@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstalledPlugins xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Plugin>
+    <Name>DFN_Plugin</Name>
+    <Description>DFN Generator: Petrel version</Description>
+    <Contact>mwelch@dtu.dk or mikael@dtu.dk</Contact>
+    <PluginTypeName>DFNGenerator_Ocean.DFNPlugin, DFNGenerator_Ocean, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
+    <PluginUri>http://www.oilgas.dtu.dk/</PluginUri>
+    <PluginId>://DFNGenerator_Ocean.DFNPlugin/2.0.0.0</PluginId>
+    <Trust PublicKeyToken="">Default</Trust>
+    <ReleaseDate>2021-09-09</ReleaseDate>
+    <Author>Michael Welch and Mikael Lüthje</Author>
+    <AppVersion>2017.0</AppVersion>
+    <Modules>
+      <Module TypeName="DFNGenerator_Ocean.DFNModule2, DFNGenerator_Ocean, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    </Modules>
+    <Assemblies>
+      <Assembly Name="DFNGenerator_Ocean, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    </Assemblies>
+    <assemblyBinding />
+    <StartMode>Startup</StartMode>
+    <StartupAction>None</StartupAction>
+  </Plugin>
+</InstalledPlugins>

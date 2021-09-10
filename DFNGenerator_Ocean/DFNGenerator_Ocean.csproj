@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup>
+    <Reference>
+      <Private>False</Private>
+    </Reference>
+  </ItemDefinitionGroup>
+  <PropertyGroup>
+    <!--ProjectType:Plugin-->
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{F339DBA5-EDC9-4602-859B-5BE45BAA50D2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>DFNGenerator_Ocean</RootNamespace>
+    <AssemblyName>DFNGenerator_Ocean</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Slb.Ocean.Basics">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Basics.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Coordinates">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Coordinates.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Core">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Data">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Geometry">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Geometry.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.Configuration">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.DomainObject.FrameworkModeling">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObject.FrameworkModeling.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.DomainObjectExtensions">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObjectExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.DomainObjectExtensions.Prestack">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObjectExtensions.Prestack.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.Geology">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Geology.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.Modeling">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Modeling.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.Seismic">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Seismic.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.UI.Controls">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.UI.Controls.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Units">
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Units.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Deployment" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="CommandHandler.cs" />
+    <Compile Include="CommandHandler2.cs" />
+    <Compile Include="DFNGenerator.cs" />
+    <Compile Include="DFNGeneratorUI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="DFNGeneratorUI.designer.cs">
+      <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PetrelProgressReporter.cs" />
+    <Compile Include="Slb\Ocean\Petrel\DomainObject\Simulation.cs" />
+    <Compile Include="ToDelete\DFN_2.cs" />
+    <Compile Include="ToDelete\DFN_2UI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ToDelete\DFN_2UI.designer.cs">
+      <DependentUpon>DFN_2UI.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="ToDelete\DFNModule.cs" />
+    <Compile Include="DFNModule2.cs" />
+    <Compile Include="DFNPlugin.cs" />
+    <Compile Include="ToDelete\HelloGrid.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ToDelete\Workstep1.cs" />
+    <Compile Include="ToDelete\Workstep2.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="OceanResources\OceanRibbonConfiguration.xml" />
+    <Content Include="OceanResources\Readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="DFNGeneratorUI.resx">
+      <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ToDelete\DFN_2UI.resx">
+      <DependentUpon>DFN_2UI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="..\DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems" Label="Shared" />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>del "$(ProjectDir)plugin.xml"
+"%25Ocean2016Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2016HOME_x64%25\petrel.exe"
+"%25Ocean2016Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2016HOME_x64%25\petrel.exe" "$(TargetDir)"
+</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+		Other similar extension points exist, see Microsoft.Common.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	<Target Name="AfterBuild">
+	</Target>
+	-->
+</Project>
