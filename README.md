@@ -43,23 +43,23 @@ The software can be run either as a standalone software or as a plug-in within P
 
 For installation and usage:
 
-Standalone executable and example files (https://github.com/JointFlow/DFN-Generator/blob/main/Files/DFNGenerator_StandaloneProgram.zip)
+Standalone executable and example files (https://github.com/JointFlow/DFNGenerator/blob/main/Files/DFNGenerator_StandaloneProgram.zip)
 
-Standalone: DFN_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow/DFN_Generator/tree/main/Documentation/DFN_Generator_Standalone_UserGuide.pdf)
+Standalone: DFN_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFN_Generator_Standalone_UserGuide.pdf)
 
-Petrel plug-in: DFN_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFN_Generator/tree/main/Documentation/DFN_Generator_Petrel_UserGuide.pdf)
+Petrel plug-in: DFN_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFN_Generator_Petrel_UserGuide.pdf)
 
 For direct use in Petrel via the Ocean Plug-in manager the .pip files can be found here:
 
-Petrel 2016: (https://github.com/JointFlow/DFN_Generator/tree/main/Files/DFN_2016.pip)
+Petrel 2016: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2016.pip)
 
-Petrel 2017: (https://github.com/JointFlow/DFN_Generator/tree/main/Files/DFN_2017.pip)
+Petrel 2017: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2017.pip)
 
-Petrel 2018: (https://github.com/JointFlow/DFN_Generator/tree/main/Files/DFN_2018.pip)
+Petrel 2018: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2018.pip)
 
-Petrel 2020: (https://github.com/JointFlow/DFN_Generator/tree/main/Files/DFN_2020.pip)
+Petrel 2020: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2020.pip)
 
-An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFN_Generator/tree/main/Documentation/DFNGenerator_TechNotes.pdf)
+An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFNGenerator_TechNotes.pdf)
 ItThiss not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the 
 Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
 
@@ -93,7 +93,7 @@ Michael Welch - mwelch@dtu.dk
 
 Mikael Lüthje - mikael@dtu.dk
 
-Project Link: [https://github.com/JointFlow/DFN-Generator](https://github.com/JointFlow/DFN-Generator)
+Project Link: [https://github.com/JointFlow/DFNGenerator](https://github.com/JointFlow/DFNGenerator)
 
 <!-- REFERENCES -->
 ## References
