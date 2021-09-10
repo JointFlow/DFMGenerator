@@ -31,8 +31,8 @@ C# and can run simple models, and a plug-in interface for the Petrel geomodellin
 that can run more complex models of real geological structures. The interface and calculation code are kept separate, so it is possible to modify the interfaces without 
 changing the calculation algorithm and vice versa.
 
-![alt text](https://github.com/JointFlow/DFN_Generator/blob/main/Documentation/Picture1.png?raw=true)
-![alt text](https://github.com/JointFlow/DFN_Generator/blob/main/Documentation/Picture2.png?raw=true)
+![alt text](https://github.com/JointFlow/DFNGenerator/blob/main/Documentation/Picture1.png?raw=true)
+![alt text](https://github.com/JointFlow/DFNGenerator/blob/main/Documentation/Picture1.png?raw=true)
 
 *Comparison of an implicit fracture model (left) and an explicit DFN model (right). In the implicit fracture model, fracture density (defined as total fracture area per unit volume, in m-1) is defined as a continuum property in a grid of discrete cells. In the explicit DFN, individual fractures are represented as geometric objects. While the fracture density can be calculated from the DFN, it also contains other valuable information such as mean fracture length, fracture orientation and connectivity, and the anisotropy of the overall fracture network.*
 
