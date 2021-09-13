@@ -60,8 +60,7 @@ Petrel 2018: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2018
 Petrel 2020: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2020.pip)
 
 An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFNGenerator_TechNotes.pdf)
-ItThiss not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the 
-Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
+ItThiss not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
 
 
 
@@ -99,8 +98,8 @@ Project Link: [https://github.com/JointFlow/DFNGenerator](https://github.com/Joi
 ## References
 Welch, M. J., Lüthje, M., & Glad, A. C. 2019. Influence of fracture nucleation and propagation rates on fracture geometry: insights from geomechanical modelling. Petroleum Geoscience, 25(4), 470-489.
 
-M. Welch, M. Lüthje and S. Oldfield. Modelling the Evolution of Natural Fracture Networks - Methods for Simulating the
-Nucleation, Propagation and Interaction of Layer-Bound Fractures. Springer. 2020. (https://www.springer.com/gp/book/9783030524135)
+Welch, M. J., Lüthje, M., & Oldfield, S. J. 2020. Modelling the Evolution of Natural Fracture Networks - Methods for Simulating the
+Nucleation, Propagation and Interaction of Layer-Bound Fractures. Springer. (https://www.springer.com/gp/book/9783030524135)
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
