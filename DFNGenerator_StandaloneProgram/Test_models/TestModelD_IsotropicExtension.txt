@@ -15,14 +15,16 @@ LayerThickness 1
 % Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
 OriginXOffset 0
 OriginYOffset 0
+% Current depth of burial in metres, positive downwards
 Depth 2000
-% Strain orientatation
+% Minimum strain orientatation (i.e. direction of maximum extension) in radians, clockwise from North
 EhminAzi -0.785398163397448
 % Set VariableStrainOrientation false to have the same minimum strain orientatation in all cells
 % Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
+% EhminCurvature is the difference in strain orientation between adjacent blocks in radians
 VariableStrainOrientation false
 EhminCurvature 0.1963495
-% Strain rates
+% Strain rates; units determined by ModelTimeUnits (i.e. strain/s, strain/year or strain/ma)
 % Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
 % With no strain relaxation, strain rate will control rate of horizontal stress increase
 % With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
@@ -37,6 +39,7 @@ VariableStrainMagnitude false
 ModelTimeUnits ma
 
 % Mechanical properties
+% Young's Modulus in Pa
 YoungsMod 1E+10
 % Set VariableYoungsMod true to have laterally variable Young's Modulus
 VariableYoungsMod false
@@ -45,10 +48,11 @@ BiotCoefficient 1
 FrictionCoefficient 0.5
 % Set VariableFriction true to have laterally variable friction coefficient
 VariableFriction false
+% Crack surface energy in J/m2
 CrackSurfaceEnergy 1000
 % Set VariableCSE true to have laterally variable crack surface energy
 VariableCSE false
-% Strain relaxation data
+% Strain relaxation time constants
 % Units are determined by ModelTimeUnits setting
 % Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
 RockStrainRelaxation 0.2
@@ -60,6 +64,7 @@ InitialMicrofractureDensity 0.001
 InitialMicrofractureSizeDistribution 2
 % Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
 SubcriticalPropIndex 20
+% Critical fracture propagation rate in m/s
 CriticalPropagationRate 2000
 
 % Stress state
@@ -67,14 +72,14 @@ CriticalPropagationRate 2000
 % Options are EvenlyDistributedStress or StressShadow
 % Do not use DuctileBoundary as this is not yet implemented
 StressDistributionScenario StressShadow
-% Depth at the time of deformation - will control stress state
-% If DepthAtDeformation is specified, use this to calculate effective vertical stress instead of the current depth
+% Depth at the time of deformation (in metres, positive downwards) - this will control stress state
+% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth
 % If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used
 DepthAtDeformation -1
-% Mean density of overlying sediments and fluid (kg/m3)
+% Mean density of overlying sediments and fluid in kg/m3
 MeanOverlyingSedimentDensity 2250
 FluidDensity 1000
-% Fluid overpressure (Pa)
+% Fluid overpressure in Pa
 InitialOverpressure 0
 % InitialStressRelaxation controls the initial horizontal stress, prior to the application of horizontal strain
 % Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
@@ -160,7 +165,7 @@ MaxTimestepDuration -1
 % Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
 % Increase this to run calculation faster, with fewer but longer timesteps
 MaxTimestepMFP33Increase 0.002
-% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
+% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)
 % If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
 % If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
 MinImplicitMicrofractureRadius -1
@@ -172,7 +177,7 @@ CalculatePopulationDistribution true
 % Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
 No_l_indexPoints 20
 % MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
-% Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
+% Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
 maxHMinLength 50
 maxHMaxLength 50
 % Calculation termination controls
@@ -202,9 +207,9 @@ CropAtBoundary true
 % Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
 LinkStressShadows false
 % Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set
-% Set to Pi/4 rad (45 degrees) by default
+% Set to Pi/4 radians (45 degrees) by default
 MaxConsistencyAngle 0.78539816
-% Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value
+% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value
 % Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
 MinimumLayerThickness 0
 % Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
@@ -216,7 +221,7 @@ ProbabilisticFractureNucleationLimit 0
 PropagateFracturesInNucleationOrder true
 % Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry
 SearchNeighbouringGridblocks Automatic
-% Minimum radius for microfractures to be included in explicit DFN
+% Minimum radius for microfractures to be included in explicit DFN (in metres)
 % Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN
 MinExplicitMicrofractureRadius 0
 % Number of cornerpoints defining the microfracture polygons in the explicit DFN

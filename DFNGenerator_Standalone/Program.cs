@@ -50,14 +50,16 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock");
                 input_file.WriteLine("OriginXOffset 0");
                 input_file.WriteLine("OriginYOffset 0");
+                input_file.WriteLine("% Current depth of burial in metres, positive downwards");
                 input_file.WriteLine("Depth 2000");
-                input_file.WriteLine("% Strain orientatation");
+                input_file.WriteLine("% Minimum strain orientatation (i.e. direction of maximum extension) in radians, clockwise from North");
                 input_file.WriteLine("EhminAzi 0");
                 input_file.WriteLine("% Set VariableStrainOrientation false to have the same minimum strain orientatation in all cells");
                 input_file.WriteLine("% Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature");
+                input_file.WriteLine("% EhminCurvature is the difference in strain orientation between adjacent blocks in radians");
                 input_file.WriteLine("VariableStrainOrientation false");
                 input_file.WriteLine("EhminCurvature 0.1963495");
-                input_file.WriteLine("% Strain rates");
+                input_file.WriteLine("% Strain rates; units determined by ModelTimeUnits (i.e. strain/s, strain/year or strain/ma)");
                 input_file.WriteLine("% Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures");
                 input_file.WriteLine("% With no strain relaxation, strain rate will control rate of horizontal stress increase");
                 input_file.WriteLine("% With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress");
@@ -73,6 +75,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Mechanical properties");
+                input_file.WriteLine("% Young's Modulus in Pa");
                 input_file.WriteLine("YoungsMod 1E+10");
                 input_file.WriteLine("% Set VariableYoungsMod true to have laterally variable Young's Modulus");
                 input_file.WriteLine("VariableYoungsMod false");
@@ -81,10 +84,11 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("FrictionCoefficient 0.5");
                 input_file.WriteLine("% Set VariableFriction true to have laterally variable friction coefficient");
                 input_file.WriteLine("VariableFriction false");
+                input_file.WriteLine("% Crack surface energy in J/m2");
                 input_file.WriteLine("CrackSurfaceEnergy 1000");
                 input_file.WriteLine("% Set VariableCSE true to have laterally variable crack surface energy");
                 input_file.WriteLine("VariableCSE false");
-                input_file.WriteLine("% Strain relaxation data");
+                input_file.WriteLine("% Strain relaxation time constants");
                 input_file.WriteLine("% Units are determined by ModelTimeUnits setting");
                 input_file.WriteLine("% Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate");
                 input_file.WriteLine("RockStrainRelaxation 0");
@@ -96,6 +100,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("InitialMicrofractureSizeDistribution 2");
                 input_file.WriteLine("% Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation");
                 input_file.WriteLine("SubcriticalPropIndex 10");
+                input_file.WriteLine("% Critical fracture propagation rate in m/s");
                 input_file.WriteLine("CriticalPropagationRate 2000");
                 input_file.WriteLine();
 
@@ -104,14 +109,14 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Options are EvenlyDistributedStress or StressShadow");
                 input_file.WriteLine("% Do not use DuctileBoundary as this is not yet implemented");
                 input_file.WriteLine("StressDistributionScenario StressShadow");
-                input_file.WriteLine("% Depth at the time of deformation - will control stress state");
-                input_file.WriteLine("% If DepthAtDeformation is specified, use this to calculate effective vertical stress instead of the current depth");
+                input_file.WriteLine("% Depth at the time of deformation (in metres, positive downwards) - this will control stress state");
+                input_file.WriteLine("% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth");
                 input_file.WriteLine("% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used");
                 input_file.WriteLine("DepthAtDeformation -1");
-                input_file.WriteLine("% Mean density of overlying sediments and fluid (kg/m3)");
+                input_file.WriteLine("% Mean density of overlying sediments and fluid in kg/m3");
                 input_file.WriteLine("MeanOverlyingSedimentDensity 2250");
                 input_file.WriteLine("FluidDensity 1000");
-                input_file.WriteLine("% Fluid overpressure (Pa)");
+                input_file.WriteLine("% Fluid overpressure in Pa");
                 input_file.WriteLine("InitialOverpressure 0");
                 input_file.WriteLine("% InitialStressRelaxation controls the initial horizontal stress, prior to the application of horizontal strain");
                 input_file.WriteLine("% Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)");
@@ -199,7 +204,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration");
                 input_file.WriteLine("% Increase this to run calculation faster, with fewer but longer timesteps");
                 input_file.WriteLine("MaxTimestepMFP33Increase 0.002");
-                input_file.WriteLine("% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations");
+                input_file.WriteLine("% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)");
                 input_file.WriteLine("% If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite");
                 input_file.WriteLine("% If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)");
                 input_file.WriteLine("MinImplicitMicrofractureRadius -1");
@@ -211,7 +216,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
                 input_file.WriteLine("No_l_indexPoints 20");
                 input_file.WriteLine("% MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively");
-                input_file.WriteLine("% Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
+                input_file.WriteLine("% Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
                 input_file.WriteLine("MaxHMinLength 0");
                 input_file.WriteLine("MaxHMaxLength 0");
                 input_file.WriteLine("% Calculation termination controls");
@@ -241,9 +246,9 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment");
                 input_file.WriteLine("LinkStressShadows false");
                 input_file.WriteLine("% Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set");
-                input_file.WriteLine("% Set to Pi/4 rad (45 degrees) by default");
+                input_file.WriteLine("% Set to Pi/4 radians (45 degrees) by default");
                 input_file.WriteLine("MaxConsistencyAngle 0.78539816");
-                input_file.WriteLine("% Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value");
+                input_file.WriteLine("% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value");
                 input_file.WriteLine("% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers");
                 input_file.WriteLine("MinimumLayerThickness 0");
                 input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
@@ -255,7 +260,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("PropagateFracturesInNucleationOrder true");
                 input_file.WriteLine("% Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry");
                 input_file.WriteLine("SearchNeighbouringGridblocks Automatic");
-                input_file.WriteLine("% Minimum radius for microfractures to be included in explicit DFN");
+                input_file.WriteLine("% Minimum radius for microfractures to be included in explicit DFN (in metres)");
                 input_file.WriteLine("% Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN");
                 input_file.WriteLine("MinExplicitMicrofractureRadius 0");
                 input_file.WriteLine("% Number of cornerpoints defining the microfracture polygons in the explicit DFN");
