@@ -90,7 +90,7 @@ Distributed under the Apache License 2.0 License. See `LICENSE` for more informa
 
 Michael Welch - mwelch@dtu.dk
 
-Mikael Lüthje - mikael@dtu.dk
+Mikael Lüthje - mllu@dtu.dk
 
 Project Link: [https://github.com/JointFlow/DFNGenerator](https://github.com/JointFlow/DFNGenerator)
 
