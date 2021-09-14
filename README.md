@@ -94,6 +94,8 @@ Mikael Lüthje - mikael@dtu.dk
 
 Project Link: [https://github.com/JointFlow/DFNGenerator](https://github.com/JointFlow/DFNGenerator)
 
+Project DOI: [![DOI](https://zenodo.org/badge/405042994.svg)](https://zenodo.org/badge/latestdoi/405042994)
+
 <!-- REFERENCES -->
 ## References
 Welch, M. J., Lüthje, M., & Glad, A. C. 2019. Influence of fracture nucleation and propagation rates on fracture geometry: insights from geomechanical modelling. Petroleum Geoscience, 25(4), 470-489.
