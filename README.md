@@ -51,13 +51,15 @@ Petrel plug-in: DFN_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow
 
 For direct use in Petrel via the Ocean Plug-in manager the .pip files can be found here:
 
-Petrel 2016: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2016.pip)
+Petrel 2016: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2016.pip)
 
-Petrel 2017: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2017.pip)
+Petrel 2017: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2017.pip)
 
-Petrel 2018: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2018.pip)
+Petrel 2018: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2018.pip)
 
-Petrel 2020: (https://github.com/JointFlow/DFNGenerator/tree/main/Files/DFN_2020.pip)
+Petrel 2019: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2019.pip)
+
+Petrel 2020: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2020.pip)
 
 An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFNGenerator_TechNotes.pdf)
 This is not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
