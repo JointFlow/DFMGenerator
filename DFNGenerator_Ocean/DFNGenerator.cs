@@ -1525,8 +1525,10 @@ namespace DFNGenerator_Ocean
                                 double local_InitialStressRelaxation = InitialStressRelaxation;
                                 if (InitialStressRelaxation < 0)
                                 {
-                                    double opt_dip = ((Math.PI / 2) + Math.Atan(local_FrictionCoefficient)) / 2;
-                                    local_InitialStressRelaxation = (((1 - PoissonsRatio) * ((Math.Sin(opt_dip) * Math.Cos(opt_dip)) - (local_FrictionCoefficient * Math.Pow(Math.Cos(opt_dip), 2)))) - PoissonsRatio) / (1 - (2 * PoissonsRatio));
+                                    double friction_angle = Math.Atan(local_FrictionCoefficient);
+                                    double sin_friction_angle = Math.Sin(friction_angle);
+                                    double sh0d_svd = (1 - sin_friction_angle) / (1 + sin_friction_angle);
+                                    local_InitialStressRelaxation = (((1 - local_PoissonsRatio) * sh0d_svd) - local_PoissonsRatio) / (1 - (2 * local_PoissonsRatio));
                                 }
                                 double lithostatic_stress = (MeanOverlyingSedimentDensity * 9.81 * local_Depth);
                                 double fluid_pressure = (FluidDensity * 9.81 * local_Depth) + InitialOverpressure;
