@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRACS
@@ -408,7 +408,7 @@ namespace DFNGenerator_Standalone
             // Ehmin is most tensile (i.e. most negative) horizontal strain rate
             double EhminRate = -0.01;
             // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-            double EhmaxRate = 0;
+            double EhmaxRate = -0;
             // Set VariableStrainMagnitude to add random variation to the input strain rates
             // Strain rates for each gridblock will vary randomly from 0 to 2x specified values
             bool VariableStrainMagnitude = false;

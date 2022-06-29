@@ -8,7 +8,7 @@
     <PluginUri>http://www.oilgas.dtu.dk/</PluginUri>
     <PluginId>://DFNGenerator_Ocean.DFNPlugin/2.0.0.0</PluginId>
     <Trust PublicKeyToken="">Default</Trust>
-    <ReleaseDate>2021-09-10</ReleaseDate>
+    <ReleaseDate>2022-06-29</ReleaseDate>
     <Author>Michael Welch and Mikael Lüthje</Author>
     <AppVersion>2017.0</AppVersion>
     <Modules>

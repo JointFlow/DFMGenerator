@@ -1536,7 +1536,30 @@ namespace DFNGenerator_SharedCode
         /// <returns>Azimuth of the minimum horizontal value of the tensor (radians, clockwise from N)</returns>
         public double GetMinimumHorizontalAzimuth()
         {
-            return Math.Atan2(2 * components[Tensor2SComponents.XY], components[Tensor2SComponents.YY] - components[Tensor2SComponents.XX]) / 2;
+            double numerator = 2 * components[Tensor2SComponents.XY];
+            double denominator = components[Tensor2SComponents.XX] - components[Tensor2SComponents.YY];
+            if (denominator < 0)
+            {
+                return (Math.PI - Math.Atan(numerator / denominator)) / 2;
+            }
+            else if (denominator > 0)
+            {
+                if (numerator > 0)
+                    return Math.PI - (Math.Atan(numerator / denominator) / 2);
+                else if (numerator < 0)
+                    return -(Math.Atan(numerator / denominator) / 2);
+                else
+                    return 0;
+            }
+            else
+            {
+                if (numerator > 0)
+                    return Math.PI / 4;
+                else if (numerator < 0)
+                    return (3 * Math.PI) / 4;
+                else
+                    return 0;
+            }
         }
         /// <summary>
         /// Get the minimum and maximum horizontal values of the tensor (if one of the eigenvectors is vertical, these will represent the other two eigenvalues)
