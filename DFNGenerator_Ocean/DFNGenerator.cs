@@ -285,7 +285,7 @@ namespace DFNGenerator_Ocean
                     // Output to file
                     // These must be set to true for stand-alone version or no output will be generated
 #if DEBUG_FRACS
-                    bool LogCalculation = true;
+                    bool WriteImplicitDataFiles = true;
                     bool WriteDFNFiles = true;
 #else
                     bool WriteImplicitDataFiles = arguments.Argument_WriteImplicitDataFiles;
@@ -300,8 +300,8 @@ namespace DFNGenerator_Ocean
                     bool OutputAtEqualTimeIntervals = arguments.Argument_OutputAtEqualTimeIntervals;
                     // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
                     bool OutputCentrepoints = arguments.Argument_OutputCentrepoints;
-                    // Flag to output the bulk rock compliance tensor
-                    bool OutputComplianceTensor = false;
+                    // Flag to output the bulk rock compliance and stiffness tensors
+                    bool OutputBulkRockElasticTensors = false;
                     // Fracture connectivity and anisotropy index control parameters
                     // Flag to calculate and output fracture connectivity and anisotropy indices
                     bool CalculateFractureConnectivityAnisotropy = arguments.Argument_CalculateFractureConnectivityAnisotropy;
@@ -1556,7 +1556,7 @@ namespace DFNGenerator_Ocean
                                 }
 
                                 // Set the propagation control data for the gridblock
-                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputComplianceTensor, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                                     MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                                 // Set folder path for output files
@@ -1634,8 +1634,8 @@ namespace DFNGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2});", lithostatic_stress, fluid_pressure, InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22}, {23}, {24});",
-                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputComplianceTensor, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, LogCalculation, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                    MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
                                 PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
 #endif

@@ -100,8 +100,8 @@ NoIntermediateOutputs 0
 OutputAtEqualTimeIntervals false
 % Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
 OutputCentrepoints false
-% Flag to output the bulk rock compliance tensor
-OutputComplianceTensor false
+% Flag to output the bulk rock compliance and stiffness tensors
+OutputBulkRockElasticTensors false
 % Fracture porosity control parameters
 % Flag to calculate and output fracture porosity
 CalculateFracturePorosity true
