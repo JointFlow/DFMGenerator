@@ -140,9 +140,11 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("OutputCentrepoints false");
                 input_file.WriteLine("% Flag to output the bulk rock compliance and stiffness tensors");
                 input_file.WriteLine("OutputBulkRockElasticTensors false");
-                input_file.WriteLine("% Fracture porosity control parameters");
                 input_file.WriteLine("% Flag to calculate and output fracture porosity");
                 input_file.WriteLine("CalculateFracturePorosity true");
+                input_file.WriteLine();
+
+                input_file.WriteLine("% Fracture aperture control parameters");
                 input_file.WriteLine("% Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation");
                 input_file.WriteLine("% Set to Uniform, SizeDependent, Dynamic, or BartonBandis");
                 input_file.WriteLine("FractureApertureControl Uniform");
@@ -483,9 +485,10 @@ namespace DFNGenerator_Standalone
             bool OutputCentrepoints = false;
             // Flag to output the bulk rock compliance and stiffness tensors
             bool OutputBulkRockElasticTensors = false;
-            // Fracture porosity control parameters
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
+
+            // Fracture aperture control parameters
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
             FractureApertureType FractureApertureControl = FractureApertureType.Uniform;
             // Fracture aperture control parameters: Uniform fracture aperture
@@ -891,12 +894,13 @@ namespace DFNGenerator_Standalone
                         case "OutputComplianceTensor": // For backwards compatibility
                             OutputBulkRockElasticTensors = (line_split[1] == "true");
                             break;
-                        // Fracture porosity control parameters
                         // Flag to calculate and output fracture porosity
                         case "CalculateFracturePorosity":
                         case "CalculateFracturePorosity_in": // For backwards compatibility
                             CalculateFracturePorosity = (line_split[1] == "true");
                             break;
+
+                        // Fracture aperture control parameters
                         // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
                         case "FractureApertureControl":
                         case "FractureApertureControl_in": // For backwards compatibility
