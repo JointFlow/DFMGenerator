@@ -47,10 +47,7 @@ namespace DFNGenerator_Ocean
             PetrelSystem.WorkflowEditor.Add(dfngeneratorInstance);
             m_dfngeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfngeneratorInstance);
             PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Plug-ins");
-            // Register OceanDFN.DFN_2
-            //DFNGenerator_Ocean.DFN_2 dfn_2Instance = new DFNGenerator_Ocean.DFN_2();
-            //PetrelSystem.WorkflowEditor.AddUIFactory<DFNGenerator_Ocean.DFN_2.Arguments>(new DFNGenerator_Ocean.DFN_2.UIFactory());
-            //PetrelSystem.WorkflowEditor.Add(dfn_2Instance);
+
             // Register CommandHandler
             PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.CommandHandler.ID, new DFNGenerator_Ocean.CommandHandler());
             // Register CommandHandler2
@@ -86,8 +83,7 @@ namespace DFNGenerator_Ocean
             // Unregister DFNGenerator_Ocean.DFNGenerator
             PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>();
             PetrelSystem.ProcessDiagram.Remove(m_dfngeneratorInstance);
-            // Unregister OceanDFN.DFN_2
-            //PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFN_2.Arguments>();
+
             // TODO:  Add DFNModule2.Disintegrate implementation
         }
 

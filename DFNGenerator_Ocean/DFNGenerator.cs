@@ -1830,26 +1830,67 @@ namespace DFNGenerator_Ocean
                             // Write implicit fracture property data to Petrel grid
                             PetrelLogger.InfoOutputWindow("Write implicit data");
                             progressBar.SetProgressText("Write implicit data");
+
+                            // Get templates for the implicit data
+                            // Where possible, use standard Petrel templates
                             Template P30Template = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
                             Template P32Template = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
                             Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
+                            Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                             Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
                             Template AnisotropyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
                             Template PorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
-                            Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
-                            using (ITransaction t = DataManager.NewTransaction())
+                            Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
+                            Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
+
+                            // There are no Petrel standard property temlates for P30 (unit fracture/length^3) or P32 (unit fractures/length), therefore we must create these ourselves, based on the dimensionless Fracture Intensity template
+                            Template fractureIntensityReferenceTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
+                            ITemplateSettingsInfoFactory IntensitySettingsFactory = CoreSystem.GetService<ITemplateSettingsInfoFactory>(fractureIntensityReferenceTemplate);
+                            TemplateSettingsInfo IntensityTemplateSettings = IntensitySettingsFactory.GetTemplateSettingsInfo(fractureIntensityReferenceTemplate);
+                            TemplateCollection fractureIntensityTemplateCollection = fractureIntensityReferenceTemplate.TemplateCollection;
+                            if (fractureIntensityTemplateCollection.CanCreateTemplate(fractureIntensityReferenceTemplate))
+                            {
+                                // Get names for the new templates
+                                string P30TemplateName = PetrelSystem.TemplateService.GetUniqueName("P30FractureIntensity");
+                                string P32TemplateName = PetrelSystem.TemplateService.GetUniqueName("P32FractureIntensity");
+
+                                // Get the units for the new templates
+                                IUnitMeasurement P30unit = PetrelUnitSystem.GetUnitMeasurement("InverseVolume");
+                                IUnitMeasurement P32unit = PetrelUnitSystem.GetUnitMeasurement("InverseDistance");
+
+                                // Create a transaction to create the new templates
+                                using (ITransaction transactionCreateNewTemplates = DataManager.NewTransaction())
+                                {
+                                    // Lock the database
+                                    transactionCreateNewTemplates.Lock(fractureIntensityTemplateCollection);
+
+                                    // Create the new templates
+                                    P30Template = fractureIntensityTemplateCollection.CreateTemplate(P30TemplateName, IntensityTemplateSettings.DefaultColorTable, P30unit);
+                                    P30Template.Comments = "P30 fracture intensity: number of fractures per unit volume";
+                                    P30Template.TemplateType = fractureIntensityReferenceTemplate.TemplateType;
+                                    P32Template = fractureIntensityTemplateCollection.CreateTemplate(P32TemplateName, IntensityTemplateSettings.DefaultColorTable, P32unit);
+                                    P32Template.Comments = "P32 fracture intensity: total fracture area per unit volume";
+                                    P32Template.TemplateType = fractureIntensityReferenceTemplate.TemplateType;
+                                }
+                            }
+
+                            // Create a transaction to write the property data to the Petrel grid
+                            using (ITransaction transactionWritePropertyData = DataManager.NewTransaction())
                             {
                                 // Get handle to parent object and lock database
                                 PropertyCollection root = PetrelGrid.PropertyCollection;
-                                t.Lock(root);
+                                transactionWritePropertyData.Lock(root);
 
                                 // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
                                 int NoStages = NoIntermediateOutputs + 1;
                                 int NoSets = NoFractureSets;
-                                int NoDipSets = (Mode1Only || Mode2Only ? 1 : 2);
+                                int NoDipSets = ((Mode1Only || Mode2Only) ? 1 : 2);
                                 int NoCalculationElementsCompleted = 0;
                                 int NoElements = NoActiveGridblocks * ((NoSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoSets * NoDipSets) + 1 : 0) + (CalculateFracturePorosity ? 1 : 0));
                                 NoElements *= NoStages;
+                                // Bulk rock elastic tensors are only output for the final stage
+                                if (OutputBulkRockElasticTensors)
+                                    NoElements += NoActiveGridblocks;
                                 progressBarWrapper.SetNumberOfElements(NoElements);
 
                                 // Get a list of end times for each gridblock - this is used to calculate the end times for the intermediate stages
@@ -2448,10 +2489,118 @@ namespace DFNGenerator_Ocean
 
                                     } // End write fracture porosity data
 
+                                    // Write stiffness and compliance tensor data to Petrel grid
+                                    if (OutputBulkRockElasticTensors && finalStage)
+                                    {
+
+                                        // Create subfolders for the bulk rock compliance and stiffness tensor components
+                                        string ComplianceTensorCollectionName = "Bulk rock compliance tensor";
+                                        PropertyCollection ComplianceTensorData = FracData.CreatePropertyCollection(ComplianceTensorCollectionName);
+                                        string StiffnessTensorCollectionName = "Bulk rock stiffness tensor";
+                                        PropertyCollection StiffnessTensorData = FracData.CreatePropertyCollection(StiffnessTensorCollectionName);
+
+                                        // Get templates for each component of both tensors
+                                        Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> ComplianceTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
+                                        Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> StiffnessTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
+                                        Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                                        foreach (Tensor2SComponents ij in tensorComponents)
+                                        {
+                                            ComplianceTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
+                                            StiffnessTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
+                                            foreach (Tensor2SComponents kl in tensorComponents)
+                                            {
+                                                Property ComplianceTensor_ijkl = ComplianceTensorData.CreateProperty(ComplianceTensorComponentTemplate);
+                                                ComplianceTensor_ijkl.Name = string.Format("S_{0}{1}", ij, kl);
+                                                ComplianceTensorProperties[ij][kl] = ComplianceTensor_ijkl;
+                                                Property StiffnessTensor_ijkl = StiffnessTensorData.CreateProperty(StiffnessTensorComponentTemplate);
+                                                StiffnessTensor_ijkl.Name = string.Format("C_{0}{1}", ij, kl);
+                                                StiffnessTensorProperties[ij][kl] = StiffnessTensor_ijkl;
+                                            }
+                                        }
+
+                                        // Loop through all columns and rows in the Fracture Grid
+                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
+                                                if (fractureGridCell == null)
+                                                    continue;
+
+                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+
+                                                // Get the compliance and stiffness tensors for this gridblock
+                                                Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
+                                                Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
+
+#if DEBUG_FRACS
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+#endif
+
+                                                // Loop through all the Petrel cells in the gridblock
+                                                // We need to define the last ij and kl components outside the loop so we can identify the tensor component if an exception is thrown
+                                                Tensor2SComponents lastij = Tensor2SComponents.XX;
+                                                Tensor2SComponents lastkl = Tensor2SComponents.XX;
+                                                try
+                                                {
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+#if DEBUG_FRACS
+                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                // Get index for cell in Petrel grid
+                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Write tensor component data to Petrel grid
+                                                                foreach (Tensor2SComponents ij in tensorComponents)
+                                                                {
+                                                                    lastij = ij;
+                                                                    foreach (Tensor2SComponents kl in tensorComponents)
+                                                                    {
+                                                                        lastkl = kl;
+                                                                        ComplianceTensorProperties[ij][kl][index_cell] = (float)gridblockComplianceTensor.Component(ij, kl);
+                                                                        StiffnessTensorProperties[ij][kl][index_cell] = (float)gridblockStiffnessTensor.Component(ij, kl);
+                                                                    }
+                                                                }
+                                                            } // End loop through all the Petrel cells in the gridblock
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to column {0}, {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                    errorMessage = errorMessage + string.Format(" S_{0}{1} {2}", lastij, lastkl, (float)gridblockComplianceTensor.Component(lastij, lastkl));
+                                                    errorMessage = errorMessage + string.Format(" C_{0}{1} {2}", lastij, lastkl, (float)gridblockStiffnessTensor.Component(lastij, lastkl));
+                                                    PetrelLogger.InfoOutputWindow(errorMessage);
+                                                    PetrelLogger.InfoOutputWindow(e.Message);
+                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                }
+
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                            } // End loop through all columns and rows in the Fracture Grid
+
+                                    } // End write stiffness and compliance tensor data
+
                                 } // End loop through each stage in the fracture growth
 
                                 // Commit the changes to the Petrel database
-                                t.Commit();
+                                transactionWritePropertyData.Commit();
                             }
 
                             // Write explicit DFN to Petrel project
@@ -2493,11 +2642,11 @@ namespace DFNGenerator_Ocean
 
                                     // Create a new fracture network object
                                     FractureNetwork fractureNetwork;
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionCreateFractureNetwork = DataManager.NewTransaction())
                                     {
                                         // Get handle to parent object and lock database
                                         ModelCollection GridColl = PetrelGrid.ModelCollection;
-                                        trans.Lock(GridColl);
+                                        transactionCreateFractureNetwork.Lock(GridColl);
 
                                         // Create a new fracture network object
                                         fractureNetwork = GridColl.CreateFractureNetwork(ModelName + outputLabel, Domain.ELEVATION_DEPTH);
@@ -2506,17 +2655,17 @@ namespace DFNGenerator_Ocean
                                         fractureNetwork.Comments = generalInputParams + explicitInputParams;
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionCreateFractureNetwork.Commit();
                                     }
 
                                     // Write the model time of the intermediate DFN to the Petrel log window
                                     PetrelLogger.InfoOutputWindow(string.Format("DFN realisation {0} at time {1} {2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
 
                                     // Create the fracture objects
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionCreateFractures = DataManager.NewTransaction())
                                     {
                                         // Lock the database
-                                        trans.Lock(fractureNetwork);
+                                        transactionCreateFractures.Lock(fractureNetwork);
 
                                         // Loop through all the microfractures in the DFN
                                         foreach (MicrofractureXYZ uF in DFN.GlobalDFNMicrofractures)
@@ -2731,11 +2880,11 @@ namespace DFNGenerator_Ocean
                                         }
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionCreateFractures.Commit();
                                     }
 
                                     // Assign the fracture properties
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionAssignFractureProperties = DataManager.NewTransaction())
                                     {
 
                                         // Get handle to the appropriate fracture properties
@@ -2746,12 +2895,12 @@ namespace DFNGenerator_Ocean
                                         {
                                             fractureAperture = fractureNetwork.GetWellKnownProperty(aperture);
                                             // Lock the database
-                                            trans.Lock(fractureAperture);
+                                            transactionAssignFractureProperties.Lock(fractureAperture);
                                         }
                                         else
                                         {
                                             // Lock the database
-                                            trans.Lock(fractureNetwork);
+                                            transactionAssignFractureProperties.Lock(fractureNetwork);
                                             fractureAperture = fractureNetwork.CreateWellKnownProperty(aperture);
                                         }
 
@@ -2882,7 +3031,7 @@ namespace DFNGenerator_Ocean
                                         }
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionAssignFractureProperties.Commit();
                                     }
 
                                     // Update the stage number
@@ -2894,11 +3043,11 @@ namespace DFNGenerator_Ocean
                                 {
                                     // Create a new collection for the polyline output
                                     Collection CentrelineCollection = Collection.NullObject;
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionCreateCentrelineCollection = DataManager.NewTransaction())
                                     {
                                         // Get handle to project and lock database
                                         Project project = PetrelProject.PrimaryProject;
-                                        trans.Lock(project);
+                                        transactionCreateCentrelineCollection.Lock(project);
 
                                         // Create a new collection for the polyline set
                                         CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
@@ -2907,7 +3056,7 @@ namespace DFNGenerator_Ocean
                                         CentrelineCollection.Comments = generalInputParams + explicitInputParams;
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionCreateCentrelineCollection.Commit();
                                     }
 
                                     // Loop through each stage in the fracture growth
@@ -2917,10 +3066,10 @@ namespace DFNGenerator_Ocean
                                         // Create a stage-specific label for the output file
                                         string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
 
-                                        using (ITransaction trans = DataManager.NewTransaction())
+                                        using (ITransaction transactionCreateCentrelines = DataManager.NewTransaction())
                                         {
                                             // Lock database
-                                            trans.Lock(CentrelineCollection);
+                                            transactionCreateCentrelines.Lock(CentrelineCollection);
 
                                             // Create a new polyline set and set to the depth domain
                                             PolylineSet Centrelines = CentrelineCollection.CreatePolylineSet("Fracture_Centrelines" + outputLabel);
@@ -2968,7 +3117,7 @@ namespace DFNGenerator_Ocean
                                             Centrelines.Polylines = pline_list;
 
                                             // Commit the changes to the Petrel database
-                                            trans.Commit();
+                                            transactionCreateCentrelines.Commit();
                                         }
 
                                         // Update the stage number

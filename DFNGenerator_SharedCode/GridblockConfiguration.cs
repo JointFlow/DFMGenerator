@@ -2434,7 +2434,7 @@ namespace DFNGenerator_SharedCode
                         string complianceTensorComponents = "";
                         string stiffnessTensorComponents = "";
                         Tensor4_2Sx2S complianceTensor = S_b;
-                        Tensor4_2Sx2S stiffnessTensor = S_b.Inverse();
+                        Tensor4_2Sx2S stiffnessTensor = complianceTensor.Inverse();
                         Tensor2SComponents[] tensorComponents= new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
                         foreach (Tensor2SComponents ij in tensorComponents)
                             foreach (Tensor2SComponents kl in tensorComponents)
