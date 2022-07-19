@@ -48,16 +48,8 @@ namespace DFNGenerator_Ocean
             m_dfngeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfngeneratorInstance);
             PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Plug-ins");
 
-            // Register CommandHandler
-            PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.CommandHandler.ID, new DFNGenerator_Ocean.CommandHandler());
-            // Register CommandHandler2
-            PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.CommandHandler2.ID, new DFNGenerator_Ocean.CommandHandler2());
-            // Register OceanDFN.DFNWorkstep
-            //DFNGenerator_Ocean.DFNWorkstep dfnworkstepInstance = new DFNGenerator_Ocean.DFNWorkstep();
-            //PetrelSystem.WorkflowEditor.Add(dfnworkstepInstance);
-            //PetrelSystem.ProcessDiagram.Add(new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfnworkstepInstance), "DFN Module");
- 
-            // TODO:  Add DFNModule2.Integrate implementation
+            // Register LaunchDFNGenerator Command Handler
+            PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.LaunchDFNGenerator.ID, new DFNGenerator_Ocean.LaunchDFNGenerator());
         }
 
         /// <summary>
@@ -68,9 +60,7 @@ namespace DFNGenerator_Ocean
         public void IntegratePresentation()
         {
             // Add Ribbon Configuration file
-            PetrelSystem.ConfigurationService.AddConfiguration(DFNGenerator_Ocean.Properties.Resources.OceanRibbonConfiguration);
-
-            // TODO:  Add DFNModule2.IntegratePresentation implementation
+            PetrelSystem.ConfigurationService.AddConfiguration(DFNGenerator_Ocean.Properties.Resources.DFNGeneratorConfig);
         }
 
         /// <summary>
@@ -83,8 +73,6 @@ namespace DFNGenerator_Ocean
             // Unregister DFNGenerator_Ocean.DFNGenerator
             PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>();
             PetrelSystem.ProcessDiagram.Remove(m_dfngeneratorInstance);
-
-            // TODO:  Add DFNModule2.Disintegrate implementation
         }
 
         #endregion

@@ -8,9 +8,9 @@ using Slb.Ocean.Petrel;
 
 namespace DFNGenerator_Ocean
 {
-    class CommandHandler2 : SimpleCommandHandler
+    class LaunchDFNGenerator : SimpleCommandHandler
     {
-        public static string ID = "OceanDFN.NewCommand2";
+        public static string ID = "DFNGenerator_Ocean.LaunchDFNGenerator";
 
         #region SimpleCommandHandler Members
 

@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-//#define DEBUG_FRACS
+#define DEBUG_FRACS
 
 using System;
 using System.Linq;
@@ -58,6 +58,7 @@ namespace DFNGenerator_Ocean
             get
             {
                 return "32231407-0f99-4178-a00b-8de946429384";
+                //return "DFNGenerator_Ocean.DFNGenerator";
             }
         }
         #endregion
@@ -582,23 +583,23 @@ namespace DFNGenerator_Ocean
                     Template GeneralTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
                     // Geological time units
                     IUnitConverter toSITimeUnits = PetrelUnitSystem.GetConverterFromUI(GeologicalTimeTemplate);
-                    bool convertFromGeneral_RockStrainRelaxation = RockStrainRelaxation_grid.Template.Equals(GeneralTemplate);
-                    bool convertFromGeneral_FractureRelaxation = FractureRelaxation_grid.Template.Equals(GeneralTemplate);
+                    bool convertFromGeneral_RockStrainRelaxation = (UseGridFor_RockStrainRelaxation ? RockStrainRelaxation_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_FractureRelaxation = (UseGridFor_FractureRelaxation ? FractureRelaxation_grid.Template.Equals(GeneralTemplate) : false);
                     // Azimuth
                     IUnitConverter toSIAzimuthUnits = PetrelUnitSystem.GetConverterFromUI(AzimuthTemplate);
-                    bool convertFromGeneral_EhminAzi = EhminAzi_grid.Template.Equals(GeneralTemplate);
+                    bool convertFromGeneral_EhminAzi = (UseGridFor_EhminAzi ? EhminAzi_grid.Template.Equals(GeneralTemplate) : false);
                     // Young's Modulus
                     IUnitConverter toSIYoungsModUnits = PetrelUnitSystem.GetConverterFromUI(YoungsModTemplate);
-                    bool convertFromGeneral_YoungsMod = YoungsMod_grid.Template.Equals(GeneralTemplate);
+                    bool convertFromGeneral_YoungsMod = (UseGridFor_YoungsMod ? YoungsMod_grid.Template.Equals(GeneralTemplate) : false);
                     // Crack surface energy
                     IUnitConverter toSICrackSurfaceEnergyUnits = PetrelUnitSystem.GetConverterFromUI(CrackSurfaceEnergyTemplate);
-                    bool convertFromGeneral_CrackSurfaceEnergy = CrackSurfaceEnergy_grid.Template.Equals(GeneralTemplate);
+                    bool convertFromGeneral_CrackSurfaceEnergy = (UseGridFor_CrackSurfaceEnergy ? CrackSurfaceEnergy_grid.Template.Equals(GeneralTemplate) : false);
                     // Strain rates must be converted from geological time units to SI time units manually, as there is no Petrel template for strain rate
                     IUnitConverter toSIUnits_StrainRate = PetrelUnitSystem.GetConverterToUI(GeologicalTimeTemplate);
                     double EhminRate_SIUnits = toSIUnits_StrainRate.Convert(EhminRate_GeologicalTimeUnits);
                     double EhmaxRate_SIUnits = toSIUnits_StrainRate.Convert(EhmaxRate_GeologicalTimeUnits);
                     // If the friction grid property is supplied as a friction angle, this will be converted to a friction coefficient
-                    bool convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
+                    bool convertFromFrictionAngle_FrictionCoefficient = (UseGridFor_FrictionCoefficient ? FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle) : false);
 
                     // Get path for output files
                     string folderPath = "";
@@ -698,7 +699,8 @@ namespace DFNGenerator_Ocean
                     if (UseGridFor_CrackSurfaceEnergy)
                         generalInputParams += string.Format("Crack surface energy: {0}, default {1}{2}\n", CrackSurfaceEnergy_grid.Name, toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
                     else
-                        generalInputParams += string.Format("Crack surface energy: {0}{2}\n", toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
+                        generalInputParams += string.Format("Crack surface energy: {0}{1}\n", toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
+
                     // Strain relaxation
                     if (RockStrainRelaxation > 0)
                     {
@@ -1855,8 +1857,10 @@ namespace DFNGenerator_Ocean
                                 string P32TemplateName = PetrelSystem.TemplateService.GetUniqueName("P32FractureIntensity");
 
                                 // Get the units for the new templates
-                                IUnitMeasurement P30unit = PetrelUnitSystem.GetUnitMeasurement("InverseVolume");
-                                IUnitMeasurement P32unit = PetrelUnitSystem.GetUnitMeasurement("InverseDistance");
+                                IUnitMeasurement P30unit = PetrelUnitSystem.GetUnitMeasurement("Volume");
+                                IUnitMeasurement P32unit = PetrelUnitSystem.GetUnitMeasurement("Inverse Length");
+                                PetrelLogger.InfoOutputWindow(string.Format("Creating P30 template {0}: Type {1}, units {2}", P30TemplateName, fractureIntensityReferenceTemplate.TemplateType.ToString(), P30unit.ToString()));
+                                PetrelLogger.InfoOutputWindow(string.Format("Creating P32 template {0}: Type {1}, units {2}", P32TemplateName, fractureIntensityReferenceTemplate.TemplateType.ToString(), P32unit.ToString()));
 
                                 // Create a transaction to create the new templates
                                 using (ITransaction transactionCreateNewTemplates = DataManager.NewTransaction())
@@ -1871,6 +1875,14 @@ namespace DFNGenerator_Ocean
                                     P32Template = fractureIntensityTemplateCollection.CreateTemplate(P32TemplateName, IntensityTemplateSettings.DefaultColorTable, P32unit);
                                     P32Template.Comments = "P32 fracture intensity: total fracture area per unit volume";
                                     P32Template.TemplateType = fractureIntensityReferenceTemplate.TemplateType;
+
+#if DEBUG_FRACS
+                                    PetrelLogger.InfoOutputWindow(string.Format("Created P30 template {0}: Type {1}, units {2}", P30Template.Name, P30Template.TemplateType.ToString(), P30Template.UnitMeasurement.ToString()));
+                                    PetrelLogger.InfoOutputWindow(string.Format("Created P32 template {0}: Type {1}, units {2}", P32Template.Name, P32Template.TemplateType.ToString(), P32Template.UnitMeasurement.ToString()));
+#endif
+
+                                    // Commit the changes to the Petrel database
+                                    transactionCreateNewTemplates.Commit();
                                 }
                             }
 
@@ -3996,7 +4008,8 @@ namespace DFNGenerator_Ocean
 
         public string Text
         {
-            get { return Description.Name; }
+            //get { return Description.Name; }
+            get { return "DFN Generator"; }
             private set 
             {
                 // TODO: implement set
@@ -4013,7 +4026,8 @@ namespace DFNGenerator_Ocean
 
         public System.Drawing.Bitmap Image
         {
-            get { return PetrelImages.Modules; }
+            //get { return PetrelImages.Modules; }
+            get { return PetrelImages.PolylineSet; }
             private set 
             {
                 // TODO: implement set
