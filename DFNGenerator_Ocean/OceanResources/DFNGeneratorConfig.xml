@@ -197,7 +197,7 @@
                     </Attributes.AttributesExtension>
                   </Extensions>
                   <Tools Type="Tools.ToolCollection">
-                    <Tools.StateButtonTool CommandId="Core.Services.ShowHideProcessDialog" Parameter="32231407-0f99-4178-a00b-8de946429384">
+                    <Tools.StateButtonTool CommandId="Core.Services.ShowHideProcessDialog" Parameter="JointFlow.DFNGenerator_Code.DFNGenerator_Ocean.DFNGenerator">
                       <Extensions Type="Extensibility.ExtensionCollection">
                         <Attributes.AttributesExtension>
                           <Attributes Type="Attributes.AttributeCollection">

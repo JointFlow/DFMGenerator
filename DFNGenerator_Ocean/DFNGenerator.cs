@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 using System;
 using System.Linq;
@@ -57,8 +57,9 @@ namespace DFNGenerator_Ocean
         {
             get
             {
-                return "32231407-0f99-4178-a00b-8de946429384";
-                //return "DFNGenerator_Ocean.DFNGenerator";
+                //return "32231407-0f99-4178-a00b-8de946429384";
+                // Change workstep UniqueID to a namespace-based ID
+                return "JointFlow.DFNGenerator_Code.DFNGenerator_Ocean.DFNGenerator";
             }
         }
         #endregion
@@ -396,11 +397,9 @@ namespace DFNGenerator_Ocean
                     // If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor
                     // If Automatic, microfractures in the stress shadow zone of oblique or perpendicular macrofractures will be deactivated only if there are more than two fracture sets
                     // NB if the Include oblique fractures checkbox on the main tab is unchecked, this will override CheckAlluFStressShadows and set the flag to None
-                    AutomaticFlag CheckAlluFStressShadows;
+                    AutomaticFlag CheckAlluFStressShadows = AutomaticFlag.None;
                     if (arguments.Argument_IncludeObliqueFracs && arguments.Argument_CheckAlluFStressShadows)
                         CheckAlluFStressShadows = AutomaticFlag.All;
-                    else
-                        CheckAlluFStressShadows = AutomaticFlag.None;
                     // Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes
                     double AnisotropyCutoff = arguments.Argument_AnisotropyCutoff;
                     // Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
@@ -1835,8 +1834,8 @@ namespace DFNGenerator_Ocean
 
                             // Get templates for the implicit data
                             // Where possible, use standard Petrel templates
-                            Template P30Template = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
-                            Template P32Template = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
+                            Template P30Template = DFNModule2.GetP30Template();
+                            Template P32Template = DFNModule2.GetP32Template();
                             Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
                             Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                             Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
@@ -1844,47 +1843,6 @@ namespace DFNGenerator_Ocean
                             Template PorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
                             Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
                             Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
-
-                            // There are no Petrel standard property temlates for P30 (unit fracture/length^3) or P32 (unit fractures/length), therefore we must create these ourselves, based on the dimensionless Fracture Intensity template
-                            Template fractureIntensityReferenceTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
-                            ITemplateSettingsInfoFactory IntensitySettingsFactory = CoreSystem.GetService<ITemplateSettingsInfoFactory>(fractureIntensityReferenceTemplate);
-                            TemplateSettingsInfo IntensityTemplateSettings = IntensitySettingsFactory.GetTemplateSettingsInfo(fractureIntensityReferenceTemplate);
-                            TemplateCollection fractureIntensityTemplateCollection = fractureIntensityReferenceTemplate.TemplateCollection;
-                            if (fractureIntensityTemplateCollection.CanCreateTemplate(fractureIntensityReferenceTemplate))
-                            {
-                                // Get names for the new templates
-                                string P30TemplateName = PetrelSystem.TemplateService.GetUniqueName("P30FractureIntensity");
-                                string P32TemplateName = PetrelSystem.TemplateService.GetUniqueName("P32FractureIntensity");
-
-                                // Get the units for the new templates
-                                IUnitMeasurement P30unit = PetrelUnitSystem.GetUnitMeasurement("Volume");
-                                IUnitMeasurement P32unit = PetrelUnitSystem.GetUnitMeasurement("Inverse Length");
-                                PetrelLogger.InfoOutputWindow(string.Format("Creating P30 template {0}: Type {1}, units {2}", P30TemplateName, fractureIntensityReferenceTemplate.TemplateType.ToString(), P30unit.ToString()));
-                                PetrelLogger.InfoOutputWindow(string.Format("Creating P32 template {0}: Type {1}, units {2}", P32TemplateName, fractureIntensityReferenceTemplate.TemplateType.ToString(), P32unit.ToString()));
-
-                                // Create a transaction to create the new templates
-                                using (ITransaction transactionCreateNewTemplates = DataManager.NewTransaction())
-                                {
-                                    // Lock the database
-                                    transactionCreateNewTemplates.Lock(fractureIntensityTemplateCollection);
-
-                                    // Create the new templates
-                                    P30Template = fractureIntensityTemplateCollection.CreateTemplate(P30TemplateName, IntensityTemplateSettings.DefaultColorTable, P30unit);
-                                    P30Template.Comments = "P30 fracture intensity: number of fractures per unit volume";
-                                    P30Template.TemplateType = fractureIntensityReferenceTemplate.TemplateType;
-                                    P32Template = fractureIntensityTemplateCollection.CreateTemplate(P32TemplateName, IntensityTemplateSettings.DefaultColorTable, P32unit);
-                                    P32Template.Comments = "P32 fracture intensity: total fracture area per unit volume";
-                                    P32Template.TemplateType = fractureIntensityReferenceTemplate.TemplateType;
-
-#if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("Created P30 template {0}: Type {1}, units {2}", P30Template.Name, P30Template.TemplateType.ToString(), P30Template.UnitMeasurement.ToString()));
-                                    PetrelLogger.InfoOutputWindow(string.Format("Created P32 template {0}: Type {1}, units {2}", P32Template.Name, P32Template.TemplateType.ToString(), P32Template.UnitMeasurement.ToString()));
-#endif
-
-                                    // Commit the changes to the Petrel database
-                                    transactionCreateNewTemplates.Commit();
-                                }
-                            }
 
                             // Create a transaction to write the property data to the Petrel grid
                             using (ITransaction transactionWritePropertyData = DataManager.NewTransaction())
@@ -1970,7 +1928,8 @@ namespace DFNGenerator_Ocean
                                         for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                         {
                                             // Create a subfolder for the fracture dip set
-                                            string CollectionName = string.Format("{0}_Mode{1}_FracSetData", FractureSetName, (Mode2Only ? 2 : DipSetNo + 1));
+                                            string dipsetLabel = (Mode2Only || (DipSetNo > 0)) ? "Inclined" : "Vertical";
+                                            string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
                                             PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
 
                                             // Get templates for each property
@@ -2063,7 +2022,6 @@ namespace DFNGenerator_Ocean
                                                         PetrelLogger.InfoOutputWindow(e.Message);
                                                         PetrelLogger.InfoOutputWindow(e.StackTrace);
                                                     }
-
 
                                                     // Update progress bar
                                                     progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
@@ -2363,7 +2321,6 @@ namespace DFNGenerator_Ocean
                                             } // End loop through all columns and rows in the Fracture Grid
 
                                     } // End write fracture anisotropy data
-
 
                                     // Write fracture porosity data to Petrel grid
                                     if (CalculateFracturePorosity)
@@ -2871,7 +2828,7 @@ namespace DFNGenerator_Ocean
 
                                                             // Assign it to the correct set, if required
                                                             if (assignOrientationSets)
-                                                                Petrel_FractureSegment.FractureSetValue = MF_set;
+                                                                Petrel_FractureSegment.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                         }
                                                         catch (Exception e)
                                                         {
@@ -3309,9 +3266,13 @@ namespace DFNGenerator_Ocean
             private double argument_MaximumClosure = 0.0005;
 
             // Calculation control parameters
-            private int argument_NoFractureSets = 2;
+            // Set argument_NoFractureSets to 6 by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+            // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
+            private int argument_NoFractureSets = 6; 
             private int argument_FractureMode = 0;
-            private bool argument_CheckAlluFStressShadows = false;
+            // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+            // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
+            private bool argument_CheckAlluFStressShadows = true;
             private double argument_AnisotropyCutoff = 1;
             private bool argument_AllowReverseFractures = false;
             private int argument_HorizontalUpscalingFactor = 1;
@@ -3564,11 +3525,13 @@ namespace DFNGenerator_Ocean
                 // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
                 // However it is initialised with a default value equivalent to 0.001(fracs>1m radius)/m3 (=0.001fracs/m), since this is calibrated empirically
                 // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
+                // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
+                // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
                 internal get
                 {
                     if (double.IsNaN(this.argument_InitialMicrofractureDensity_default))
                     {
-                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, 1), 3 - Argument_InitialMicrofractureSizeDistribution_default);
+                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, 1), 3 - Argument_InitialMicrofractureSizeDistribution_default);
                         this.argument_InitialMicrofractureDensity_default = this.argument_InitialMicrofractureDensity_SI * toProjectUnits_InitialMicrofractureDensity;
                     }
                     return this.argument_InitialMicrofractureDensity_default;

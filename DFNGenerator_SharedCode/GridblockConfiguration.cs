@@ -1942,8 +1942,8 @@ namespace DFNGenerator_SharedCode
             // Output control criteria
             // Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor
             bool CalculateRelaxedStrainPartitioning = PropControl.CalculateRelaxedStrainPartitioning;
-            // Flag to output the bulk rock compliance tensor
-            bool OutputComplianceTensor = PropControl.OutputComplianceTensor;
+            // Flag to output the bulk rock compliance and stiffness tensors
+            bool OutputBulkRockElasticTensors = PropControl.OutputBulkRockElasticTensors;
             // Flag to calculate full fracture cumulative population distribution function; if false, will only calculate total cumulative properties (i.e. r = 0 and l = 0)
             bool CalculatePopulationDistributionData = PropControl.CalculatePopulationDistributionData;
             // Flag to calculate and output fracture porosity
@@ -1999,7 +1999,7 @@ namespace DFNGenerator_SharedCode
                     headerLine2 += "\t\t\t\t\t\t\t\t";
                     TS0data += "0\t0\t0\t0\t0\t0\t0\t0\t";
                 }
-                if (OutputComplianceTensor)
+                if (OutputBulkRockElasticTensors)
                 {
                     Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
                     // Header for compliance tensor
@@ -2011,12 +2011,13 @@ namespace DFNGenerator_SharedCode
                             TS0data += string.Format("{0}\t", MechProps.S_r.Component(ij, kl));
                         }
                     // Header for stiffness tensor
+                    Tensor4_2Sx2S C_r = MechProps.S_r.Inverse();
                     headerLine1 += "Bulk rock stiffness tensor\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
                     foreach (Tensor2SComponents ij in tensorComponents)
                         foreach (Tensor2SComponents kl in tensorComponents)
                         {
                             headerLine2 += ij + "," + kl + "\t";
-                            TS0data += string.Format("{0}\t", MechProps.S_r.Component(ij, kl));
+                            TS0data += string.Format("{0}\t", C_r.Component(ij, kl));
                         }
                 }
 
@@ -2427,7 +2428,7 @@ namespace DFNGenerator_SharedCode
                         string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis]);
                         timestepData += porosityData;
                     }
-                    if (OutputComplianceTensor)
+                    if (OutputBulkRockElasticTensors)
                     {
                         // NB here we output the bulk rock compliance tensor rather than the effective bulk rock compliance tensor. This will include the effect of the fractures, even in the stress shadow scenario
                         // We will also output the bulk rock stiffness tensor, obtained by inverting the compliance tensor
@@ -2435,6 +2436,7 @@ namespace DFNGenerator_SharedCode
                         string stiffnessTensorComponents = "";
                         Tensor4_2Sx2S complianceTensor = S_b;
                         Tensor4_2Sx2S stiffnessTensor = complianceTensor.Inverse();
+
                         Tensor2SComponents[] tensorComponents= new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
                         foreach (Tensor2SComponents ij in tensorComponents)
                             foreach (Tensor2SComponents kl in tensorComponents)

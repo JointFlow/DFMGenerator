@@ -2149,7 +2149,7 @@ namespace DFNGenerator_SharedCode
                 {
                     // Create a list of column components for the smaller submatrix, comprising all the columns in this submatrix except the column we are removing
                     List<Tensor2SComponents> submatrixCols = new List<Tensor2SComponents>(ColumnComponents);
-                    submatrixRows.Remove(column);
+                    submatrixCols.Remove(column);
 
                     // Calculate the increment to the overall determinant and add it to the current value
                     determinant += polarity * components[Tensor2SComponents.XX][column] * SubmatrixDeterminant(submatrixRows, submatrixCols);

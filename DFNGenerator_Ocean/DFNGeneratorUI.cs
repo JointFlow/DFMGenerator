@@ -163,7 +163,9 @@ namespace DFNGenerator_Ocean
             UpdateNumericBox(args.Argument_HorizontalUpscalingFactor, numericUpDown_HorizontalUpscalingFactor);
             UpdateTextBox(args.Argument_MaxTSDuration, unitTextBox_MaxTSDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_MaxTSDuration_Units);
             UpdateTextBox(args.Argument_Max_TS_MFP33_increase, unitTextBox_Max_TS_MFP33_increase, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdateTextBox(args.Argument_MinimumImplicitMicrofractureRadius, unitTextBox_MinimumImplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, label_MinimumImplicitMicrofractureRadius_Units);
+            // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
+            // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
+            UpdateTextBox(args.Argument_MinimumImplicitMicrofractureRadius, unitTextBox_MinimumImplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_MinimumImplicitMicrofractureRadius_Units);
             UpdateTextBox(args.Argument_No_r_bins, textBox_No_r_bins);
             // Calculation termination controls
             UpdateTextBox(args.Argument_DeformationDuration, unitTextBox_DeformationDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_DeformationDuration_Units);
@@ -180,7 +182,7 @@ namespace DFNGenerator_Ocean
             UpdateTextBox(args.Argument_ProbabilisticFractureNucleationLimit, unitTextBox_ProbabilisticFractureNucleationLimit, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_PropagateFracturesInNucleationOrder, checkBox_PropagateFracturesInNucleationOrder);
             UpdateComboBox(args.Argument_SearchAdjacentGridblocks, comboBox_SearchAdjacentGridblocks);
-            UpdateTextBox(args.Argument_MinimumExplicitMicrofractureRadius, unitTextBox_MinimumExplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, label_MinimumExplicitMicrofractureRadius_Units);
+            UpdateTextBox(args.Argument_MinimumExplicitMicrofractureRadius, unitTextBox_MinimumExplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_MinimumExplicitMicrofractureRadius_Units);
             UpdateNumericBox(args.Argument_NoMicrofractureCornerpoints, numericUpDown_NoMicrofractureCornerpoints);
         }
 
@@ -307,7 +309,9 @@ namespace DFNGenerator_Ocean
                     presentationBox_Grid.Text = grName.Name;
                 }
                 else
+                {
                     presentationBox_Grid.Text = gr.Name;
+                }
                 IImageInfoFactory grImgIF = CoreSystem.GetService<IImageInfoFactory>(gr);
                 if (grImgIF != null)
                 {
@@ -334,7 +338,9 @@ namespace DFNGenerator_Ocean
                     pBox.Text = propName.Name;
                 }
                 else
+                {
                     pBox.Text = gprop.Name;
+                }
                 IImageInfoFactory propImgIF = CoreSystem.GetService<IImageInfoFactory>(gprop);
                 if (propImgIF != null)
                 {
@@ -342,7 +348,9 @@ namespace DFNGenerator_Ocean
                     pBox.Image = propImage.GetDisplayImage(new ImageInfoContext());
                 }
                 else
+                {
                     pBox.Image = PetrelImages.Property;
+                }
             }
             else
             {
@@ -364,8 +372,9 @@ namespace DFNGenerator_Ocean
         }
         private void UpdateTextBox(double number, Slb.Ocean.Petrel.UI.Controls.UnitTextBox tBox, Template propertyTemplate)
         {
-            // Set the correct units from the supplied template
+            // Set the correct units from the supplied template, and set the numeric format to general
             tBox.Template = propertyTemplate;
+            tBox.TextFormat = "G";
 
             if (double.IsNaN(number))
                 tBox.Text = "";
@@ -379,6 +388,25 @@ namespace DFNGenerator_Ocean
             // Set the unit label text
             unitLabel.Text = PetrelUnitSystem.GetDisplayUnit(propertyTemplate).Symbol;
         }
+        // These overloads, which set the UnitTextBox units from an IUnitMeasurement object rather than a Template object, are not required because standard Petrel Template objects are available for all required properties
+        /*private void UpdateTextBox(double number, Slb.Ocean.Petrel.UI.Controls.UnitTextBox tBox, Slb.Ocean.Units.IUnitMeasurement propertyUnitMeasurement)
+        {
+            // Set the correct units from the supplied template, and set the numeric format to general
+            tBox.UnitMeasurement = propertyUnitMeasurement;
+            tBox.TextFormat = "G";
+
+            if (double.IsNaN(number))
+                tBox.Text = "";
+            else
+                tBox.Value = number;
+        }
+        private void UpdateTextBox(double number, Slb.Ocean.Petrel.UI.Controls.UnitTextBox tBox, Slb.Ocean.Units.IUnitMeasurement propertyUnitMeasurement, System.Windows.Forms.Label unitLabel)
+        {
+            UpdateTextBox(number, tBox, propertyUnitMeasurement);
+
+            // Set the unit label text
+            unitLabel.Text = PetrelUnitSystem.GetDisplayUnit(propertyUnitMeasurement).Symbol;
+        }*/
         private void UpdateTextBox(int number, System.Windows.Forms.TextBox tBox)
         {
             if (number == -999)
@@ -510,8 +538,8 @@ namespace DFNGenerator_Ocean
         private void EnableNoFractureSets()
         {
             // Disable the numeric box for selecting the number of fracture sets and the checkbox for checking all microfracture stress shadowson the Control parameters tab,
-            // if the Include oblique fractures checkbox on the Main tab is checked, and enable them if the Include oblique fractures checkbox is unchecked
-            if (checkBox_IncludeObliqueFracs.Checked == true)
+            // if the Include oblique fractures checkbox on the Main tab is unchecked, and enable them if the Include oblique fractures checkbox is checked
+            if (checkBox_IncludeObliqueFracs.Checked == false)
             { 
                 label_NoFractureSets.Enabled = false;
                 numericUpDown_NoFractureSets.Enabled = false;
@@ -527,7 +555,9 @@ namespace DFNGenerator_Ocean
         private void SetInitialMicrofractureDensityUnits()
         {
             double c = GetDoubleFromTextBox(unitTextBox_InitialMicrofractureSizeDistribution_default);
-            string lengthUnit = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance).Symbol;
+            // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
+            // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
+            string lengthUnit = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth).Symbol;
             string AUnit = "";
             if (c < 3)
                 AUnit = string.Format("fracs/{0}^{1}", lengthUnit, 3 - c);
@@ -796,13 +826,13 @@ namespace DFNGenerator_Ocean
 
         private void checkBox_IncludeObliqueFracs_CheckedChanged(object sender, EventArgs e)
         {
-            // Disable the numeric box for selecting the number of fracture sets and the checkbox for checking all microfracture stress shadowson the Control parameters tab,
+            // Disable the numeric box for selecting the number of fracture sets and the checkbox for checking all microfracture stress shadows on the Control parameters tab,
             // if the Include oblique fractures checkbox on the Main tab is checked, and enable them if the Include oblique fractures checkbox is unchecked
             EnableNoFractureSets();
         }
         #endregion
 
-        private void unitTextBox_InitialMicrofractureSizeDistribution_default_TextChanged(object sender, EventArgs e)
+        private void unitTextBox_InitialMicrofractureSizeDistribution_default_ValueChanged(object sender, EventArgs e)
         {
             // Recalculate and display the InitialMicrofractureDensity units
             SetInitialMicrofractureDensityUnits();
