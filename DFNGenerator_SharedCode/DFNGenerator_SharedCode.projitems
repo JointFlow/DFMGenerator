@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)DFN.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DFN_ML.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FCD_List.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureDipSet.cs" />
@@ -17,6 +18,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)GeometricObjects.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Grid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GridblockConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GridblockConfiguration_ML.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GridblockStack_ML.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Grid_ML.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MacrofractureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MechanicalProperties.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MicrofractureData.cs" />

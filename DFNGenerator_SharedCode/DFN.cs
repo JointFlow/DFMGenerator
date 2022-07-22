@@ -437,11 +437,11 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Reference to parent FractureSet object
         /// </summary>
-        private Gridblock_FractureSet fs;
+        protected Gridblock_FractureSet fs;
         /// <summary>
         /// Reference to corresponding FractureDipSet object
         /// </summary>
-        private FractureDipSet fds;
+        protected FractureDipSet fds;
         /// <summary>
         /// Index of fracture dip set corresponding to this fracture - this contains driving stress and dip data and will not change after fracture is initiated
         /// </summary>
@@ -533,7 +533,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Non-propagating fracture node in IJK coordinates - this will not change after fracture segment is initiated
         /// </summary>
-        public PointIJK NonPropNode { get; private set; }
+        public PointIJK NonPropNode { get; protected set; }
         /// <summary>
         /// Propagating fracture node in IJK coordinates
         /// </summary>

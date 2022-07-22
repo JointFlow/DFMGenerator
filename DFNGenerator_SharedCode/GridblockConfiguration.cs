@@ -33,17 +33,17 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Reference to parent FractureGrid object - this does not need to be filled as the GridblockConfiguration can also function as a standalone object
         /// </summary>
-        private FractureGrid gd;
+        protected FractureGrid gd;
 
         // Gridblock geometry data
         /// <summary>
         /// Mean layer thickness at time of deformation (m), used to calculating fracture population data; can be set independently of cornerpoints
         /// </summary>
-        public double ThicknessAtDeformation { get; private set; }
+        public double ThicknessAtDeformation { get; protected set; }
         /// <summary>
         /// Mean depth of top surface at time of deformation (m), used to calculating fracture population data; can be set independently of cornerpoints
         /// </summary>
-        public double DepthAtDeformation { get; private set; }
+        public double DepthAtDeformation { get; protected set; }
         /// <summary>
         /// Reset the mean depth and mean layer thickness at the time of deformation to the current depth and thickness
         /// </summary>
@@ -69,35 +69,35 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Coordinates of the point at the top southwest corner of the gridblock
         /// </summary>
-        public PointXYZ SWtop { get; private set; }
+        public PointXYZ SWtop { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the bottom southwest corner of the gridblock
         /// </summary>
-        public PointXYZ SWbottom { get; private set; }
+        public PointXYZ SWbottom { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the top northwest corner of the gridblock
         /// </summary>
-        public PointXYZ NWtop { get; private set; }
+        public PointXYZ NWtop { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the bottom northwest corner of the gridblock
         /// </summary>
-        public PointXYZ NWbottom { get; private set; }
+        public PointXYZ NWbottom { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the top northeast corner of the gridblock
         /// </summary>
-        public PointXYZ NEtop { get; private set; }
+        public PointXYZ NEtop { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the bottom northeast corner of the gridblock
         /// </summary>
-        public PointXYZ NEbottom { get; private set; }
+        public PointXYZ NEbottom { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the top southeast corner of the gridblock
         /// </summary>
-        public PointXYZ SEtop { get; private set; }
+        public PointXYZ SEtop { get; protected set; }
         /// <summary>
         /// Coordinates of the point at the bottom southeast corner of the gridblock
         /// </summary>
-        public PointXYZ SEbottom { get; private set; }
+        public PointXYZ SEbottom { get; protected set; }
         /// <summary>
         /// Return coordinates of the point in the centre of the southwest corner pillar of the gridblock
         /// </summary>
@@ -284,7 +284,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Recalculate the area, side lengths and corner angles of the middle surface of the gridblock, projected onto the horizontal; this should be called whenever the cornerpoints are changed
         /// </summary>
-        private void recalculateGeometry()
+        protected void recalculateGeometry()
         {
             // Check to see if all cornerpoints are defined
             if (checkCornerpointsDefined())
@@ -996,7 +996,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Control data for calculating fracture propagation
         /// </summary>
-        public PropagationControl PropControl { get; private set; }
+        public PropagationControl PropControl { get; protected set; }
         /// <summary>
         /// Mechanical properties data
         /// </summary>
@@ -1016,7 +1016,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax
         /// </summary>
-        public int NoFractureSets { get; private set; }
+        public int NoFractureSets { get; protected set; }
         /// <summary>
         /// Index number of the fracture set perpendicular to HMin
         /// </summary>
@@ -4621,7 +4621,7 @@ namespace DFNGenerator_SharedCode
         /// </summary>
         /// <param name="thickness_in">Layer thickness at time of deformation (m)</param>
         /// <param name="depth_in">Depth at time of deformation (m)</param>
-        /// <param name="NoFractureSets">Number of fracture sets</param>
+        /// <param name="NoFractureSets_in">Number of fracture sets</param>
         public GridblockConfiguration(double thickness_in, double depth_in, int NoFractureSets_in)
         {
             // Set layer point_t and point_z

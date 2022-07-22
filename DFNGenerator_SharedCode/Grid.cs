@@ -745,7 +745,7 @@ namespace DFNGenerator_SharedCode
 
         // Reset and data input functions
         /// <summary>
-        /// Add a GridblockConfiguration object to a specified cell in the grid and set up references to adjecent cells. The specified cell in the grid must already exist.
+        /// Add a GridblockConfiguration object to a specified cell in the grid and set up references to adjacent cells. The specified cell in the grid must already exist.
         /// </summary>
         /// <param name="gridblock_in">GridblockConfiguration object to add to the grid</param>
         /// <param name="RowNo">Row number of cell to place it in (zero referenced)</param>
