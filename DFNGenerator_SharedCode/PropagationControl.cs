@@ -285,9 +285,9 @@ namespace DFNGenerator_SharedCode
         /// </summary>
         public bool CalculateRelaxedStrainPartitioning { get; set; }
         /// <summary>
-        /// Flag to output the bulk rock compliance tensor
+        /// Flag to output the bulk rock compliance and stiffness tensors
         /// </summary>
-        public bool OutputComplianceTensor { get; set; }
+        public bool OutputBulkRockElasticTensors { get; set; }
         /// <summary>
         /// Stress distribution case; DuctileBoundary not yet implemented
         /// </summary>
@@ -466,7 +466,7 @@ namespace DFNGenerator_SharedCode
         /// <param name="max_HMin_l_indexPoint_Length_in">Length of largest index point in the full macrofracture cumulative population distribution array for fractures striking perpendicular to HMin; if zero set lengths automatically</param>
         /// <param name="max_HMax_l_indexPoint_Length_in">Length of largest index point in the full macrofracture cumulative population distribution array for fractures striking perpendicular to HMax; if zero set lengths automatically</param>
         /// <param name="CalculateRelaxedStrainPartitioning_in">Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor</param>
-        /// <param name="OutputComplianceTensor_in">Flag to output the bulk rock compliance tensor</param>
+        /// <param name="OutputBulkRockElasticTensors_in">Flag to output the bulk rock compliance and stiffness tensors</param>
         /// <param name="StressDistribution_in">Stress distribution case</param>
         /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls accuracy of calculation)</param>
         /// <param name="historic_a_MFP33_termination_ratio_in">Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control</param>
@@ -486,7 +486,7 @@ namespace DFNGenerator_SharedCode
         /// <param name="timeUnits_in">Time units for deformation rates</param>
         /// <param name="CalculateFracturePorosity_in">Flag to calculate and output fracture porosity</param>
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
-        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, double DeformationStageDuration_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, double Epsilon_hmin_azimuth_in, double Epsilon_hmin_dashed_in, double Epsilon_hmax_dashed_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
+        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, double DeformationStageDuration_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, double Epsilon_hmin_azimuth_in, double Epsilon_hmin_dashed_in, double Epsilon_hmax_dashed_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
         {
             // Set the time units and calculate unit conversion multiplier to adjust input rates if not in SI units
             timeUnits = timeUnits_in;
@@ -501,8 +501,8 @@ namespace DFNGenerator_SharedCode
             max_HMax_l_indexPoint_Length = max_HMax_l_indexPoint_Length_in;
             // Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor
             CalculateRelaxedStrainPartitioning = CalculateRelaxedStrainPartitioning_in;
-            // Flag to output the bulk rock compliance tensor
-            OutputComplianceTensor = OutputComplianceTensor_in;
+            // Flag to output the bulk rock compliance and stiffness tensors
+            OutputBulkRockElasticTensors = OutputBulkRockElasticTensors_in;
             // Stress distribution case
             StressDistributionCase = StressDistribution_in;
             // Maximum allowable increase in MFP33 value in each timestep

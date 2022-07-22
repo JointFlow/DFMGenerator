@@ -138,11 +138,13 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("OutputAtEqualTimeIntervals false");
                 input_file.WriteLine("% Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints");
                 input_file.WriteLine("OutputCentrepoints false");
-                input_file.WriteLine("% Flag to output the bulk rock compliance tensor");
-                input_file.WriteLine("OutputComplianceTensor false");
-                input_file.WriteLine("% Fracture porosity control parameters");
+                input_file.WriteLine("% Flag to output the bulk rock compliance and stiffness tensors");
+                input_file.WriteLine("OutputBulkRockElasticTensors false");
                 input_file.WriteLine("% Flag to calculate and output fracture porosity");
                 input_file.WriteLine("CalculateFracturePorosity true");
+                input_file.WriteLine();
+
+                input_file.WriteLine("% Fracture aperture control parameters");
                 input_file.WriteLine("% Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation");
                 input_file.WriteLine("% Set to Uniform, SizeDependent, Dynamic, or BartonBandis");
                 input_file.WriteLine("FractureApertureControl Uniform");
@@ -481,11 +483,12 @@ namespace DFNGenerator_Standalone
             bool OutputAtEqualTimeIntervals = false;
             // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
             bool OutputCentrepoints = false;
-            // Flag to output the bulk rock compliance tensor
-            bool OutputComplianceTensor = false;
-            // Fracture porosity control parameters
+            // Flag to output the bulk rock compliance and stiffness tensors
+            bool OutputBulkRockElasticTensors = false;
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
+
+            // Fracture aperture control parameters
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
             FractureApertureType FractureApertureControl = FractureApertureType.Uniform;
             // Fracture aperture control parameters: Uniform fracture aperture
@@ -886,16 +889,18 @@ namespace DFNGenerator_Standalone
                         case "outputCentrepoints": // For backwards compatibility
                             OutputCentrepoints = (line_split[1] == "true");
                             break;
-                        // Flag to output the bulk rock compliance tensor
-                        case "OutputComplianceTensor":
-                            OutputComplianceTensor = (line_split[1] == "true");
+                        // Flag to output the bulk rock compliance and stiffness tensors
+                        case "OutputBulkRockElasticTensors":
+                        case "OutputComplianceTensor": // For backwards compatibility
+                            OutputBulkRockElasticTensors = (line_split[1] == "true");
                             break;
-                        // Fracture porosity control parameters
                         // Flag to calculate and output fracture porosity
                         case "CalculateFracturePorosity":
                         case "CalculateFracturePorosity_in": // For backwards compatibility
                             CalculateFracturePorosity = (line_split[1] == "true");
                             break;
+
+                        // Fracture aperture control parameters
                         // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
                         case "FractureApertureControl":
                         case "FractureApertureControl_in": // For backwards compatibility
@@ -1771,7 +1776,7 @@ namespace DFNGenerator_Standalone
                     }
 
                     // Set the propagation control data for the gridblock
-                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputComplianceTensor, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                         MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                     // Set folder path for output files
@@ -1840,8 +1845,8 @@ namespace DFNGenerator_Standalone
                     Console.WriteLine(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                     Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2});", lithostatic_stress, fluid_pressure, InitialStressRelaxation));
                     Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22}, {23}, {24}); ",
-                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputComplianceTensor, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                        MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, LogCalculation, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                        MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
                     Console.WriteLine(string.Format("gc.resetFractures({0}, {1}, {2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
                     Console.WriteLine(string.Format("ModelGrid.AddGridblock(gc, {0}, {1});", RowNo, ColNo));
 #endif

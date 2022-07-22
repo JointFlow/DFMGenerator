@@ -66,7 +66,7 @@ namespace DFNGenerator_SharedCode
                     case StressDistribution.EvenlyDistributedStress:
                         // In the evenly distributed stress scenario, the local elastic strain in the host rock is uniform,
                         // and proportional to the ratio of the compliance tensor for intact host rock and the bulk rock compliance tensor
-                        return (gbc.MechProps.S_r / gbc.S_b) * el_Epsilon;
+                        return (gbc.MechProps.S_r / gbc.S_beff) * el_Epsilon;
                     case StressDistribution.StressShadow:
                         // In the stress shadow scenario, the local elastic strain in the host rock (outside the stress shadows) is equal to the total elastic strain
                         // NB within the stress shadows, the local elastic strain in the host rock is zero
@@ -114,7 +114,7 @@ namespace DFNGenerator_SharedCode
             get
             {
                 // Regardless of the stress distribution scenario, the elastic strain on the fractures is proportional to the ratio of the fracture compliance tensor to the bulk rock compliance tensor
-                return (gbc.S_F / gbc.S_b) * el_Epsilon;
+                return (gbc.S_F / gbc.S_beff) * el_Epsilon;
             }
         }
 

@@ -93,8 +93,7 @@
     <Reference Include="System.Deployment" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandHandler.cs" />
-    <Compile Include="CommandHandler2.cs" />
+    <Compile Include="LaunchDFNGenerator.cs" />
     <Compile Include="DFNGenerator.cs" />
     <Compile Include="DFNGeneratorUI.cs">
       <SubType>UserControl</SubType>
@@ -103,26 +102,14 @@
       <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
     </Compile>
     <Compile Include="PetrelProgressReporter.cs" />
-    <Compile Include="Slb\Ocean\Petrel\DomainObject\Simulation.cs" />
-    <Compile Include="ToDelete\DFN_2.cs" />
-    <Compile Include="ToDelete\DFN_2UI.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="ToDelete\DFN_2UI.designer.cs">
-      <DependentUpon>DFN_2UI.cs</DependentUpon>
-    </Compile>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="ToDelete\DFNModule.cs" />
     <Compile Include="DFNModule2.cs" />
     <Compile Include="DFNPlugin.cs" />
-    <Compile Include="ToDelete\HelloGrid.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ToDelete\Workstep1.cs" />
-    <Compile Include="ToDelete\Workstep2.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
@@ -142,27 +129,26 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="OceanResources\OceanRibbonConfiguration.xml" />
-    <Content Include="OceanResources\Readme.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="DFNGeneratorUI.resx">
       <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="ToDelete\DFN_2UI.resx">
-      <DependentUpon>DFN_2UI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="OceanResources\DFNGeneratorConfig.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
   <Import Project="..\DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del "$(ProjectDir)plugin.xml"
-"%25Ocean2016Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2016HOME_x64%25\petrel.exe"
-"%25Ocean2016Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2016HOME_x64%25\petrel.exe" "$(TargetDir)"
+"%25Ocean2020Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe"
+"%25Ocean2020Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe" "$(TargetDir)"
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.

@@ -62,17 +62,17 @@ namespace DFNGenerator_Ocean.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-        ///&lt;Configuration Type=&quot;Configuration.ConfigurationState&quot; Version=&quot;1.0.0.12&quot; Caption=&quot;Ocean - Ribbon&quot;&gt;
+        ///&lt;Configuration Type=&quot;Configuration.ConfigurationState&quot; Version=&quot;1.0.0.12&quot; Caption=&quot;DFNGeneratorConfig&quot;&gt;
         ///  &lt;Extensions Type=&quot;Extensibility.ExtensionCollection&quot;&gt;
-        ///    &lt;Workspaces.WorkspaceExtension EntityId=&quot;9dbb1494-12ef-417b-a979-1dc118b4bda5&quot; /&gt;
+        ///    &lt;Workspaces.WorkspaceExtension EntityId=&quot;65641e60-2cf7-46db-9c41-f2a4c059d9ff&quot; /&gt;
         ///    &lt;Relationships.RelationshipsExtension&gt;
         ///      &lt;Associations Type=&quot;Relationships.Associations&quot;&gt;
         ///        &lt;Relationships.Association RelationshipId=&quot;Configuration-Section&quot; Role=&quot;Configuration&quot;&gt;
-        ///          &lt;AssociatedEnds Type [rest of string was truncated]&quot;;.
+        ///          &lt;AssociatedEnds  [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string OceanRibbonConfiguration {
+        internal static string DFNGeneratorConfig {
             get {
-                return ResourceManager.GetString("OceanRibbonConfiguration", resourceCulture);
+                return ResourceManager.GetString("DFNGeneratorConfig", resourceCulture);
             }
         }
     }

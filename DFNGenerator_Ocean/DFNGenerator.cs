@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.IO;
+using System.Collections.Generic;
 
 using Slb.Ocean.Petrel.Basics;
 using Slb.Ocean.Core;
@@ -15,8 +16,8 @@ using Slb.Ocean.Petrel.DomainObject.PillarGrid;
 using Slb.Ocean.Basics;
 using Slb.Ocean.Geometry;
 using Slb.Ocean.Petrel.DomainObject;
-using System.Collections.Generic;
 using Slb.Ocean.Petrel.DomainObject.Shapes;
+using Slb.Ocean.Units;
 
 using DFNGenerator_SharedCode;
 
@@ -56,7 +57,9 @@ namespace DFNGenerator_Ocean
         {
             get
             {
-                return "32231407-0f99-4178-a00b-8de946429384";
+                //return "32231407-0f99-4178-a00b-8de946429384";
+                // Change workstep UniqueID to a namespace-based ID
+                return "JointFlow.DFNGenerator_Code.DFNGenerator_Ocean.DFNGenerator";
             }
         }
         #endregion
@@ -169,25 +172,26 @@ namespace DFNGenerator_Ocean
                     // Strain orientatation
                     double EhminAzi = 0;
                     if (!double.IsNaN(arguments.Argument_EhminAzi_default))
-                        EhminAzi = arguments.Argument_EhminAzi_default * (Math.PI / 180); // Can also be set from grid property
+                        EhminAzi = arguments.Argument_EhminAzi_default; // Can also be set from grid property; NB value should be returned in radians as conversion should be carried out by the Petrel unit conversion functionality 
                     Property EhminAzi_grid = arguments.Argument_EhminAzi;
                     bool UseGridFor_EhminAzi = (EhminAzi_grid != null);
                     // Strain rates
                     // Set to negative value for extensional strain
                     // Ehmin is most tensile (i.e. most negative) horizontal strain rate
-                    double EhminRate = 0;
+                    double EhminRate_GeologicalTimeUnits = 0;
                     if (!double.IsNaN(arguments.Argument_EhminRate_default))
-                        EhminRate = arguments.Argument_EhminRate_default; // Can also be set from grid property
+                        EhminRate_GeologicalTimeUnits = arguments.Argument_EhminRate_default; // Can also be set from grid property
                     Property EhminRate_grid = arguments.Argument_EhminRate;
                     bool UseGridFor_EhminRate = (EhminRate_grid != null);
                     // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-                    double EhmaxRate = 0;
+                    double EhmaxRate_GeologicalTimeUnits = 0;
                     if (!double.IsNaN(arguments.Argument_EhmaxRate_default))
-                        EhmaxRate = arguments.Argument_EhmaxRate_default; // Can also be set from grid property
+                        EhmaxRate_GeologicalTimeUnits = arguments.Argument_EhmaxRate_default; // Can also be set from grid property
                     Property EhmaxRate_grid = arguments.Argument_EhmaxRate;
                     bool UseGridFor_EhmaxRate = (EhmaxRate_grid != null);
-                    // Time units set to ma
-                    TimeUnits ModelTimeUnits = TimeUnits.ma;
+                    // Time units set to seconds - unit conversion from geological time units is carried out automatically by the Petrel unit conversion functionality
+                    // NB the calculation code uses seconds internally in any case, so this will not lead to any loss in accuracy
+                    TimeUnits ModelTimeUnits = TimeUnits.second;
 
                     // Mechanical properties
                     double YoungsMod = 1E+10;
@@ -285,7 +289,7 @@ namespace DFNGenerator_Ocean
                     // Output to file
                     // These must be set to true for stand-alone version or no output will be generated
 #if DEBUG_FRACS
-                    bool LogCalculation = true;
+                    bool WriteImplicitDataFiles = true;
                     bool WriteDFNFiles = true;
 #else
                     bool WriteImplicitDataFiles = arguments.Argument_WriteImplicitDataFiles;
@@ -300,14 +304,15 @@ namespace DFNGenerator_Ocean
                     bool OutputAtEqualTimeIntervals = arguments.Argument_OutputAtEqualTimeIntervals;
                     // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
                     bool OutputCentrepoints = arguments.Argument_OutputCentrepoints;
-                    // Flag to output the bulk rock compliance tensor
-                    bool OutputComplianceTensor = false;
+                    // Flag to output the bulk rock compliance and stiffness tensors
+                    bool OutputBulkRockElasticTensors = arguments.Argument_CalculateBulkRockElasticTensors;
                     // Fracture connectivity and anisotropy index control parameters
                     // Flag to calculate and output fracture connectivity and anisotropy indices
                     bool CalculateFractureConnectivityAnisotropy = arguments.Argument_CalculateFractureConnectivityAnisotropy;
-                    // Fracture porosity control parameters
                     // Flag to calculate and output fracture porosity
                     bool CalculateFracturePorosity = arguments.Argument_CalculateFracturePorosity;
+
+                    // Fracture aperture control parameters
                     // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
                     FractureApertureType FractureApertureControl = (FractureApertureType)arguments.Argument_FractureApertureControl;
                     // Fracture aperture control parameters: Uniform fracture aperture
@@ -376,8 +381,9 @@ namespace DFNGenerator_Ocean
                     // Set to 1 to generate a single fracture set, perpendicular to ehmin
                     // Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehmax; this is typical of a single stage of deformation in intact rock
                     // Set to 6 or more to generate oblique fractures; this is typical of multiple stages of deformation with fracture reactivation, or transtensional strain
+                    // NB if the Include oblique fractures checkbox on the main tab is unchecked, this will override NoFractureSets and set the number of fracture sets to 2
                     int NoFractureSets = 2;
-                    if (arguments.Argument_NoFractureSets >= 0)
+                    if (arguments.Argument_IncludeObliqueFracs && (arguments.Argument_NoFractureSets >= 0))
                         NoFractureSets = arguments.Argument_NoFractureSets;
                     // Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
                     bool Mode1Only = false;
@@ -390,11 +396,10 @@ namespace DFNGenerator_Ocean
                     // If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures
                     // If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor
                     // If Automatic, microfractures in the stress shadow zone of oblique or perpendicular macrofractures will be deactivated only if there are more than two fracture sets
-                    AutomaticFlag CheckAlluFStressShadows;
-                    if (arguments.Argument_CheckAlluFStressShadows)
+                    // NB if the Include oblique fractures checkbox on the main tab is unchecked, this will override CheckAlluFStressShadows and set the flag to None
+                    AutomaticFlag CheckAlluFStressShadows = AutomaticFlag.None;
+                    if (arguments.Argument_IncludeObliqueFracs && arguments.Argument_CheckAlluFStressShadows)
                         CheckAlluFStressShadows = AutomaticFlag.All;
-                    else
-                        CheckAlluFStressShadows = AutomaticFlag.None;
                     // Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes
                     double AnisotropyCutoff = arguments.Argument_AnisotropyCutoff;
                     // Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
@@ -504,6 +509,97 @@ namespace DFNGenerator_Ocean
                     if (arguments.Argument_NoMicrofractureCornerpoints > 3)
                         Number_uF_Points = arguments.Argument_NoMicrofractureCornerpoints;
 
+                    // Flag to assign discrete fractures to sets based on azimuth
+                    // Currently set to false as set assignment adds a high overhead in computational cost; this could be allowed as an option in future
+                    bool assignOrientationSets = true;// false;
+
+                    // Create Petrel unit converters to convert geological time and other properties from SI to project units, and strings for the unit labels
+                    // Geological time units
+                    Template GeologicalTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
+                    IUnitConverter toGeologicalTimeUnits = PetrelUnitSystem.GetConverterToUI(GeologicalTimeTemplate);
+                    string ProjectTimeUnits = PetrelUnitSystem.GetDisplayUnit(GeologicalTimeTemplate).Symbol;
+                    // Strain rate units
+                    IUnitConverter toProjectStrainRateUnits = PetrelUnitSystem.GetConverterFromUI(GeologicalTimeTemplate);
+                    string ProjectStrainRateUnits = "/" + PetrelUnitSystem.GetDisplayUnit(GeologicalTimeTemplate).Symbol;
+                    // Azimuth
+                    Template AzimuthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth;
+                    IUnitConverter toProjectAzimuthUnits = PetrelUnitSystem.GetConverterToUI(AzimuthTemplate);
+                    string AzimuthUnits = PetrelUnitSystem.GetDisplayUnit(AzimuthTemplate).Symbol;
+                    // Young's Modulus
+                    Template YoungsModTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.YoungsModulus;
+                    IUnitConverter toProjectYoungsModUnits = PetrelUnitSystem.GetConverterToUI(YoungsModTemplate);
+                    string YoungsModUnits = PetrelUnitSystem.GetDisplayUnit(YoungsModTemplate).Symbol;
+                    // Crack Surface Energy
+                    Template CrackSurfaceEnergyTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.SurfaceTension;
+                    IUnitConverter toProjectCrackSurfaceEnergyUnits = PetrelUnitSystem.GetConverterToUI(CrackSurfaceEnergyTemplate);
+                    string CrackSurfaceEnergyUnits = PetrelUnitSystem.GetDisplayUnit(CrackSurfaceEnergyTemplate).Symbol;
+                    // Propagation rate
+                    Template PropagationRateTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.Velocity;
+                    IUnitConverter toProjectPropagationRateUnits = PetrelUnitSystem.GetConverterToUI(PropagationRateTemplate);
+                    string PropagationRateUnits = PetrelUnitSystem.GetDisplayUnit(PropagationRateTemplate).Symbol;
+                    // Depth
+                    Template DepthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth;
+                    IUnitConverter toProjectDepthUnits = PetrelUnitSystem.GetConverterToUI(DepthTemplate);
+                    string DepthUnits = PetrelUnitSystem.GetDisplayUnit(DepthTemplate).Symbol;
+                    // Rock density
+                    Template RockDensityTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.RockDensity;
+                    IUnitConverter toProjectRockDensityUnits = PetrelUnitSystem.GetConverterToUI(RockDensityTemplate);
+                    string RockDensityUnits = PetrelUnitSystem.GetDisplayUnit(RockDensityTemplate).Symbol;
+                    // Fluid density
+                    Template FluidDensityTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.LiquidDensity;
+                    IUnitConverter toProjectFluidDensityUnits = PetrelUnitSystem.GetConverterToUI(FluidDensityTemplate);
+                    string FluidDensityUnits = PetrelUnitSystem.GetDisplayUnit(FluidDensityTemplate).Symbol;
+                    // Fluid pressure
+                    Template PressureTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure;
+                    IUnitConverter toProjectPressureUnits = PetrelUnitSystem.GetConverterToUI(PressureTemplate);
+                    string PressureUnits = PetrelUnitSystem.GetDisplayUnit(PressureTemplate).Symbol;
+                    // Fracture aperture
+                    Template FractureApertureTemplate = PetrelProject.WellKnownTemplates.FracturePropertyGroup.FractureAperture;
+                    IUnitConverter toProjectFractureApertureUnits = PetrelUnitSystem.GetConverterToUI(FractureApertureTemplate);
+                    string FractureApertureUnits = PetrelUnitSystem.GetDisplayUnit(FractureApertureTemplate).Symbol;
+                    // Stress
+                    Template StressTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.StressEffective;
+                    IUnitConverter toProjectStressUnits = PetrelUnitSystem.GetConverterToUI(StressTemplate);
+                    string StressUnits = PetrelUnitSystem.GetDisplayUnit(StressTemplate).Symbol;
+                    // Fracture stiffness
+                    Template FractureStiffnessTemplate = PetrelProject.WellKnownTemplates.LogTypesGroup.PressureGradient;
+                    IUnitConverter toProjectFractureStiffnessUnits = PetrelUnitSystem.GetConverterToUI(FractureStiffnessTemplate);
+                    string FractureStiffnessUnits = PetrelUnitSystem.GetDisplayUnit(FractureStiffnessTemplate).Symbol;
+                    // Layer thickness
+                    Template LayerThicknessTemplate = PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth;
+                    IUnitConverter toProjectLayerThicknessUnits = PetrelUnitSystem.GetConverterToUI(LayerThicknessTemplate);
+                    string LayerThicknessUnits = PetrelUnitSystem.GetDisplayUnit(LayerThicknessTemplate).Symbol;
+                    // Fracture radius
+                    Template FractureRadiusTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
+                    IUnitConverter toProjectFractureRadiusUnits = PetrelUnitSystem.GetConverterToUI(FractureRadiusTemplate);
+                    string FractureRadiusUnits = PetrelUnitSystem.GetDisplayUnit(FractureRadiusTemplate).Symbol;
+                    // Get length unit conversion factor, if length units are not in metres
+                    double toSIUnits_Length = PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, 1);
+                    bool lengthUnitMetres = (toSIUnits_Length == 1);
+
+                    // NB if certain properties are supplied with a General template, we will carry out unit conversion as if they were supplied in project units
+                    // Therefore we need to create Petrel unit converters from project to SI units, and flags to indicate if this conversion is required
+                    Template GeneralTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
+                    // Geological time units
+                    IUnitConverter toSITimeUnits = PetrelUnitSystem.GetConverterFromUI(GeologicalTimeTemplate);
+                    bool convertFromGeneral_RockStrainRelaxation = (UseGridFor_RockStrainRelaxation ? RockStrainRelaxation_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_FractureRelaxation = (UseGridFor_FractureRelaxation ? FractureRelaxation_grid.Template.Equals(GeneralTemplate) : false);
+                    // Azimuth
+                    IUnitConverter toSIAzimuthUnits = PetrelUnitSystem.GetConverterFromUI(AzimuthTemplate);
+                    bool convertFromGeneral_EhminAzi = (UseGridFor_EhminAzi ? EhminAzi_grid.Template.Equals(GeneralTemplate) : false);
+                    // Young's Modulus
+                    IUnitConverter toSIYoungsModUnits = PetrelUnitSystem.GetConverterFromUI(YoungsModTemplate);
+                    bool convertFromGeneral_YoungsMod = (UseGridFor_YoungsMod ? YoungsMod_grid.Template.Equals(GeneralTemplate) : false);
+                    // Crack surface energy
+                    IUnitConverter toSICrackSurfaceEnergyUnits = PetrelUnitSystem.GetConverterFromUI(CrackSurfaceEnergyTemplate);
+                    bool convertFromGeneral_CrackSurfaceEnergy = (UseGridFor_CrackSurfaceEnergy ? CrackSurfaceEnergy_grid.Template.Equals(GeneralTemplate) : false);
+                    // Strain rates must be converted from geological time units to SI time units manually, as there is no Petrel template for strain rate
+                    IUnitConverter toSIUnits_StrainRate = PetrelUnitSystem.GetConverterToUI(GeologicalTimeTemplate);
+                    double EhminRate_SIUnits = toSIUnits_StrainRate.Convert(EhminRate_GeologicalTimeUnits);
+                    double EhmaxRate_SIUnits = toSIUnits_StrainRate.Convert(EhmaxRate_GeologicalTimeUnits);
+                    // If the friction grid property is supplied as a friction angle, this will be converted to a friction coefficient
+                    bool convertFromFrictionAngle_FrictionCoefficient = (UseGridFor_FrictionCoefficient ? FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle) : false);
+
                     // Get path for output files
                     string folderPath = "";
                     if (WriteToProjectFolder)
@@ -556,17 +652,17 @@ namespace DFNGenerator_Ocean
 
                     // Strain orientation and rate
                     if (EhminAzi_grid != null)
-                        generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}deg\n", EhminAzi_grid.Name, arguments.Argument_EhminAzi_default);
+                        generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid.Name, toProjectAzimuthUnits.Convert(arguments.Argument_EhminAzi_default), AzimuthUnits);
                     else
-                        generalInputParams += string.Format("Minimum strain orientation: {0}deg\n", arguments.Argument_EhminAzi_default);
+                        generalInputParams += string.Format("Minimum strain orientation: {0}{1}\n", toProjectAzimuthUnits.Convert(arguments.Argument_EhminAzi_default), AzimuthUnits);
                     if (UseGridFor_EhminRate)
-                        generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}/{2}\n", EhminRate_grid.Name, EhminRate, ModelTimeUnits);
+                        generalInputParams += string.Format("Minimum strain rate: {0}, default {1}{2}\n", EhminRate_grid.Name, EhminRate_GeologicalTimeUnits, ProjectStrainRateUnits);
                     else
-                        generalInputParams += string.Format("Minimum strain orientation: {0}/{1}\n", EhminRate, ModelTimeUnits);
+                        generalInputParams += string.Format("Minimum strain rate: {0}{1}\n", EhminRate_GeologicalTimeUnits, ProjectStrainRateUnits);
                     if (UseGridFor_EhmaxRate)
-                        generalInputParams += string.Format("Maximum strain orientation: {0}, default {1}/{2}\n", EhmaxRate_grid.Name, EhmaxRate, ModelTimeUnits);
+                        generalInputParams += string.Format("Maximum strain rate: {0}, default {1}{2}\n", EhmaxRate_grid.Name, EhmaxRate_GeologicalTimeUnits, ProjectStrainRateUnits);
                     else
-                        generalInputParams += string.Format("Maximum strain orientation: {0}/{1}\n", EhmaxRate, ModelTimeUnits);
+                        generalInputParams += string.Format("Maximum strain rate: {0}{1}\n", EhmaxRate_GeologicalTimeUnits, ProjectStrainRateUnits);
                     if (AverageStressStrainData)
                         generalInputParams += "Strain input parameters averaged across all cells\n";
                     else
@@ -584,9 +680,9 @@ namespace DFNGenerator_Ocean
 
                     // Mechanical properties
                     if (UseGridFor_YoungsMod)
-                        generalInputParams += string.Format("Young's Modulus: {0}, default {1}Pa\n", YoungsMod_grid.Name, YoungsMod);
+                        generalInputParams += string.Format("Young's Modulus: {0}, default {1}{2}\n", YoungsMod_grid.Name, toProjectYoungsModUnits.Convert(YoungsMod), YoungsModUnits);
                     else
-                        generalInputParams += string.Format("Young's Modulus: {0}Pa\n", YoungsMod);
+                        generalInputParams += string.Format("Young's Modulus: {0}{1}\n", toProjectYoungsModUnits.Convert(YoungsMod), YoungsModUnits);
                     if (UseGridFor_PoissonsRatio)
                         generalInputParams += string.Format("Poisson's ratio: {0}, default {1}\n", PoissonsRatio_grid.Name, PoissonsRatio);
                     else
@@ -600,23 +696,24 @@ namespace DFNGenerator_Ocean
                     else
                         generalInputParams += string.Format("Friction coefficient: {0}\n", FrictionCoefficient);
                     if (UseGridFor_CrackSurfaceEnergy)
-                        generalInputParams += string.Format("Crack surface energy: {0}, default {1}J/m2\n", CrackSurfaceEnergy_grid.Name, CrackSurfaceEnergy);
+                        generalInputParams += string.Format("Crack surface energy: {0}, default {1}{2}\n", CrackSurfaceEnergy_grid.Name, toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
                     else
-                        generalInputParams += string.Format("Crack surface energy: {0}J/m2\n", CrackSurfaceEnergy);
+                        generalInputParams += string.Format("Crack surface energy: {0}{1}\n", toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
+
                     // Strain relaxation
                     if (RockStrainRelaxation > 0)
                     {
                         if (UseGridFor_RockStrainRelaxation)
-                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}, default {1}{2}\n", RockStrainRelaxation_grid.Name, RockStrainRelaxation, ModelTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}, default {1}{2}\n", RockStrainRelaxation_grid.Name, RockStrainRelaxation, ProjectTimeUnits);
                         else
-                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}{1}\n", RockStrainRelaxation, ModelTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}{1}\n", RockStrainRelaxation, ProjectTimeUnits);
                     }
                     else if (FractureRelaxation > 0)
                     {
                         if (UseGridFor_FractureRelaxation)
-                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}, default {1}{2}\n", FractureRelaxation_grid.Name, FractureRelaxation, ModelTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}, default {1}{2}\n", FractureRelaxation_grid.Name, FractureRelaxation, ProjectTimeUnits);
                         else
-                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}{1}\n", FractureRelaxation, ModelTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}{1}\n", FractureRelaxation, ProjectTimeUnits);
                     }
                     else
                         generalInputParams += "No strain relaxation applied\n";
@@ -634,7 +731,7 @@ namespace DFNGenerator_Ocean
                         generalInputParams += string.Format("Subcritical propagation index: {0}, default {1}\n", SubcriticalPropIndex_grid.Name, SubcriticalPropIndex);
                     else
                         generalInputParams += string.Format("Subcritical propagation index: {0}\n", SubcriticalPropIndex);
-                    generalInputParams += string.Format("Critical propagation rate: {0}m/s\n", CriticalPropagationRate);
+                    generalInputParams += string.Format("Critical propagation rate: {0}{1}\n", toProjectPropagationRateUnits.Convert(CriticalPropagationRate), PropagationRateUnits);
                     if (AverageMechanicalPropertyData)
                         generalInputParams += "Mechanical property input parameters averaged across all cells\n";
                     else
@@ -643,21 +740,21 @@ namespace DFNGenerator_Ocean
                     // Stress state
                     generalInputParams += string.Format("Stress distribution: {0}\n", StressDistributionScenario);
                     if (OverwriteDepth)
-                        generalInputParams += string.Format("Depth of deformation: {0}m\n", DepthAtDeformation);
+                        generalInputParams += string.Format("Depth of deformation: {0}{1}\n", toProjectDepthUnits.Convert(DepthAtDeformation), DepthUnits);
                     else
                         generalInputParams += "Depth of deformation: current depth\n";
-                    generalInputParams += string.Format("Mean overlying sediment density: {0}kg/m3\n", MeanOverlyingSedimentDensity);
-                    generalInputParams += string.Format("Fluid density: {0}kg/m3\n", FluidDensity);
-                    generalInputParams += string.Format("Initial fluid overpressure: {0}Pa\n", InitialOverpressure);
+                    generalInputParams += string.Format("Mean overlying sediment density: {0}{1}\n", toProjectRockDensityUnits.Convert(MeanOverlyingSedimentDensity), RockDensityUnits);
+                    generalInputParams += string.Format("Fluid density: {0}{1}\n", toProjectFluidDensityUnits.Convert(FluidDensity), FluidDensityUnits);
+                    generalInputParams += string.Format("Initial fluid overpressure: {0}{1}\n", toProjectPressureUnits.Convert(InitialOverpressure), PressureUnits);
                     generalInputParams += string.Format("Initial stress relaxation factor: {0}\n", InitialStressRelaxation);
 
-                    // Outputs: Fracture porosity
+                    // Fracture aperture
                     if (CalculateFracturePorosity)
                     {
                         switch (FractureApertureControl)
                         {
                             case FractureApertureType.Uniform:
-                                generalInputParams += string.Format("Uniform fracture aperture: HMin Mode 1 {0}m; HMin Mode 2 {1}m; HMax Mode 1 {2}m; HMax Mode 2 {3}m\n", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture);
+                                generalInputParams += string.Format("Uniform fracture aperture: HMin Mode 1 {0}{4}; HMin Mode 2 {1}{4}; HMax Mode 1 {2}{4}; HMax Mode 2 {3}{4}\n", toProjectFractureApertureUnits.Convert(Mode1HMin_UniformAperture), toProjectFractureApertureUnits.Convert(Mode2HMin_UniformAperture), toProjectFractureApertureUnits.Convert(Mode1HMax_UniformAperture), toProjectFractureApertureUnits.Convert(Mode2HMax_UniformAperture), FractureApertureUnits);
                                 break;
                             case FractureApertureType.SizeDependent:
                                 generalInputParams += string.Format("Size dependent aperture: HMin Mode 1 x{0}; HMin Mode 2 x{1}; HMax Mode 1 x{2}; HMax Mode 2 x{3}\n", Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
@@ -666,7 +763,7 @@ namespace DFNGenerator_Ocean
                                 generalInputParams += string.Format("Dynamic aperture: x{0}\n", DynamicApertureMultiplier);
                                 break;
                             case FractureApertureType.BartonBandis:
-                                generalInputParams += string.Format("Barton-Bandis aperture: JRC {0}; UCS ratio {1}; Initial normal stress {2}Pa; Initial stiffness {3}Pa; Max closure {4}m\n", JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure);
+                                generalInputParams += string.Format("Barton-Bandis aperture: JRC {0}; UCS ratio {1}; Initial normal stress {2}{5}; Initial stiffness {3}{6} Max closure {4}{7}\n", JRC, UCSRatio, toProjectStressUnits.Convert(InitialNormalStress), toProjectFractureStiffnessUnits.Convert(FractureNormalStiffness), toProjectFractureApertureUnits.Convert(MaximumClosure), StressUnits, FractureStiffnessUnits, FractureApertureUnits);
                                 break;
                             default:
                                 break;
@@ -691,12 +788,12 @@ namespace DFNGenerator_Ocean
                     if (HorizontalUpscalingFactor > 1)
                         generalInputParams += string.Format("Horizontal upscaling factor: {0}\n", HorizontalUpscalingFactor);
                     if (MaxTimestepDuration > 0)
-                        generalInputParams += string.Format("Maximum duration for individual timesteps: {0}{1}\n", MaxTimestepDuration, ModelTimeUnits);
+                        generalInputParams += string.Format("Maximum duration for individual timesteps: {0}{1}\n", MaxTimestepDuration, ProjectTimeUnits);
                     generalInputParams += string.Format("Maximum MFP33 increase per timestep (controls accuracy of calculation): {0}\n", MaxTimestepMFP33Increase);
-                    generalInputParams += string.Format("Minimum microfracture radius for implicit population data: {0}m\n", MinImplicitMicrofractureRadius);
+                    generalInputParams += string.Format("Minimum microfracture radius for implicit population data: {0}{1}\n", toProjectFractureRadiusUnits.Convert(MinImplicitMicrofractureRadius), FractureRadiusUnits);
                     generalInputParams += string.Format("Number of radius bins for numerical calculation of microfracture P32: {0}\n", No_r_bins);
                     // Calculation termination controls
-                    generalInputParams += string.Format("Maximum duration of deformation: {0}{1}\n", DeformationStageDuration, ModelTimeUnits);
+                    generalInputParams += string.Format("Maximum duration of deformation: {0}{1}\n", DeformationStageDuration, ProjectTimeUnits);
                     generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumClearZoneVolume);
                     if (Current_HistoricMFP33TerminationRatio > 0)
                         generalInputParams += string.Format("; Current:Peak active MFP33 ratio {0}", Current_HistoricMFP33TerminationRatio);
@@ -713,8 +810,8 @@ namespace DFNGenerator_Ocean
                         explicitInputParams += "Link fractures across relay zones\n";
                     else
                         explicitInputParams += "Do not link fractures across relay zones\n";
-                    explicitInputParams += string.Format("Maximum bend across cell boundaries (Max Consistency Angle): {0}deg\n", arguments.Argument_MaxConsistencyAngle);
-                    explicitInputParams += string.Format("Minimum layer thickness cutoff: {0}m\n", MinimumLayerThickness);
+                    explicitInputParams += string.Format("Maximum bend across cell boundaries (Max Consistency Angle): {0}{1}\n", toProjectAzimuthUnits.Convert(arguments.Argument_MaxConsistencyAngle), AzimuthUnits);
+                    explicitInputParams += string.Format("Minimum layer thickness cutoff: {0}{1}\n", toProjectLayerThicknessUnits.Convert(MinimumLayerThickness), LayerThicknessUnits);
                     if (CreateTriangularFractureSegments)
                         explicitInputParams += "Fractures represented by triangular segments\n";
                     if (ProbabilisticFractureNucleationLimit > 0)
@@ -737,7 +834,7 @@ namespace DFNGenerator_Ocean
                     }
                     if (MinExplicitMicrofractureRadius > 0)
                     {
-                        explicitInputParams += string.Format("Minimum microfracture radius for explicit DFN: {0}m\n", MinExplicitMicrofractureRadius);
+                        explicitInputParams += string.Format("Minimum microfracture radius for explicit DFN: {0}{1}\n", toProjectFractureRadiusUnits.Convert(MinExplicitMicrofractureRadius), FractureRadiusUnits);
                         explicitInputParams += string.Format("Microfractures represented as {0} point polygons\n", Number_uF_Points);
                     }
                     else
@@ -746,7 +843,8 @@ namespace DFNGenerator_Ocean
                     }
 
                     // Define a time unit modifier to convert between input units and SI units, when writing output
-                    double timeUnits_Modifier = 1;
+                    // Not needed as this can be done using Petrel unit conversion
+                    /*double timeUnits_Modifier = 1;
                     switch (ModelTimeUnits)
                     {
                         case TimeUnits.second:
@@ -760,7 +858,7 @@ namespace DFNGenerator_Ocean
                             break;
                         default:
                             break;
-                    }
+                    }*/
 
                     // Get the index numbers of the fracture sets perpendicular to hmin and hmax
                     // Note that if the number of fracture sets is odd, there will be no set directly perpendicular to hmax, so we will take the index number of the closest set
@@ -988,8 +1086,8 @@ namespace DFNGenerator_Ocean
                                 // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
                                 // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
                                 double local_Epsilon_hmin_azimuth_in = EhminAzi;
-                                double local_Epsilon_hmin_rate_in = EhminRate;
-                                double local_Epsilon_hmax_rate_in = EhmaxRate;
+                                double local_Epsilon_hmin_rate_in = EhminRate_SIUnits;
+                                double local_Epsilon_hmax_rate_in = EhmaxRate_SIUnits;
 
                                 if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                                 {
@@ -1013,6 +1111,9 @@ namespace DFNGenerator_Ocean
                                                 if (UseGridFor_EhminAzi)
                                                 {
                                                     double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_EhminAzi)
+                                                        cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
                                                     if (!double.IsNaN(cell_ehmin_orient))
                                                     {
                                                         // Trim the ehmin orientation values so they lie within a semicircular range
@@ -1054,7 +1155,8 @@ namespace DFNGenerator_Ocean
                                                 // Update ehmin rate total if defined
                                                 if (UseGridFor_EhminRate)
                                                 {
-                                                    double cell_ehmin_rate = (double)EhminRate_grid[cellRef];
+                                                    // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+                                                    double cell_ehmin_rate = toSIUnits_StrainRate.Convert((double)EhminRate_grid[cellRef]);
                                                     if (!double.IsNaN(cell_ehmin_rate))
                                                     {
                                                         ehmin_rate_total += cell_ehmin_rate;
@@ -1065,7 +1167,8 @@ namespace DFNGenerator_Ocean
                                                 // Update ehmax rate total if defined
                                                 if (UseGridFor_EhmaxRate)
                                                 {
-                                                    double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef];
+                                                    // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+                                                    double cell_ehmax_rate = toSIUnits_StrainRate.Convert((double)EhmaxRate_grid[cellRef]);
                                                     if (!double.IsNaN(cell_ehmax_rate))
                                                     {
                                                         ehmax_rate_total += cell_ehmax_rate;
@@ -1106,6 +1209,9 @@ namespace DFNGenerator_Ocean
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
                                             double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_EhminAzi)
+                                                cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
                                             if (!double.IsNaN(cell_ehmin_orient))
                                             {
                                                 local_Epsilon_hmin_azimuth_in = cell_ehmin_orient;
@@ -1121,7 +1227,8 @@ namespace DFNGenerator_Ocean
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_ehmin_rate = (double)EhminRate_grid[cellRef];
+                                            // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+                                            double cell_ehmin_rate = toSIUnits_StrainRate.Convert((double)EhminRate_grid[cellRef]);
                                             if (!double.IsNaN(cell_ehmin_rate))
                                             {
                                                 local_Epsilon_hmin_rate_in = cell_ehmin_rate;
@@ -1137,7 +1244,8 @@ namespace DFNGenerator_Ocean
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef];
+                                            // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+                                            double cell_ehmax_rate = toSIUnits_StrainRate.Convert((double)EhmaxRate_grid[cellRef]);
                                             if (!double.IsNaN(cell_ehmax_rate))
                                             {
                                                 local_Epsilon_hmax_rate_in = cell_ehmax_rate;
@@ -1229,6 +1337,9 @@ namespace DFNGenerator_Ocean
                                                 if (UseGridFor_YoungsMod)
                                                 {
                                                     double cell_YoungsMod = (double)YoungsMod_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_YoungsMod)
+                                                        cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
                                                     if (!double.IsNaN(cell_YoungsMod))
                                                     {
                                                         YoungsMod_total += cell_YoungsMod;
@@ -1262,6 +1373,9 @@ namespace DFNGenerator_Ocean
                                                 if (UseGridFor_CrackSurfaceEnergy)
                                                 {
                                                     double cell_CrackSurfaceEnergy = (double)CrackSurfaceEnergy_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_CrackSurfaceEnergy)
+                                                        cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
                                                     if (!double.IsNaN(cell_CrackSurfaceEnergy))
                                                     {
                                                         CrackSurfaceEnergy_total += cell_CrackSurfaceEnergy;
@@ -1273,6 +1387,9 @@ namespace DFNGenerator_Ocean
                                                 if (UseGridFor_FrictionCoefficient)
                                                 {
                                                     double cell_FrictionCoeff = (double)FrictionCoefficient_grid[cellRef];
+                                                    // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                                    if (convertFromFrictionAngle_FrictionCoefficient)
+                                                        cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
                                                     if (!double.IsNaN(cell_FrictionCoeff))
                                                     {
                                                         FrictionCoeff_total += cell_FrictionCoeff;
@@ -1284,6 +1401,9 @@ namespace DFNGenerator_Ocean
                                                 if (UseGridFor_RockStrainRelaxation)
                                                 {
                                                     double cell_RockStrainRelaxation = (double)RockStrainRelaxation_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_RockStrainRelaxation)
+                                                        cell_RockStrainRelaxation = toSITimeUnits.Convert(cell_RockStrainRelaxation);
                                                     if (!double.IsNaN(cell_RockStrainRelaxation))
                                                     {
                                                         if (cell_RockStrainRelaxation > 0)
@@ -1298,6 +1418,9 @@ namespace DFNGenerator_Ocean
                                                 if (UseGridFor_FractureRelaxation)
                                                 {
                                                     double cell_FractureRelaxation = (double)FractureRelaxation_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_FractureRelaxation)
+                                                        cell_FractureRelaxation = toSITimeUnits.Convert(cell_FractureRelaxation);
                                                     if (!double.IsNaN(cell_FractureRelaxation))
                                                     {
                                                         if (cell_FractureRelaxation > 0)
@@ -1403,6 +1526,9 @@ namespace DFNGenerator_Ocean
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
                                             double cell_YoungsMod = (double)YoungsMod_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_YoungsMod)
+                                                cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
                                             if (!double.IsNaN(cell_YoungsMod))
                                             {
                                                 local_YoungsMod = cell_YoungsMod;
@@ -1451,6 +1577,9 @@ namespace DFNGenerator_Ocean
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
                                             double cell_CrackSurfaceEnergy = (double)CrackSurfaceEnergy_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_CrackSurfaceEnergy)
+                                                cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
                                             if (!double.IsNaN(cell_CrackSurfaceEnergy))
                                             {
                                                 local_CrackSurfaceEnergy = cell_CrackSurfaceEnergy;
@@ -1467,6 +1596,9 @@ namespace DFNGenerator_Ocean
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
                                             double cell_FrictionCoeff = (double)FrictionCoefficient_grid[cellRef];
+                                            // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                            if (convertFromFrictionAngle_FrictionCoefficient)
+                                                cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
                                             if (!double.IsNaN(cell_FrictionCoeff))
                                             {
                                                 local_FrictionCoefficient = cell_FrictionCoeff;
@@ -1483,6 +1615,9 @@ namespace DFNGenerator_Ocean
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
                                             double cell_RockStrainRelaxation = (double)RockStrainRelaxation_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_RockStrainRelaxation)
+                                                cell_RockStrainRelaxation = toSITimeUnits.Convert(cell_RockStrainRelaxation);
                                             if (!double.IsNaN(cell_RockStrainRelaxation))
                                             {
                                                 local_RockStrainRelaxation = cell_RockStrainRelaxation;
@@ -1499,6 +1634,9 @@ namespace DFNGenerator_Ocean
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
                                             double cell_FractureRelaxation = (double)FractureRelaxation_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_FractureRelaxation)
+                                                cell_FractureRelaxation = toSITimeUnits.Convert(cell_FractureRelaxation);
                                             if (!double.IsNaN(cell_FractureRelaxation))
                                             {
                                                 local_FractureRelaxation = cell_FractureRelaxation;
@@ -1506,7 +1644,18 @@ namespace DFNGenerator_Ocean
                                             }
                                         }
                                     }
-                                } // End get the mechanical properties from the grid as required
+                                }
+                                // Until that point, all data will be kept in project units
+
+                                // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                                // Therefore unit conversion for InitialMicrofractureDensity A must be carried out now
+                                // Unit conversion must be done on a cell by cell basis, since the values of InitialMicrofractureSizeDistribution may vary between cells
+                                if (!lengthUnitMetres)
+                                {
+                                    double toSIUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, 1), local_InitialMicrofractureSizeDistribution - 3);
+                                    local_InitialMicrofractureDensity *= toSIUnits_InitialMicrofractureDensity;
+                                }
+                                // End get the mechanical properties from the grid as required
 
                                 // Create a new gridblock object containing the required number of fracture sets
                                 GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);
@@ -1556,7 +1705,7 @@ namespace DFNGenerator_Ocean
                                 }
 
                                 // Set the propagation control data for the gridblock
-                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputComplianceTensor, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                                     MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                                 // Set folder path for output files
@@ -1634,8 +1783,8 @@ namespace DFNGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2});", lithostatic_stress, fluid_pressure, InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22}, {23}, {24});",
-                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputComplianceTensor, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, LogCalculation, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                    MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
                                 PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
 #endif
@@ -1682,26 +1831,36 @@ namespace DFNGenerator_Ocean
                             // Write implicit fracture property data to Petrel grid
                             PetrelLogger.InfoOutputWindow("Write implicit data");
                             progressBar.SetProgressText("Write implicit data");
-                            Template P30Template = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
-                            Template P32Template = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Intensity;
+
+                            // Get templates for the implicit data
+                            // Where possible, use standard Petrel templates
+                            Template P30Template = DFNModule2.GetP30Template();
+                            Template P32Template = DFNModule2.GetP32Template();
                             Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
+                            Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                             Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
                             Template AnisotropyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
                             Template PorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
-                            Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
-                            using (ITransaction t = DataManager.NewTransaction())
+                            Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
+                            Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
+
+                            // Create a transaction to write the property data to the Petrel grid
+                            using (ITransaction transactionWritePropertyData = DataManager.NewTransaction())
                             {
                                 // Get handle to parent object and lock database
                                 PropertyCollection root = PetrelGrid.PropertyCollection;
-                                t.Lock(root);
+                                transactionWritePropertyData.Lock(root);
 
                                 // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
                                 int NoStages = NoIntermediateOutputs + 1;
                                 int NoSets = NoFractureSets;
-                                int NoDipSets = (Mode1Only || Mode2Only ? 1 : 2);
+                                int NoDipSets = ((Mode1Only || Mode2Only) ? 1 : 2);
                                 int NoCalculationElementsCompleted = 0;
                                 int NoElements = NoActiveGridblocks * ((NoSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoSets * NoDipSets) + 1 : 0) + (CalculateFracturePorosity ? 1 : 0));
                                 NoElements *= NoStages;
+                                // Bulk rock elastic tensors are only output for the final stage
+                                if (OutputBulkRockElasticTensors)
+                                    NoElements += NoActiveGridblocks;
                                 progressBarWrapper.SetNumberOfElements(NoElements);
 
                                 // Get a list of end times for each gridblock - this is used to calculate the end times for the intermediate stages
@@ -1733,7 +1892,7 @@ namespace DFNGenerator_Ocean
                                     }
 
                                     // Create a stage-specific label for the output file
-                                    string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, stageEndTime * timeUnits_Modifier, ModelTimeUnits));
+                                    string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(stageEndTime), ProjectTimeUnits));
 
 #if DEBUG_FRACS
                                     PetrelLogger.InfoOutputWindow("");
@@ -1769,7 +1928,8 @@ namespace DFNGenerator_Ocean
                                         for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                         {
                                             // Create a subfolder for the fracture dip set
-                                            string CollectionName = string.Format("{0}_Mode{1}_FracSetData", FractureSetName, (Mode2Only ? 2 : DipSetNo + 1));
+                                            string dipsetLabel = (Mode2Only || (DipSetNo > 0)) ? "Inclined" : "Vertical";
+                                            string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
                                             PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
 
                                             // Get templates for each property
@@ -1862,7 +2022,6 @@ namespace DFNGenerator_Ocean
                                                         PetrelLogger.InfoOutputWindow(e.Message);
                                                         PetrelLogger.InfoOutputWindow(e.StackTrace);
                                                     }
-
 
                                                     // Update progress bar
                                                     progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
@@ -2163,7 +2322,6 @@ namespace DFNGenerator_Ocean
 
                                     } // End write fracture anisotropy data
 
-
                                     // Write fracture porosity data to Petrel grid
                                     if (CalculateFracturePorosity)
                                     {
@@ -2300,10 +2458,118 @@ namespace DFNGenerator_Ocean
 
                                     } // End write fracture porosity data
 
+                                    // Write stiffness and compliance tensor data to Petrel grid
+                                    if (OutputBulkRockElasticTensors && finalStage)
+                                    {
+
+                                        // Create subfolders for the bulk rock compliance and stiffness tensor components
+                                        string ComplianceTensorCollectionName = "Bulk rock compliance tensor";
+                                        PropertyCollection ComplianceTensorData = FracData.CreatePropertyCollection(ComplianceTensorCollectionName);
+                                        string StiffnessTensorCollectionName = "Bulk rock stiffness tensor";
+                                        PropertyCollection StiffnessTensorData = FracData.CreatePropertyCollection(StiffnessTensorCollectionName);
+
+                                        // Get templates for each component of both tensors
+                                        Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> ComplianceTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
+                                        Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> StiffnessTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
+                                        Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                                        foreach (Tensor2SComponents ij in tensorComponents)
+                                        {
+                                            ComplianceTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
+                                            StiffnessTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
+                                            foreach (Tensor2SComponents kl in tensorComponents)
+                                            {
+                                                Property ComplianceTensor_ijkl = ComplianceTensorData.CreateProperty(ComplianceTensorComponentTemplate);
+                                                ComplianceTensor_ijkl.Name = string.Format("S_{0}{1}", ij, kl);
+                                                ComplianceTensorProperties[ij][kl] = ComplianceTensor_ijkl;
+                                                Property StiffnessTensor_ijkl = StiffnessTensorData.CreateProperty(StiffnessTensorComponentTemplate);
+                                                StiffnessTensor_ijkl.Name = string.Format("C_{0}{1}", ij, kl);
+                                                StiffnessTensorProperties[ij][kl] = StiffnessTensor_ijkl;
+                                            }
+                                        }
+
+                                        // Loop through all columns and rows in the Fracture Grid
+                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
+                                                if (fractureGridCell == null)
+                                                    continue;
+
+                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+
+                                                // Get the compliance and stiffness tensors for this gridblock
+                                                Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
+                                                Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
+
+#if DEBUG_FRACS
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+#endif
+
+                                                // Loop through all the Petrel cells in the gridblock
+                                                // We need to define the last ij and kl components outside the loop so we can identify the tensor component if an exception is thrown
+                                                Tensor2SComponents lastij = Tensor2SComponents.XX;
+                                                Tensor2SComponents lastkl = Tensor2SComponents.XX;
+                                                try
+                                                {
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+#if DEBUG_FRACS
+                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                // Get index for cell in Petrel grid
+                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Write tensor component data to Petrel grid
+                                                                foreach (Tensor2SComponents ij in tensorComponents)
+                                                                {
+                                                                    lastij = ij;
+                                                                    foreach (Tensor2SComponents kl in tensorComponents)
+                                                                    {
+                                                                        lastkl = kl;
+                                                                        ComplianceTensorProperties[ij][kl][index_cell] = (float)gridblockComplianceTensor.Component(ij, kl);
+                                                                        StiffnessTensorProperties[ij][kl][index_cell] = (float)gridblockStiffnessTensor.Component(ij, kl);
+                                                                    }
+                                                                }
+                                                            } // End loop through all the Petrel cells in the gridblock
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to column {0}, {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                    errorMessage = errorMessage + string.Format(" S_{0}{1} {2}", lastij, lastkl, (float)gridblockComplianceTensor.Component(lastij, lastkl));
+                                                    errorMessage = errorMessage + string.Format(" C_{0}{1} {2}", lastij, lastkl, (float)gridblockStiffnessTensor.Component(lastij, lastkl));
+                                                    PetrelLogger.InfoOutputWindow(errorMessage);
+                                                    PetrelLogger.InfoOutputWindow(e.Message);
+                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                }
+
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                            } // End loop through all columns and rows in the Fracture Grid
+
+                                    } // End write stiffness and compliance tensor data
+
                                 } // End loop through each stage in the fracture growth
 
                                 // Commit the changes to the Petrel database
-                                t.Commit();
+                                transactionWritePropertyData.Commit();
                             }
 
                             // Write explicit DFN to Petrel project
@@ -2341,15 +2607,15 @@ namespace DFNGenerator_Ocean
                                 foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                 {
                                     // Create a stage-specific label for the output file
-                                    string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, DFN.CurrentTime * timeUnits_Modifier, ModelTimeUnits));
+                                    string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
 
                                     // Create a new fracture network object
                                     FractureNetwork fractureNetwork;
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionCreateFractureNetwork = DataManager.NewTransaction())
                                     {
                                         // Get handle to parent object and lock database
                                         ModelCollection GridColl = PetrelGrid.ModelCollection;
-                                        trans.Lock(GridColl);
+                                        transactionCreateFractureNetwork.Lock(GridColl);
 
                                         // Create a new fracture network object
                                         fractureNetwork = GridColl.CreateFractureNetwork(ModelName + outputLabel, Domain.ELEVATION_DEPTH);
@@ -2358,17 +2624,17 @@ namespace DFNGenerator_Ocean
                                         fractureNetwork.Comments = generalInputParams + explicitInputParams;
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionCreateFractureNetwork.Commit();
                                     }
 
                                     // Write the model time of the intermediate DFN to the Petrel log window
-                                    PetrelLogger.InfoOutputWindow(string.Format("DFN realisation {0} at time {1} {2}", stageNumber, DFN.CurrentTime * timeUnits_Modifier, ModelTimeUnits));
+                                    PetrelLogger.InfoOutputWindow(string.Format("DFN realisation {0} at time {1} {2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
 
                                     // Create the fracture objects
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionCreateFractures = DataManager.NewTransaction())
                                     {
                                         // Lock the database
-                                        trans.Lock(fractureNetwork);
+                                        transactionCreateFractures.Lock(fractureNetwork);
 
                                         // Loop through all the microfractures in the DFN
                                         foreach (MicrofractureXYZ uF in DFN.GlobalDFNMicrofractures)
@@ -2381,7 +2647,7 @@ namespace DFNGenerator_Ocean
                                             }
 
                                             // Get the microfracture set
-                                            //int uF_set = (uF.Set == FractureOrientation.HMin ? 1 : 2);
+                                            int uF_set = uF.SetIndex;
 
                                             // Get a list of cornerpoints around the circumference of the fracture, as PointXYZ objects
                                             List<PointXYZ> CornerPoints = uF.GetFractureCornerpointsInXYZ(Number_uF_Points);
@@ -2409,9 +2675,9 @@ namespace DFNGenerator_Ocean
                                                         // Create a new fracture patch object
                                                         FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
 
-                                                        // Assign it to the correct set
-                                                        // Set assignment adds a high overhead in computational cost so for now we will not assign sets; this could be allowed as an option in future
-                                                        //Petrel_FractureSegment.FractureSetValue = uF_set;
+                                                        // Assign it to the correct set, if required
+                                                        if (assignOrientationSets)
+                                                            Petrel_FractureSegment.FractureSetValue = uF_set;
                                                     }
                                                 }
                                                 catch (Exception e)
@@ -2439,9 +2705,9 @@ namespace DFNGenerator_Ocean
                                                     // Create a new fracture patch object
                                                     FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
 
-                                                    // Assign it to the correct set
-                                                    // Set assignment adds a high overhead in computational cost so for now we will not assign sets; this could be allowed as an option in future
-                                                    //Petrel_FractureSegment.FractureSetValue = uF_set;
+                                                    // Assign it to the correct set, if required
+                                                    if (assignOrientationSets)
+                                                        Petrel_FractureSegment.FractureSetValue = uF_set;
                                                 }
                                                 catch (Exception e)
                                                 {
@@ -2469,7 +2735,7 @@ namespace DFNGenerator_Ocean
                                             }
 
                                             // Get the macrofracture set
-                                            //int MF_set = (MF.Set == FractureOrientation.HMin ? 1 : 2);
+                                            int MF_set = MF.SetIndex;
 
                                             // Loop through each macrofracture segment
                                             foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
@@ -2517,10 +2783,12 @@ namespace DFNGenerator_Ocean
                                                             FracturePatch Petrel_FractureSegment1 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints1);
                                                             FracturePatch Petrel_FractureSegment2 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints2);
 
-                                                            // Assign them to the correct set
-                                                            // Set assignment adds a high overhead in computational time so for now we will not assign sets; this could be allowed as an option in future
-                                                            //Petrel_FractureSegment1.FractureSetValue = MF_set;
-                                                            //Petrel_FractureSegment2.FractureSetValue = MF_set;
+                                                            // Assign them to the correct set, if required
+                                                            if (assignOrientationSets)
+                                                            {
+                                                                Petrel_FractureSegment1.FractureSetValue = MF_set;
+                                                                Petrel_FractureSegment2.FractureSetValue = MF_set;
+                                                            }
                                                         }
                                                         catch (Exception e)
                                                         {
@@ -2558,9 +2826,9 @@ namespace DFNGenerator_Ocean
                                                             // Create a new fracture patch object
                                                             FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
 
-                                                            // Assign it to the correct set
-                                                            // Set assignment adds a high overhead in computational cost so for now we will not assign sets; this could be allowed as an option in future
-                                                            //Petrel_FractureSegment.FractureSetValue = MF_set;
+                                                            // Assign it to the correct set, if required
+                                                            if (assignOrientationSets)
+                                                                Petrel_FractureSegment.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                         }
                                                         catch (Exception e)
                                                         {
@@ -2581,11 +2849,11 @@ namespace DFNGenerator_Ocean
                                         }
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionCreateFractures.Commit();
                                     }
 
                                     // Assign the fracture properties
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionAssignFractureProperties = DataManager.NewTransaction())
                                     {
 
                                         // Get handle to the appropriate fracture properties
@@ -2596,12 +2864,12 @@ namespace DFNGenerator_Ocean
                                         {
                                             fractureAperture = fractureNetwork.GetWellKnownProperty(aperture);
                                             // Lock the database
-                                            trans.Lock(fractureAperture);
+                                            transactionAssignFractureProperties.Lock(fractureAperture);
                                         }
                                         else
                                         {
                                             // Lock the database
-                                            trans.Lock(fractureNetwork);
+                                            transactionAssignFractureProperties.Lock(fractureNetwork);
                                             fractureAperture = fractureNetwork.CreateWellKnownProperty(aperture);
                                         }
 
@@ -2732,7 +3000,7 @@ namespace DFNGenerator_Ocean
                                         }
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionAssignFractureProperties.Commit();
                                     }
 
                                     // Update the stage number
@@ -2744,11 +3012,11 @@ namespace DFNGenerator_Ocean
                                 {
                                     // Create a new collection for the polyline output
                                     Collection CentrelineCollection = Collection.NullObject;
-                                    using (ITransaction trans = DataManager.NewTransaction())
+                                    using (ITransaction transactionCreateCentrelineCollection = DataManager.NewTransaction())
                                     {
                                         // Get handle to project and lock database
                                         Project project = PetrelProject.PrimaryProject;
-                                        trans.Lock(project);
+                                        transactionCreateCentrelineCollection.Lock(project);
 
                                         // Create a new collection for the polyline set
                                         CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
@@ -2757,7 +3025,7 @@ namespace DFNGenerator_Ocean
                                         CentrelineCollection.Comments = generalInputParams + explicitInputParams;
 
                                         // Commit the changes to the Petrel database
-                                        trans.Commit();
+                                        transactionCreateCentrelineCollection.Commit();
                                     }
 
                                     // Loop through each stage in the fracture growth
@@ -2765,12 +3033,12 @@ namespace DFNGenerator_Ocean
                                     foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                     {
                                         // Create a stage-specific label for the output file
-                                        string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, DFN.CurrentTime * timeUnits_Modifier, ModelTimeUnits));
+                                        string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
 
-                                        using (ITransaction trans = DataManager.NewTransaction())
+                                        using (ITransaction transactionCreateCentrelines = DataManager.NewTransaction())
                                         {
                                             // Lock database
-                                            trans.Lock(CentrelineCollection);
+                                            transactionCreateCentrelines.Lock(CentrelineCollection);
 
                                             // Create a new polyline set and set to the depth domain
                                             PolylineSet Centrelines = CentrelineCollection.CreatePolylineSet("Fracture_Centrelines" + outputLabel);
@@ -2818,7 +3086,7 @@ namespace DFNGenerator_Ocean
                                             Centrelines.Polylines = pline_list;
 
                                             // Commit the changes to the Petrel database
-                                            trans.Commit();
+                                            transactionCreateCentrelines.Commit();
                                         }
 
                                         // Update the stage number
@@ -2924,12 +3192,15 @@ namespace DFNGenerator_Ocean
             private int argument_BottomLayerK = 1;
             private double argument_EhminAzi_default = 0;
             private Property argument_EhminAzi;
+            // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units, not SI units
             private double argument_EhminRate_default = -0.01;
             private Property argument_EhminRate;
             private double argument_EhmaxRate_default = 0;
             private Property argument_EhmaxRate;
             private bool argument_GenerateExplicitDFN = true;
             private int argument_NoIntermediateOutputs = 0;
+            private bool argument_IncludeObliqueFracs = false;
 
             // Mechanical properties
             private double argument_YoungsMod_default = 10000000000;
@@ -2942,11 +3213,16 @@ namespace DFNGenerator_Ocean
             private Property argument_FrictionCoefficient;
             private double argument_CrackSurfaceEnergy_default = 1000;
             private Property argument_CrackSurfaceEnergy;
+            // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
             private double argument_RockStrainRelaxation_default = 0;
             private Property argument_RockStrainRelaxation;
             private double argument_FractureStrainRelaxation_default = 0;
             private Property argument_FractureStrainRelaxation;
-            private double argument_InitialMicrofractureDensity_default = 0.001;
+            // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+            // However it is initialised with a default value equivalent to 0.001fracs/m, since this is calibrated empirically
+            // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
+            private double argument_InitialMicrofractureDensity_SI = 0.001;
+            private double argument_InitialMicrofractureDensity_default = double.NaN;
             private Property argument_InitialMicrofractureDensity;
             private double argument_InitialMicrofractureSizeDistribution_default = 2;
             private Property argument_InitialMicrofractureSizeDistribution;
@@ -2973,8 +3249,10 @@ namespace DFNGenerator_Ocean
             private bool argument_OutputCentrepoints = false;
             // Fracture connectivity and anisotropy index control parameters
             private bool argument_CalculateFractureConnectivityAnisotropy = true;
-            // Fracture porosity control parameters
             private bool argument_CalculateFracturePorosity = true;
+            private bool argument_CalculateBulkRockElasticTensors = false;
+
+            // Fracture aperture control parameters
             private int argument_FractureApertureControl = 0;
             private double argument_HMin_UniformAperture = 0.0005;
             private double argument_HMax_UniformAperture = 0.0005;
@@ -2988,17 +3266,23 @@ namespace DFNGenerator_Ocean
             private double argument_MaximumClosure = 0.0005;
 
             // Calculation control parameters
-            private int argument_NoFractureSets = 2;
+            // Set argument_NoFractureSets to 6 by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+            // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
+            private int argument_NoFractureSets = 6; 
             private int argument_FractureMode = 0;
-            private bool argument_CheckAlluFStressShadows = false;
+            // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+            // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
+            private bool argument_CheckAlluFStressShadows = true;
             private double argument_AnisotropyCutoff = 1;
             private bool argument_AllowReverseFractures = false;
             private int argument_HorizontalUpscalingFactor = 1;
+            // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
             private double argument_MaxTSDuration = double.NaN;
             private double argument_Max_TS_MFP33_increase = 0.002;
             private double argument_MinimumImplicitMicrofractureRadius = 0.05;
             private int argument_No_r_bins = 10;
             // Calculation termination controls
+            // NB the deformation duration must be supplied in SI units (seconds), not geological time units
             private double argument_DeformationDuration = double.NaN;
             private int argument_MaxNoTimesteps = 1000;
             private double argument_Historic_MFP33_TerminationRatio = double.NaN;
@@ -3007,7 +3291,7 @@ namespace DFNGenerator_Ocean
             // DFN geometry controls
             private bool argument_CropAtGridBoundary = true;
             private bool argument_LinkParallelFractures = true;
-            private double argument_MaxConsistencyAngle = 45;
+            private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
             private bool argument_CreateTriangularFractureSegments = false;
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
@@ -3017,134 +3301,141 @@ namespace DFNGenerator_Ocean
             private int argument_NoMicrofractureCornerpoints = 8;
 
             // Main settings
-            [Description("Argument_ModelName", "Model name")]
+            [Description("Model name", "Model name")]
             public string Argument_ModelName
             {
                 internal get { return this.argument_ModelName; }
                 set { this.argument_ModelName = value; }
             }
 
-            [Description("Argument_Grid", "Grid to use for DFN model")]
+            [Description("Grid to use for DFN model", "Grid to use for DFN model")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Grid Argument_Grid
             {
                 internal get { return this.argument_Grid; }
                 set { this.argument_Grid = value; }
             }
 
-            [Description("Argument_StartColI", "Index (I) of first column to model")]
+            [Description("Index of first column to model", "Index (I) of first column to model")]
             public int Argument_StartColI
             {
                 internal get { return this.argument_StartColI; }
                 set { this.argument_StartColI = value; }
             }
 
-            [Description("Argument_StartRowJ", "Index (J) of first row to model")]
+            [Description("Index (J) of first row to model", "Index (J) of first row to model")]
             public int Argument_StartRowJ
             {
                 internal get { return this.argument_StartRowJ; }
                 set { this.argument_StartRowJ = value; }
             }
 
-            [Description("Argument_NoColsI", "Number of columns to model")]
+            [Description("Number of columns to model", "Number of columns to model")]
             public int Argument_NoColsI
             {
                 internal get { return this.argument_NoColsI; }
                 set { this.argument_NoColsI = value; }
             }
 
-            [Description("Argument_NoRowsJ", "Number of rows to model")]
+            [Description("Number of rows to model", "Number of rows to model")]
             public int Argument_NoRowsJ
             {
                 internal get { return this.argument_NoRowsJ; }
                 set { this.argument_NoRowsJ = value; }
             }
 
-            [Description("Argument_TopLayerK", "Index (K) of top grid layer in the fractured layer")]
+            [Description("Index (K) of top grid layer in the fractured layer", "Index (K) of top grid layer in the fractured layer")]
             public int Argument_TopLayerK
             {
                 internal get { return this.argument_TopLayerK; }
                 set { this.argument_TopLayerK = value; }
             }
 
-            [Description("Argument_BottomLayerK", "Index (K) of bottom grid layer in the fractured layer")]
+            [Description("Index (K) of bottom grid layer in the fractured layer", "Index (K) of bottom grid layer in the fractured layer")]
             public int Argument_BottomLayerK
             {
                 internal get { return this.argument_BottomLayerK; }
                 set { this.argument_BottomLayerK = value; }
             }
 
-            [Description("Argument_EhminAzi_default", "Default value for azimuth of minimum (most tensile) horizontal strain (deg)")]
+            [Description("Default azimuth of minimum (most tensile) horizontal strain (deg)", "Default value for azimuth of minimum (most tensile) horizontal strain (deg)")]
             public double Argument_EhminAzi_default
             {
                 internal get { return this.argument_EhminAzi_default; }
                 set { this.argument_EhminAzi_default = value; }
             }
 
-            [Description("Argument_EhminAzi", "Azimuth of minimum (most tensile) horizontal strain (deg)")]
+            [Description("Azimuth of minimum (most tensile) horizontal strain (deg)", "Azimuth of minimum (most tensile) horizontal strain (deg)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi
             {
                 internal get { return this.argument_EhminAzi; }
                 set { this.argument_EhminAzi = value; }
             }
 
-            [Description("Argument_EhminRate_default", "Default value for minimum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Default minimum horizontal strain rate (/ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/ma, tensile strain negative)")]
             public double Argument_EhminRate_default
             {
                 internal get { return this.argument_EhminRate_default; }
                 set { this.argument_EhminRate_default = value; }
             }
 
-            [Description("Argument_EhminRate", "Minimum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Minimum horizontal strain rate (/ma, tensile strain negative)", "Minimum horizontal strain rate (/ma, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
             {
                 internal get { return this.argument_EhminRate; }
                 set { this.argument_EhminRate = value; }
             }
 
-            [Description("Argument_EhmaxRate_default", "Default value for maximum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Default maximum horizontal strain rate (/ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/ma, tensile strain negative)")]
             public double Argument_EhmaxRate_default
             {
                 internal get { return this.argument_EhmaxRate_default; }
                 set { this.argument_EhmaxRate_default = value; }
             }
 
-            [Description("Argument_EhmaxRate", "Maximum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Maximum horizontal strain rate (/ma, tensile strain negative)", "Maximum horizontal strain rate (/ma, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
             {
                 internal get { return this.argument_EhmaxRate; }
                 set { this.argument_EhmaxRate = value; }
             }
 
-            [Description("Argument_GenerateExplicitDFN", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
+            [Description("Generate explicit DFN?", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
             public bool Argument_GenerateExplicitDFN
             {
                 internal get { return this.argument_GenerateExplicitDFN; }
                 set { this.argument_GenerateExplicitDFN = value; }
             }
 
-            [Description("Argument_NoIntermediateOutputs", "Set to output data for intermediate stages of fracture growth")]
+            [Description("Number of intermediate outputs", "Number of intermediate outputs; set to output data for intermediate stages of fracture growth")]
             public int Argument_NoIntermediateOutputs
             {
                 internal get { return this.argument_NoIntermediateOutputs; }
                 set { this.argument_NoIntermediateOutputs = value; }
             }
 
+            [Description("Include oblique fractures?", "Include oblique fractures? (if true, this will override Argument_NoFractureSets to set the number of fracture sets to 2)")]
+            public bool Argument_IncludeObliqueFracs
+            {
+                internal get { return this.argument_IncludeObliqueFracs; }
+                set { this.argument_IncludeObliqueFracs = value; }
+            }
+
             // Mechanical properties
-            [Description("Argument_YoungsMod_default", "Default value for Young's Modulus (Pa)")]
+            [Description("Default Young's Modulus (Pa)", "Default value for Young's Modulus (Pa)")]
             public double Argument_YoungsMod_default
             {
                 internal get { return this.argument_YoungsMod_default; }
                 set { this.argument_YoungsMod_default = value; }
             }
 
-            [Description("Argument_YoungsMod", "Young's Modulus (Pa)")]
+            [Description("Young's Modulus (Pa)", "Young's Modulus (Pa)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_YoungsMod
             {
                 internal get { return this.argument_YoungsMod; }
                 set { this.argument_YoungsMod = value; }
             }
 
-            [Description("Default Poisson's ratio", "Default Poisson's ratio")]
+            [Description("Default Poisson's ratio", "Default value for Poisson's ratio")]
             public double Argument_PoissonsRatio_default
             {
                 internal get { return this.argument_PoissonsRatio_default; }
@@ -3158,7 +3449,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_PoissonsRatio = value; }
             }
 
-            [Description("Default Biot's coefficient", "Default Biot's coefficient")]
+            [Description("Default Biot's coefficient", "Default value for Biot's coefficient")]
             public double Argument_BiotCoefficient_default
             {
                 internal get { return this.argument_BiotCoefficient_default; }
@@ -3172,7 +3463,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_BiotCoefficient = value; }
             }
 
-            [Description("Default friction coefficient", "Default friction coefficient")]
+            [Description("Default friction coefficient", "Default value for friction coefficient")]
             public double Argument_FrictionCoefficient_default
             {
                 internal get { return this.argument_FrictionCoefficient_default; }
@@ -3186,7 +3477,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_FrictionCoefficient = value; }
             }
 
-            [Description("Default crack surface energy (J/m2)", "Default crack surface energy (J/m2)")]
+            [Description("Default crack surface energy (J/m2)", "Default value for crack surface energy (J/m2)")]
             public double Argument_CrackSurfaceEnergy_default
             {
                 internal get { return this.argument_CrackSurfaceEnergy_default; }
@@ -3228,10 +3519,23 @@ namespace DFNGenerator_Ocean
                 set { this.argument_FractureStrainRelaxation = value; }
             }
 
-            [Description("Default initial microfracture density (fracs/m3)", "Default initial microfracture density (fracs/m3)")]
+            [Description("Default initial microfracture density (fracs/m)", "Default value for initial microfracture density (fracs/m)")]
             public double Argument_InitialMicrofractureDensity_default
             {
-                internal get { return this.argument_InitialMicrofractureDensity_default; }
+                // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                // However it is initialised with a default value equivalent to 0.001(fracs>1m radius)/m3 (=0.001fracs/m), since this is calibrated empirically
+                // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
+                // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
+                // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
+                internal get
+                {
+                    if (double.IsNaN(this.argument_InitialMicrofractureDensity_default))
+                    {
+                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, 1), 3 - Argument_InitialMicrofractureSizeDistribution_default);
+                        this.argument_InitialMicrofractureDensity_default = this.argument_InitialMicrofractureDensity_SI * toProjectUnits_InitialMicrofractureDensity;
+                    }
+                    return this.argument_InitialMicrofractureDensity_default;
+                }
                 set { this.argument_InitialMicrofractureDensity_default = value; }
             }
 
@@ -3242,7 +3546,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_InitialMicrofractureDensity = value; }
             }
 
-            [Description("Default initial microfracture size distribution coefficient", "Default initial microfracture size distribution coefficient")]
+            [Description("Default initial microfracture size distribution coefficient", "Default value for initial microfracture size distribution coefficient")]
             public double Argument_InitialMicrofractureSizeDistribution_default
             {
                 internal get { return this.argument_InitialMicrofractureSizeDistribution_default; }
@@ -3256,7 +3560,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_InitialMicrofractureSizeDistribution = value; }
             }
 
-            [Description("Default subcritical fracture propagation index", "Default subcritical fracture propagation index")]
+            [Description("Default subcritical fracture propagation index", "Default value for subcritical fracture propagation index")]
             public double Argument_SubcriticalPropagationIndex_default
             {
                 internal get { return this.argument_SubcriticalPropagationIndex_default; }
@@ -3385,7 +3689,6 @@ namespace DFNGenerator_Ocean
                 set { this.argument_CalculateFractureConnectivityAnisotropy = value; }
             }
 
-            // Fracture porosity control parameters
             [Description("Calculate fracture porosity?", "Calculate fracture porosity?")]
             public bool Argument_CalculateFracturePorosity
             {
@@ -3393,7 +3696,15 @@ namespace DFNGenerator_Ocean
                 set { this.argument_CalculateFracturePorosity = value; }
             }
 
-            [Description("Method used to determine fracture aperture: 1 = Uniform Aperture, 2 = Size Dependent, 3 = Dynamic Aperture, 4 = Barton-Bandis", "Method used to determine fracture aperture: 1 = Uniform Aperture, 2 = Size Dependent, 3 = Dynamic Aperture, 4 = Barton-Bandis")]
+            [Description("Calculate bulk rock elastic tensors?", "Calculate bulk rock compliance and stiffness tensors, taking into account the fractures")]
+            public bool Argument_CalculateBulkRockElasticTensors
+            {
+                internal get { return this.argument_CalculateBulkRockElasticTensors; }
+                set { this.argument_CalculateBulkRockElasticTensors = value; }
+            }
+
+            // Fracture aperture control parameters
+            [Description("Method used to determine fracture aperture: 0 = Uniform Aperture, 1 = Size Dependent, 2 = Dynamic Aperture, 3 = Barton-Bandis", "Method used to determine fracture aperture: 0 = Uniform Aperture, 1 = Size Dependent, 2 = Dynamic Aperture, 3 = Barton-Bandis")]
             public int Argument_FractureApertureControl
             {
                 internal get { return this.argument_FractureApertureControl; }
@@ -3660,7 +3971,8 @@ namespace DFNGenerator_Ocean
 
         public string Text
         {
-            get { return Description.Name; }
+            //get { return Description.Name; }
+            get { return "DFN Generator"; }
             private set 
             {
                 // TODO: implement set
@@ -3677,7 +3989,8 @@ namespace DFNGenerator_Ocean
 
         public System.Drawing.Bitmap Image
         {
-            get { return PetrelImages.Modules; }
+            //get { return PetrelImages.Modules; }
+            get { return PetrelImages.PolylineSet; }
             private set 
             {
                 // TODO: implement set

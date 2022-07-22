@@ -9,7 +9,7 @@ namespace DFNGenerator_Ocean
     {
         public override string AppVersion
         {
-            get { return "2017.0"; }
+            get { return "2020.0"; }
         }
 
         public override string Author
@@ -39,7 +39,7 @@ namespace DFNGenerator_Ocean
 
         public override Uri PluginUri
         {
-            get { return new Uri("http://www.oilgas.dtu.dk/"); }
+            get { return new Uri("https://offshore.dtu.dk/english"); }
         }
 
         public override IEnumerable<ModuleReference> Modules

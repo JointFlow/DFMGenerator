@@ -23,13 +23,13 @@ EhminAzi 0
 % Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
 % EhminCurvature is the difference in strain orientation between adjacent blocks in radians
 VariableStrainOrientation false
-EhminCurvature 0.1963495
+EhminCurvature 0,1963495
 % Strain rates; units determined by ModelTimeUnits (i.e. strain/s, strain/year or strain/ma)
 % Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
 % With no strain relaxation, strain rate will control rate of horizontal stress increase
 % With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
 % EhminRate is most tensile (i.e. most negative) horizontal strain rate
-EhminRate -0.01
+EhminRate -0,01
 % Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
 EhmaxRate 0
 % Set VariableStrainMagnitude to add random variation to the input strain rates
@@ -43,9 +43,9 @@ ModelTimeUnits ma
 YoungsMod 1E+10
 % Set VariableYoungsMod true to have laterally variable Young's Modulus
 VariableYoungsMod false
-PoissonsRatio 0.25
+PoissonsRatio 0,25
 BiotCoefficient 1
-FrictionCoefficient 0.5
+FrictionCoefficient 0,5
 % Set VariableFriction true to have laterally variable friction coefficient
 VariableFriction false
 % Crack surface energy in J/m2
@@ -59,7 +59,7 @@ RockStrainRelaxation 0
 % Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
 FractureRelaxation 0
 % Density of initial microfractures
-InitialMicrofractureDensity 0.001
+InitialMicrofractureDensity 0,001
 % Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
 InitialMicrofractureSizeDistribution 2
 % Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
@@ -110,13 +110,13 @@ CalculateFracturePorosity true
 FractureApertureControl Uniform
 % Fracture aperture control parameters: Uniform fracture aperture
 % Fixed aperture for Mode 1 fractures striking perpendicular to hmin in the uniform aperture case (m)
-Mode1HMin_UniformAperture 0.0005
+Mode1HMin_UniformAperture 0,0005
 % Fixed aperture for Mode 2 fractures striking perpendicular to hmin in the uniform aperture case (m)
-Mode2HMin_UniformAperture 0.0005
+Mode2HMin_UniformAperture 0,0005
 % Fixed aperture for Mode 1 fractures striking perpendicular to hmax in the uniform aperture case (m)
-Mode1HMax_UniformAperture 0.0005
+Mode1HMax_UniformAperture 0,0005
 % Fixed aperture for Mode 2 fractures striking perpendicular to hmax in the uniform aperture case (m)
-Mode2HMax_UniformAperture 0.0005
+Mode2HMax_UniformAperture 0,0005
 % Fracture aperture control parameters: SizeDependent fracture aperture
 % Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
 Mode1HMin_SizeDependentApertureMultiplier 1E-5
@@ -137,9 +137,9 @@ UCSRatio 2
 % Initial normal strength on fracture
 InitialNormalStress 2E+5
 % Stiffness normal to the fracture, at initial normal stress
-FractureNormalStiffness 2.5E+9
+FractureNormalStiffness 2,5E+9
 % Maximum fracture closure (m)
-MaximumClosure 0.0005
+MaximumClosure 0,0005
 
 % Calculation control parameters
 % Number of fracture sets
@@ -164,7 +164,7 @@ AllowReverseFractures false
 MaxTimestepDuration -1
 % Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
 % Increase this to run calculation faster, with fewer but longer timesteps
-MaxTimestepMFP33Increase 0.002
+MaxTimestepMFP33Increase 0,002
 % Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)
 % If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
 % If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -194,7 +194,7 @@ Current_HistoricMFP33TerminationRatio -1
 % Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
 Active_TotalMFP30TerminationRatio -1
 % Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-MinimumClearZoneVolume 0.01
+MinimumClearZoneVolume 0,01
 % Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing
 % Set DeformationStageDuration to -1 to continue until fracture saturation is reached
 DeformationStageDuration -1
@@ -208,7 +208,7 @@ CropAtBoundary true
 LinkStressShadows false
 % Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set
 % Set to Pi/4 radians (45 degrees) by default
-MaxConsistencyAngle 0.78539816
+MaxConsistencyAngle 0,78539816
 % Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value
 % Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
 MinimumLayerThickness 0

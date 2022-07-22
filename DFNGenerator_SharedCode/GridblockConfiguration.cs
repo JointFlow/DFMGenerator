@@ -1843,21 +1843,31 @@ namespace DFNGenerator_SharedCode
             }
         }
         /// <summary>
-        /// Bulk rock compliance tensor
+        /// Bulk rock compliance tensor - includes fractures and intact rock
         /// </summary>
         public Tensor4_2Sx2S S_b
         {
             // This is not stored as a separate object but is calculated dynamically from the compliance tensors for the fractures and for the intact rock when required
-            // The exact calculation will depend on the stress distribution scenario
+            get
+            {
+                return S_F + MechProps.S_r;
+            }
+        }
+        /// <summary>
+        /// Effective bulk rock compliance tensor - compliance tensor for the rockmass excluding stress shadows
+        /// </summary>
+        public Tensor4_2Sx2S S_beff
+        {
+            // This is equal to the bulk rock compliance tensor in the evenly distributed stress scenario, and the intact rock compliance tensor for the stress shadow scenario
             get
             {
                 switch (PropControl.StressDistributionCase)
                 {
                     case StressDistribution.EvenlyDistributedStress:
-                        // For evenly distributed stress, the bulk rock compliance tensor is the sum of the compliance tensors for the fractures and for the intact rock
-                        return S_F + MechProps.S_r;
+                        // For evenly distributed stress, there are no stress shadows so the effective bulk rock compliance tensor is the sum of the compliance tensors for the fractures and for the intact rock
+                        return S_b;
                     case StressDistribution.StressShadow:
-                        // With stress shadows, the fractures have no effect on the bulk rock elastic properties, so the bulk rock compliance tensor is equal to the compliance tensor for the intact rock
+                        // With stress shadows, the strain on the fractures is accommodated within the stress shadows, which are not included in the effective bulk rock compliance tensor; therefore this is equal to the compliance tensor for the intact rock
                         return new Tensor4_2Sx2S(MechProps.S_r);
                     case StressDistribution.DuctileBoundary:
                         // Not yet implemented - return compliance tensor for the intact rock
@@ -1932,8 +1942,8 @@ namespace DFNGenerator_SharedCode
             // Output control criteria
             // Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor
             bool CalculateRelaxedStrainPartitioning = PropControl.CalculateRelaxedStrainPartitioning;
-            // Flag to output the bulk rock compliance tensor
-            bool OutputComplianceTensor = PropControl.OutputComplianceTensor;
+            // Flag to output the bulk rock compliance and stiffness tensors
+            bool OutputBulkRockElasticTensors = PropControl.OutputBulkRockElasticTensors;
             // Flag to calculate full fracture cumulative population distribution function; if false, will only calculate total cumulative properties (i.e. r = 0 and l = 0)
             bool CalculatePopulationDistributionData = PropControl.CalculatePopulationDistributionData;
             // Flag to calculate and output fracture porosity
@@ -1989,15 +1999,25 @@ namespace DFNGenerator_SharedCode
                     headerLine2 += "\t\t\t\t\t\t\t\t";
                     TS0data += "0\t0\t0\t0\t0\t0\t0\t0\t";
                 }
-                if (OutputComplianceTensor)
+                if (OutputBulkRockElasticTensors)
                 {
-                    headerLine1 += "Bulk rock compliance tensor\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
                     Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                    // Header for compliance tensor
+                    headerLine1 += "Bulk rock compliance tensor\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
                     foreach (Tensor2SComponents ij in tensorComponents)
                         foreach (Tensor2SComponents kl in tensorComponents)
                         {
                             headerLine2 += ij + "," + kl + "\t";
                             TS0data += string.Format("{0}\t", MechProps.S_r.Component(ij, kl));
+                        }
+                    // Header for stiffness tensor
+                    Tensor4_2Sx2S C_r = MechProps.S_r.Inverse();
+                    headerLine1 += "Bulk rock stiffness tensor\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+                    foreach (Tensor2SComponents ij in tensorComponents)
+                        foreach (Tensor2SComponents kl in tensorComponents)
+                        {
+                            headerLine2 += ij + "," + kl + "\t";
+                            TS0data += string.Format("{0}\t", C_r.Component(ij, kl));
                         }
                 }
 
@@ -2126,7 +2146,7 @@ namespace DFNGenerator_SharedCode
                             // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation on the fractures
                             // Note that when the elastic strain accommodated on the fractures [given by depf_depel * bulk rock elastic strain] equals the applied strain rate times tf,
                             // the rate of change of elastic strain will be zero; this represents equilibrium.
-                            Tensor4_2Sx2S depf_depel = S_F / S_b;
+                            Tensor4_2Sx2S depf_depel = S_F / S_beff;
                             Tensor2S f_epsilon_noncomp = (depf_depel * el_epsilon_noncomp);
                             StressStrain.el_Epsilon_dashed = AppliedStrainRate - (f_epsilon_noncomp / tf);
 
@@ -2182,7 +2202,7 @@ namespace DFNGenerator_SharedCode
                     case StressDistribution.EvenlyDistributedStress:
                         // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
                         // We must therefore use partial inversion of the current bulk rock compliance tensor to recalculate the stress tensors
-                        StressStrain.RecalculateEffectiveStressState(S_b);
+                        StressStrain.RecalculateEffectiveStressState(S_beff);
                         break;
                     case StressDistribution.StressShadow:
                         // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
@@ -2325,7 +2345,7 @@ namespace DFNGenerator_SharedCode
 
                                 // The proportion of this relaxed strain accommodated on the fractures is given by the ratio of the fracture compliance tensor to the bulk rock compliance tensor
                                 // NB by calculating this now, we will include the effect of any growth in the fractures during this timestep; this may therefore give a slightly different result than if calculated at the start of the timestep 
-                                Tensor4_2Sx2S depf_depel = S_F / S_b;
+                                Tensor4_2Sx2S depf_depel = S_F / S_beff;
                                 StressStrain.rel_Epsilon_f += (depf_depel * relaxedStrain);
                             }
                             break;
@@ -2408,17 +2428,24 @@ namespace DFNGenerator_SharedCode
                         string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis]);
                         timestepData += porosityData;
                     }
-                    if (OutputComplianceTensor)
+                    if (OutputBulkRockElasticTensors)
                     {
+                        // NB here we output the bulk rock compliance tensor rather than the effective bulk rock compliance tensor. This will include the effect of the fractures, even in the stress shadow scenario
+                        // We will also output the bulk rock stiffness tensor, obtained by inverting the compliance tensor
                         string complianceTensorComponents = "";
+                        string stiffnessTensorComponents = "";
                         Tensor4_2Sx2S complianceTensor = S_b;
+                        Tensor4_2Sx2S stiffnessTensor = complianceTensor.Inverse();
+
                         Tensor2SComponents[] tensorComponents= new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
                         foreach (Tensor2SComponents ij in tensorComponents)
                             foreach (Tensor2SComponents kl in tensorComponents)
                             {
                                 complianceTensorComponents += string.Format("{0}\t", complianceTensor.Component(ij, kl));
+                                stiffnessTensorComponents += string.Format("{0}\t", stiffnessTensor.Component(ij, kl));
                             }
                         timestepData += complianceTensorComponents;
+                        timestepData += stiffnessTensorComponents;
                     }
 
                     // Write timestep data to log file

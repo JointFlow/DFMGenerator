@@ -8,9 +8,9 @@ using Slb.Ocean.Petrel;
 
 namespace DFNGenerator_Ocean
 {
-    class CommandHandler2 : SimpleCommandHandler
+    class LaunchDFNGenerator : SimpleCommandHandler
     {
-        public static string ID = "OceanDFN.NewCommand2";
+        public static string ID = "DFNGenerator_Ocean.LaunchDFNGenerator";
 
         #region SimpleCommandHandler Members
 
@@ -22,7 +22,6 @@ namespace DFNGenerator_Ocean
         public override void Execute(Slb.Ocean.Petrel.Contexts.Context context)
         {          
             //TODO: Add command execution logic here
-            PetrelLogger.InfoOutputWindow(string.Format("{0} clicked", @"NewCommand" ));
         }
     
         #endregion
