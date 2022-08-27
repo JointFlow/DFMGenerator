@@ -11,8 +11,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Pip_builder</RootNamespace>
     <AssemblyName>Pip_builder</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -57,7 +58,7 @@
     <PreBuildEvent>mkdir "$(TargetDir)"
 rmdir "$(ProjectDir)\obj\copytemp" /s /q
 "$(ProjectDir)\DeployCopier.exe" "$(ProjectDir)DeployList.xml" "$(ProjectDir)\obj\copytemp" /config:$(ConfigurationName) /platform:"$(PlatformName)"</PreBuildEvent>
-    <PostBuildEvent>"%25Ocean2016Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2016.pip" "%25Ocean2016Home%25\petrel.exe"</PostBuildEvent>
+    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2020.pip" "%25Ocean2020Home%25\petrel.exe"</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

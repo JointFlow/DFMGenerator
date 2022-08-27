@@ -72,6 +72,20 @@ namespace DFNGenerator_Ocean
         {
             // Add Ribbon Configuration file
             PetrelSystem.ConfigurationService.AddConfiguration(DFNGenerator_Ocean.Properties.Resources.DFNGeneratorConfig);
+
+            // Add help content via PetrelSystem.HelpService
+            string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            HelpService helpService = PetrelSystem.HelpService;
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"))
+            {
+                Text = "DFN Generator Help",
+            };
+            helpService.Add(helpContentMain);
+            /*PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"))
+            {
+                Text = "DFN Generator Help, pdf format",
+            };
+            helpService.Add(helpContentPDF);*/
         }
 
         /// <summary>
@@ -84,6 +98,12 @@ namespace DFNGenerator_Ocean
             // Unregister DFNGenerator_Ocean.DFNGenerator
             PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>();
             PetrelSystem.ProcessDiagram.Remove(m_dfngeneratorInstance);
+
+            // Remove the help content
+            string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            HelpService helpService = PetrelSystem.HelpService;
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"));
+            helpService.Remove(helpContentMain);
         }
 
         #endregion

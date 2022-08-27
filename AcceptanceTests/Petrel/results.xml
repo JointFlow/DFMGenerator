@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ManualTestResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <ManualTestCases>
+    <ManualTestCase Id="1.1">Pending</ManualTestCase>
+    <ManualTestCase Id="1.4">Pending</ManualTestCase>
+    <ManualTestCase Id="1.8">Pending</ManualTestCase>
+    <ManualTestCase Id="2.1">Pending</ManualTestCase>
+    <ManualTestCase Id="2.2">Pending</ManualTestCase>
+    <ManualTestCase Id="3.1">Pending</ManualTestCase>
+    <ManualTestCase Id="3.2">Pending</ManualTestCase>
+    <ManualTestCase Id="3.3">Pending</ManualTestCase>
+    <ManualTestCase Id="3.4">Pending</ManualTestCase>
+    <ManualTestCase Id="4.4">Pending</ManualTestCase>
+    <ManualTestCase Id="4.5">Pending</ManualTestCase>
+    <ManualTestCase Id="5.1">Pending</ManualTestCase>
+    <ManualTestCase Id="5.2">Pending</ManualTestCase>
+    <ManualTestCase Id="5.3">Pending</ManualTestCase>
+    <ManualTestCase Id="5.6">Pending</ManualTestCase>
+    <ManualTestCase Id="5.7">Pending</ManualTestCase>
+    <ManualTestCase Id="6.1">Pending</ManualTestCase>
+    <ManualTestCase Id="6.2">Pending</ManualTestCase>
+    <ManualTestCase Id="6.3">Pending</ManualTestCase>
+    <ManualTestCase Id="6.4">Pending</ManualTestCase>
+    <ManualTestCase Id="6.5">Pending</ManualTestCase>
+    <ManualTestCase Id="6.6">Pending</ManualTestCase>
+    <ManualTestCase Id="6.7">Pending</ManualTestCase>
+    <ManualTestCase Id="6.8">Pending</ManualTestCase>
+    <ManualTestCase Id="6.9">Pending</ManualTestCase>
+    <ManualTestCase Id="6.10">Pending</ManualTestCase>
+    <ManualTestCase Id="6.11">Pending</ManualTestCase>
+    <ManualTestCase Id="6.12">Pending</ManualTestCase>
+    <ManualTestCase Id="6.13">Pending</ManualTestCase>
+    <ManualTestCase Id="6.14">Pending</ManualTestCase>
+    <ManualTestCase Id="6.15">Pending</ManualTestCase>
+    <ManualTestCase Id="6.16">Pending</ManualTestCase>
+    <ManualTestCase Id="6.17">Pending</ManualTestCase>
+    <ManualTestCase Id="6.18">Pending</ManualTestCase>
+    <ManualTestCase Id="6.19">Pending</ManualTestCase>
+    <ManualTestCase Id="6.20">Pending</ManualTestCase>
+    <ManualTestCase Id="6.21">Pending</ManualTestCase>
+    <ManualTestCase Id="6.22">Pending</ManualTestCase>
+    <ManualTestCase Id="6.23">Pending</ManualTestCase>
+    <ManualTestCase Id="6.24">Pending</ManualTestCase>
+  </ManualTestCases>
+</ManualTestResults>
