@@ -81,11 +81,11 @@ namespace DFNGenerator_Ocean
                 Text = "DFN Generator Help",
             };
             helpService.Add(helpContentMain);
-            /*PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"))
+            PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"))
             {
                 Text = "DFN Generator Help, pdf format",
             };
-            helpService.Add(helpContentPDF);*/
+            helpService.Add(helpContentPDF);
         }
 
         /// <summary>

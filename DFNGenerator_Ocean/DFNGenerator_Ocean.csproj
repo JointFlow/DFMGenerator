@@ -41,7 +41,8 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>DFNGeneratorKey.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Slb.Ocean.Basics">
@@ -147,7 +148,6 @@
     <EmbeddedResource Include="OceanResources\DFNGeneratorConfig.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DFNGeneratorKey.snk" />
     <None Include="Resources\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm" />
   </ItemGroup>
   <ItemGroup>
