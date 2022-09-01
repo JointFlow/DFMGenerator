@@ -830,12 +830,12 @@ namespace DFNGenerator_Ocean
             // if the Include oblique fractures checkbox on the Main tab is checked, and enable them if the Include oblique fractures checkbox is unchecked
             EnableNoFractureSets();
         }
-        #endregion
 
         private void unitTextBox_InitialMicrofractureSizeDistribution_default_ValueChanged(object sender, EventArgs e)
         {
             // Recalculate and display the InitialMicrofractureDensity units
             SetInitialMicrofractureDensityUnits();
         }
+        #endregion
     }
 }

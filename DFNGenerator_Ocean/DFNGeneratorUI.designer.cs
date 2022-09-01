@@ -1110,7 +1110,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_InitialMicrofractureDensity
             // 
-            this.toolTipHotspot_InitialMicrofractureDensity.Location = new System.Drawing.Point(689, 234);
+            this.toolTipHotspot_InitialMicrofractureDensity.Location = new System.Drawing.Point(700, 234);
             this.toolTipHotspot_InitialMicrofractureDensity.Name = "toolTipHotspot_InitialMicrofractureDensity";
             this.toolTipHotspot_InitialMicrofractureDensity.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_InitialMicrofractureDensity.TabIndex = 81;
@@ -1121,7 +1121,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_FrictionCoefficient
             // 
-            this.toolTipHotspot_FrictionCoefficient.Location = new System.Drawing.Point(689, 121);
+            this.toolTipHotspot_FrictionCoefficient.Location = new System.Drawing.Point(700, 121);
             this.toolTipHotspot_FrictionCoefficient.Name = "toolTipHotspot_FrictionCoefficient";
             this.toolTipHotspot_FrictionCoefficient.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FrictionCoefficient.TabIndex = 80;
@@ -1228,7 +1228,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_FractureStrainRelaxation
             // 
-            this.toolTipHotspot_FractureStrainRelaxation.Location = new System.Drawing.Point(689, 205);
+            this.toolTipHotspot_FractureStrainRelaxation.Location = new System.Drawing.Point(700, 205);
             this.toolTipHotspot_FractureStrainRelaxation.Name = "toolTipHotspot_FractureStrainRelaxation";
             this.toolTipHotspot_FractureStrainRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FractureStrainRelaxation.TabIndex = 66;
@@ -1239,7 +1239,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_AverageMechanicalPropertyData
             // 
-            this.toolTipHotspot_AverageMechanicalPropertyData.Location = new System.Drawing.Point(274, 355);
+            this.toolTipHotspot_AverageMechanicalPropertyData.Location = new System.Drawing.Point(310, 355);
             this.toolTipHotspot_AverageMechanicalPropertyData.Name = "toolTipHotspot_AverageMechanicalPropertyData";
             this.toolTipHotspot_AverageMechanicalPropertyData.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AverageMechanicalPropertyData.TabIndex = 65;
@@ -1250,7 +1250,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_SubcriticalPropagationIndex
             // 
-            this.toolTipHotspot_SubcriticalPropagationIndex.Location = new System.Drawing.Point(631, 291);
+            this.toolTipHotspot_SubcriticalPropagationIndex.Location = new System.Drawing.Point(700, 291);
             this.toolTipHotspot_SubcriticalPropagationIndex.Name = "toolTipHotspot_SubcriticalPropagationIndex";
             this.toolTipHotspot_SubcriticalPropagationIndex.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SubcriticalPropagationIndex.TabIndex = 64;
@@ -1261,7 +1261,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_RockStrainRelaxation
             // 
-            this.toolTipHotspot_RockStrainRelaxation.Location = new System.Drawing.Point(689, 177);
+            this.toolTipHotspot_RockStrainRelaxation.Location = new System.Drawing.Point(700, 177);
             this.toolTipHotspot_RockStrainRelaxation.Name = "toolTipHotspot_RockStrainRelaxation";
             this.toolTipHotspot_RockStrainRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_RockStrainRelaxation.TabIndex = 63;
@@ -1286,9 +1286,9 @@ namespace DFNGenerator_Ocean
             this.checkBox_AverageMechanicalPropertyData.AutoSize = true;
             this.checkBox_AverageMechanicalPropertyData.Location = new System.Drawing.Point(19, 358);
             this.checkBox_AverageMechanicalPropertyData.Name = "checkBox_AverageMechanicalPropertyData";
-            this.checkBox_AverageMechanicalPropertyData.Size = new System.Drawing.Size(243, 17);
+            this.checkBox_AverageMechanicalPropertyData.Size = new System.Drawing.Size(285, 17);
             this.checkBox_AverageMechanicalPropertyData.TabIndex = 61;
-            this.checkBox_AverageMechanicalPropertyData.Text = "Average mechanical properties across all cells";
+            this.checkBox_AverageMechanicalPropertyData.Text = "Average mechanical properties across all grid (K) layers";
             this.checkBox_AverageMechanicalPropertyData.UseVisualStyleBackColor = true;
             // 
             // label_CriticalPropagationRate
@@ -1821,7 +1821,7 @@ namespace DFNGenerator_Ocean
             // 
             // toolTipHotspot_AverageStressStrainData
             // 
-            this.toolTipHotspot_AverageStressStrainData.Location = new System.Drawing.Point(253, 184);
+            this.toolTipHotspot_AverageStressStrainData.Location = new System.Drawing.Point(289, 184);
             this.toolTipHotspot_AverageStressStrainData.Name = "toolTipHotspot_AverageStressStrainData";
             this.toolTipHotspot_AverageStressStrainData.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AverageStressStrainData.TabIndex = 17;
@@ -1868,9 +1868,9 @@ namespace DFNGenerator_Ocean
             this.checkBox_AverageStressStrainData.AutoSize = true;
             this.checkBox_AverageStressStrainData.Location = new System.Drawing.Point(18, 187);
             this.checkBox_AverageStressStrainData.Name = "checkBox_AverageStressStrainData";
-            this.checkBox_AverageStressStrainData.Size = new System.Drawing.Size(223, 17);
+            this.checkBox_AverageStressStrainData.Size = new System.Drawing.Size(265, 17);
             this.checkBox_AverageStressStrainData.TabIndex = 12;
-            this.checkBox_AverageStressStrainData.Text = "Average stress/strain state across all cells";
+            this.checkBox_AverageStressStrainData.Text = "Average stress/strain state across all grid (K) layers\r\n";
             this.checkBox_AverageStressStrainData.UseVisualStyleBackColor = true;
             // 
             // label_InitialStressRelaxation
@@ -2735,7 +2735,7 @@ namespace DFNGenerator_Ocean
             this.toolTipHotspot_MaxTSDuration.Name = "toolTipHotspot_MaxTSDuration";
             this.toolTipHotspot_MaxTSDuration.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MaxTSDuration.TabIndex = 20;
-            toolTipItem50.Text = "Maximum duration for individual timesteps; leave blank for no maximum timestep du" +
+            toolTipItem50.Text = "Maximum duration for individual timesteps. Leave blank for no maximum timestep du" +
     "ration.";
             toolTipInfo39.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem50});
@@ -3217,8 +3217,9 @@ namespace DFNGenerator_Ocean
     " or propagate without overlapping the stress shadow of another macrofracture) dr" +
     "ops below a specified minimum.";
             toolTipItem72.Text = resources.GetString("toolTipItem72.Text");
-            toolTipItem73.Text = "To stop the calculation while fractures are still growing, reduce the maximum def" +
-    "ormation episode duration.";
+            toolTipItem73.Text = "To stop the calculation while fractures are still growing, set a maximum deformat" +
+    "ion episode duration. If this is blank, there will be no time limit to the defor" +
+    "mation episode.";
             toolTipItem74.Text = "The maximum timestep limit is designed to prevent models hanging if termination c" +
     "riteria are not met. If models are failing to run to completion, try increasing " +
     "this limit.";
@@ -3316,9 +3317,9 @@ namespace DFNGenerator_Ocean
             this.label_MaxTSDuration.AutoSize = true;
             this.label_MaxTSDuration.Location = new System.Drawing.Point(17, 120);
             this.label_MaxTSDuration.Name = "label_MaxTSDuration";
-            this.label_MaxTSDuration.Size = new System.Drawing.Size(198, 13);
+            this.label_MaxTSDuration.Size = new System.Drawing.Size(113, 13);
             this.label_MaxTSDuration.TabIndex = 4;
-            this.label_MaxTSDuration.Text = "Max timestep duration (blank for no limit):";
+            this.label_MaxTSDuration.Text = "Max timestep duration:";
             // 
             // label_HorizontalUpscalingFactor
             // 

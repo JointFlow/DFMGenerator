@@ -56,7 +56,7 @@ namespace DFNGenerator_Ocean
             PetrelSystem.WorkflowEditor.AddUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>(new DFNGenerator_Ocean.DFNGenerator.UIFactory());
             PetrelSystem.WorkflowEditor.Add(dfngeneratorInstance);
             m_dfngeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfngeneratorInstance);
-            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Plug-ins");
+            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Fracture network modeling");
 
             // Register LaunchDFNGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
@@ -174,7 +174,7 @@ namespace DFNGenerator_Ocean
                 TemplateCollection fractureIntensityTemplateCollection = PetrelProject.WellKnownTemplateCollections.FractureProperty;
 
                 // Create a name for the new templates; if there is already a template with that name, return that instead
-                string templateName = "P30FractureIntensity";
+                string templateName = "P30 Fracture Intensity";
                 Template existingTemplate = PetrelSystem.TemplateService.FindTemplateByName(templateName);
                 if (existingTemplate != null)
                     return existingTemplate;
@@ -228,7 +228,7 @@ namespace DFNGenerator_Ocean
                 TemplateCollection fractureIntensityTemplateCollection = PetrelProject.WellKnownTemplateCollections.FractureProperty;
 
                 // Create a name for the new templates; if there is already a template with that name, return that instead
-                string templateName = "P32FractureIntensity";
+                string templateName = "P32 Fracture Intensity";
                 Template existingTemplate = PetrelSystem.TemplateService.FindTemplateByName(templateName);
                 if (existingTemplate != null)
                     return existingTemplate;
