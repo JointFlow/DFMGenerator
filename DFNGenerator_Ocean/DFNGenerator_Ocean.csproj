@@ -66,6 +66,10 @@
     <Reference Include="Slb.Ocean.Petrel.Configuration">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Configuration.dll</HintPath>
     </Reference>
+    <Reference Include="Slb.Ocean.Petrel.Data.Persistence, Version=20.1.0.0, Culture=neutral, PublicKeyToken=14ef4a483ef6a64b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Data.Persistence.dll</HintPath>
+    </Reference>
     <Reference Include="Slb.Ocean.Petrel.DomainObject.FrameworkModeling">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObject.FrameworkModeling.dll</HintPath>
     </Reference>
@@ -100,6 +104,7 @@
     <Reference Include="System.Deployment" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DFNGeneratorDataSourceFactory.cs" />
     <Compile Include="LaunchDFNGenerator.cs" />
     <Compile Include="DFNGenerator.cs" />
     <Compile Include="DFNGeneratorUI.cs">

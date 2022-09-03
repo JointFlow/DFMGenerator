@@ -19,6 +19,7 @@ namespace DFNGenerator_Ocean
     public class DFNModule2 : IModule
     {
         private Process m_dfngeneratorInstance;
+        private DFNGeneratorDataSourceFactory m_dfngeneratorDataSourceFactory;
         public DFNModule2()
         {
             //
@@ -61,6 +62,10 @@ namespace DFNGenerator_Ocean
             // Register LaunchDFNGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
             PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.LaunchDFNGenerator.ID, new DFNGenerator_Ocean.LaunchDFNGenerator());
+
+            // Register the custom DFNGeneratorDataSourceFactory
+            m_dfngeneratorDataSourceFactory = new DFNGeneratorDataSourceFactory();
+            PetrelSystem.AddDataSourceFactory(m_dfngeneratorDataSourceFactory);
         }
 
         /// <summary>
@@ -104,6 +109,9 @@ namespace DFNGenerator_Ocean
             HelpService helpService = PetrelSystem.HelpService;
             PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"));
             helpService.Remove(helpContentMain);
+
+            // Unregister the custom DFNGeneratorDataSourceFactory
+            PetrelSystem.RemoveDataSourceFactory(m_dfngeneratorDataSourceFactory);
         }
 
         #endregion

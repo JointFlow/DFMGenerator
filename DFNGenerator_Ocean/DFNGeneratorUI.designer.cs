@@ -175,6 +175,8 @@ namespace DFNGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem73 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem74 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo55 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem75 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             this.btnApply = new System.Windows.Forms.Button();
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -450,6 +452,7 @@ namespace DFNGenerator_Ocean
             this.label_HorizontalUpscalingFactor = new System.Windows.Forms.Label();
             this.label_FractureMode = new System.Windows.Forms.Label();
             this.toolTipManager_DFNGenerator = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
+            this.btnRestoreDefaults = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoIntermediateOutputs)).BeginInit();
@@ -515,7 +518,7 @@ namespace DFNGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 5;
+            this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
             this.tabControl1.TabPages.AddRange(new Slb.Ocean.Petrel.UI.Controls.TabPage[] {
@@ -3339,10 +3342,27 @@ namespace DFNGenerator_Ocean
             this.label_FractureMode.TabIndex = 0;
             this.label_FractureMode.Text = "Fracture mode:";
             // 
+            // btnRestoreDefaults
+            // 
+            this.btnRestoreDefaults.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnRestoreDefaults.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnRestoreDefaults.Location = new System.Drawing.Point(10, 439);
+            this.btnRestoreDefaults.Name = "btnRestoreDefaults";
+            this.btnRestoreDefaults.Size = new System.Drawing.Size(114, 23);
+            this.btnRestoreDefaults.TabIndex = 4;
+            this.btnRestoreDefaults.Text = "Restore defaults";
+            toolTipItem75.Text = "Reset all input parameters to default values";
+            toolTipInfo55.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem75});
+            this.toolTipManager_DFNGenerator.SetToolTip(this.btnRestoreDefaults, toolTipInfo55);
+            this.btnRestoreDefaults.UseVisualStyleBackColor = true;
+            this.btnRestoreDefaults.Click += new System.EventHandler(this.btnRestoreDefaults_Click);
+            // 
             // DFNGeneratorUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.btnRestoreDefaults);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnApply);
@@ -3662,5 +3682,6 @@ namespace DFNGenerator_Ocean
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DeformationDuration;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_InitialMicrofractureDensity;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_FrictionCoefficient;
+        private System.Windows.Forms.Button btnRestoreDefaults;
     }
 }

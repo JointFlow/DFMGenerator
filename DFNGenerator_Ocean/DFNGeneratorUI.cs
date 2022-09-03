@@ -836,6 +836,13 @@ namespace DFNGenerator_Ocean
             // Recalculate and display the InitialMicrofractureDensity units
             SetInitialMicrofractureDensityUnits();
         }
+
+        private void btnRestoreDefaults_Click(object sender, EventArgs e)
+        {
+            // Restore all arguments to their default values, then repopulate the dialog
+            args.ResetDefaults();
+            updateUIFromArgs();
+        }
         #endregion
     }
 }

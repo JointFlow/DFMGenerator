@@ -13,6 +13,8 @@ using Slb.Ocean.Petrel;
 using Slb.Ocean.Petrel.UI;
 using Slb.Ocean.Petrel.Workflow;
 using Slb.Ocean.Petrel.DomainObject.PillarGrid;
+using Slb.Ocean.Petrel.Data;
+using Slb.Ocean.Petrel.Data.Persistence;
 using Slb.Ocean.Basics;
 using Slb.Ocean.Geometry;
 using Slb.Ocean.Petrel.DomainObject;
@@ -1821,6 +1823,8 @@ namespace DFNGenerator_Ocean
                             PetrelLogger.InfoOutputWindow("Start generating explicit DFN");
                             progressBar.SetProgressText("Generating explicit DFN");
                             ModelGrid.GenerateDFN(progressBarWrapper);
+                            if (ModelGrid.DFNThicknessCutoffActivated)
+                                PetrelLogger.InfoOutputWindow("The explicit DFN was not generated in one or more cells due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.");
                         }
 
                         // If the calculation has already been cancelled, do not write any output data
@@ -1932,7 +1936,7 @@ namespace DFNGenerator_Ocean
                                             string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
                                             PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
 
-                                            // Get templates for each property
+                                            // Create properties and set templates for each property
                                             Property MF_P30_tot = FracSetData.CreateProperty(P30Template);
                                             MF_P30_tot.Name = "Layer_bound_fracture_P30";
                                             Property MF_P32_tot = FracSetData.CreateProperty(P32Template);
@@ -1941,6 +1945,16 @@ namespace DFNGenerator_Ocean
                                             uF_P32_tot.Name = "Microfracture_P32";
                                             Property MF_MeanLength = FracSetData.CreateProperty(LengthTemplate);
                                             MF_MeanLength.Name = "Mean_fracture_length";
+
+                                            // Add creation event to each property
+                                            IHistoryInfoEditor MF_P30_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P30_tot);
+                                            IHistoryInfoEditor MF_P32_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P32_tot);
+                                            IHistoryInfoEditor uF_P32_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_P32_tot);
+                                            IHistoryInfoEditor MF_MeanLengthHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_MeanLength);
+                                            MF_P30_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_P32_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            uF_P32_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_MeanLengthHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                             // Loop through all columns and rows in the Fracture Grid
                                             // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
@@ -2031,7 +2045,7 @@ namespace DFNGenerator_Ocean
                                             // If required, write fracture connectivity data to Petrel grid
                                             if (CalculateFractureConnectivityAnisotropy)
                                             {
-                                                // Get templates for each property
+                                                // Create properties and set templates for each property
                                                 Property MF_UnconnectedTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
                                                 MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
                                                 Property MF_RelayTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
@@ -2040,6 +2054,16 @@ namespace DFNGenerator_Ocean
                                                 MF_ConnectedTipRatio.Name = "Connected_fracture_tip_ratio";
                                                 Property EndDeformationTime = FracSetData.CreateProperty(DeformationTimeTemplate);
                                                 EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+
+                                                // Add creation event to each property
+                                                IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
+                                                IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
+                                                IHistoryInfoEditor MF_ConnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_ConnectedTipRatio);
+                                                IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
+                                                MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_ConnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                                 // Loop through all columns and rows in the Fracture Grid
                                                 // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
@@ -2141,7 +2165,7 @@ namespace DFNGenerator_Ocean
                                         string CollectionName = "Fracture_Anisotropy";
                                         PropertyCollection FracAnisotropyData = FracData.CreatePropertyCollection(CollectionName);
 
-                                        // Get templates for each property
+                                        // Create properties and set templates for each property
                                         Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
                                         P32_Anisotropy.Name = "P32_anisotropy";
                                         Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
@@ -2157,6 +2181,20 @@ namespace DFNGenerator_Ocean
                                         MF_ConnectedTipRatio.Name = "Connected_fracture_tip_ratio";
                                         Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
                                         EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+
+                                        // Add creation event to each property
+                                        IHistoryInfoEditor P32_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P32_Anisotropy);
+                                        IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
+                                        IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
+                                        IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
+                                        IHistoryInfoEditor MF_ConnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_ConnectedTipRatio);
+                                        IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
+                                        P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        MF_ConnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                         // Loop through all columns and rows in the Fracture Grid
                                         // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
@@ -2329,7 +2367,7 @@ namespace DFNGenerator_Ocean
                                         string CollectionName = "Fracture_Porosity";
                                         PropertyCollection FracPorosityData = FracData.CreatePropertyCollection(CollectionName);
 
-                                        // Create templates for microfracture and macrofracture porosity and combined P32 values
+                                        // Create properties and set templates for microfracture and macrofracture porosity and combined P32 values
                                         Property uF_P32combined = FracPorosityData.CreateProperty(P32Template);
                                         Property MF_P32combined = FracPorosityData.CreateProperty(P32Template);
                                         Property uF_Porosity = FracPorosityData.CreateProperty(PorosityTemplate);
@@ -2359,6 +2397,16 @@ namespace DFNGenerator_Ocean
                                             default:
                                                 break;
                                         }
+
+                                        // Add creation event to each property
+                                        IHistoryInfoEditor uF_P32combinedHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_P32combined);
+                                        IHistoryInfoEditor MF_P32combinedHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P32combined);
+                                        IHistoryInfoEditor uF_PorosityHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_Porosity);
+                                        IHistoryInfoEditor MF_PorosityHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_Porosity);
+                                        uF_P32combinedHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        MF_P32combinedHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        uF_PorosityHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        MF_PorosityHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                         // Loop through all columns and rows in the Fracture Grid
                                         // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
@@ -2468,7 +2516,7 @@ namespace DFNGenerator_Ocean
                                         string StiffnessTensorCollectionName = "Bulk rock stiffness tensor";
                                         PropertyCollection StiffnessTensorData = FracData.CreatePropertyCollection(StiffnessTensorCollectionName);
 
-                                        // Get templates for each component of both tensors
+                                        // Create properties and set templates for each component of both tensors
                                         Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> ComplianceTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
                                         Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> StiffnessTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
                                         Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
@@ -2480,9 +2528,14 @@ namespace DFNGenerator_Ocean
                                             {
                                                 Property ComplianceTensor_ijkl = ComplianceTensorData.CreateProperty(ComplianceTensorComponentTemplate);
                                                 ComplianceTensor_ijkl.Name = string.Format("S_{0}{1}", ij, kl);
+                                                IHistoryInfoEditor ComplianceTensor_ijklHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(ComplianceTensor_ijkl);
+                                                ComplianceTensor_ijklHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                                 ComplianceTensorProperties[ij][kl] = ComplianceTensor_ijkl;
+
                                                 Property StiffnessTensor_ijkl = StiffnessTensorData.CreateProperty(StiffnessTensorComponentTemplate);
                                                 StiffnessTensor_ijkl.Name = string.Format("C_{0}{1}", ij, kl);
+                                                IHistoryInfoEditor StiffnessTensor_ijklHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(StiffnessTensor_ijkl);
+                                                StiffnessTensor_ijklHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                                 StiffnessTensorProperties[ij][kl] = StiffnessTensor_ijkl;
                                             }
                                         }
@@ -2619,6 +2672,11 @@ namespace DFNGenerator_Ocean
 
                                         // Create a new fracture network object
                                         fractureNetwork = GridColl.CreateFractureNetwork(ModelName + outputLabel, Domain.ELEVATION_DEPTH);
+
+                                        // Add creation event to the DFN object history
+                                        HistoryEntry dfnCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
+                                        IHistoryInfoEditor dfnHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(fractureNetwork);
+                                        dfnHistoryInfoEditor.AddHistoryEntry(dfnCreationEvent);
 
                                         // Write the input parameters for the model run to the fracture network object comments string
                                         fractureNetwork.Comments = generalInputParams + explicitInputParams;
@@ -3044,6 +3102,11 @@ namespace DFNGenerator_Ocean
                                             PolylineSet Centrelines = CentrelineCollection.CreatePolylineSet("Fracture_Centrelines" + outputLabel);
                                             Centrelines.Domain = Domain.ELEVATION_DEPTH;
 
+                                            // Add creation event to the polyline set object history
+                                            HistoryEntry centrelinesCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
+                                            IHistoryInfoEditor centrelinesHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(Centrelines);
+                                            centrelinesHistoryInfoEditor.AddHistoryEntry(centrelinesCreationEvent);
+
                                             // Create a list of Petrel polylines
                                             List<Polyline3> pline_list = new List<Polyline3>();
 
@@ -3170,134 +3233,238 @@ namespace DFNGenerator_Ocean
         /// input/output role are taken from the property and modified by any
         /// attributes applied.
         /// </summary>
-        public class Arguments : DescribedArgumentsByReflection
+        [Archivable]
+        public class Arguments : DescribedArgumentsByReflection, IIdentifiable, IDisposable
         {
             public Arguments()
                 : this(DataManager.DataSourceManager)
-            {                
+            {
             }
 
             public Arguments(IDataSourceManager dataSourceManager)
             {
+                // Create argument package in correct project; for RPT scenarios
+                dataSource = DFNGeneratorDataSourceFactory.Get(dataSourceManager);
+                if (dataSource != null)
+                {
+                    arguments_Droid = dataSource.GenerateDroid();
+                    dataSource.AddItem(arguments_Droid, this);
+                }
             }
 
+            // Keep data source to dispose of transient argument packages
+            [ArchivableContextInject]
+            private StructuredArchiveDataSource dataSource;
+
             // Main settings
+            [Archived(IsOptional = true)]
             private string argument_ModelName = "New DFN";
-            private Grid argument_Grid;
+            [Archived(IsOptional = true)]
+            private Droid argument_Grid;
+            [Archived(IsOptional = true)]
             private int argument_StartColI = 1;
+            [Archived(IsOptional = true)]
             private int argument_StartRowJ = 1;
+            [Archived(IsOptional = true)]
             private int argument_NoColsI = 1;
+            [Archived(IsOptional = true)]
             private int argument_NoRowsJ = 1;
+            [Archived(IsOptional = true)]
             private int argument_TopLayerK = 1;
+            [Archived(IsOptional = true)]
             private int argument_BottomLayerK = 1;
+            [Archived(IsOptional = true)]
             private double argument_EhminAzi_default = 0;
-            private Property argument_EhminAzi;
+            [Archived(IsOptional = true)]
+            private Droid argument_EhminAzi;
             // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
             // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units, not SI units
+            [Archived(IsOptional = true)]
             private double argument_EhminRate_default = -0.01;
-            private Property argument_EhminRate;
+            [Archived(IsOptional = true)]
+            private Droid argument_EhminRate;
+            [Archived(IsOptional = true)]
             private double argument_EhmaxRate_default = 0;
-            private Property argument_EhmaxRate;
+            [Archived(IsOptional = true)]
+            private Droid argument_EhmaxRate;
+            [Archived(IsOptional = true)]
             private bool argument_GenerateExplicitDFN = true;
+            [Archived(IsOptional = true)]
             private int argument_NoIntermediateOutputs = 0;
+            [Archived(IsOptional = true)]
             private bool argument_IncludeObliqueFracs = false;
 
             // Mechanical properties
+            [Archived(IsOptional = true)]
             private double argument_YoungsMod_default = 10000000000;
-            private Property argument_YoungsMod;
+            [Archived(IsOptional = true)]
+            private Droid argument_YoungsMod;
+            [Archived(IsOptional = true)]
             private double argument_PoissonsRatio_default = 0.25;
-            private Property argument_PoissonsRatio;
+            [Archived(IsOptional = true)]
+            private Droid argument_PoissonsRatio;
+            [Archived(IsOptional = true)]
             private double argument_BiotCoefficient_default = 1;
-            private Property argument_BiotCoefficient;
+            [Archived(IsOptional = true)]
+            private Droid argument_BiotCoefficient;
+            [Archived(IsOptional = true)]
             private double argument_FrictionCoefficient_default = 0.5;
-            private Property argument_FrictionCoefficient;
+            [Archived(IsOptional = true)]
+            private Droid argument_FrictionCoefficient;
+            [Archived(IsOptional = true)]
             private double argument_CrackSurfaceEnergy_default = 1000;
-            private Property argument_CrackSurfaceEnergy;
+            [Archived(IsOptional = true)]
+            private Droid argument_CrackSurfaceEnergy;
             // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
+            [Archived(IsOptional = true)]
             private double argument_RockStrainRelaxation_default = 0;
-            private Property argument_RockStrainRelaxation;
+            [Archived(IsOptional = true)]
+            private Droid argument_RockStrainRelaxation;
+            [Archived(IsOptional = true)]
             private double argument_FractureStrainRelaxation_default = 0;
-            private Property argument_FractureStrainRelaxation;
+            [Archived(IsOptional = true)]
+            private Droid argument_FractureStrainRelaxation;
             // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
             // However it is initialised with a default value equivalent to 0.001fracs/m, since this is calibrated empirically
             // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
+            [Archived(IsOptional = true)]
             private double argument_InitialMicrofractureDensity_SI = 0.001;
+            [Archived(IsOptional = true)]
             private double argument_InitialMicrofractureDensity_default = double.NaN;
-            private Property argument_InitialMicrofractureDensity;
+            [Archived(IsOptional = true)]
+            private Droid argument_InitialMicrofractureDensity;
+            [Archived(IsOptional = true)]
             private double argument_InitialMicrofractureSizeDistribution_default = 2;
-            private Property argument_InitialMicrofractureSizeDistribution;
+            [Archived(IsOptional = true)]
+            private Droid argument_InitialMicrofractureSizeDistribution;
+            [Archived(IsOptional = true)]
             private double argument_SubcriticalPropagationIndex_default = 10;
-            private Property argument_SubcriticalPropagationIndex;
+            [Archived(IsOptional = true)]
+            private Droid argument_SubcriticalPropagationIndex;
+            [Archived(IsOptional = true)]
             private double argument_CriticalPropagationRate = 2000;
+            [Archived(IsOptional = true)]
             private bool argument_AverageMechanicalPropertyData = true;
 
             // Stress state
+            [Archived(IsOptional = true)]
             private int argument_StressDistribution = 1;
+            [Archived(IsOptional = true)]
             private double argument_DepthAtDeformation = double.NaN;
+            [Archived(IsOptional = true)]
             private double argument_MeanOverlyingSedimentDensity = 2250;
+            [Archived(IsOptional = true)]
             private double argument_FluidDensity = 1000;
+            [Archived(IsOptional = true)]
             private double argument_InitialOverpressure = 0;
+            [Archived(IsOptional = true)]
             private double argument_InitialStressRelaxation = 1;
+            [Archived(IsOptional = true)]
             private bool argument_AverageStressStrainData = false;
 
             // Outputs
+            [Archived(IsOptional = true)]
             private bool argument_WriteImplicitDataFiles = false;
+            [Archived(IsOptional = true)]
             private bool argument_WriteDFNFiles = false;
+            [Archived(IsOptional = true)]
             private bool argument_WriteToProjectFolder = true;
+            [Archived(IsOptional = true)]
             private int argument_DFNFileType = 1;
+            [Archived(IsOptional = true)]
             private bool argument_OutputAtEqualTimeIntervals = false;
+            [Archived(IsOptional = true)]
             private bool argument_OutputCentrepoints = false;
             // Fracture connectivity and anisotropy index control parameters
+            [Archived(IsOptional = true)]
             private bool argument_CalculateFractureConnectivityAnisotropy = true;
+            [Archived(IsOptional = true)]
             private bool argument_CalculateFracturePorosity = true;
+            [Archived(IsOptional = true)]
             private bool argument_CalculateBulkRockElasticTensors = false;
 
             // Fracture aperture control parameters
+            [Archived(IsOptional = true)]
             private int argument_FractureApertureControl = 0;
+            [Archived(IsOptional = true)]
             private double argument_HMin_UniformAperture = 0.0005;
+            [Archived(IsOptional = true)]
             private double argument_HMax_UniformAperture = 0.0005;
+            [Archived(IsOptional = true)]
             private double argument_HMin_SizeDependentApertureMultiplier = 0.00001;
+            [Archived(IsOptional = true)]
             private double argument_HMax_SizeDependentApertureMultiplier = 0.00001;
+            [Archived(IsOptional = true)]
             private double argument_DynamicApertureMultiplier = 1;
+            [Archived(IsOptional = true)]
             private double argument_JRC = 10;
+            [Archived(IsOptional = true)]
             private double argument_UCSratio = 2;
+            [Archived(IsOptional = true)]
             private double argument_InitialNormalStress = 200000;
+            [Archived(IsOptional = true)]
             private double argument_FractureNormalStiffness = 2.5E+9;
+            [Archived(IsOptional = true)]
             private double argument_MaximumClosure = 0.0005;
 
             // Calculation control parameters
             // Set argument_NoFractureSets to 6 by default; however this value will only apply if argument_IncludeObliqueFracs is true;
             // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
-            private int argument_NoFractureSets = 6; 
+            [Archived(IsOptional = true)]
+            private int argument_NoFractureSets = 6;
+            [Archived(IsOptional = true)]
             private int argument_FractureMode = 0;
             // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
             // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
+            [Archived(IsOptional = true)]
             private bool argument_CheckAlluFStressShadows = true;
+            [Archived(IsOptional = true)]
             private double argument_AnisotropyCutoff = 1;
+            [Archived(IsOptional = true)]
             private bool argument_AllowReverseFractures = false;
+            [Archived(IsOptional = true)]
             private int argument_HorizontalUpscalingFactor = 1;
             // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
+            [Archived(IsOptional = true)]
             private double argument_MaxTSDuration = double.NaN;
+            [Archived(IsOptional = true)]
             private double argument_Max_TS_MFP33_increase = 0.002;
+            [Archived(IsOptional = true)]
             private double argument_MinimumImplicitMicrofractureRadius = 0.05;
+            [Archived(IsOptional = true)]
             private int argument_No_r_bins = 10;
             // Calculation termination controls
             // NB the deformation duration must be supplied in SI units (seconds), not geological time units
+            [Archived(IsOptional = true)]
             private double argument_DeformationDuration = double.NaN;
+            [Archived(IsOptional = true)]
             private int argument_MaxNoTimesteps = 1000;
+            [Archived(IsOptional = true)]
             private double argument_Historic_MFP33_TerminationRatio = double.NaN;
+            [Archived(IsOptional = true)]
             private double argument_Active_MFP30_TerminationRatio = double.NaN;
+            [Archived(IsOptional = true)]
             private double argument_Minimum_ClearZone_Volume = 0.01;
             // DFN geometry controls
+            [Archived(IsOptional = true)]
             private bool argument_CropAtGridBoundary = true;
+            [Archived(IsOptional = true)]
             private bool argument_LinkParallelFractures = true;
+            [Archived(IsOptional = true)]
             private double argument_MaxConsistencyAngle = Math.PI / 4;
+            [Archived(IsOptional = true)]
             private double argument_MinimumLayerThickness = 1;
+            [Archived(IsOptional = true)]
             private bool argument_CreateTriangularFractureSegments = false;
+            [Archived(IsOptional = true)]
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
+            [Archived(IsOptional = true)]
             private bool argument_PropagateFracturesInNucleationOrder = true;
+            [Archived(IsOptional = true)]
             private int argument_SearchAdjacentGridblocks = 2;
+            [Archived(IsOptional = true)]
             private double argument_MinimumExplicitMicrofractureRadius = double.NaN;
+            [Archived(IsOptional = true)]
             private int argument_NoMicrofractureCornerpoints = 8;
 
             // Main settings
@@ -3311,11 +3478,11 @@ namespace DFNGenerator_Ocean
             [Description("Grid to use for DFN model", "Grid to use for DFN model")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Grid Argument_Grid
             {
-                internal get { return this.argument_Grid; }
-                set { this.argument_Grid = value; }
+                internal get { return DataManager.Resolve(this.argument_Grid) as Grid; }
+                set { this.argument_Grid = (value == null ? null : value.Droid); }
             }
 
-            [Description("Index of first column to model", "Index (I) of first column to model")]
+            [Description("Index (I) of first column to model", "Index (I) of first column to model")]
             public int Argument_StartColI
             {
                 internal get { return this.argument_StartColI; }
@@ -3357,18 +3524,19 @@ namespace DFNGenerator_Ocean
                 set { this.argument_BottomLayerK = value; }
             }
 
-            [Description("Default azimuth of minimum (most tensile) horizontal strain (deg)", "Default value for azimuth of minimum (most tensile) horizontal strain (deg)")]
+            [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
             public double Argument_EhminAzi_default
             {
                 internal get { return this.argument_EhminAzi_default; }
                 set { this.argument_EhminAzi_default = value; }
             }
 
-            [Description("Azimuth of minimum (most tensile) horizontal strain (deg)", "Azimuth of minimum (most tensile) horizontal strain (deg)")]
+            [OptionalInWorkflow]
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi
             {
-                internal get { return this.argument_EhminAzi; }
-                set { this.argument_EhminAzi = value; }
+                internal get { return DataManager.Resolve(this.argument_EhminAzi) as Property; }
+                set { this.argument_EhminAzi = (value == null ? null : value.Droid); }
             }
 
             [Description("Default minimum horizontal strain rate (/ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/ma, tensile strain negative)")]
@@ -3378,11 +3546,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_EhminRate_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Minimum horizontal strain rate (/ma, tensile strain negative)", "Minimum horizontal strain rate (/ma, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
             {
-                internal get { return this.argument_EhminRate; }
-                set { this.argument_EhminRate = value; }
+                internal get { return DataManager.Resolve(this.argument_EhminRate) as Property; }
+                set { this.argument_EhminRate = (value == null ? null : value.Droid); }
             }
 
             [Description("Default maximum horizontal strain rate (/ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/ma, tensile strain negative)")]
@@ -3392,11 +3561,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_EhmaxRate_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Maximum horizontal strain rate (/ma, tensile strain negative)", "Maximum horizontal strain rate (/ma, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
             {
-                internal get { return this.argument_EhmaxRate; }
-                set { this.argument_EhmaxRate = value; }
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate) as Property; }
+                set { this.argument_EhmaxRate = (value == null ? null : value.Droid); }
             }
 
             [Description("Generate explicit DFN?", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
@@ -3428,11 +3598,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_YoungsMod_default = value; }
             }
 
-            [Description("Young's Modulus (Pa)", "Young's Modulus (Pa)")]
+            [OptionalInWorkflow]
+            [Description("Young's Modulus", "Young's Modulus")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_YoungsMod
             {
-                internal get { return this.argument_YoungsMod; }
-                set { this.argument_YoungsMod = value; }
+                internal get { return DataManager.Resolve(this.argument_YoungsMod) as Property; }
+                set { this.argument_YoungsMod = (value == null ? null : value.Droid); }
             }
 
             [Description("Default Poisson's ratio", "Default value for Poisson's ratio")]
@@ -3442,11 +3613,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_PoissonsRatio_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Poisson's ratio", "Poisson's ratio")]
             public Property Argument_PoissonsRatio
             {
-                internal get { return this.argument_PoissonsRatio; }
-                set { this.argument_PoissonsRatio = value; }
+                internal get { return DataManager.Resolve(this.argument_PoissonsRatio) as Property; }
+                set { this.argument_PoissonsRatio = (value == null ? null : value.Droid); }
             }
 
             [Description("Default Biot's coefficient", "Default value for Biot's coefficient")]
@@ -3456,11 +3628,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_BiotCoefficient_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Biot's coefficient", "Biot's coefficient")]
             public Property Argument_BiotCoefficient
             {
-                internal get { return this.argument_BiotCoefficient; }
-                set { this.argument_BiotCoefficient = value; }
+                internal get { return DataManager.Resolve(this.argument_BiotCoefficient) as Property; }
+                set { this.argument_BiotCoefficient = (value == null ? null : value.Droid); }
             }
 
             [Description("Default friction coefficient", "Default value for friction coefficient")]
@@ -3470,11 +3643,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_FrictionCoefficient_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Friction coefficient", "Friction coefficient")]
             public Property Argument_FrictionCoefficient
             {
-                internal get { return this.argument_FrictionCoefficient; }
-                set { this.argument_FrictionCoefficient = value; }
+                internal get { return DataManager.Resolve(this.argument_FrictionCoefficient) as Property; }
+                set { this.argument_FrictionCoefficient = (value == null ? null : value.Droid); }
             }
 
             [Description("Default crack surface energy (J/m2)", "Default value for crack surface energy (J/m2)")]
@@ -3484,11 +3658,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_CrackSurfaceEnergy_default = value; }
             }
 
-            [Description("Crack surface energy (J/m2)", "Crack surface energy (J/m2)")]
+            [OptionalInWorkflow]
+            [Description("Crack surface energy", "Crack surface energy")]
             public Property Argument_CrackSurfaceEnergy
             {
-                internal get { return this.argument_CrackSurfaceEnergy; }
-                set { this.argument_CrackSurfaceEnergy = value; }
+                internal get { return DataManager.Resolve(this.argument_CrackSurfaceEnergy) as Property; }
+                set { this.argument_CrackSurfaceEnergy = (value == null ? null : value.Droid); }
             }
 
             [Description("Default rock strain relaxation time constant (ma); set to 0 for no rock strain relaxation", "Default rock strain relaxation time constant (ma); set to 0 for no rock strain relaxation")]
@@ -3498,11 +3673,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_RockStrainRelaxation_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Rock strain relaxation time constant (ma)", "Rock strain relaxation time constant (ma)")]
             public Property Argument_RockStrainRelaxation
             {
-                internal get { return this.argument_RockStrainRelaxation; }
-                set { this.argument_RockStrainRelaxation = value; }
+                internal get { return DataManager.Resolve(this.argument_RockStrainRelaxation) as Property; }
+                set { this.argument_RockStrainRelaxation = (value == null ? null : value.Droid); }
             }
 
             [Description("Default fracture strain relaxation time constant (ma); set to 0 for no fracture strain relaxation", "Default fracture strain relaxation time constant (ma); set to 0 for no fracture strain relaxation")]
@@ -3512,11 +3688,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_FractureStrainRelaxation_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Fracture strain relaxation time constant (ma)", "Fracture strain relaxation time constant (ma)")]
             public Property Argument_FractureStrainRelaxation
             {
-                internal get { return this.argument_FractureStrainRelaxation; }
-                set { this.argument_FractureStrainRelaxation = value; }
+                internal get { return DataManager.Resolve(this.argument_FractureStrainRelaxation) as Property; }
+                set { this.argument_FractureStrainRelaxation = (value == null ? null : value.Droid); }
             }
 
             [Description("Default initial microfracture density (fracs/m)", "Default value for initial microfracture density (fracs/m)")]
@@ -3539,11 +3716,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_InitialMicrofractureDensity_default = value; }
             }
 
-            [Description("Initial microfracture density (fr/m3)", "Initial microfracture density (fr/m3)")]
+            [OptionalInWorkflow]
+            [Description("Initial microfracture density (fracs/m)", "Initial microfracture density (fracs/m)")]
             public Property Argument_InitialMicrofractureDensity
             {
-                internal get { return this.argument_InitialMicrofractureDensity; }
-                set { this.argument_InitialMicrofractureDensity = value; }
+                internal get { return DataManager.Resolve(this.argument_InitialMicrofractureDensity) as Property; }
+                set { this.argument_InitialMicrofractureDensity = (value == null ? null : value.Droid); }
             }
 
             [Description("Default initial microfracture size distribution coefficient", "Default value for initial microfracture size distribution coefficient")]
@@ -3553,11 +3731,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_InitialMicrofractureSizeDistribution_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Initial microfracture size distribution coefficient", "Initial microfracture size distribution coefficient")]
             public Property Argument_InitialMicrofractureSizeDistribution
             {
-                internal get { return this.argument_InitialMicrofractureSizeDistribution; }
-                set { this.argument_InitialMicrofractureSizeDistribution = value; }
+                internal get { return DataManager.Resolve(this.argument_InitialMicrofractureSizeDistribution) as Property; }
+                set { this.argument_InitialMicrofractureSizeDistribution = (value == null ? null : value.Droid); }
             }
 
             [Description("Default subcritical fracture propagation index", "Default value for subcritical fracture propagation index")]
@@ -3567,11 +3746,12 @@ namespace DFNGenerator_Ocean
                 set { this.argument_SubcriticalPropagationIndex_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Subcritical fracture propagation index", "Subcritical fracture propagation index")]
             public Property Argument_SubcriticalPropagationIndex
             {
-                internal get { return this.argument_SubcriticalPropagationIndex; }
-                set { this.argument_SubcriticalPropagationIndex = value; }
+                internal get { return DataManager.Resolve(this.argument_SubcriticalPropagationIndex) as Property; }
+                set { this.argument_SubcriticalPropagationIndex = (value == null ? null : value.Droid); }
             }
 
             [Description("Critical fracture propagation rate (m/s)", "Critical fracture propagation rate (m/s)")]
@@ -3596,6 +3776,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_StressDistribution = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Depth at time of deformation (m); leave blank to use current depth", "Depth at time of deformation (m); leave blank to use current depth")]
             public double Argument_DepthAtDeformation
             {
@@ -3824,6 +4005,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_HorizontalUpscalingFactor = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Max timestep duration (ma); blank for no limit", "Maximum duration for individual timesteps (ma); leave blank for no limit to timestep duration")]
             public double Argument_MaxTSDuration
             {
@@ -3838,6 +4020,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_Max_TS_MFP33_increase = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Minimum implicit microfracture radius (m)", "Minimum implicit microfracture radius: Cut-off radius for microfractures included in implicit fracture density data (m)")]
             public double Argument_MinimumImplicitMicrofractureRadius
             {
@@ -3853,6 +4036,7 @@ namespace DFNGenerator_Ocean
             }
 
             // Calculation termination controls
+            [OptionalInWorkflow]
             [Description("Max deformation episode duration (ma)", "Maximum deformation episode duration (ma); if blank, will continue until fracture saturation is reached")]
             public double Argument_DeformationDuration
             {
@@ -3867,6 +4051,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_MaxNoTimesteps = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Min ratio of current to peak active MFP33", "Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive")]
             public double Argument_Historic_MFP33_TerminationRatio
             {
@@ -3874,6 +4059,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_Historic_MFP33_TerminationRatio = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Min ratio of active to total MFP30", "Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive")]
             public double Argument_Active_MFP30_TerminationRatio
             {
@@ -3881,6 +4067,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_Active_MFP30_TerminationRatio = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Minimum clear zone volume", "Minimum clear zone volume; if the clear zone volume falls below this value, the fracture set will be considered inactive")]
             public double Argument_Minimum_ClearZone_Volume
             {
@@ -3903,7 +4090,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_LinkParallelFractures = value; }
             }
 
-            [Description("Maximum consistency angle (deg)", "Maximum consistency angle (deg); if variation in fracture strike across gridblock boundary is greater than this, the algorithm will search for another fracture set")]
+            [Description("Maximum consistency angle (rad)", "Maximum consistency angle (rad); if variation in fracture strike across gridblock boundary is greater than this, the algorithm will search for another fracture set")]
             public double Argument_MaxConsistencyAngle
             {
                 internal get { return this.argument_MaxConsistencyAngle; }
@@ -3924,6 +4111,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_CreateTriangularFractureSegments = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Probabilistic fracture nucleation limit", "Probabilistic fracture nucleation limit: allows fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small; set to 0 to disable probabilistic fracture nucleation, leave blank for automatic probabilistic fracture nucleation")]
             public double Argument_ProbabilisticFractureNucleationLimit
             {
@@ -3945,6 +4133,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_SearchAdjacentGridblocks = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Minimum explicit microfracture radius (m); leave blank to generate no explicit microfractures", "Minimum explicit microfracture radius (m); leave blank to generate no explicit microfractures")]
             public double Argument_MinimumExplicitMicrofractureRadius
             {
@@ -3959,6 +4148,148 @@ namespace DFNGenerator_Ocean
                 set { this.argument_NoMicrofractureCornerpoints = value; }
             }
 
+            /// <summary>
+            /// Reset all arguments to default values
+            /// </summary>
+            public void ResetDefaults()
+            {
+                // Main settings
+                argument_ModelName = "New DFN";
+                argument_Grid = null;
+                argument_StartColI = 1;
+                argument_StartRowJ = 1;
+                argument_NoColsI = 1;
+                argument_NoRowsJ = 1;
+                argument_TopLayerK = 1;
+                argument_BottomLayerK = 1;
+                argument_EhminAzi_default = 0;
+                argument_EhminAzi = null;
+                // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+                // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units, not SI units
+                argument_EhminRate_default = -0.01;
+                argument_EhminRate = null;
+                argument_EhmaxRate_default = 0;
+                argument_EhmaxRate = null;
+                argument_GenerateExplicitDFN = true;
+                argument_NoIntermediateOutputs = 0;
+                argument_IncludeObliqueFracs = false;
+
+                // Mechanical properties
+                argument_YoungsMod_default = 10000000000;
+                argument_YoungsMod = null;
+                argument_PoissonsRatio_default = 0.25;
+                argument_PoissonsRatio = null;
+                argument_BiotCoefficient_default = 1;
+                argument_BiotCoefficient = null;
+                argument_FrictionCoefficient_default = 0.5;
+                argument_FrictionCoefficient = null;
+                argument_CrackSurfaceEnergy_default = 1000;
+                argument_CrackSurfaceEnergy = null;
+                // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
+                argument_RockStrainRelaxation_default = 0;
+                argument_RockStrainRelaxation = null;
+                argument_FractureStrainRelaxation_default = 0;
+                argument_FractureStrainRelaxation = null;
+                // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                // However it is initialised with a default value equivalent to 0.001fracs/m, since this is calibrated empirically
+                // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
+                argument_InitialMicrofractureDensity_SI = 0.001;
+                argument_InitialMicrofractureDensity_default = double.NaN;
+                argument_InitialMicrofractureDensity = null;
+                argument_InitialMicrofractureSizeDistribution_default = 2;
+                argument_InitialMicrofractureSizeDistribution = null;
+                argument_SubcriticalPropagationIndex_default = 10;
+                argument_SubcriticalPropagationIndex = null;
+                argument_CriticalPropagationRate = 2000;
+                argument_AverageMechanicalPropertyData = true;
+
+                // Stress state
+                argument_StressDistribution = 1;
+                argument_DepthAtDeformation = double.NaN;
+                argument_MeanOverlyingSedimentDensity = 2250;
+                argument_FluidDensity = 1000;
+                argument_InitialOverpressure = 0;
+                argument_InitialStressRelaxation = 1;
+                argument_AverageStressStrainData = false;
+
+                // Outputs
+                argument_WriteImplicitDataFiles = false;
+                argument_WriteDFNFiles = false;
+                argument_WriteToProjectFolder = true;
+                argument_DFNFileType = 1;
+                argument_OutputAtEqualTimeIntervals = false;
+                argument_OutputCentrepoints = false;
+                // Fracture connectivity and anisotropy index control parameters
+                argument_CalculateFractureConnectivityAnisotropy = true;
+                argument_CalculateFracturePorosity = true;
+                argument_CalculateBulkRockElasticTensors = false;
+
+                // Fracture aperture control parameters
+                argument_FractureApertureControl = 0;
+                argument_HMin_UniformAperture = 0.0005;
+                argument_HMax_UniformAperture = 0.0005;
+                argument_HMin_SizeDependentApertureMultiplier = 0.00001;
+                argument_HMax_SizeDependentApertureMultiplier = 0.00001;
+                argument_DynamicApertureMultiplier = 1;
+                argument_JRC = 10;
+                argument_UCSratio = 2;
+                argument_InitialNormalStress = 200000;
+                argument_FractureNormalStiffness = 2.5E+9;
+                argument_MaximumClosure = 0.0005;
+
+                // Calculation control parameters
+                // Set argument_NoFractureSets to 6 by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+                // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
+                argument_NoFractureSets = 6;
+                argument_FractureMode = 0;
+                // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+                // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
+                argument_CheckAlluFStressShadows = true;
+                argument_AnisotropyCutoff = 1;
+                argument_AllowReverseFractures = false;
+                argument_HorizontalUpscalingFactor = 1;
+                // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
+                argument_MaxTSDuration = double.NaN;
+                argument_Max_TS_MFP33_increase = 0.002;
+                argument_MinimumImplicitMicrofractureRadius = 0.05;
+                argument_No_r_bins = 10;
+                // Calculation termination controls
+                // NB the deformation duration must be supplied in SI units (seconds), not geological time units
+                argument_DeformationDuration = double.NaN;
+                argument_MaxNoTimesteps = 1000;
+                argument_Historic_MFP33_TerminationRatio = double.NaN;
+                argument_Active_MFP30_TerminationRatio = double.NaN;
+                argument_Minimum_ClearZone_Volume = 0.01;
+                // DFN geometry controls
+                argument_CropAtGridBoundary = true;
+                argument_LinkParallelFractures = true;
+                argument_MaxConsistencyAngle = Math.PI / 4;
+                argument_MinimumLayerThickness = 1;
+                argument_CreateTriangularFractureSegments = false;
+                argument_ProbabilisticFractureNucleationLimit = double.NaN;
+                argument_PropagateFracturesInNucleationOrder = true;
+                argument_SearchAdjacentGridblocks = 2;
+                argument_MinimumExplicitMicrofractureRadius = double.NaN;
+                argument_NoMicrofractureCornerpoints = 8;
+            }
+
+            #region IIdentifiable Members
+            [Archived]
+            private Droid arguments_Droid;
+            // Set IgnoreInWorkflow so it will not appear in the default UI
+            // Any custom UI would just ignore this
+            [IgnoreInWorkflow]
+            public Droid Droid { get { return arguments_Droid; } }
+            #endregion
+
+            #region IDisposable Members
+            // IDisposable
+            public void Dispose()
+            {
+                if (dataSource != null)
+                    dataSource.RemoveItem(arguments_Droid);
+            }
+            #endregion
         }
 
         #region IAppearance Members
@@ -3973,7 +4304,7 @@ namespace DFNGenerator_Ocean
         {
             //get { return Description.Name; }
             get { return "DFN Generator"; }
-            private set 
+            private set
             {
                 // TODO: implement set
                 this.RaiseTextChanged();
@@ -3991,7 +4322,7 @@ namespace DFNGenerator_Ocean
         {
             //get { return PetrelImages.Modules; }
             get { return PetrelImages.PolylineSet; }
-            private set 
+            private set
             {
                 // TODO: implement set
                 this.RaiseImageChanged();
@@ -4018,7 +4349,7 @@ namespace DFNGenerator_Ocean
             /// <summary>
             /// Contains the singleton instance.
             /// </summary>
-            private  static DFNGeneratorDescription instance = new DFNGeneratorDescription();
+            private static DFNGeneratorDescription instance = new DFNGeneratorDescription();
             /// <summary>
             /// Gets the singleton instance of this Description class
             /// </summary>
