@@ -160,8 +160,8 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del "$(ProjectDir)plugin.xml"
-"%25Ocean2016Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2016HOME_x64%25\petrel.exe"
-"%25Ocean2016Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2016HOME_x64%25\petrel.exe" "$(TargetDir)"
+"%25Ocean2020Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe"
+"%25Ocean2020Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe" "$(TargetDir)"
 xcopy "$(ProjectDir)Resources\HelpFiles" /s /i /y "$(TargetDir)HelpFiles"
 </PostBuildEvent>
   </PropertyGroup>
