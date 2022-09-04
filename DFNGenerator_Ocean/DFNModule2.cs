@@ -111,11 +111,11 @@ namespace DFNGenerator_Ocean
             PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>();
             PetrelSystem.ProcessDiagram.Remove(m_dfngeneratorInstance);
 
-            // Remove the help content
-            string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            // Remove the help content - not necessary
+            /*string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             HelpService helpService = PetrelSystem.HelpService;
             PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"));
-            helpService.Remove(helpContentMain);
+            helpService.Remove(helpContentMain);*/
 
 #if MANAGED_PERSISTENCE
             // Unregister the custom DFNGeneratorDataSourceFactory
