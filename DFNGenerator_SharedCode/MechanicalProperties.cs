@@ -58,6 +58,16 @@ namespace DFNGenerator_SharedCode
         /// <param name="Biot_in">Biot's coefficient for intact rock</param>
         public void setElasticProperties(double E_r_in, double Nu_r_in, double Biot_in)
         {
+            // The stress calculation algorithm will throw an error if Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+            // Therefore if these values are entered, they will be adjusted slightly so as not to throw an error
+            // The code will actually generate a result with any other values, even if they are physically unrealistic, so they will not be corrected here
+            if ((float)E_r_in == 0f)
+                E_r_in = 0.01;
+            if ((float)Nu_r_in == -1f)
+                Nu_r_in = -0.99;
+            if ((float)Nu_r_in == 1f)
+                Nu_r_in = 0.99;
+
             // Set the elastic constants
             // Young's modulus of intact rock
             E_r = E_r_in;

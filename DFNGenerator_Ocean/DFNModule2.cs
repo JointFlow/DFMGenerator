@@ -2,6 +2,9 @@
 // Use for debugging only
 //#define DEBUG_FRACS
 
+// Set this flag to enable managed persistence of the dialog box input data
+//#define MANAGED_PERSISTENCE
+
 using System;
 using Slb.Ocean.Core;
 using Slb.Ocean.Petrel;
@@ -19,7 +22,9 @@ namespace DFNGenerator_Ocean
     public class DFNModule2 : IModule
     {
         private Process m_dfngeneratorInstance;
+#if MANAGED_PERSISTENCE
         private DFNGeneratorDataSourceFactory m_dfngeneratorDataSourceFactory;
+#endif
         public DFNModule2()
         {
             //
@@ -27,7 +32,7 @@ namespace DFNGenerator_Ocean
             //
         }
 
-        #region IModule Members
+#region IModule Members
 
         /// <summary>
         /// This method runs once in the Module life; when it loaded into the petrel.
@@ -63,9 +68,11 @@ namespace DFNGenerator_Ocean
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
             PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.LaunchDFNGenerator.ID, new DFNGenerator_Ocean.LaunchDFNGenerator());
 
+#if MANAGED_PERSISTENCE
             // Register the custom DFNGeneratorDataSourceFactory
             m_dfngeneratorDataSourceFactory = new DFNGeneratorDataSourceFactory();
             PetrelSystem.AddDataSourceFactory(m_dfngeneratorDataSourceFactory);
+#endif
         }
 
         /// <summary>
@@ -110,22 +117,24 @@ namespace DFNGenerator_Ocean
             PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"));
             helpService.Remove(helpContentMain);
 
+#if MANAGED_PERSISTENCE
             // Unregister the custom DFNGeneratorDataSourceFactory
             PetrelSystem.RemoveDataSourceFactory(m_dfngeneratorDataSourceFactory);
+#endif
         }
 
-        #endregion
+#endregion
 
-        #region IDisposable Members
+#region IDisposable Members
 
         public void Dispose()
         {
             // TODO:  Add DFNModule2.Dispose implementation
         }
 
-        #endregion
+#endregion
 
-        #region Event Handlers and auxiliary functions
+#region Event Handlers and auxiliary functions
 
         /// <summary>
         /// Event handler for the WorkspaceEvents.Opened event that is called whenever a new project is opened
@@ -268,7 +277,7 @@ namespace DFNGenerator_Ocean
             // Return the template
             return outputTemplate;
         }
-        #endregion
+#endregion
     }
 
 

@@ -2,6 +2,9 @@
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRACS
 
+// Set this flag to enable managed persistence of the dialog box input data
+//#define MANAGED_PERSISTENCE
+
 using System;
 using System.Linq;
 using System.IO;
@@ -1657,6 +1660,18 @@ namespace DFNGenerator_Ocean
                                     double toSIUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, 1), local_InitialMicrofractureSizeDistribution - 3);
                                     local_InitialMicrofractureDensity *= toSIUnits_InitialMicrofractureDensity;
                                 }
+
+                                // Check the elastic properties for physically unrealistic values, and if so warn the user
+                                // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+                                // and these values will automatically be corrected by the MechanicalProperties object
+                                if (local_YoungsMod <= 0)
+                                {
+                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Young's Modulus ({0}Pa) in cell {1},{2}. This will create errors in the calculation.", local_YoungsMod, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
+                                }
+                                if ((local_PoissonsRatio < 0) || (local_PoissonsRatio > 0.5))
+                                {
+                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
+                                }
                                 // End get the mechanical properties from the grid as required
 
                                 // Create a new gridblock object containing the required number of fracture sets
@@ -3233,8 +3248,12 @@ namespace DFNGenerator_Ocean
         /// input/output role are taken from the property and modified by any
         /// attributes applied.
         /// </summary>
+#if MANAGED_PERSISTENCE
         [Archivable]
         public class Arguments : DescribedArgumentsByReflection, IIdentifiable, IDisposable
+#else
+        public class Arguments : DescribedArgumentsByReflection
+#endif
         {
             public Arguments()
                 : this(DataManager.DataSourceManager)
@@ -3243,6 +3262,7 @@ namespace DFNGenerator_Ocean
 
             public Arguments(IDataSourceManager dataSourceManager)
             {
+#if MANAGED_PERSISTENCE
                 // Create argument package in correct project; for RPT scenarios
                 dataSource = DFNGeneratorDataSourceFactory.Get(dataSourceManager);
                 if (dataSource != null)
@@ -3250,8 +3270,10 @@ namespace DFNGenerator_Ocean
                     arguments_Droid = dataSource.GenerateDroid();
                     dataSource.AddItem(arguments_Droid, this);
                 }
+#endif
             }
 
+#if MANAGED_PERSISTENCE
             // Keep data source to dispose of transient argument packages
             [ArchivableContextInject]
             private StructuredArchiveDataSource dataSource;
@@ -3466,6 +3488,126 @@ namespace DFNGenerator_Ocean
             private double argument_MinimumExplicitMicrofractureRadius = double.NaN;
             [Archived(IsOptional = true)]
             private int argument_NoMicrofractureCornerpoints = 8;
+#else
+            // Main settings
+            private string argument_ModelName = "New DFN";
+            private Droid argument_Grid;
+            private int argument_StartColI = 1;
+            private int argument_StartRowJ = 1;
+            private int argument_NoColsI = 1;
+            private int argument_NoRowsJ = 1;
+            private int argument_TopLayerK = 1;
+            private int argument_BottomLayerK = 1;
+            private double argument_EhminAzi_default = 0;
+            private Droid argument_EhminAzi;
+            // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
+            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units, not SI units
+            private double argument_EhminRate_default = -0.01;
+            private Droid argument_EhminRate;
+            private double argument_EhmaxRate_default = 0;
+            private Droid argument_EhmaxRate;
+            private bool argument_GenerateExplicitDFN = true;
+            private int argument_NoIntermediateOutputs = 0;
+            private bool argument_IncludeObliqueFracs = false;
+
+            // Mechanical properties
+            private double argument_YoungsMod_default = 10000000000;
+            private Droid argument_YoungsMod;
+            private double argument_PoissonsRatio_default = 0.25;
+            private Droid argument_PoissonsRatio;
+            private double argument_BiotCoefficient_default = 1;
+            private Droid argument_BiotCoefficient;
+            private double argument_FrictionCoefficient_default = 0.5;
+            private Droid argument_FrictionCoefficient;
+            private double argument_CrackSurfaceEnergy_default = 1000;
+            private Droid argument_CrackSurfaceEnergy;
+            // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
+            private double argument_RockStrainRelaxation_default = 0;
+            private Droid argument_RockStrainRelaxation;
+            private double argument_FractureStrainRelaxation_default = 0;
+            private Droid argument_FractureStrainRelaxation;
+            // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+            // However it is initialised with a default value equivalent to 0.001fracs/m, since this is calibrated empirically
+            // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
+            private double argument_InitialMicrofractureDensity_SI = 0.001;
+            private double argument_InitialMicrofractureDensity_default = double.NaN;
+            private Droid argument_InitialMicrofractureDensity;
+            private double argument_InitialMicrofractureSizeDistribution_default = 2;
+            private Droid argument_InitialMicrofractureSizeDistribution;
+            private double argument_SubcriticalPropagationIndex_default = 10;
+            private Droid argument_SubcriticalPropagationIndex;
+            private double argument_CriticalPropagationRate = 2000;
+            private bool argument_AverageMechanicalPropertyData = true;
+
+            // Stress state
+            private int argument_StressDistribution = 1;
+            private double argument_DepthAtDeformation = double.NaN;
+            private double argument_MeanOverlyingSedimentDensity = 2250;
+            private double argument_FluidDensity = 1000;
+            private double argument_InitialOverpressure = 0;
+            private double argument_InitialStressRelaxation = 1;
+            private bool argument_AverageStressStrainData = false;
+
+            // Outputs
+            private bool argument_WriteImplicitDataFiles = false;
+            private bool argument_WriteDFNFiles = false;
+            private bool argument_WriteToProjectFolder = true;
+            private int argument_DFNFileType = 1;
+            private bool argument_OutputAtEqualTimeIntervals = false;
+            private bool argument_OutputCentrepoints = false;
+            // Fracture connectivity and anisotropy index control parameters
+            private bool argument_CalculateFractureConnectivityAnisotropy = true;
+            private bool argument_CalculateFracturePorosity = true;
+            private bool argument_CalculateBulkRockElasticTensors = false;
+
+            // Fracture aperture control parameters
+            private int argument_FractureApertureControl = 0;
+            private double argument_HMin_UniformAperture = 0.0005;
+            private double argument_HMax_UniformAperture = 0.0005;
+            private double argument_HMin_SizeDependentApertureMultiplier = 0.00001;
+            private double argument_HMax_SizeDependentApertureMultiplier = 0.00001;
+            private double argument_DynamicApertureMultiplier = 1;
+            private double argument_JRC = 10;
+            private double argument_UCSratio = 2;
+            private double argument_InitialNormalStress = 200000;
+            private double argument_FractureNormalStiffness = 2.5E+9;
+            private double argument_MaximumClosure = 0.0005;
+
+            // Calculation control parameters
+            // Set argument_NoFractureSets to 6 by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+            // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
+            private int argument_NoFractureSets = 6;
+            private int argument_FractureMode = 0;
+            // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
+            // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
+            private bool argument_CheckAlluFStressShadows = true;
+            private double argument_AnisotropyCutoff = 1;
+            private bool argument_AllowReverseFractures = false;
+            private int argument_HorizontalUpscalingFactor = 1;
+            // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
+            private double argument_MaxTSDuration = double.NaN;
+            private double argument_Max_TS_MFP33_increase = 0.002;
+            private double argument_MinimumImplicitMicrofractureRadius = 0.05;
+            private int argument_No_r_bins = 10;
+            // Calculation termination controls
+            // NB the deformation duration must be supplied in SI units (seconds), not geological time units
+            private double argument_DeformationDuration = double.NaN;
+            private int argument_MaxNoTimesteps = 1000;
+            private double argument_Historic_MFP33_TerminationRatio = double.NaN;
+            private double argument_Active_MFP30_TerminationRatio = double.NaN;
+            private double argument_Minimum_ClearZone_Volume = 0.01;
+            // DFN geometry controls
+            private bool argument_CropAtGridBoundary = true;
+            private bool argument_LinkParallelFractures = true;
+            private double argument_MaxConsistencyAngle = Math.PI / 4;
+            private double argument_MinimumLayerThickness = 1;
+            private bool argument_CreateTriangularFractureSegments = false;
+            private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
+            private bool argument_PropagateFracturesInNucleationOrder = true;
+            private int argument_SearchAdjacentGridblocks = 2;
+            private double argument_MinimumExplicitMicrofractureRadius = double.NaN;
+            private int argument_NoMicrofractureCornerpoints = 8;
+#endif
 
             // Main settings
             [Description("Model name", "Model name")]
@@ -4273,26 +4415,25 @@ namespace DFNGenerator_Ocean
                 argument_NoMicrofractureCornerpoints = 8;
             }
 
-            #region IIdentifiable Members
+#if MANAGED_PERSISTENCE
+            // IIdentifiable Members
             [Archived]
             private Droid arguments_Droid;
             // Set IgnoreInWorkflow so it will not appear in the default UI
             // Any custom UI would just ignore this
             [IgnoreInWorkflow]
             public Droid Droid { get { return arguments_Droid; } }
-            #endregion
 
-            #region IDisposable Members
-            // IDisposable
+            // IDisposable Members
             public void Dispose()
             {
                 if (dataSource != null)
                     dataSource.RemoveItem(arguments_Droid);
             }
-            #endregion
+#endif
         }
 
-        #region IAppearance Members
+#region IAppearance Members
         public event EventHandler<TextChangedEventArgs> TextChanged;
         protected void RaiseTextChanged()
         {
@@ -4328,9 +4469,9 @@ namespace DFNGenerator_Ocean
                 this.RaiseImageChanged();
             }
         }
-        #endregion
+#endregion
 
-        #region IDescriptionSource Members
+#region IDescriptionSource Members
 
         /// <summary>
         /// Gets the description of the DFNGenerator
@@ -4358,7 +4499,7 @@ namespace DFNGenerator_Ocean
                 get { return instance; }
             }
 
-            #region IDescription Members
+#region IDescription Members
 
             /// <summary>
             /// Gets the name of DFNGenerator
@@ -4382,9 +4523,9 @@ namespace DFNGenerator_Ocean
                 get { return "Petrel UI for DFN Generator module"; }
             }
 
-            #endregion
+#endregion
         }
-        #endregion
+#endregion
 
         public class UIFactory : WorkflowEditorUIFactory
         {
