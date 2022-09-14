@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFN_install", "Pip_builder\
 		{F339DBA5-EDC9-4602-859B-5BE45BAA50D2} = {F339DBA5-EDC9-4602-859B-5BE45BAA50D2}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OceanPluginTest1", "OceanPluginTest1\OceanPluginTest1.csproj", "{D5FC914E-75AB-473B-BE14-16BD1460B896}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems*{3763fa9f-9862-4bf7-b072-7e8662d5498c}*SharedItemsImports = 13
@@ -37,6 +39,10 @@ Global
 		{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5FC914E-75AB-473B-BE14-16BD1460B896}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5FC914E-75AB-473B-BE14-16BD1460B896}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5FC914E-75AB-473B-BE14-16BD1460B896}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5FC914E-75AB-473B-BE14-16BD1460B896}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
