@@ -165,7 +165,7 @@ namespace DFNGenerator_Ocean
             UpdateTextBox(args.Argument_Max_TS_MFP33_increase, unitTextBox_Max_TS_MFP33_increase, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
             // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
-            UpdateTextBox(args.Argument_MinimumImplicitMicrofractureRadius, unitTextBox_MinimumImplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_MinimumImplicitMicrofractureRadius_Units);
+            UpdateTextBox(args.Argument_MinimumImplicitMicrofractureRadius, unitTextBox_MinimumImplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumImplicitMicrofractureRadius_Units);
             UpdateTextBox(args.Argument_No_r_bins, textBox_No_r_bins);
             // Calculation termination controls
             UpdateTextBox(args.Argument_DeformationDuration, unitTextBox_DeformationDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_DeformationDuration_Units);
@@ -182,7 +182,7 @@ namespace DFNGenerator_Ocean
             UpdateTextBox(args.Argument_ProbabilisticFractureNucleationLimit, unitTextBox_ProbabilisticFractureNucleationLimit, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_PropagateFracturesInNucleationOrder, checkBox_PropagateFracturesInNucleationOrder);
             UpdateComboBox(args.Argument_SearchAdjacentGridblocks, comboBox_SearchAdjacentGridblocks);
-            UpdateTextBox(args.Argument_MinimumExplicitMicrofractureRadius, unitTextBox_MinimumExplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_MinimumExplicitMicrofractureRadius_Units);
+            UpdateTextBox(args.Argument_MinimumExplicitMicrofractureRadius, unitTextBox_MinimumExplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumExplicitMicrofractureRadius_Units);
             UpdateNumericBox(args.Argument_NoMicrofractureCornerpoints, numericUpDown_NoMicrofractureCornerpoints);
         }
 
@@ -557,7 +557,7 @@ namespace DFNGenerator_Ocean
             double c = GetDoubleFromTextBox(unitTextBox_InitialMicrofractureSizeDistribution_default);
             // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
             // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
-            string lengthUnit = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth).Symbol;
+            string lengthUnit = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth).Symbol;
             string AUnit = "";
             if (c < 3)
                 AUnit = string.Format("fracs/{0}^{1}", lengthUnit, 3 - c);

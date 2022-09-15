@@ -575,12 +575,21 @@ namespace DFNGenerator_Ocean
                     IUnitConverter toProjectLayerThicknessUnits = PetrelUnitSystem.GetConverterToUI(LayerThicknessTemplate);
                     string LayerThicknessUnits = PetrelUnitSystem.GetDisplayUnit(LayerThicknessTemplate).Symbol;
                     // Fracture radius
-                    Template FractureRadiusTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
+                    Template FractureRadiusTemplate = PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth;
                     IUnitConverter toProjectFractureRadiusUnits = PetrelUnitSystem.GetConverterToUI(FractureRadiusTemplate);
                     string FractureRadiusUnits = PetrelUnitSystem.GetDisplayUnit(FractureRadiusTemplate).Symbol;
-                    // Get length unit conversion factor, if length units are not in metres
-                    double toSIUnits_Length = PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, 1);
+                    // Get length unit conversion factor for calculating the initial microfracture density coefficient A
+                    // Note that the conversion factor for A itself will need to be calculated separately for each gridblock since it is dependent on the initial microfracture size distribution coefficient c
+                    // For the parameters written to the comments section, we can determine units based on the default value of c
+                    double toSIUnits_Length = PetrelUnitSystem.ConvertFromUI(FractureRadiusTemplate, 1);
                     bool lengthUnitMetres = (toSIUnits_Length == 1);
+                    string AUnit = "";
+                    if (InitialMicrofractureSizeDistribution < 3)
+                        AUnit = string.Format("fracs/{0}^{1}", FractureRadiusUnits, 3 - InitialMicrofractureSizeDistribution);
+                    else if (InitialMicrofractureSizeDistribution > 3)
+                        AUnit = string.Format("frac.{0}^{1}", FractureRadiusUnits, InitialMicrofractureSizeDistribution - 3);
+                    else
+                        AUnit = "fracs";
 
                     // NB if certain properties are supplied with a General template, we will carry out unit conversion as if they were supplied in project units
                     // Therefore we need to create Petrel unit converters from project to SI units, and flags to indicate if this conversion is required
@@ -724,9 +733,9 @@ namespace DFNGenerator_Ocean
                         generalInputParams += "No strain relaxation applied\n";
                     // Initial microfracture density
                     if (UseGridFor_InitialMicrofractureDensity)
-                        generalInputParams += string.Format("Initial fracture density: {0}, default {1}; ", InitialMicrofractureDensity_grid.Name, InitialMicrofractureDensity);
+                        generalInputParams += string.Format("Initial fracture density: {0}, default {1}{2}; ", InitialMicrofractureDensity_grid.Name, InitialMicrofractureDensity, AUnit);
                     else
-                        generalInputParams += string.Format("Initial fracture density: {0}; ", InitialMicrofractureDensity);
+                        generalInputParams += string.Format("Initial fracture density: {0}{1}; ", InitialMicrofractureDensity, AUnit);
                     if (UseGridFor_InitialMicrofractureSizeDistribution)
                         generalInputParams += string.Format("exponent {0}, default {1}\n ", InitialMicrofractureSizeDistribution_grid.Name, InitialMicrofractureSizeDistribution);
                     else
@@ -1657,7 +1666,7 @@ namespace DFNGenerator_Ocean
                                 // Unit conversion must be done on a cell by cell basis, since the values of InitialMicrofractureSizeDistribution may vary between cells
                                 if (!lengthUnitMetres)
                                 {
-                                    double toSIUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.Distance, 1), local_InitialMicrofractureSizeDistribution - 3);
+                                    double toSIUnits_InitialMicrofractureDensity = Math.Pow(toSIUnits_Length, local_InitialMicrofractureSizeDistribution - 3);
                                     local_InitialMicrofractureDensity *= toSIUnits_InitialMicrofractureDensity;
                                 }
 
@@ -3850,7 +3859,7 @@ namespace DFNGenerator_Ocean
                 {
                     if (double.IsNaN(this.argument_InitialMicrofractureDensity_default))
                     {
-                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, 1), 3 - Argument_InitialMicrofractureSizeDistribution_default);
+                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, 1), 3 - Argument_InitialMicrofractureSizeDistribution_default);
                         this.argument_InitialMicrofractureDensity_default = this.argument_InitialMicrofractureDensity_SI * toProjectUnits_InitialMicrofractureDensity;
                     }
                     return this.argument_InitialMicrofractureDensity_default;
