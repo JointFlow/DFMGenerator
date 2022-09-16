@@ -480,10 +480,10 @@ namespace DFNGenerator_Ocean
                     // Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
                     bool LinkStressShadows = arguments.Argument_LinkParallelFractures;
                     // Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set 
-                    // Set to Pi/4 rad (45 degrees) by default
+                    // Set to Pi/4 rad (45 degrees) by default; NB value should be returned in radians as conversion should be carried out by the Petrel unit conversion functionality
                     double MaxConsistencyAngle = Math.PI / 4;
                     if (!double.IsNaN(arguments.Argument_MaxConsistencyAngle))
-                        MaxConsistencyAngle = arguments.Argument_MaxConsistencyAngle * (Math.PI / 180);
+                        MaxConsistencyAngle = arguments.Argument_MaxConsistencyAngle;
                     // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value
                     // Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
                     double MinimumLayerThickness = 0;
@@ -3690,7 +3690,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_EhminAzi = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default minimum horizontal strain rate (/ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Default minimum horizontal strain rate (/s, tensile strain negative)", "Default value for minimum horizontal strain rate (/s, tensile strain negative)")]
             public double Argument_EhminRate_default
             {
                 internal get { return this.argument_EhminRate_default; }
@@ -3698,14 +3698,14 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Minimum horizontal strain rate (/ma, tensile strain negative)", "Minimum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Minimum horizontal strain rate (/s, tensile strain negative)", "Minimum horizontal strain rate (/s, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
             {
                 internal get { return DataManager.Resolve(this.argument_EhminRate) as Property; }
                 set { this.argument_EhminRate = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default maximum horizontal strain rate (/ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Default maximum horizontal strain rate (/s, tensile strain negative)", "Default value for maximum horizontal strain rate (/s, tensile strain negative)")]
             public double Argument_EhmaxRate_default
             {
                 internal get { return this.argument_EhmaxRate_default; }
@@ -3713,7 +3713,7 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Maximum horizontal strain rate (/ma, tensile strain negative)", "Maximum horizontal strain rate (/ma, tensile strain negative)")]
+            [Description("Maximum horizontal strain rate (/s, tensile strain negative)", "Maximum horizontal strain rate (/s, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
             {
                 internal get { return DataManager.Resolve(this.argument_EhmaxRate) as Property; }
@@ -3817,7 +3817,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_CrackSurfaceEnergy = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default rock strain relaxation time constant (ma); set to 0 for no rock strain relaxation", "Default rock strain relaxation time constant (ma); set to 0 for no rock strain relaxation")]
+            [Description("Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation", "Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation")]
             public double Argument_RockStrainRelaxation_default
             {
                 internal get { return this.argument_RockStrainRelaxation_default; }
@@ -3825,14 +3825,14 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Rock strain relaxation time constant (ma)", "Rock strain relaxation time constant (ma)")]
+            [Description("Rock strain relaxation time constant (s)", "Rock strain relaxation time constant (s)")]
             public Property Argument_RockStrainRelaxation
             {
                 internal get { return DataManager.Resolve(this.argument_RockStrainRelaxation) as Property; }
                 set { this.argument_RockStrainRelaxation = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default fracture strain relaxation time constant (ma); set to 0 for no fracture strain relaxation", "Default fracture strain relaxation time constant (ma); set to 0 for no fracture strain relaxation")]
+            [Description("Default fracture strain relaxation time constant (s); set to 0 for no fracture strain relaxation", "Default fracture strain relaxation time constant (s); set to 0 for no fracture strain relaxation")]
             public double Argument_FractureStrainRelaxation_default
             {
                 internal get { return this.argument_FractureStrainRelaxation_default; }
@@ -3840,14 +3840,14 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Fracture strain relaxation time constant (ma)", "Fracture strain relaxation time constant (ma)")]
+            [Description("Fracture strain relaxation time constant (s)", "Fracture strain relaxation time constant (s)")]
             public Property Argument_FractureStrainRelaxation
             {
                 internal get { return DataManager.Resolve(this.argument_FractureStrainRelaxation) as Property; }
                 set { this.argument_FractureStrainRelaxation = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default initial microfracture density (fracs/m)", "Default value for initial microfracture density (fracs/m)")]
+            [Description("Default initial microfracture density; NB must use project units", "Default value for initial microfracture density; NB must use project units")]
             public double Argument_InitialMicrofractureDensity_default
             {
                 // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
@@ -3868,7 +3868,7 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Initial microfracture density (fracs/m)", "Initial microfracture density (fracs/m)")]
+            [Description("Initial microfracture density (project units)", "Initial microfracture density (project units)")]
             public Property Argument_InitialMicrofractureDensity
             {
                 internal get { return DataManager.Resolve(this.argument_InitialMicrofractureDensity) as Property; }
@@ -4099,7 +4099,7 @@ namespace DFNGenerator_Ocean
                 set { this.argument_InitialNormalStress = value; }
             }
 
-            [Description("Barton-Bandis Fracture Aperture: Stiffness normal to the fracture, at initial normal stress (Pa/mm)", "Barton-Bandis Fracture Aperture: Stiffness normal to the fracture, at initial normal stress (Pa/mm)")]
+            [Description("Barton-Bandis Fracture Aperture: Stiffness normal to the fracture, at initial normal stress (Pa/m)", "Barton-Bandis Fracture Aperture: Stiffness normal to the fracture, at initial normal stress (Pa/m)")]
             public double Argument_FractureNormalStiffness
             {
                 internal get { return this.argument_FractureNormalStiffness; }
@@ -4157,7 +4157,7 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Max timestep duration (ma); blank for no limit", "Maximum duration for individual timesteps (ma); leave blank for no limit to timestep duration")]
+            [Description("Max timestep duration (s); blank for no limit", "Maximum duration for individual timesteps (s); leave blank for no limit to timestep duration")]
             public double Argument_MaxTSDuration
             {
                 internal get { return this.argument_MaxTSDuration; }
@@ -4188,7 +4188,7 @@ namespace DFNGenerator_Ocean
 
             // Calculation termination controls
             [OptionalInWorkflow]
-            [Description("Max deformation episode duration (ma)", "Maximum deformation episode duration (ma); if blank, will continue until fracture saturation is reached")]
+            [Description("Max deformation episode duration (s)", "Maximum deformation episode duration (s); if blank, will continue until fracture saturation is reached")]
             public double Argument_DeformationDuration
             {
                 internal get { return this.argument_DeformationDuration; }

@@ -134,9 +134,9 @@ DynamicApertureMultiplier 1
 JRC 10
 % Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock
 UCSRatio 2
-% Initial normal strength on fracture
+% Initial normal strength on fracture (Pa)
 InitialNormalStress 2E+5
-% Stiffness normal to the fracture, at initial normal stress
+% Stiffness normal to the fracture, at initial normal stress (Pa/m)
 FractureNormalStiffness 2,5E+9
 % Maximum fracture closure (m)
 MaximumClosure 0,0005

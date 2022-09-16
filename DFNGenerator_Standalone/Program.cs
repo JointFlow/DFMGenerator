@@ -174,9 +174,9 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("JRC 10");
                 input_file.WriteLine("% Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock");
                 input_file.WriteLine("UCSRatio 2");
-                input_file.WriteLine("% Initial normal strength on fracture");
+                input_file.WriteLine("% Initial normal stress on fracture (Pa)");
                 input_file.WriteLine("InitialNormalStress 2E+5");
-                input_file.WriteLine("% Stiffness normal to the fracture, at initial normal stress");
+                input_file.WriteLine("% Stiffness normal to the fracture, at initial normal stress (Pa/m)");
                 input_file.WriteLine("FractureNormalStiffness 2.5E+9");
                 input_file.WriteLine("% Maximum fracture closure (m)");
                 input_file.WriteLine("MaximumClosure 0.0005");
@@ -517,9 +517,9 @@ namespace DFNGenerator_Standalone
             double JRC = 10;
             // Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock
             double UCSRatio = 2;
-            // Initial normal strength on fracture
+            // Initial normal stress on fracture (Pa)
             double InitialNormalStress = 2E+5;
-            // Stiffness normal to the fracture, at initial normal stress
+            // Stiffness normal to the fracture, at initial normal stress (Pa/m)
             double FractureNormalStiffness = 2.5E+9;
             // Maximum fracture closure (m)
             double MaximumClosure = 0.0005;
@@ -974,12 +974,12 @@ namespace DFNGenerator_Standalone
                         case "UCS_ratio_in": // For backwards compatibility
                             UCSRatio = Convert.ToDouble(line_split[1]);
                             break;
-                        // Initial normal strength on fracture
+                        // Initial normal stress on fracture (Pa)
                         case "InitialNormalStress":
                         case "InitialNormalStress_in": // For backwards compatibility
                             InitialNormalStress = Convert.ToDouble(line_split[1]);
                             break;
-                        // Stiffness normal to the fracture, at initial normal stress
+                        // Stiffness normal to the fracture, at initial normal stress (Pa/m)
                         case "FractureNormalStiffness":
                         case "FractureNormalStiffness_in": // For backwards compatibility
                             FractureNormalStiffness = Convert.ToDouble(line_split[1]);
