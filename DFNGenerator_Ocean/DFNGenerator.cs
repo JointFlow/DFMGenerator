@@ -718,16 +718,16 @@ namespace DFNGenerator_Ocean
                     if (RockStrainRelaxation > 0)
                     {
                         if (UseGridFor_RockStrainRelaxation)
-                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}, default {1}{2}\n", RockStrainRelaxation_grid.Name, RockStrainRelaxation, ProjectTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}, default {1}{2}\n", RockStrainRelaxation_grid.Name, toGeologicalTimeUnits.Convert(RockStrainRelaxation), ProjectTimeUnits);
                         else
-                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}{1}\n", RockStrainRelaxation, ProjectTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for rock matrix: {0}{1}\n", toGeologicalTimeUnits.Convert(RockStrainRelaxation), ProjectTimeUnits);
                     }
                     else if (FractureRelaxation > 0)
                     {
                         if (UseGridFor_FractureRelaxation)
-                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}, default {1}{2}\n", FractureRelaxation_grid.Name, FractureRelaxation, ProjectTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}, default {1}{2}\n", FractureRelaxation_grid.Name, toGeologicalTimeUnits.Convert(FractureRelaxation), ProjectTimeUnits);
                         else
-                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}{1}\n", FractureRelaxation, ProjectTimeUnits);
+                            generalInputParams += string.Format("Strain relaxation time constant for fractures: {0}{1}\n", toGeologicalTimeUnits.Convert(FractureRelaxation), ProjectTimeUnits);
                     }
                     else
                         generalInputParams += "No strain relaxation applied\n";
