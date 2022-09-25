@@ -4471,7 +4471,7 @@ namespace DFNGenerator_Ocean
         public System.Drawing.Bitmap Image
         {
             //get { return PetrelImages.Modules; }
-            get { return PetrelImages.PolylineSet; }
+            get { return DFNGenerator_Ocean.Properties.Resources.Logo1_48; } 
             private set
             {
                 // TODO: implement set

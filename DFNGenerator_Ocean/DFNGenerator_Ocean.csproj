@@ -164,6 +164,12 @@
   <ItemGroup>
     <None Include="Resources\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Logo1_48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Logo1_256.png" />
+  </ItemGroup>
   <Import Project="..\DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
