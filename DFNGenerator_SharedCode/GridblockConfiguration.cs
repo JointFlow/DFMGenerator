@@ -2486,6 +2486,7 @@ namespace DFNGenerator_SharedCode
                 int no_l_IndexPoints = PropControl.no_l_indexPoints;
                 if (no_l_IndexPoints > 0)
                     cullValue = CurrentImplicitTimestep / no_l_IndexPoints;
+                double maxLengthMultiplier = 4;
 
                 double maxHMinLength = PropControl.max_HMin_l_indexPoint_Length;
                 double maxHMaxLength = PropControl.max_HMax_l_indexPoint_Length;
@@ -2495,19 +2496,21 @@ namespace DFNGenerator_SharedCode
                     Gridblock_FractureSet fs = FractureSets[fs_index];
 
                     // Calculate the maximum length for the macrofracture cumulative population distribution function index values based on orientation
-                    // If this has not been specified, default to 0 (maximum potential length)
+                    // If this has not been specified, calculate this by applying a multiplier to the mean macrofracture length
                     double maxIndexLength;
-                    if (fs_index == 0)
+                    if ((maxHMinLength <= 0) || (maxHMaxLength <= 0))
+                    {
+                        double denominator = fs.combined_T_MFP30_total() * ThicknessAtDeformation;
+                        maxIndexLength = (denominator > 0 ? fs.combined_T_MFP32_total() / denominator : 0);
+                        maxIndexLength *= maxLengthMultiplier;
+                    }
+                    else if (fs_index == 0)
                     {
                         maxIndexLength = maxHMinLength;
                     }
                     else if ((fs_index == (NoFractureSets / 2)) && ((NoFractureSets % 2) == 0))
                     {
                         maxIndexLength = maxHMaxLength;
-                    }
-                    else if ((maxHMinLength <= 0) || (maxHMaxLength <= 0))
-                    {
-                        maxIndexLength = 0;
                     }
                     else
                     {

@@ -135,7 +135,7 @@ namespace DFNGenerator_Ocean
                     // NB the number of pillars is one more than the number of cells in any direction, and the cells are zero indexed, so we must subtract 2 to get the index number of the last cell in the grid
                     int maxI = PetrelGrid.NumPillarsIJ.I - 2;
                     int maxJ = PetrelGrid.NumPillarsIJ.J - 2;
-                    int maxK = PetrelGrid.NumCellsIJK.K - 2;
+                    int maxK = PetrelGrid.NumCellsIJK.K - 1;
                     // Counter to get number of active gridblocks (after upscaling)
                     int NoActiveGridblocks = 0;
                     // Get all uniform or default values from dialog box arguments
@@ -174,6 +174,9 @@ namespace DFNGenerator_Ocean
                     int PetrelGrid_BaseCellK = arguments.Argument_BottomLayerK - 1;
                     if (PetrelGrid_BaseCellK < PetrelGrid_TopCellK) PetrelGrid_BaseCellK = PetrelGrid_TopCellK;
                     if (PetrelGrid_BaseCellK > maxK) PetrelGrid_BaseCellK = maxK;
+#if DEBUG_FRACS
+                    PetrelLogger.InfoOutputWindow(string.Format("TopCellK {0}, BaseCellK {1}", PetrelGrid_TopCellK, PetrelGrid_BaseCellK));
+#endif
                     // Strain orientatation
                     double EhminAzi = 0;
                     if (!double.IsNaN(arguments.Argument_EhminAzi_default))
@@ -433,8 +436,8 @@ namespace DFNGenerator_Ocean
                     int No_r_bins = 10;
                     if (arguments.Argument_No_r_bins > 0)
                         No_r_bins = arguments.Argument_No_r_bins;
-                    // Implicit fracture population distribution functions are not calculated in the Petrel implementation of DFN Generator
-                    bool CalculatePopulationDistribution = false;
+                    // Implicit fracture population distribution functions will only be calculated if the implicit data is written to file
+                    bool CalculatePopulationDistribution = WriteImplicitDataFiles;
                     // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
                     int No_l_indexPoints = 20;
                     // MaxHMinLength and MaxHMaxLength control the range of fracture lengths in the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
@@ -619,7 +622,11 @@ namespace DFNGenerator_Ocean
                     if (WriteToProjectFolder)
                     {
                         IProjectInfo pi = PetrelProject.GetProjectInfo(DataManager.DataSourceManager);
-                        folderPath = pi.ProjectStorageDirectory.Parent.FullName;
+                        folderPath = Path.Combine(pi.ProjectStorageDirectory.Parent.FullName, ModelName);
+                        folderPath = folderPath + Path.DirectorySeparatorChar;
+                        // If the output folder does not exist, create it
+                        if (!Directory.Exists(folderPath))
+                            Directory.CreateDirectory(folderPath);
                     }
                     else
                     {
@@ -631,7 +638,7 @@ namespace DFNGenerator_Ocean
                             {
                                 string fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
                                 folderPath = Path.Combine(fullHomePath, "DFNFolder");
-                                folderPath = folderPath + @"\";
+                                folderPath = folderPath + Path.DirectorySeparatorChar;
                                 // If the output folder does not exist, create it
                                 if (!Directory.Exists(folderPath))
                                     Directory.CreateDirectory(folderPath);
@@ -916,6 +923,10 @@ namespace DFNGenerator_Ocean
                                 int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                 int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
                                 int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+#if DEBUG_FRACS
+                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_FirstCellI {0}, PetrelGrid_FirstCellJ {1}, PetrelGrid_TopCellK {2}", PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK));
+                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_LastCellI {0}, PetrelGrid_LastCellJ {1}, PetrelGrid_BaseCellK {2}", PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_BaseCellK));
+#endif
 
                                 // Initialise variables for mean depth and thickness
                                 double local_Depth = 0;
