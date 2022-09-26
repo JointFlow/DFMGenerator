@@ -2770,7 +2770,7 @@ namespace DFNGenerator_Ocean
 
                                                         // Assign it to the correct set, if required
                                                         if (assignOrientationSets)
-                                                            Petrel_FractureSegment.FractureSetValue = uF_set;
+                                                            Petrel_FractureSegment.FractureSetValue = (uF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                     }
                                                 }
                                                 catch (Exception e)
@@ -2800,7 +2800,7 @@ namespace DFNGenerator_Ocean
 
                                                     // Assign it to the correct set, if required
                                                     if (assignOrientationSets)
-                                                        Petrel_FractureSegment.FractureSetValue = uF_set;
+                                                        Petrel_FractureSegment.FractureSetValue = (uF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                 }
                                                 catch (Exception e)
                                                 {
@@ -2879,8 +2879,8 @@ namespace DFNGenerator_Ocean
                                                             // Assign them to the correct set, if required
                                                             if (assignOrientationSets)
                                                             {
-                                                                Petrel_FractureSegment1.FractureSetValue = MF_set;
-                                                                Petrel_FractureSegment2.FractureSetValue = MF_set;
+                                                                Petrel_FractureSegment1.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                                Petrel_FractureSegment2.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                             }
                                                         }
                                                         catch (Exception e)

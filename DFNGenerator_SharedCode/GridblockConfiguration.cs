@@ -2503,6 +2503,17 @@ namespace DFNGenerator_SharedCode
                         double denominator = fs.combined_T_MFP30_total() * ThicknessAtDeformation;
                         maxIndexLength = (denominator > 0 ? fs.combined_T_MFP32_total() / denominator : 0);
                         maxIndexLength *= maxLengthMultiplier;
+                        // If the maximum possible macrofracture length is less than this, reduce the maximum index length to the maximum possible macrofracture length
+                        // This will be the case if there is no fracture deactivation (uniaxial or anisotropic evenly distributed stress models)
+                        double maxMFlength = 0;
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            double dipsetMaxMFlength = fds.getCumulativeMFPropagationDistance(CurrentImplicitTimestep, 0);
+                            if (maxMFlength < dipsetMaxMFlength)
+                                maxMFlength = dipsetMaxMFlength;
+                        }
+                        if (maxIndexLength > maxMFlength)
+                            maxIndexLength = maxMFlength;
                     }
                     else if (fs_index == 0)
                     {
