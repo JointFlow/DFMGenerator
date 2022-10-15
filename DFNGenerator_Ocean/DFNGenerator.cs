@@ -247,7 +247,7 @@ namespace DFNGenerator_Ocean
                     Property InitialMicrofractureDensity_grid = arguments.Argument_InitialMicrofractureDensity;
                     bool UseGridFor_InitialMicrofractureDensity = (InitialMicrofractureDensity_grid != null);
                     // Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
-                    double InitialMicrofractureSizeDistribution = 2;
+                    double InitialMicrofractureSizeDistribution = 3;
                     if (!double.IsNaN(arguments.Argument_InitialMicrofractureSizeDistribution_default))
                         InitialMicrofractureSizeDistribution = arguments.Argument_InitialMicrofractureSizeDistribution_default; // Can also be set from grid property
                     Property InitialMicrofractureSizeDistribution_grid = arguments.Argument_InitialMicrofractureSizeDistribution;
@@ -3262,6 +3262,7 @@ namespace DFNGenerator_Ocean
 
         #endregion
 
+        #region Arguments
         /// <summary>
         /// ArgumentPackage class for DFNGenerator.
         /// Each public property is an argument in the package.  The name, type and
@@ -3552,7 +3553,7 @@ namespace DFNGenerator_Ocean
             private double argument_InitialMicrofractureDensity_SI = 0.001;
             private double argument_InitialMicrofractureDensity_default = double.NaN;
             private Droid argument_InitialMicrofractureDensity;
-            private double argument_InitialMicrofractureSizeDistribution_default = 2;
+            private double argument_InitialMicrofractureSizeDistribution_default = 3;
             private Droid argument_InitialMicrofractureSizeDistribution;
             private double argument_SubcriticalPropagationIndex_default = 10;
             private Droid argument_SubcriticalPropagationIndex;
@@ -4452,8 +4453,9 @@ namespace DFNGenerator_Ocean
             }
 #endif
         }
+        #endregion
 
-#region IAppearance Members
+        #region IAppearance Members
         public event EventHandler<TextChangedEventArgs> TextChanged;
         protected void RaiseTextChanged()
         {

@@ -3883,39 +3883,69 @@ namespace DFNGenerator_SharedCode
         /// <param name="active_total_MFP30_termination_ratio">Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio</param>
         /// <param name="minimum_ClearZone_Volume">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
         /// <param name="minrb_minRad">Maximum radius of microfractures in the smallest bin; calculation will terminate if the extrapolated initial radius of these macrofractures is less than zero (will only apply if b is lees than 2)</param>
-        public void CheckFractureDeactivation(double historic_a_MFP33_termination_ratio, double active_total_MFP30_termination_ratio, double minimum_ClearZone_Volume, double minrb_minRad)
+        /// <returns>True if at least one dip set within the fracture set is deactivated, and no sets are still growing or residual active</returns>
+        public bool CheckFractureDeactivation(double historic_a_MFP33_termination_ratio, double active_total_MFP30_termination_ratio, double minimum_ClearZone_Volume, double minrb_minRad)
         {
             // Flag to deactivate fracture set; initially set to false
             bool deactivateFractureSet = false;
 
-            // If the active half-macrofracture volumetric ratio for this fracture set is increasing, update the maximum historic active macrofracture volumetric ratio
-            double current_tot_a_MFP33 = combined_a_MFP33_total();
-            if (max_historic_a_MFP33 < current_tot_a_MFP33)
-                max_historic_a_MFP33 = current_tot_a_MFP33;
-
             // Calculate the ratio of current to maximum active macrofracture volumetric ratio for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
-            double historic_a_MFP33_ratio = (max_historic_a_MFP33 > 0 ? current_tot_a_MFP33 / max_historic_a_MFP33 : 1);
-            if (historic_a_MFP33_ratio <= historic_a_MFP33_termination_ratio)
-                deactivateFractureSet = true;
+            // We only need to do this if the specified minimum is greater than zero; otherwise the check is not performed
+            if (historic_a_MFP33_termination_ratio > 0)
+            {
+                // If the active half-macrofracture volumetric ratio for this fracture set is increasing, update the maximum historic active macrofracture volumetric ratio
+                double current_tot_a_MFP33 = combined_a_MFP33_total();
+                if (max_historic_a_MFP33 < current_tot_a_MFP33)
+                    max_historic_a_MFP33 = current_tot_a_MFP33;
+
+                double historic_a_MFP33_ratio = (max_historic_a_MFP33 > 0 ? current_tot_a_MFP33 / max_historic_a_MFP33 : 1);
+                if (historic_a_MFP33_ratio <= historic_a_MFP33_termination_ratio)
+                    deactivateFractureSet = true;
+            }
 
             // Calculate the active to total half-macrofracture volumetric ratio for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
-            double a_MFP30_ratio = combined_a_MFP30_total() / (combined_a_MFP30_total() + combined_sII_MFP30_total() + combined_sIJ_MFP30_total());
-            if (a_MFP30_ratio <= active_total_MFP30_termination_ratio)
-                deactivateFractureSet = true;
+            // We only need to do this if the specified minimum is greater than zero; otherwise the check is not performed
+            if (active_total_MFP30_termination_ratio > 0)
+            {
+                double a_MFP30_ratio = combined_a_MFP30_total() / (combined_a_MFP30_total() + combined_sII_MFP30_total() + combined_sIJ_MFP30_total());
+                if (a_MFP30_ratio <= active_total_MFP30_termination_ratio)
+                    deactivateFractureSet = true;
+            }
 
+            bool OneDipSetDeactivated = deactivateFractureSet;
+            bool OneDipSetStillActive = false;
             // If the fracture deactivation flag is true, deactivate all the dipsets
             foreach (FractureDipSet fds in FractureDipSets)
             {
-                if (deactivateFractureSet)
+                // If the dipset is already deactivated, we do not need to check it again
+                if (fds.getEvolutionStage() == FractureEvolutionStage.Deactivated)
+                {
+                    OneDipSetDeactivated = true;
+                    continue;
+                }
+                // If the entire fracture set has been deactivated, deactivate this fracture dipset
+                else if (deactivateFractureSet)
+                {
                     fds.deactivateFractures();
-
+                    OneDipSetDeactivated = true;
+                }
                 // If the clear zone volume has dropped below the minimum specified, deactivate this fracture dipset only
-                if ((fds.getEvolutionStage() != FractureEvolutionStage.Deactivated) && (fds.getClearZoneVolumeAllFS() < gbc.PropControl.minimum_ClearZone_Volume))
+                else if (fds.getClearZoneVolumeAllFS() < gbc.PropControl.minimum_ClearZone_Volume)
+                {
                     fds.deactivateFractures();
-
+                    OneDipSetDeactivated = true;
+                }
                 // Check if the extrapolated initial radius of microfractures in the smallest bin is less than zero (will only apply if b<2); if so, deactivate this fracture dipset only
-                fds.Check_Initial_uF_Radius(minrb_minRad, gbc.MechProps.b_factor);
+                else if (fds.Check_Initial_uF_Radius(minrb_minRad, gbc.MechProps.b_factor))
+                {
+                    OneDipSetDeactivated = true;
+                }
+
+                if ((fds.getEvolutionStage() == FractureEvolutionStage.Growing) || (fds.getEvolutionStage() == FractureEvolutionStage.ResidualActivity)) 
+                    OneDipSetStillActive = true;
             }
+
+            return OneDipSetDeactivated && !OneDipSetStillActive;
         }
 
         // DFN fracture interaction functions: used to check if fractures interact with other fractures during DFN generation

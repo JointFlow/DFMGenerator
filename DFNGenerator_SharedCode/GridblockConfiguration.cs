@@ -1921,10 +1921,10 @@ namespace DFNGenerator_SharedCode
             // Flag for whether all fracture sets have been deactivated
             bool AllSetsDeactivated = false;
             // Flag for whether to stop the calculation when all sets have been deactivated
-            // By default we will continue until all fracture sets have been deactivated
+            // By default we will continue until the end of the specified deformation duration
             bool StopWhenAllSetsDeactivated = false;
             // If the deformation stage duration is negative, then we will stop automatically when all fracture sets have been deactivated
-            // We can also set the deformation stage duration to an arbitrarily long time (5000ma) and set the calculation to stop automatically when all sets have been deactivated
+            // We will set the deformation stage duration to an arbitrarily long time (5000ma) and set the calculation to stop automatically when all sets have been deactivated
             if (DeformationStageDuration < 0)
             {
                 DeformationStageDuration = 5000d * 1000000d * 365.25d * 24d * 3600d; // Convert from ma to s
@@ -2238,7 +2238,7 @@ namespace DFNGenerator_SharedCode
                 if (checkAlluFStressShadows && stressShadowWidthChanged)
                     setCrossFSStressShadows();
 
-                // Check if any of the fracture sets meet the deactivation criteria
+                // Check if any of the fracture sets meet the deactivation criteria, after in situ stress and stress shadow widths have been recalculated 
                 foreach (Gridblock_FractureSet fs in FractureSets)
                 {
                     fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
@@ -2322,6 +2322,13 @@ namespace DFNGenerator_SharedCode
                         fds.calculateTotalMicrofracturePopulation(no_r_bins);
                         fds.setMicrofractureDensityData();
                     }
+                }
+
+                // Check if any or all of the fracture sets meet the deactivation criteria, after the fracture densities have been recalculated
+                AllSetsDeactivated = true;
+                foreach (Gridblock_FractureSet fs in FractureSets)
+                {
+                    AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
                 }
 
                 // Update stress and strain tensors for the next timestep
@@ -2460,20 +2467,6 @@ namespace DFNGenerator_SharedCode
                 if (CurrentImplicitTimestep >= maxTimesteps)
                     CalculationCompleted = true;
                 // Check if all fracture sets are deactivated
-                AllSetsDeactivated = true;
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    // We will consider the fracture set as deactivated if any one dip set within the fracture set is deactivated and no sets are still growing or residual active
-                    bool DipSetDeactivated = false;
-                    bool DipSetStillActive = false;
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        if (fds.getEvolutionStage() == FractureEvolutionStage.Deactivated) DipSetDeactivated = true;
-                        if ((fds.getEvolutionStage() == FractureEvolutionStage.Growing) || (fds.getEvolutionStage() == FractureEvolutionStage.ResidualActivity)) DipSetStillActive = true;
-                    }
-                    bool ThisSetDeactivated = DipSetDeactivated && !DipSetStillActive;
-                    AllSetsDeactivated = AllSetsDeactivated && ThisSetDeactivated;
-                }
                 if (AllSetsDeactivated && StopWhenAllSetsDeactivated)
                     CalculationCompleted = true;
 

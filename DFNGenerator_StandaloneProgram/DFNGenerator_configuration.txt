@@ -61,7 +61,7 @@ FractureRelaxation 0
 % Density of initial microfractures
 InitialMicrofractureDensity 0.001
 % Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
-InitialMicrofractureSizeDistribution 2
+InitialMicrofractureSizeDistribution 3
 % Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
 SubcriticalPropIndex 10
 % Critical fracture propagation rate in m/s
@@ -85,7 +85,7 @@ InitialOverpressure 0
 % Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
 % Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
 % Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
-InitialStressRelaxation 1
+InitialStressRelaxation 0.5
 
 % Outputs
 % Output to file
