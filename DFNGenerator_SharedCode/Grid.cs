@@ -15,7 +15,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFNGenerator v2.1.1"; } }
+        public static string VersionNumber { get { return "DFNGenerator v3.0.0"; } }
 
         // Grid data
         /// <summary>
