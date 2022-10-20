@@ -58,6 +58,16 @@ namespace DFNGenerator_SharedCode
         /// <param name="Biot_in">Biot's coefficient for intact rock</param>
         public void setElasticProperties(double E_r_in, double Nu_r_in, double Biot_in)
         {
+            // The stress calculation algorithm will throw an error if Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+            // Therefore if these values are entered, they will be adjusted slightly so as not to throw an error
+            // The code will actually generate a result with any other values, even if they are physically unrealistic, so they will not be corrected here
+            if ((float)E_r_in == 0f)
+                E_r_in = 0.01;
+            if ((float)Nu_r_in == -1f)
+                Nu_r_in = -0.99;
+            if ((float)Nu_r_in == 1f)
+                Nu_r_in = 0.99;
+
             // Set the elastic constants
             // Young's modulus of intact rock
             E_r = E_r_in;
@@ -146,7 +156,7 @@ namespace DFNGenerator_SharedCode
         /// </summary>
         public double UCS_ratio { get; set; }
         /// <summary>
-        /// Initial normal strength on fracture (Pa) - used to calculate aperture by Barton-Bandis formula
+        /// Initial normal stress on fracture (Pa) - used to calculate aperture by Barton-Bandis formula
         /// </summary>
         public double InitialNormalStress { get; set; }
         /// <summary>
@@ -227,9 +237,8 @@ namespace DFNGenerator_SharedCode
         /// <param name="DynamicApertureMultiplier_in">Multiplier for dynamic aperture</param>
         /// <param name="JRC_in">Joint Roughness Coefficient</param>
         /// <param name="UCS_ratio_in">Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock</param>
-        /// <param name="UCS_in">Unconfined Compressive Strength of intact rock</param>
-        /// <param name="InitialNormalStress_in">Initial normal strength on fracture</param>
-        /// <param name="FractureNormalStiffness_in">Stiffness normal to the fracture, at initial normal stress</param>
+        /// <param name="InitialNormalStress_in">Initial normal stress on fracture (Pa)</param>
+        /// <param name="FractureNormalStiffness_in">Stiffness normal to the fracture, at initial normal stress (Pa/m)</param>
         /// <param name="MaximumClosure_in">Maximum fracture closure (m)</param>
         public void setFractureApertureControlData(double DynamicApertureMultiplier_in, double JRC_in, double UCS_ratio_in, double InitialNormalStress_in, double FractureNormalStiffness_in, double MaximumClosure_in)
         {
@@ -239,9 +248,9 @@ namespace DFNGenerator_SharedCode
             JRC = JRC_in;
             // Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock
             UCS_ratio = UCS_ratio_in;
-            // Initial normal strength on fracture
+            // Initial normal stress on fracture (Pa)
             InitialNormalStress = InitialNormalStress_in;
-            // Stiffness normal to the fracture, at initial normal stress
+            // Stiffness normal to the fracture, at initial normal stress (Pa/m)
             FractureNormalStiffness = FractureNormalStiffness_in;
             // Maximum fracture closure (m)
             MaximumClosure = MaximumClosure_in;

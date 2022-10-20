@@ -97,7 +97,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Density of initial microfractures");
                 input_file.WriteLine("InitialMicrofractureDensity 0.001");
                 input_file.WriteLine("% Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures");
-                input_file.WriteLine("InitialMicrofractureSizeDistribution 2");
+                input_file.WriteLine("InitialMicrofractureSizeDistribution 3");
                 input_file.WriteLine("% Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation");
                 input_file.WriteLine("SubcriticalPropIndex 10");
                 input_file.WriteLine("% Critical fracture propagation rate in m/s");
@@ -122,7 +122,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)");
                 input_file.WriteLine("% Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)");
                 input_file.WriteLine("% Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)");
-                input_file.WriteLine("InitialStressRelaxation 1");
+                input_file.WriteLine("InitialStressRelaxation 0.5");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Outputs");
@@ -174,9 +174,9 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("JRC 10");
                 input_file.WriteLine("% Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock");
                 input_file.WriteLine("UCSRatio 2");
-                input_file.WriteLine("% Initial normal strength on fracture");
+                input_file.WriteLine("% Initial normal stress on fracture (Pa)");
                 input_file.WriteLine("InitialNormalStress 2E+5");
-                input_file.WriteLine("% Stiffness normal to the fracture, at initial normal stress");
+                input_file.WriteLine("% Stiffness normal to the fracture, at initial normal stress (Pa/m)");
                 input_file.WriteLine("FractureNormalStiffness 2.5E+9");
                 input_file.WriteLine("% Maximum fracture closure (m)");
                 input_file.WriteLine("MaximumClosure 0.0005");
@@ -445,7 +445,7 @@ namespace DFNGenerator_Standalone
             // Density of initial microfractures
             double InitialMicrofractureDensity = 0.001;
             // Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
-            double InitialMicrofractureSizeDistribution = 2;
+            double InitialMicrofractureSizeDistribution = 3;
             // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
             double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
@@ -468,7 +468,7 @@ namespace DFNGenerator_Standalone
             // Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
             // Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
             // Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
-            double InitialStressRelaxation = 1;
+            double InitialStressRelaxation = 0.5;
 
             // Outputs
             // Output to file
@@ -517,9 +517,9 @@ namespace DFNGenerator_Standalone
             double JRC = 10;
             // Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock
             double UCSRatio = 2;
-            // Initial normal strength on fracture
+            // Initial normal stress on fracture (Pa)
             double InitialNormalStress = 2E+5;
-            // Stiffness normal to the fracture, at initial normal stress
+            // Stiffness normal to the fracture, at initial normal stress (Pa/m)
             double FractureNormalStiffness = 2.5E+9;
             // Maximum fracture closure (m)
             double MaximumClosure = 0.0005;
@@ -974,12 +974,12 @@ namespace DFNGenerator_Standalone
                         case "UCS_ratio_in": // For backwards compatibility
                             UCSRatio = Convert.ToDouble(line_split[1]);
                             break;
-                        // Initial normal strength on fracture
+                        // Initial normal stress on fracture (Pa)
                         case "InitialNormalStress":
                         case "InitialNormalStress_in": // For backwards compatibility
                             InitialNormalStress = Convert.ToDouble(line_split[1]);
                             break;
-                        // Stiffness normal to the fracture, at initial normal stress
+                        // Stiffness normal to the fracture, at initial normal stress (Pa/m)
                         case "FractureNormalStiffness":
                         case "FractureNormalStiffness_in": // For backwards compatibility
                             FractureNormalStiffness = Convert.ToDouble(line_split[1]);

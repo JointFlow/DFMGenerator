@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--ProjectType:PIPBuilder-->
+  <Import Project="..\packages\NUnit.3.13.3\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.13.3\build\NUnit.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -11,8 +12,11 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Pip_builder</RootNamespace>
     <AssemblyName>Pip_builder</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -34,9 +38,6 @@
   <PropertyGroup>
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="Readme.txt" />
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build">
     <Exec Command="$(PreBuildEvent)" />
@@ -54,10 +55,11 @@
   </Target>
   -->
   <PropertyGroup>
-    <PreBuildEvent>mkdir "$(TargetDir)"
+    <PreBuildEvent>xcopy "$(SolutionDir)\DFNGenerator_Ocean\Resources\HelpFiles" /s /i /y "$(ProjectDir)HelpFiles"
+mkdir "$(TargetDir)"
 rmdir "$(ProjectDir)\obj\copytemp" /s /q
 "$(ProjectDir)\DeployCopier.exe" "$(ProjectDir)DeployList.xml" "$(ProjectDir)\obj\copytemp" /config:$(ConfigurationName) /platform:"$(PlatformName)"</PreBuildEvent>
-    <PostBuildEvent>"%25Ocean2016Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2016.pip" "%25Ocean2016Home%25\petrel.exe"</PostBuildEvent>
+    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm" -helpfile "$(ProjectDir)\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
@@ -66,4 +68,18 @@ rmdir "$(ProjectDir)\obj\copytemp" /s /q
     <Content Include="DeployCopier.exe" />
     <Content Include="DeployList.xml" />
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework, Version=3.13.3.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\packages\NUnit.3.13.3\lib\net45\nunit.framework.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\NUnit.3.13.3\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.13.3\build\NUnit.props'))" />
+  </Target>
 </Project>

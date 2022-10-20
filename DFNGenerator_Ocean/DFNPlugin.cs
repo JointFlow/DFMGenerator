@@ -47,10 +47,6 @@ namespace DFNGenerator_Ocean
             get 
             {
                 yield return new ModuleReference(typeof(DFNGenerator_Ocean.DFNModule2));
-                //yield return new ModuleReference(typeof(DFNGenerator_Ocean.DFNModule)); 
-                // Please fill this method with your modules with lines like this:
-                //yield return new ModuleReference(typeof(Module));
-
             }
         }
 

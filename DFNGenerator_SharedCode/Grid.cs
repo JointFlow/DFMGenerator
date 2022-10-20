@@ -15,7 +15,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFNGenerator v3.0.0"; } }
+        public static string VersionNumber { get { return "DFNGenerator v2.1.1"; } }
 
         // Grid data
         /// <summary>
@@ -46,6 +46,10 @@ namespace DFNGenerator_SharedCode
         /// Control data for generating the DFN 
         /// </summary>
         public DFNGenerationControl DFNControl;
+        /// <summary>
+        /// Flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer thickness cutoff
+        /// </summary>
+        public bool DFNThicknessCutoffActivated { get; private set; }
 
         // Functions to calculate fracture population data and generate the DFN
         /// <summary>
@@ -146,6 +150,9 @@ namespace DFNGenerator_SharedCode
             // Calculate unit conversion modifier for output time data if not in SI units
             TimeUnits timeUnits = DFNControl.timeUnits;
             double timeUnits_Modifier = DFNControl.getTimeUnitsModifier();
+
+            // Initialise flags to indicate that the explicit DFN was not generated in some or any gridblocks, due to the layer thickness cutoff
+            DFNThicknessCutoffActivated = false;
 
             // Generate a list of timestep end times for all timesteps in every gridblock in the grid
             int totalNoCalculationElements;
@@ -591,6 +598,8 @@ namespace DFNGenerator_SharedCode
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
                 if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                else
+                    DFNThicknessCutoffActivated = true;
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -645,6 +654,8 @@ namespace DFNGenerator_SharedCode
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
                 if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                else
+                    DFNThicknessCutoffActivated = true;
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -745,7 +756,7 @@ namespace DFNGenerator_SharedCode
 
         // Reset and data input functions
         /// <summary>
-        /// Add a GridblockConfiguration object to a specified cell in the grid and set up references to adjacent cells. The specified cell in the grid must already exist.
+        /// Add a GridblockConfiguration object to a specified cell in the grid and set up references to adjecent cells. The specified cell in the grid must already exist.
         /// </summary>
         /// <param name="gridblock_in">GridblockConfiguration object to add to the grid</param>
         /// <param name="RowNo">Row number of cell to place it in (zero referenced)</param>
@@ -901,6 +912,9 @@ namespace DFNGenerator_SharedCode
 
             // Initialise random number generator for placing fractures
             RandomNumberGenerator = new Random();
-        }
+
+            // Initialise flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer tthickness cutoff
+            DFNThicknessCutoffActivated = false;
     }
+}
 }

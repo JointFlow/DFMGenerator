@@ -4,18 +4,19 @@
     <Name>DFN_Plugin</Name>
     <Description>DFN Generator: Petrel version</Description>
     <Contact>mwelch@dtu.dk or mikael@dtu.dk</Contact>
-    <PluginTypeName>DFNGenerator_Ocean.DFNPlugin, DFNGenerator_Ocean, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
+    <PluginTypeName>DFNGenerator_Ocean.DFNPlugin, DFNGenerator_Ocean, Version=2.1.1.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
     <PluginUri>https://offshore.dtu.dk/english</PluginUri>
-    <PluginId>://DFNGenerator_Ocean.DFNPlugin/2.0.1.0</PluginId>
+    <PluginId>://DFNGenerator_Ocean.DFNPlugin/2.1.1.0</PluginId>
     <Trust PublicKeyToken="">Default</Trust>
-    <ReleaseDate>2022-07-22</ReleaseDate>
+    <ReleaseDate>2022-10-20</ReleaseDate>
     <Author>Michael Welch and Mikael Lüthje</Author>
     <AppVersion>2020.0</AppVersion>
     <Modules>
-      <Module TypeName="DFNGenerator_Ocean.DFNModule2, DFNGenerator_Ocean, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null" />
+      <Module TypeName="DFNGenerator_Ocean.DFNModule2, DFNGenerator_Ocean, Version=2.1.1.0, Culture=neutral, PublicKeyToken=null" />
     </Modules>
     <Assemblies>
-      <Assembly Name="DFNGenerator_Ocean, Version=2.0.1.0, Culture=neutral, PublicKeyToken=null" />
+      <Assembly Name="DFNGenerator_Ocean, Version=2.1.1.0, Culture=neutral, PublicKeyToken=null" />
+      <Assembly Name="nunit.framework, Version=3.13.3.0, Culture=neutral, PublicKeyToken=2638cd05610744eb" />
     </Assemblies>
     <assemblyBinding />
     <StartMode>Startup</StartMode>

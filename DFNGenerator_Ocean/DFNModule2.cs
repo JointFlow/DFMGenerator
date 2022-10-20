@@ -2,6 +2,9 @@
 // Use for debugging only
 //#define DEBUG_FRACS
 
+// Set this flag to enable managed persistence of the dialog box input data
+//#define MANAGED_PERSISTENCE
+
 using System;
 using Slb.Ocean.Core;
 using Slb.Ocean.Petrel;
@@ -19,6 +22,9 @@ namespace DFNGenerator_Ocean
     public class DFNModule2 : IModule
     {
         private Process m_dfngeneratorInstance;
+#if MANAGED_PERSISTENCE
+        private DFNGeneratorDataSourceFactory m_dfngeneratorDataSourceFactory;
+#endif
         public DFNModule2()
         {
             //
@@ -26,7 +32,7 @@ namespace DFNGenerator_Ocean
             //
         }
 
-        #region IModule Members
+#region IModule Members
 
         /// <summary>
         /// This method runs once in the Module life; when it loaded into the petrel.
@@ -56,11 +62,17 @@ namespace DFNGenerator_Ocean
             PetrelSystem.WorkflowEditor.AddUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>(new DFNGenerator_Ocean.DFNGenerator.UIFactory());
             PetrelSystem.WorkflowEditor.Add(dfngeneratorInstance);
             m_dfngeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfngeneratorInstance);
-            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Plug-ins");
+            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Fracture network modeling");
 
             // Register LaunchDFNGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
             PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.LaunchDFNGenerator.ID, new DFNGenerator_Ocean.LaunchDFNGenerator());
+
+#if MANAGED_PERSISTENCE
+            // Register the custom DFNGeneratorDataSourceFactory
+            m_dfngeneratorDataSourceFactory = new DFNGeneratorDataSourceFactory();
+            PetrelSystem.AddDataSourceFactory(m_dfngeneratorDataSourceFactory);
+#endif
         }
 
         /// <summary>
@@ -72,6 +84,20 @@ namespace DFNGenerator_Ocean
         {
             // Add Ribbon Configuration file
             PetrelSystem.ConfigurationService.AddConfiguration(DFNGenerator_Ocean.Properties.Resources.DFNGeneratorConfig);
+
+            // Add help content via PetrelSystem.HelpService
+            string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            HelpService helpService = PetrelSystem.HelpService;
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"))
+            {
+                Text = "DFN Generator Help",
+            };
+            helpService.Add(helpContentMain);
+            PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"))
+            {
+                Text = "DFN Generator Help, pdf format",
+            };
+            helpService.Add(helpContentPDF);
         }
 
         /// <summary>
@@ -84,20 +110,31 @@ namespace DFNGenerator_Ocean
             // Unregister DFNGenerator_Ocean.DFNGenerator
             PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>();
             PetrelSystem.ProcessDiagram.Remove(m_dfngeneratorInstance);
+
+            // Remove the help content - not necessary
+            /*string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            HelpService helpService = PetrelSystem.HelpService;
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"));
+            helpService.Remove(helpContentMain);*/
+
+#if MANAGED_PERSISTENCE
+            // Unregister the custom DFNGeneratorDataSourceFactory
+            PetrelSystem.RemoveDataSourceFactory(m_dfngeneratorDataSourceFactory);
+#endif
         }
 
-        #endregion
+#endregion
 
-        #region IDisposable Members
+#region IDisposable Members
 
         public void Dispose()
         {
             // TODO:  Add DFNModule2.Dispose implementation
         }
 
-        #endregion
+#endregion
 
-        #region Event Handlers and auxiliary functions
+#region Event Handlers and auxiliary functions
 
         /// <summary>
         /// Event handler for the WorkspaceEvents.Opened event that is called whenever a new project is opened
@@ -154,7 +191,7 @@ namespace DFNGenerator_Ocean
                 TemplateCollection fractureIntensityTemplateCollection = PetrelProject.WellKnownTemplateCollections.FractureProperty;
 
                 // Create a name for the new templates; if there is already a template with that name, return that instead
-                string templateName = "P30FractureIntensity";
+                string templateName = "P30 Fracture Intensity";
                 Template existingTemplate = PetrelSystem.TemplateService.FindTemplateByName(templateName);
                 if (existingTemplate != null)
                     return existingTemplate;
@@ -208,7 +245,7 @@ namespace DFNGenerator_Ocean
                 TemplateCollection fractureIntensityTemplateCollection = PetrelProject.WellKnownTemplateCollections.FractureProperty;
 
                 // Create a name for the new templates; if there is already a template with that name, return that instead
-                string templateName = "P32FractureIntensity";
+                string templateName = "P32 Fracture Intensity";
                 Template existingTemplate = PetrelSystem.TemplateService.FindTemplateByName(templateName);
                 if (existingTemplate != null)
                     return existingTemplate;
@@ -240,7 +277,7 @@ namespace DFNGenerator_Ocean
             // Return the template
             return outputTemplate;
         }
-        #endregion
+#endregion
     }
 
 
