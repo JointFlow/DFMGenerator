@@ -3521,8 +3521,9 @@ namespace DFNGenerator_Ocean
             private int argument_BottomLayerK = 1;
             private double argument_EhminAzi_default = 0;
             private Droid argument_EhminAzi;
-            // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units, not SI units
+            // Unit conversion for the strain rate properties EhminRate and EhmaxRate are carried out when the grid is populated in ExectureSimple(), as there are no inbuilt Petrel units for strain rate 
+            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
+            // Unit labelling must be handled manually
             private double argument_EhminRate_default = -0.01;
             private Droid argument_EhminRate;
             private double argument_EhmaxRate_default = 0;
@@ -3702,7 +3703,10 @@ namespace DFNGenerator_Ocean
                 set { this.argument_EhminAzi = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default minimum horizontal strain rate (/s, tensile strain negative)", "Default value for minimum horizontal strain rate (/s, tensile strain negative)")]
+            // Unit conversion for the strain rate properties EhminRate and EhmaxRate are carried out when the grid is populated in ExectureSimple(), as there are no inbuilt Petrel units for strain rate 
+            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
+            // Unit labelling must be handled manually
+            [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
             public double Argument_EhminRate_default
             {
                 internal get { return this.argument_EhminRate_default; }
@@ -3710,14 +3714,14 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Minimum horizontal strain rate (/s, tensile strain negative)", "Minimum horizontal strain rate (/s, tensile strain negative)")]
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
             {
                 internal get { return DataManager.Resolve(this.argument_EhminRate) as Property; }
                 set { this.argument_EhminRate = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default maximum horizontal strain rate (/s, tensile strain negative)", "Default value for maximum horizontal strain rate (/s, tensile strain negative)")]
+            [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
             public double Argument_EhmaxRate_default
             {
                 internal get { return this.argument_EhmaxRate_default; }
@@ -3725,7 +3729,7 @@ namespace DFNGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Maximum horizontal strain rate (/s, tensile strain negative)", "Maximum horizontal strain rate (/s, tensile strain negative)")]
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
             {
                 internal get { return DataManager.Resolve(this.argument_EhmaxRate) as Property; }

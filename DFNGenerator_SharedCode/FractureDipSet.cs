@@ -2566,7 +2566,7 @@ namespace DFNGenerator_SharedCode
             }
             // If we are not allowing reverse fractures and the new displacement vector gives a reverse sense of displacement, there will be no fracture growth in this timestep
             // We can therefore set U and V to zero
-            // In this case we cannot calculate an optimal duration and will return the default value -1
+            // In this case we cannot calculate an optimal duration and will return the default value infinity (no optimal duration calculated)
             else if (!IncludeReverseFractures && DisplacementSense == FractureDisplacementSense.Reverse)
             {
                 U = 0;

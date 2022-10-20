@@ -442,7 +442,11 @@ namespace DFNGenerator_Ocean
         {
             try
             {
-                return tBox.Value;
+                // If the text box is blank, return NaN
+                if (tBox.TextLength == 0)
+                    return double.NaN;
+                else
+                    return tBox.Value;
             }
             catch (FormatException)
             {
@@ -457,6 +461,7 @@ namespace DFNGenerator_Ocean
         {
             try
             {
+                // Convert.ToDouble will throw an exception if the text box is blank, so there is no need to check this
                 return Convert.ToDouble(tBox.Text);
             }
             catch (FormatException)
