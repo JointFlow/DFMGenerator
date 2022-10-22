@@ -3055,7 +3055,7 @@ namespace DFNGenerator_SharedCode
 
                                 // Also calculate a_MFP30 for a residual active macrofracture population - we will compare this with the a_MFP30 calculated for a growing fracture population
                                 // We include the timestep equilibriation factor to exclude early timesteps where the projected residual fracture population is high, but the equilbrium has not yet been reached so the actual population is much lower
-                                tsK_a_MFP30_residual = ts_equilibriation_factor * ((Math.Abs(betac_factor) * ts_gamma_InvBeta) / inst_F_K) * ts_theta_dashed_Mminus1 * ts_CumhGammaM_betacminus1_factor;
+                                tsK_a_MFP30_residual = (inst_F_K > 0 ? ts_equilibriation_factor * ((Math.Abs(betac_factor) * ts_gamma_InvBeta) / inst_F_K) * ts_theta_dashed_Mminus1 * ts_CumhGammaM_betacminus1_factor : 0);
 
                             } // End final timestep M=K=N
 

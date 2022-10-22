@@ -1924,10 +1924,10 @@ namespace DFNGenerator_SharedCode
             // By default we will continue until the end of the specified deformation duration
             bool StopWhenAllSetsDeactivated = false;
             // If the deformation stage duration is negative, then we will stop automatically when all fracture sets have been deactivated
-            // We will set the deformation stage duration to an arbitrarily long time (5000ma) and set the calculation to stop automatically when all sets have been deactivated
+            // We will set the deformation stage duration to infinity and set the calculation to stop automatically when all sets have been deactivated
             if (DeformationStageDuration < 0)
             {
-                DeformationStageDuration = 5000d * 1000000d * 365.25d * 24d * 3600d; // Convert from ma to s
+                DeformationStageDuration = double.PositiveInfinity;
                 StopWhenAllSetsDeactivated = true;
             }
 
@@ -2258,6 +2258,13 @@ namespace DFNGenerator_SharedCode
                         if (maxdur < TimestepDuration) 
                             TimestepDuration = maxdur;
                     }
+                }
+
+                // If the timestep duration is still infinity, no further fractures can form; therefore set the current timestep duration to zero and set the flag to stop the calculation at the end of it
+                if (double.IsInfinity(TimestepDuration))
+                {
+                    TimestepDuration = 0;
+                    CalculationCompleted = true;
                 }
 
                 // Update list of timestep end times

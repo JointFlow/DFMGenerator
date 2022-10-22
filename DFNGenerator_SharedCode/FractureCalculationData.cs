@@ -176,16 +176,16 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Mean probability of half-macrofracture deactivation by stress shadow interaction averaged over the whole of timestep M, as a proportion of initial fracture population (/s)
         /// </summary>
-        public double Mean_FII_M { get { double PhiM = Phi_M; if (PhiM >= 1) return 0; else return Mean_F_M * (Phi_II_M > 0 ? (Math.Log(Phi_II_M) / Math.Log(PhiM)) : 1); } }
+        public double Mean_FII_M { get { double PhiM = Phi_M; if (PhiM >= 1) return 0; else if (Phi_II_M <= 0) return Mean_F_M; else return Mean_F_M * (Math.Log(Phi_II_M) / Math.Log(PhiM)); } }
         /// <summary>
         /// Instantaneous probability of half-macrofracture deactivation by stress shadow interaction during timestep M, as a proportion of current fracture population (/s)
         /// Since macrofracture stress shadow interaction is a random process, this can be calculated directly from Phi_II
         /// </summary>
-        public double Instantaneous_FII_M { get { return -Math.Log(Phi_II_M) / M_Duration; } }
+        public double Instantaneous_FII_M { get { if (M_Duration <= 0) return 0; else return -Math.Log(Phi_II_M) / M_Duration; } }
         /// <summary>
         /// Mean probability of half-macrofracture deactivation by intersecting another fracture set averaged over the whole of timestep M, as a proportion of initial fracture population (/s)
         /// </summary>
-        public double Mean_FIJ_M { get { double PhiM = Phi_M; if (PhiM >= 1) return 0; else return Mean_F_M * (Phi_IJ_M > 0 ? (Math.Log(Phi_IJ_M) / Math.Log(PhiM)) : 1); } }
+        public double Mean_FIJ_M { get { double PhiM = Phi_M; if (PhiM >= 1) return 0; else if (Phi_IJ_M <= 0) return Mean_F_M; else return Mean_F_M * (Math.Log(Phi_IJ_M) / Math.Log(PhiM)); } }
         /// <summary>
         /// Instantaneous probability of half-macrofracture deactivation by intersecting another fracture set during timestep M, as a proportion of current fracture population (/s)
         /// Since macrofracture intersection is a semi-regular process when there are stress shadows, this cannot always be calculated from Phi_IJ so is stored separately
@@ -194,7 +194,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Mean probability of half-macrofracture deactivation averaged over the whole of timestep M, as a proportion of initial fracture population (/s)
         /// </summary>
-        public double Mean_F_M { get { return (1 - Phi_M) / M_Duration; } }
+        public double Mean_F_M { get { if (M_Duration <= 0) return 0; else return (1 - Phi_M) / M_Duration; } }
         /// <summary>
         /// Instantaneous probability of half-macrofracture deactivation during timestep M, as a proportion of current fracture population (/s)
         /// </summary>
