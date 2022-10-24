@@ -2643,9 +2643,10 @@ namespace DFNGenerator_SharedCode
                 double U_factor1 = CapA * Math.Pow(sqrtpi_Kc_factor * U, b);
                 double U_factor2 = U * U_factor1;
 
-                // NB if (V_factor + U_factor1) <= 0 then driving stress is decreasing and will never be sufficient to reach the specified d_MFP33
-                // In this case we cannot calculate an optimal duration and will return the default value -1
-                if ((V_factor + U_factor1) > 0)
+                // If the ratio of active to maximum potential half macrofractures is close to zero, the specified d_MFP33 will never be reached
+                // If (V_factor + U_factor1) <= 0 then driving stress is decreasing and will never be sufficient to reach the specified d_MFP33
+                // In these cases we cannot calculate an optimal duration, so will deactivate the fracture set and return the default value infinity (no optimal duration calculated)
+                if (((float)ts_ahalfMF_uF_ratio > 0f) && ((float)(V_factor + U_factor1) > 0f))
                 {
                     double UV_factor = alpha_uF_b_factor * Math.Pow(V_factor + U_factor2, 1 / (b + 1));
 
@@ -2661,6 +2662,10 @@ namespace DFNGenerator_SharedCode
                         optdur = d_MFP33_CumhGammaM_betac1_factor2 / (U_factor1 / beta);
                         V = 0;
                     }
+                }
+                else
+                {
+                    CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
                 }
 
                 // Finally, if the normal stress on the fracture will reach zero (from either a positive or negative value) before the calculated optimal duration, we will set this as the optimal timestep duration
@@ -3292,7 +3297,7 @@ namespace DFNGenerator_SharedCode
             // Cache current timestep duration
             double tsN_Duration = PreviousFractureData.getDuration(tsN);
 
-            // Cache current mean instantaneous probability of microfracture deactivation
+            // Cache current mean probability of microfracture deactivation
             double mean_qiI_N = PreviousFractureData.getMean_qiI(tsN);
 
             // Cache useful variables locally
@@ -4210,7 +4215,7 @@ namespace DFNGenerator_SharedCode
                     // Cache timestep M duration
                     double tsM_Duration = PreviousFractureData.getDuration(tsM);
 
-                    // Cache current mean instantaneous probability of microfracture deactivation
+                    // Cache current mean probability of microfracture deactivation
                     double mean_qiI_M = PreviousFractureData.getMean_qiI(tsM);
 
                     // Cache useful variables locally

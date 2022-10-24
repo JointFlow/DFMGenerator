@@ -147,7 +147,7 @@ namespace DFNGenerator_SharedCode
         /// <returns></returns>
         public double getCumulativeHalfLength(int Timestep_N, int Timestep_M) { return (Timestep_N < Timestep_M ? 0 : (dataList[Timestep_N].Cum_HalfLength_M - dataList[Timestep_M].Cum_HalfLength_M)); }
         /// <summary>
-        /// Mean instantaneous probability of microfracture deactivation by falling into a macrofracture stress shadow in this gridblock, during timestep M (/s)
+        /// Mean probability of microfracture deactivation by falling into a macrofracture stress shadow in this gridblock, during timestep M (/s)
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
@@ -159,7 +159,7 @@ namespace DFNGenerator_SharedCode
         /// <returns></returns>
         public double getCumulativeTheta(int Timestep_M) { return dataList[Timestep_M].theta_M; }
         /// <summary>
-        /// Mean instantaneous probability of a microfracture in this gridblock falling into a macrofracture exclusion zone, during timestep M (/s)
+        /// Mean probability of a microfracture in this gridblock falling into a macrofracture exclusion zone, during timestep M (/s)
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>

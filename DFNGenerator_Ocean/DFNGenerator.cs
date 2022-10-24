@@ -767,7 +767,10 @@ namespace DFNGenerator_Ocean
                     generalInputParams += string.Format("Mean overlying sediment density: {0}{1}\n", toProjectRockDensityUnits.Convert(MeanOverlyingSedimentDensity), RockDensityUnits);
                     generalInputParams += string.Format("Fluid density: {0}{1}\n", toProjectFluidDensityUnits.Convert(FluidDensity), FluidDensityUnits);
                     generalInputParams += string.Format("Initial fluid overpressure: {0}{1}\n", toProjectPressureUnits.Convert(InitialOverpressure), PressureUnits);
-                    generalInputParams += string.Format("Initial stress relaxation factor: {0}\n", InitialStressRelaxation);
+                    if (InitialStressRelaxation < 0)
+                        generalInputParams += string.Format("Initial stress: Critical\n");
+                    else
+                        generalInputParams += string.Format("Initial stress relaxation factor: {0}\n", InitialStressRelaxation);
 
                     // Fracture aperture
                     if (CalculateFracturePorosity)
