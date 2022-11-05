@@ -43,20 +43,39 @@ namespace DFNGenerator_SharedCode
         /// </summary>
         public double Nu_r { get; private set; }
         /// <summary>
-        /// Biot's coefficient
+        /// Bulk modulus of intact rock (Pa)
         /// </summary>
-        public double Biot { get; private set; }
+        public double Kb_r { get { return E_r / (2 * (1 + Nu_r)); } }
         /// <summary>
         /// Compliance tensor for intact rock
         /// </summary>
         public Tensor4_2Sx2S S_r { get; private set; }
+
+        // Poroelastic properties
         /// <summary>
-        /// Set the elastic constants and recreate the compliance tensor for intact rock
+        /// Porosity of intact rock (volume ratio)
         /// </summary>
-        /// <param name="E_r_in">Young's Modulus for intact rock (Pa)</param>
-        /// <param name="Nu_r_in">Poisson's ratio for intact rock</param>
+        public double Porosity { get; private set; }
+        /// <summary>
+        /// Biot's coefficient of intact rock
+        /// </summary>
+        public double Biot { get; private set; }
+        /// <summary>
+        /// Bulk modulus of the grains (Pa)
+        /// </summary>
+        public double Kg_r { get { return Kb_r / (1 - Biot); } }
+        /// <summary>
+        /// Bulk modulus of the intact pore system
+        /// </summary>
+        public double Kp_r { get { return Kb_r * (Porosity / Biot); } }
+        /// <summary>
+        /// Set the poroelastic constants and recreate the compliance tensor for intact rock
+        /// </summary>
+        /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
+        /// <param name="Nu_r_in">Poisson's ratio of intact rock</param>
+        /// <param name="Porosity_in">Porosity of intact rock</param>
         /// <param name="Biot_in">Biot's coefficient for intact rock</param>
-        public void setElasticProperties(double E_r_in, double Nu_r_in, double Biot_in)
+        public void setPoroelasticProperties(double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in)
         {
             // The stress calculation algorithm will throw an error if Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
             // Therefore if these values are entered, they will be adjusted slightly so as not to throw an error
@@ -73,12 +92,52 @@ namespace DFNGenerator_SharedCode
             E_r = E_r_in;
             // Poisson's ratio of intact rock
             Nu_r = Nu_r_in;
-            // Biot's coefficient
+            // Porosity of intact rock
+            Porosity = Porosity_in;
+            // Biot's coefficient of intact rock
             Biot = Biot_in;
 
             // Recreate the elastic compliance tensor
-            S_r = Tensor4_2Sx2S.IsotropicComplianceTensor(E_r_in, Nu_r_in);
+            S_r = Tensor4_2Sx2S.IsotropicComplianceTensor(E_r, Nu_r);
         }
+        /// <summary>
+        /// Set the poroelastic constants through the bulk moduli of the intact rock and grains, and recreate the compliance tensor for intact rock
+        /// </summary>
+        /// <param name="Kb_r_in">Bulk Modulus of intact rock (Pa)</param>
+        /// <param name="Kg_r_in">Bulk modulus of the grains (Pa)</param>
+        /// <param name="Nu_r_in">Poisson's ratio of intact rock</param>
+        /// <param name="Porosity_in">Porosity of intact rock</param>
+        public void setBulkModuli(double Kb_r_in, double Kg_r_in, double Nu_r_in, double Porosity_in)
+        {
+            // The stress calculation algorithm will throw an error if Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+            // Therefore if these values are entered, they will be adjusted slightly so as not to throw an error
+            // The code will actually generate a result with any other values, even if they are physically unrealistic, so they will not be corrected here
+            if ((float)Kb_r_in == 0f)
+                Kb_r_in = 0.01;
+            if ((float)Nu_r_in == -1f)
+                Nu_r_in = -0.99;
+            if ((float)Nu_r_in == 1f)
+                Nu_r_in = 0.99;
+
+            // Set the elastic constants
+            // Young's modulus of intact rock
+            E_r = 2 * (1 + Nu_r_in) * Kb_r_in;
+            // Poisson's ratio of intact rock
+            Nu_r = Nu_r_in;
+            // Porosity of intact rock
+            Porosity = Porosity_in;
+            // Biot's coefficient of intact rock
+            Biot = 1 - (Kb_r_in / Kg_r_in);
+
+            // Recreate the elastic compliance tensor
+            S_r = Tensor4_2Sx2S.IsotropicComplianceTensor(E_r, Nu_r);
+        }
+
+        // Thermoelastic properties
+        /// <summary>
+        /// Thermal expansion coefficient of intact rock (/degK)
+        /// </summary>
+        public double ThermalExpansionCoefficient { get; set; }
 
         // Elastoplastic properties
         /// <summary>
@@ -201,9 +260,11 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Function to set mechanical properties
         /// </summary>
-        /// <param name="E_r_in">Young's Modulus for intact rock (Pa)</param>
-        /// <param name="Nu_r_in">Poisson's ratio for intact rock</param>
-        /// <param name="Biot_in">Biot's coefficient for intact rock</param>
+        /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
+        /// <param name="Nu_r_in">Poisson's ratio of intact rock</param>
+        /// <param name="Porosity_in">Porosity of intact rock</param>
+        /// <param name="Biot_in">Biot's coefficient of intact rock</param>
+        /// <param name="ThermalExpansionCoefficient_in">Thermal expansion coefficient of intact rock (/degK)</param>
         /// <param name="Gc_in">Crack surface energy (J/m2)</param>
         /// <param name="MuFr_in">Friction coefficient on fractures</param>
         /// <param name="tr_in">Strain relaxation time constant for intact rock (s): set to zero for no uniform strain relaxation</param>
@@ -211,10 +272,13 @@ namespace DFNGenerator_SharedCode
         /// <param name="A_in">Critical fracture propagation rate (m/s)</param>
         /// <param name="b_in">Subcritical fracture propagation index</param>
         /// <param name="timeUnits_in">Units for strain relaxation time constants</param>
-        public void setMechanicalProperties(double E_r_in, double Nu_r_in, double Biot_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in)
+        public void setMechanicalProperties(double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in, double ThermalExpansionCoefficient_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in)
         {
-            // Elastic properties
-            setElasticProperties(E_r_in, Nu_r_in, Biot_in);
+            // Poroelastic properties
+            setPoroelasticProperties(E_r_in, Nu_r_in, Porosity_in, Biot_in);
+
+            // Thermoelastic properties
+            ThermalExpansionCoefficient = ThermalExpansionCoefficient_in;
 
             // Elastoplastic properties
             // Crack surface energy
@@ -261,14 +325,20 @@ namespace DFNGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
-        public MechanicalProperties(GridblockConfiguration gbc_in) : this(gbc_in, 1E+10, 0.25, 1, 1000, 0.5, 0, 0, 2000, 3, TimeUnits.second)
+        public MechanicalProperties(GridblockConfiguration gbc_in) : this(gbc_in, 1E+10, 0.25, 0.2, 1, 4E-5, 1000, 0.5, 0, 0, 2000, 3, TimeUnits.second)
         {
             // Defaults:
 
             // Elastic properties
             // Young's modulus of intact rock: default 10GPa
             // Poisson's ratio of intact rock: default 0.25
+
+            // Poroelastic properties
+            // Porosity of intact rock: default 0.2
             // Biot's coefficient: default 1
+
+            // Thermoelastic properties
+            // Thermal expansion coefficient: default 0.00004/degK
 
             // Elastoplastic properties
             // Crack surface energy: default 1000J/m2
@@ -286,9 +356,11 @@ namespace DFNGenerator_SharedCode
         /// Constructor: input intact rock properties values but not fracture aperture control data
         /// </summary>
         /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
-        /// <param name="E_r_in">Young's Modulus for intact rock (Pa)</param>
-        /// <param name="Nu_r_in">Poisson's ratio for intact rock</param>
-        /// <param name="Biot_in">Biot's coefficient for intact rock</param>
+        /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
+        /// <param name="Nu_r_in">Poisson's ratio of intact rock</param>
+        /// <param name="Porosity_in">Porosity of intact rock</param>
+        /// <param name="Biot_in">Biot's coefficient of intact rock</param>
+        /// <param name="ThermalExpansionCoefficient_in">Thermal expansion coefficient of intact rock (/degK)</param>
         /// <param name="Gc_in">Crack surface energy (J/m2)</param>
         /// <param name="MuFr_in">Friction coefficient on fractures</param>
         /// <param name="tr_in">Strain relaxation time constant for intact rock (s): set to zero for no uniform strain relaxation</param>
@@ -296,13 +368,13 @@ namespace DFNGenerator_SharedCode
         /// <param name="A_in">Critical fracture propagation rate (m/s)</param>
         /// <param name="b_in">Subcritical fracture propagation index</param>
         /// <param name="timeUnits_in">Units for strain relaxation time constants</param>
-        public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Biot_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in)
+        public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in, double ThermalExpansionCoefficient_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in)
         {
             // Reference to parent GridblockConfiguration object
             gbc = gbc_in;
 
             // Set mechanical properties
-            setMechanicalProperties(E_r_in, Nu_r_in, Biot_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in);
+            setMechanicalProperties(E_r_in, Nu_r_in, Porosity_in, Biot_in, ThermalExpansionCoefficient_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in);
 
             // Set fracture aperture control data to default values
             // Multiplier for dynamic aperture: 1
@@ -317,9 +389,11 @@ namespace DFNGenerator_SharedCode
         /// Constructor: input intact rock properties values and fracture aperture control data
         /// </summary>
         /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
-        /// <param name="E_r_in">Young's Modulus for intact rock (Pa)</param>
-        /// <param name="Nu_r_in">Poisson's ratio for intact rock</param>
-        /// <param name="Biot_in">Biot's coefficient for intact rock</param>
+        /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
+        /// <param name="Nu_r_in">Poisson's ratio of intact rock</param>
+        /// <param name="Porosity_in">Porosity of intact rock</param>
+        /// <param name="Biot_in">Biot's coefficient of intact rock</param>
+        /// <param name="ThermalExpansionCoefficient_in">Thermal expansion coefficient of intact rock (/degK)</param>
         /// <param name="Gc_in">Crack surface energy (J/m2)</param>
         /// <param name="MuFr_in">Friction coefficient on fractures</param>
         /// <param name="tr_in">Strain relaxation time constant for intact rock (s): set to zero for no uniform strain relaxation</param>
@@ -334,13 +408,13 @@ namespace DFNGenerator_SharedCode
         /// <param name="InitialNormalStress_in">Initial normal strength on fracture</param>
         /// <param name="FractureNormalStiffness_in">Stiffness normal to the fracture, at initial normal stress</param>
         /// <param name="MaximumClosure_in">Maximum fracture closure (m)</param>
-        public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Biot_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in, double DynamicApertureMultiplier_in, double JRC_in, double UCS_ratio_in, double InitialNormalStress_in, double FractureNormalStiffness_in, double MaximumClosure_in)
+        public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in, double ThermalExpansionCoefficient_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in, double DynamicApertureMultiplier_in, double JRC_in, double UCS_ratio_in, double InitialNormalStress_in, double FractureNormalStiffness_in, double MaximumClosure_in)
         {
             // Reference to parent GridblockConfiguration object
             gbc = gbc_in;
 
             // Set mechanical properties
-            setMechanicalProperties(E_r_in, Nu_r_in, Biot_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in);
+            setMechanicalProperties(E_r_in, Nu_r_in, Porosity_in, Biot_in, ThermalExpansionCoefficient_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in);
 
             // Set fracture aperture control data
             setFractureApertureControlData(DynamicApertureMultiplier_in, JRC_in, UCS_ratio_in, InitialNormalStress_in, FractureNormalStiffness_in, MaximumClosure_in);

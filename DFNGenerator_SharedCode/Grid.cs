@@ -145,7 +145,7 @@ namespace DFNGenerator_SharedCode
             // Number of intermediate DFNs to output and flag to control their separation
             int noIntermediateDFNs = DFNControl.NumberOfIntermediateOutputs;
             if (noIntermediateDFNs < 0) noIntermediateDFNs = 0;
-            bool separateIntermediatesByTime = DFNControl.SeparateIntermediateOutputsByTime;
+            IntermediateOutputInterval separateIntermediatesBy = DFNControl.SeparateIntermediateOutputsBy;
 
             // Calculate unit conversion modifier for output time data if not in SI units
             TimeUnits timeUnits = DFNControl.timeUnits;
@@ -177,7 +177,13 @@ namespace DFNGenerator_SharedCode
             while (!calculationCompleted)
             {
                 // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
-                if (separateIntermediatesByTime)
+                if (separateIntermediatesBy == IntermediateOutputInterval.SpecifiedTime)
+                {
+                    double nextIntermediateEndTime = (nextStage < DFNControl.IntermediateOutputTimes.Count ? DFNControl.IntermediateOutputTimes[nextStage] : endTime);
+                    calculationCompleted = PropagateLocalDFNs(ref currentCalculationElement, nextIntermediateEndTime, timestepList, progressReporter);
+
+                }
+                else if (separateIntermediatesBy == IntermediateOutputInterval.EqualTime)
                 {
                     double nextIntermediateEndTime = (nextStage * endTime) / (noIntermediateDFNs + 1);
                     calculationCompleted = PropagateLocalDFNs(ref currentCalculationElement, nextIntermediateEndTime, timestepList, progressReporter);

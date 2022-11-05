@@ -37,32 +37,47 @@ namespace DFNGenerator_SharedCode
 
         // Gridblock geometry data
         /// <summary>
-        /// Mean layer thickness at time of deformation (m), used to calculating fracture population data; can be set independently of cornerpoints
+        /// Mean layer thickness at the start of deformation (m); can be set independently of cornerpoints
+        /// </summary>
+        private double InitialThickness { get; set; }
+        /// <summary>
+        /// Mean layer thickness during deformation (m), used to calculate fracture population data
         /// </summary>
         public double ThicknessAtDeformation { get; private set; }
         /// <summary>
-        /// Mean depth of top surface at time of deformation (m), used to calculating fracture population data; can be set independently of cornerpoints
+        /// Mean depth of top surface at the start of deformation (m); can be set independently of cornerpoints
+        /// </summary>
+        private double InitialDepth { get; set; }
+        /// <summary>
+        /// Mean depth of top surface during deformation (m), used to calculate fracture population data
         /// </summary>
         public double DepthAtDeformation { get; private set; }
         /// <summary>
-        /// Reset the mean depth and mean layer thickness at the time of deformation to the current depth and thickness
+        /// Reset the mean layer thickness and mean depth to the initial thickness and depth at the start of deformation
         /// </summary>
-        public void ResetDepthAndThickness()
+        public void ResetThicknessAndDepth()
         {
-            // Reset the depth and thickness at deformation to the current depth and thickness
-            DepthAtDeformation = CurrentDepth;
-            ThicknessAtDeformation = CurrentThickness;
+            ThicknessAtDeformation = InitialThickness;
+            DepthAtDeformation = InitialDepth;
         }
         /// <summary>
-        /// Reset the mean depth and mean layer thickness at the time of deformation to the specified values
+        /// Set the mean layer thickness and mean depth to the current thickness and depth
         /// </summary>
-        /// <param name="DepthAtDeformation_in">Mean depth of top surface at time of deformation (m) - this does not need to be the current depth</param>
-        /// <param name="ThicknessAtDeformation_in">Mean layer thickness at time of deformation (m) - this does not need to be the current thickness</param>
-        public void ResetDepthAndThickness(double DepthAtDeformation_in, double ThicknessAtDeformation_in)
+        public void SetToCurrentThicknessAndDepth()
         {
-            // Reset the depth and thickness at deformation to the current depth and thickness
-            DepthAtDeformation = DepthAtDeformation_in;
-            ThicknessAtDeformation = ThicknessAtDeformation_in;
+            ThicknessAtDeformation = CurrentThickness;
+            DepthAtDeformation = CurrentDepth;
+        }
+        /// <summary>
+        /// Set the mean layer thickness and mean depth at the start of deformation to the specified values
+        /// </summary>
+        /// <param name="InitialThickness_in">Mean layer thickness at the start of deformation (m) - this does not need to be the current thickness</param>
+        /// <param name="InitialDepth_in">Mean depth of top surface at the start of deformation (m) - this does not need to be the current depth</param>
+        public void SetInitialThicknessAndDepth(double InitialThickness_in, double InitialDepth_in)
+        {
+            InitialThickness = InitialThickness_in;
+            InitialDepth = InitialDepth_in;
+            ResetThicknessAndDepth();
         }
 
         // Coordinates of cornerpoints
@@ -1006,11 +1021,11 @@ namespace DFNGenerator_SharedCode
         /// </summary>
         public StressStrainState StressStrain { get; private set; }
 
-        // Orientation of fracture sets (assumed to be coaxial with applied minimum strain orientation)
+        // Orientation of fracture sets (assumed to be coaxial with applied minimum strain orientation in the first deformation episode)
         /// <summary>
         /// Azimuth of minimum horizontal strain (radians)
         /// </summary>
-        public double Hmin_azimuth { get { return PropControl.Applied_Epsilon_hmin_azimuth; } }
+        public double Hmin_azimuth { get { return PropControl.Initial_Applied_Epsilon_hmin_azimuth; } }
 
         // List containing fracture sets
         /// <summary>
@@ -1887,22 +1902,21 @@ namespace DFNGenerator_SharedCode
         {
             // Declare local variables
             bool CalculationCompleted = false;
-            double DeformationStageDuration = PropControl.DeformationStageDuration;
             StrainRelaxationCase SRC = MechProps.GetStrainRelaxationCase();
             StressDistribution SD = PropControl.StressDistributionCase;
 
             // Cache constants locally
             double half_h = ThicknessAtDeformation / 2;
-            // Cache elastic properties locally
+            // Cache thermo-poro-elastic properties locally
             double E_r = MechProps.E_r;
             double Nu_r = MechProps.Nu_r;
+            double OneMinusBiot = 1 - MechProps.Biot;
+            double Kb_r = MechProps.Kb_r;
+            double ThermalExpansionCoefficient = MechProps.ThermalExpansionCoefficient;
             // Cache mechanical coefficients locally
             double tr = MechProps.tr;
             double tf = MechProps.tf;
             double ecomp = StressStrain.InitialHorizontalCompactionalStrain;
-
-            // Create local copy of the applied strain rate tensor
-            Tensor2S AppliedStrainRate = PropControl.Applied_Epsilon_dashed;
 
             // Calculation control criteria
             // Set the target maximum increase in MFP33 allowed per timestep
@@ -1920,16 +1934,6 @@ namespace DFNGenerator_SharedCode
             bool useMaxTSDurationCutoff = (maxTimestepDuration > 0);
             // Flag for whether all fracture sets have been deactivated
             bool AllSetsDeactivated = false;
-            // Flag for whether to stop the calculation when all sets have been deactivated
-            // By default we will continue until the end of the specified deformation duration
-            bool StopWhenAllSetsDeactivated = false;
-            // If the deformation stage duration is negative, then we will stop automatically when all fracture sets have been deactivated
-            // We will set the deformation stage duration to infinity and set the calculation to stop automatically when all sets have been deactivated
-            if (DeformationStageDuration < 0)
-            {
-                DeformationStageDuration = double.PositiveInfinity;
-                StopWhenAllSetsDeactivated = true;
-            }
 
             // Set the number of bins to split the microfracture radii into when calculating uFP33 numerically
             int no_r_bins = PropControl.no_r_bins;
@@ -2030,378 +2034,424 @@ namespace DFNGenerator_SharedCode
             foreach (Gridblock_FractureSet fs in FractureSets)
                 fs.FractureDistribution = SD;
 
-            // We will start the calculation from the current stress and strain state, as defined in the StressStrain object
-            // To start from an initial (undeformed) state, call the StressStrain.ResetStressStrainState() before calling this function, or call the CalculateFractureData(PropagationControl pc_in) overload of this function
-            // We will however recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            // Loop through the deformation episodes
+            int currentDeformationEpisodeIndex = 0;
+            foreach (DeformationEpisodeControl currentDeformationEpisode in PropControl.DeformationEpisodes)
             {
-                fs.RecalculateHorizontalStrainRatios(AppliedStrainRate);
-            }
+                // Update the index of the current deformation episode
+                currentDeformationEpisodeIndex++;
 
-            // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays
-            if (checkAlluFStressShadows)
-            {
-                for (int I = 0; I < NoFractureSets; I++)
-                {
-                    Gridblock_FractureSet FSI = FractureSets[I];
-                    for (int J = 0; J < NoFractureSets; J++)
-                    {
-                        if (I != J)
-                        {
-                            Gridblock_FractureSet FSJ = FractureSets[J];
-                            FaaIJ[I, J] = FSI.getFaaIJ(FSJ);
-                            FasIJ[I, J] = FSI.getFasIJ(FSJ);
-                        }
-                        else
-                        {
-                            FaaIJ[I, J] = 1;
-                            FasIJ[I, J] = 1;
-                        }
-                    }
-                }
-            }
+                // Create local copy of the applied strain rate tensor
+                Tensor2S appliedStrainRate = currentDeformationEpisode.Applied_Epsilon_dashed;
 
-            // Loop through the timesteps
-            do
-            {
-                // Get the current end time and then update the timestep counter by 1
-                double endLastTimestep = CurrentImplicitTime;
-                CurrentImplicitTimestep++;
+                // Set the fluid overpressure and uplift rates in the StressStrain object
+                double overpressureRate = currentDeformationEpisode.AppliedOverpressureRate;
+                double upliftRate = currentDeformationEpisode.AppliedUpliftRate;
+                double stressArchingFactor = currentDeformationEpisode.StressArchingFactor;
+                StressStrain.FluidOverpressureRate = overpressureRate;
+                StressStrain.UpliftRate = upliftRate;
 
-                // Set the maximum timestep duration to the total time remaining
-                double TimestepDuration = DeformationStageDuration - endLastTimestep;
+                // Calculate the equivalent horizontal strain due to fluid pressure and temperature changes, and add this to the local applied strain rate tensor
+                // This is taken from Miller (1995), but modified to allow the degree of stress arching to be varied
+                double tempChangeRate = currentDeformationEpisode.AppliedTemperatureChange - (upliftRate * StressStrain.GeothermalGradient);
+                double internalStressRate = (OneMinusBiot * StressStrain.P_f_dashed) - (ThermalExpansionCoefficient * Kb_r * tempChangeRate);
+                double verticalStrainFactor = (1 - Nu_r - (stressArchingFactor * Nu_r));
+                double equivalentHorizontalStrainRate = -(verticalStrainFactor / E_r) * internalStressRate;
+                appliedStrainRate.ComponentAdd(Tensor2SComponents.XX, equivalentHorizontalStrainRate);
+                appliedStrainRate.ComponentAdd(Tensor2SComponents.YY, equivalentHorizontalStrainRate);
 
-                // Apply maximum timestep duration cutoff if required
-                // Do not do this if all fracture sets have been deactivated
-                if (useMaxTSDurationCutoff && !AllSetsDeactivated)
-                    if (TimestepDuration > maxTimestepDuration) 
-                        TimestepDuration = maxTimestepDuration;
+                // Calculate the equivalent vertical stress due to fluid pressure and temperature changes, and add this to the applied stress rate tensor
+                // NB This is dependent on the degree of stress arching; if there is no stress arching, vertical stress will be equal to lithostatic stress and there will be no vertical stress change
+                double equivalentVerticalStressRate = -stressArchingFactor * internalStressRate;
+                StressStrain.Sigma_dashed.Component(Tensor2SComponents.ZZ, equivalentVerticalStressRate);
 
-                // Recalculate the bulk rock elastic properties
-                // This is mostly done within the FractureDipSet objects, when the FractureDipSet.S_Dipset compliance tensor is retrieved
-                // First we must recalculate the displacement vector and base for the compliance tensor for each fracture dipset
-                // This may have changed as the in situ stress tensor has changed since the previous timestep
+                // We will start the calculation from the current stress and strain state, as defined in the StressStrain object
+                // To start from an initial (undeformed) state, call the StressStrain.ResetStressStrainState() before calling this function, or call the CalculateFractureData(PropagationControl pc_in) overload of this function
+                // We will however recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
                 foreach (Gridblock_FractureSet fs in FractureSets)
                 {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        fds.RecalculateElasticResponse(StressStrain.Sigma_eff);
-                    }
+                    fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
                 }
 
-                // Calculate the tensor for the rate of change of internal elastic strain, including applied external strain and strain relaxation, in this timestep
-                // NB the initial elastic strain tensor will be as it was at the end of the previous timestep, or in its default state
-                switch (SRC)
-                {
-                    case StrainRelaxationCase.NoStrainRelaxation:
-                        {
-                            // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
-                            // NB we need to take a copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
-                            StressStrain.el_Epsilon_dashed = new Tensor2S(AppliedStrainRate);
-                        }
-                        break;
-                    case StrainRelaxationCase.UniformStrainRelaxation:
-                        {
-                            // In this scenario the total elastic strain and rate of change of elastic strain both follow exponential curves that are valid across all timesteps, representing the solution to the differential equation combining applied strain and strain relaxation.
-                            // We could therefore calculate exact values for both initial elastic strain and strain rate at the start of each timestep.
-                            // However this would lead to slight discrepencies between the calculated initial elastic strain and the elastic strain accumulated during the previous timestep,
-                            // since the model assumes a constant rate of change of strain during each timestep, rather than an exponential decay. This would be especially noticeable during early timesteps.
-                            // Therefore instead we will use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
-
-                            // To calculate the rate of elastic strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
-                            Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
-
-                            // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation
-                            // Note that when the initial elastic strain equals the applied strain rate times tr, the rate of change of elastic strain will be zero; this represents equilibrium.
-                            StressStrain.el_Epsilon_dashed = AppliedStrainRate - (el_epsilon_noncomp / tr);
-
-                            // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
-                            // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from to rounding errors
-                            // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
-                            bool StaticStrain = true;
-                            foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
-                            {
-                                if ((float)el_epsilon_noncomp.Component(ij) == (float)(AppliedStrainRate.Component(ij) * tr))
-                                    StressStrain.el_Epsilon_dashed.Component(ij, 0);
-                                else
-                                    StaticStrain = false;
-                            }
-
-                            // If necessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                            if (!StaticStrain && (TimestepDuration > tr))
-                                TimestepDuration = tr;
-                        }
-                        break;
-                    case StrainRelaxationCase.FractureOnlyStrainRelaxation:
-                        {
-                            // In this scenario the rate of strain relaxation varies with time as the fracture system grows. Therefore the differential equation combining applied strain and strain relaxation also changes with time,
-                            // so there are no exponential curves for the total elastic strain and rate of change of elastic strain that are valid across all timesteps.
-                            // We must therefore use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
-
-                            // The rate of change of elastic strain will be a function of the fracture population, and also the stress distribution scenario. 
-                            // If there are no fractures, it will revert to the No Strain Relaxation scenario where the rate of change of elastic strain is the applied strain rate.
-                            // To calculate the rate of strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
-                            Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
-
-                            // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation on the fractures
-                            // Note that when the elastic strain accommodated on the fractures [given by depf_depel * bulk rock elastic strain] equals the applied strain rate times tf,
-                            // the rate of change of elastic strain will be zero; this represents equilibrium.
-                            Tensor4_2Sx2S depf_depel = S_F / S_beff;
-                            Tensor2S f_epsilon_noncomp = (depf_depel * el_epsilon_noncomp);
-                            StressStrain.el_Epsilon_dashed = AppliedStrainRate - (f_epsilon_noncomp / tf);
-
-                            // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
-                            // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from rounding errors
-                            // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
-                            bool StaticStrain = true;
-                            foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
-                            {
-                                if ((float)f_epsilon_noncomp.Component(ij) == (float)(AppliedStrainRate.Component(ij) * tf))
-                                    StressStrain.el_Epsilon_dashed.Component(ij, 0);
-                                else
-                                    StaticStrain = false;
-                            }
-
-                            // If neccessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                            if (!StaticStrain)
-                            {
-                                // In the equilibrium equation for fracture only strain relaxation, the strain rate tensor, a 2nd order tensor is multiplied by depf_depel, a 4th order tensor
-                                // Therefore, unlike in the rock strain relaxation scenario, equilibrium may be reached at different times for different components of the strain tensor
-                                // We will therefore examine each horizontal component in turn to determine the time until equilibrium is reached, and reduce the maximum timestep duration if necessary
-                                // First we will calculate the sum of the squares of the horizontal stain components - we need this to compare the individual components with to see if they can be rounded down to zero
-                                double strain_magnitude_comparator = Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XX), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.YY), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XY), 2);
-                                foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
-                                {
-                                    // Get appropriate components of the noncompactional elastic strain and fracture strain tensors
-                                    double epel_ij = el_epsilon_noncomp.Component(ij);
-                                    double depf_ij = f_epsilon_noncomp.Component(ij);
-
-                                    // If the fracture strain tensor component is zero, or within rounding error of zero, there is no relaxation of this component so we can move on to the next
-                                    if (Math.Pow(depf_ij, 2) <= strain_magnitude_comparator / 1000000)
-                                        continue;
-
-                                    // Now insert the two tensor components into the equilibrium equation to determine the time until equilibrium is reached
-                                    double timeToEquilibrium = tf * (epel_ij / depf_ij);
-
-                                    // If necessary, reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                                    // NB if the calculated time to equilibrium is zero or negative, we can ignore it
-                                    if ((timeToEquilibrium > 0) && (TimestepDuration > timeToEquilibrium))
-                                        TimestepDuration = timeToEquilibrium;
-                                }
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-
-                // Recalculate the tensors for current in situ stress and rate of change of in situ stress
-                // The method for doing this will depend on the stress distribution scenario
-                switch (SD)
-                {
-                    case StressDistribution.EvenlyDistributedStress:
-                        // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
-                        // We must therefore use partial inversion of the current bulk rock compliance tensor to recalculate the stress tensors
-                        StressStrain.RecalculateEffectiveStressState(S_beff);
-                        break;
-                    case StressDistribution.StressShadow:
-                        // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
-                        // We can therefore recalculate the stress tensors from just the Young's Modulus and Poisson's ratio of the host rock
-                        StressStrain.RecalculateEffectiveStressState(E_r, Nu_r);
-                        break;
-                    case StressDistribution.DuctileBoundary:
-                        // Not yet implemented
-                        break;
-                    default:
-                        break;
-                }
-
-                // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        fds.setTimestepData();
-                    }
-                }
-
-                // Update the macrofracture stress shadow widths (which may have changed due to changes in the in situ stress)
-                // If any stress shadow widths have changed, this will also update the macrofracture spacing distribution data and clear zone volume
-                bool stressShadowWidthChanged = false;
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    if (fs.setStressShadowWidthData())
-                        stressShadowWidthChanged = true;
-                }
-
-                // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
-                if (checkAlluFStressShadows && stressShadowWidthChanged)
-                    setCrossFSStressShadows();
-
-                // Check if any of the fracture sets meet the deactivation criteria, after in situ stress and stress shadow widths have been recalculated 
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
-                }
-
-                // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        // Use the getOptimalDuration function in the fracture dip set object to get the optimal timestep duration for that dipset
-                        double maxdur = fds.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_dashed, d_MFP33);
-
-                        // Check to see if the maximum timstep duration calculated for this timestep is less than the maximum timestep duration so far
-                        // NB if it is not possible to calculate a value for the optimal timestep duration, the getOptimalDuration function will return infinity
-                        // This will always be greater than any actual calculated optimal duration
-                        if (maxdur < TimestepDuration) 
-                            TimestepDuration = maxdur;
-                    }
-                }
-
-                // If the timestep duration is still infinity, no further fractures can form; therefore set the current timestep duration to zero and set the flag to stop the calculation at the end of it
-                if (double.IsInfinity(TimestepDuration))
-                {
-                    TimestepDuration = 0;
-                    CalculationCompleted = true;
-                }
-
-                // Update list of timestep end times
-                TimestepEndTimes.Add(endLastTimestep + TimestepDuration);
-
-                // Calculate calculate the driving stress and propagation rate data for each fracture dip set
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        fds.setTimestepPropagationData(endLastTimestep, TimestepDuration);
-                    }
-                }
-
-                // Calculate the macrofracture deactivation probabilities Phi_II_M and Phi_IJ_M for each fracture dip set
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        fds.setMacrofractureDeactivationRate();
-                    }
-                }
-
-                // Calculate the total half-macrofracture population data for this timestep for each fracture dip set
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        fds.calculateTotalMacrofracturePopulation();
-                    }
-                }
-
-                // If required, update the macrofracture termination array
+                // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays
                 if (checkAlluFStressShadows)
-                    upDateMFTerminations();
-
-                // Calculate and update the macrofracture density, macrofracture spacing distribution and clear zone volume data in the CurrentFractureData object
-                // NB we cannot do this as we calculate the new macrofracture density data for the timestep, because we need to keep the previous values until all macrofracture sets have been calculated
-                // Otherwise we will introduce a bias in the calculation of residual fracture populations based on the order of calculation
-                foreach (Gridblock_FractureSet fs in FractureSets)
                 {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
+                    for (int I = 0; I < NoFractureSets; I++)
                     {
-                        fds.setMacrofractureDensityData();
-                    }
-                    fs.calculateMacrofractureSpacingDistributionData();
-                }
-
-                // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
-                if (checkAlluFStressShadows)
-                    setCrossFSStressShadows();
-
-                // Calculate the new total linear microfracture population data for each fracture dip set, and update the CurrentFractureData object
-                // NB the microfracture densities from one set do not affect the microfracture density calculations for the other sets
-                // so we do not need to calculate the population data for all sets before we can update the CurrentFractureData objects
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                {
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
-                    {
-                        // Calculate the total linear microfracture population data for this timestep for each fracture dip set
-                        // NB we cannot calculate uF_P_30(0,t) for power law initial microfracture distribution as this will be infinite
-                        fds.calculateTotalMicrofracturePopulation(no_r_bins);
-                        fds.setMicrofractureDensityData();
+                        Gridblock_FractureSet FSI = FractureSets[I];
+                        for (int J = 0; J < NoFractureSets; J++)
+                        {
+                            if (I != J)
+                            {
+                                Gridblock_FractureSet FSJ = FractureSets[J];
+                                FaaIJ[I, J] = FSI.getFaaIJ(FSJ);
+                                FasIJ[I, J] = FSI.getFasIJ(FSJ);
+                            }
+                            else
+                            {
+                                FaaIJ[I, J] = 1;
+                                FasIJ[I, J] = 1;
+                            }
+                        }
                     }
                 }
 
-                // Check if any or all of the fracture sets meet the deactivation criteria, after the fracture densities have been recalculated
-                AllSetsDeactivated = true;
-                foreach (Gridblock_FractureSet fs in FractureSets)
+                // Get the deformation episode duration
+                double CurrentDeformationEpisodeDuration = currentDeformationEpisode.DeformationEpisodeDuration;
+                // Flag for whether to stop the calculation when all sets have been deactivated
+                // By default we will continue until the end of the specified deformation duration
+                bool StopWhenAllSetsDeactivated = false;
+                // If the deformation stage duration is negative, then we will stop automatically when all fracture sets have been deactivated
+                // We will set the deformation stage duration to infinity and set the calculation to stop automatically when all sets have been deactivated
+                if (CurrentDeformationEpisodeDuration < 0)
                 {
-                    AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                    CurrentDeformationEpisodeDuration = double.PositiveInfinity;
+                    StopWhenAllSetsDeactivated = true;
                 }
 
-                // Update stress and strain tensors for the next timestep
-                // Update the effective stress and the bulk rock elastic strain tensors at the end of the timestep, based on the respective rate of change tensors and the timestep duration
-                StressStrain.UpdateStressStrainState(TimestepDuration);
-                // Update total cumulative strain tensor - this increases by the increment in applied external strain
-                StressStrain.tot_Epsilon += (TimestepDuration * AppliedStrainRate);
-                // If required, update the cumulative inelastic strain on the fractures
-                // Note that we do not need to update the cumulative inelastic strain in the host rock; this is calculated automatically from the total cumulative strain, the total elastic noncompactional strain and the cumulative inelastic strain on the fractures
-                if (CalculateRelaxedStrainPartitioning)
+                // Loop through the timesteps
+                do
                 {
+                    // Get the current end time and then update the timestep counter by 1
+                    double endLastTimestep = CurrentImplicitTime;
+                    CurrentImplicitTimestep++;
+
+                    // Set the maximum timestep duration to the total time remaining
+                    double TimestepDuration = CurrentDeformationEpisodeDuration - endLastTimestep;
+
+                    // Apply maximum timestep duration cutoff if required
+                    // Do not do this if all fracture sets have been deactivated
+                    if (useMaxTSDurationCutoff && !AllSetsDeactivated)
+                        if (TimestepDuration > maxTimestepDuration)
+                            TimestepDuration = maxTimestepDuration;
+
+                    // Recalculate the bulk rock elastic properties
+                    // This is mostly done within the FractureDipSet objects, when the FractureDipSet.S_Dipset compliance tensor is retrieved
+                    // First we must recalculate the displacement vector and base for the compliance tensor for each fracture dipset
+                    // This may have changed as the in situ stress tensor has changed since the previous timestep
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            fds.RecalculateElasticResponse(StressStrain.Sigma_eff);
+                        }
+                    }
+
+                    // Calculate the tensor for the rate of change of internal elastic strain, including applied external strain and strain relaxation, in this timestep
+                    // NB the initial elastic strain tensor will be as it was at the end of the previous timestep, or in its default state
                     switch (SRC)
                     {
                         case StrainRelaxationCase.NoStrainRelaxation:
-                            // No increment to total or cumulative inelastic strain tensors
+                            {
+                                // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
+                                // NB we need to take a copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
+                                StressStrain.el_Epsilon_dashed = new Tensor2S(appliedStrainRate);
+                            }
                             break;
                         case StrainRelaxationCase.UniformStrainRelaxation:
                             {
-                                // Total increment in relaxed strain = applied strain - increment in elastic strain
-                                Tensor2S relaxedStrain = TimestepDuration * (AppliedStrainRate - StressStrain.el_Epsilon_dashed);
+                                // In this scenario the total elastic strain and rate of change of elastic strain both follow exponential curves that are valid across all timesteps, representing the solution to the differential equation combining applied strain and strain relaxation.
+                                // We could therefore calculate exact values for both initial elastic strain and strain rate at the start of each timestep.
+                                // However this would lead to slight discrepencies between the calculated initial elastic strain and the elastic strain accumulated during the previous timestep,
+                                // since the model assumes a constant rate of change of strain during each timestep, rather than an exponential decay. This would be especially noticeable during early timesteps.
+                                // Therefore instead we will use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
 
-                                // The proportion of this relaxed strain accommodated on the fractures is given by the ratio of the fracture compliance tensor to the bulk rock compliance tensor
-                                // NB by calculating this now, we will include the effect of any growth in the fractures during this timestep; this may therefore give a slightly different result than if calculated at the start of the timestep 
-                                Tensor4_2Sx2S depf_depel = S_F / S_beff;
-                                StressStrain.rel_Epsilon_f += (depf_depel * relaxedStrain);
+                                // To calculate the rate of elastic strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
+                                Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
+
+                                // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation
+                                // Note that when the initial elastic strain equals the applied strain rate times tr, the rate of change of elastic strain will be zero; this represents equilibrium.
+                                StressStrain.el_Epsilon_dashed = appliedStrainRate - (el_epsilon_noncomp / tr);
+
+                                // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
+                                // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from to rounding errors
+                                // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
+                                bool StaticStrain = true;
+                                foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                                {
+                                    if ((float)el_epsilon_noncomp.Component(ij) == (float)(appliedStrainRate.Component(ij) * tr))
+                                        StressStrain.el_Epsilon_dashed.Component(ij, 0);
+                                    else
+                                        StaticStrain = false;
+                                }
+
+                                // If necessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
+                                if (!StaticStrain && (TimestepDuration > tr))
+                                    TimestepDuration = tr;
                             }
                             break;
                         case StrainRelaxationCase.FractureOnlyStrainRelaxation:
                             {
-                                // Total increment in relaxed strain = applied strain - increment in elastic strain
-                                Tensor2S relaxedStrain = TimestepDuration * (AppliedStrainRate - StressStrain.el_Epsilon_dashed);
+                                // In this scenario the rate of strain relaxation varies with time as the fracture system grows. Therefore the differential equation combining applied strain and strain relaxation also changes with time,
+                                // so there are no exponential curves for the total elastic strain and rate of change of elastic strain that are valid across all timesteps.
+                                // We must therefore use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
 
-                                // In this scenario, all the relaxed strain is accommodated on the fractures
-                                StressStrain.rel_Epsilon_f += relaxedStrain;
+                                // The rate of change of elastic strain will be a function of the fracture population, and also the stress distribution scenario. 
+                                // If there are no fractures, it will revert to the No Strain Relaxation scenario where the rate of change of elastic strain is the applied strain rate.
+                                // To calculate the rate of strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
+                                Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
+
+                                // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation on the fractures
+                                // Note that when the elastic strain accommodated on the fractures [given by depf_depel * bulk rock elastic strain] equals the applied strain rate times tf,
+                                // the rate of change of elastic strain will be zero; this represents equilibrium.
+                                Tensor4_2Sx2S depf_depel = S_F / S_beff;
+                                Tensor2S f_epsilon_noncomp = (depf_depel * el_epsilon_noncomp);
+                                StressStrain.el_Epsilon_dashed = appliedStrainRate - (f_epsilon_noncomp / tf);
+
+                                // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
+                                // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from rounding errors
+                                // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
+                                bool StaticStrain = true;
+                                foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                                {
+                                    if ((float)f_epsilon_noncomp.Component(ij) == (float)(appliedStrainRate.Component(ij) * tf))
+                                        StressStrain.el_Epsilon_dashed.Component(ij, 0);
+                                    else
+                                        StaticStrain = false;
+                                }
+
+                                // If neccessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
+                                if (!StaticStrain)
+                                {
+                                    // In the equilibrium equation for fracture only strain relaxation, the strain rate tensor, a 2nd order tensor is multiplied by depf_depel, a 4th order tensor
+                                    // Therefore, unlike in the rock strain relaxation scenario, equilibrium may be reached at different times for different components of the strain tensor
+                                    // We will therefore examine each horizontal component in turn to determine the time until equilibrium is reached, and reduce the maximum timestep duration if necessary
+                                    // First we will calculate the sum of the squares of the horizontal stain components - we need this to compare the individual components with to see if they can be rounded down to zero
+                                    double strain_magnitude_comparator = Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XX), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.YY), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XY), 2);
+                                    foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                                    {
+                                        // Get appropriate components of the noncompactional elastic strain and fracture strain tensors
+                                        double epel_ij = el_epsilon_noncomp.Component(ij);
+                                        double depf_ij = f_epsilon_noncomp.Component(ij);
+
+                                        // If the fracture strain tensor component is zero, or within rounding error of zero, there is no relaxation of this component so we can move on to the next
+                                        if (Math.Pow(depf_ij, 2) <= strain_magnitude_comparator / 1000000)
+                                            continue;
+
+                                        // Now insert the two tensor components into the equilibrium equation to determine the time until equilibrium is reached
+                                        double timeToEquilibrium = tf * (epel_ij / depf_ij);
+
+                                        // If necessary, reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
+                                        // NB if the calculated time to equilibrium is zero or negative, we can ignore it
+                                        if ((timeToEquilibrium > 0) && (TimestepDuration > timeToEquilibrium))
+                                            TimestepDuration = timeToEquilibrium;
+                                    }
+                                }
                             }
                             break;
                         default:
                             break;
                     }
-                }
 
-                // Write data to logfile
-                if (writeImplicitDataToFile)
-                {
-                    // Create strings for logging data
-                    string timestepData = "";
-                    string fractureSetData = "";
+                    // Recalculate the tensors for current in situ stress and rate of change of in situ stress
+                    // The method for doing this will depend on the stress distribution scenario
+                    switch (SD)
+                    {
+                        case StressDistribution.EvenlyDistributedStress:
+                            // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
+                            // We must therefore use partial inversion of the current bulk rock compliance tensor to recalculate the stress tensors
+                            StressStrain.RecalculateEffectiveStressState(S_beff);
+                            break;
+                        case StressDistribution.StressShadow:
+                            // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
+                            // We can therefore recalculate the stress tensors from just the Young's Modulus and Poisson's ratio of the host rock
+                            StressStrain.RecalculateEffectiveStressState(E_r, Nu_r);
+                            break;
+                        case StressDistribution.DuctileBoundary:
+                            // Not yet implemented
+                            break;
+                        default:
+                            break;
+                    }
 
-                    // Get the minimum and maximum horizontal elastic and total cumulative strain values
-                    List<double> minMaxElStrain = StressStrain.el_Epsilon.GetMinMaxHorizontalValues();
-                    List<double> minMaxTotStrain = StressStrain.tot_Epsilon.GetMinMaxHorizontalValues();
-
-                    // Write timestep data
-                    timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, minMaxElStrain[0], minMaxElStrain[1], minMaxTotStrain[0], minMaxTotStrain[1]);
-#if LOGDFNPOP
-                    timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_eff.Component(Tensor2SComponents.XX), StressStrain.Sigma_eff.Component(Tensor2SComponents.YY), StressStrain.Sigma_eff.Component(Tensor2SComponents.XY), StressStrain.Sigma_eff.Component(Tensor2SComponents.ZZ));
-                    //timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_dashed.Component(Tensor2SComponents.XX), StressStrain.Sigma_dashed.Component(Tensor2SComponents.YY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.XY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.ZZ));
-#endif
-                    // Write data for each fracture set
+                    // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
-                            // Get fracture data and add to timestep log string
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
-                                fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                            fds.setTimestepData();
+                        }
+                    }
+
+                    // Update the macrofracture stress shadow widths (which may have changed due to changes in the in situ stress)
+                    // If any stress shadow widths have changed, this will also update the macrofracture spacing distribution data and clear zone volume
+                    bool stressShadowWidthChanged = false;
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        if (fs.setStressShadowWidthData())
+                            stressShadowWidthChanged = true;
+                    }
+
+                    // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
+                    if (checkAlluFStressShadows && stressShadowWidthChanged)
+                        setCrossFSStressShadows();
+
+                    // Check if any of the fracture sets meet the deactivation criteria, after in situ stress and stress shadow widths have been recalculated 
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                    }
+
+                    // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            // Use the getOptimalDuration function in the fracture dip set object to get the optimal timestep duration for that dipset
+                            double maxdur = fds.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_dashed, d_MFP33);
+
+                            // Check to see if the maximum timstep duration calculated for this timestep is less than the maximum timestep duration so far
+                            // NB if it is not possible to calculate a value for the optimal timestep duration, the getOptimalDuration function will return infinity
+                            // This will always be greater than any actual calculated optimal duration
+                            if (maxdur < TimestepDuration)
+                                TimestepDuration = maxdur;
+                        }
+                    }
+
+                    // If the timestep duration is still infinity, no further fractures can form; therefore set the current timestep duration to zero and set the flag to stop the calculation at the end of it
+                    if (double.IsInfinity(TimestepDuration))
+                    {
+                        TimestepDuration = 0;
+                        CalculationCompleted = true;
+                    }
+
+                    // Update list of timestep end times
+                    TimestepEndTimes.Add(endLastTimestep + TimestepDuration);
+
+                    // Calculate calculate the driving stress and propagation rate data for each fracture dip set
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            fds.setTimestepPropagationData(endLastTimestep, TimestepDuration);
+                        }
+                    }
+
+                    // Calculate the macrofracture deactivation probabilities Phi_II_M and Phi_IJ_M for each fracture dip set
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            fds.setMacrofractureDeactivationRate();
+                        }
+                    }
+
+                    // Calculate the total half-macrofracture population data for this timestep for each fracture dip set
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            fds.calculateTotalMacrofracturePopulation();
+                        }
+                    }
+
+                    // If required, update the macrofracture termination array
+                    if (checkAlluFStressShadows)
+                        upDateMFTerminations();
+
+                    // Calculate and update the macrofracture density, macrofracture spacing distribution and clear zone volume data in the CurrentFractureData object
+                    // NB we cannot do this as we calculate the new macrofracture density data for the timestep, because we need to keep the previous values until all macrofracture sets have been calculated
+                    // Otherwise we will introduce a bias in the calculation of residual fracture populations based on the order of calculation
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            fds.setMacrofractureDensityData();
+                        }
+                        fs.calculateMacrofractureSpacingDistributionData();
+                    }
+
+                    // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
+                    if (checkAlluFStressShadows)
+                        setCrossFSStressShadows();
+
+                    // Calculate the new total linear microfracture population data for each fracture dip set, and update the CurrentFractureData object
+                    // NB the microfracture densities from one set do not affect the microfracture density calculations for the other sets
+                    // so we do not need to calculate the population data for all sets before we can update the CurrentFractureData objects
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        foreach (FractureDipSet fds in fs.FractureDipSets)
+                        {
+                            // Calculate the total linear microfracture population data for this timestep for each fracture dip set
+                            // NB we cannot calculate uF_P_30(0,t) for power law initial microfracture distribution as this will be infinite
+                            fds.calculateTotalMicrofracturePopulation(no_r_bins);
+                            fds.setMicrofractureDensityData();
+                        }
+                    }
+
+                    // Check if any or all of the fracture sets meet the deactivation criteria, after the fracture densities have been recalculated
+                    AllSetsDeactivated = true;
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    {
+                        AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                    }
+
+                    // Update stress and strain tensors for the next timestep
+                    // Update the depth of burial
+                    DepthAtDeformation += upliftRate;
+                    // Update the effective stress and the bulk rock elastic strain tensors at the end of the timestep, based on the respective rate of change tensors and the timestep duration
+                    StressStrain.UpdateStressStrainState(TimestepDuration);
+                    // Update total cumulative strain tensor - this increases by the increment in applied external strain
+                    StressStrain.tot_Epsilon += (TimestepDuration * appliedStrainRate);
+                    // If required, update the cumulative inelastic strain on the fractures
+                    // Note that we do not need to update the cumulative inelastic strain in the host rock; this is calculated automatically from the total cumulative strain, the total elastic noncompactional strain and the cumulative inelastic strain on the fractures
+                    if (CalculateRelaxedStrainPartitioning)
+                    {
+                        switch (SRC)
+                        {
+                            case StrainRelaxationCase.NoStrainRelaxation:
+                                // No increment to total or cumulative inelastic strain tensors
+                                break;
+                            case StrainRelaxationCase.UniformStrainRelaxation:
+                                {
+                                    // Total increment in relaxed strain = applied strain - increment in elastic strain
+                                    Tensor2S relaxedStrain = TimestepDuration * (appliedStrainRate - StressStrain.el_Epsilon_dashed);
+
+                                    // The proportion of this relaxed strain accommodated on the fractures is given by the ratio of the fracture compliance tensor to the bulk rock compliance tensor
+                                    // NB by calculating this now, we will include the effect of any growth in the fractures during this timestep; this may therefore give a slightly different result than if calculated at the start of the timestep 
+                                    Tensor4_2Sx2S depf_depel = S_F / S_beff;
+                                    StressStrain.rel_Epsilon_f += (depf_depel * relaxedStrain);
+                                }
+                                break;
+                            case StrainRelaxationCase.FractureOnlyStrainRelaxation:
+                                {
+                                    // Total increment in relaxed strain = applied strain - increment in elastic strain
+                                    Tensor2S relaxedStrain = TimestepDuration * (appliedStrainRate - StressStrain.el_Epsilon_dashed);
+
+                                    // In this scenario, all the relaxed strain is accommodated on the fractures
+                                    StressStrain.rel_Epsilon_f += relaxedStrain;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    // Write data to logfile
+                    if (writeImplicitDataToFile)
+                    {
+                        // Create strings for logging data
+                        string timestepData = "";
+                        string fractureSetData = "";
+
+                        // Get the minimum and maximum horizontal elastic and total cumulative strain values
+                        List<double> minMaxElStrain = StressStrain.el_Epsilon.GetMinMaxHorizontalValues();
+                        List<double> minMaxTotStrain = StressStrain.tot_Epsilon.GetMinMaxHorizontalValues();
+
+                        // Write timestep data
+                        timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, minMaxElStrain[0], minMaxElStrain[1], minMaxTotStrain[0], minMaxTotStrain[1]);
+#if LOGDFNPOP
+                    timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_eff.Component(Tensor2SComponents.XX), StressStrain.Sigma_eff.Component(Tensor2SComponents.YY), StressStrain.Sigma_eff.Component(Tensor2SComponents.XY), StressStrain.Sigma_eff.Component(Tensor2SComponents.ZZ));
+                    //timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_dashed.Component(Tensor2SComponents.XX), StressStrain.Sigma_dashed.Component(Tensor2SComponents.YY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.XY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.ZZ));
+#endif
+                        // Write data for each fracture set
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        {
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                            {
+                                // Get fracture data and add to timestep log string
+                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
+                                    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #if LOGDFNPOP
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), 
                                 fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
@@ -2410,74 +2460,76 @@ namespace DFNGenerator_SharedCode
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
                             //    fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolume(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #endif
-                            timestepData = timestepData + fractureSetData;
+                                timestepData = timestepData + fractureSetData;
+                            }
                         }
-                    }
 
-                    // If required, write the fracture porosity data
-                    // Currently configured to output porosity data for all aperture types 
-                    if (CalculateFracturePorosity)
-                    {
-                        Dictionary<FractureApertureType, double> uFPorosity = new Dictionary<FractureApertureType, double>();
-                        Dictionary<FractureApertureType, double> MFPorosity = new Dictionary<FractureApertureType, double>();
-
-                        uFPorosity.Add(FractureApertureType.Uniform, 0);
-                        MFPorosity.Add(FractureApertureType.Uniform, 0);
-                        uFPorosity.Add(FractureApertureType.SizeDependent, 0);
-                        MFPorosity.Add(FractureApertureType.SizeDependent, 0);
-                        uFPorosity.Add(FractureApertureType.Dynamic, 0);
-                        MFPorosity.Add(FractureApertureType.Dynamic, 0);
-                        uFPorosity.Add(FractureApertureType.BartonBandis, 0);
-                        MFPorosity.Add(FractureApertureType.BartonBandis, 0);
-
-                        foreach (FractureApertureType apertureType in Enum.GetValues(typeof(FractureApertureType)).Cast<FractureApertureType>())
+                        // If required, write the fracture porosity data
+                        // Currently configured to output porosity data for all aperture types 
+                        if (CalculateFracturePorosity)
                         {
-                            foreach (Gridblock_FractureSet fs in FractureSets)
+                            Dictionary<FractureApertureType, double> uFPorosity = new Dictionary<FractureApertureType, double>();
+                            Dictionary<FractureApertureType, double> MFPorosity = new Dictionary<FractureApertureType, double>();
+
+                            uFPorosity.Add(FractureApertureType.Uniform, 0);
+                            MFPorosity.Add(FractureApertureType.Uniform, 0);
+                            uFPorosity.Add(FractureApertureType.SizeDependent, 0);
+                            MFPorosity.Add(FractureApertureType.SizeDependent, 0);
+                            uFPorosity.Add(FractureApertureType.Dynamic, 0);
+                            MFPorosity.Add(FractureApertureType.Dynamic, 0);
+                            uFPorosity.Add(FractureApertureType.BartonBandis, 0);
+                            MFPorosity.Add(FractureApertureType.BartonBandis, 0);
+
+                            foreach (FractureApertureType apertureType in Enum.GetValues(typeof(FractureApertureType)).Cast<FractureApertureType>())
                             {
-                                uFPorosity[apertureType] += fs.combined_uF_Porosity(apertureType);
-                                MFPorosity[apertureType] += fs.combined_MF_Porosity(apertureType);
+                                foreach (Gridblock_FractureSet fs in FractureSets)
+                                {
+                                    uFPorosity[apertureType] += fs.combined_uF_Porosity(apertureType);
+                                    MFPorosity[apertureType] += fs.combined_MF_Porosity(apertureType);
+                                }
                             }
+
+                            string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis]);
+                            timestepData += porosityData;
+                        }
+                        if (OutputBulkRockElasticTensors)
+                        {
+                            // NB here we output the bulk rock compliance tensor rather than the effective bulk rock compliance tensor. This will include the effect of the fractures, even in the stress shadow scenario
+                            // We will also output the bulk rock stiffness tensor, obtained by inverting the compliance tensor
+                            string complianceTensorComponents = "";
+                            string stiffnessTensorComponents = "";
+                            Tensor4_2Sx2S complianceTensor = S_b;
+                            Tensor4_2Sx2S stiffnessTensor = complianceTensor.Inverse();
+
+                            Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                            foreach (Tensor2SComponents ij in tensorComponents)
+                                foreach (Tensor2SComponents kl in tensorComponents)
+                                {
+                                    complianceTensorComponents += string.Format("{0}\t", complianceTensor.Component(ij, kl));
+                                    stiffnessTensorComponents += string.Format("{0}\t", stiffnessTensor.Component(ij, kl));
+                                }
+                            timestepData += complianceTensorComponents;
+                            timestepData += stiffnessTensorComponents;
                         }
 
-                        string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis]);
-                        timestepData += porosityData;
-                    }
-                    if (OutputBulkRockElasticTensors)
-                    {
-                        // NB here we output the bulk rock compliance tensor rather than the effective bulk rock compliance tensor. This will include the effect of the fractures, even in the stress shadow scenario
-                        // We will also output the bulk rock stiffness tensor, obtained by inverting the compliance tensor
-                        string complianceTensorComponents = "";
-                        string stiffnessTensorComponents = "";
-                        Tensor4_2Sx2S complianceTensor = S_b;
-                        Tensor4_2Sx2S stiffnessTensor = complianceTensor.Inverse();
-
-                        Tensor2SComponents[] tensorComponents= new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
-                        foreach (Tensor2SComponents ij in tensorComponents)
-                            foreach (Tensor2SComponents kl in tensorComponents)
-                            {
-                                complianceTensorComponents += string.Format("{0}\t", complianceTensor.Component(ij, kl));
-                                stiffnessTensorComponents += string.Format("{0}\t", stiffnessTensor.Component(ij, kl));
-                            }
-                        timestepData += complianceTensorComponents;
-                        timestepData += stiffnessTensorComponents;
+                        // Write timestep data to log file
+                        outputFile.WriteLine(timestepData);
                     }
 
-                    // Write timestep data to log file
-                    outputFile.WriteLine(timestepData);
-                }
+                    // Check if calculation is finished
+                    // Check if we have run to completion
+                    if (CurrentImplicitTime >= CurrentDeformationEpisodeDuration)
+                        CalculationCompleted = true;
+                    // Check if we have exceeded maximum number of timesteps
+                    if (CurrentImplicitTimestep >= maxTimesteps)
+                        CalculationCompleted = true;
+                    // Check if all fracture sets are deactivated
+                    if (AllSetsDeactivated && StopWhenAllSetsDeactivated)
+                        CalculationCompleted = true;
 
-                // Check if calculation is finished
-                // Check if we have run to completion
-                if (CurrentImplicitTime >= DeformationStageDuration)
-                    CalculationCompleted = true;
-                // Check if we have exceeded maximum number of timesteps
-                if (CurrentImplicitTimestep >= maxTimesteps)
-                    CalculationCompleted = true;
-                // Check if all fracture sets are deactivated
-                if (AllSetsDeactivated && StopWhenAllSetsDeactivated)
-                    CalculationCompleted = true;
+                } while (!CalculationCompleted); // Move on to the next timestep
 
-            } while (!CalculationCompleted); // Move on to the next timestep
+            } // Move on to the next deformation episode
 
             // Calculate cumulative population distribution function arrays
             if (CalculatePopulationDistributionData)
@@ -4615,12 +4667,12 @@ namespace DFNGenerator_SharedCode
         {
             // Defaults:
 
-            // Set layer thickness and depth at time of deformation
+            // Set layer thickness and depth at the start of deformation
             // Layer thickness: default 1m
             // Depth: default 1000m
         }
         /// <summary>
-        /// Constructor: specify layer thickness and depth, but create two empty fracture sets
+        /// Constructor: specify layer thickness and depth at the start of deformation, but create two empty fracture sets
         /// </summary>
         /// <param name="thickness_in">Layer thickness at time of deformation (m)</param>
         /// <param name="depth_in">Depth at time of deformation (m)</param>
@@ -4631,16 +4683,15 @@ namespace DFNGenerator_SharedCode
             // Set the number of fracture sets to 2, for two orthogonal sets perpendicular to ehmin and ehmax
         }
         /// <summary>
-        /// Constructor: specify layer thickness and depth, and the number of fracture sets, but create empty fracture sets
+        /// Constructor: specify layer thickness and depth at the start of deformation, and the number of fracture sets, but create empty fracture sets
         /// </summary>
-        /// <param name="thickness_in">Layer thickness at time of deformation (m)</param>
-        /// <param name="depth_in">Depth at time of deformation (m)</param>
+        /// <param name="InitialThickness_in">Layer thickness at the start of deformation (m)</param>
+        /// <param name="InitialDepth_in">Depth at the start of deformation (m)</param>
         /// <param name="NoFractureSets">Number of fracture sets</param>
-        public GridblockConfiguration(double thickness_in, double depth_in, int NoFractureSets_in)
+        public GridblockConfiguration(double InitialThickness_in, double InitialDepth_in, int NoFractureSets_in)
         {
-            // Set layer point_t and point_z
-            ThicknessAtDeformation = thickness_in;
-            DepthAtDeformation = depth_in;
+            // Set layer thickness and depth at the start of deformation
+            SetInitialThicknessAndDepth(InitialThickness_in, InitialDepth_in);
 
             // Create a dictionary of adjacent gridblocks and fill with null references (except for reference to this gridblock)
             NeighbourGridblocks = new Dictionary<GridDirection, GridblockConfiguration>();
@@ -4655,7 +4706,7 @@ namespace DFNGenerator_SharedCode
 
             // Create default objects for mechanical properties, stress and strain state and propagation control
             MechProps = new MechanicalProperties(this);
-            StressStrain = new StressStrainState(this, (2500 * 9.81 * depth_in), (1000 * 9.81 * depth_in), 0);
+            StressStrain = new StressStrainState(this);
             PropControl = new PropagationControl();
 
             // Set the number of fracture sets (minimum 0)
