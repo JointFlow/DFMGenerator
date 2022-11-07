@@ -269,7 +269,7 @@ namespace DFNGenerator_Ocean
                     // Do not use DuctileBoundary as this is not yet implemented
                     StressDistribution StressDistributionScenario = (StressDistribution)arguments.Argument_StressDistribution;
                     // If depth at the time of deformation is specified, use this to calculate effective vertical stress instead of the current depth
-                    // If DepthAtFracture is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used
+                    // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
                     double DepthAtDeformation = arguments.Argument_DepthAtDeformation;
                     bool OverwriteDepth = (DepthAtDeformation > 0);
                     // Mean density of overlying sediments and fluid (kg/m3)
@@ -911,7 +911,7 @@ namespace DFNGenerator_Ocean
                             {
 #if DEBUG_FRACS
                                 PetrelLogger.InfoOutputWindow("");
-                                PetrelLogger.InfoOutputWindow(string.Format("ColNo {0}, RowNo {1}", FractureGrid_ColNo, FractureGrid_RowNo));
+                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock Col(I) {0}, Row(J) {1}", FractureGrid_ColNo, FractureGrid_RowNo));
 #endif
 
                                 // Check if calculation has been aborted
@@ -964,9 +964,9 @@ namespace DFNGenerator_Ocean
                                             break;
                                     }
                                 }
-                                // Create FractureGrid point corresponding to the SW Petrel gridblock corners
-                                PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, -SW_top_corner.Z);
-                                PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, -SW_bottom_corner.Z);
+                                // Create FractureGrid points corresponding to the SW Petrel gridblock corners
+                                PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);
+                                PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);
                                 // Update mean depth and thickness variables
                                 local_Depth -= SW_top_corner.Z;
                                 local_LayerThickness += (SW_top_corner.Z - SW_bottom_corner.Z);
@@ -1000,9 +1000,9 @@ namespace DFNGenerator_Ocean
                                             break;
                                     }
                                 }
-                                // Create FractureGrid point corresponding to the NW Petrel gridblock corners
-                                PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, -NW_top_corner.Z);
-                                PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, -NW_bottom_corner.Z);
+                                // Create FractureGrid points corresponding to the NW Petrel gridblock corners
+                                PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);
+                                PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);
                                 // Update mean depth and thickness variables
                                 local_Depth -= NW_top_corner.Z;
                                 local_LayerThickness += (NW_top_corner.Z - NW_bottom_corner.Z);
@@ -1036,9 +1036,9 @@ namespace DFNGenerator_Ocean
                                             break;
                                     }
                                 }
-                                // Create FractureGrid point corresponding to the NE Petrel gridblock corners
-                                PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, -NE_top_corner.Z);
-                                PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, -NE_bottom_corner.Z);
+                                // Create FractureGrid points corresponding to the NE Petrel gridblock corners
+                                PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);
+                                PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);
                                 // Update mean depth and thickness variables
                                 local_Depth -= NE_top_corner.Z;
                                 local_LayerThickness += (NE_top_corner.Z - NE_bottom_corner.Z);
@@ -1072,16 +1072,16 @@ namespace DFNGenerator_Ocean
                                             break;
                                     }
                                 }
-                                // Create FractureGrid point corresponding to the SE Petrel gridblock corners
-                                PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, -SE_top_corner.Z);
-                                PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, -SE_bottom_corner.Z);
+                                // Create FractureGrid points corresponding to the SE Petrel gridblock corners
+                                PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);
+                                PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);
                                 // Update mean depth and thickness variables
                                 local_Depth -= SE_top_corner.Z;
                                 local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
 
                                 // Calculate the mean depth and layer thickness
                                 local_Depth = (OverwriteDepth ? DepthAtDeformation : local_Depth / 4);
-                                local_LayerThickness = local_LayerThickness / 4;
+                                local_LayerThickness /= 4;
 
                                 // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
                                 // In this case we will abort this gridblock and move onto the next
@@ -1109,6 +1109,29 @@ namespace DFNGenerator_Ocean
                                     if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(SEpillar))
                                         faultToSouth = true;
                                 }
+
+#if DEBUG_FRACS
+                                foreach (PointXYZ point in new PointXYZ[] { FractureGrid_SWtop, FractureGrid_NWtop, FractureGrid_NEtop, FractureGrid_SEtop, FractureGrid_SWbottom, FractureGrid_NWbottom, FractureGrid_NEbottom, FractureGrid_SEbottom })
+                                {
+                                    if (minX > point.X) minX = point.X;
+                                    if (minY > point.Y) minY = point.Y;
+                                    if (minZ > point.Z) minZ = point.Z;
+                                    if (maxX < point.X) maxX = point.X;
+                                    if (maxY < point.Y) maxY = point.Y;
+                                    if (maxZ < point.Z) maxZ = point.Z;
+                                }
+
+                                PetrelLogger.InfoOutputWindow("Geometry");
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);", SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);", SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);", NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);", NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);", NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Depth));
+#endif
 
                                 // Get the stress/strain data from the grid as required
                                 // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
@@ -1794,27 +1817,7 @@ namespace DFNGenerator_Ocean
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
 
 #if DEBUG_FRACS
-                                foreach (PointXYZ point in new PointXYZ[] { FractureGrid_SWtop, FractureGrid_NWtop, FractureGrid_NEtop, FractureGrid_SEtop, FractureGrid_SWbottom, FractureGrid_NWbottom, FractureGrid_NEbottom, FractureGrid_SEbottom })
-                                {
-                                    if (minX > point.X) minX = point.X;
-                                    if (minY > point.Y) minY = point.Y;
-                                    if (minZ > point.Z) minZ = point.Z;
-                                    if (maxX < point.X) maxX = point.X;
-                                    if (maxY < point.Y) maxY = point.Y;
-                                    if (maxZ < point.Z) maxZ = point.Z;
-                                }
-
-                                PetrelLogger.InfoOutputWindow("");
-                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock Row {0}, Col {1}", FractureGrid_RowNo, FractureGrid_ColNo));
-                                PetrelLogger.InfoOutputWindow(string.Format("SWtop = new PointXYZ({0}, {1}, {2});", FractureGrid_SWtop.X, FractureGrid_SWtop.Y, FractureGrid_SWtop.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("NWtop = new PointXYZ({0}, {1}, {2});", FractureGrid_NWtop.X, FractureGrid_NWtop.Y, FractureGrid_NWtop.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("NEtop = new PointXYZ({0}, {1}, {2});", FractureGrid_NEtop.X, FractureGrid_NEtop.Y, FractureGrid_NEtop.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("SEtop = new PointXYZ({0}, {1}, {2});", FractureGrid_SEtop.X, FractureGrid_SEtop.Y, FractureGrid_SEtop.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("SWbottom = new PointXYZ({0}, {1}, {2});", FractureGrid_SWbottom.X, FractureGrid_SWbottom.Y, FractureGrid_SWbottom.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("NWbottom = new PointXYZ({0}, {1}, {2});", FractureGrid_NWbottom.X, FractureGrid_NWbottom.Y, FractureGrid_NWbottom.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("NEbottom = new PointXYZ({0}, {1}, {2});", FractureGrid_NEbottom.X, FractureGrid_NEbottom.Y, FractureGrid_NEbottom.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("SEbottom = new PointXYZ({0}, {1}, {2});", FractureGrid_SEbottom.X, FractureGrid_SEbottom.Y, FractureGrid_SEbottom.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Depth));
+                                PetrelLogger.InfoOutputWindow("Properties");
                                 PetrelLogger.InfoOutputWindow(string.Format("local_Epsilon_hmin_azimuth_in = {0}; Epsilon_hmin_rate_in = {1}; Epsilon_hmax_rate_in = {2};", local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in));
                                 PetrelLogger.InfoOutputWindow(string.Format("sv' {0}", gc.StressStrain.Sigma_v_eff));
                                 PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient {2}, Crack surface energy:{3}, Friction coefficient:{4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
@@ -2764,9 +2767,9 @@ namespace DFNGenerator_Ocean
                                                         // Add the centrepoint, the current cornerpoint and the next cornerpoint to the Petrel point collection
                                                         PointXYZ CP2 = CornerPoints[cornerPointNo];
                                                         PointXYZ CP3 = (cornerPointNo < Number_uF_Points - 1 ? CornerPoints[cornerPointNo + 1] : CornerPoints[0]);
-                                                        Petrel_CornerPoints.Add(new Point3(CP1.X, CP1.Y, CP1.Depth));
-                                                        Petrel_CornerPoints.Add(new Point3(CP2.X, CP2.Y, CP2.Depth));
-                                                        Petrel_CornerPoints.Add(new Point3(CP3.X, CP3.Y, CP3.Depth));
+                                                        Petrel_CornerPoints.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
+                                                        Petrel_CornerPoints.Add(new Point3(CP2.X, CP2.Y, CP2.Z));
+                                                        Petrel_CornerPoints.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
 
                                                         // Create a new fracture patch object
                                                         FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
@@ -2780,7 +2783,7 @@ namespace DFNGenerator_Ocean
                                                 {
                                                     string errorMessage = string.Format("Exception thrown when writing microfracture:");
                                                     foreach (PointXYZ CornerPoint in CornerPoints)
-                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Depth);
+                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
                                                     PetrelLogger.InfoOutputWindow(e.Message);
                                                     PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -2796,7 +2799,7 @@ namespace DFNGenerator_Ocean
 
                                                     // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
                                                     foreach (PointXYZ CornerPoint in CornerPoints)
-                                                        Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Depth));
+                                                        Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
 
                                                     // Create a new fracture patch object
                                                     FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
@@ -2809,7 +2812,7 @@ namespace DFNGenerator_Ocean
                                                 {
                                                     string errorMessage = string.Format("Exception thrown when writing microfracture:");
                                                     foreach (PointXYZ CornerPoint in CornerPoints)
-                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Depth);
+                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
                                                     PetrelLogger.InfoOutputWindow(e.Message);
                                                     PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -2868,12 +2871,12 @@ namespace DFNGenerator_Ocean
                                                                 if (point.Z > maxZ) point.Z = maxZ;
                                                             }
 #endif
-                                                            Petrel_CornerPoints1.Add(new Point3(CP1.X, CP1.Y, CP1.Depth));
-                                                            Petrel_CornerPoints1.Add(new Point3(CP2.X, CP2.Y, CP2.Depth));
-                                                            Petrel_CornerPoints1.Add(new Point3(CP3.X, CP3.Y, CP3.Depth));
-                                                            Petrel_CornerPoints2.Add(new Point3(CP3.X, CP3.Y, CP3.Depth));
-                                                            Petrel_CornerPoints2.Add(new Point3(CP4.X, CP4.Y, CP4.Depth));
-                                                            Petrel_CornerPoints2.Add(new Point3(CP1.X, CP1.Y, CP1.Depth));
+                                                            Petrel_CornerPoints1.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
+                                                            Petrel_CornerPoints1.Add(new Point3(CP2.X, CP2.Y, CP2.Z));
+                                                            Petrel_CornerPoints1.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
+                                                            Petrel_CornerPoints2.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
+                                                            Petrel_CornerPoints2.Add(new Point3(CP4.X, CP4.Y, CP4.Z));
+                                                            Petrel_CornerPoints2.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
 
                                                             // Create two new fracture patch objects
                                                             FracturePatch Petrel_FractureSegment1 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints1);
@@ -2890,7 +2893,7 @@ namespace DFNGenerator_Ocean
                                                         {
                                                             string errorMessage = string.Format("Exception thrown when writing macrofracture segment:");
                                                             foreach (PointXYZ CornerPoint in segment)
-                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Depth);
+                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
                                                             PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -2916,7 +2919,7 @@ namespace DFNGenerator_Ocean
                                                                     if (CornerPoint.Z > maxZ) CornerPoint.Z = maxZ;
                                                                 }
 #endif
-                                                                Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Depth));
+                                                                Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
                                                             }
 
                                                             // Create a new fracture patch object
@@ -2930,7 +2933,7 @@ namespace DFNGenerator_Ocean
                                                         {
                                                             string errorMessage = string.Format("Exception thrown when writing macrofracture segment:");
                                                             foreach (PointXYZ CornerPoint in segment)
-                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Depth);
+                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
                                                             PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -3166,14 +3169,14 @@ namespace DFNGenerator_Ocean
                                                 {
                                                     List<Point3> newpline = new List<Point3>();
                                                     foreach (PointXYZ grid_Point in grid_Centreline)
-                                                        newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Depth));
+                                                        newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Z));
                                                     pline_list.Add(new Polyline3(newpline));
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     string errorMessage = string.Format("Exception thrown when writing centreline:");
                                                     foreach (PointXYZ grid_Point in grid_Centreline)
-                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Depth);
+                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Z);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
                                                     PetrelLogger.InfoOutputWindow(e.Message);
                                                     PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -3223,7 +3226,7 @@ namespace DFNGenerator_Ocean
 
                                             // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
                                             foreach (PointXYZ CornerPoint in Segment)
-                                                Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Depth));
+                                                Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
 
                                             // Add the cornerpoints to the set of points for comparison with the corners of the fracture patches
                                             CornersAsPoints.AddRange(Petrel_CornerPoints);
@@ -3232,7 +3235,7 @@ namespace DFNGenerator_Ocean
                                         {
                                             string errorMessage = string.Format("Exception thrown when writing fracture cornerpoints:");
                                             foreach (PointXYZ CornerPoint in Segment)
-                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Depth);
+                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                             PetrelLogger.InfoOutputWindow(e.Message);
                                             PetrelLogger.InfoOutputWindow(e.StackTrace);

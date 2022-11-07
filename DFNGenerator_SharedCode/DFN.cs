@@ -91,16 +91,16 @@ namespace DFNGenerator_SharedCode
         /// <returns>Azimuth (rad)</returns>
         public double getAzimuth()
         {
-            // Fracture azimuth will be equal to fracture strike +/- pi/2 depending on dip direction
-            double azimuth = fs.Strike;
+            double azimuth = double.NaN;
 
+            // Segment azimuth will be equal to fracture strike +/- pi/2 depending on dip direction
             switch (DipDir)
             {
                 case DipDirection.JPlus:
-                    azimuth -= (Math.PI / 2);
+                    azimuth = fs.Strike + (Math.PI / 2);
                     break;
                 case DipDirection.JMinus:
-                    azimuth += (Math.PI / 2);
+                    azimuth = fs.Strike - (Math.PI / 2);
                     break;
                 default:
                     break;
@@ -695,11 +695,8 @@ namespace DFNGenerator_SharedCode
         /// <returns>New PointXYZ object representing the lowermost non-propagating corner of the fracture segment</returns>
         public PointXYZ getLowerNonPropCornerinXYZ()
         {
-            // Get x, y, and z coordinates of non-propagating node (i.e. in the vertical centre of the gridblock)
+            // Get the non-propagating node (i.e. the non-propagating tip of the fracture in the vertical centre of the gridblock) in x, y, and z coordinates
             PointXYZ NodeXYZ = getNonPropNodeinXYZ();
-            double X_Node = NodeXYZ.X;
-            double Y_Node = NodeXYZ.Y;
-            double Z_Node = NodeXYZ.Z;
 
             // Get the true vertical thickness of the gridblock at the non-propagating node
             double layerThickness = fs.getTVTAtPoint(NodeXYZ);
@@ -729,11 +726,8 @@ namespace DFNGenerator_SharedCode
         /// <returns>New PointXYZ object representing the uppermost non-propagating corner of the fracture segment</returns>
         public PointXYZ getUpperNonPropCornerinXYZ()
         {
-            // Get x, y, and z coordinates of non-propagating node (i.e. in the vertical centre of the gridblock)
+            // Get the non-propagating node (i.e. the non-propagating tip of the fracture in the vertical centre of the gridblock) in x, y, and z coordinates
             PointXYZ NodeXYZ = getNonPropNodeinXYZ();
-            double X_Node = NodeXYZ.X;
-            double Y_Node = NodeXYZ.Y;
-            double Z_Node = NodeXYZ.Z;
 
             // Get the true vertical thickness of the gridblock at the non-propagating node
             double layerThickness = fs.getTVTAtPoint(NodeXYZ);
@@ -763,11 +757,8 @@ namespace DFNGenerator_SharedCode
         /// <returns>New PointXYZ object representing the lowermost propagating corner of the fracture segment</returns>
         public PointXYZ getLowerPropCornerinXYZ()
         {
-            // Get x, y, and z coordinates of propagating node (i.e. in the vertical centre of the gridblock)
+            // Get the propagating node (i.e. the propagating tip of the fracture in the vertical centre of the gridblock) in x, y, and z coordinates
             PointXYZ NodeXYZ = getPropNodeinXYZ();
-            double X_Node = NodeXYZ.X;
-            double Y_Node = NodeXYZ.Y;
-            double Z_Node = NodeXYZ.Z;
 
             // Get the true vertical thickness of the gridblock at the propagating node
             double layerThickness = fs.getTVTAtPoint(NodeXYZ);
@@ -797,11 +788,8 @@ namespace DFNGenerator_SharedCode
         /// <returns>New PointXYZ object representing the uppermost propagating corner of the fracture segment</returns>
         public PointXYZ getUpperPropCornerinXYZ()
         {
-            // Get x, y, and z coordinates of propagating node (i.e. in the vertical centre of the gridblock)
+            // Get the propagating node (i.e. the propagating tip of the fracture in the vertical centre of the gridblock) in x, y, and z coordinates
             PointXYZ NodeXYZ = getPropNodeinXYZ();
-            double X_Node = NodeXYZ.X;
-            double Y_Node = NodeXYZ.Y;
-            double Z_Node = NodeXYZ.Z;
 
             // Get the true vertical thickness of the gridblock at the propagating node
             double layerThickness = fs.getTVTAtPoint(NodeXYZ);
@@ -1242,6 +1230,11 @@ namespace DFNGenerator_SharedCode
         /// Fracture dip - this will not change after fracture is initiated
         /// </summary>
         public double Dip { get; private set; }
+        /*/// <summary>
+        /// Returns the azimuth of the first macrofracture segment in the IPlus direction; use for debugging
+        /// </summary>
+        /// <returns></returns>
+        public double InitialSegmentAzimuth() { return MF_segments[PropagationDirection.IPlus][0].getAzimuth(); } */
         /// <summary>
         /// List of mean apertures (in current stress field) of each segment
         /// </summary>
