@@ -45,7 +45,7 @@ namespace DFNGenerator_SharedCode
         /// </summary>
         public double ThicknessAtDeformation { get; private set; }
         /// <summary>
-        /// Mean depth of top surface at the start of deformation (m); can be set independently of cornerpoints
+        /// Mean depth of top surface at time of deformation (in metres, positive downwards), used to calculate in situ stress state; can be set independently of cornerpoints
         /// </summary>
         private double InitialDepth { get; set; }
         /// <summary>
@@ -148,11 +148,11 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Current mean depth of the top of the gridblock - may not be the same as depth at the time of deformation
         /// </summary>
-        public double CurrentDepth { get { return (SWtop.Z + NWtop.Z + NEtop.Z + SEtop.Z) / 4; } }
+        public double CurrentDepth { get { return (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4; } }
         /// <summary>
         /// Curren mean thickness of the gridblock - may not be the same as thickness at the time of deformation
         /// </summary>
-        public double CurrentThickness { get { return ((SWbottom.Z - SWtop.Z) + (NWbottom.Z - NWtop.Z) + (NEbottom.Z - NEtop.Z) + (SEbottom.Z - SEtop.Z)) / 4; } }
+        public double CurrentThickness { get { return ((SWtop.Z - SWbottom.Z) + (NWtop.Z - NWbottom.Z) + (NEtop.Z - NEbottom.Z) + (SEtop.Z - SEbottom.Z)) / 4; } }
         /// <summary>
         /// Get a list of all cornerpoints as PointXYZ objects
         /// </summary>
@@ -679,11 +679,11 @@ namespace DFNGenerator_SharedCode
                 // Calculate Z at X,Y
                 Z_out = (u_inv * v_inv * SW_Z) + (u * v_inv * SE_Z) + (u_inv * v * NW_Z) + (u * v * NE_Z);
             }
-            // Default return value is CurrentDepth + (CurrentThickness/2), representing the mean centre depth for the gridblock
+            // Default return value is -(CurrentDepth + (CurrentThickness/2)), representing the mean centre depth for the gridblock
             // This will be returned if the the depth at the specified point cannot be calculated (which may occur with inverted geometries)
             else
             {
-                Z_out = CurrentDepth + (CurrentThickness / 2);
+                Z_out = -(CurrentDepth + (CurrentThickness / 2));
             }
 
             // Return Z

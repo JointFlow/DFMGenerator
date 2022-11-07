@@ -39,10 +39,10 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Main properties");
-                input_file.WriteLine("% Grid size; all lengths in metres");
+                input_file.WriteLine("% Grid size");
                 input_file.WriteLine("NoRows 3");
                 input_file.WriteLine("NoCols 3");
-                input_file.WriteLine("% Gridblock size");
+                input_file.WriteLine("% Gridblock size; all lengths in metres");
                 input_file.WriteLine("Width_EW 20");
                 input_file.WriteLine("Length_NS 20");
                 input_file.WriteLine("LayerThickness 1");
@@ -138,7 +138,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("StressDistributionScenario StressShadow");
                 input_file.WriteLine("% Depth at the time of deformation (in metres, positive downwards) - this will control stress state");
                 input_file.WriteLine("% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth");
-                input_file.WriteLine("% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used");
+                input_file.WriteLine("% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used");
                 input_file.WriteLine("DepthAtDeformation -1");
                 input_file.WriteLine("% Mean density of overlying sediments and fluid in kg/m3");
                 input_file.WriteLine("MeanOverlyingSedimentDensity 2250");
@@ -421,7 +421,7 @@ namespace DFNGenerator_Standalone
             // Grid size
             int NoRows = 3;
             int NoCols = 3;
-            // Gridblock size
+            // Gridblock size; all lengths in metres
             double Width_EW = 20;
             double Length_NS = 20;
             double LayerThickness = 1;
@@ -429,6 +429,7 @@ namespace DFNGenerator_Standalone
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
             double OriginYOffset = 0;
+            // Current depth of burial in metres, positive downwards
             double Depth = 2000;
             // Time units used in input load rates, time limits and strain relaxation time constants
             // These will be converted to SI units (s) by the gridblock objects
@@ -547,9 +548,9 @@ namespace DFNGenerator_Standalone
             // Stress distribution scenario - use to turn on or off stress shadow effect
             // Do not use DuctileBoundary as this is not yet implemented
             StressDistribution StressDistributionScenario = StressDistribution.StressShadow;
-            // Depth at the time of deformation - will control stress state
-            // If DepthAtDeformation is specified, use this to calculate effective vertical stress instead of the current depth
-            // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used
+            // Depth at the time of deformation (in metres, positive downwards) - this will control stress state
+            // If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth
+            // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
             double DepthAtDeformation = -1;
             bool OverwriteDepth = (DepthAtDeformation > 0);
             // Mean density of overlying sediments and fluid (kg/m3)
@@ -1512,13 +1513,13 @@ namespace DFNGenerator_Standalone
                     PointXYZ PillarTop, PillarBottom;
                     if (TestComplexGeometry)
                     {
-                        PillarTop = new PointXYZ(((double)ColNo * Width_EW) - ((RowNo) % 2 == 1 ? 2 : -2) + OriginXOffset, ((double)RowNo * Length_NS) - ((ColNo) % 2 == 1 ? 2 : -2) + OriginYOffset, Depth + ((RowNo) % 2 == 1 ? 0.1 : -0.1));
-                        PillarBottom = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, Depth + LayerThickness + ((ColNo) % 2 == 1 ? 0.1 : -0.1));
+                        PillarTop = new PointXYZ(((double)ColNo * Width_EW) - ((RowNo) % 2 == 1 ? 2 : -2) + OriginXOffset, ((double)RowNo * Length_NS) - ((ColNo) % 2 == 1 ? 2 : -2) + OriginYOffset, -(Depth + ((RowNo) % 2 == 1 ? 0.1 : -0.1)));
+                        PillarBottom = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, -(Depth + LayerThickness + ((ColNo) % 2 == 1 ? 0.1 : -0.1)));
                     }
                     else
                     {
-                        PillarTop = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, Depth);
-                        PillarBottom = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, Depth + LayerThickness);
+                        PillarTop = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, -Depth);
+                        PillarBottom = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, -(Depth + LayerThickness));
                     }
                     PillarTops[RowNo, ColNo] = PillarTop;
                     PillarBottoms[RowNo, ColNo] = PillarBottom;
@@ -2155,8 +2156,8 @@ namespace DFNGenerator_Standalone
                     SEbottom = PillarBottoms[RowNo, ColNo + 1];
 
                     // Calculate the mean depth of top surface and mean layer thickness at time of deformation - assume that these are equal to the current mean depth and layer thickness, unless the depth at the time of fracturing has been specified
-                    double local_Depth = (OverwriteDepth ? DepthAtDeformation : (SWtop.Z + NWtop.Z + NEtop.Z + SEtop.Z) / 4);
-                    double local_LayerThickness = ((SWbottom.Z - SWtop.Z) + (NWbottom.Z - NWtop.Z) + (NEbottom.Z - NEtop.Z) + (SEbottom.Z - SEtop.Z)) / 4;
+                    double local_Depth = (OverwriteDepth ? DepthAtDeformation : (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4);
+                    double local_LayerThickness = ((SWtop.Z - SWbottom.Z) + (NWtop.Z - NWbottom.Z) + (NEtop.Z - NEbottom.Z) + (SEtop.Z - SEbottom.Z)) / 4;
 
                     // Create a new gridblock object containing the required number of fracture sets
                     GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);

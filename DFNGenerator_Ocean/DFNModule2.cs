@@ -62,7 +62,7 @@ namespace DFNGenerator_Ocean
             PetrelSystem.WorkflowEditor.AddUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>(new DFNGenerator_Ocean.DFNGenerator.UIFactory());
             PetrelSystem.WorkflowEditor.Add(dfngeneratorInstance);
             m_dfngeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfngeneratorInstance);
-            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Fracture network modeling");
+            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Dynamic fracture modelling");
 
             // Register LaunchDFNGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command

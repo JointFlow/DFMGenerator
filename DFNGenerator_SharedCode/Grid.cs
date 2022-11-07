@@ -231,7 +231,7 @@ namespace DFNGenerator_SharedCode
                             case DFNFileType.ASCII:
                                 {
                                     // Write header data
-                                    string FSheader1 = "FracNo\tSet\tCentre X\tCentre Y\tCentre Z\tRadius\tDip\tAzimuth\tActive\t";
+                                    string FSheader1 = "FracNo\tSet\tCentre X\tCentre Y\tCentre Depth\tRadius\tDip\tAzimuth\tActive\t";
                                     uF_outputFile.WriteLine(FSheader1);
 
                                     // Loop through each microfracture and write data to logfile
