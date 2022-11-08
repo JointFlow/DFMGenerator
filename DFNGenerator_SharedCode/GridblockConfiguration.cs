@@ -39,15 +39,15 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Mean layer thickness at the start of deformation (m); can be set independently of cornerpoints
         /// </summary>
-        private double InitialThickness { get; set; }
+        private double InitialThickness;
         /// <summary>
         /// Mean layer thickness during deformation (m), used to calculate fracture population data
         /// </summary>
         public double ThicknessAtDeformation { get; private set; }
         /// <summary>
-        /// Mean depth of top surface at time of deformation (in metres, positive downwards), used to calculate in situ stress state; can be set independently of cornerpoints
+        /// Mean depth of top surface at the start of deformation (in metres, positive downwards), used to calculate in situ stress state; can be set independently of cornerpoints
         /// </summary>
-        private double InitialDepth { get; set; }
+        private double InitialDepth;
         /// <summary>
         /// Mean depth of top surface during deformation (m), used to calculate fracture population data
         /// </summary>
@@ -2388,7 +2388,7 @@ namespace DFNGenerator_SharedCode
 
                     // Update stress and strain tensors for the next timestep
                     // Update the depth of burial
-                    DepthAtDeformation += upliftRate;
+                    DepthAtDeformation += (TimestepDuration * upliftRate);
                     // Update the effective stress and the bulk rock elastic strain tensors at the end of the timestep, based on the respective rate of change tensors and the timestep duration
                     StressStrain.UpdateStressStrainState(TimestepDuration);
                     // Update total cumulative strain tensor - this increases by the increment in applied external strain

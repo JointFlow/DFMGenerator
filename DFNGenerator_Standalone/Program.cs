@@ -136,7 +136,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Options are EvenlyDistributedStress or StressShadow");
                 input_file.WriteLine("% Do not use DuctileBoundary as this is not yet implemented");
                 input_file.WriteLine("StressDistributionScenario StressShadow");
-                input_file.WriteLine("% Depth at the time of deformation (in metres, positive downwards) - this will control stress state");
+                input_file.WriteLine("% Depth at the start of deformation (in metres, positive downwards) - this will control stress state");
                 input_file.WriteLine("% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth");
                 input_file.WriteLine("% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used");
                 input_file.WriteLine("DepthAtDeformation -1");
@@ -548,7 +548,7 @@ namespace DFNGenerator_Standalone
             // Stress distribution scenario - use to turn on or off stress shadow effect
             // Do not use DuctileBoundary as this is not yet implemented
             StressDistribution StressDistributionScenario = StressDistribution.StressShadow;
-            // Depth at the time of deformation (in metres, positive downwards) - this will control stress state
+            // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
             // If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth
             // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
             double DepthAtDeformation = -1;
@@ -2155,8 +2155,28 @@ namespace DFNGenerator_Standalone
                     NEbottom = PillarBottoms[RowNo + 1, ColNo + 1];
                     SEbottom = PillarBottoms[RowNo, ColNo + 1];
 
-                    // Calculate the mean depth of top surface and mean layer thickness at time of deformation - assume that these are equal to the current mean depth and layer thickness, unless the depth at the time of fracturing has been specified
-                    double local_Depth = (OverwriteDepth ? DepthAtDeformation : (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4);
+                    // Calculate the mean depth of top surface and mean layer thickness at time of deformation - assume that these are equal to the current mean depth minus total specified uplift and layer thickness, unless the depth at the start of fracturing has been specified
+                    double local_Depth;
+                    if (OverwriteDepth)
+                    {
+                        // If depth at the start of fracturing has been specified, use this 
+                        local_Depth = DepthAtDeformation;
+                    }
+                    else
+                    {
+                        // Otherwise, calculate the current mean depth of the gridblock minus the total specified uplift
+                        // NB Uplift will not be counted for deformation episodes with indefinite duration
+                        double currentMeanDepth = (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4;
+                        double totalUplift = 0;
+                        for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                        {
+                            double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][RowNo, ColNo] : AppliedUpliftRate);
+                            double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][RowNo, ColNo] : DeformationEpisodeDuration);
+                            if (local_DeformationEpisodeDuration > 0)
+                                totalUplift += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
+                        }
+                        local_Depth = currentMeanDepth + totalUplift;
+                    }
                     double local_LayerThickness = ((SWtop.Z - SWbottom.Z) + (NWtop.Z - NWbottom.Z) + (NEtop.Z - NEbottom.Z) + (SEtop.Z - SEbottom.Z)) / 4;
 
                     // Create a new gridblock object containing the required number of fracture sets
