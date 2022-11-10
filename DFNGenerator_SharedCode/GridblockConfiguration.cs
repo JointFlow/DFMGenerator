@@ -2036,8 +2036,15 @@ namespace DFNGenerator_SharedCode
 
             // Loop through the deformation episodes
             int currentDeformationEpisodeIndex = 0;
+            double endLastTimestep = 0;
             foreach (DeformationEpisodeControl currentDeformationEpisode in PropControl.DeformationEpisodes)
             {
+                // Check if we have already reached the maximum timestep limit; if so, end the calculation
+                if (CurrentImplicitTimestep >= maxTimesteps)
+                    break;
+                // Otherwise reset the CalculationCompleted flag to false
+                CalculationCompleted = false;
+
                 // Update the index of the current deformation episode
                 currentDeformationEpisodeIndex++;
 
@@ -2097,27 +2104,26 @@ namespace DFNGenerator_SharedCode
                 }
 
                 // Get the deformation episode duration
-                double CurrentDeformationEpisodeDuration = currentDeformationEpisode.DeformationEpisodeDuration;
+                double CurrentDeformationEpisodeEndTime = endLastTimestep + currentDeformationEpisode.DeformationEpisodeDuration;
                 // Flag for whether to stop the calculation when all sets have been deactivated
                 // By default we will continue until the end of the specified deformation duration
                 bool StopWhenAllSetsDeactivated = false;
                 // If the deformation stage duration is negative, then we will stop automatically when all fracture sets have been deactivated
                 // We will set the deformation stage duration to infinity and set the calculation to stop automatically when all sets have been deactivated
-                if (CurrentDeformationEpisodeDuration < 0)
+                if (CurrentDeformationEpisodeEndTime < 0)
                 {
-                    CurrentDeformationEpisodeDuration = double.PositiveInfinity;
+                    CurrentDeformationEpisodeEndTime = double.PositiveInfinity;
                     StopWhenAllSetsDeactivated = true;
                 }
 
                 // Loop through the timesteps
                 do
                 {
-                    // Get the current end time and then update the timestep counter by 1
-                    double endLastTimestep = CurrentImplicitTime;
+                    // Increment the implicit timestep counter by 1
                     CurrentImplicitTimestep++;
 
                     // Set the maximum timestep duration to the total time remaining
-                    double TimestepDuration = CurrentDeformationEpisodeDuration - endLastTimestep;
+                    double TimestepDuration = CurrentDeformationEpisodeEndTime - endLastTimestep;
 
                     // Apply maximum timestep duration cutoff if required
                     // Do not do this if all fracture sets have been deactivated
@@ -2315,9 +2321,6 @@ namespace DFNGenerator_SharedCode
                         CalculationCompleted = true;
                     }
 
-                    // Update list of timestep end times
-                    TimestepEndTimes.Add(endLastTimestep + TimestepDuration);
-
                     // Calculate calculate the driving stress and propagation rate data for each fracture dip set
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
@@ -2427,6 +2430,10 @@ namespace DFNGenerator_SharedCode
                         }
                     }
 
+                    // Update the current end time and the list of timestep end times
+                    endLastTimestep += TimestepDuration;
+                    TimestepEndTimes.Add(endLastTimestep);
+
                     // Write data to logfile
                     if (writeImplicitDataToFile)
                     {
@@ -2518,7 +2525,7 @@ namespace DFNGenerator_SharedCode
 
                     // Check if calculation is finished
                     // Check if we have run to completion
-                    if (CurrentImplicitTime >= CurrentDeformationEpisodeDuration)
+                    if (CurrentImplicitTime >= CurrentDeformationEpisodeEndTime)
                         CalculationCompleted = true;
                     // Check if we have exceeded maximum number of timesteps
                     if (CurrentImplicitTimestep >= maxTimesteps)

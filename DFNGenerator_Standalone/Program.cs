@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRACS
@@ -137,9 +137,9 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("% Do not use DuctileBoundary as this is not yet implemented");
                 input_file.WriteLine("StressDistributionScenario StressShadow");
                 input_file.WriteLine("% Depth at the start of deformation (in metres, positive downwards) - this will control stress state");
-                input_file.WriteLine("% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth");
-                input_file.WriteLine("% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used");
-                input_file.WriteLine("DepthAtDeformation -1");
+                input_file.WriteLine("% If InitialDepth is specified, this will be used to calculate effective vertical stress instead of the current depth");
+                input_file.WriteLine("% If InitialDepth is <=0 or NaN, OverwriteDepth will be set to false and InitialDepth will not be used");
+                input_file.WriteLine("InitialDepth -1");
                 input_file.WriteLine("% Mean density of overlying sediments and fluid in kg/m3");
                 input_file.WriteLine("MeanOverlyingSedimentDensity 2250");
                 input_file.WriteLine("FluidDensity 1000");
@@ -495,8 +495,8 @@ namespace DFNGenerator_Standalone
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(1);
-            // Add an additional uplift episode, with uplift of 2000m over 20ma
+            DeformationEpisodeDuration_list.Add(0); //(DeformationEpisodeDuration);
+            // Add an additional uplift episode, with uplift of 1800m over 18ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
@@ -504,7 +504,7 @@ namespace DFNGenerator_Standalone
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(100);
             StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(20);
+            DeformationEpisodeDuration_list.Add(18);
             // Add an additional overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -522,7 +522,7 @@ namespace DFNGenerator_Standalone
             bool VariableYoungsMod = false;
             double PoissonsRatio = 0.25;
             double Porosity = 0.2;
-            double BiotCoefficient = 1;
+            double BiotCoefficient = 0.8;// 1;
             // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
             double ThermalExpansionCoefficient = 4E-5;
             double CrackSurfaceEnergy = 1000;
@@ -549,10 +549,10 @@ namespace DFNGenerator_Standalone
             // Do not use DuctileBoundary as this is not yet implemented
             StressDistribution StressDistributionScenario = StressDistribution.StressShadow;
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
-            // If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth
-            // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
-            double DepthAtDeformation = -1;
-            bool OverwriteDepth = (DepthAtDeformation > 0);
+            // If InitialDepth is specified, this will be used to calculate effective vertical stress instead of the current depth
+            // If InitialDepth is <=0 or NaN, OverwriteDepth will be set to false and InitialDepth will not be used
+            double InitialDepth = 2000;// -1;
+            bool OverwriteDepth = (InitialDepth > 0);
             // Mean density of overlying sediments and fluid (kg/m3)
             double MeanOverlyingSedimentDensity = 2250;
             double FluidDensity = 1000;
@@ -564,7 +564,7 @@ namespace DFNGenerator_Standalone
             // Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
             // Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
             // Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
-            double InitialStressRelaxation = 0.5;
+            double InitialStressRelaxation = -1;// 0.5;
 
             // Outputs
             // Output to file
@@ -985,11 +985,12 @@ namespace DFNGenerator_Standalone
                         // Depth at the time of deformation - will control stress state
                         // If DepthAtDeformation is specified, use this to calculate effective vertical stress instead of the current depth
                         // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used
-                        case "DepthAtDeformation":
+                        case "InitialDepth":
+                        case "DepthAtDeformation": // For backwards compatibility
                         case "DepthAtFracture": // For backwards compatibility
                             {
-                                DepthAtDeformation = Convert.ToDouble(line_split[1]);
-                                OverwriteDepth = (DepthAtDeformation > 0);
+                                InitialDepth = Convert.ToDouble(line_split[1]);
+                                OverwriteDepth = (InitialDepth > 0);
                             }
                             break;
                         // Mean density of overlying sediments and fluid (kg/m3)
@@ -1438,12 +1439,12 @@ namespace DFNGenerator_Standalone
                             double strainMultiplier = RandomNumberGenerator.NextDouble() * 2;
                             double local_EhminRate = nextEhminRate * strainMultiplier;
                             double local_EhmaxRate = nextEhmaxRate * strainMultiplier;
-                            nextEhminAzi_array[RowNo, ColNo] = local_EhminRate;
+                            nextEhminRate_array[RowNo, ColNo] = local_EhminRate;
                             nextEhmaxRate_array[RowNo, ColNo] = local_EhmaxRate;
                         }
                         else
                         {
-                            nextEhminAzi_array[RowNo, ColNo] = nextEhminRate;
+                            nextEhminRate_array[RowNo, ColNo] = nextEhminRate;
                             nextEhmaxRate_array[RowNo, ColNo] = nextEhmaxRate;
                         }
                         nextAppliedOverpressureRate_array[RowNo, ColNo] = nextAppliedOverpressureRate;
@@ -2155,12 +2156,12 @@ namespace DFNGenerator_Standalone
                     NEbottom = PillarBottoms[RowNo + 1, ColNo + 1];
                     SEbottom = PillarBottoms[RowNo, ColNo + 1];
 
-                    // Calculate the mean depth of top surface and mean layer thickness at time of deformation - assume that these are equal to the current mean depth minus total specified uplift and layer thickness, unless the depth at the start of fracturing has been specified
+                    // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift and layer thickness, unless the initial depth has been specified
                     double local_Depth;
                     if (OverwriteDepth)
                     {
-                        // If depth at the start of fracturing has been specified, use this 
-                        local_Depth = DepthAtDeformation;
+                        // If the initial depth  has been specified, use this 
+                        local_Depth = InitialDepth;
                     }
                     else
                     {
