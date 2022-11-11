@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-//#define DEBUG_FRACS
+#define DEBUG_FRACS
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -177,30 +177,158 @@ namespace DFNGenerator_Ocean
 #if DEBUG_FRACS
                     PetrelLogger.InfoOutputWindow(string.Format("TopCellK {0}, BaseCellK {1}", PetrelGrid_TopCellK, PetrelGrid_BaseCellK));
 #endif
-                    // Strain orientatation
-                    double EhminAzi = 0;
-                    if (!double.IsNaN(arguments.Argument_EhminAzi_default))
-                        EhminAzi = arguments.Argument_EhminAzi_default; // Can also be set from grid property; NB value should be returned in radians as conversion should be carried out by the Petrel unit conversion functionality 
-                    Property EhminAzi_grid = arguments.Argument_EhminAzi;
-                    bool UseGridFor_EhminAzi = (EhminAzi_grid != null);
-                    // Strain rates
-                    // Set to negative value for extensional strain
-                    // Ehmin is most tensile (i.e. most negative) horizontal strain rate
-                    double EhminRate_GeologicalTimeUnits = 0;
-                    if (!double.IsNaN(arguments.Argument_EhminRate_default))
-                        EhminRate_GeologicalTimeUnits = arguments.Argument_EhminRate_default; // Can also be set from grid property
-                    Property EhminRate_grid = arguments.Argument_EhminRate;
-                    bool UseGridFor_EhminRate = (EhminRate_grid != null);
-                    // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-                    double EhmaxRate_GeologicalTimeUnits = 0;
-                    if (!double.IsNaN(arguments.Argument_EhmaxRate_default))
-                        EhmaxRate_GeologicalTimeUnits = arguments.Argument_EhmaxRate_default; // Can also be set from grid property
-                    Property EhmaxRate_grid = arguments.Argument_EhmaxRate;
-                    bool UseGridFor_EhmaxRate = (EhmaxRate_grid != null);
                     // Time units set to seconds - unit conversion from geological time units is carried out automatically by the Petrel unit conversion functionality
                     // NB the calculation code uses seconds internally in any case, so this will not lead to any loss in accuracy
                     TimeUnits ModelTimeUnits = TimeUnits.second;
+                    // Deformation load
+                    // Multiple deformation episodes can be added
+                    // Deformation load parameter defaults: the following describe the default values that will be applied to all deformation episodes unless otherwise specified
+                    // Strain orientatation
+                    double EhminAzi = 0;
+                    // Strain rates
+                    // Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
+                    // With no strain relaxation, strain rate will control rate of horizontal stress increase
+                    // With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
+                    // Ehmin is most tensile (i.e. most negative) horizontal strain rate
+                    double EhminRate_GeologicalTimeUnits = 0;
+                    // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
+                    double EhmaxRate_GeologicalTimeUnits = 0;
+                    // Fluid pressure, thermal and uplift loads
+                    // Rate of increase of fluid overpressure (Pa/ModelTImeUnit)
+                    double AppliedOverpressureRate_GeologicalTimeUnits = 0;
+                    // Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTImeUnit)
+                    double AppliedTemperatureChange_GeologicalTimeUnits = 0;
+                    // Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTImeUnit)
+                    double AppliedUpliftRate_GeologicalTimeUnits = 0;
+                    // Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)
+                    double StressArchingFactor = 0;
+                    // Duration of the deformation episode; set to -1 to continue until fracture saturation is reached
+                    double DeformationEpisodeDuration_GeologicalTimeUnits = -1;
+                    // Global deformation load parameter lists
+                    // These contain one entry for each deformation episode, in order
+                    // They will be copied to all gridblocks
+                    int noDeformationEpisodes = arguments.Argument_DeformationEpisode.Count;
+                    List<double> EhminAzi_list = new List<double>();
+                    List<double> EhminRate_GeologicalTimeUnits_list = new List<double>();
+                    List<double> EhmaxRate_GeologicalTimeUnits_list = new List<double>();
+                    List<double> AppliedOverpressureRate_GeologicalTimeUnits_list = new List<double>();
+                    List<double> AppliedTemperatureChange_GeologicalTimeUnits_list = new List<double>();
+                    List<double> AppliedUpliftRate_GeologicalTimeUnits_list = new List<double>();
+                    List<double> StressArchingFactor_list = new List<double>();
+                    List<double> DeformationEpisodeDuration_GeologicalTimeUnits_list = new List<double>();
+                    List<TimeUnits> DeformationEpisodeTimeUnits_list = new List<TimeUnits>();
+                    List<Property> EhminAzi_grid_list = new List<Property>();
+                    List<Property> EhminRate_grid_list = new List<Property>();
+                    List<Property> EhmaxRate_grid_list = new List<Property>();
+                    List<Property> AppliedOverpressureRate_grid_list = new List<Property>();
+                    List<Property> AppliedTemperatureChange_grid_list = new List<Property>();
+                    List<Property> AppliedUpliftRate_grid_list = new List<Property>();
+                    List<bool> UseGridFor_EhminAzi_list = new List<bool>();
+                    List<bool> UseGridFor_EhminRate_list = new List<bool>();
+                    List<bool> UseGridFor_EhmaxRate_list = new List<bool>();
+                    List<bool> UseGridFor_AppliedOverpressureRate_list = new List<bool>();
+                    List<bool> UseGridFor_AppliedTemperatureChange_list = new List<bool>();
+                    List<bool> UseGridFor_AppliedUpliftRate_list = new List<bool>();
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    {
+                        double next_EhminAzi_GeologicalTimeUnits = arguments.EhminAzi_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_EhminAzi_GeologicalTimeUnits))
+                            EhminAzi_list.Add(next_EhminAzi_GeologicalTimeUnits);
+                        else
+                            EhminAzi_list.Add(EhminAzi);
+                        Property next_EhminAzi_grid = arguments.EhminAzi(deformationEpisodeNo);
+                        EhminAzi_grid_list.Add(next_EhminAzi_grid);
+                        UseGridFor_EhminAzi_list.Add(next_EhminAzi_grid != null);
 
+                        double next_EhminRate_GeologicalTimeUnits = arguments.EhminRate_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_EhminRate_GeologicalTimeUnits))
+                            EhminRate_GeologicalTimeUnits_list.Add(next_EhminRate_GeologicalTimeUnits);
+                        else
+                            EhminRate_GeologicalTimeUnits_list.Add(EhminRate_GeologicalTimeUnits);
+                        Property next_EhminRate_grid = arguments.EhminRate(deformationEpisodeNo);
+                        EhminRate_grid_list.Add(next_EhminRate_grid);
+                        UseGridFor_EhminRate_list.Add(next_EhminRate_grid != null);
+
+                        double next_EhmaxRate_GeologicalTimeUnits = arguments.EhmaxRate_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_EhmaxRate_GeologicalTimeUnits))
+                            EhmaxRate_GeologicalTimeUnits_list.Add(next_EhmaxRate_GeologicalTimeUnits);
+                        else
+                            EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
+                        Property next_EhmaxRate_grid = arguments.EhmaxRate(deformationEpisodeNo);
+                        EhmaxRate_grid_list.Add(next_EhmaxRate_grid);
+                        UseGridFor_EhmaxRate_list.Add(next_EhmaxRate_grid != null);
+
+                        double next_AppliedOverpressureRate_GeologicalTimeUnits = arguments.AppliedOverpressureRate_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_AppliedOverpressureRate_GeologicalTimeUnits))
+                            AppliedOverpressureRate_GeologicalTimeUnits_list.Add(next_AppliedOverpressureRate_GeologicalTimeUnits);
+                        else
+                            AppliedOverpressureRate_GeologicalTimeUnits_list.Add(AppliedOverpressureRate_GeologicalTimeUnits);
+                        Property next_AppliedOverpressureRate_grid = arguments.AppliedOverpressureRate(deformationEpisodeNo);
+                        AppliedOverpressureRate_grid_list.Add(next_AppliedOverpressureRate_grid);
+                        UseGridFor_AppliedOverpressureRate_list.Add(next_AppliedOverpressureRate_grid != null);
+
+                        double next_AppliedTemperatureChange_GeologicalTimeUnits = arguments.AppliedTemperatureChange_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_AppliedTemperatureChange_GeologicalTimeUnits))
+                            AppliedTemperatureChange_GeologicalTimeUnits_list.Add(next_AppliedTemperatureChange_GeologicalTimeUnits);
+                        else
+                            AppliedTemperatureChange_GeologicalTimeUnits_list.Add(AppliedTemperatureChange_GeologicalTimeUnits);
+                        Property next_AppliedTemperatureChange_grid = arguments.AppliedTemperatureChange(deformationEpisodeNo);
+                        AppliedTemperatureChange_grid_list.Add(next_AppliedTemperatureChange_grid);
+                        UseGridFor_AppliedTemperatureChange_list.Add(next_AppliedTemperatureChange_grid != null);
+
+                        double next_AppliedUpliftRate_GeologicalTimeUnits = arguments.AppliedUpliftRate_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_AppliedUpliftRate_GeologicalTimeUnits))
+                            AppliedUpliftRate_GeologicalTimeUnits_list.Add(next_AppliedUpliftRate_GeologicalTimeUnits);
+                        else
+                            AppliedUpliftRate_GeologicalTimeUnits_list.Add(AppliedUpliftRate_GeologicalTimeUnits);
+                        Property next_AppliedUpliftRate_grid = arguments.AppliedUpliftRate(deformationEpisodeNo);
+                        AppliedUpliftRate_grid_list.Add(next_AppliedUpliftRate_grid);
+                        UseGridFor_AppliedUpliftRate_list.Add(next_AppliedUpliftRate_grid != null);
+
+                        double next_StressArchingFactor_GeologicalTimeUnits = arguments.StressArchingFactor(deformationEpisodeNo);
+                        if (!double.IsNaN(next_StressArchingFactor_GeologicalTimeUnits))
+                            StressArchingFactor_list.Add(next_StressArchingFactor_GeologicalTimeUnits);
+                        else
+                            StressArchingFactor_list.Add(StressArchingFactor);
+
+                        double next_DeformationEpisodeDuration_GeologicalTimeUnits = arguments.DeformationEpisodeDuration(deformationEpisodeNo);
+                        if (!double.IsNaN(next_DeformationEpisodeDuration_GeologicalTimeUnits))
+                            DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(next_DeformationEpisodeDuration_GeologicalTimeUnits);
+                        else
+                            DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(DeformationEpisodeDuration_GeologicalTimeUnits);
+
+                        DeformationEpisodeTimeUnits_list.Add(arguments.DeformationEpisodeTimeUnits(deformationEpisodeNo));
+                    }
+
+#if DEBUG_FRACS
+                    // Add an initial episode with uniaxial extension of -0.01/ma over 1ma
+                    EhminAzi_list.Add(EhminAzi);
+                    EhminRate_GeologicalTimeUnits_list.Add(-0.01);
+                    EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
+                    AppliedOverpressureRate_GeologicalTimeUnits_list.Add(AppliedOverpressureRate_GeologicalTimeUnits);
+                    AppliedTemperatureChange_GeologicalTimeUnits_list.Add(AppliedTemperatureChange_GeologicalTimeUnits);
+                    AppliedUpliftRate_GeologicalTimeUnits_list.Add(AppliedUpliftRate_GeologicalTimeUnits);
+                    StressArchingFactor_list.Add(StressArchingFactor);
+                    DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(0); //(DeformationEpisodeDuration);
+                    // Add an additional uplift episode, with uplift of 1800m over 18ma
+                    EhminAzi_list.Add(EhminAzi);
+                    EhminRate_GeologicalTimeUnits_list.Add(EhminRate_GeologicalTimeUnits);
+                    EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
+                    AppliedOverpressureRate_GeologicalTimeUnits_list.Add(AppliedOverpressureRate_GeologicalTimeUnits);
+                    AppliedTemperatureChange_GeologicalTimeUnits_list.Add(AppliedTemperatureChange_GeologicalTimeUnits);
+                    AppliedUpliftRate_GeologicalTimeUnits_list.Add(100);
+                    StressArchingFactor_list.Add(StressArchingFactor);
+                    DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(18);
+                    // Add an additional overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
+                    EhminAzi_list.Add(EhminAzi);
+                    EhminRate_GeologicalTimeUnits_list.Add(EhminRate_GeologicalTimeUnits);
+                    EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
+                    AppliedOverpressureRate_GeologicalTimeUnits_list.Add(1E+12);
+                    AppliedTemperatureChange_GeologicalTimeUnits_list.Add(-5E+6);
+                    AppliedUpliftRate_GeologicalTimeUnits_list.Add(AppliedUpliftRate_GeologicalTimeUnits);
+                    StressArchingFactor_list.Add(1);
+                    DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(1E-5);
+#endif
                     // Mechanical properties
                     double YoungsMod = 1E+10;
                     if (!double.IsNaN(arguments.Argument_YoungsMod_default))
@@ -212,11 +340,22 @@ namespace DFNGenerator_Ocean
                         PoissonsRatio = arguments.Argument_PoissonsRatio_default; // Can also be set from grid property
                     Property PoissonsRatio_grid = arguments.Argument_PoissonsRatio;
                     bool UseGridFor_PoissonsRatio = (PoissonsRatio_grid != null);
+                    double Porosity = 0.2;
+                    if (!double.IsNaN(arguments.Argument_Porosity_default))
+                        Porosity = arguments.Argument_Porosity_default; // Can also be set from grid property
+                    Property Porosity_grid = arguments.Argument_Porosity;
+                    bool UseGridFor_Porosity = (Porosity_grid != null);
                     double BiotCoefficient = 1;
                     if (!double.IsNaN(arguments.Argument_BiotCoefficient_default))
                         BiotCoefficient = arguments.Argument_BiotCoefficient_default; // Can also be set from grid property
                     Property BiotCoefficient_grid = arguments.Argument_BiotCoefficient;
                     bool UseGridFor_BiotCoefficient = (BiotCoefficient_grid != null);
+                    // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
+                    double ThermalExpansionCoefficient = 4E-5;
+                    if (!double.IsNaN(arguments.Argument_ThermalExpansionCoefficient_default))
+                        ThermalExpansionCoefficient = arguments.Argument_ThermalExpansionCoefficient_default; // Can also be set from grid property
+                    Property ThermalExpansionCoefficient_grid = arguments.Argument_ThermalExpansionCoefficient;
+                    bool UseGridFor_ThermalExpansionCoefficient = (ThermalExpansionCoefficient_grid != null);
                     double FrictionCoefficient = 0.5;
                     if (!double.IsNaN(arguments.Argument_FrictionCoefficient_default))
                         FrictionCoefficient = arguments.Argument_FrictionCoefficient_default; // Can also be set from grid property
@@ -283,6 +422,10 @@ namespace DFNGenerator_Ocean
                     double InitialOverpressure = 0;
                     if (!double.IsNaN(arguments.Argument_InitialOverpressure))
                         InitialOverpressure = arguments.Argument_InitialOverpressure;
+                    // Geothermal gradient (degK/m)
+                    double GeothermalGradient = 0;
+                    if (!double.IsNaN(arguments.Argument_GeothermalGradient))
+                        GeothermalGradient = arguments.Argument_GeothermalGradient;
                     // InitialStressRelaxation controls the initial horizontal stress, prior to the application of horizontal strain
                     // Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
                     // Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
@@ -309,7 +452,8 @@ namespace DFNGenerator_Ocean
                     int NoIntermediateOutputs = 0;
                     if (arguments.Argument_NoIntermediateOutputs > 0)
                         NoIntermediateOutputs = arguments.Argument_NoIntermediateOutputs;
-                    bool OutputAtEqualTimeIntervals = arguments.Argument_OutputAtEqualTimeIntervals;
+                    // Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
+                    IntermediateOutputInterval IntermediateOutputIntervalControl = arguments.Argument_OutputAtEqualTimeIntervals;
                     // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
                     bool OutputCentrepoints = arguments.Argument_OutputCentrepoints;
                     // Flag to output the bulk rock compliance and stiffness tensors
@@ -454,7 +598,7 @@ namespace DFNGenerator_Ocean
                     //      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
                     // Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
                     // Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
-                    // To stop calculation while fractures are still growing reduce the DeformationStageDuration_in or maxTimesteps_in limits
+                    // To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
                     // Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control
                     double Current_HistoricMFP33TerminationRatio = -1;
                     if (!double.IsNaN(arguments.Argument_Historic_MFP33_TerminationRatio))
@@ -467,11 +611,7 @@ namespace DFNGenerator_Ocean
                     double MinimumClearZoneVolume = 0;
                     if (!double.IsNaN(arguments.Argument_Minimum_ClearZone_Volume))
                         MinimumClearZoneVolume = arguments.Argument_Minimum_ClearZone_Volume;
-                    // Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing
-                    // Set DeformationStageDuration to -1 to continue until fracture saturation is reached
-                    double DeformationStageDuration = -1;
-                    if (!double.IsNaN(arguments.Argument_DeformationDuration))
-                        DeformationStageDuration = arguments.Argument_DeformationDuration;
+                    // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
                     int MaxTimesteps = 1;
                     if (arguments.Argument_MaxNoTimesteps > 0)
                         MaxTimesteps = arguments.Argument_MaxNoTimesteps;
@@ -526,9 +666,10 @@ namespace DFNGenerator_Ocean
                     Template GeologicalTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                     IUnitConverter toGeologicalTimeUnits = PetrelUnitSystem.GetConverterToUI(GeologicalTimeTemplate);
                     string ProjectTimeUnits = PetrelUnitSystem.GetDisplayUnit(GeologicalTimeTemplate).Symbol;
-                    // Strain rate units
-                    IUnitConverter toProjectStrainRateUnits = PetrelUnitSystem.GetConverterFromUI(GeologicalTimeTemplate);
-                    string ProjectStrainRateUnits = "/" + PetrelUnitSystem.GetDisplayUnit(GeologicalTimeTemplate).Symbol;
+                    // Load rate units - these may be set independently for each deformation episode
+                    List<string> ProjectTimeUnits_list = new List<string>();
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                        ProjectTimeUnits_list.Add(string.Format("{0}", DeformationEpisodeTimeUnits_list[deformationEpisodeNo]));
                     // Azimuth
                     Template AzimuthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth;
                     IUnitConverter toProjectAzimuthUnits = PetrelUnitSystem.GetConverterToUI(AzimuthTemplate);
@@ -537,6 +678,14 @@ namespace DFNGenerator_Ocean
                     Template YoungsModTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.YoungsModulus;
                     IUnitConverter toProjectYoungsModUnits = PetrelUnitSystem.GetConverterToUI(YoungsModTemplate);
                     string YoungsModUnits = PetrelUnitSystem.GetDisplayUnit(YoungsModTemplate).Symbol;
+                    // Porosity
+                    Template PorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
+                    IUnitConverter toProjectPorosityUnits = PetrelUnitSystem.GetConverterToUI(PorosityTemplate);
+                    string PorosityUnits = PetrelUnitSystem.GetDisplayUnit(PorosityTemplate).Symbol;
+                    // Thermal Expansion Coefficient
+                    Template ThermalExpansionCoefficientTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.InverseTemperature;
+                    IUnitConverter toProjectThermalExpansionCoefficientUnits = PetrelUnitSystem.GetConverterToUI(ThermalExpansionCoefficientTemplate);
+                    string ThermalExpansionCoefficientUnits = PetrelUnitSystem.GetDisplayUnit(ThermalExpansionCoefficientTemplate).Symbol;
                     // Crack Surface Energy
                     Template CrackSurfaceEnergyTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.SurfaceTension;
                     IUnitConverter toProjectCrackSurfaceEnergyUnits = PetrelUnitSystem.GetConverterToUI(CrackSurfaceEnergyTemplate);
@@ -561,6 +710,14 @@ namespace DFNGenerator_Ocean
                     Template PressureTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure;
                     IUnitConverter toProjectPressureUnits = PetrelUnitSystem.GetConverterToUI(PressureTemplate);
                     string PressureUnits = PetrelUnitSystem.GetDisplayUnit(PressureTemplate).Symbol;
+                    // Temperature
+                    Template TemperatureTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.AbsoluteTemperature;
+                    IUnitConverter toProjectTemperatureUnits = PetrelUnitSystem.GetConverterToUI(TemperatureTemplate);
+                    string TemperatureUnits = PetrelUnitSystem.GetDisplayUnit(TemperatureTemplate).Symbol;
+                    // Geothermal gradient
+                    Template GeothermalGradientTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.ThermalGradient;
+                    IUnitConverter toProjectGeothermalGradientUnits = PetrelUnitSystem.GetConverterToUI(GeothermalGradientTemplate);
+                    string GeothermalGradientUnits = PetrelUnitSystem.GetDisplayUnit(GeothermalGradientTemplate).Symbol;
                     // Fracture aperture
                     Template FractureApertureTemplate = PetrelProject.WellKnownTemplates.FracturePropertyGroup.FractureAperture;
                     IUnitConverter toProjectFractureApertureUnits = PetrelUnitSystem.GetConverterToUI(FractureApertureTemplate);
@@ -601,19 +758,61 @@ namespace DFNGenerator_Ocean
                     IUnitConverter toSITimeUnits = PetrelUnitSystem.GetConverterFromUI(GeologicalTimeTemplate);
                     bool convertFromGeneral_RockStrainRelaxation = (UseGridFor_RockStrainRelaxation ? RockStrainRelaxation_grid.Template.Equals(GeneralTemplate) : false);
                     bool convertFromGeneral_FractureRelaxation = (UseGridFor_FractureRelaxation ? FractureRelaxation_grid.Template.Equals(GeneralTemplate) : false);
-                    // Azimuth
+                    // Strain azimuth and deformation load
                     IUnitConverter toSIAzimuthUnits = PetrelUnitSystem.GetConverterFromUI(AzimuthTemplate);
-                    bool convertFromGeneral_EhminAzi = (UseGridFor_EhminAzi ? EhminAzi_grid.Template.Equals(GeneralTemplate) : false);
+                    IUnitConverter toSIPressureUnits = PetrelUnitSystem.GetConverterFromUI(PressureTemplate);
+                    IUnitConverter toSITemperatureUnits = PetrelUnitSystem.GetConverterFromUI(TemperatureTemplate);
+                    IUnitConverter toSIDepthUnits = PetrelUnitSystem.GetConverterFromUI(DepthTemplate);
+                    List<bool> convertFromGeneral_EhminAzi_list = new List<bool>();
+                    List<bool> convertFromGeneral_AppliedOverpressureRate_list = new List<bool>();
+                    List<bool> convertFromGeneral_AppliedTemperatureChange_list = new List<bool>();
+                    List<bool> convertFromGeneral_AppliedUpliftRate_list = new List<bool>();
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    {
+                        convertFromGeneral_EhminAzi_list.Add(UseGridFor_EhminAzi_list[deformationEpisodeNo] ? EhminAzi_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
+                        convertFromGeneral_AppliedOverpressureRate_list.Add(UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo] ? AppliedOverpressureRate_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
+                        convertFromGeneral_AppliedTemperatureChange_list.Add(UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo] ? AppliedTemperatureChange_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
+                        convertFromGeneral_AppliedUpliftRate_list.Add(UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo] ? AppliedUpliftRate_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
+                    }
                     // Young's Modulus
                     IUnitConverter toSIYoungsModUnits = PetrelUnitSystem.GetConverterFromUI(YoungsModTemplate);
                     bool convertFromGeneral_YoungsMod = (UseGridFor_YoungsMod ? YoungsMod_grid.Template.Equals(GeneralTemplate) : false);
+                    // Porosity
+                    IUnitConverter toSIPorosityUnits = PetrelUnitSystem.GetConverterFromUI(PorosityTemplate);
+                    bool convertFromGeneral_Porosity = (UseGridFor_Porosity ? Porosity_grid.Template.Equals(GeneralTemplate) : false);
                     // Crack surface energy
                     IUnitConverter toSICrackSurfaceEnergyUnits = PetrelUnitSystem.GetConverterFromUI(CrackSurfaceEnergyTemplate);
                     bool convertFromGeneral_CrackSurfaceEnergy = (UseGridFor_CrackSurfaceEnergy ? CrackSurfaceEnergy_grid.Template.Equals(GeneralTemplate) : false);
-                    // Strain rates must be converted from geological time units to SI time units manually, as there is no Petrel template for strain rate
-                    IUnitConverter toSIUnits_StrainRate = PetrelUnitSystem.GetConverterToUI(GeologicalTimeTemplate);
-                    double EhminRate_SIUnits = toSIUnits_StrainRate.Convert(EhminRate_GeologicalTimeUnits);
-                    double EhmaxRate_SIUnits = toSIUnits_StrainRate.Convert(EhmaxRate_GeologicalTimeUnits);
+                    // Thermal expansion coefficient
+                    IUnitConverter toSIThermalExpansionCoefficientUnits = PetrelUnitSystem.GetConverterFromUI(ThermalExpansionCoefficientTemplate);
+                    bool convertFromGeneral_ThermalExpansionCoefficient = (UseGridFor_ThermalExpansionCoefficient ? ThermalExpansionCoefficient_grid.Template.Equals(GeneralTemplate) : false);
+                    // Geological time
+                    // Deformation duration and load rates must be converted from geological time units to SI time units manually, as there is no Petrel template for inverse geological time
+                    // They may be set independently for each deformation episode
+                    // NB Times in project units must be divided by the converter to convert to SI units (s)
+                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
+                    List<double> TimeUnitConverter_list = new List<double>();
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    {
+                        switch (ModelTimeUnits)
+                        {
+                            case TimeUnits.second:
+                                // In SI units - no change
+                                TimeUnitConverter_list.Add(1);
+                                break;
+                            case TimeUnits.year:
+                                // Convert from yr to s
+                                TimeUnitConverter_list.Add(365.25d * 24d * 3600d);
+                                break;
+                            case TimeUnits.ma:
+                                // Convert from ma to s
+                                TimeUnitConverter_list.Add(1000000d * 365.25d * 24d * 3600d);
+                                break;
+                            default:
+                                TimeUnitConverter_list.Add(1);
+                                break;
+                        }
+                    }
                     // If the friction grid property is supplied as a friction angle, this will be converted to a friction coefficient
                     bool convertFromFrictionAngle_FrictionCoefficient = (UseGridFor_FrictionCoefficient ? FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle) : false);
 
@@ -672,18 +871,41 @@ namespace DFNGenerator_Ocean
                     generalInputParams += string.Format("Layers {0}-{1}\n", PetrelGrid_TopCellK + 1, PetrelGrid_BaseCellK + 1);
 
                     // Strain orientation and rate
-                    if (EhminAzi_grid != null)
-                        generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid.Name, toProjectAzimuthUnits.Convert(arguments.Argument_EhminAzi_default), AzimuthUnits);
-                    else
-                        generalInputParams += string.Format("Minimum strain orientation: {0}{1}\n", toProjectAzimuthUnits.Convert(arguments.Argument_EhminAzi_default), AzimuthUnits);
-                    if (UseGridFor_EhminRate)
-                        generalInputParams += string.Format("Minimum strain rate: {0}, default {1}{2}\n", EhminRate_grid.Name, EhminRate_GeologicalTimeUnits, ProjectStrainRateUnits);
-                    else
-                        generalInputParams += string.Format("Minimum strain rate: {0}{1}\n", EhminRate_GeologicalTimeUnits, ProjectStrainRateUnits);
-                    if (UseGridFor_EhmaxRate)
-                        generalInputParams += string.Format("Maximum strain rate: {0}, default {1}{2}\n", EhmaxRate_grid.Name, EhmaxRate_GeologicalTimeUnits, ProjectStrainRateUnits);
-                    else
-                        generalInputParams += string.Format("Maximum strain rate: {0}{1}\n", EhmaxRate_GeologicalTimeUnits, ProjectStrainRateUnits);
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    {
+                        generalInputParams += arguments.Argument_DeformationEpisode[deformationEpisodeNo];
+                        generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
+                        else
+                            generalInputParams += string.Format("Minimum strain orientation: {0}{1}\n", toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
+                        if (UseGridFor_EhminRate_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Minimum strain rate: {0}, default {1}/{2}\n", EhminRate_grid_list[deformationEpisodeNo].Name, EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        else
+                            generalInputParams += string.Format("Minimum strain rate: {0}/{1}\n", EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (UseGridFor_EhmaxRate_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Maximum strain rate: {0}, default {1}/{2}\n", EhmaxRate_grid_list[deformationEpisodeNo].Name, EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        else
+                            generalInputParams += string.Format("Maximum strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                        else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
+                            generalInputParams += string.Format("Rate of fluid overpressure: {0}{1}/{2}\n", toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Rate of temperature change: {0}, default {1}{2}/{3}\n", AppliedTemperatureChange_grid_list[deformationEpisodeNo].Name, toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                        else if (AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
+                            generalInputParams += string.Format("Rate of temperature change: {0}{1}/{2}\n", toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Rate of uplift: {0}, default {1}{2}/{3}\n", AppliedUpliftRate_grid_list[deformationEpisodeNo].Name, toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                        else if (AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
+                            generalInputParams += string.Format("Rate of uplift: {0}{1}/{2}\n", toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (StressArchingFactor_list[deformationEpisodeNo] == 1)
+                        generalInputParams += string.Format("Complete stress arching; no subsidence at surface\n");
+                        else if (StressArchingFactor_list[deformationEpisodeNo] == 1)
+                            generalInputParams += string.Format("No stress arching; subsidence at surface\n");
+                        else
+                            generalInputParams += string.Format("Stress arching factor: {0}\n", StressArchingFactor_list[deformationEpisodeNo]);
+                    }
                     if (AverageStressStrainData)
                         generalInputParams += "Strain input parameters averaged across all cells\n";
                     else
@@ -693,10 +915,12 @@ namespace DFNGenerator_Ocean
                     if (NoIntermediateOutputs > 0)
                     {
                         generalInputParams += string.Format("Output {0} intermediate DFNs ", NoIntermediateOutputs);
-                        if (OutputAtEqualTimeIntervals)
+                        if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualTime)
                             generalInputParams += "at equal time intervals\n";
-                        else
+                        else if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualArea)
                             generalInputParams += "at approximately equal stages of fracture growth\n";
+                        else
+                            generalInputParams += "at the end of each deformation episode\n";
                     }
 
                     // Mechanical properties
@@ -708,10 +932,18 @@ namespace DFNGenerator_Ocean
                         generalInputParams += string.Format("Poisson's ratio: {0}, default {1}\n", PoissonsRatio_grid.Name, PoissonsRatio);
                     else
                         generalInputParams += string.Format("Poisson's ratio: {0}\n", PoissonsRatio);
+                    if (UseGridFor_Porosity)
+                        generalInputParams += string.Format("Porosity: {0}, default {1}{2}\n", Porosity_grid.Name, toProjectPorosityUnits.Convert(Porosity), PorosityUnits);
+                    else
+                        generalInputParams += string.Format("Porosity: {0}{1}\n", toProjectPorosityUnits.Convert(Porosity), PorosityUnits);
                     if (UseGridFor_BiotCoefficient)
                         generalInputParams += string.Format("Biot's coefficient: {0}, default {1}\n", BiotCoefficient_grid.Name, BiotCoefficient);
                     else
                         generalInputParams += string.Format("Biot's coefficient: {0}\n", BiotCoefficient);
+                    if (UseGridFor_ThermalExpansionCoefficient)
+                        generalInputParams += string.Format("Thermal expansion coefficient: {0}, default {1}{2}\n", ThermalExpansionCoefficient_grid.Name, toProjectThermalExpansionCoefficientUnits.Convert(ThermalExpansionCoefficient), ThermalExpansionCoefficientUnits);
+                    else
+                        generalInputParams += string.Format("Thermal expansion coefficient: {0}{1}\n", toProjectThermalExpansionCoefficientUnits.Convert(ThermalExpansionCoefficient), ThermalExpansionCoefficientUnits);
                     if (UseGridFor_FrictionCoefficient)
                         generalInputParams += string.Format("Friction coefficient: {0}, default {1}\n", FrictionCoefficient_grid.Name, FrictionCoefficient);
                     else
@@ -767,6 +999,7 @@ namespace DFNGenerator_Ocean
                     generalInputParams += string.Format("Mean overlying sediment density: {0}{1}\n", toProjectRockDensityUnits.Convert(MeanOverlyingSedimentDensity), RockDensityUnits);
                     generalInputParams += string.Format("Fluid density: {0}{1}\n", toProjectFluidDensityUnits.Convert(FluidDensity), FluidDensityUnits);
                     generalInputParams += string.Format("Initial fluid overpressure: {0}{1}\n", toProjectPressureUnits.Convert(InitialOverpressure), PressureUnits);
+                    generalInputParams += string.Format("Geothermal gradient: {0}{1}\n", toProjectGeothermalGradientUnits.Convert(GeothermalGradient), GeothermalGradientUnits);
                     if (InitialStressRelaxation < 0)
                         generalInputParams += string.Format("Initial stress: Critical\n");
                     else
@@ -817,7 +1050,6 @@ namespace DFNGenerator_Ocean
                     generalInputParams += string.Format("Minimum microfracture radius for implicit population data: {0}{1}\n", toProjectFractureRadiusUnits.Convert(MinImplicitMicrofractureRadius), FractureRadiusUnits);
                     generalInputParams += string.Format("Number of radius bins for numerical calculation of microfracture P32: {0}\n", No_r_bins);
                     // Calculation termination controls
-                    generalInputParams += string.Format("Maximum duration of deformation: {0}{1}\n", DeformationStageDuration, ProjectTimeUnits);
                     generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumClearZoneVolume);
                     if (Current_HistoricMFP33TerminationRatio > 0)
                         generalInputParams += string.Format("; Current:Peak active MFP33 ratio {0}", Current_HistoricMFP33TerminationRatio);
@@ -865,24 +1097,6 @@ namespace DFNGenerator_Ocean
                     {
                         explicitInputParams += "Explicit DFN includes macrofractures only\n";
                     }
-
-                    // Define a time unit modifier to convert between input units and SI units, when writing output
-                    // Not needed as this can be done using Petrel unit conversion
-                    /*double timeUnits_Modifier = 1;
-                    switch (ModelTimeUnits)
-                    {
-                        case TimeUnits.second:
-                            // In SI units - no change
-                            break;
-                        case TimeUnits.year:
-                            timeUnits_Modifier = 1 / (365.25d * 24d * 3600d); // Convert from yr to s
-                            break;
-                        case TimeUnits.ma:
-                            timeUnits_Modifier = 1 / (1000000d * 365.25d * 24d * 3600d); // Convert from ma to s
-                            break;
-                        default:
-                            break;
-                    }*/
 
                     // Get the index numbers of the fracture sets perpendicular to hmin and hmax
                     // Note that if the number of fracture sets is odd, there will be no set directly perpendicular to hmax, so we will take the index number of the closest set
@@ -1133,178 +1347,11 @@ namespace DFNGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Depth));
 #endif
 
-                                // Get the stress/strain data from the grid as required
-                                // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                double local_Epsilon_hmin_azimuth_in = EhminAzi;
-                                double local_Epsilon_hmin_rate_in = EhminRate_SIUnits;
-                                double local_Epsilon_hmax_rate_in = EhmaxRate_SIUnits;
+                                // Create a new gridblock object containing the required number of fracture sets
+                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);
 
-                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                {
-                                    // Create local variables for running total and number of datapoints for each stress/strain state parameter
-                                    double ehmin_orient_x_total = 0;
-                                    double ehmin_orient_y_total = 0;
-                                    int ehmin_orient_novalues = 0;
-                                    double ehmin_rate_total = 0;
-                                    int ehmin_rate_novalues = 0;
-                                    double ehmax_rate_total = 0;
-                                    int ehmax_rate_novalues = 0;
-
-                                    // Loop through all the Petrel cells in the gridblock
-                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                            {
-                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                // Update ehmin orientation total if defined
-                                                if (UseGridFor_EhminAzi)
-                                                {
-                                                    double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
-                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                    if (convertFromGeneral_EhminAzi)
-                                                        cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
-                                                    if (!double.IsNaN(cell_ehmin_orient))
-                                                    {
-                                                        // Trim the ehmin orientation values so they lie within a semicircular range
-                                                        // To try to get a more meaningful average, the range will depend on the previous values
-                                                        // If previous values have tended towards an EW orientation (so total x > total y), the range will be between 0 and pi to better average near EW vectors
-                                                        if (Math.Abs(ehmin_orient_x_total) > 1.2 * Math.Abs(ehmin_orient_y_total))
-                                                        {
-                                                            // Trim the ehmin orientation values so they lie between 0 and pi
-                                                            while (cell_ehmin_orient < 0)
-                                                                cell_ehmin_orient += Math.PI;
-                                                            while (cell_ehmin_orient >= Math.PI)
-                                                                cell_ehmin_orient -= Math.PI;
-                                                        }
-                                                        // If previous values have tended towards an NS orientation (so total x < total y), the range will be between -pi/2 and pi/2 to better average near NS vectors
-                                                        else if (Math.Abs(ehmin_orient_y_total) > 1.2 * Math.Abs(ehmin_orient_x_total))
-                                                        {
-                                                            // Trim the ehmin orientation values so they lie between 0 and pi
-                                                            while (cell_ehmin_orient < -(Math.PI / 2))
-                                                                cell_ehmin_orient += Math.PI;
-                                                            while (cell_ehmin_orient >= (Math.PI / 2))
-                                                                cell_ehmin_orient -= Math.PI;
-                                                        }
-                                                        // If previous values have no preferred orientation, or this is the first value (so total x = total y), the range will be between -pi/4 and 3*pi/4 to better average near NS vectors
-                                                        else
-                                                        {
-                                                            // Trim the ehmin orientation values so they lie between -pi/4 and 3*pi/4
-                                                            while (cell_ehmin_orient < -(Math.PI / 4))
-                                                                cell_ehmin_orient += Math.PI;
-                                                            while (cell_ehmin_orient >= (3 * Math.PI / 4))
-                                                                cell_ehmin_orient -= Math.PI;
-                                                        }
-
-                                                        ehmin_orient_x_total += Math.Sin(cell_ehmin_orient);
-                                                        ehmin_orient_y_total += Math.Cos(cell_ehmin_orient);
-                                                        ehmin_orient_novalues++;
-                                                    }
-                                                }
-
-                                                // Update ehmin rate total if defined
-                                                if (UseGridFor_EhminRate)
-                                                {
-                                                    // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-                                                    double cell_ehmin_rate = toSIUnits_StrainRate.Convert((double)EhminRate_grid[cellRef]);
-                                                    if (!double.IsNaN(cell_ehmin_rate))
-                                                    {
-                                                        ehmin_rate_total += cell_ehmin_rate;
-                                                        ehmin_rate_novalues++;
-                                                    }
-                                                }
-
-                                                // Update ehmax rate total if defined
-                                                if (UseGridFor_EhmaxRate)
-                                                {
-                                                    // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-                                                    double cell_ehmax_rate = toSIUnits_StrainRate.Convert((double)EhmaxRate_grid[cellRef]);
-                                                    if (!double.IsNaN(cell_ehmax_rate))
-                                                    {
-                                                        ehmax_rate_total += cell_ehmax_rate;
-                                                        ehmax_rate_novalues++;
-                                                    }
-                                                }
-                                            }
-
-                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                    if (ehmin_orient_novalues > 0)
-                                        local_Epsilon_hmin_azimuth_in = Math.Atan(ehmin_orient_x_total / ehmin_orient_y_total);
-                                    if (ehmin_rate_novalues > 0)
-                                        local_Epsilon_hmin_rate_in = ehmin_rate_total / (double)ehmin_rate_novalues;
-                                    if (ehmax_rate_novalues > 0)
-                                        local_Epsilon_hmax_rate_in = ehmax_rate_total / (double)ehmax_rate_novalues;
-                                }
-                                else // We are taking data from a single cell
-                                {
-                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                    if (HorizontalUpscalingFactor > 1)
-                                    {
-                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                    }
-
-                                    // Create a reference to the cell from which we will read the data
-                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                    // Update ehmin orientation total if defined
-                                    if (UseGridFor_EhminAzi)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_EhminAzi)
-                                                cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
-                                            if (!double.IsNaN(cell_ehmin_orient))
-                                            {
-                                                local_Epsilon_hmin_azimuth_in = cell_ehmin_orient;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update ehmin rate total if defined
-                                    if (UseGridFor_EhminRate)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-                                            double cell_ehmin_rate = toSIUnits_StrainRate.Convert((double)EhminRate_grid[cellRef]);
-                                            if (!double.IsNaN(cell_ehmin_rate))
-                                            {
-                                                local_Epsilon_hmin_rate_in = cell_ehmin_rate;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update ehmax rate total if defined
-                                    if (UseGridFor_EhmaxRate)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            // Unit conversion for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-                                            double cell_ehmax_rate = toSIUnits_StrainRate.Convert((double)EhmaxRate_grid[cellRef]);
-                                            if (!double.IsNaN(cell_ehmax_rate))
-                                            {
-                                                local_Epsilon_hmax_rate_in = cell_ehmax_rate;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                } // End get the stress / strain data from the grid as required
+                                // Set the gridblock cornerpoints
+                                gc.setGridblockCorners(FractureGrid_SWtop, FractureGrid_SWbottom, FractureGrid_NWtop, FractureGrid_NWbottom, FractureGrid_NEtop, FractureGrid_NEbottom, FractureGrid_SEtop, FractureGrid_SEbottom);
 
                                 // Get the mechanical properties from the grid as required
                                 // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
@@ -1314,7 +1361,9 @@ namespace DFNGenerator_Ocean
                                 double local_SubcriticalPropIndex = SubcriticalPropIndex;
                                 double local_YoungsMod = YoungsMod;
                                 double local_PoissonsRatio = PoissonsRatio;
+                                double local_Porosity = Porosity;
                                 double local_BiotCoefficient = BiotCoefficient;
+                                double local_ThermalExpansionCoefficient = ThermalExpansionCoefficient;
                                 double local_CrackSurfaceEnergy = CrackSurfaceEnergy;
                                 double local_FrictionCoefficient = FrictionCoefficient;
                                 double local_RockStrainRelaxation = RockStrainRelaxation;
@@ -1333,8 +1382,12 @@ namespace DFNGenerator_Ocean
                                     int YoungsMod_novalues = 0;
                                     double PoissonsRatio_total = 0;
                                     int PoissonsRatio_novalues = 0;
+                                    double Porosity_total = 0;
+                                    int Porosity_novalues = 0;
                                     double BiotCoeff_total = 0;
                                     int BiotCoeff_novalues = 0;
+                                    double ThermalExpansionCoefficient_total = 0;
+                                    int ThermalExpansionCoefficient_novalues = 0;
                                     double CrackSurfaceEnergy_total = 0;
                                     int CrackSurfaceEnergy_novalues = 0;
                                     double FrictionCoeff_total = 0;
@@ -1409,6 +1462,20 @@ namespace DFNGenerator_Ocean
                                                     }
                                                 }
 
+                                                // Update porosity total if defined
+                                                if (UseGridFor_Porosity)
+                                                {
+                                                    double cell_Porosity = (double)Porosity_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_Porosity)
+                                                        cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
+                                                    if (!double.IsNaN(cell_Porosity))
+                                                    {
+                                                        Porosity_total += cell_Porosity;
+                                                        Porosity_novalues++;
+                                                    }
+                                                }
+
                                                 // Update Biot coefficient total if defined
                                                 if (UseGridFor_BiotCoefficient)
                                                 {
@@ -1417,6 +1484,20 @@ namespace DFNGenerator_Ocean
                                                     {
                                                         BiotCoeff_total += cell_BiotCoeff;
                                                         BiotCoeff_novalues++;
+                                                    }
+                                                }
+
+                                                // Update thermal expansion coefficient total if defined
+                                                if (UseGridFor_ThermalExpansionCoefficient)
+                                                {
+                                                    double cell_ThermalExpansionCoefficient = (double)ThermalExpansionCoefficient_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_ThermalExpansionCoefficient)
+                                                        cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
+                                                    if (!double.IsNaN(cell_ThermalExpansionCoefficient))
+                                                    {
+                                                        ThermalExpansionCoefficient_total += cell_ThermalExpansionCoefficient;
+                                                        ThermalExpansionCoefficient_novalues++;
                                                     }
                                                 }
 
@@ -1494,8 +1575,12 @@ namespace DFNGenerator_Ocean
                                         local_YoungsMod = YoungsMod_total / (double)YoungsMod_novalues;
                                     if (PoissonsRatio_novalues > 0)
                                         local_PoissonsRatio = PoissonsRatio_total / (double)PoissonsRatio_novalues;
+                                    if (Porosity_novalues > 0)
+                                        local_Porosity = Porosity_total / (double)Porosity_novalues;
                                     if (BiotCoeff_novalues > 0)
                                         local_BiotCoefficient = BiotCoeff_total / (double)BiotCoeff_novalues;
+                                    if (ThermalExpansionCoefficient_novalues > 0)
+                                        local_ThermalExpansionCoefficient = ThermalExpansionCoefficient_total / (double)ThermalExpansionCoefficient_novalues;
                                     if (CrackSurfaceEnergy_novalues > 0)
                                         local_CrackSurfaceEnergy = CrackSurfaceEnergy_total / (double)CrackSurfaceEnergy_novalues;
                                     if (FrictionCoeff_novalues > 0)
@@ -1604,6 +1689,25 @@ namespace DFNGenerator_Ocean
                                         }
                                     }
 
+                                    // Update porosity total if defined
+                                    if (UseGridFor_Porosity)
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        {
+                                            cellRef.K = PetrelGrid_DataCellK;
+                                            double cell_Porosity = (double)Porosity_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_Porosity)
+                                                cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
+                                            if (!double.IsNaN(cell_Porosity))
+                                            {
+                                                local_Porosity = cell_Porosity;
+                                                break;
+                                            }
+                                        }
+                                    }
+
                                     // Update Biot coefficient total if defined
                                     if (UseGridFor_BiotCoefficient)
                                     {
@@ -1615,6 +1719,25 @@ namespace DFNGenerator_Ocean
                                             if (!double.IsNaN(cell_BiotCoeff))
                                             {
                                                 local_BiotCoefficient = cell_BiotCoeff;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Update thermal expansion coefficient total if defined
+                                    if (UseGridFor_ThermalExpansionCoefficient)
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        {
+                                            cellRef.K = PetrelGrid_DataCellK;
+                                            double cell_ThermalExpansionCoefficient = (double)ThermalExpansionCoefficient_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_ThermalExpansionCoefficient)
+                                                cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
+                                            if (!double.IsNaN(cell_ThermalExpansionCoefficient))
+                                            {
+                                                local_ThermalExpansionCoefficient = cell_ThermalExpansionCoefficient;
                                                 break;
                                             }
                                         }
@@ -1696,7 +1819,6 @@ namespace DFNGenerator_Ocean
                                         }
                                     }
                                 }
-                                // Until that point, all data will be kept in project units
 
                                 // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
                                 // Therefore unit conversion for InitialMicrofractureDensity A must be carried out now
@@ -1720,14 +1842,8 @@ namespace DFNGenerator_Ocean
                                 }
                                 // End get the mechanical properties from the grid as required
 
-                                // Create a new gridblock object containing the required number of fracture sets
-                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);
-
-                                // Set the gridblock cornerpoints
-                                gc.setGridblockCorners(FractureGrid_SWtop, FractureGrid_SWbottom, FractureGrid_NWtop, FractureGrid_NWbottom, FractureGrid_NEtop, FractureGrid_NEbottom, FractureGrid_SEtop, FractureGrid_SEbottom);
-
                                 // Set the mechanical properties for the gridblock
-                                gc.MechProps.setMechanicalProperties(local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits);
+                                gc.MechProps.setMechanicalProperties(local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits);
 
                                 // Set the fracture aperture control properties
                                 gc.MechProps.setFractureApertureControlData(DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure);
@@ -1742,9 +1858,10 @@ namespace DFNGenerator_Ocean
                                     double sh0d_svd = (1 - sin_friction_angle) / (1 + sin_friction_angle);
                                     local_InitialStressRelaxation = (((1 - local_PoissonsRatio) * sh0d_svd) - local_PoissonsRatio) / (1 - (2 * local_PoissonsRatio));
                                 }
-                                double lithostatic_stress = (MeanOverlyingSedimentDensity * 9.81 * local_Depth);
-                                double fluid_pressure = (FluidDensity * 9.81 * local_Depth) + InitialOverpressure;
-                                gc.StressStrain.SetInitialStressStrainState(lithostatic_stress, fluid_pressure, local_InitialStressRelaxation);
+                                gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
+
+                                // Set the geothermal gradient
+                                gc.StressStrain.GeothermalGradient = GeothermalGradient;
 
                                 // Calculate the minimum microfracture radius from the layer thickness, if required
                                 double local_minImplicitMicrofractureRadius = (MinImplicitMicrofractureRadius < 0 ? local_LayerThickness / (double)No_r_bins : MinImplicitMicrofractureRadius);
@@ -1769,7 +1886,7 @@ namespace DFNGenerator_Ocean
 
                                 // Set the propagation control data for the gridblock
                                 gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                                 // Set folder path for output files
                                 gc.PropControl.FolderPath = folderPath;
@@ -1781,6 +1898,21 @@ namespace DFNGenerator_Ocean
                                     gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
                                 else
                                     gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, AllowReverseFractures);
+
+#if DEBUG_FRACS
+                                PetrelLogger.InfoOutputWindow("Properties");
+                                PetrelLogger.InfoOutputWindow(string.Format("sv' {0}", gc.StressStrain.Sigma_v_eff));
+                                PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient {2}, Crack surface energy:{3}, Friction coefficient:{4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Depth, NoFractureSets));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, TimeUnits.{18}, {19}, {20});",
+                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
+#endif
 
                                 // Set the fracture aperture control data for fracture porosity calculation
                                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
@@ -1811,24 +1943,353 @@ namespace DFNGenerator_Ocean
                                         Mode2_SizeDependentApertureMultiplier_in = (Mode2HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode2HMax_SizeDependentApertureMultiplier * HMaxComponent);
                                     }
                                     gc.FractureSets[fs_index].SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
+
+#if DEBUG_FRACS
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.FractureSets[{0}].SetFractureApertureControlData(({1}, {2}, {3}, {4});", fs_index, Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in));
+#endif
                                 }
+
+
+                                // Add the deformation load data 
+                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                                {
+                                    // Get the time converter for this episode
+                                    // This can vary between episodes as the time units may be different for each deformation episode
+                                    // NB Times in project units must be divided by the converter to convert to SI units (s)
+                                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
+                                    double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
+
+                                    // Get the deformation load data from the grid as required
+                                    // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                    // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                    double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
+                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
+                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+
+                                    // Get local handles for the properties and flags
+                                    bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
+                                    Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
+                                    bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
+                                    Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
+                                    bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
+                                    Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
+                                    bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                    Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                    bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                    Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                    bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
+                                    Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
+
+                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                    {
+                                        // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                        double ehmin_orient_x_total = 0;
+                                        double ehmin_orient_y_total = 0;
+                                        int ehmin_orient_novalues = 0;
+                                        double ehmin_rate_total = 0;
+                                        int ehmin_rate_novalues = 0;
+                                        double ehmax_rate_total = 0;
+                                        int ehmax_rate_novalues = 0;
+                                        double OP_rate_total = 0;
+                                        int OP_rate_novalues = 0;
+                                        double temp_rate_total = 0;
+                                        int temp_rate_novalues = 0;
+                                        double uplift_rate_total = 0;
+                                        int uplift_rate_novalues = 0;
+
+                                        // Loop through all the Petrel cells in the gridblock
+                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                {
+                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                    // Update ehmin orientation total if defined
+                                                    if (UseGridFor_EhminAzi)
+                                                    {
+                                                        double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_EhminAzi)
+                                                            cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
+                                                        if (!double.IsNaN(cell_ehmin_orient))
+                                                        {
+                                                            // Trim the ehmin orientation values so they lie within a semicircular range
+                                                            // To try to get a more meaningful average, the range will depend on the previous values
+                                                            // If previous values have tended towards an EW orientation (so total x > total y), the range will be between 0 and pi to better average near EW vectors
+                                                            if (Math.Abs(ehmin_orient_x_total) > 1.2 * Math.Abs(ehmin_orient_y_total))
+                                                            {
+                                                                // Trim the ehmin orientation values so they lie between 0 and pi
+                                                                while (cell_ehmin_orient < 0)
+                                                                    cell_ehmin_orient += Math.PI;
+                                                                while (cell_ehmin_orient >= Math.PI)
+                                                                    cell_ehmin_orient -= Math.PI;
+                                                            }
+                                                            // If previous values have tended towards an NS orientation (so total x < total y), the range will be between -pi/2 and pi/2 to better average near NS vectors
+                                                            else if (Math.Abs(ehmin_orient_y_total) > 1.2 * Math.Abs(ehmin_orient_x_total))
+                                                            {
+                                                                // Trim the ehmin orientation values so they lie between 0 and pi
+                                                                while (cell_ehmin_orient < -(Math.PI / 2))
+                                                                    cell_ehmin_orient += Math.PI;
+                                                                while (cell_ehmin_orient >= (Math.PI / 2))
+                                                                    cell_ehmin_orient -= Math.PI;
+                                                            }
+                                                            // If previous values have no preferred orientation, or this is the first value (so total x = total y), the range will be between -pi/4 and 3*pi/4 to better average near NS vectors
+                                                            else
+                                                            {
+                                                                // Trim the ehmin orientation values so they lie between -pi/4 and 3*pi/4
+                                                                while (cell_ehmin_orient < -(Math.PI / 4))
+                                                                    cell_ehmin_orient += Math.PI;
+                                                                while (cell_ehmin_orient >= (3 * Math.PI / 4))
+                                                                    cell_ehmin_orient -= Math.PI;
+                                                            }
+
+                                                            ehmin_orient_x_total += Math.Sin(cell_ehmin_orient);
+                                                            ehmin_orient_y_total += Math.Cos(cell_ehmin_orient);
+                                                            ehmin_orient_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update ehmin rate total if defined
+                                                    if (UseGridFor_EhminRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
+                                                        if (!double.IsNaN(cell_ehmin_rate))
+                                                        {
+                                                            ehmin_rate_total += cell_ehmin_rate;
+                                                            ehmin_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update ehmax rate total if defined
+                                                    if (UseGridFor_EhmaxRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
+                                                        if (!double.IsNaN(cell_ehmax_rate))
+                                                        {
+                                                            ehmax_rate_total += cell_ehmax_rate;
+                                                            ehmax_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update overpressure rate total if defined
+                                                    if (UseGridFor_AppliedOverpressureRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
+                                                        double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_AppliedOverpressureRate)
+                                                            cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
+                                                        if (!double.IsNaN(cell_OP_rate))
+                                                        {
+                                                            OP_rate_total += cell_OP_rate;
+                                                            OP_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update temperature change total if defined
+                                                    if (UseGridFor_AppliedTemperatureChange)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
+                                                        double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_AppliedTemperatureChange)
+                                                            cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
+                                                        if (!double.IsNaN(cell_temp_rate))
+                                                        {
+                                                            temp_rate_total += cell_temp_rate;
+                                                            temp_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update uplift rate total if defined
+                                                    if (UseGridFor_AppliedUpliftRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
+                                                        double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_AppliedUpliftRate)
+                                                            cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
+                                                        if (!double.IsNaN(cell_uplift_rate))
+                                                        {
+                                                            uplift_rate_total += cell_uplift_rate;
+                                                            uplift_rate_novalues++;
+                                                        }
+                                                    }
+                                                }
+
+                                        // Update the gridblock values with the averages - if there is any data to calculate them from
+                                        if (ehmin_orient_novalues > 0)
+                                            local_EhminAzi = Math.Atan(ehmin_orient_x_total / ehmin_orient_y_total);
+                                        if (ehmin_rate_novalues > 0)
+                                            local_EhminRate = ehmin_rate_total / (double)ehmin_rate_novalues;
+                                        if (ehmax_rate_novalues > 0)
+                                            local_EhmaxRate = ehmax_rate_total / (double)ehmax_rate_novalues;
+                                        if (OP_rate_novalues > 0)
+                                            local_AppliedOverpressureRate = OP_rate_total / (double)OP_rate_novalues;
+                                        if (temp_rate_novalues > 0)
+                                            local_AppliedTemperatureChange = temp_rate_total / (double)temp_rate_novalues;
+                                        if (uplift_rate_novalues > 0)
+                                            local_AppliedUpliftRate = uplift_rate_total / (double)uplift_rate_novalues;
+                                    }
+                                    else // We are taking data from a single cell
+                                    {
+                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                        if (HorizontalUpscalingFactor > 1)
+                                        {
+                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                        }
+
+                                        // Create a reference to the cell from which we will read the data
+                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                        // Update ehmin orientation total if defined
+                                        if (UseGridFor_EhminAzi)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_EhminAzi)
+                                                    cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
+                                                if (!double.IsNaN(cell_ehmin_orient))
+                                                {
+                                                    local_EhminAzi = cell_ehmin_orient;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update ehmin rate total if defined
+                                        if (UseGridFor_EhminRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
+                                                if (!double.IsNaN(cell_ehmin_rate))
+                                                {
+                                                    local_EhminRate = cell_ehmin_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update ehmax rate total if defined
+                                        if (UseGridFor_EhmaxRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
+                                                if (!double.IsNaN(cell_ehmax_rate))
+                                                {
+                                                    local_EhmaxRate = cell_ehmax_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update overpressure rate total if defined
+                                        if (UseGridFor_AppliedOverpressureRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
+                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_AppliedOverpressureRate)
+                                                    cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
+                                                if (!double.IsNaN(cell_OP_rate))
+                                                {
+                                                    local_AppliedOverpressureRate = cell_OP_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update temperature change total if defined
+                                        if (UseGridFor_AppliedTemperatureChange)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
+                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_AppliedTemperatureChange)
+                                                    cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
+                                                if (!double.IsNaN(cell_temp_rate))
+                                                {
+                                                    local_AppliedTemperatureChange = cell_temp_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update uplift rate total if defined
+                                        if (UseGridFor_AppliedUpliftRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
+                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_AppliedUpliftRate)
+                                                    cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
+                                                if (!double.IsNaN(cell_uplift_rate))
+                                                {
+                                                    local_AppliedUpliftRate = cell_uplift_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Add the deformation episode to the deformation episode list in the PropControl object
+                                    gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
+
+#if DEBUG_FRACS
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
+#endif
+                                }// End get the stress / strain data from the grid as required
 
                                 // Add to grid
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
 
 #if DEBUG_FRACS
-                                PetrelLogger.InfoOutputWindow("Properties");
-                                PetrelLogger.InfoOutputWindow(string.Format("local_Epsilon_hmin_azimuth_in = {0}; Epsilon_hmin_rate_in = {1}; Epsilon_hmax_rate_in = {2};", local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in));
-                                PetrelLogger.InfoOutputWindow(string.Format("sv' {0}", gc.StressStrain.Sigma_v_eff));
-                                PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient {2}, Crack surface energy:{3}, Friction coefficient:{4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Depth, NoFractureSets));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, TimeUnits.{9});", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2});", lithostatic_stress, fluid_pressure, InitialStressRelaxation));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22}, {23}, {24});",
-                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
                                 PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
 #endif
 
@@ -1842,10 +2303,10 @@ namespace DFNGenerator_Ocean
                         } // End loop through all columns in the Fracture Grid
 
                         // Set the DFN generation data
-                        DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, OutputAtEqualTimeIntervals, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
+                        DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
 #if DEBUG_FRACS
                         PetrelLogger.InfoOutputWindow("");
-                        PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, DFNFileType.{12}, {13}, {14}, {15}, {16}, TimeUnits.{17});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, OutputAtEqualTimeIntervals, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
+                        PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, DFNFileType.{12}, {13}, {14}, {15}, {16}, TimeUnits.{17});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
 #endif
                         dfn_control.FolderPath = folderPath;
                         ModelGrid.DFNControl = dfn_control;
@@ -1885,7 +2346,7 @@ namespace DFNGenerator_Ocean
                             Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                             Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
                             Template AnisotropyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
-                            Template PorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
+                            Template FracturePorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
                             Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
                             Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
 
@@ -1897,7 +2358,7 @@ namespace DFNGenerator_Ocean
                                 transactionWritePropertyData.Lock(root);
 
                                 // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
-                                int NoStages = NoIntermediateOutputs + 1;
+                                int NoStages = (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime ? ModelGrid.DFNControl.IntermediateOutputTimes.Count : NoIntermediateOutputs + 1);
                                 int NoSets = NoFractureSets;
                                 int NoDipSets = ((Mode1Only || Mode2Only) ? 1 : 2);
                                 int NoCalculationElementsCompleted = 0;
@@ -1922,11 +2383,11 @@ namespace DFNGenerator_Ocean
                                     // Get the endtime for the current stage
                                     // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
                                     double stageEndTime = 0;
-                                    if (OutputAtEqualTimeIntervals)
+                                    if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualTime)
                                     {
                                         stageEndTime = (stageNumber * endTime) / NoStages;
                                     }
-                                    else
+                                    else if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualArea)
                                     {
                                         int gridblockTimestepNo = ((stageNumber * NoGridblockTimesteps) / NoStages);
                                         if (gridblockTimestepNo < 1)
@@ -1934,6 +2395,10 @@ namespace DFNGenerator_Ocean
                                         if (gridblockTimestepNo > NoGridblockTimesteps)
                                             gridblockTimestepNo = NoGridblockTimesteps;
                                         stageEndTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[gridblockTimestepNo - 1] : 0);
+                                    }
+                                    else
+                                    {
+                                        stageEndTime = (stageNumber < ModelGrid.DFNControl.IntermediateOutputTimes.Count ? ModelGrid.DFNControl.IntermediateOutputTimes[stageNumber - 1] : endTime);
                                     }
 
                                     // Create a stage-specific label for the output file
@@ -2411,8 +2876,8 @@ namespace DFNGenerator_Ocean
                                         // Create properties and set templates for microfracture and macrofracture porosity and combined P32 values
                                         Property uF_P32combined = FracPorosityData.CreateProperty(P32Template);
                                         Property MF_P32combined = FracPorosityData.CreateProperty(P32Template);
-                                        Property uF_Porosity = FracPorosityData.CreateProperty(PorosityTemplate);
-                                        Property MF_Porosity = FracPorosityData.CreateProperty(PorosityTemplate);
+                                        Property uF_Porosity = FracPorosityData.CreateProperty(FracturePorosityTemplate);
+                                        Property MF_Porosity = FracPorosityData.CreateProperty(FracturePorosityTemplate);
 
                                         // Set property template names
                                         uF_P32combined.Name = "Microfracture_combined_P32";
@@ -3525,15 +3990,26 @@ namespace DFNGenerator_Ocean
             private int argument_NoRowsJ = 1;
             private int argument_TopLayerK = 1;
             private int argument_BottomLayerK = 1;
-            private double argument_EhminAzi_default = 0;
-            private Droid argument_EhminAzi;
-            // Unit conversion for the strain rate properties EhminRate and EhmaxRate are carried out when the grid is populated in ExectureSimple(), as there are no inbuilt Petrel units for strain rate 
-            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
+            // Deformation load
+            private List<string> argument_DeformationEpisode = new List<string>();
+            private List<TimeUnits> argument_DeformationEpisodeTimeUnits = new List<TimeUnits>();
+            private List<double> argument_EhminAzi_default = new List<double>();
+            private List<Droid> argument_EhminAzi = new List<Droid>();
+            // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
+            // Therefore these properties are stored in geological time units (typically Ma), not SI units (/s)
             // Unit labelling must be handled manually
-            private double argument_EhminRate_default = -0.01;
-            private Droid argument_EhminRate;
-            private double argument_EhmaxRate_default = 0;
-            private Droid argument_EhmaxRate;
+            private List<double> argument_EhminRate_default = new List<double>();
+            private List<Droid> argument_EhminRate = new List<Droid>();
+            private List<double> argument_EhmaxRate_default = new List<double>();
+            private List<Droid> argument_EhmaxRate = new List<Droid>();
+            private List<double> argument_AppliedOverpressureRate_default = new List<double>();
+            private List<Droid> argument_AppliedOverpressureRate = new List<Droid>();
+            private List<double> argument_AppliedTemperatureChange_default = new List<double>();
+            private List<Droid> argument_AppliedTemperatureChange = new List<Droid>();
+            private List<double> argument_AppliedUpliftRate_default = new List<double>();
+            private List<Droid> argument_AppliedUpliftRate = new List<Droid>();
+            private List<double> argument_StressArchingFactor = new List<double>();
+            private List<double> argument_DeformationEpisodeDuration = new List<double>();
             private bool argument_GenerateExplicitDFN = true;
             private int argument_NoIntermediateOutputs = 0;
             private bool argument_IncludeObliqueFracs = false;
@@ -3543,12 +4019,16 @@ namespace DFNGenerator_Ocean
             private Droid argument_YoungsMod;
             private double argument_PoissonsRatio_default = 0.25;
             private Droid argument_PoissonsRatio;
+            private double argument_Porosity_default = 0.2;
+            private Droid argument_Porosity;
             private double argument_BiotCoefficient_default = 1;
             private Droid argument_BiotCoefficient;
             private double argument_FrictionCoefficient_default = 0.5;
             private Droid argument_FrictionCoefficient;
             private double argument_CrackSurfaceEnergy_default = 1000;
             private Droid argument_CrackSurfaceEnergy;
+            private double argument_ThermalExpansionCoefficient_default = 4E-5;
+            private Droid argument_ThermalExpansionCoefficient;
             // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
             private double argument_RockStrainRelaxation_default = 0;
             private Droid argument_RockStrainRelaxation;
@@ -3573,6 +4053,7 @@ namespace DFNGenerator_Ocean
             private double argument_MeanOverlyingSedimentDensity = 2250;
             private double argument_FluidDensity = 1000;
             private double argument_InitialOverpressure = 0;
+            public double argument_GeothermalGradient = 0.03;
             private double argument_InitialStressRelaxation = 1;
             private bool argument_AverageStressStrainData = false;
 
@@ -3581,7 +4062,7 @@ namespace DFNGenerator_Ocean
             private bool argument_WriteDFNFiles = false;
             private bool argument_WriteToProjectFolder = true;
             private int argument_DFNFileType = 1;
-            private bool argument_OutputAtEqualTimeIntervals = false;
+            private IntermediateOutputInterval argument_OutputAtEqualTimeIntervals = IntermediateOutputInterval.EqualArea;
             private bool argument_OutputCentrepoints = false;
             // Fracture connectivity and anisotropy index control parameters
             private bool argument_CalculateFractureConnectivityAnisotropy = true;
@@ -3618,8 +4099,6 @@ namespace DFNGenerator_Ocean
             private double argument_MinimumImplicitMicrofractureRadius = 0.05;
             private int argument_No_r_bins = 10;
             // Calculation termination controls
-            // NB the deformation duration must be supplied in SI units (seconds), not geological time units
-            private double argument_DeformationDuration = double.NaN;
             private int argument_MaxNoTimesteps = 1000;
             private double argument_Historic_MFP33_TerminationRatio = double.NaN;
             private double argument_Active_MFP30_TerminationRatio = double.NaN;
@@ -3694,52 +4173,472 @@ namespace DFNGenerator_Ocean
                 set { this.argument_BottomLayerK = value; }
             }
 
+            // Deformation load
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            public List<string> Argument_DeformationEpisode
+            {
+                internal get { return this.argument_DeformationEpisode; }
+                set { this.argument_DeformationEpisode = value; }
+            }
+            internal string DeformationEpisode(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_DeformationEpisode[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void DeformationEpisode(string value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_DeformationEpisode[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_DeformationEpisode.Add(value);
+                }
+            }
+
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            public List<TimeUnits> Argument_DeformationEpisodeTimeUnits
+            {
+                internal get { return this.argument_DeformationEpisodeTimeUnits; }
+                set { this.argument_DeformationEpisodeTimeUnits = value; }
+            }
+            internal TimeUnits DeformationEpisodeTimeUnits(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_DeformationEpisodeTimeUnits[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return TimeUnits.second;
+                }
+            }
+            public void DeformationEpisodeTimeUnits(TimeUnits value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_DeformationEpisodeTimeUnits[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_DeformationEpisodeTimeUnits.Add(value);
+                }
+            }
+
             [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
-            public double Argument_EhminAzi_default
+            public List<double> Argument_EhminAzi_default
             {
                 internal get { return this.argument_EhminAzi_default; }
                 set { this.argument_EhminAzi_default = value; }
             }
-
-            [OptionalInWorkflow]
-            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
-            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi
+            internal double EhminAzi_default(int episodeIndex)
             {
-                internal get { return DataManager.Resolve(this.argument_EhminAzi) as Property; }
-                set { this.argument_EhminAzi = (value == null ? null : value.Droid); }
+                try
+                {
+                    return this.argument_EhminAzi_default[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void EhminAzi_default(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_EhminAzi_default[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_EhminAzi_default.Add(value);
+                }
+            }
+
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
+            public List<Droid> Argument_EhminAzi
+            {
+                internal get { return this.argument_EhminAzi; }
+                set { this.argument_EhminAzi = value; }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminAzi (int episodeIndex)
+            {
+                try
+                {
+                    return DataManager.Resolve(this.argument_EhminAzi[episodeIndex]) as Property;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void EhminAzi(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_EhminAzi[episodeIndex] = (value == null ? null : value.Droid);
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_EhminAzi.Add(value == null ? null : value.Droid);
+                }
             }
 
             // Unit conversion for the strain rate properties EhminRate and EhmaxRate are carried out when the grid is populated in ExectureSimple(), as there are no inbuilt Petrel units for strain rate 
             // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
             // Unit labelling must be handled manually
             [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            public double Argument_EhminRate_default
+            public List<double> Argument_EhminRate_default
             {
                 internal get { return this.argument_EhminRate_default; }
                 set { this.argument_EhminRate_default = value; }
             }
-
-            [OptionalInWorkflow]
-            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
+            internal double EhminRate_default(int episodeIndex)
             {
-                internal get { return DataManager.Resolve(this.argument_EhminRate) as Property; }
-                set { this.argument_EhminRate = (value == null ? null : value.Droid); }
+                try
+                {
+                    return this.argument_EhminRate_default[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void EhminRate_default(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_EhminRate_default[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_EhminRate_default.Add(value);
+                }
+            }
+
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public List<Droid> Argument_EhminRate
+            {
+                internal get { return this.argument_EhminRate; }
+                set { this.argument_EhminRate = value; }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminRate(int episodeIndex)
+            {
+                try
+                {
+                    return DataManager.Resolve(this.argument_EhminRate[episodeIndex]) as Property;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void EhminRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_EhminRate[episodeIndex] = (value == null ? null : value.Droid);
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_EhminRate.Add(value == null ? null : value.Droid);
+                }
             }
 
             [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            public double Argument_EhmaxRate_default
+            public List<double> Argument_EhmaxRate_default
             {
                 internal get { return this.argument_EhmaxRate_default; }
                 set { this.argument_EhmaxRate_default = value; }
             }
-
-            [OptionalInWorkflow]
-            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
+            internal double EhmaxRate_default(int episodeIndex)
             {
-                internal get { return DataManager.Resolve(this.argument_EhmaxRate) as Property; }
-                set { this.argument_EhmaxRate = (value == null ? null : value.Droid); }
+                try
+                {
+                    return this.argument_EhmaxRate_default[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void EhmaxRate_default(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_EhmaxRate_default[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_EhmaxRate_default.Add(value);
+                }
+            }
+
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public List<Droid> Argument_EhmaxRate
+            {
+                internal get { return this.argument_EhmaxRate; }
+                set { this.argument_EhmaxRate = value; }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhmaxRate(int episodeIndex)
+            {
+                try
+                {
+                    return DataManager.Resolve(this.argument_EhmaxRate[episodeIndex]) as Property;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void EhmaxRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_EhmaxRate[episodeIndex] = (value == null ? null : value.Droid);
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_EhmaxRate.Add(value == null ? null : value.Droid);
+                }
+            }
+
+            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
+            public List<double> Argument_AppliedOverpressureRate_default
+            {
+                internal get { return this.argument_AppliedOverpressureRate_default; }
+                set { this.argument_AppliedOverpressureRate_default = value; }
+            }
+            internal double AppliedOverpressureRate_default(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_AppliedOverpressureRate_default[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void AppliedOverpressureRate_default(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_AppliedOverpressureRate_default[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_AppliedOverpressureRate_default.Add(value);
+                }
+            }
+
+            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
+            public List<Droid> Argument_AppliedOverpressureRate
+            {
+                internal get { return this.argument_AppliedOverpressureRate; }
+                set { this.argument_AppliedOverpressureRate = value; }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedOverpressureRate(int episodeIndex)
+            {
+                try
+                {
+                    return DataManager.Resolve(this.argument_AppliedOverpressureRate[episodeIndex]) as Property;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void AppliedOverpressureRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_AppliedOverpressureRate[episodeIndex] = (value == null ? null : value.Droid);
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_AppliedOverpressureRate.Add(value == null ? null : value.Droid);
+                }
+            }
+
+            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public List<double> Argument_AppliedTemperatureChange_default
+            {
+                internal get { return this.argument_AppliedTemperatureChange_default; }
+                set { this.argument_AppliedTemperatureChange_default = value; }
+            }
+            internal double AppliedTemperatureChange_default(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_AppliedTemperatureChange_default[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void AppliedTemperatureChange_default(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_AppliedTemperatureChange_default[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_AppliedTemperatureChange_default.Add(value);
+                }
+            }
+
+            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public List<Droid> Argument_AppliedTemperatureChange
+            {
+                internal get { return this.argument_AppliedTemperatureChange; }
+                set { this.argument_AppliedTemperatureChange = value; }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedTemperatureChange(int episodeIndex)
+            {
+                try
+                {
+                    return DataManager.Resolve(this.argument_AppliedTemperatureChange[episodeIndex]) as Property;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void AppliedTemperatureChange(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_AppliedTemperatureChange[episodeIndex] = (value == null ? null : value.Droid);
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_AppliedTemperatureChange.Add(value == null ? null : value.Droid);
+                }
+            }
+
+            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public List<double> Argument_AppliedUpliftRate_default
+            {
+                internal get { return this.argument_AppliedUpliftRate_default; }
+                set { this.argument_AppliedUpliftRate_default = value; }
+            }
+            internal double AppliedUpliftRate_default(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_AppliedUpliftRate_default[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void AppliedUpliftRate_default(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_AppliedUpliftRate_default[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_AppliedUpliftRate_default.Add(value);
+                }
+            }
+
+            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public List<Droid> Argument_AppliedUpliftRate
+            {
+                internal get { return this.argument_AppliedUpliftRate; }
+                set { this.argument_AppliedUpliftRate = value; }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedUpliftRate(int episodeIndex)
+            {
+                try
+                {
+                    return DataManager.Resolve(this.argument_AppliedUpliftRate[episodeIndex]) as Property;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return null;
+                }
+            }
+            public void AppliedUpliftRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_AppliedUpliftRate[episodeIndex] = (value == null ? null : value.Droid);
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_AppliedUpliftRate.Add(value == null ? null : value.Droid);
+                }
+            }
+
+            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
+            public List<double> Argument_StressArchingFactor
+            {
+                internal get { return this.argument_StressArchingFactor; }
+                set { this.argument_StressArchingFactor = value; }
+            }
+            internal double StressArchingFactor(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_StressArchingFactor[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void StressArchingFactor(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_StressArchingFactor[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_StressArchingFactor.Add(value);
+                }
+            }
+
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public List<double> Argument_DeformationEpisodeDuration
+            {
+                internal get { return this.argument_DeformationEpisodeDuration; }
+                set { this.argument_DeformationEpisodeDuration = value; }
+            }
+            internal double DeformationEpisodeDuration(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_DeformationEpisodeDuration[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void DeformationEpisodeDuration(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_DeformationEpisodeDuration[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_DeformationEpisodeDuration.Add(value);
+                }
             }
 
             [Description("Generate explicit DFN?", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
@@ -3794,6 +4693,21 @@ namespace DFNGenerator_Ocean
                 set { this.argument_PoissonsRatio = (value == null ? null : value.Droid); }
             }
 
+            [Description("Default Porosity", "Default value for Porosity")]
+            public double Argument_Porosity_default
+            {
+                internal get { return this.argument_Porosity_default; }
+                set { this.argument_Porosity_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Porosity", "Porosity")]
+            public Property Argument_Porosity
+            {
+                internal get { return DataManager.Resolve(this.argument_Porosity) as Property; }
+                set { this.argument_Porosity = (value == null ? null : value.Droid); }
+            }
+
             [Description("Default Biot's coefficient", "Default value for Biot's coefficient")]
             public double Argument_BiotCoefficient_default
             {
@@ -3837,6 +4751,21 @@ namespace DFNGenerator_Ocean
             {
                 internal get { return DataManager.Resolve(this.argument_CrackSurfaceEnergy) as Property; }
                 set { this.argument_CrackSurfaceEnergy = (value == null ? null : value.Droid); }
+            }
+
+            [Description("Default thermal expansion coefficient (/degK)", "Default value for thermal expansion coefficient (/degK)")]
+            public double Argument_ThermalExpansionCoefficient_default
+            {
+                internal get { return this.argument_ThermalExpansionCoefficient_default; }
+                set { this.argument_ThermalExpansionCoefficient_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Thermal expansion coefficient", "Thermal expansion coefficient")]
+            public Property Argument_ThermalExpansionCoefficient
+            {
+                internal get { return DataManager.Resolve(this.argument_ThermalExpansionCoefficient) as Property; }
+                set { this.argument_ThermalExpansionCoefficient = (value == null ? null : value.Droid); }
             }
 
             [Description("Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation", "Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation")]
@@ -3978,6 +4907,13 @@ namespace DFNGenerator_Ocean
                 set { this.argument_InitialOverpressure = value; }
             }
 
+            [Description("Geothermal gradient (degK/m)", "Geothermal gradient (degK/m)")]
+            public double Argument_GeothermalGradient
+            {
+                internal get { return this.argument_GeothermalGradient; }
+                set { this.argument_GeothermalGradient = value; }
+            }
+
             [Description("Initial stress relaxation", "Initial stress relaxation")]
             public double Argument_InitialStressRelaxation
             {
@@ -4021,8 +4957,8 @@ namespace DFNGenerator_Ocean
                 set { this.argument_DFNFileType = value; }
             }
 
-            [Description("Output intermediate results by time? (if false, will output intermediate results by approximate fracture area)", "Output intermediate results by time? (if false, will output intermediate results by approximate fracture area)")]
-            public bool Argument_OutputAtEqualTimeIntervals
+            [Description("Flag to control interval between output of intermediate stage DFNs", "Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area")]
+            public IntermediateOutputInterval Argument_OutputAtEqualTimeIntervals
             {
                 internal get { return this.argument_OutputAtEqualTimeIntervals; }
                 set { this.argument_OutputAtEqualTimeIntervals = value; }
@@ -4209,14 +5145,6 @@ namespace DFNGenerator_Ocean
             }
 
             // Calculation termination controls
-            [OptionalInWorkflow]
-            [Description("Max deformation episode duration (s)", "Maximum deformation episode duration (s); if blank, will continue until fracture saturation is reached")]
-            public double Argument_DeformationDuration
-            {
-                internal get { return this.argument_DeformationDuration; }
-                set { this.argument_DeformationDuration = value; }
-            }
-
             [Description("Max number of timesteps", "Maximum number of timesteps")]
             public int Argument_MaxNoTimesteps
             {
@@ -4335,14 +5263,25 @@ namespace DFNGenerator_Ocean
                 argument_NoRowsJ = 1;
                 argument_TopLayerK = 1;
                 argument_BottomLayerK = 1;
-                argument_EhminAzi_default = 0;
-                argument_EhminAzi = null;
-                // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-                // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units, not SI units
-                argument_EhminRate_default = -0.01;
-                argument_EhminRate = null;
-                argument_EhmaxRate_default = 0;
-                argument_EhmaxRate = null;
+                argument_DeformationEpisode = new List<string>();
+                argument_EhminAzi_default = new List<double>();
+                argument_EhminAzi = new List<Droid>();
+                // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
+                // Therefore these properties are stored in geological time units (typically Ma), not SI units (/s)
+                // Unit labelling must be handled manually
+                argument_EhminRate_default = new List<double>();
+                argument_EhminRate = new List<Droid>();
+                argument_EhmaxRate_default = new List<double>();
+                argument_EhmaxRate = new List<Droid>();
+                argument_AppliedOverpressureRate_default = new List<double>();
+                argument_AppliedOverpressureRate = new List<Droid>();
+                argument_AppliedTemperatureChange_default = new List<double>();
+                argument_AppliedTemperatureChange = new List<Droid>();
+                argument_AppliedUpliftRate_default = new List<double>();
+                argument_AppliedUpliftRate = new List<Droid>();
+                argument_StressArchingFactor = new List<double>();
+                argument_DeformationEpisodeDuration = new List<double>();
+                argument_DeformationEpisodeTimeUnits = new List<TimeUnits>();
                 argument_GenerateExplicitDFN = true;
                 argument_NoIntermediateOutputs = 0;
                 argument_IncludeObliqueFracs = false;
@@ -4352,8 +5291,12 @@ namespace DFNGenerator_Ocean
                 argument_YoungsMod = null;
                 argument_PoissonsRatio_default = 0.25;
                 argument_PoissonsRatio = null;
+                argument_Porosity_default = 0.2;
+                argument_Porosity = null;
                 argument_BiotCoefficient_default = 1;
                 argument_BiotCoefficient = null;
+                argument_ThermalExpansionCoefficient_default = 4E-5;
+                argument_ThermalExpansionCoefficient = null;
                 argument_FrictionCoefficient_default = 0.5;
                 argument_FrictionCoefficient = null;
                 argument_CrackSurfaceEnergy_default = 1000;
@@ -4382,6 +5325,7 @@ namespace DFNGenerator_Ocean
                 argument_MeanOverlyingSedimentDensity = 2250;
                 argument_FluidDensity = 1000;
                 argument_InitialOverpressure = 0;
+                argument_GeothermalGradient = 0.03;
                 argument_InitialStressRelaxation = 1;
                 argument_AverageStressStrainData = false;
 
@@ -4390,7 +5334,7 @@ namespace DFNGenerator_Ocean
                 argument_WriteDFNFiles = false;
                 argument_WriteToProjectFolder = true;
                 argument_DFNFileType = 1;
-                argument_OutputAtEqualTimeIntervals = false;
+                argument_OutputAtEqualTimeIntervals = IntermediateOutputInterval.EqualArea;
                 argument_OutputCentrepoints = false;
                 // Fracture connectivity and anisotropy index control parameters
                 argument_CalculateFractureConnectivityAnisotropy = true;
@@ -4427,8 +5371,6 @@ namespace DFNGenerator_Ocean
                 argument_MinimumImplicitMicrofractureRadius = 0.05;
                 argument_No_r_bins = 10;
                 // Calculation termination controls
-                // NB the deformation duration must be supplied in SI units (seconds), not geological time units
-                argument_DeformationDuration = double.NaN;
                 argument_MaxNoTimesteps = 1000;
                 argument_Historic_MFP33_TerminationRatio = double.NaN;
                 argument_Active_MFP30_TerminationRatio = double.NaN;

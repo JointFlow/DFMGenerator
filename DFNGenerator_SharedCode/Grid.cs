@@ -181,7 +181,6 @@ namespace DFNGenerator_SharedCode
                 {
                     double nextIntermediateEndTime = (nextStage < DFNControl.IntermediateOutputTimes.Count ? DFNControl.IntermediateOutputTimes[nextStage] : endTime);
                     calculationCompleted = PropagateLocalDFNs(ref currentCalculationElement, nextIntermediateEndTime, timestepList, progressReporter);
-
                 }
                 else if (separateIntermediatesBy == IntermediateOutputInterval.EqualTime)
                 {

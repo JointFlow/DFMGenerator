@@ -263,7 +263,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("%      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume");
                 input_file.WriteLine("% Increase these cutoffs to reduce the sensitivity and stop the calculation earlier");
                 input_file.WriteLine("% Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime");
-                input_file.WriteLine("% To stop calculation while fractures are still growing reduce the DeformationStageDuration_in or maxTimesteps_in limits");
+                input_file.WriteLine("% To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits");
                 input_file.WriteLine("% Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control");
                 input_file.WriteLine("Current_HistoricMFP33TerminationRatio -1");
                 input_file.WriteLine("% Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control");
@@ -465,11 +465,11 @@ namespace DFNGenerator_Standalone
                 VariableStrainMagnitude = true;
             }
             // Fluid pressure, thermal and uplift loads
-            // Rate of increase of fluid overpressure (Pa/ModelTImeUnit)
+            // Rate of increase of fluid overpressure (Pa/ModelTimeUnit)
             double AppliedOverpressureRate = 0;
-            // Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTImeUnit)
+            // Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTimeUnit)
             double AppliedTemperatureChange = 0;
-            // Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTImeUnit)
+            // Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTimeUnit)
             double AppliedUpliftRate = 0;
             // Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)
             double StressArchingFactor = 0;
@@ -667,7 +667,7 @@ namespace DFNGenerator_Standalone
             //      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
             // Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
             // Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
-            // To stop calculation while fractures are still growing reduce the DeformationStageDuration_in or maxTimesteps_in limits
+            // To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
             // Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control
             double Current_HistoricMFP33TerminationRatio = -1;// 0.01;
             // Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
