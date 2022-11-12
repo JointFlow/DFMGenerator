@@ -1236,6 +1236,10 @@ namespace DFNGenerator_SharedCode
         /// <returns></returns>
         public double InitialSegmentAzimuth() { return MF_segments[PropagationDirection.IPlus][0].getAzimuth(); } */
         /// <summary>
+        /// List of flags for zero length segments
+        /// </summary>
+        public Dictionary<PropagationDirection, List<bool>> ZeroLengthSegments { get; set; }
+        /// <summary>
         /// List of mean apertures (in current stress field) of each segment
         /// </summary>
         public Dictionary<PropagationDirection, List<double>> SegmentMeanAperture { get; set; }
@@ -1305,6 +1309,10 @@ namespace DFNGenerator_SharedCode
             strikehalflength[PropagationDirection.IMinus] = 0;
             totalhalflength[PropagationDirection.IPlus] = 0;
             totalhalflength[PropagationDirection.IMinus] = 0;
+
+            // Clear the current list of zero length segment flags
+            ZeroLengthSegments[PropagationDirection.IPlus].Clear();
+            ZeroLengthSegments[PropagationDirection.IMinus].Clear();
 
             // Clear the current list of segment mean aperture values
             SegmentMeanAperture[PropagationDirection.IPlus].Clear();
@@ -1540,7 +1548,7 @@ namespace DFNGenerator_SharedCode
                                 double LowerInnerBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_LowerInnerBevelledCornerPoint);
                                 double LowerOuterBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_LowerOuterBevelledCornerPoint);
 
-                                bool UpperBoundaryInverted=false;
+                                bool UpperBoundaryInverted = false;
                                 if (CurrentSegment.LocalPropDir == PropagationDirection.IPlus)
                                     UpperBoundaryInverted = (UpperOuterBevelledCornerPoint_I <= UpperInnerBevelledCornerPoint_I);
                                 else
@@ -1653,6 +1661,12 @@ namespace DFNGenerator_SharedCode
                     strikehalflength[dir] += CurrentSegment.StrikeLength;
                     totalhalflength[dir] += CurrentSegment.TotalLength;
 
+                    // Add the flag for zero length segments
+                    if (((float)CurrentSegment.PropNode.I == (float)CurrentSegment.NonPropNode.I) && ((float)CurrentSegment.PropNode.J == (float)CurrentSegment.NonPropNode.J))
+                        ZeroLengthSegments[dir].Add(true);
+                    else
+                        ZeroLengthSegments[dir].Add(false);
+
                     // Finally update and add the segment aperture, in the current stress field
                     SegmentMeanAperture[dir].Add(CurrentSegment.MeanAperture());
 
@@ -1662,7 +1676,7 @@ namespace DFNGenerator_SharedCode
                 for (int segmentNo = 0; segmentNo < noSegments - 1; segmentNo++)
                 {
                     // Check if we need to adjust the upper outer cornerpoint for the segment
-                    if(adjustUpperOuterCornerPoints[segmentNo])
+                    if (adjustUpperOuterCornerPoints[segmentNo])
                     {
                         // Calculate the length of each of the two segments as a proportion of the total length of both of the two segments
                         double firstSegmentLength = segments[segmentNo].TotalLength;
@@ -1849,7 +1863,7 @@ namespace DFNGenerator_SharedCode
 
         // Output functions
         /// <summary>
-        /// Function to return a list of the XYZ coordinates of the cornerpoints of each segment of the fracture
+        /// Function to return a list of the XYZ coordinates of the cornerpoints of each segment of the fracture, excluding zero length segments
         /// Note that using this function has a high overhead in computational cost; if possible access the cornerpoints directly from the SegmentCornerPoints nested list
         /// </summary>
         /// <returns>A primary list, each item representing a fracture segment, containing nested lists of cornerpoints as PointXYZ objects; NB this is a copy of the list in the MacrofractureXYZ object, not a reference to that list or any of the objects within it</returns>
@@ -1872,6 +1886,10 @@ namespace DFNGenerator_SharedCode
                 int segmentNo;
                 for (segmentNo = noSegments - 1; segmentNo >= 0; segmentNo--)
                 {
+                    // Check if it is a zero length segment; if so, move on to the next segment
+                    if (ZeroLengthSegments[dir][segmentNo])
+                        continue;
+
                     // Create a new list of PointXYZ objects for the cornerpoints
                     List<PointXYZ> NewSegmentCornerPoints = new List<PointXYZ>();
 
@@ -1881,7 +1899,7 @@ namespace DFNGenerator_SharedCode
 
                     // Add each corner to our new list of cornerpoints for this segment
                     // NB we will create copies of the PointXYZ objects in the original list, rather than copying across references to those objects
-                    foreach(PointXYZ corner in segment)
+                    foreach (PointXYZ corner in segment)
                         NewSegmentCornerPoints.Add(new PointXYZ(corner));
 
                     // Add the new segment to the new list of segments
@@ -1900,6 +1918,10 @@ namespace DFNGenerator_SharedCode
                 int segmentNo;
                 for (segmentNo = 0; segmentNo < noSegments; segmentNo++)
                 {
+                    // Check if it is a zero length segment; if so, move on to the next segment
+                    if (ZeroLengthSegments[dir][segmentNo])
+                        continue;
+
                     // Create a new list of PointXYZ objects for the cornerpoints
                     List<PointXYZ> NewSegmentCornerPoints = new List<PointXYZ>();
 
@@ -1944,6 +1966,10 @@ namespace DFNGenerator_SharedCode
                 int segmentNo;
                 for (segmentNo = noSegments - 1; segmentNo >= 0; segmentNo--)
                 {
+                    // Check if it is a zero length segment; if so, move on to the next segment
+                    if (ZeroLengthSegments[dir][segmentNo])
+                        continue;
+
                     // Each segment will be broken down into two triangular elements
                     // Therefore we must create two new lists of PointXYZ objects for the cornerpoints of each element
                     List<PointXYZ> Element1CornerPoints = new List<PointXYZ>();
@@ -1980,6 +2006,10 @@ namespace DFNGenerator_SharedCode
                 int segmentNo;
                 for (segmentNo = 0; segmentNo < noSegments; segmentNo++)
                 {
+                    // Check if it is a zero length segment; if so, move on to the next segment
+                    if (ZeroLengthSegments[dir][segmentNo])
+                        continue;
+
                     // Each segment will be broken down into two triangular elements
                     // Therefore we must create two new lists of PointXYZ objects for the cornerpoints of each element
                     List<PointXYZ> Element1CornerPoints = new List<PointXYZ>();
@@ -2018,6 +2048,9 @@ namespace DFNGenerator_SharedCode
             // Create a new cornerpoint list object
             List<PointXYZ> CornerPoints = new List<PointXYZ>();
 
+            // Keep a record of the previous point in the list; this is neccessary to remove duplicates
+            PointXYZ lastPoint = null;
+
             // First move around the IPlus side of the fracture
             {
                 PropagationDirection dir = PropagationDirection.IPlus;
@@ -2038,10 +2071,18 @@ namespace DFNGenerator_SharedCode
 
                     // If this is the first segment, add the upper inner cornerpoint to the list - this will be the nucleation point top
                     if (segmentNo == 0)
-                        CornerPoints.Add(new PointXYZ(ThisSegment_Corners[0]));
+                    {
+                        PointXYZ firstPoint = new PointXYZ(ThisSegment_Corners[0]);
+                        CornerPoints.Add(firstPoint);
+                        lastPoint = firstPoint;
+                    }
 
                     // For all segments, add the (bevelled) upper outer cornerpoint to the list
-                    CornerPoints.Add(new PointXYZ(ThisSegment_Corners[1]));
+                    // First check if it is a duplicate of the previous point
+                    PointXYZ nextPoint = new PointXYZ(ThisSegment_Corners[1]);
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CornerPoints.Add(nextPoint);
+                    lastPoint = nextPoint;
                 }
 
                 // Now move back along the bottom of the fracture in the IMinus direction adding points to the cornerpoint list
@@ -2055,7 +2096,11 @@ namespace DFNGenerator_SharedCode
                         continue;
 
                     // For all segments, add the (bevelled) lower outer cornerpoint to the list
-                    CornerPoints.Add(new PointXYZ(ThisSegment_Corners[2]));
+                    // First check if it is a duplicate of the previous point
+                    PointXYZ nextPoint = new PointXYZ(ThisSegment_Corners[2]);
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CornerPoints.Add(nextPoint);
+                    lastPoint = nextPoint;
                 }
 
             } // End move around the IPlus side of the fracture
@@ -2079,11 +2124,21 @@ namespace DFNGenerator_SharedCode
                         continue;
 
                     // If this is the first segment, add the lower inner cornerpoint to the list - this will be the nucleation point bottom
+                    // First check if it is a duplicate of the previous point
                     if (segmentNo == 0)
-                        CornerPoints.Add(new PointXYZ(ThisSegment_Corners[3]));
+                    {
+                        PointXYZ firstPoint = new PointXYZ(ThisSegment_Corners[3]);
+                        if (!PointXYZ.comparePoints(lastPoint, firstPoint))
+                            CornerPoints.Add(firstPoint);
+                        lastPoint = firstPoint;
+                    }
 
                     // For all segments, add the (bevelled) lower outer cornerpoint to the list
-                    CornerPoints.Add(ThisSegment_Corners[2]);
+                    // First check if it is a duplicate of the previous point
+                    PointXYZ nextPoint = new PointXYZ(ThisSegment_Corners[2]);
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CornerPoints.Add(nextPoint);
+                    lastPoint = nextPoint;
                 }
 
                 // Now move back along the top of the fracture in the IPlus direction adding points to the cornerpoint list
@@ -2097,7 +2152,11 @@ namespace DFNGenerator_SharedCode
                         continue;
 
                     // For all segments, add the (bevelled) upper outer cornerpoint to the list
-                    CornerPoints.Add(new PointXYZ(ThisSegment_Corners[1]));
+                    // First check if it is a duplicate of the previous point
+                    PointXYZ nextPoint = new PointXYZ(ThisSegment_Corners[1]);
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CornerPoints.Add(nextPoint);
+                    lastPoint = nextPoint;
                 }
 
             } // End move around the IMinus side of the fracture
@@ -2115,6 +2174,9 @@ namespace DFNGenerator_SharedCode
             // Create a new cornerpoint list object
             List<PointXYZ> CentrePoints = new List<PointXYZ>();
 
+            // Keep a record of the previous point in the list; this is necessary to remove duplicates
+            PointXYZ lastPoint = null;
+
             // First move along the IMinus side of the fracture
             {
                 PropagationDirection dir = PropagationDirection.IMinus;
@@ -2129,11 +2191,15 @@ namespace DFNGenerator_SharedCode
                     MacrofractureSegmentIJK ThisSegment = MF_segments[dir][segmentNo];
 
                     // Add the outer centrepoint to the list
-                    CentrePoints.Add(ThisSegment.getOuterCentrepointinXYZ());
+                    // First check if it is a duplicate of the previous point
+                    PointXYZ nextPoint = ThisSegment.getOuterCentrepointinXYZ();
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CentrePoints.Add(nextPoint);
+                    lastPoint = nextPoint;
                 }
 
             } // End move along the IMinus side of the fracture
-            
+
             // Next move along the IPlus side of the fracture
             {
                 PropagationDirection dir = PropagationDirection.IPlus;
@@ -2141,18 +2207,27 @@ namespace DFNGenerator_SharedCode
                 // Get the number of segments on this side of the fracture
                 int noSegments = MF_segments[dir].Count;
 
+                // Add the inner centrepoint of the first segment to the list - this will be the nucleation point
+                // First check if it is a duplicate of the previous point
+                if (noSegments > 0)
+                {
+                    PointXYZ nextPoint = MF_segments[dir][0].getInnerCentrepointinXYZ();
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CentrePoints.Add(nextPoint);
+                    lastPoint = nextPoint;
+                }
+
                 // Move along the fracture in the IPlus direction adding points to the centrepoint list
                 for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
                 {
                     // Get a reference to the appropriate segment
                     MacrofractureSegmentIJK ThisSegment = MF_segments[dir][segmentNo];
 
-                    // If this is the first segment, add the inner centrepoint to the list - this will be the nucleation point
-                    if (segmentNo == 0)
-                        CentrePoints.Add(ThisSegment.getInnerCentrepointinXYZ());
-
                     // For all segments, add the outer centrepoint to the list
-                    CentrePoints.Add(ThisSegment.getOuterCentrepointinXYZ());
+                    PointXYZ nextPoint = ThisSegment.getOuterCentrepointinXYZ();
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        CentrePoints.Add(nextPoint);
+                    lastPoint = nextPoint;
                 }
 
             } // End move along the IPlus side of the fracture
@@ -2160,7 +2235,37 @@ namespace DFNGenerator_SharedCode
             // Return the centrepoint list
             return CentrePoints;
         }
-        
+        /// <summary>
+        /// Create a list of the normal vectors for each fracture segment
+        /// </summary>
+        /// <returns>Dictionary containing lists of the normal vectors of each macrofracture segment, as VectorXYZ objects</returns>
+        public Dictionary<PropagationDirection, List<VectorXYZ>> GetSegmentNormalVectors()
+        {
+            Dictionary<PropagationDirection, List<VectorXYZ>> SegmentNormalVectors = new Dictionary<PropagationDirection, List<VectorXYZ>>();
+
+            // Move along the IPlus and IMinus sides of the fracture in turn
+            foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+            {
+                // Create a new list of vectors and add it to the dictionary
+                List<VectorXYZ> normalVectorList = new List<VectorXYZ>();
+                SegmentNormalVectors.Add(dir, normalVectorList);
+
+                // Get the number of segments on this side of the fracture
+                List<MacrofractureSegmentIJK> segments = MF_segments[dir];
+                int noSegments = segments.Count;
+
+                // Move along the fracture, creating a normal vector for each segment and adding it to the list
+                for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
+                {
+                    MacrofractureSegmentIJK segment = segments[segmentNo];
+                    VectorXYZ segmentNormalVector = VectorXYZ.GetNormalToPlane(segment.getAzimuth(), segment.getDip());
+                    normalVectorList.Add(segmentNormalVector);
+                }
+            }
+
+            return SegmentNormalVectors;
+        }
+
         // Constructors
         /// <summary>
         /// Constructor: create a new MacrofractureXYZ object based on a supplied macrofracture segment object; this will be mirrored to create a bidirectional macrofracture
@@ -2194,10 +2299,13 @@ namespace DFNGenerator_SharedCode
                 SegmentCornerPoints.Add(propDir, segmentCornerPointList);
             }
 
-            // Create a dictionary for the segment mean apertures, and add an empty list for each propagation direction
+            // Create dictionaries for the zero length segment flags and the segment mean apertures, and add empty lists for each propagation direction
+            ZeroLengthSegments = new Dictionary<PropagationDirection, List<bool>>();
             SegmentMeanAperture = new Dictionary<PropagationDirection, List<double>>();
             foreach (PropagationDirection propDir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
             {
+                List<bool> zeroLengthSegmentList = new List<bool>();
+                ZeroLengthSegments.Add(propDir, zeroLengthSegmentList);
                 List<double> segmentMeanApertureList = new List<double>();
                 SegmentMeanAperture.Add(propDir, segmentMeanApertureList);
             }
@@ -2263,10 +2371,13 @@ namespace DFNGenerator_SharedCode
                 SegmentCornerPoints.Add(propDir, segmentCornerPointList);
             }
 
-            // Create a dictionary for the segment mean apertures, and add an empty list for each propagation direction
+            // Create dictionaries for the zero length segment flags and the segment mean apertures, and add empty lists for each propagation direction
+            ZeroLengthSegments = new Dictionary<PropagationDirection, List<bool>>();
             SegmentMeanAperture = new Dictionary<PropagationDirection, List<double>>();
             foreach (PropagationDirection propDir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
             {
+                List<bool> zeroLengthSegmentList = new List<bool>();
+                ZeroLengthSegments.Add(propDir, zeroLengthSegmentList);
                 List<double> segmentMeanApertureList = new List<double>();
                 SegmentMeanAperture.Add(propDir, segmentMeanApertureList);
             }

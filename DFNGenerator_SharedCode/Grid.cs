@@ -212,11 +212,24 @@ namespace DFNGenerator_SharedCode
                 {
                     // Create a stage-specific label for the output file
                     string outputLabel = (calculationCompleted ? "final" : string.Format("Stage{0}_Time{1}", nextStage, CurrentDFN.CurrentTime / timeUnits_Modifier));
+                    string fractureFileExtension;
+                    switch (DFNControl.OutputFileType)
+                    {
+                        case DFNFileType.ASCII:
+                            fractureFileExtension = ".txt";
+                            break;
+                        case DFNFileType.FAB:
+                            fractureFileExtension = ".FAB";
+                            break;
+                        default:
+                            fractureFileExtension = "";
+                            break;
+                    }
 
                     // Write microfracture data to file
                     {
                         // Create file for microfractures
-                        string fileName = "Microfractures_" + outputLabel + ".txt";
+                        string fileName = "Microfractures_" + outputLabel + fractureFileExtension;
                         String namecomb = DFNControl.FolderPath + fileName;
                         StreamWriter uF_outputFile = new StreamWriter(namecomb);
 
@@ -281,7 +294,7 @@ namespace DFNGenerator_SharedCode
                                     string FAB_header_5 = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n{3}\r\n\r\n{4}", "END PROPERTIES", "BEGIN SETS", "Set1    =    \"Discrete fractures\"", "END SETS", "BEGIN FRACTURE");
                                     uF_outputFile.WriteLine(FAB_header_5);
 
-                                    // Loop through each macrofracture and write data to logfile
+                                    // Loop through each microfracture and write data to logfile
                                     for (int uFracNo = 0; uFracNo < No_uFracs; uFracNo++)
                                     {
                                         MicrofractureXYZ frac = latestDFN.GlobalDFNMicrofractures[uFracNo];
@@ -299,7 +312,8 @@ namespace DFNGenerator_SharedCode
                                             uF_outputFile.WriteLine(pointCoords);
                                         }
 
-                                        string lastLine = string.Format("{0} {1} {2} {3}", 0, -0.733665229313, 0.679473616879, 0.00713689448164);
+                                        VectorXYZ fractureNormal = VectorXYZ.GetNormalToPlane(frac.Azimuth, frac.Dip);
+                                        string lastLine = string.Format("{0} {1} {2} {3}", 0, fractureNormal.Component(VectorComponents.X), fractureNormal.Component(VectorComponents.Y), fractureNormal.Component(VectorComponents.Z));
                                         uF_outputFile.WriteLine(lastLine);
                                     }
 
@@ -319,7 +333,7 @@ namespace DFNGenerator_SharedCode
                     // Write macrofracture data to file
                     {
                         // Create output file for macrofractures
-                        string fileName = "Macrofractures_" + outputLabel + ".txt";
+                        string fileName = "Macrofractures_" + outputLabel + fractureFileExtension;
                         String namecomb = DFNControl.FolderPath + fileName;
                         StreamWriter MF_outputFile = new StreamWriter(namecomb);
 
@@ -361,13 +375,17 @@ namespace DFNGenerator_SharedCode
                                     int No_Segments = 0;
                                     int No_Cornerpoints = 0;
 
-                                    // Loop through each macrofracture and count the total number of segments and cornerpoints
+                                    // Loop through each macrofracture and count the total number of segments and cornerpoints, excluding zero length segments
                                     foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
                                     { 
                                         foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
                                         {
-                                            No_Segments += frac.SegmentCornerPoints[dir].Count;
-                                            No_Cornerpoints += frac.SegmentCornerPoints[dir].Count * 4;
+                                            int nonZeroLengthSegments = 0;
+                                            foreach (bool segmentFlag in frac.ZeroLengthSegments[dir])
+                                                if (!segmentFlag)
+                                                    nonZeroLengthSegments++;
+                                            No_Segments += nonZeroLengthSegments;
+                                            No_Cornerpoints += nonZeroLengthSegments * 4;
                                         }
                                     }
 
@@ -393,21 +411,30 @@ namespace DFNGenerator_SharedCode
                                     MF_outputFile.WriteLine(FAB_header_5);
 
                                     // Loop through each macrofracture segment and write data to logfile
-                                    int segmentNo = 1;
-                                    foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
+                                    int global_segmentNo = 1;
+                                    foreach (MacrofractureXYZ MF in latestDFN.GlobalDFNMacrofractures)
                                     {
+                                        // Get a list of normal vectors to the fracture segments
+                                        Dictionary<PropagationDirection, List<VectorXYZ>> segmentNormalVectors = MF.GetSegmentNormalVectors();
+
                                         foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
                                         {
-                                            int segmentCounter = 0;
-
-                                            foreach (List<PointXYZ> segment in frac.SegmentCornerPoints[dir])
+                                            int MF_noSegments = MF.SegmentCornerPoints[dir].Count;
+                                            for (int MF_segmentNo = 0; MF_segmentNo < MF_noSegments; MF_segmentNo++)
                                             {
+                                                // Check if it is a zero length segment; if so, move on to the next segment
+                                                if (MF.ZeroLengthSegments[dir][MF_segmentNo])
+                                                    continue;
+
+                                                // Get a reference to the cornerpoint list for the segment
+                                                List<PointXYZ> segment = MF.SegmentCornerPoints[dir][MF_segmentNo];
+
                                                 int noNodes = segment.Count;
 
                                                 // Set the fracture aperture
-                                                double aperture = frac.SegmentMeanAperture[dir][segmentCounter];
+                                                double aperture = MF.SegmentMeanAperture[dir][MF_segmentNo];
 
-                                                string data = string.Format("{0} {1} {2} {3} {4} {5}", segmentNo, noNodes, 1, permability, compressibility, aperture);
+                                                string data = string.Format("{0} {1} {2} {3} {4} {5}", global_segmentNo, noNodes, 1, permability, compressibility, aperture);
                                                 MF_outputFile.WriteLine(data);
 
                                                 int nodeCounter = 1;
@@ -419,11 +446,11 @@ namespace DFNGenerator_SharedCode
                                                     nodeCounter++;
                                                 }
 
-                                                string lastLine = string.Format("{0} {1} {2} {3}", 0, -0.733665229313, 0.679473616879, 0.00713689448164);
+                                                VectorXYZ segmentNormal = segmentNormalVectors[dir][MF_segmentNo];
+                                                string lastLine = string.Format("{0} {1} {2} {3}", 0, segmentNormal.Component(VectorComponents.X), segmentNormal.Component(VectorComponents.Y), segmentNormal.Component(VectorComponents.Z));
                                                 MF_outputFile.WriteLine(lastLine);
 
-                                                if (segmentCounter < frac.SegmentMeanAperture[dir].Count - 1) segmentCounter++;
-                                                segmentNo++;
+                                                global_segmentNo++;
                                             }
                                         }
                                     }
@@ -444,8 +471,22 @@ namespace DFNGenerator_SharedCode
                     // If required, write macrofracture centrepoints to file
                     if (outputCentrepoints)
                     {
+                        string centrepointFileExtension;
+                        switch (DFNControl.OutputFileType)
+                        {
+                            case DFNFileType.ASCII:
+                                centrepointFileExtension = ".txt";
+                                break;
+                            case DFNFileType.FAB:
+                                centrepointFileExtension = "";
+                                break;
+                            default:
+                                centrepointFileExtension = "";
+                                break;
+                        }
+
                         // Create output file for macrofracture centrepoints
-                        string fileName = "MFCentrepoints_" + outputLabel + ".txt";
+                        string fileName = "MFCentrepoints_" + outputLabel + centrepointFileExtension;
                         String namecomb = DFNControl.FolderPath + fileName;
                         StreamWriter CP_outputFile = new StreamWriter(namecomb);
 

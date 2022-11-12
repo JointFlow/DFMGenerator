@@ -2842,6 +2842,10 @@ namespace DFNGenerator_Ocean
                                                 int noSegments = MF.SegmentCornerPoints[dir].Count;
                                                 for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
                                                 {
+                                                    // Check if it is a zero length segment; if so, move on to the next segment
+                                                    if (MF.ZeroLengthSegments[dir][segmentNo])
+                                                        continue;
+
                                                     // Get a reference to the cornerpoint list for the segment
                                                     List<PointXYZ> segment = MF.SegmentCornerPoints[dir][segmentNo];
 
@@ -3052,6 +3056,10 @@ namespace DFNGenerator_Ocean
                                                 int noSegments = MF.SegmentCornerPoints[dir].Count;
                                                 for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
                                                 {
+                                                    // Check if it is a zero length segment; if so, move on to the next segment
+                                                    if (MF.ZeroLengthSegments[dir][segmentNo])
+                                                        continue;
+
                                                     // Get the aperture of the fracture segment
                                                     double MF_Aperture = MF.SegmentMeanAperture[dir][segmentNo];
 
