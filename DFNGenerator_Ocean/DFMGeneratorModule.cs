@@ -19,13 +19,13 @@ namespace DFMGenerator_Ocean
     /// This class will control the lifecycle of the Module.
     /// The order of the methods are the same as the calling order.
     /// </summary>
-    public class DFNModule2 : IModule
+    public class DFMGeneratorModule : IModule
     {
         private Process m_DFMGeneratorInstance;
 #if MANAGED_PERSISTENCE
         private DFMGeneratorDataSourceFactory m_DFMGeneratorDataSourceFactory;
 #endif
-        public DFNModule2()
+        public DFMGeneratorModule()
         {
             //
             // TODO: Add constructor logic here
@@ -58,11 +58,11 @@ namespace DFMGenerator_Ocean
             CoreLogger.Info("Registering DFM Generator");
 
             // Register DFMGenerator_Ocean.DFMGenerator as a workstep and a process (using WorkstepProcessWrapper)
-            DFMGenerator_Ocean.DFMGenerator DFMGeneratorInstance = new DFMGenerator_Ocean.DFMGenerator();
-            PetrelSystem.WorkflowEditor.AddUIFactory<DFMGenerator_Ocean.DFMGenerator.Arguments>(new DFMGenerator_Ocean.DFMGenerator.UIFactory());
+            DFMGenerator_Ocean.DFMGeneratorWorkstep DFMGeneratorInstance = new DFMGenerator_Ocean.DFMGeneratorWorkstep();
+            PetrelSystem.WorkflowEditor.AddUIFactory<DFMGenerator_Ocean.DFMGeneratorWorkstep.Arguments>(new DFMGenerator_Ocean.DFMGeneratorWorkstep.UIFactory());
             PetrelSystem.WorkflowEditor.Add(DFMGeneratorInstance);
             m_DFMGeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(DFMGeneratorInstance);
-            PetrelSystem.ProcessDiagram.Add(m_DFMGeneratorInstance, "Dynamic fracture modelling");
+            PetrelSystem.ProcessDiagram.Add(m_DFMGeneratorInstance, "Fracture network modeling");
 
             // Register LaunchDFMGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
@@ -108,7 +108,7 @@ namespace DFMGenerator_Ocean
         public void Disintegrate()
         {
             // Unregister DFMGenerator_Ocean.DFMGenerator
-            PetrelSystem.WorkflowEditor.RemoveUIFactory<DFMGenerator_Ocean.DFMGenerator.Arguments>();
+            PetrelSystem.WorkflowEditor.RemoveUIFactory<DFMGenerator_Ocean.DFMGeneratorWorkstep.Arguments>();
             PetrelSystem.ProcessDiagram.Remove(m_DFMGeneratorInstance);
 
             // Remove the help content - not necessary
@@ -129,12 +129,12 @@ namespace DFMGenerator_Ocean
 
         public void Dispose()
         {
-            // TODO:  Add DFNModule2.Dispose implementation
+            // TODO:  Add DFMGeneratorModule.Dispose implementation
         }
 
-#endregion
+        #endregion
 
-#region Event Handlers and auxiliary functions
+        #region Event Handlers and auxiliary functions
 
         /// <summary>
         /// Event handler for the WorkspaceEvents.Opened event that is called whenever a new project is opened

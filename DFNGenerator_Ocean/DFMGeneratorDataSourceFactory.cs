@@ -16,7 +16,7 @@ namespace DFMGenerator_Ocean
         public static string DataSourceId = "DFMGenerator_Ocean.DFMGeneratorDataSourceFactory";
         public override Slb.Ocean.Core.IDataSource GetDataSource()
         {
-            StructuredArchiveDataSource dataSource = new StructuredArchiveDataSource(DataSourceId, new[] { typeof(DFMGenerator.Arguments) });
+            StructuredArchiveDataSource dataSource = new StructuredArchiveDataSource(DataSourceId, new[] { typeof(DFMGeneratorWorkstep.Arguments) });
             return dataSource;
         }
         // Helper method

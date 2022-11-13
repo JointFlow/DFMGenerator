@@ -32,7 +32,7 @@ namespace DFMGenerator_Ocean
     /// This class contains all the methods and subclasses of the DFMGenerator.
     /// Worksteps are displayed in the workflow editor.
     /// </summary>
-    class DFMGenerator : Workstep<DFMGenerator.Arguments>, IExecutorSource, IAppearance, IDescriptionSource
+    class DFMGeneratorWorkstep : Workstep<DFMGeneratorWorkstep.Arguments>, IExecutorSource, IAppearance, IDescriptionSource
     {
         #region Overridden Workstep methods
 
@@ -41,7 +41,7 @@ namespace DFMGenerator_Ocean
         /// </summary>
         /// <returns>New Argument instance.</returns>
 
-        protected override DFMGenerator.Arguments CreateArgumentPackageCore(IDataSourceManager dataSourceManager)
+        protected override DFMGeneratorWorkstep.Arguments CreateArgumentPackageCore(IDataSourceManager dataSourceManager)
         {
             return new Arguments(dataSourceManager);
         }
@@ -130,7 +130,7 @@ namespace DFMGenerator_Ocean
                     // Main properties
                     // Model name
                     string ModelName = arguments.Argument_ModelName;
-                    if (ModelName.Length == 0) ModelName = "New DFN";
+                    if (ModelName.Length == 0) ModelName = "New DFM";
                     // Grid size
                     // NB the number of pillars is one more than the number of cells in any direction, and the cells are zero indexed, so we must subtract 2 to get the index number of the last cell in the grid
                     int maxI = PetrelGrid.NumPillarsIJ.I - 2;
@@ -448,7 +448,7 @@ namespace DFMGenerator_Ocean
 #endif
                     bool WriteToProjectFolder = arguments.Argument_WriteToProjectFolder;
                     DFNFileType OutputDFNFileType = (DFNFileType)arguments.Argument_DFNFileType;
-                    // Output DFN at intermediate stages of fracture growth
+                    // Output DFM at intermediate stages of fracture growth
                     int NoIntermediateOutputs = 0;
                     if (arguments.Argument_NoIntermediateOutputs > 0)
                         NoIntermediateOutputs = arguments.Argument_NoIntermediateOutputs;
@@ -836,7 +836,7 @@ namespace DFMGenerator_Ocean
                             if (homePath != null)
                             {
                                 string fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
-                                folderPath = Path.Combine(fullHomePath, "DFNFolder");
+                                folderPath = Path.Combine(fullHomePath, "DFMFolder");
                                 folderPath = folderPath + Path.DirectorySeparatorChar;
                                 // If the output folder does not exist, create it
                                 if (!Directory.Exists(folderPath))
@@ -2340,8 +2340,8 @@ namespace DFMGenerator_Ocean
 
                             // Get templates for the implicit data
                             // Where possible, use standard Petrel templates
-                            Template P30Template = DFNModule2.GetP30Template();
-                            Template P32Template = DFNModule2.GetP32Template();
+                            Template P30Template = DFMGeneratorModule.GetP30Template();
+                            Template P32Template = DFMGeneratorModule.GetP32Template();
                             Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
                             Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                             Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
@@ -3307,6 +3307,10 @@ namespace DFMGenerator_Ocean
                                                 int noSegments = MF.SegmentCornerPoints[dir].Count;
                                                 for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
                                                 {
+                                                    // Check if it is a zero length segment; if so, move on to the next segment
+                                                    if (MF.ZeroLengthSegments[dir][segmentNo])
+                                                        continue;
+
                                                     // Get a reference to the cornerpoint list for the segment
                                                     List<PointXYZ> segment = MF.SegmentCornerPoints[dir][segmentNo];
 
@@ -3517,6 +3521,10 @@ namespace DFMGenerator_Ocean
                                                 int noSegments = MF.SegmentCornerPoints[dir].Count;
                                                 for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
                                                 {
+                                                    // Check if it is a zero length segment; if so, move on to the next segment
+                                                    if (MF.ZeroLengthSegments[dir][segmentNo])
+                                                        continue;
+
                                                     // Get the aperture of the fracture segment
                                                     double MF_Aperture = MF.SegmentMeanAperture[dir][segmentNo];
 
@@ -3772,7 +3780,7 @@ namespace DFMGenerator_Ocean
 
             // Main settings
             [Archived(IsOptional = true)]
-            private string argument_ModelName = "New DFN";
+            private string argument_ModelName = "New DFM";
             [Archived(IsOptional = true)]
             private Droid argument_Grid;
             [Archived(IsOptional = true)]
@@ -3982,7 +3990,7 @@ namespace DFMGenerator_Ocean
             private int argument_NoMicrofractureCornerpoints = 8;
 #else
             // Main settings
-            private string argument_ModelName = "New DFN";
+            private string argument_ModelName = "New DFM";
             private Droid argument_Grid;
             private int argument_StartColI = 1;
             private int argument_StartRowJ = 1;
@@ -4124,7 +4132,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_ModelName = value; }
             }
 
-            [Description("Grid to use for DFN model", "Grid to use for DFN model")]
+            [Description("Grid to use for fracture model", "Grid to use for fracture model")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Grid Argument_Grid
             {
                 internal get { return DataManager.Resolve(this.argument_Grid) as Grid; }
@@ -5255,7 +5263,7 @@ namespace DFMGenerator_Ocean
             public void ResetDefaults()
             {
                 // Main settings
-                argument_ModelName = "New DFN";
+                argument_ModelName = "New DFM";
                 argument_Grid = null;
                 argument_StartColI = 1;
                 argument_StartRowJ = 1;
@@ -5513,7 +5521,7 @@ namespace DFMGenerator_Ocean
             /// <returns>a Windows.Forms.Control to edit the argument package with</returns>
             protected override System.Windows.Forms.Control CreateDialogUICore(Workstep workstep, object argumentPackage, WorkflowContext context)
             {
-                return new DFMGeneratorUI((DFMGenerator)workstep, (Arguments)argumentPackage, context);
+                return new DFMGeneratorUI((DFMGeneratorWorkstep)workstep, (Arguments)argumentPackage, context);
             }
         }
     }

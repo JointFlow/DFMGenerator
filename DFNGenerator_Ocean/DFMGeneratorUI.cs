@@ -18,11 +18,11 @@ namespace DFMGenerator_Ocean
     /// </summary>
     partial class DFMGeneratorUI : UserControl
     {
-        private DFMGenerator workstep;
+        private DFMGeneratorWorkstep workstep;
         /// <summary>
         /// The argument package instance being edited by the UI.
         /// </summary>
-        private DFMGenerator.Arguments args;
+        private DFMGeneratorWorkstep.Arguments args;
         /// <summary>
         /// Contains the actual underlaying context.
         /// </summary>
@@ -34,7 +34,7 @@ namespace DFMGenerator_Ocean
         /// <param name="workstep">the workstep instance</param>
         /// <param name="args">the arguments</param>
         /// <param name="context">the underlying context in which this UI is being used</param>
-        public DFMGeneratorUI(DFMGenerator workstep, DFMGenerator.Arguments args, WorkflowContext context)
+        public DFMGeneratorUI(DFMGeneratorWorkstep workstep, DFMGeneratorWorkstep.Arguments args, WorkflowContext context)
         {
             InitializeComponent();
 

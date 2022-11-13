@@ -80,7 +80,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\Users\MWelch\Dropbox\DFN\DFN_Git\DFMGenerator_Code\DFMGenerator_Ocean\DFMGenerator_Ocean.csproj">
+    <ProjectReference Include="..\DFNGenerator_Ocean\DFMGenerator_Ocean.csproj">
       <Project>{F339DBA5-EDC9-4602-859B-5BE45BAA50D2}</Project>
       <Name>DFMGenerator_Ocean</Name>
     </ProjectReference>

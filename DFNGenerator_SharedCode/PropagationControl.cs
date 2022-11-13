@@ -437,14 +437,19 @@ namespace DFMGenerator_SharedCode
 
         // Default values for fracture permeability, compressibility and aperture
         // Use these values when the fracture permeability, compressibility and aperture must be written to file but are not explicitly calculated
+        // Set these to the maximum value for a float type; this is what Petrel uses when they are undefined
         /// <summary>
-        /// Default fracture permeability: 40000mD
+        /// Default fracture permeability
         /// </summary>
-        public double DefaultFracturePermeability = 40000;
+        public double DefaultFracturePermeability = (double)float.MaxValue;
         /// <summary>
-        /// Default fracture compressibility: 3e+038Pa-1
+        /// Default fracture compressibility
         /// </summary>
-        public double DefaultFractureCompressibility = 3e+038;
+        public double DefaultFractureCompressibility = (double)float.MaxValue;
+        /// <summary>
+        /// Default fracture aperture
+        /// </summary>
+        public double DefaultFractureAperture = (double)float.MaxValue;
 
         // Reset and data input functions
         /// <summary>

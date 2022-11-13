@@ -163,7 +163,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)");
                 input_file.WriteLine("%      - FAB (FAB files can be loaded directly into Petrel)");
                 input_file.WriteLine("OutputDFNFileType ASCII");
-                input_file.WriteLine("% Output DFN at intermediate stages of fracture growth");
+                input_file.WriteLine("% Output DFM at intermediate stages of fracture growth");
                 input_file.WriteLine("NoIntermediateOutputs 0");
                 input_file.WriteLine("% Flag to control interval between output of intermediate stage DFNs:");
                 input_file.WriteLine("%      - EqualArea (output at at approximately regular intervals of total fracture area)");
@@ -392,7 +392,7 @@ namespace DFMGenerator_Standalone
                     if (homePath != null)
                     {
                         fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
-                        folderPath = Path.Combine(fullHomePath, "DFNFolder");
+                        folderPath = Path.Combine(fullHomePath, "DFMFolder");
                         folderPath = folderPath + @"\";
                         // If the output folder does not exist, create it
                         if (!Directory.Exists(folderPath))
@@ -573,7 +573,7 @@ namespace DFMGenerator_Standalone
             bool WriteDFNFiles = true;
             // Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)
             DFNFileType OutputDFNFileType = DFNFileType.ASCII;
-            // Output DFN at intermediate stages of fracture growth
+            // Output DFM at intermediate stages of fracture growth
             int NoIntermediateOutputs = 0;
             // Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
             IntermediateOutputInterval IntermediateOutputIntervalControl = IntermediateOutputInterval.EqualArea;
@@ -1039,7 +1039,7 @@ namespace DFMGenerator_Standalone
                                     OutputDFNFileType = DFNFileType.FAB;
                             }
                             break;
-                        // Output DFN at intermediate stages of fracture growth
+                        // Output DFM at intermediate stages of fracture growth
                         case "NoIntermediateOutputs":
                         case "noIntermediateOutputs": // For backwards compatibility
                             NoIntermediateOutputs = Convert.ToInt32(line_split[1]);
