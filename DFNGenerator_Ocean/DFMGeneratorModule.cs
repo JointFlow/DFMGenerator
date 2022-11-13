@@ -62,7 +62,7 @@ namespace DFMGenerator_Ocean
             PetrelSystem.WorkflowEditor.AddUIFactory<DFMGenerator_Ocean.DFMGeneratorWorkstep.Arguments>(new DFMGenerator_Ocean.DFMGeneratorWorkstep.UIFactory());
             PetrelSystem.WorkflowEditor.Add(DFMGeneratorInstance);
             m_DFMGeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(DFMGeneratorInstance);
-            PetrelSystem.ProcessDiagram.Add(m_DFMGeneratorInstance, "Dynamic fracture modelling");
+            PetrelSystem.ProcessDiagram.Add(m_DFMGeneratorInstance, "Fracture network modeling");
 
             // Register LaunchDFMGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
@@ -129,12 +129,12 @@ namespace DFMGenerator_Ocean
 
         public void Dispose()
         {
-            // TODO:  Add DFNModule2.Dispose implementation
+            // TODO:  Add DFMGeneratorModule.Dispose implementation
         }
 
-#endregion
+        #endregion
 
-#region Event Handlers and auxiliary functions
+        #region Event Handlers and auxiliary functions
 
         /// <summary>
         /// Event handler for the WorkspaceEvents.Opened event that is called whenever a new project is opened

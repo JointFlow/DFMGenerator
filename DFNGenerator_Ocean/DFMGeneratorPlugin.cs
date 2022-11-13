@@ -5,7 +5,7 @@ using Slb.Ocean.Core;
 
 namespace DFMGenerator_Ocean
 {
-    public class DFNPlugin : Slb.Ocean.Core.Plugin
+    public class DFMGeneratorPlugin : Slb.Ocean.Core.Plugin
     {
         public override string AppVersion
         {

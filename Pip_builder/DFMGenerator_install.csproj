@@ -59,7 +59,7 @@
 mkdir "$(TargetDir)"
 rmdir "$(ProjectDir)\obj\copytemp" /s /q
 "$(ProjectDir)\DeployCopier.exe" "$(ProjectDir)DeployList.xml" "$(ProjectDir)\obj\copytemp" /config:$(ConfigurationName) /platform:"$(PlatformName)"</PreBuildEvent>
-    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf"</PostBuildEvent>
+    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFMGenerator_Ocean.dll" "$(TargetDir)DFN_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf"</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
@@ -72,9 +72,6 @@ rmdir "$(ProjectDir)\obj\copytemp" /s /q
     <Reference Include="nunit.framework, Version=3.13.3.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
       <HintPath>..\packages\NUnit.3.13.3\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
