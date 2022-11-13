@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     /// <summary>
     /// Enumerator for fracture mode: Mode1 = dilatant, Mode2 = dip-slip shear, Mode3 = strike-slip shear

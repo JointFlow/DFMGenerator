@@ -10,31 +10,31 @@ using Slb.Ocean.Petrel.DomainObject.PillarGrid;
 using Slb.Ocean.Petrel.UI.Controls;
 using Slb.Ocean.Petrel.DomainObject;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     /// <summary>
     /// This class is the user interface which forms the focus for the capabilities offered by the process.  
     /// This often includes UI to set up arguments and interactively run a batch part expressed as a workstep.
     /// </summary>
-    partial class DFNGeneratorUI : UserControl
+    partial class DFMGeneratorUI : UserControl
     {
-        private DFNGenerator workstep;
+        private DFMGenerator workstep;
         /// <summary>
         /// The argument package instance being edited by the UI.
         /// </summary>
-        private DFNGenerator.Arguments args;
+        private DFMGenerator.Arguments args;
         /// <summary>
         /// Contains the actual underlaying context.
         /// </summary>
         private WorkflowContext context;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DFNGeneratorUI"/> class.
+        /// Initializes a new instance of the <see cref="DFMGeneratorUI"/> class.
         /// </summary>
         /// <param name="workstep">the workstep instance</param>
         /// <param name="args">the arguments</param>
         /// <param name="context">the underlying context in which this UI is being used</param>
-        public DFNGeneratorUI(DFNGenerator workstep, DFNGenerator.Arguments args, WorkflowContext context)
+        public DFMGeneratorUI(DFMGenerator workstep, DFMGenerator.Arguments args, WorkflowContext context)
         {
             InitializeComponent();
 

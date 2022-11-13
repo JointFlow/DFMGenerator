@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Configuration Type="Configuration.ConfigurationState" Version="1.0.0.12" Caption="DFNGeneratorConfig">
+<Configuration Type="Configuration.ConfigurationState" Version="1.0.0.12" Caption="DFMGeneratorConfig">
   <Extensions Type="Extensibility.ExtensionCollection">
     <Workspaces.WorkspaceExtension EntityId="65641e60-2cf7-46db-9c41-f2a4c059d9ff" />
     <Relationships.RelationshipsExtension>
@@ -51,7 +51,7 @@
         </Relationships.RelationshipsExtension>
       </Extensions>
       <Commands Type="Commands.CommandCollection">
-        <CommandInfo Id="DFNGenerator_Ocean.LaunchDFNGenerator" Type="Commands.SimpleCommand">
+        <CommandInfo Id="DFMGenerator_Ocean.LaunchDFMGenerator" Type="Commands.SimpleCommand">
           <Extensions Type="Extensibility.ExtensionCollection">
             <Workspaces.WorkspaceExtension EntityId="d4c98be9-9e75-457d-85e3-a3f13420497b" />
             <Relationships.RelationshipsExtension>
@@ -197,7 +197,7 @@
                     </Attributes.AttributesExtension>
                   </Extensions>
                   <Tools Type="Tools.ToolCollection">
-                    <Tools.StateButtonTool CommandId="Core.Services.ShowHideProcessDialog" Parameter="JointFlow.DFNGenerator_Code.DFNGenerator_Ocean.DFNGenerator">
+                    <Tools.StateButtonTool CommandId="Core.Services.ShowHideProcessDialog" Parameter="JointFlow.DFMGenerator_Code.DFMGenerator_Ocean.DFMGenerator">
                       <Extensions Type="Extensibility.ExtensionCollection">
                         <Attributes.AttributesExtension>
                           <Attributes Type="Attributes.AttributeCollection">

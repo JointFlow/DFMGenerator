@@ -12,9 +12,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using DFNGenerator_SharedCode;
+using DFMGenerator_SharedCode;
 
-namespace DFNGenerator_Standalone
+namespace DFMGenerator_Standalone
 {
     // Enumerators used throughout code
 
@@ -28,7 +28,7 @@ namespace DFNGenerator_Standalone
             if (args.Length > 0)
                 inputfile_name = args[0];
             else
-                inputfile_name = "DFNGenerator_configuration.txt";
+                inputfile_name = "DFMGenerator_configuration.txt";
             if (!File.Exists(inputfile_name))
             {
                 StreamWriter input_file = new StreamWriter(inputfile_name);
@@ -160,7 +160,7 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("WriteImplicitDataFiles true");
                 input_file.WriteLine("WriteDFNFiles true");
                 input_file.WriteLine("% Output file type for explicit DFN data:");
-                input_file.WriteLine("%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFN Generator)");
+                input_file.WriteLine("%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)");
                 input_file.WriteLine("%      - FAB (FAB files can be loaded directly into Petrel)");
                 input_file.WriteLine("OutputDFNFileType ASCII");
                 input_file.WriteLine("% Output DFN at intermediate stages of fracture growth");
@@ -365,7 +365,7 @@ namespace DFNGenerator_Standalone
 
                 input_file.Close();
 
-                Console.WriteLine("\nDFNGenerator configuration file did not exist. An empty file has been created. Please enter the required values, SAVE it and press ENTER! ");
+                Console.WriteLine("\nDFMGenerator configuration file did not exist. An empty file has been created. Please enter the required values, SAVE it and press ENTER! ");
                 Console.ReadKey();
             }
 
@@ -712,7 +712,7 @@ namespace DFNGenerator_Standalone
 
 #if READINPUTFROMFILE
             // Read default values from input file
-            Console.WriteLine("Reading the DFNGenerator configuration file...");
+            Console.WriteLine("Reading the DFMGenerator configuration file...");
             string[] inputfile_lines = File.ReadAllLines(inputfile_name);
             // NB we will create a list of gridblock overrides and include files - they will be processed later
             List<List<string>> GBoverrides = new List<List<string>>();

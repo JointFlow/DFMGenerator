@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     /// <summary>
     /// Class representing the entire fractured layer, containing a 2D array of gridblocks
@@ -15,7 +15,7 @@ namespace DFNGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFNGenerator v2.1.1"; } }
+        public static string VersionNumber { get { return "DFMGenerator v2.1.1"; } }
 
         // Grid data
         /// <summary>

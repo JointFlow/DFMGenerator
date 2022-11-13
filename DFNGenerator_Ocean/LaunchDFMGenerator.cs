@@ -6,11 +6,11 @@ using System.Text;
 using Slb.Ocean.Petrel.Commands;
 using Slb.Ocean.Petrel;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
-    class LaunchDFNGenerator : SimpleCommandHandler
+    class LaunchDFMGenerator : SimpleCommandHandler
     {
-        public static string ID = "DFNGenerator_Ocean.LaunchDFNGenerator";
+        public static string ID = "DFMGenerator_Ocean.LaunchDFMGenerator";
 
         #region SimpleCommandHandler Members
 

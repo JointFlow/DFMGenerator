@@ -24,15 +24,15 @@ using Slb.Ocean.Petrel.DomainObject;
 using Slb.Ocean.Petrel.DomainObject.Shapes;
 using Slb.Ocean.Units;
 
-using DFNGenerator_SharedCode;
+using DFMGenerator_SharedCode;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     /// <summary>
-    /// This class contains all the methods and subclasses of the DFNGenerator.
+    /// This class contains all the methods and subclasses of the DFMGenerator.
     /// Worksteps are displayed in the workflow editor.
     /// </summary>
-    class DFNGenerator : Workstep<DFNGenerator.Arguments>, IExecutorSource, IAppearance, IDescriptionSource
+    class DFMGenerator : Workstep<DFMGenerator.Arguments>, IExecutorSource, IAppearance, IDescriptionSource
     {
         #region Overridden Workstep methods
 
@@ -41,7 +41,7 @@ namespace DFNGenerator_Ocean
         /// </summary>
         /// <returns>New Argument instance.</returns>
 
-        protected override DFNGenerator.Arguments CreateArgumentPackageCore(IDataSourceManager dataSourceManager)
+        protected override DFMGenerator.Arguments CreateArgumentPackageCore(IDataSourceManager dataSourceManager)
         {
             return new Arguments(dataSourceManager);
         }
@@ -64,7 +64,7 @@ namespace DFNGenerator_Ocean
             {
                 //return "32231407-0f99-4178-a00b-8de946429384";
                 // Change workstep UniqueID to a namespace-based ID
-                return "JointFlow.DFNGenerator_Code.DFNGenerator_Ocean.DFNGenerator";
+                return "JointFlow.DFMGenerator_Code.DFMGenerator_Ocean.DFMGenerator";
             }
         }
         #endregion
@@ -3735,7 +3735,7 @@ namespace DFNGenerator_Ocean
 
         #region Arguments
         /// <summary>
-        /// ArgumentPackage class for DFNGenerator.
+        /// ArgumentPackage class for DFMGenerator.
         /// Each public property is an argument in the package.  The name, type and
         /// input/output role are taken from the property and modified by any
         /// attributes applied.
@@ -3756,7 +3756,7 @@ namespace DFNGenerator_Ocean
             {
 #if MANAGED_PERSISTENCE
                 // Create argument package in correct project; for RPT scenarios
-                dataSource = DFNGeneratorDataSourceFactory.Get(dataSourceManager);
+                dataSource = DFMGeneratorDataSourceFactory.Get(dataSourceManager);
                 if (dataSource != null)
                 {
                     arguments_Droid = dataSource.GenerateDroid();
@@ -5418,7 +5418,7 @@ namespace DFNGenerator_Ocean
         public string Text
         {
             //get { return Description.Name; }
-            get { return "DFN Generator"; }
+            get { return "DFM Generator"; }
             private set
             {
                 // TODO: implement set
@@ -5436,7 +5436,7 @@ namespace DFNGenerator_Ocean
         public System.Drawing.Bitmap Image
         {
             //get { return PetrelImages.Modules; }
-            get { return DFNGenerator_Ocean.Properties.Resources.Logo1_48; } 
+            get { return DFMGenerator_Ocean.Properties.Resources.Logo1_48; } 
             private set
             {
                 // TODO: implement set
@@ -5448,27 +5448,27 @@ namespace DFNGenerator_Ocean
 #region IDescriptionSource Members
 
         /// <summary>
-        /// Gets the description of the DFNGenerator
+        /// Gets the description of the DFMGenerator
         /// </summary>
         public IDescription Description
         {
-            get { return DFNGeneratorDescription.Instance; }
+            get { return DFMGeneratorDescription.Instance; }
         }
 
         /// <summary>
-        /// This singleton class contains the description of the DFNGenerator.
+        /// This singleton class contains the description of the DFMGenerator.
         /// Contains Name, Shorter description and detailed description.
         /// </summary>
-        public class DFNGeneratorDescription : IDescription
+        public class DFMGeneratorDescription : IDescription
         {
             /// <summary>
             /// Contains the singleton instance.
             /// </summary>
-            private static DFNGeneratorDescription instance = new DFNGeneratorDescription();
+            private static DFMGeneratorDescription instance = new DFMGeneratorDescription();
             /// <summary>
             /// Gets the singleton instance of this Description class
             /// </summary>
-            public static DFNGeneratorDescription Instance
+            public static DFMGeneratorDescription Instance
             {
                 get { return instance; }
             }
@@ -5476,25 +5476,25 @@ namespace DFNGenerator_Ocean
 #region IDescription Members
 
             /// <summary>
-            /// Gets the name of DFNGenerator
+            /// Gets the name of DFMGenerator
             /// </summary>
             public string Name
             {
-                get { return "DFNGenerator"; }
+                get { return "DFMGenerator"; }
             }
             /// <summary>
-            /// Gets the short description of DFNGenerator
+            /// Gets the short description of DFMGenerator
             /// </summary>
             public string ShortDescription
             {
-                get { return "Petrel UI for DFN Generator module"; }
+                get { return "Petrel UI for DFM Generator module"; }
             }
             /// <summary>
-            /// Gets the detailed description of DFNGenerator
+            /// Gets the detailed description of DFMGenerator
             /// </summary>
             public string Description
             {
-                get { return "Petrel UI for DFN Generator module"; }
+                get { return "Petrel UI for DFM Generator module"; }
             }
 
 #endregion
@@ -5513,7 +5513,7 @@ namespace DFNGenerator_Ocean
             /// <returns>a Windows.Forms.Control to edit the argument package with</returns>
             protected override System.Windows.Forms.Control CreateDialogUICore(Workstep workstep, object argumentPackage, WorkflowContext context)
             {
-                return new DFNGeneratorUI((DFNGenerator)workstep, (Arguments)argumentPackage, context);
+                return new DFMGeneratorUI((DFMGenerator)workstep, (Arguments)argumentPackage, context);
             }
         }
     }

@@ -9,7 +9,7 @@
     <Import_RootNamespace>DFNGenerator_SharedCode</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)DFN.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DFNComponents.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FCD_List.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureDipSet.cs" />

@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <OceanDeployList>
   <CopyList>
-    <Project source="..\DFNGenerator_Ocean\DFNGenerator_Ocean.csproj" required="True" />
+    <Project source="..\DFMGenerator_Ocean\DFMGenerator_Ocean.csproj" required="True" />
   </CopyList>
 </OceanDeployList>

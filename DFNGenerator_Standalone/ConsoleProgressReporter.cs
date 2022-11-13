@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using DFNGenerator_SharedCode;
+using DFMGenerator_SharedCode;
 
-namespace DFNGenerator_Standalone
+namespace DFMGenerator_Standalone
 {
     /// <summary>
     /// Object to be used by the calculation algorithms to update progress, implementing the IProgressReporterWrapper interface; will write progress updates to Console

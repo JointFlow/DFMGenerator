@@ -9,9 +9,9 @@ using Slb.Ocean.Core;
 using Slb.Ocean.Petrel;
 using Slb.Ocean.Petrel.UI;
 
-using DFNGenerator_SharedCode;
+using DFMGenerator_SharedCode;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     class PetrelProgressReporter : IProgressReporterWrapper
     {

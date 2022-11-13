@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     /// <summary>
     /// Contains data representing the stress and strain state of a single gridblock, including tensors for the in situ stress, elastic and inelastic strain

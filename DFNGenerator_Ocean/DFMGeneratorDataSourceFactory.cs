@@ -9,14 +9,14 @@ using Slb.Ocean.Petrel.Data;
 using Slb.Ocean.Petrel.Data.Persistence;
 
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
-    class DFNGeneratorDataSourceFactory : DataSourceFactory
+    class DFMGeneratorDataSourceFactory : DataSourceFactory
     {
-        public static string DataSourceId = "DFNGenerator_Ocean.DFNGeneratorDataSourceFactory";
+        public static string DataSourceId = "DFMGenerator_Ocean.DFMGeneratorDataSourceFactory";
         public override Slb.Ocean.Core.IDataSource GetDataSource()
         {
-            StructuredArchiveDataSource dataSource = new StructuredArchiveDataSource(DataSourceId, new[] { typeof(DFNGenerator.Arguments) });
+            StructuredArchiveDataSource dataSource = new StructuredArchiveDataSource(DataSourceId, new[] { typeof(DFMGenerator.Arguments) });
             return dataSource;
         }
         // Helper method

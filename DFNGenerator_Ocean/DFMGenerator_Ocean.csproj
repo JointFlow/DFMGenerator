@@ -114,24 +114,19 @@
     <Reference Include="System.Deployment" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DFNGeneratorDataSourceFactory.cs" />
-    <Compile Include="LaunchDFNGenerator.cs" />
-    <Compile Include="DFNGenerator.cs" />
-    <Compile Include="DFNGeneratorUI.cs">
+    <Compile Include="DFMGeneratorDataSourceFactory.cs" />
+    <Compile Include="LaunchDFMGenerator.cs" />
+    <Compile Include="DFMGeneratorWorkstep.cs" />
+    <Compile Include="DFMGeneratorUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="DFNGeneratorUI.designer.cs">
-      <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
+    <Compile Include="DFMGeneratorUI.designer.cs">
+      <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </Compile>
     <Compile Include="PetrelProgressReporter.cs" />
-    <Compile Include="DFNModule2.cs" />
-    <Compile Include="DFNPlugin.cs" />
+    <Compile Include="DFMGeneratorModule.cs" />
+    <Compile Include="DFMGeneratorPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
@@ -151,19 +146,17 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="DFNGeneratorUI.resx">
-      <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
+    <EmbeddedResource Include="DFMGeneratorUI.resx">
+      <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="OceanResources\DFNGeneratorConfig.xml" />
+    <EmbeddedResource Include="OceanResources\DFMGeneratorConfig.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="Resources\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm" />
   </ItemGroup>
   <ItemGroup>
