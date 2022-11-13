@@ -12,9 +12,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using DFNGenerator_SharedCode;
+using DFMGenerator_SharedCode;
 
-namespace DFNGenerator_Standalone
+namespace DFMGenerator_Standalone
 {
     // Enumerators used throughout code
 
@@ -28,7 +28,7 @@ namespace DFNGenerator_Standalone
             if (args.Length > 0)
                 inputfile_name = args[0];
             else
-                inputfile_name = "DFNGenerator_configuration.txt";
+                inputfile_name = "DFMGenerator_configuration.txt";
             if (!File.Exists(inputfile_name))
             {
                 StreamWriter input_file = new StreamWriter(inputfile_name);
@@ -132,9 +132,9 @@ namespace DFNGenerator_Standalone
                 input_file.WriteLine("WriteDFNFiles true");
                 input_file.WriteLine("% Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)");
                 input_file.WriteLine("OutputDFNFileType ASCII");
-                input_file.WriteLine("% Output DFN at intermediate stages of fracture growth");
+                input_file.WriteLine("% Output DFM at intermediate stages of fracture growth");
                 input_file.WriteLine("NoIntermediateOutputs 0");
-                input_file.WriteLine("% Flag to control interval between output of intermediate stage DFNs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area");
+                input_file.WriteLine("% Flag to control interval between output of intermediate stage DFMs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area");
                 input_file.WriteLine("OutputAtEqualTimeIntervals false");
                 input_file.WriteLine("% Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints");
                 input_file.WriteLine("OutputCentrepoints false");
@@ -330,7 +330,7 @@ namespace DFNGenerator_Standalone
 
                 input_file.Close();
 
-                Console.WriteLine("\nDFNGenerator configuration file did not exist. An empty file has been created. Please enter the required values, SAVE it and press ENTER! ");
+                Console.WriteLine("\nDFMGenerator configuration file did not exist. An empty file has been created. Please enter the required values, SAVE it and press ENTER! ");
                 Console.ReadKey();
             }
 
@@ -357,7 +357,7 @@ namespace DFNGenerator_Standalone
                     if (homePath != null)
                     {
                         fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
-                        folderPath = Path.Combine(fullHomePath, "DFNFolder");
+                        folderPath = Path.Combine(fullHomePath, "DFMFolder");
                         folderPath = folderPath + @"\";
                         // If the output folder does not exist, create it
                         if (!Directory.Exists(folderPath))
@@ -478,9 +478,9 @@ namespace DFNGenerator_Standalone
             bool WriteDFNFiles = true;
             // Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)
             DFNFileType OutputDFNFileType = DFNFileType.ASCII;
-            // Output DFN at intermediate stages of fracture growth
+            // Output DFM at intermediate stages of fracture growth
             int NoIntermediateOutputs = 0;
-            // Flag to control interval between output of intermediate stage DFNs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area 
+            // Flag to control interval between output of intermediate stage DFMs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area 
             bool OutputAtEqualTimeIntervals = false;
             // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
             bool OutputCentrepoints = false;
@@ -619,7 +619,7 @@ namespace DFNGenerator_Standalone
 
 #if READINPUTFROMFILE
             // Read default values from input file
-            Console.WriteLine("Reading the DFNGenerator configuration file...");
+            Console.WriteLine("Reading the DFMGenerator configuration file...");
             string[] inputfile_lines = File.ReadAllLines(inputfile_name);
             // NB we will create a list of gridblock overrides and include files - they will be processed later
             List<List<string>> GBoverrides = new List<List<string>>();
@@ -875,12 +875,12 @@ namespace DFNGenerator_Standalone
                                     OutputDFNFileType = DFNFileType.FAB;
                             }
                             break;
-                        // Output DFN at intermediate stages of fracture growth
+                        // Output DFM at intermediate stages of fracture growth
                         case "NoIntermediateOutputs":
                         case "noIntermediateOutputs": // For backwards compatibility
                             NoIntermediateOutputs = Convert.ToInt32(line_split[1]);
                             break;
-                        // Flag to control interval between output of intermediate stage DFNs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area 
+                        // Flag to control interval between output of intermediate stage DFMs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area 
                         case "OutputAtEqualTimeIntervals":
                         case "separateIntermediateOutputsByTime": // For backwards compatibility
                             OutputAtEqualTimeIntervals = (line_split[1] == "true");

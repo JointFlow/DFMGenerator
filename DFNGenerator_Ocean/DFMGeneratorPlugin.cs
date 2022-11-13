@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using Slb.Ocean.Core;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     public class DFNPlugin : Slb.Ocean.Core.Plugin
     {
@@ -29,7 +29,7 @@ namespace DFNGenerator_Ocean
 
         public override string Description
         {
-            get { return "DFN Generator: Petrel version"; }
+            get { return "Dynamic Fracture Model Generator: Petrel version"; }
         }
 
         public override string ImageResourceName
@@ -46,13 +46,13 @@ namespace DFNGenerator_Ocean
         {
             get 
             {
-                yield return new ModuleReference(typeof(DFNGenerator_Ocean.DFNModule2));
+                yield return new ModuleReference(typeof(DFMGenerator_Ocean.DFMGeneratorModule));
             }
         }
 
         public override string Name
         {
-            get { return "DFN_Plugin"; }
+            get { return "DFM Generator"; }
         }
 
         public override PluginIdentifier PluginId

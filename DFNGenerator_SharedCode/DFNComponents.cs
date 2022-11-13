@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     /// <summary>
     /// Enumerator for different macrofracture tip types

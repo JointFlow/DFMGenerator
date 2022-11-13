@@ -15,8 +15,8 @@
     <ProjectGuid>{F339DBA5-EDC9-4602-859B-5BE45BAA50D2}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DFNGenerator_Ocean</RootNamespace>
-    <AssemblyName>DFNGenerator_Ocean</AssemblyName>
+    <RootNamespace>DFMGenerator_Ocean</RootNamespace>
+    <AssemblyName>DFMGenerator_Ocean</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -111,18 +111,18 @@
     <Reference Include="System.Deployment" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DFNGeneratorDataSourceFactory.cs" />
-    <Compile Include="LaunchDFNGenerator.cs" />
-    <Compile Include="DFNGenerator.cs" />
-    <Compile Include="DFNGeneratorUI.cs">
+    <Compile Include="DFMGeneratorDataSourceFactory.cs" />
+    <Compile Include="LaunchDFMGenerator.cs" />
+    <Compile Include="DFMGeneratorWorkstep.cs" />
+    <Compile Include="DFMGeneratorUI.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="DFNGeneratorUI.designer.cs">
-      <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
+    <Compile Include="DFMGeneratorUI.designer.cs">
+      <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </Compile>
     <Compile Include="PetrelProgressReporter.cs" />
-    <Compile Include="DFNModule2.cs" />
-    <Compile Include="DFNPlugin.cs" />
+    <Compile Include="DFMGeneratorModule.cs" />
+    <Compile Include="DFMGeneratorPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -148,8 +148,8 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="DFNGeneratorUI.resx">
-      <DependentUpon>DFNGeneratorUI.cs</DependentUpon>
+    <EmbeddedResource Include="DFMGeneratorUI.resx">
+      <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -157,14 +157,13 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="OceanResources\DFNGeneratorConfig.xml" />
+    <EmbeddedResource Include="OceanResources\DFMGeneratorConfig.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-    <None Include="Resources\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm" />
+    <None Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf" />
+    <None Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Logo1_48.png" />

@@ -59,7 +59,7 @@
 mkdir "$(TargetDir)"
 rmdir "$(ProjectDir)\obj\copytemp" /s /q
 "$(ProjectDir)\DeployCopier.exe" "$(ProjectDir)DeployList.xml" "$(ProjectDir)\obj\copytemp" /config:$(ConfigurationName) /platform:"$(PlatformName)"</PreBuildEvent>
-    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm" -helpfile "$(ProjectDir)\HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"</PostBuildEvent>
+    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFNGenerator_Ocean.dll" "$(TargetDir)DFN_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf"</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

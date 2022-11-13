@@ -4,7 +4,7 @@ using NUnit.Framework;
 using ReferenceResolver;
 using Slb.Ocean.Petrel.Testing;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     [SetUpFixture]
     public class PluginTestSetup

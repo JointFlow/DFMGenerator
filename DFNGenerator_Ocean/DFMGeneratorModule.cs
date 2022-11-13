@@ -13,19 +13,19 @@ using Slb.Ocean.Petrel.Workflow;
 using Slb.Ocean.Petrel.DomainObject;
 using Slb.Ocean.Units;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     /// <summary>
     /// This class will control the lifecycle of the Module.
     /// The order of the methods are the same as the calling order.
     /// </summary>
-    public class DFNModule2 : IModule
+    public class DFMGeneratorModule : IModule
     {
-        private Process m_dfngeneratorInstance;
+        private Process m_DFMGeneratorInstance;
 #if MANAGED_PERSISTENCE
-        private DFNGeneratorDataSourceFactory m_dfngeneratorDataSourceFactory;
+        private DFMGeneratorDataSourceFactory m_DFMGeneratorDataSourceFactory;
 #endif
-        public DFNModule2()
+        public DFMGeneratorModule()
         {
             //
             // TODO: Add constructor logic here
@@ -40,7 +40,7 @@ namespace DFNGenerator_Ocean
         /// </summary>
         public void Initialize()
         {
-            CoreLogger.Info("Initializing DFN Generator");
+            CoreLogger.Info("Initializing DFM Generator");
 
             //       this.BackColor = System.Drawing.Color.Aqua;
 
@@ -55,23 +55,23 @@ namespace DFNGenerator_Ocean
         /// </summary>
         public void Integrate()
         {
-            CoreLogger.Info("Registering DFN Generator");
+            CoreLogger.Info("Registering DFM Generator");
 
-            // Register DFNGenerator_Ocean.DFNGenerator as a workstep and a process (using WorkstepProcessWrapper)
-            DFNGenerator_Ocean.DFNGenerator dfngeneratorInstance = new DFNGenerator_Ocean.DFNGenerator();
-            PetrelSystem.WorkflowEditor.AddUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>(new DFNGenerator_Ocean.DFNGenerator.UIFactory());
-            PetrelSystem.WorkflowEditor.Add(dfngeneratorInstance);
-            m_dfngeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(dfngeneratorInstance);
-            PetrelSystem.ProcessDiagram.Add(m_dfngeneratorInstance, "Dynamic fracture modelling");
+            // Register DFMGenerator_Ocean.DFMGenerator as a workstep and a process (using WorkstepProcessWrapper)
+            DFMGenerator_Ocean.DFMGeneratorWorkstep DFMGeneratorInstance = new DFMGenerator_Ocean.DFMGeneratorWorkstep();
+            PetrelSystem.WorkflowEditor.AddUIFactory<DFMGenerator_Ocean.DFMGeneratorWorkstep.Arguments>(new DFMGenerator_Ocean.DFMGeneratorWorkstep.UIFactory());
+            PetrelSystem.WorkflowEditor.Add(DFMGeneratorInstance);
+            m_DFMGeneratorInstance = new Slb.Ocean.Petrel.Workflow.WorkstepProcessWrapper(DFMGeneratorInstance);
+            PetrelSystem.ProcessDiagram.Add(m_DFMGeneratorInstance, "Dynamic fracture modelling");
 
-            // Register LaunchDFNGenerator Command Handler
+            // Register LaunchDFMGenerator Command Handler
             // This is currently not used as the process is launched via the Core.Services.ShowHideProcessDialog command
-            PetrelSystem.CommandManager.CreateCommand(DFNGenerator_Ocean.LaunchDFNGenerator.ID, new DFNGenerator_Ocean.LaunchDFNGenerator());
+            PetrelSystem.CommandManager.CreateCommand(DFMGenerator_Ocean.LaunchDFMGenerator.ID, new DFMGenerator_Ocean.LaunchDFMGenerator());
 
 #if MANAGED_PERSISTENCE
-            // Register the custom DFNGeneratorDataSourceFactory
-            m_dfngeneratorDataSourceFactory = new DFNGeneratorDataSourceFactory();
-            PetrelSystem.AddDataSourceFactory(m_dfngeneratorDataSourceFactory);
+            // Register the custom DFMGeneratorDataSourceFactory
+            m_DFMGeneratorDataSourceFactory = new DFMGeneratorDataSourceFactory();
+            PetrelSystem.AddDataSourceFactory(m_DFMGeneratorDataSourceFactory);
 #endif
         }
 
@@ -83,19 +83,19 @@ namespace DFNGenerator_Ocean
         public void IntegratePresentation()
         {
             // Add Ribbon Configuration file
-            PetrelSystem.ConfigurationService.AddConfiguration(DFNGenerator_Ocean.Properties.Resources.DFNGeneratorConfig);
+            PetrelSystem.ConfigurationService.AddConfiguration(DFMGenerator_Ocean.Properties.Resources.DFMGeneratorConfig);
 
             // Add help content via PetrelSystem.HelpService
             string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             HelpService helpService = PetrelSystem.HelpService;
-            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"))
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm"))
             {
-                Text = "DFN Generator Help",
+                Text = "DFM Generator Help",
             };
             helpService.Add(helpContentMain);
-            PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.pdf"))
+            PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf"))
             {
-                Text = "DFN Generator Help, pdf format",
+                Text = "DFM Generator Help, pdf format",
             };
             helpService.Add(helpContentPDF);
         }
@@ -107,19 +107,19 @@ namespace DFNGenerator_Ocean
         /// </summary>
         public void Disintegrate()
         {
-            // Unregister DFNGenerator_Ocean.DFNGenerator
-            PetrelSystem.WorkflowEditor.RemoveUIFactory<DFNGenerator_Ocean.DFNGenerator.Arguments>();
-            PetrelSystem.ProcessDiagram.Remove(m_dfngeneratorInstance);
+            // Unregister DFMGenerator_Ocean.DFMGenerator
+            PetrelSystem.WorkflowEditor.RemoveUIFactory<DFMGenerator_Ocean.DFMGeneratorWorkstep.Arguments>();
+            PetrelSystem.ProcessDiagram.Remove(m_DFMGeneratorInstance);
 
             // Remove the help content - not necessary
             /*string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             HelpService helpService = PetrelSystem.HelpService;
-            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFN_Generator_Petrel_UserGuide_v2.htm"));
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm"));
             helpService.Remove(helpContentMain);*/
 
 #if MANAGED_PERSISTENCE
-            // Unregister the custom DFNGeneratorDataSourceFactory
-            PetrelSystem.RemoveDataSourceFactory(m_dfngeneratorDataSourceFactory);
+            // Unregister the custom DFMGeneratorDataSourceFactory
+            PetrelSystem.RemoveDataSourceFactory(m_DFMGeneratorDataSourceFactory);
 #endif
         }
 
