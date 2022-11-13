@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     /// <summary>
     /// Enumerator for fracture intersection angle: Orthogonal_IPlus for +90deg, Orthogonal_IMinus for -90deg, Parallel for 0deg, Oblique for anything else

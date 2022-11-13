@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DFNGenerator_Ocean.Properties {
+namespace DFMGenerator_Ocean.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DFNGenerator_Ocean.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DFNGenerator_Ocean.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DFMGenerator_Ocean.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -62,7 +62,7 @@ namespace DFNGenerator_Ocean.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-        ///&lt;Configuration Type=&quot;Configuration.ConfigurationState&quot; Version=&quot;1.0.0.12&quot; Caption=&quot;DFNGeneratorConfig&quot;&gt;
+        ///&lt;Configuration Type=&quot;Configuration.ConfigurationState&quot; Version=&quot;1.0.0.12&quot; Caption=&quot;DFMGeneratorConfig&quot;&gt;
         ///  &lt;Extensions Type=&quot;Extensibility.ExtensionCollection&quot;&gt;
         ///    &lt;Workspaces.WorkspaceExtension EntityId=&quot;65641e60-2cf7-46db-9c41-f2a4c059d9ff&quot; /&gt;
         ///    &lt;Relationships.RelationshipsExtension&gt;
@@ -70,9 +70,9 @@ namespace DFNGenerator_Ocean.Properties {
         ///        &lt;Relationships.Association RelationshipId=&quot;Configuration-Section&quot; Role=&quot;Configuration&quot;&gt;
         ///          &lt;AssociatedEnds  [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string DFNGeneratorConfig {
+        internal static string DFMGeneratorConfig {
             get {
-                return ResourceManager.GetString("DFNGeneratorConfig", resourceCulture);
+                return ResourceManager.GetString("DFMGeneratorConfig", resourceCulture);
             }
         }
         

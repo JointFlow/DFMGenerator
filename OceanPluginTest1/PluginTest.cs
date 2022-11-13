@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace DFNGenerator_Ocean
+namespace DFMGenerator_Ocean
 {
     [TestFixture]
     public class TestClass

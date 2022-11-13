@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     class MacrofractureData
     {

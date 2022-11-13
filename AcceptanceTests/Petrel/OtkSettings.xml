@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <OceanStoreTestKitSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <AcceptanceCheckerParameters>
-    <PipPath>C:\Users\MWelch\Source\Repos\DFNGenerator\Files\DFN_2020.pip</PipPath>
+    <PipPath>C:\Users\MWelch\Source\Repos\DFMGenerator\Files\DFN_2020.pip</PipPath>
     <Platform>Petrel</Platform>
-    <PdbPath>C:\Users\MWelch\source\repos\DFNGenerator\DFNGenerator_Ocean\bin\Release</PdbPath>
+    <PdbPath>C:\Users\MWelch\source\repos\DFMGenerator\DFMGenerator_Ocean\bin\Release</PdbPath>
     <TempDirectory usecustom="false">C:\Users\MWelch\AppData\Local\Temp\</TempDirectory>
     <LastTimeRun>
       <Timestamp>08/23/2022 11:18:20 UTC2</Timestamp>

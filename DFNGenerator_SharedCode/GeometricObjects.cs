@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace DFNGenerator_SharedCode
+namespace DFMGenerator_SharedCode
 {
     /// <summary>
     /// Enumerator use to control functions to calculate crossover points
@@ -401,6 +401,25 @@ namespace DFNGenerator_SharedCode
 
             // Return the calculated point
             return returnPoint;
+        }
+        /// <summary>
+        /// Check if two points have the same coordinates
+        /// </summary>
+        /// <param name="Point1">First point</param>
+        /// <param name="Point2">Second point</param>
+        /// <returns>True if both points have identical X, Y and Z coordinates within rounding error, otherwise false</returns>
+        public static bool comparePoints(PointXYZ Point1, PointXYZ Point2)
+        {
+            if ((Point1 == null) || (Point2 == null))
+                return false;
+            else if ((float)Point1.X != (float)Point2.X)
+                return false;
+            else if ((float)Point1.Y != (float)Point2.Y)
+                return false;
+            else if ((float)Point1.Z != (float)Point2.Z)
+                return false;
+            else
+                return true;
         }
 
         // Vector functions
