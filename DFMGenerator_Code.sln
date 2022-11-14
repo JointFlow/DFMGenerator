@@ -3,22 +3,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30709.132
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DFMGenerator_SharedCode", "DFNGenerator_SharedCode\DFMGenerator_SharedCode.shproj", "{3763FA9F-9862-4BF7-B072-7E8662D5498C}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DFMGenerator_SharedCode", "DFMGenerator_SharedCode\DFMGenerator_SharedCode.shproj", "{3763FA9F-9862-4BF7-B072-7E8662D5498C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Ocean", "DFNGenerator_Ocean\DFMGenerator_Ocean.csproj", "{F339DBA5-EDC9-4602-859B-5BE45BAA50D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Ocean", "DFMGenerator_Ocean\DFMGenerator_Ocean.csproj", "{F339DBA5-EDC9-4602-859B-5BE45BAA50D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Standalone", "DFNGenerator_Standalone\DFMGenerator_Standalone.csproj", "{C7744768-FED9-48D0-8549-7491D6D66C54}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Standalone", "DFMGenerator_Standalone\DFMGenerator_Standalone.csproj", "{C7744768-FED9-48D0-8549-7491D6D66C54}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_install", "Pip_builder\DFMGenerator_install.csproj", "{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Install", "DFMGenerator_Install\DFMGenerator_Install.csproj", "{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F339DBA5-EDC9-4602-859B-5BE45BAA50D2} = {F339DBA5-EDC9-4602-859B-5BE45BAA50D2}
 	EndProjectSection
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems*{3763fa9f-9862-4bf7-b072-7e8662d5498c}*SharedItemsImports = 13
-		DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems*{c7744768-fed9-48d0-8549-7491d6d66c54}*SharedItemsImports = 4
-		DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems*{f339dba5-edc9-4602-859b-5be45baa50d2}*SharedItemsImports = 4
+		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{3763fa9f-9862-4bf7-b072-7e8662d5498c}*SharedItemsImports = 13
+		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{c7744768-fed9-48d0-8549-7491d6d66c54}*SharedItemsImports = 4
+		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{f339dba5-edc9-4602-859b-5be45baa50d2}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
