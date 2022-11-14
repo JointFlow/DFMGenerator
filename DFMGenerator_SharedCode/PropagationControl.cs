@@ -666,6 +666,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double minImplicitMicrofractureRadius { get; set; }
         /// <summary>
+        /// Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer
+        /// </summary>
+        public double FractureNucleationPosition { get; set; }
+        /// <summary>
         /// Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set
         /// </summary>
         public bool checkAlluFStressShadows { get; set; }
@@ -837,13 +841,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="maxTimestepDuration_in">Maximum duration for individual timesteps; set to -1 for no maximum timestep duration</param>
         /// <param name="no_r_bins_in">Number of bins to split the microfracture radii into when calculating uFP32 and uFP33 numerically (controls accuracy of microfracture calculation)</param>
         /// <param name="minImplicitMicrofractureRadius_in">Minimum radius for microfractures to be included in fracture density and porosity calculations; if set to zero (no limit) it will not be possible to calculate volumetric microfracture density</param>
+        /// <param name="FractureNucleationPosition_in">Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer</param>
         /// <param name="checkAlluFStressShadows_in">Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set</param>
         /// <param name="anisotropyCutoff_in">Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes</param>
         /// <param name="WriteImplicitDataFiles_in">Write to log while running calculation (use for debugging)</param>
         /// <param name="timeUnits_in">Time units for deformation rates</param>
         /// <param name="CalculateFracturePorosity_in">Flag to calculate and output fracture porosity</param>
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
-        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
+        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
         {
             // Set the time units and calculate unit conversion multiplier to adjust input rates if not in SI units
             timeUnits = timeUnits_in;
@@ -878,6 +883,8 @@ namespace DFMGenerator_SharedCode
             no_r_bins = no_r_bins_in;
             // Minimum radius for microfractures to be included in fracture density and porosity calculations; if set to zero (no limit) it will not be possible to calculate volumetric microfracture density as this will be infinite
             minImplicitMicrofractureRadius = minImplicitMicrofractureRadius_in;
+            // Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer
+            FractureNucleationPosition = FractureNucleationPosition_in;
             // Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set
             checkAlluFStressShadows = checkAlluFStressShadows_in;
             // Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes
@@ -896,7 +903,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public PropagationControl() 
-            : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform)
+            : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform)
         {
             // Defaults:
 
@@ -915,6 +922,7 @@ namespace DFMGenerator_SharedCode
             // Maximum duration for individual timesteps: -1 (no maximum timestep duration)
             // Number of bins to split the microfracture radii into when calculating uFP32 and uFP33 numerically: 10
             // Minimum radius for microfractures to be included in fracture density and porosity calculations: 0 (no limit); NB it will not be possible to calculate volumetric microfracture density as this will be infinite
+            // Position of fracture nucleation within the layer: -1 (fractures nucleate at random locations within the layer)
             // Flag to check microfractures against stress shadows of all macrofractures, regardless of set: false
             // Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes: 1 (always use isotropic method)
             // Write implicit fracture data to file while running calculation: false
@@ -940,20 +948,21 @@ namespace DFMGenerator_SharedCode
         /// <param name="maxTimestepDuration_in">Maximum duration for individual timesteps; set to -1 for no maximum timestep duration</param>
         /// <param name="no_r_bins_in">Number of bins to split the microfracture radii into when calculating uFP32 and uFP33 numerically (controls accuracy of microfracture calculation)</param>
         /// <param name="minMicrofractureRadius_in">Minimum radius for microfractures to be included in fracture density and porosity calculations; if set to zero (no limit) it will not be possible to calculate volumetric microfracture density as this will be infinite</param>
+        /// <param name="FractureNucleationPosition_in">Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer</param>
         /// <param name="checkAlluFStressShadows_in">Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set</param>
         /// <param name="anisotropyCutoff_in">Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes</param>
         /// <param name="WriteImplicitDataFiles_in">Write implicit fracture data to file while running calculation</param>
         /// <param name="timeUnits_in">Time units for deformation rates</param>
         /// <param name="CalculateFracturePorosity_in">Flag to calculate and output fracture porosity</param>
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeControl>();
             // Set all other data
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in);
         }
         /// <summary>
         /// Constructor: Set all calculation control data, and create a single deformation episode with an applied strain load only; set index points for cumulative fracture size distribution arrays independently for each fracture set
@@ -974,6 +983,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="maxTimestepDuration_in">Maximum duration for individual timesteps; set to -1 for no maximum timestep duration</param>
         /// <param name="no_r_bins_in">Number of bins to split the microfracture radii into when calculating uFP32 and uFP33 numerically (controls accuracy of microfracture calculation)</param>
         /// <param name="minMicrofractureRadius_in">Minimum radius for microfractures to be included in fracture density and porosity calculations; if set to zero (no limit) it will not be possible to calculate volumetric microfracture density as this will be infinite</param>
+        /// <param name="FractureNucleationPosition_in">Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer</param>
         /// <param name="checkAlluFStressShadows_in">Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set</param>
         /// <param name="anisotropyCutoff_in">Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes</param>
         /// <param name="WriteImplicitDataFiles_in">Write implicit fracture data to file while running calculation</param>
@@ -983,14 +993,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="timeUnits_in">Time units for deformation rates</param>
         /// <param name="CalculateFracturePorosity_in">Flag to calculate and output fracture porosity</param>
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, double DeformationEpisodeDuration_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, double Applied_Epsilon_hmin_azimuth_in, double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, double DeformationEpisodeDuration_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, double Applied_Epsilon_hmin_azimuth_in, double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeControl>();
             // Set all other data
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in);
             // Create the deformation episode
             AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, DeformationEpisodeDuration_in);
         }

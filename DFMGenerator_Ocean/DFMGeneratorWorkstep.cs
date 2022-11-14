@@ -407,10 +407,17 @@ namespace DFMGenerator_Ocean
                     // Stress distribution scenario - use to turn on or off stress shadow effect
                     // Do not use DuctileBoundary as this is not yet implemented
                     StressDistribution StressDistributionScenario = (StressDistribution)arguments.Argument_StressDistribution;
+                    // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
                     // If depth at the time of deformation is specified, use this to calculate effective vertical stress instead of the current depth
                     // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
-                    double DepthAtDeformation = arguments.Argument_DepthAtDeformation;
-                    bool OverwriteDepth = (DepthAtDeformation > 0);
+                    double DepthAtDeformation = -1;
+                    if (!double.IsNaN(arguments.Argument_DepthAtDeformation_default))
+                        DepthAtDeformation = arguments.Argument_DepthAtDeformation_default;
+                    //bool OverwriteDepth = (DepthAtDeformation > 0);
+                    if (!double.IsNaN(arguments.Argument_YoungsMod_default))
+                        YoungsMod = arguments.Argument_YoungsMod_default; // Can also be set from grid property
+                    Property DepthAtDeformation_grid = arguments.Argument_DepthAtDeformation;
+                    bool UseGridFor_DepthAtDeformation = (DepthAtDeformation_grid != null);
                     // Mean density of overlying sediments and fluid (kg/m3)
                     double MeanOverlyingSedimentDensity = 2250;
                     if (!double.IsNaN(arguments.Argument_MeanOverlyingSedimentDensity))
@@ -544,6 +551,10 @@ namespace DFMGenerator_Ocean
                         Mode1Only = true;
                     else if (arguments.Argument_FractureMode == 2)
                         Mode2Only = true;
+                    // Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer
+                    double FractureNucleationPosition = -1;
+                    if (!double.IsNaN(arguments.Argument_FractureNucleationPosition))
+                        FractureNucleationPosition = arguments.Argument_FractureNucleationPosition;
                     // Flag to check microfractures against stress shadows of all macrofractures, regardless of set
                     // If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures
                     // If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor
@@ -774,6 +785,8 @@ namespace DFMGenerator_Ocean
                         convertFromGeneral_AppliedTemperatureChange_list.Add(UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo] ? AppliedTemperatureChange_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
                         convertFromGeneral_AppliedUpliftRate_list.Add(UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo] ? AppliedUpliftRate_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
                     }
+                    // Depth at start of deformation
+                    bool convertFromGeneral_DepthAtDeformation = (UseGridFor_DepthAtDeformation ? DepthAtDeformation_grid.Template.Equals(GeneralTemplate) : false);
                     // Young's Modulus
                     IUnitConverter toSIYoungsModUnits = PetrelUnitSystem.GetConverterFromUI(YoungsModTemplate);
                     bool convertFromGeneral_YoungsMod = (UseGridFor_YoungsMod ? YoungsMod_grid.Template.Equals(GeneralTemplate) : false);
@@ -992,10 +1005,11 @@ namespace DFMGenerator_Ocean
 
                     // Stress state
                     generalInputParams += string.Format("Stress distribution: {0}\n", StressDistributionScenario);
-                    if (OverwriteDepth)
-                        generalInputParams += string.Format("Depth of deformation: {0}{1}\n", toProjectDepthUnits.Convert(DepthAtDeformation), DepthUnits);
+                    string defaultDepthAtDeformation = (DepthAtDeformation > 0 ? string.Format("{0}{1}", toProjectDepthUnits.Convert(DepthAtDeformation), DepthUnits) : "current depth");
+                    if (UseGridFor_DepthAtDeformation)
+                        generalInputParams += string.Format("Depth at start of deformation: {0}, default {1}\n", DepthAtDeformation_grid.Name, defaultDepthAtDeformation);
                     else
-                        generalInputParams += "Depth of deformation: current depth\n";
+                        generalInputParams += string.Format("Depth at start of deformation: {0}\n", defaultDepthAtDeformation);
                     generalInputParams += string.Format("Mean overlying sediment density: {0}{1}\n", toProjectRockDensityUnits.Convert(MeanOverlyingSedimentDensity), RockDensityUnits);
                     generalInputParams += string.Format("Fluid density: {0}{1}\n", toProjectFluidDensityUnits.Convert(FluidDensity), FluidDensityUnits);
                     generalInputParams += string.Format("Initial fluid overpressure: {0}{1}\n", toProjectPressureUnits.Convert(InitialOverpressure), PressureUnits);
@@ -1293,8 +1307,82 @@ namespace DFMGenerator_Ocean
                                 local_Depth -= SE_top_corner.Z;
                                 local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
 
+                                // Get the depth at the start of deformation from the grid as required
+                                // This will depend on whether we are averaging the stress and strain data over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                // First we will create a local variable for the property value in this gridblock; we can then recalculate this without altering the global default value
+                                double local_DepthAtDeformation = DepthAtDeformation;
+
+                                if (UseGridFor_DepthAtDeformation)
+                                {
+                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                    {
+                                        // Create local variables for running total and number of datapoints
+                                        double DepthAtDeformation_total = 0;
+                                        int DepthAtDeformation_novalues = 0;
+
+                                        // Loop through all the Petrel cells in the gridblock
+                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                {
+                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                    // Update depth at deformation total if defined
+                                                    double cell_depthatdeformation = (double)DepthAtDeformation_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_DepthAtDeformation)
+                                                        cell_depthatdeformation = toSIDepthUnits.Convert(cell_depthatdeformation);
+                                                    // If the cell value is undefined, it will not be included in the average;if all cell values are undefined, the default value for depth at deformation will be used
+                                                    // If the cell value is <=0 it will be included in the average; if the average <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
+                                                    if (!double.IsNaN(cell_depthatdeformation))
+                                                    {
+                                                        DepthAtDeformation_total += cell_depthatdeformation;
+                                                        DepthAtDeformation_novalues++;
+                                                    }
+                                                }
+
+                                        // Update the gridblock value with the average - if there is any data to calculate it from
+                                        if (DepthAtDeformation_novalues > 0)
+                                            local_DepthAtDeformation = DepthAtDeformation_total / (double)DepthAtDeformation_novalues;
+                                    }
+                                    else // We are taking data from a single cell
+                                    {
+                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                        if (HorizontalUpscalingFactor > 1)
+                                        {
+                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                        }
+
+                                        // Create a reference to the cell from which we will read the data
+                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                        // Update depth at deformation total if defined
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        {
+                                            cellRef.K = PetrelGrid_DataCellK;
+                                            double cell_depthatdeformation = (double)DepthAtDeformation_grid[cellRef];
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            if (convertFromGeneral_DepthAtDeformation)
+                                                cell_depthatdeformation = toSIDepthUnits.Convert(cell_depthatdeformation);
+                                            // If all cell values are undefined, the default value for depth at deformation will be used
+                                            // If the top cell value is <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
+                                            if (!double.IsNaN(cell_depthatdeformation))
+                                            {
+                                                local_DepthAtDeformation = cell_depthatdeformation;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 // Calculate the mean depth and layer thickness
-                                local_Depth = (OverwriteDepth ? DepthAtDeformation : local_Depth / 4);
+                                local_Depth = (local_DepthAtDeformation > 0 ? local_DepthAtDeformation : local_Depth / 4);
                                 local_LayerThickness /= 4;
 
                                 // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
@@ -1886,7 +1974,7 @@ namespace DFMGenerator_Ocean
 
                                 // Set the propagation control data for the gridblock
                                 gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                                 // Set folder path for output files
                                 gc.PropControl.FolderPath = folderPath;
@@ -4057,7 +4145,8 @@ namespace DFMGenerator_Ocean
 
             // Stress state
             private int argument_StressDistribution = 1;
-            private double argument_DepthAtDeformation = double.NaN;
+            private double argument_DepthAtDeformation_default = double.NaN;
+            private Droid argument_DepthAtDeformation;
             private double argument_MeanOverlyingSedimentDensity = 2250;
             private double argument_FluidDensity = 1000;
             private double argument_InitialOverpressure = 0;
@@ -4095,6 +4184,7 @@ namespace DFMGenerator_Ocean
             // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
             private int argument_NoFractureSets = 6;
             private int argument_FractureMode = 0;
+            private double argument_FractureNucleationPosition = -1;
             // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
             // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
             private bool argument_CheckAlluFStressShadows = true;
@@ -4887,11 +4977,19 @@ namespace DFMGenerator_Ocean
             }
 
             [OptionalInWorkflow]
-            [Description("Depth at time of deformation (m); leave blank to use current depth", "Depth at time of deformation (m); leave blank to use current depth")]
-            public double Argument_DepthAtDeformation
+            [Description("Depth at start of deformation; leave blank to use current depth", "Depth at start of deformation; leave blank to use current depth")]
+            public double Argument_DepthAtDeformation_default
             {
-                internal get { return this.argument_DepthAtDeformation; }
-                set { this.argument_DepthAtDeformation = value; }
+                internal get { return this.argument_DepthAtDeformation_default; }
+                set { this.argument_DepthAtDeformation_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Depth at start of deformation", "Depth at start of deformation")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_DepthAtDeformation
+            {
+                internal get { return DataManager.Resolve(this.argument_DepthAtDeformation) as Property; }
+                set { this.argument_DepthAtDeformation = (value == null ? null : value.Droid); }
             }
 
             [Description("Mean density of overlying sediments (kg/m3)", "Mean density of overlying sediments (kg/m3)")]
@@ -5092,6 +5190,14 @@ namespace DFMGenerator_Ocean
             {
                 internal get { return this.argument_FractureMode; }
                 set { this.argument_FractureMode = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Position of fracture nucleation within the layer", "Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; leave blank to nucleate fractures at random locations within the layer")]
+            public double Argument_FractureNucleationPosition
+            {
+                internal get { return this.argument_FractureNucleationPosition; }
+                set { this.argument_FractureNucleationPosition = value; }
             }
 
             [Description("Flag to check microfractures against stress shadows of all macrofractures, regardless of set", "Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set")]
@@ -5329,7 +5435,7 @@ namespace DFMGenerator_Ocean
 
                 // Stress state
                 argument_StressDistribution = 1;
-                argument_DepthAtDeformation = double.NaN;
+                argument_DepthAtDeformation_default = double.NaN;
                 argument_MeanOverlyingSedimentDensity = 2250;
                 argument_FluidDensity = 1000;
                 argument_InitialOverpressure = 0;

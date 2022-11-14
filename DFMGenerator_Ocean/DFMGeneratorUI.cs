@@ -72,16 +72,16 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_NoRowsJ, textBox_NoRowsJ);
             UpdateTextBox(args.Argument_TopLayerK, textBox_TopLayerK);
             UpdateTextBox(args.Argument_BottomLayerK, textBox_BottomLayerK);
-            UpdatePropertyPresentationBox(args.Argument_EhminAzi, presentationBox_EhminAzi);
+            UpdatePropertyPresentationBox(args.EhminAzi(0), presentationBox_EhminAzi);
             // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
             // Because geological time units are very different from SI time units, this conversion is carried out when downloading data from the dialog box or when reading the grid property values
             // Until that point, all data will be kept in project units
-            UpdatePropertyPresentationBox(args.Argument_EhminRate, presentationBox_EhminRate);
-            UpdatePropertyPresentationBox(args.Argument_EhmaxRate, presentationBox_EhmaxRate);
+            UpdatePropertyPresentationBox(args.EhminRate(0), presentationBox_EhminRate);
+            UpdatePropertyPresentationBox(args.EhmaxRate(0), presentationBox_EhmaxRate);
             SetStrainRateUnits();
-            UpdateTextBox(args.Argument_EhminAzi_default, unitTextBox_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_EhminAzi_Units);
-            UpdateTextBox(args.Argument_EhminRate_default, unitTextBox_EhminRate_default);
-            UpdateTextBox(args.Argument_EhmaxRate_default, unitTextBox_EhmaxRate_default);
+            UpdateTextBox(args.EhminAzi_default(0), unitTextBox_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_EhminAzi_Units);
+            UpdateTextBox(args.EhminRate_default(0), unitTextBox_EhminRate_default);
+            UpdateTextBox(args.EhmaxRate_default(0), unitTextBox_EhmaxRate_default);
             UpdateCheckBox(args.Argument_GenerateExplicitDFN, checkBox_GenerateExplicitDFN);
             UpdateNumericBox(args.Argument_NoIntermediateOutputs, numericUpDown_NoIntermediateOutputs);
             UpdateCheckBox(args.Argument_IncludeObliqueFracs, checkBox_IncludeObliqueFracs);
@@ -120,7 +120,7 @@ namespace DFMGenerator_Ocean
 
             // Stress state
             UpdateComboBox(args.Argument_StressDistribution, comboBox_StressDistribution);
-            UpdateTextBox(args.Argument_DepthAtDeformation, unitTextBox_DepthAtDeformation, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_DepthAtDeformation_Units);
+            UpdateTextBox(args.Argument_DepthAtDeformation_default, unitTextBox_DepthAtDeformation, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_DepthAtDeformation_Units);
             UpdateTextBox(args.Argument_MeanOverlyingSedimentDensity, unitTextBox_MeanOverlyingSedimentDensity, PetrelProject.WellKnownTemplates.GeophysicalGroup.RockDensity, label_MeanOverlyingSedimentDensity_Units);
             UpdateTextBox(args.Argument_FluidDensity, unitTextBox_FluidDensity, PetrelProject.WellKnownTemplates.GeophysicalGroup.LiquidDensity, label_FluidDensity_Units);
             UpdateTextBox(args.Argument_InitialOverpressure, unitTextBox_InitialOverpressure, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure, label_InitialOverpressure_Units);
@@ -132,7 +132,7 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_WriteDFNFiles, checkBox_WriteDFNFiles);
             UpdateCheckBox(args.Argument_WriteToProjectFolder, checkBox_WriteToProjectFolder);
             UpdateComboBox(args.Argument_DFNFileType, comboBox_DFNFileType);
-            UpdateCheckBox(args.Argument_OutputAtEqualTimeIntervals, checkBox_OutputIntermediatesByTime);
+            UpdateCheckBox((args.Argument_OutputAtEqualTimeIntervals == DFMGenerator_SharedCode.IntermediateOutputInterval.EqualTime), checkBox_OutputIntermediatesByTime);
             UpdateCheckBox(args.Argument_OutputCentrepoints, checkBox_OutputCentrepoints);
             // Fracture connectivity and anisotropy index control parameters
             UpdateCheckBox(args.Argument_CalculateFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
@@ -168,7 +168,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_MinimumImplicitMicrofractureRadius, unitTextBox_MinimumImplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumImplicitMicrofractureRadius_Units);
             UpdateTextBox(args.Argument_No_r_bins, textBox_No_r_bins);
             // Calculation termination controls
-            UpdateTextBox(args.Argument_DeformationDuration, unitTextBox_DeformationDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_DeformationDuration_Units);
+            UpdateTextBox(args.DeformationEpisodeDuration(0), unitTextBox_DeformationDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_DeformationDuration_Units);
             UpdateTextBox(args.Argument_MaxNoTimesteps, textBox_MaxNoTimesteps);
             UpdateTextBox(args.Argument_Historic_MFP33_TerminationRatio, unitTextBox_Historic_MFP33_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Active_MFP30_TerminationRatio, unitTextBox_Active_MFP30_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -197,12 +197,12 @@ namespace DFMGenerator_Ocean
             args.Argument_NoRowsJ = GetIntFromTextBox(textBox_NoRowsJ);
             args.Argument_TopLayerK = GetIntFromTextBox(textBox_TopLayerK);
             args.Argument_BottomLayerK = GetIntFromTextBox(textBox_BottomLayerK);
-            args.Argument_EhminAzi = presentationBox_EhminAzi.Tag as Property;
-            args.Argument_EhminRate = presentationBox_EhminRate.Tag as Property;
-            args.Argument_EhmaxRate = presentationBox_EhmaxRate.Tag as Property;
-            args.Argument_EhminAzi_default = GetDoubleFromTextBox(unitTextBox_EhminAzi_default);
-            args.Argument_EhminRate_default = GetDoubleFromTextBox(unitTextBox_EhminRate_default);
-            args.Argument_EhmaxRate_default = GetDoubleFromTextBox(unitTextBox_EhmaxRate_default);
+            args.EhminAzi(presentationBox_EhminAzi.Tag as Property, 0);
+            args.EhminRate(presentationBox_EhminRate.Tag as Property, 0);
+            args.EhmaxRate(presentationBox_EhmaxRate.Tag as Property, 0);
+            args.EhminAzi_default(GetDoubleFromTextBox(unitTextBox_EhminAzi_default), 0);
+            args.EhminRate_default(GetDoubleFromTextBox(unitTextBox_EhminRate_default), 0);
+            args.EhmaxRate_default(GetDoubleFromTextBox(unitTextBox_EhmaxRate_default), 0);
             args.Argument_GenerateExplicitDFN = checkBox_GenerateExplicitDFN.Checked;
             args.Argument_NoIntermediateOutputs = GetIntFromNumericBox(numericUpDown_NoIntermediateOutputs);
             args.Argument_IncludeObliqueFracs = checkBox_IncludeObliqueFracs.Checked;
@@ -233,7 +233,7 @@ namespace DFMGenerator_Ocean
 
             // Stress state
             args.Argument_StressDistribution = comboBox_StressDistribution.SelectedIndex;
-            args.Argument_DepthAtDeformation = GetDoubleFromTextBox(unitTextBox_DepthAtDeformation);
+            args.Argument_DepthAtDeformation_default = GetDoubleFromTextBox(unitTextBox_DepthAtDeformation);
             args.Argument_MeanOverlyingSedimentDensity = GetDoubleFromTextBox(unitTextBox_MeanOverlyingSedimentDensity);
             args.Argument_FluidDensity = GetDoubleFromTextBox(unitTextBox_FluidDensity);
             args.Argument_InitialOverpressure = GetDoubleFromTextBox(unitTextBox_InitialOverpressure);
@@ -245,7 +245,7 @@ namespace DFMGenerator_Ocean
             args.Argument_WriteDFNFiles = checkBox_WriteDFNFiles.Checked;
             args.Argument_WriteToProjectFolder = checkBox_WriteToProjectFolder.Checked;
             args.Argument_DFNFileType = comboBox_DFNFileType.SelectedIndex;
-            args.Argument_OutputAtEqualTimeIntervals = checkBox_OutputIntermediatesByTime.Checked;
+            args.Argument_OutputAtEqualTimeIntervals = (checkBox_OutputIntermediatesByTime.Checked ? DFMGenerator_SharedCode.IntermediateOutputInterval.EqualTime : DFMGenerator_SharedCode.IntermediateOutputInterval.EqualArea);
             args.Argument_OutputCentrepoints = checkBox_OutputCentrepoints.Checked;
             // Fracture connectivity and anisotropy index control parameters
             args.Argument_CalculateFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
@@ -277,7 +277,7 @@ namespace DFMGenerator_Ocean
             args.Argument_MinimumImplicitMicrofractureRadius = GetDoubleFromTextBox(unitTextBox_MinimumImplicitMicrofractureRadius);
             args.Argument_No_r_bins = GetIntFromTextBox(textBox_No_r_bins);
             // Calculation termination controls
-            args.Argument_DeformationDuration = GetDoubleFromTextBox(unitTextBox_DeformationDuration);
+            args.DeformationEpisodeDuration(GetDoubleFromTextBox(unitTextBox_DeformationDuration), 0);
             args.Argument_MaxNoTimesteps = GetIntFromTextBox(textBox_MaxNoTimesteps);
             args.Argument_Historic_MFP33_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Historic_MFP33_TerminationRatio);
             args.Argument_Active_MFP30_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Active_MFP30_TerminationRatio);
@@ -849,5 +849,12 @@ namespace DFMGenerator_Ocean
             updateUIFromArgs();
         }
         #endregion
+
+        private void btnEditDeformationEpisode_Click(object sender, EventArgs e)
+        {
+            EditDeformationEpisode dlg_EditDeformationEpisode = new EditDeformationEpisode();
+            dlg_EditDeformationEpisode.Text = "Deformation episode 1";
+            PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
+        }
     }
 }
