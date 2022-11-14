@@ -452,7 +452,7 @@ namespace DFMGenerator_Ocean
                     int NoIntermediateOutputs = 0;
                     if (arguments.Argument_NoIntermediateOutputs > 0)
                         NoIntermediateOutputs = arguments.Argument_NoIntermediateOutputs;
-                    // Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
+                    // Flag to control interval between output of intermediate stage DFMs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
                     IntermediateOutputInterval IntermediateOutputIntervalControl = arguments.Argument_OutputAtEqualTimeIntervals;
                     // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
                     bool OutputCentrepoints = arguments.Argument_OutputCentrepoints;
@@ -914,7 +914,7 @@ namespace DFMGenerator_Ocean
                     // Intermediate outputs
                     if (NoIntermediateOutputs > 0)
                     {
-                        generalInputParams += string.Format("Output {0} intermediate DFNs ", NoIntermediateOutputs);
+                        generalInputParams += string.Format("Output {0} intermediate DFMs ", NoIntermediateOutputs);
                         if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualTime)
                             generalInputParams += "at equal time intervals\n";
                         else if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualArea)
@@ -4965,7 +4965,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_DFNFileType = value; }
             }
 
-            [Description("Flag to control interval between output of intermediate stage DFNs", "Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area")]
+            [Description("Flag to control interval between output of intermediate stage DFMs", "Flag to control interval between output of intermediate stage DFMs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area")]
             public IntermediateOutputInterval Argument_OutputAtEqualTimeIntervals
             {
                 internal get { return this.argument_OutputAtEqualTimeIntervals; }

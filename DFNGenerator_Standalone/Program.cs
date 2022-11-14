@@ -165,7 +165,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("OutputDFNFileType ASCII");
                 input_file.WriteLine("% Output DFM at intermediate stages of fracture growth");
                 input_file.WriteLine("NoIntermediateOutputs 0");
-                input_file.WriteLine("% Flag to control interval between output of intermediate stage DFNs:");
+                input_file.WriteLine("% Flag to control interval between output of intermediate stage DFMs:");
                 input_file.WriteLine("%      - EqualArea (output at at approximately regular intervals of total fracture area)");
                 input_file.WriteLine("%      - EqualTime (output at equal intervals of time)");
                 input_file.WriteLine("%      - SpecifiedTime (output at the end of each specified deformation episode)");
@@ -575,7 +575,7 @@ namespace DFMGenerator_Standalone
             DFNFileType OutputDFNFileType = DFNFileType.ASCII;
             // Output DFM at intermediate stages of fracture growth
             int NoIntermediateOutputs = 0;
-            // Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
+            // Flag to control interval between output of intermediate stage DFMs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
             IntermediateOutputInterval IntermediateOutputIntervalControl = IntermediateOutputInterval.EqualArea;
             // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
             bool OutputCentrepoints = false;
@@ -1044,7 +1044,7 @@ namespace DFMGenerator_Standalone
                         case "noIntermediateOutputs": // For backwards compatibility
                             NoIntermediateOutputs = Convert.ToInt32(line_split[1]);
                             break;
-                        // Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
+                        // Flag to control interval between output of intermediate stage DFMs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
                         case "IntermediateOutputIntervalControl":
                         case "OutputAtEqualTimeIntervals": // For backwards compatibility
                         case "separateIntermediateOutputsByTime": // For backwards compatibility
