@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Ocean", "DFMGe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Standalone", "DFMGenerator_Standalone\DFMGenerator_Standalone.csproj", "{C7744768-FED9-48D0-8549-7491D6D66C54}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Install", "Pip_builder\DFMGenerator_install.csproj", "{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Install", "DFMGenerator_Install\DFMGenerator_Install.csproj", "{D28975C9-7CDA-48B0-86AC-0B69055FD7AC}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F339DBA5-EDC9-4602-859B-5BE45BAA50D2} = {F339DBA5-EDC9-4602-859B-5BE45BAA50D2}
 	EndProjectSection

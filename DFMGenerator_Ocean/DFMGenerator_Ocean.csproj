@@ -53,22 +53,22 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Slb.Ocean.Basics">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Basics.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Basics.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Coordinates">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Coordinates.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Coordinates.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Core">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Core.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Data">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Data.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Data.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Geometry">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Geometry.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Geometry.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Configuration">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Configuration.dll</HintPath>
@@ -94,9 +94,6 @@
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Seismic">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Seismic.dll</HintPath>
-    </Reference>
-    <Reference Include="Slb.Ocean.Petrel.Testing">
-      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Testing.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.UI.Controls">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.UI.Controls.dll</HintPath>
