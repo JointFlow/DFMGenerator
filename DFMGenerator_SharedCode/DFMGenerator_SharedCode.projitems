@@ -6,7 +6,7 @@
     <SharedGUID>3763fa9f-9862-4bf7-b072-7e8662d5498c</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>DFNGenerator_SharedCode</Import_RootNamespace>
+    <Import_RootNamespace>DFMGenerator_SharedCode</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)DFNComponents.cs" />

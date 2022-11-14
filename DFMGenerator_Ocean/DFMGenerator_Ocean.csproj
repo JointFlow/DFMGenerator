@@ -71,38 +71,38 @@
       <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Configuration">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Configuration.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Data.Persistence, Version=20.1.0.0, Culture=neutral, PublicKeyToken=14ef4a483ef6a64b, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Data.Persistence.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.DomainObject.FrameworkModeling">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObject.FrameworkModeling.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.DomainObject.FrameworkModeling.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.DomainObjectExtensions">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObjectExtensions.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.DomainObjectExtensions.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.DomainObjectExtensions.Prestack">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.DomainObjectExtensions.Prestack.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.DomainObjectExtensions.Prestack.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Geology">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Geology.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Geology.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Modeling">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Modeling.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Modeling.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Seismic">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.Seismic.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Seismic.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Testing">
       <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Testing.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.UI.Controls">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Petrel.UI.Controls.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.UI.Controls.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Units">
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2016\Public\Slb.Ocean.Units.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Units.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -174,7 +174,7 @@
   <ItemGroup>
     <None Include="Resources\P32_icon.ico" />
   </ItemGroup>
-  <Import Project="..\DFNGenerator_SharedCode\DFNGenerator_SharedCode.projitems" Label="Shared" />
+  <Import Project="..\DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del "$(ProjectDir)plugin.xml"

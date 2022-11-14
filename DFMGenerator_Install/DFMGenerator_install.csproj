@@ -55,7 +55,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PreBuildEvent>xcopy "$(SolutionDir)\DFNGenerator_Ocean\Resources\HelpFiles" /s /i /y "$(ProjectDir)HelpFiles"
+    <PreBuildEvent>xcopy "$(SolutionDir)\DFMGenerator_Ocean\Resources\HelpFiles" /s /i /y "$(ProjectDir)HelpFiles"
 mkdir "$(TargetDir)"
 rmdir "$(ProjectDir)\obj\copytemp" /s /q
 "$(ProjectDir)\DeployCopier.exe" "$(ProjectDir)DeployList.xml" "$(ProjectDir)\obj\copytemp" /config:$(ConfigurationName) /platform:"$(PlatformName)"</PreBuildEvent>
