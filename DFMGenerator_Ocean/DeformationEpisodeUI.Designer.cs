@@ -1,7 +1,7 @@
 ﻿
 namespace DFMGenerator_Ocean
 {
-    partial class EditDeformationEpisode
+    partial class DeformationEpisodeUI
     {
         /// <summary> 
         /// Required designer variable.
@@ -29,19 +29,22 @@ namespace DFMGenerator_Ocean
         /// </summary>
         private void InitializeComponent()
         {
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem43 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem44 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem45 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             this.unitTextBox_DE_EhmaxRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.unitTextBox_DE_EhminRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.unitTextBox_De_EhminAzi_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_de_EhminAzi_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_DE_EhminAzi_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_DE_EhminAzi_Units = new System.Windows.Forms.Label();
             this.label_DE_EhmaxRate_Units = new System.Windows.Forms.Label();
             this.label_DE_EhminRate_Units = new System.Windows.Forms.Label();
             this.label_DE_EhmaxRate_default = new System.Windows.Forms.Label();
             this.label_DE_EhminRate_default = new System.Windows.Forms.Label();
-            this.label_de_EhminAzi_default = new System.Windows.Forms.Label();
+            this.label_DE_EhminAzi_default = new System.Windows.Forms.Label();
             this.presentationBox_DE_EhmaxRate = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
             this.presentationBox_DE_EhminRate = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.presentationBox_dE_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.dropTarget_DE_EhmaxAzi = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.presentationBox_DE_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.dropTarget_DE_EhmaxRate = new Slb.Ocean.Petrel.UI.DropTarget();
             this.dropTarget_DE_EhminRate = new Slb.Ocean.Petrel.UI.DropTarget();
             this.dropTarget_DE_EhminAzi = new Slb.Ocean.Petrel.UI.DropTarget();
             this.label_DE_EhmaxRate = new System.Windows.Forms.Label();
@@ -69,8 +72,9 @@ namespace DFMGenerator_Ocean
             this.label_DE_UpliftRate = new System.Windows.Forms.Label();
             this.label_DE_TempChange = new System.Windows.Forms.Label();
             this.label_DE_OPRate = new System.Windows.Forms.Label();
-            this.unitTextBox1 = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.unitTextBox_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.label_DE_StressArchingFactor = new System.Windows.Forms.Label();
+            this.comboBox_DE_TimeUnits = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
             this.SuspendLayout();
             // 
             // unitTextBox_DE_EhmaxRate_default
@@ -87,21 +91,21 @@ namespace DFMGenerator_Ocean
             this.unitTextBox_DE_EhminRate_default.Size = new System.Drawing.Size(114, 20);
             this.unitTextBox_DE_EhminRate_default.TabIndex = 71;
             // 
-            // unitTextBox_De_EhminAzi_default
+            // unitTextBox_DE_EhminAzi_default
             // 
-            this.unitTextBox_De_EhminAzi_default.Location = new System.Drawing.Point(532, 39);
-            this.unitTextBox_De_EhminAzi_default.Name = "unitTextBox_De_EhminAzi_default";
-            this.unitTextBox_De_EhminAzi_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_De_EhminAzi_default.TabIndex = 70;
+            this.unitTextBox_DE_EhminAzi_default.Location = new System.Drawing.Point(532, 39);
+            this.unitTextBox_DE_EhminAzi_default.Name = "unitTextBox_DE_EhminAzi_default";
+            this.unitTextBox_DE_EhminAzi_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_EhminAzi_default.TabIndex = 70;
             // 
-            // label_de_EhminAzi_Units
+            // label_DE_EhminAzi_Units
             // 
-            this.label_de_EhminAzi_Units.AutoSize = true;
-            this.label_de_EhminAzi_Units.Location = new System.Drawing.Point(652, 42);
-            this.label_de_EhminAzi_Units.Name = "label_de_EhminAzi_Units";
-            this.label_de_EhminAzi_Units.Size = new System.Drawing.Size(25, 13);
-            this.label_de_EhminAzi_Units.TabIndex = 69;
-            this.label_de_EhminAzi_Units.Text = "deg";
+            this.label_DE_EhminAzi_Units.AutoSize = true;
+            this.label_DE_EhminAzi_Units.Location = new System.Drawing.Point(652, 42);
+            this.label_DE_EhminAzi_Units.Name = "label_DE_EhminAzi_Units";
+            this.label_DE_EhminAzi_Units.Size = new System.Drawing.Size(25, 13);
+            this.label_DE_EhminAzi_Units.TabIndex = 69;
+            this.label_DE_EhminAzi_Units.Text = "deg";
             // 
             // label_DE_EhmaxRate_Units
             // 
@@ -139,14 +143,14 @@ namespace DFMGenerator_Ocean
             this.label_DE_EhminRate_default.TabIndex = 65;
             this.label_DE_EhminRate_default.Text = "Default value:";
             // 
-            // label_de_EhminAzi_default
+            // label_DE_EhminAzi_default
             // 
-            this.label_de_EhminAzi_default.AutoSize = true;
-            this.label_de_EhminAzi_default.Location = new System.Drawing.Point(456, 42);
-            this.label_de_EhminAzi_default.Name = "label_de_EhminAzi_default";
-            this.label_de_EhminAzi_default.Size = new System.Drawing.Size(73, 13);
-            this.label_de_EhminAzi_default.TabIndex = 64;
-            this.label_de_EhminAzi_default.Text = "Default value:";
+            this.label_DE_EhminAzi_default.AutoSize = true;
+            this.label_DE_EhminAzi_default.Location = new System.Drawing.Point(456, 42);
+            this.label_DE_EhminAzi_default.Name = "label_DE_EhminAzi_default";
+            this.label_DE_EhminAzi_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_EhminAzi_default.TabIndex = 64;
+            this.label_DE_EhminAzi_default.Text = "Default value:";
             // 
             // presentationBox_DE_EhmaxRate
             // 
@@ -154,6 +158,7 @@ namespace DFMGenerator_Ocean
             this.presentationBox_DE_EhmaxRate.Name = "presentationBox_DE_EhmaxRate";
             this.presentationBox_DE_EhmaxRate.Size = new System.Drawing.Size(135, 22);
             this.presentationBox_DE_EhmaxRate.TabIndex = 63;
+            this.presentationBox_DE_EhmaxRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhmaxRate_KeyDown);
             // 
             // presentationBox_DE_EhminRate
             // 
@@ -161,21 +166,24 @@ namespace DFMGenerator_Ocean
             this.presentationBox_DE_EhminRate.Name = "presentationBox_DE_EhminRate";
             this.presentationBox_DE_EhminRate.Size = new System.Drawing.Size(135, 22);
             this.presentationBox_DE_EhminRate.TabIndex = 62;
+            this.presentationBox_DE_EhminRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhminRate_KeyDown);
             // 
-            // presentationBox_dE_EhminAzi
+            // presentationBox_DE_EhminAzi
             // 
-            this.presentationBox_dE_EhminAzi.Location = new System.Drawing.Point(316, 37);
-            this.presentationBox_dE_EhminAzi.Name = "presentationBox_dE_EhminAzi";
-            this.presentationBox_dE_EhminAzi.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_dE_EhminAzi.TabIndex = 61;
+            this.presentationBox_DE_EhminAzi.Location = new System.Drawing.Point(316, 37);
+            this.presentationBox_DE_EhminAzi.Name = "presentationBox_DE_EhminAzi";
+            this.presentationBox_DE_EhminAzi.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_EhminAzi.TabIndex = 61;
+            this.presentationBox_DE_EhminAzi.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhminAzi_KeyDown);
             // 
-            // dropTarget_DE_EhmaxAzi
+            // dropTarget_DE_EhmaxRate
             // 
-            this.dropTarget_DE_EhmaxAzi.AllowDrop = true;
-            this.dropTarget_DE_EhmaxAzi.Location = new System.Drawing.Point(284, 92);
-            this.dropTarget_DE_EhmaxAzi.Name = "dropTarget_DE_EhmaxAzi";
-            this.dropTarget_DE_EhmaxAzi.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_EhmaxAzi.TabIndex = 60;
+            this.dropTarget_DE_EhmaxRate.AllowDrop = true;
+            this.dropTarget_DE_EhmaxRate.Location = new System.Drawing.Point(284, 92);
+            this.dropTarget_DE_EhmaxRate.Name = "dropTarget_DE_EhmaxRate";
+            this.dropTarget_DE_EhmaxRate.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_EhmaxRate.TabIndex = 60;
+            this.dropTarget_DE_EhmaxRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhmaxRate_DragDrop);
             // 
             // dropTarget_DE_EhminRate
             // 
@@ -184,6 +192,7 @@ namespace DFMGenerator_Ocean
             this.dropTarget_DE_EhminRate.Name = "dropTarget_DE_EhminRate";
             this.dropTarget_DE_EhminRate.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_EhminRate.TabIndex = 59;
+            this.dropTarget_DE_EhminRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhminRate_DragDrop);
             // 
             // dropTarget_DE_EhminAzi
             // 
@@ -192,6 +201,7 @@ namespace DFMGenerator_Ocean
             this.dropTarget_DE_EhminAzi.Name = "dropTarget_DE_EhminAzi";
             this.dropTarget_DE_EhminAzi.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_EhminAzi.TabIndex = 58;
+            this.dropTarget_DE_EhminAzi.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhminAzi_DragDrop);
             // 
             // label_DE_EhmaxRate
             // 
@@ -246,6 +256,7 @@ namespace DFMGenerator_Ocean
             this.btn_DE_Cancel.TabIndex = 77;
             this.btn_DE_Cancel.Text = "Cancel";
             this.btn_DE_Cancel.UseVisualStyleBackColor = true;
+            this.btn_DE_Cancel.Click += new System.EventHandler(this.btn_DE_Cancel_Click);
             // 
             // btn_DE_OK
             // 
@@ -257,6 +268,7 @@ namespace DFMGenerator_Ocean
             this.btn_DE_OK.TabIndex = 76;
             this.btn_DE_OK.Text = "OK";
             this.btn_DE_OK.UseVisualStyleBackColor = true;
+            this.btn_DE_OK.Click += new System.EventHandler(this.btn_DE_OK_Click);
             // 
             // unitTextBox_DE_UpliftRate_default
             // 
@@ -339,6 +351,7 @@ namespace DFMGenerator_Ocean
             this.presentationBox_DE_UpliftRate.Name = "presentationBox_DE_UpliftRate";
             this.presentationBox_DE_UpliftRate.Size = new System.Drawing.Size(134, 22);
             this.presentationBox_DE_UpliftRate.TabIndex = 86;
+            this.presentationBox_DE_UpliftRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_UpliftRate_KeyDown);
             // 
             // presentationBox_DE_TempChange
             // 
@@ -346,6 +359,7 @@ namespace DFMGenerator_Ocean
             this.presentationBox_DE_TempChange.Name = "presentationBox_DE_TempChange";
             this.presentationBox_DE_TempChange.Size = new System.Drawing.Size(135, 22);
             this.presentationBox_DE_TempChange.TabIndex = 85;
+            this.presentationBox_DE_TempChange.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_TempChange_KeyDown);
             // 
             // presentationBox_DE_OPRate
             // 
@@ -353,6 +367,7 @@ namespace DFMGenerator_Ocean
             this.presentationBox_DE_OPRate.Name = "presentationBox_DE_OPRate";
             this.presentationBox_DE_OPRate.Size = new System.Drawing.Size(135, 22);
             this.presentationBox_DE_OPRate.TabIndex = 84;
+            this.presentationBox_DE_OPRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_OPRate_KeyDown);
             // 
             // dropTarget_DE_UpliftRate
             // 
@@ -361,6 +376,7 @@ namespace DFMGenerator_Ocean
             this.dropTarget_DE_UpliftRate.Name = "dropTarget_DE_UpliftRate";
             this.dropTarget_DE_UpliftRate.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_UpliftRate.TabIndex = 83;
+            this.dropTarget_DE_UpliftRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_UpliftRate_DragDrop);
             // 
             // dropTarget_DE_TempChange
             // 
@@ -369,6 +385,7 @@ namespace DFMGenerator_Ocean
             this.dropTarget_DE_TempChange.Name = "dropTarget_DE_TempChange";
             this.dropTarget_DE_TempChange.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_TempChange.TabIndex = 82;
+            this.dropTarget_DE_TempChange.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_TempChange_DragDrop);
             // 
             // dropTarget_DE_OPRate
             // 
@@ -377,6 +394,7 @@ namespace DFMGenerator_Ocean
             this.dropTarget_DE_OPRate.Name = "dropTarget_DE_OPRate";
             this.dropTarget_DE_OPRate.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_OPRate.TabIndex = 81;
+            this.dropTarget_DE_OPRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_OPRate_DragDrop);
             // 
             // label_DE_UpliftRate
             // 
@@ -405,12 +423,12 @@ namespace DFMGenerator_Ocean
             this.label_DE_OPRate.TabIndex = 78;
             this.label_DE_OPRate.Text = "Fluid overpressure rate:";
             // 
-            // unitTextBox1
+            // unitTextBox_DE_StressArchingFactor
             // 
-            this.unitTextBox1.Location = new System.Drawing.Point(316, 205);
-            this.unitTextBox1.Name = "unitTextBox1";
-            this.unitTextBox1.Size = new System.Drawing.Size(134, 20);
-            this.unitTextBox1.TabIndex = 97;
+            this.unitTextBox_DE_StressArchingFactor.Location = new System.Drawing.Point(316, 205);
+            this.unitTextBox_DE_StressArchingFactor.Name = "unitTextBox_DE_StressArchingFactor";
+            this.unitTextBox_DE_StressArchingFactor.Size = new System.Drawing.Size(134, 20);
+            this.unitTextBox_DE_StressArchingFactor.TabIndex = 97;
             // 
             // label_DE_StressArchingFactor
             // 
@@ -421,12 +439,28 @@ namespace DFMGenerator_Ocean
             this.label_DE_StressArchingFactor.TabIndex = 96;
             this.label_DE_StressArchingFactor.Text = "Stress Arching Factor:";
             // 
-            // EditDeformationEpisode
+            // comboBox_DE_TimeUnits
+            // 
+            this.comboBox_DE_TimeUnits.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
+            comboBoxItem43.Text = "seconds";
+            comboBoxItem44.Text = "years";
+            comboBoxItem45.Text = "ma";
+            this.comboBox_DE_TimeUnits.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
+            comboBoxItem43,
+            comboBoxItem44,
+            comboBoxItem45});
+            this.comboBox_DE_TimeUnits.Location = new System.Drawing.Point(457, 11);
+            this.comboBox_DE_TimeUnits.Name = "comboBox_DE_TimeUnits";
+            this.comboBox_DE_TimeUnits.Size = new System.Drawing.Size(99, 22);
+            this.comboBox_DE_TimeUnits.TabIndex = 98;
+            // 
+            // DeformationEpisodeUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(749, 266);
-            this.Controls.Add(this.unitTextBox1);
+            this.Controls.Add(this.comboBox_DE_TimeUnits);
+            this.Controls.Add(this.unitTextBox_DE_StressArchingFactor);
             this.Controls.Add(this.label_DE_StressArchingFactor);
             this.Controls.Add(this.unitTextBox_DE_UpliftRate_default);
             this.Controls.Add(this.unitTextBox_DE_TempChange_default);
@@ -452,23 +486,23 @@ namespace DFMGenerator_Ocean
             this.Controls.Add(this.label_DE_DeformationDuration);
             this.Controls.Add(this.unitTextBox_DE_EhmaxRate_default);
             this.Controls.Add(this.unitTextBox_DE_EhminRate_default);
-            this.Controls.Add(this.unitTextBox_De_EhminAzi_default);
-            this.Controls.Add(this.label_de_EhminAzi_Units);
+            this.Controls.Add(this.unitTextBox_DE_EhminAzi_default);
+            this.Controls.Add(this.label_DE_EhminAzi_Units);
             this.Controls.Add(this.label_DE_EhmaxRate_Units);
             this.Controls.Add(this.label_DE_EhminRate_Units);
             this.Controls.Add(this.label_DE_EhmaxRate_default);
             this.Controls.Add(this.label_DE_EhminRate_default);
-            this.Controls.Add(this.label_de_EhminAzi_default);
+            this.Controls.Add(this.label_DE_EhminAzi_default);
             this.Controls.Add(this.presentationBox_DE_EhmaxRate);
             this.Controls.Add(this.presentationBox_DE_EhminRate);
-            this.Controls.Add(this.presentationBox_dE_EhminAzi);
-            this.Controls.Add(this.dropTarget_DE_EhmaxAzi);
+            this.Controls.Add(this.presentationBox_DE_EhminAzi);
+            this.Controls.Add(this.dropTarget_DE_EhmaxRate);
             this.Controls.Add(this.dropTarget_DE_EhminRate);
             this.Controls.Add(this.dropTarget_DE_EhminAzi);
             this.Controls.Add(this.label_DE_EhmaxRate);
             this.Controls.Add(this.label_DE_EhminRate);
             this.Controls.Add(this.label_DE_EhminAzi);
-            this.Name = "EditDeformationEpisode";
+            this.Name = "DeformationEpisodeUI";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -477,17 +511,17 @@ namespace DFMGenerator_Ocean
         #endregion
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhmaxRate_default;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhminRate_default;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_De_EhminAzi_default;
-        private System.Windows.Forms.Label label_de_EhminAzi_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhminAzi_default;
+        private System.Windows.Forms.Label label_DE_EhminAzi_Units;
         private System.Windows.Forms.Label label_DE_EhmaxRate_Units;
         private System.Windows.Forms.Label label_DE_EhminRate_Units;
         private System.Windows.Forms.Label label_DE_EhmaxRate_default;
         private System.Windows.Forms.Label label_DE_EhminRate_default;
-        private System.Windows.Forms.Label label_de_EhminAzi_default;
+        private System.Windows.Forms.Label label_DE_EhminAzi_default;
         private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhmaxRate;
         private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhminRate;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_dE_EhminAzi;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhmaxAzi;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhminAzi;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhmaxRate;
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhminRate;
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhminAzi;
         private System.Windows.Forms.Label label_DE_EhmaxRate;
@@ -515,7 +549,8 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_DE_UpliftRate;
         private System.Windows.Forms.Label label_DE_TempChange;
         private System.Windows.Forms.Label label_DE_OPRate;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox1;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_StressArchingFactor;
         private System.Windows.Forms.Label label_DE_StressArchingFactor;
+        private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_DE_TimeUnits;
     }
 }

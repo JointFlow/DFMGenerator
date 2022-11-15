@@ -112,11 +112,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DFMGeneratorDataSourceFactory.cs" />
-    <Compile Include="EditDeformationEpisode.cs">
+    <Compile Include="DeformationEpisodeUI.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="EditDeformationEpisode.Designer.cs">
-      <DependentUpon>EditDeformationEpisode.cs</DependentUpon>
+    <Compile Include="DeformationEpisodeUI.Designer.cs">
+      <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
     </Compile>
     <Compile Include="LaunchDFMGenerator.cs" />
     <Compile Include="DFMGeneratorWorkstep.cs" />
@@ -157,8 +157,8 @@
     <EmbeddedResource Include="DFMGeneratorUI.resx">
       <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="EditDeformationEpisode.resx">
-      <DependentUpon>EditDeformationEpisode.cs</DependentUpon>
+    <EmbeddedResource Include="DeformationEpisodeUI.resx">
+      <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

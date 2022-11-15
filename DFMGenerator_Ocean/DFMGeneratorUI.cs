@@ -852,8 +852,8 @@ namespace DFMGenerator_Ocean
 
         private void btnEditDeformationEpisode_Click(object sender, EventArgs e)
         {
-            EditDeformationEpisode dlg_EditDeformationEpisode = new EditDeformationEpisode();
-            dlg_EditDeformationEpisode.Text = "Deformation episode 1";
+            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, 0, context);
+            dlg_EditDeformationEpisode.Text = "Deformation episode";
             PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
         }
     }

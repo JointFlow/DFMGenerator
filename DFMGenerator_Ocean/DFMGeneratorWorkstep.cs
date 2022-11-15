@@ -207,7 +207,7 @@ namespace DFMGenerator_Ocean
                     // Global deformation load parameter lists
                     // These contain one entry for each deformation episode, in order
                     // They will be copied to all gridblocks
-                    int noDeformationEpisodes = arguments.Argument_DeformationEpisode.Count;
+                    int noDeformationEpisodes = arguments.Argument_NoDeformationEpisodes;
                     List<double> EhminAzi_list = new List<double>();
                     List<double> EhminRate_GeologicalTimeUnits_list = new List<double>();
                     List<double> EhmaxRate_GeologicalTimeUnits_list = new List<double>();
@@ -297,7 +297,7 @@ namespace DFMGenerator_Ocean
                         else
                             DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(DeformationEpisodeDuration_GeologicalTimeUnits);
 
-                        DeformationEpisodeTimeUnits_list.Add(arguments.DeformationEpisodeTimeUnits(deformationEpisodeNo));
+                        DeformationEpisodeTimeUnits_list.Add((TimeUnits)arguments.DeformationEpisodeTimeUnits(deformationEpisodeNo));
                     }
 
 #if DEBUG_FRACS
@@ -886,7 +886,7 @@ namespace DFMGenerator_Ocean
                     // Strain orientation and rate
                     for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                     {
-                        generalInputParams += arguments.Argument_DeformationEpisode[deformationEpisodeNo];
+                        generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo);
                         generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
@@ -4088,7 +4088,8 @@ namespace DFMGenerator_Ocean
             private int argument_BottomLayerK = 1;
             // Deformation load
             private List<string> argument_DeformationEpisode = new List<string>();
-            private List<TimeUnits> argument_DeformationEpisodeTimeUnits = new List<TimeUnits>();
+            private List<double> argument_DeformationEpisodeDuration = new List<double>();
+            private List<int> argument_DeformationEpisodeTimeUnits = new List<int>();
             private List<double> argument_EhminAzi_default = new List<double>();
             private List<Droid> argument_EhminAzi = new List<Droid>();
             // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
@@ -4105,7 +4106,6 @@ namespace DFMGenerator_Ocean
             private List<double> argument_AppliedUpliftRate_default = new List<double>();
             private List<Droid> argument_AppliedUpliftRate = new List<Droid>();
             private List<double> argument_StressArchingFactor = new List<double>();
-            private List<double> argument_DeformationEpisodeDuration = new List<double>();
             private bool argument_GenerateExplicitDFN = true;
             private int argument_NoIntermediateOutputs = 0;
             private bool argument_IncludeObliqueFracs = false;
@@ -4272,10 +4272,15 @@ namespace DFMGenerator_Ocean
             }
 
             // Deformation load
-            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
-            public List<string> Argument_DeformationEpisode
+            [Description("Number of deformation episodes", "Number of deformation episodes")]
+            public int Argument_NoDeformationEpisodes
             {
-                internal get { return this.argument_DeformationEpisode; }
+                get { return this.argument_DeformationEpisode.Count; }
+            }
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            private List<string> Argument_DeformationEpisode
+            {
+                get { return this.argument_DeformationEpisode; }
                 set { this.argument_DeformationEpisode = value; }
             }
             internal string DeformationEpisode(int episodeIndex)
@@ -4301,13 +4306,42 @@ namespace DFMGenerator_Ocean
                 }
             }
 
-            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
-            public List<TimeUnits> Argument_DeformationEpisodeTimeUnits
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            private List<double> Argument_DeformationEpisodeDuration
             {
-                internal get { return this.argument_DeformationEpisodeTimeUnits; }
+                get { return this.argument_DeformationEpisodeDuration; }
+                set { this.argument_DeformationEpisodeDuration = value; }
+            }
+            internal double DeformationEpisodeDuration(int episodeIndex)
+            {
+                try
+                {
+                    return this.argument_DeformationEpisodeDuration[episodeIndex];
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    return double.NaN;
+                }
+            }
+            public void DeformationEpisodeDuration(double value, int episodeIndex)
+            {
+                try
+                {
+                    this.argument_DeformationEpisodeDuration[episodeIndex] = value;
+                }
+                catch (System.IndexOutOfRangeException)
+                {
+                    this.argument_DeformationEpisodeDuration.Add(value);
+                }
+            }
+
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            private List<int> Argument_DeformationEpisodeTimeUnits
+            {
+                get { return this.argument_DeformationEpisodeTimeUnits; }
                 set { this.argument_DeformationEpisodeTimeUnits = value; }
             }
-            internal TimeUnits DeformationEpisodeTimeUnits(int episodeIndex)
+            internal int DeformationEpisodeTimeUnits(int episodeIndex)
             {
                 try
                 {
@@ -4315,10 +4349,10 @@ namespace DFMGenerator_Ocean
                 }
                 catch (System.IndexOutOfRangeException)
                 {
-                    return TimeUnits.second;
+                    return 0;
                 }
             }
-            public void DeformationEpisodeTimeUnits(TimeUnits value, int episodeIndex)
+            public void DeformationEpisodeTimeUnits(int value, int episodeIndex)
             {
                 try
                 {
@@ -4331,9 +4365,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
-            public List<double> Argument_EhminAzi_default
+            private List<double> Argument_EhminAzi_default
             {
-                internal get { return this.argument_EhminAzi_default; }
+                get { return this.argument_EhminAzi_default; }
                 set { this.argument_EhminAzi_default = value; }
             }
             internal double EhminAzi_default(int episodeIndex)
@@ -4360,12 +4394,12 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
-            public List<Droid> Argument_EhminAzi
+            private List<Droid> Argument_EhminAzi
             {
-                internal get { return this.argument_EhminAzi; }
+                get { return this.argument_EhminAzi; }
                 set { this.argument_EhminAzi = value; }
             }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminAzi (int episodeIndex)
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminAzi(int episodeIndex)
             {
                 try
                 {
@@ -4392,9 +4426,9 @@ namespace DFMGenerator_Ocean
             // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
             // Unit labelling must be handled manually
             [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<double> Argument_EhminRate_default
+            private List<double> Argument_EhminRate_default
             {
-                internal get { return this.argument_EhminRate_default; }
+                get { return this.argument_EhminRate_default; }
                 set { this.argument_EhminRate_default = value; }
             }
             internal double EhminRate_default(int episodeIndex)
@@ -4421,9 +4455,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<Droid> Argument_EhminRate
+            private List<Droid> Argument_EhminRate
             {
-                internal get { return this.argument_EhminRate; }
+                get { return this.argument_EhminRate; }
                 set { this.argument_EhminRate = value; }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminRate(int episodeIndex)
@@ -4450,9 +4484,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<double> Argument_EhmaxRate_default
+            private List<double> Argument_EhmaxRate_default
             {
-                internal get { return this.argument_EhmaxRate_default; }
+                get { return this.argument_EhmaxRate_default; }
                 set { this.argument_EhmaxRate_default = value; }
             }
             internal double EhmaxRate_default(int episodeIndex)
@@ -4479,9 +4513,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<Droid> Argument_EhmaxRate
+            private List<Droid> Argument_EhmaxRate
             {
-                internal get { return this.argument_EhmaxRate; }
+                get { return this.argument_EhmaxRate; }
                 set { this.argument_EhmaxRate = value; }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhmaxRate(int episodeIndex)
@@ -4508,9 +4542,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
-            public List<double> Argument_AppliedOverpressureRate_default
+            private List<double> Argument_AppliedOverpressureRate_default
             {
-                internal get { return this.argument_AppliedOverpressureRate_default; }
+                get { return this.argument_AppliedOverpressureRate_default; }
                 set { this.argument_AppliedOverpressureRate_default = value; }
             }
             internal double AppliedOverpressureRate_default(int episodeIndex)
@@ -4537,9 +4571,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
-            public List<Droid> Argument_AppliedOverpressureRate
+            private List<Droid> Argument_AppliedOverpressureRate
             {
-                internal get { return this.argument_AppliedOverpressureRate; }
+                get { return this.argument_AppliedOverpressureRate; }
                 set { this.argument_AppliedOverpressureRate = value; }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedOverpressureRate(int episodeIndex)
@@ -4566,9 +4600,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
-            public List<double> Argument_AppliedTemperatureChange_default
+            private List<double> Argument_AppliedTemperatureChange_default
             {
-                internal get { return this.argument_AppliedTemperatureChange_default; }
+                get { return this.argument_AppliedTemperatureChange_default; }
                 set { this.argument_AppliedTemperatureChange_default = value; }
             }
             internal double AppliedTemperatureChange_default(int episodeIndex)
@@ -4595,9 +4629,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
-            public List<Droid> Argument_AppliedTemperatureChange
+            private List<Droid> Argument_AppliedTemperatureChange
             {
-                internal get { return this.argument_AppliedTemperatureChange; }
+                get { return this.argument_AppliedTemperatureChange; }
                 set { this.argument_AppliedTemperatureChange = value; }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedTemperatureChange(int episodeIndex)
@@ -4624,9 +4658,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
-            public List<double> Argument_AppliedUpliftRate_default
+            private List<double> Argument_AppliedUpliftRate_default
             {
-                internal get { return this.argument_AppliedUpliftRate_default; }
+                get { return this.argument_AppliedUpliftRate_default; }
                 set { this.argument_AppliedUpliftRate_default = value; }
             }
             internal double AppliedUpliftRate_default(int episodeIndex)
@@ -4653,9 +4687,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
-            public List<Droid> Argument_AppliedUpliftRate
+            private List<Droid> Argument_AppliedUpliftRate
             {
-                internal get { return this.argument_AppliedUpliftRate; }
+                get { return this.argument_AppliedUpliftRate; }
                 set { this.argument_AppliedUpliftRate = value; }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedUpliftRate(int episodeIndex)
@@ -4682,9 +4716,9 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
-            public List<double> Argument_StressArchingFactor
+            private List<double> Argument_StressArchingFactor
             {
-                internal get { return this.argument_StressArchingFactor; }
+                get { return this.argument_StressArchingFactor; }
                 set { this.argument_StressArchingFactor = value; }
             }
             internal double StressArchingFactor(int episodeIndex)
@@ -4709,34 +4743,55 @@ namespace DFMGenerator_Ocean
                     this.argument_StressArchingFactor.Add(value);
                 }
             }
-
-            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
-            public List<double> Argument_DeformationEpisodeDuration
+            /// <summary>
+            /// Add a new deformation episode to the list, populated with default values
+            /// </summary>
+            public void AddDeformationEpisode()
             {
-                internal get { return this.argument_DeformationEpisodeDuration; }
-                set { this.argument_DeformationEpisodeDuration = value; }
+                int deformationEpisodeIndex = Argument_NoDeformationEpisodes + 1;
+                this.argument_DeformationEpisode.Add(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex));
+                this.argument_DeformationEpisodeDuration.Add(-1);
+                this.argument_DeformationEpisodeTimeUnits.Add(2); // Default time units are ma
+                this.argument_EhminAzi_default.Add(0);
+                this.argument_EhminAzi.Add(null);
+                this.argument_EhminRate_default.Add(0);
+                this.argument_EhminRate.Add(null);
+                this.argument_EhmaxRate_default.Add(0);
+                this.argument_EhmaxRate.Add(null);
+                this.argument_AppliedOverpressureRate_default.Add(0);
+                this.argument_AppliedOverpressureRate.Add(null);
+                this.argument_AppliedTemperatureChange_default.Add(0);
+                this.argument_AppliedTemperatureChange.Add(null);
+                this.argument_AppliedUpliftRate_default.Add(0);
+                this.argument_AppliedUpliftRate.Add(null);
+                this.argument_StressArchingFactor.Add(0);
             }
-            internal double DeformationEpisodeDuration(int episodeIndex)
+            /// <summary>
+            /// Remove a deformation episode at a specified index
+            /// </summary>
+            /// <param name="deformationEpisodeIndex">Index of the deformation episode to remove (zero-based)</param>
+            public void RemoveDeformationEpisode(int deformationEpisodeIndex)
             {
-                try
-                {
-                    return this.argument_DeformationEpisodeDuration[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void DeformationEpisodeDuration(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_DeformationEpisodeDuration[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_DeformationEpisodeDuration.Add(value);
-                }
+                if (deformationEpisodeIndex < 0)
+                    deformationEpisodeIndex = 0;
+                if (deformationEpisodeIndex >= Argument_NoDeformationEpisodes)
+                    deformationEpisodeIndex = Argument_NoDeformationEpisodes - 1;
+                this.argument_DeformationEpisode.RemoveAt(deformationEpisodeIndex);
+                this.argument_DeformationEpisodeDuration.RemoveAt(deformationEpisodeIndex);
+                this.argument_DeformationEpisodeTimeUnits.RemoveAt(deformationEpisodeIndex);
+                this.argument_EhminAzi_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_EhminAzi.RemoveAt(deformationEpisodeIndex);
+                this.argument_EhminRate_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_EhminRate.RemoveAt(deformationEpisodeIndex);
+                this.argument_EhmaxRate_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_EhmaxRate.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedOverpressureRate_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedOverpressureRate.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedTemperatureChange_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedTemperatureChange_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedUpliftRate_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedUpliftRate.RemoveAt(deformationEpisodeIndex);
+                this.argument_StressArchingFactor.RemoveAt(deformationEpisodeIndex);
             }
 
             [Description("Generate explicit DFN?", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
@@ -5377,25 +5432,25 @@ namespace DFMGenerator_Ocean
                 argument_NoRowsJ = 1;
                 argument_TopLayerK = 1;
                 argument_BottomLayerK = 1;
-                argument_DeformationEpisode = new List<string>();
-                argument_EhminAzi_default = new List<double>();
-                argument_EhminAzi = new List<Droid>();
+                argument_DeformationEpisode.Clear();
+                argument_EhminAzi_default.Clear();
+                argument_EhminAzi .Clear();
                 // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
                 // Therefore these properties are stored in geological time units (typically Ma), not SI units (/s)
                 // Unit labelling must be handled manually
-                argument_EhminRate_default = new List<double>();
-                argument_EhminRate = new List<Droid>();
-                argument_EhmaxRate_default = new List<double>();
-                argument_EhmaxRate = new List<Droid>();
-                argument_AppliedOverpressureRate_default = new List<double>();
-                argument_AppliedOverpressureRate = new List<Droid>();
-                argument_AppliedTemperatureChange_default = new List<double>();
-                argument_AppliedTemperatureChange = new List<Droid>();
-                argument_AppliedUpliftRate_default = new List<double>();
-                argument_AppliedUpliftRate = new List<Droid>();
-                argument_StressArchingFactor = new List<double>();
-                argument_DeformationEpisodeDuration = new List<double>();
-                argument_DeformationEpisodeTimeUnits = new List<TimeUnits>();
+                argument_EhminRate_default.Clear();
+                argument_EhminRate.Clear();
+                argument_EhmaxRate_default.Clear();
+                argument_EhmaxRate.Clear();
+                argument_AppliedOverpressureRate_default.Clear();
+                argument_AppliedOverpressureRate.Clear();
+                argument_AppliedTemperatureChange_default.Clear();
+                argument_AppliedTemperatureChange.Clear();
+                argument_AppliedUpliftRate_default.Clear();
+                argument_AppliedUpliftRate.Clear();
+                argument_StressArchingFactor.Clear();
+                argument_DeformationEpisodeDuration.Clear();
+                argument_DeformationEpisodeTimeUnits.Clear();
                 argument_GenerateExplicitDFN = true;
                 argument_NoIntermediateOutputs = 0;
                 argument_IncludeObliqueFracs = false;
@@ -5436,6 +5491,7 @@ namespace DFMGenerator_Ocean
                 // Stress state
                 argument_StressDistribution = 1;
                 argument_DepthAtDeformation_default = double.NaN;
+                argument_DepthAtDeformation = null;
                 argument_MeanOverlyingSedimentDensity = 2250;
                 argument_FluidDensity = 1000;
                 argument_InitialOverpressure = 0;
@@ -5501,7 +5557,6 @@ namespace DFMGenerator_Ocean
                 argument_MinimumExplicitMicrofractureRadius = double.NaN;
                 argument_NoMicrofractureCornerpoints = 8;
             }
-
 #if MANAGED_PERSISTENCE
             // IIdentifiable Members
             [Archived]
