@@ -4746,10 +4746,11 @@ namespace DFMGenerator_Ocean
             /// <summary>
             /// Add a new deformation episode to the list, populated with default values
             /// </summary>
-            public void AddDeformationEpisode()
+            /// <returns>Index number of the new deformation episode (zero-based)</returns>
+            public int AddDeformationEpisode()
             {
-                int deformationEpisodeIndex = Argument_NoDeformationEpisodes + 1;
-                this.argument_DeformationEpisode.Add(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex));
+                int deformationEpisodeIndex = Argument_NoDeformationEpisodes; // Zero-based
+                this.argument_DeformationEpisode.Add(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex + 1)); // In the episode name, the index number is 1-based
                 this.argument_DeformationEpisodeDuration.Add(-1);
                 this.argument_DeformationEpisodeTimeUnits.Add(2); // Default time units are ma
                 this.argument_EhminAzi_default.Add(0);
@@ -4765,6 +4766,7 @@ namespace DFMGenerator_Ocean
                 this.argument_AppliedUpliftRate_default.Add(0);
                 this.argument_AppliedUpliftRate.Add(null);
                 this.argument_StressArchingFactor.Add(0);
+                return deformationEpisodeIndex;
             }
             /// <summary>
             /// Remove a deformation episode at a specified index

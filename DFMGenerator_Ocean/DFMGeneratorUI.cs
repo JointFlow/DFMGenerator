@@ -72,16 +72,18 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_NoRowsJ, textBox_NoRowsJ);
             UpdateTextBox(args.Argument_TopLayerK, textBox_TopLayerK);
             UpdateTextBox(args.Argument_BottomLayerK, textBox_BottomLayerK);
-            UpdatePropertyPresentationBox(args.EhminAzi(0), presentationBox_EhminAzi);
-            // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-            // Because geological time units are very different from SI time units, this conversion is carried out when downloading data from the dialog box or when reading the grid property values
-            // Until that point, all data will be kept in project units
-            UpdatePropertyPresentationBox(args.EhminRate(0), presentationBox_EhminRate);
-            UpdatePropertyPresentationBox(args.EhmaxRate(0), presentationBox_EhmaxRate);
-            SetStrainRateUnits();
-            UpdateTextBox(args.EhminAzi_default(0), unitTextBox_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_EhminAzi_Units);
-            UpdateTextBox(args.EhminRate_default(0), unitTextBox_EhminRate_default);
-            UpdateTextBox(args.EhmaxRate_default(0), unitTextBox_EhmaxRate_default);
+            // Populate the list of deformation episodes
+            int noDeformationEpisodes = args.Argument_NoDeformationEpisodes;
+            listBox_DeformationEpisodes.BeginUpdate();
+            listBox_DeformationEpisodes.Items.Clear();
+            for(int deformationEpisodeIndex = 0; deformationEpisodeIndex<noDeformationEpisodes;deformationEpisodeIndex++)
+            {
+                ListBoxItem nextItem = new ListBoxItem();
+                nextItem.Text = args.DeformationEpisode(deformationEpisodeIndex);
+                listBox_DeformationEpisodes.Items.Add(args.DeformationEpisode(deformationEpisodeIndex));
+            }
+            listBox_DeformationEpisodes.EndUpdate();
+            listBox_DeformationEpisodes.SelectionMode = SelectionMode.One;
             UpdateCheckBox(args.Argument_GenerateExplicitDFN, checkBox_GenerateExplicitDFN);
             UpdateNumericBox(args.Argument_NoIntermediateOutputs, numericUpDown_NoIntermediateOutputs);
             UpdateCheckBox(args.Argument_IncludeObliqueFracs, checkBox_IncludeObliqueFracs);
@@ -197,12 +199,6 @@ namespace DFMGenerator_Ocean
             args.Argument_NoRowsJ = GetIntFromTextBox(textBox_NoRowsJ);
             args.Argument_TopLayerK = GetIntFromTextBox(textBox_TopLayerK);
             args.Argument_BottomLayerK = GetIntFromTextBox(textBox_BottomLayerK);
-            args.EhminAzi(presentationBox_EhminAzi.Tag as Property, 0);
-            args.EhminRate(presentationBox_EhminRate.Tag as Property, 0);
-            args.EhmaxRate(presentationBox_EhmaxRate.Tag as Property, 0);
-            args.EhminAzi_default(GetDoubleFromTextBox(unitTextBox_EhminAzi_default), 0);
-            args.EhminRate_default(GetDoubleFromTextBox(unitTextBox_EhminRate_default), 0);
-            args.EhmaxRate_default(GetDoubleFromTextBox(unitTextBox_EhmaxRate_default), 0);
             args.Argument_GenerateExplicitDFN = checkBox_GenerateExplicitDFN.Checked;
             args.Argument_NoIntermediateOutputs = GetIntFromNumericBox(numericUpDown_NoIntermediateOutputs);
             args.Argument_IncludeObliqueFracs = checkBox_IncludeObliqueFracs.Checked;
@@ -572,12 +568,6 @@ namespace DFMGenerator_Ocean
                 AUnit = "fracs";
             label_InitialMicrofractureDensity_Units.Text = AUnit;
         }
-        private void SetStrainRateUnits()
-        {
-            string StrainRateUnits = string.Format("/{0}", PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale).Symbol);
-            label_EhminRate_Units.Text = StrainRateUnits;
-            label_EhmaxRate_Units.Text = StrainRateUnits;
-        }
         #endregion
 
         #region EventHandlers
@@ -608,24 +598,6 @@ namespace DFMGenerator_Ocean
         {
             Grid droppedGrid = e.Data.GetData(typeof(object)) as Grid;
             UpdateGridPresentationBox(droppedGrid);
-        }
-
-        private void dropTarget_EhminAzi_DragDrop(object sender, DragEventArgs e)
-        {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_EhminAzi);
-        }
-
-        private void dropTarget_EhminRate_DragDrop(object sender, DragEventArgs e)
-        {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_EhminRate);
-        }
-
-        private void dropTarget_EhmaxAzi_DragDrop(object sender, DragEventArgs e)
-        {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_EhmaxRate);
         }
 
         private void dropTarget_YoungsMod_DragDrop(object sender, DragEventArgs e)
@@ -693,33 +665,6 @@ namespace DFMGenerator_Ocean
             if (e.KeyCode == Keys.Delete)
             {
                 UpdateGridPresentationBox(Grid.NullObject);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_EhminAzi_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_EhminAzi);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_EhminRate_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_EhminRate);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_EhmaxRate_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_EhmaxRate);
                 e.Handled = true;
             }
         }
@@ -852,9 +797,31 @@ namespace DFMGenerator_Ocean
 
         private void btnEditDeformationEpisode_Click(object sender, EventArgs e)
         {
-            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, 0, context);
-            dlg_EditDeformationEpisode.Text = "Deformation episode";
+            int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
+            if (deformationEpisodeIndex < 0)
+                return;
+            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, deformationEpisodeIndex, context);
             PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
+            updateUIFromArgs();
+        }
+
+        private void btnAddDeformationEpisode_Click(object sender, EventArgs e)
+        {
+            int deformationEpisodeIndex = args.AddDeformationEpisode();
+            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, deformationEpisodeIndex, context);
+            PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
+            updateUIFromArgs();
+            listBox_DeformationEpisodes.SelectedIndex = deformationEpisodeIndex;
+        }
+
+        private void btnRemoveDeformationEpisode_Click(object sender, EventArgs e)
+        {
+            int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
+            if (deformationEpisodeIndex < 0)
+                return;
+            args.RemoveDeformationEpisode(deformationEpisodeIndex);
+            listBox_DeformationEpisodes.SelectedIndex = -1;
+            updateUIFromArgs();
         }
     }
 }

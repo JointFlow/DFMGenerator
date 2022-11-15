@@ -117,4 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <metadata name="toolTipManager_DeformationEpisode.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="toolTipItem1.Text" xml:space="preserve">
+    <value>Fracturing is driven by an applied horizontal strain, specified as a minimum and maximum strain rate and an orientation. Specify the horizontal strain data as a grid property to model lateral variations in the strain orientation and rate. If no grid property is specified, the model will apply the specified default values to all cells.</value>
+  </data>
+  <data name="toolTipItem2.Text" xml:space="preserve">
+    <value>This represents the direction of maximum extension, and controls the orientation of the fractures in the DFN: the primary fracture set forms perpendicular to this and the secondary fracture set forms parallel to this. If a grid property is specified, the fractures will bend at cell boundaries to reflect changes in the strain orientation.</value>
+  </data>
+  <data name="toolTipItem3.Text" xml:space="preserve">
+    <value>NB extensional strain is negative, so the minimum horizontal strain rate represents the maximum extension rate, and should have predominantly negative values; typical values are in the range -0.001 to -0.01/ma. The maximum horizontal strain rate may be negative, zero or positive.</value>
+  </data>
 </root>

@@ -29,9 +29,27 @@ namespace DFMGenerator_Ocean
         /// </summary>
         private void InitializeComponent()
         {
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem43 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem44 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem45 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            this.components = new System.ComponentModel.Container();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem1 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem2 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem3 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo1 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem1 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DeformationEpisodeUI));
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo2 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem2 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem8 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem9 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             this.unitTextBox_DE_EhmaxRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.unitTextBox_DE_EhminRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.unitTextBox_DE_EhminAzi_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
@@ -75,6 +93,15 @@ namespace DFMGenerator_Ocean
             this.unitTextBox_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.label_DE_StressArchingFactor = new System.Windows.Forms.Label();
             this.comboBox_DE_TimeUnits = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
+            this.toolTipManager_DeformationEpisode = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
+            this.toolTipHotspot_Eh = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_EhminRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_TempChange = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_UpliftRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_OPRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).BeginInit();
             this.SuspendLayout();
             // 
             // unitTextBox_DE_EhmaxRate_default
@@ -442,23 +469,118 @@ namespace DFMGenerator_Ocean
             // comboBox_DE_TimeUnits
             // 
             this.comboBox_DE_TimeUnits.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem43.Text = "seconds";
-            comboBoxItem44.Text = "years";
-            comboBoxItem45.Text = "ma";
+            comboBoxItem1.Text = "seconds";
+            comboBoxItem2.Text = "years";
+            comboBoxItem3.Text = "ma";
             this.comboBox_DE_TimeUnits.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem43,
-            comboBoxItem44,
-            comboBoxItem45});
+            comboBoxItem1,
+            comboBoxItem2,
+            comboBoxItem3});
             this.comboBox_DE_TimeUnits.Location = new System.Drawing.Point(457, 11);
             this.comboBox_DE_TimeUnits.Name = "comboBox_DE_TimeUnits";
             this.comboBox_DE_TimeUnits.Size = new System.Drawing.Size(99, 22);
             this.comboBox_DE_TimeUnits.TabIndex = 98;
+            // 
+            // toolTipHotspot_Eh
+            // 
+            this.toolTipHotspot_Eh.Location = new System.Drawing.Point(626, 11);
+            this.toolTipHotspot_Eh.Name = "toolTipHotspot_Eh";
+            this.toolTipHotspot_Eh.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_Eh.TabIndex = 99;
+            toolTipItem1.Text = resources.GetString("toolTipItem1.Text");
+            toolTipInfo1.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem1});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_Eh, toolTipInfo1);
+            // 
+            // toolTipHotspot_EhminAzi
+            // 
+            this.toolTipHotspot_EhminAzi.Location = new System.Drawing.Point(717, 39);
+            this.toolTipHotspot_EhminAzi.Name = "toolTipHotspot_EhminAzi";
+            this.toolTipHotspot_EhminAzi.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_EhminAzi.TabIndex = 100;
+            toolTipItem2.Text = resources.GetString("toolTipItem2.Text");
+            toolTipInfo2.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem2});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_EhminAzi, toolTipInfo2);
+            // 
+            // toolTipHotspot_EhminRate
+            // 
+            this.toolTipHotspot_EhminRate.Location = new System.Drawing.Point(717, 81);
+            this.toolTipHotspot_EhminRate.Name = "toolTipHotspot_EhminRate";
+            this.toolTipHotspot_EhminRate.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_EhminRate.TabIndex = 101;
+            toolTipItem3.Text = resources.GetString("toolTipItem3.Text");
+            toolTipInfo3.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem3});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_EhminRate, toolTipInfo3);
+            // 
+            // toolTipHotspot_TempChange
+            // 
+            this.toolTipHotspot_TempChange.Location = new System.Drawing.Point(717, 151);
+            this.toolTipHotspot_TempChange.Name = "toolTipHotspot_TempChange";
+            this.toolTipHotspot_TempChange.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_TempChange.TabIndex = 102;
+            toolTipItem4.Text = "Rate of temperature change, excluding temperature change caused by uplift.";
+            toolTipInfo4.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem4});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_TempChange, toolTipInfo4);
+            // 
+            // toolTipHotspot_UpliftRate
+            // 
+            this.toolTipHotspot_UpliftRate.Location = new System.Drawing.Point(717, 179);
+            this.toolTipHotspot_UpliftRate.Name = "toolTipHotspot_UpliftRate";
+            this.toolTipHotspot_UpliftRate.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_UpliftRate.TabIndex = 103;
+            toolTipItem5.Text = "Rate of uplift. This will cause change in lithostatic stress, fluid pressure and " +
+    "temperature, determined by the fluid and overburden densities and the geothermal" +
+    " gradient.";
+            toolTipInfo5.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem5});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_UpliftRate, toolTipInfo5);
+            // 
+            // toolTipHotspot3
+            // 
+            this.toolTipHotspot3.Location = new System.Drawing.Point(460, 205);
+            this.toolTipHotspot3.Name = "toolTipHotspot3";
+            this.toolTipHotspot3.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot3.TabIndex = 104;
+            toolTipItem6.Text = "he Stress Arching Factor controls the proportion of vertical stress change due to" +
+    " fluid pressure and thermal loads that is accommodated by stress arching:";
+            toolTipItem7.ShowBullet = true;
+            toolTipItem7.Text = "Set to 0 for no stress arching (no change in vertical stress)";
+            toolTipItem8.ShowBullet = true;
+            toolTipItem8.Text = "Set to 1 for complete stress arching (change in vertical stress is equal to chang" +
+    "e in horizontal stress)";
+            toolTipInfo6.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem6,
+            toolTipItem7,
+            toolTipItem8});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot3, toolTipInfo6);
+            // 
+            // toolTipHotspot_OPRate
+            // 
+            this.toolTipHotspot_OPRate.Location = new System.Drawing.Point(717, 123);
+            this.toolTipHotspot_OPRate.Name = "toolTipHotspot_OPRate";
+            this.toolTipHotspot_OPRate.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_OPRate.TabIndex = 105;
+            toolTipItem9.Text = "Rate of change of fluid overpressure, excluding pressure change caused by uplift." +
+    "";
+            toolTipInfo7.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem9});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_OPRate, toolTipInfo7);
             // 
             // DeformationEpisodeUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(749, 266);
+            this.Controls.Add(this.toolTipHotspot_OPRate);
+            this.Controls.Add(this.toolTipHotspot3);
+            this.Controls.Add(this.toolTipHotspot_UpliftRate);
+            this.Controls.Add(this.toolTipHotspot_TempChange);
+            this.Controls.Add(this.toolTipHotspot_EhminRate);
+            this.Controls.Add(this.toolTipHotspot_EhminAzi);
+            this.Controls.Add(this.toolTipHotspot_Eh);
             this.Controls.Add(this.comboBox_DE_TimeUnits);
             this.Controls.Add(this.unitTextBox_DE_StressArchingFactor);
             this.Controls.Add(this.label_DE_StressArchingFactor);
@@ -503,6 +625,7 @@ namespace DFMGenerator_Ocean
             this.Controls.Add(this.label_DE_EhminRate);
             this.Controls.Add(this.label_DE_EhminAzi);
             this.Name = "DeformationEpisodeUI";
+            ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -552,5 +675,13 @@ namespace DFMGenerator_Ocean
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_StressArchingFactor;
         private System.Windows.Forms.Label label_DE_StressArchingFactor;
         private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_DE_TimeUnits;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipManager toolTipManager_DeformationEpisode;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_Eh;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_EhminAzi;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_EhminRate;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_TempChange;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_UpliftRate;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot3;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_OPRate;
     }
 }
