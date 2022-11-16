@@ -2164,7 +2164,7 @@ namespace DFMGenerator_Standalone
                     NEbottom = PillarBottoms[RowNo + 1, ColNo + 1];
                     SEbottom = PillarBottoms[RowNo, ColNo + 1];
 
-                    // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift and layer thickness, unless the initial depth has been specified
+                    // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the initial depth has been specified
                     double local_Depth;
                     if (OverwriteDepth)
                     {

@@ -46,6 +46,7 @@ namespace DFMGenerator_Ocean
             this.args = args;
             this.deformationEpisodeIndex = deformationEpisodeIndex;
             this.context = context;
+            updateUIFromArgs();
 
             this.btn_DE_OK.Image = PetrelImages.OK;
             this.btn_DE_Cancel.Image = PetrelImages.Cancel;
@@ -90,74 +91,25 @@ namespace DFMGenerator_Ocean
 
         private void updateArgsFromUI()
         {
-            // Get data from the dialog box
-            Property ehminAzi = presentationBox_DE_EhminAzi.Tag as Property;
-            Property ehminRate = presentationBox_DE_EhminRate.Tag as Property;
-            Property ehmaxRate = presentationBox_DE_EhmaxRate.Tag as Property;
-            Property OPRate = presentationBox_DE_OPRate.Tag as Property;
-            Property tempChange = presentationBox_DE_TempChange.Tag as Property;
-            Property upliftRate = presentationBox_DE_UpliftRate.Tag as Property;
-            double duration = GetDoubleFromTextBox(unitTextBox_DE_DeformationDuration);
-            int timeUnits = comboBox_DE_TimeUnits.SelectedIndex;
-            double ehminAzi_default = GetDoubleFromTextBox(unitTextBox_DE_EhminAzi_default);
-            double ehminRate_default = GetDoubleFromTextBox(unitTextBox_DE_EhminRate_default);
-            double ehmaxRate_default = GetDoubleFromTextBox(unitTextBox_DE_EhmaxRate_default);
-            double OPRate_default = GetDoubleFromTextBox(unitTextBox_DE_OPRate_default);
-            double tempChange_default = GetDoubleFromTextBox(unitTextBox_DE_TempChange_default);
-            double upliftRate_default = GetDoubleFromTextBox(unitTextBox_DE_UpliftRate_default);
-            double stressArchingFactor = GetDoubleFromTextBox(unitTextBox_DE_StressArchingFactor);
-
-            // Create a name based on deformation episode duration and specified load
-            string deformationEpisodeName = string.Format("Deformation episode {0}: ", deformationEpisodeIndex);
-            string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
-            if (duration >= 0)
-                deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
-            if (ehminRate!=null)
-            {
-                deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
-                if (ehminAzi != null)
-                    deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
-                else
-                    deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
-            }
-            else if (ehminRate_default != 0)
-            {
-                deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
-                if (ehminAzi != null)
-                    deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
-                else
-                    deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
-            }
-            if (OPRate != null)
-                deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
-            else if (OPRate_default != 0)
-                deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
-            if (tempChange != null)
-                deformationEpisodeName += string.Format(" Temperature {0}", tempChange.Name);
-            else if (tempChange_default != 0)
-                deformationEpisodeName += string.Format(" Temperature {0}degK/{1}", Math.Round(tempChange_default), timeUnitText);
-            if (upliftRate != null)
-                deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
-            else if (upliftRate_default != 0)
-                deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
-
             // Write data to the argument package
-            args.DeformationEpisode(deformationEpisodeName, deformationEpisodeIndex);
-            args.DeformationEpisodeDuration(duration, deformationEpisodeIndex);
-            args.DeformationEpisodeTimeUnits(timeUnits, deformationEpisodeIndex);
-            args.EhminAzi(ehminAzi, deformationEpisodeIndex);
-            args.EhminRate(ehminRate, deformationEpisodeIndex);
-            args.EhmaxRate(ehmaxRate, deformationEpisodeIndex);
-            args.AppliedOverpressureRate(OPRate, deformationEpisodeIndex);
-            args.AppliedTemperatureChange(tempChange, deformationEpisodeIndex);
-            args.AppliedUpliftRate(upliftRate, deformationEpisodeIndex);
-            args.EhminAzi_default(ehminAzi_default, deformationEpisodeIndex);
-            args.EhminRate_default(ehminRate_default, deformationEpisodeIndex);
-            args.EhmaxRate_default(ehmaxRate_default, deformationEpisodeIndex);
-            args.AppliedOverpressureRate_default(OPRate_default, deformationEpisodeIndex);
-            args.AppliedTemperatureChange_default(tempChange_default, deformationEpisodeIndex);
-            args.AppliedUpliftRate_default(upliftRate_default, deformationEpisodeIndex);
-            args.StressArchingFactor(stressArchingFactor, deformationEpisodeIndex);
+            args.DeformationEpisodeDuration(GetDoubleFromTextBox(unitTextBox_DE_DeformationDuration), deformationEpisodeIndex);
+            args.DeformationEpisodeTimeUnits(comboBox_DE_TimeUnits.SelectedIndex, deformationEpisodeIndex);
+            args.EhminAzi(presentationBox_DE_EhminAzi.Tag as Property, deformationEpisodeIndex);
+            args.EhminRate(presentationBox_DE_EhminRate.Tag as Property, deformationEpisodeIndex);
+            args.EhmaxRate(presentationBox_DE_EhmaxRate.Tag as Property, deformationEpisodeIndex);
+            args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
+            args.AppliedTemperatureChange(presentationBox_DE_TempChange.Tag as Property, deformationEpisodeIndex);
+            args.AppliedUpliftRate(presentationBox_DE_UpliftRate.Tag as Property, deformationEpisodeIndex);
+            args.EhminAzi_default(GetDoubleFromTextBox(unitTextBox_DE_EhminAzi_default), deformationEpisodeIndex);
+            args.EhminRate_default(GetDoubleFromTextBox(unitTextBox_DE_EhminRate_default), deformationEpisodeIndex);
+            args.EhmaxRate_default(GetDoubleFromTextBox(unitTextBox_DE_EhmaxRate_default), deformationEpisodeIndex);
+            args.AppliedOverpressureRate_default(GetDoubleFromTextBox(unitTextBox_DE_OPRate_default), deformationEpisodeIndex);
+            args.AppliedTemperatureChange_default(GetDoubleFromTextBox(unitTextBox_DE_TempChange_default), deformationEpisodeIndex);
+            args.AppliedUpliftRate_default(GetDoubleFromTextBox(unitTextBox_DE_UpliftRate_default), deformationEpisodeIndex);
+            args.StressArchingFactor(GetDoubleFromTextBox(unitTextBox_DE_StressArchingFactor), deformationEpisodeIndex);
+
+            // Update the deformation episode name
+            args.GenerateDeformationEpisodeName(deformationEpisodeIndex, true);
 
             // tell fwk to update LineUI:
             context.OnArgumentPackageChanged(this, new WorkflowContext.ArgumentPackageChangedEventArgs());

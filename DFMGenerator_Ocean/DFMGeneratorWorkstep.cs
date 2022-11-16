@@ -301,7 +301,7 @@ namespace DFMGenerator_Ocean
                     }
 
 #if DEBUG_FRACS
-                    // Add an initial episode with uniaxial extension of -0.01/ma over 1ma
+                    /*// Add an initial episode with uniaxial extension of -0.01/ma over 1ma
                     EhminAzi_list.Add(EhminAzi);
                     EhminRate_GeologicalTimeUnits_list.Add(-0.01);
                     EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
@@ -327,7 +327,7 @@ namespace DFMGenerator_Ocean
                     AppliedTemperatureChange_GeologicalTimeUnits_list.Add(-5E+6);
                     AppliedUpliftRate_GeologicalTimeUnits_list.Add(AppliedUpliftRate_GeologicalTimeUnits);
                     StressArchingFactor_list.Add(1);
-                    DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(1E-5);
+                    DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(1E-5);*/
 #endif
                     // Mechanical properties
                     double YoungsMod = 1E+10;
@@ -460,7 +460,7 @@ namespace DFMGenerator_Ocean
                     if (arguments.Argument_NoIntermediateOutputs > 0)
                         NoIntermediateOutputs = arguments.Argument_NoIntermediateOutputs;
                     // Flag to control interval between output of intermediate stage DFMs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
-                    IntermediateOutputInterval IntermediateOutputIntervalControl = arguments.Argument_OutputAtEqualTimeIntervals;
+                    IntermediateOutputInterval IntermediateOutputIntervalControl = (IntermediateOutputInterval)arguments.Argument_IntermediateOutputIntervalControl;
                     // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
                     bool OutputCentrepoints = arguments.Argument_OutputCentrepoints;
                     // Flag to output the bulk rock compliance and stiffness tensors
@@ -1311,7 +1311,6 @@ namespace DFMGenerator_Ocean
                                 // This will depend on whether we are averaging the stress and strain data over all Petrel cells that make up the gridblock, or taking the values from a single cell
                                 // First we will create a local variable for the property value in this gridblock; we can then recalculate this without altering the global default value
                                 double local_DepthAtDeformation = DepthAtDeformation;
-
                                 if (UseGridFor_DepthAtDeformation)
                                 {
                                     if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
@@ -1332,7 +1331,7 @@ namespace DFMGenerator_Ocean
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_DepthAtDeformation)
                                                         cell_depthatdeformation = toSIDepthUnits.Convert(cell_depthatdeformation);
-                                                    // If the cell value is undefined, it will not be included in the average;if all cell values are undefined, the default value for depth at deformation will be used
+                                                    // If the cell value is undefined, it will not be included in the average; if all cell values are undefined, the default value for depth at deformation will be used
                                                     // If the cell value is <=0 it will be included in the average; if the average <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
                                                     if (!double.IsNaN(cell_depthatdeformation))
                                                     {
@@ -1380,9 +1379,10 @@ namespace DFMGenerator_Ocean
                                         }
                                     }
                                 }
+                                bool OverWriteDepth = (local_DepthAtDeformation > 0);
 
                                 // Calculate the mean depth and layer thickness
-                                local_Depth = (local_DepthAtDeformation > 0 ? local_DepthAtDeformation : local_Depth / 4);
+                                local_Depth = (OverWriteDepth ? local_DepthAtDeformation : local_Depth / 4);
                                 local_LayerThickness /= 4;
 
                                 // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
@@ -2037,8 +2037,9 @@ namespace DFMGenerator_Ocean
 #endif
                                 }
 
-
                                 // Add the deformation load data 
+                                // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
+                                double totalUplift = 0;
                                 for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                                 {
                                     // Get the time converter for this episode
@@ -2366,6 +2367,10 @@ namespace DFMGenerator_Ocean
                                         }
                                     }
 
+                                    // Update the total uplift
+                                    if (local_DeformationEpisodeDuration > 0)
+                                        totalUplift += (local_DeformationEpisodeDuration * local_AppliedUpliftRate);
+
                                     // Add the deformation episode to the deformation episode list in the PropControl object
                                     gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
 
@@ -2373,6 +2378,16 @@ namespace DFMGenerator_Ocean
                                     PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
 #endif
                                 }// End get the stress / strain data from the grid as required
+
+                                // If required, update the initial depth
+                                // This is only necessary if the depth is set to the current depth, and there is some uplift specified
+                                // If the initial depth is updated, it will also be necessary to reset the initial in situ stress state
+                                if (!OverWriteDepth && (totalUplift != 0))
+                                {
+                                    local_Depth += totalUplift;
+                                    gc.SetInitialThicknessAndDepth(local_LayerThickness, local_Depth);
+                                    gc.StressStrain.ResetStressStrainState();
+                                }
 
                                 // Add to grid
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
@@ -4159,7 +4174,7 @@ namespace DFMGenerator_Ocean
             private bool argument_WriteDFNFiles = false;
             private bool argument_WriteToProjectFolder = true;
             private int argument_DFNFileType = 1;
-            private IntermediateOutputInterval argument_OutputAtEqualTimeIntervals = IntermediateOutputInterval.EqualArea;
+            private int argument_IntermediateOutputIntervalControl = 2;
             private bool argument_OutputCentrepoints = false;
             // Fracture connectivity and anisotropy index control parameters
             private bool argument_CalculateFractureConnectivityAnisotropy = true;
@@ -4751,7 +4766,7 @@ namespace DFMGenerator_Ocean
             {
                 int deformationEpisodeIndex = Argument_NoDeformationEpisodes; // Zero-based
                 this.argument_DeformationEpisode.Add(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex + 1)); // In the episode name, the index number is 1-based
-                this.argument_DeformationEpisodeDuration.Add(-1);
+                this.argument_DeformationEpisodeDuration.Add(double.NaN);
                 this.argument_DeformationEpisodeTimeUnits.Add(2); // Default time units are ma
                 this.argument_EhminAzi_default.Add(0);
                 this.argument_EhminAzi.Add(null);
@@ -4790,10 +4805,78 @@ namespace DFMGenerator_Ocean
                 this.argument_AppliedOverpressureRate_default.RemoveAt(deformationEpisodeIndex);
                 this.argument_AppliedOverpressureRate.RemoveAt(deformationEpisodeIndex);
                 this.argument_AppliedTemperatureChange_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedTemperatureChange_default.RemoveAt(deformationEpisodeIndex);
+                this.argument_AppliedTemperatureChange.RemoveAt(deformationEpisodeIndex);
                 this.argument_AppliedUpliftRate_default.RemoveAt(deformationEpisodeIndex);
                 this.argument_AppliedUpliftRate.RemoveAt(deformationEpisodeIndex);
                 this.argument_StressArchingFactor.RemoveAt(deformationEpisodeIndex);
+
+                // Rename the subsequent deformation episodes with the correct index number
+                for (; deformationEpisodeIndex < Argument_NoDeformationEpisodes; deformationEpisodeIndex++)
+                    GenerateDeformationEpisodeName(deformationEpisodeIndex, true);
+            }
+            /// <summary>
+            /// Create and assign a name for the specified deformation episode based on duration and load
+            /// </summary>
+            /// <param name="deformationEpisodeIndex">Index of the deformation episode to name</param>
+            /// <param name="assignName">If true, will write the new name to the deformation episode name list; if false, will only return it as a string</param>
+            /// <returns></returns>
+            public string GenerateDeformationEpisodeName(int deformationEpisodeIndex, bool assignName)
+            {
+                // Get data from the dialog box
+                double duration = DeformationEpisodeDuration(deformationEpisodeIndex);
+                int timeUnits = DeformationEpisodeTimeUnits(deformationEpisodeIndex);
+                double ehminAzi_default = EhminAzi_default(deformationEpisodeIndex);
+                Property ehminAzi = EhminAzi(deformationEpisodeIndex);
+                double ehminRate_default = EhminRate_default(deformationEpisodeIndex);
+                Property ehminRate = EhminRate(deformationEpisodeIndex);
+                //double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
+                //Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
+                double OPRate_default = AppliedOverpressureRate_default(deformationEpisodeIndex);
+                Property OPRate = AppliedOverpressureRate(deformationEpisodeIndex);
+                double tempChange_default = AppliedTemperatureChange_default(deformationEpisodeIndex);
+                Property tempChange = AppliedTemperatureChange(deformationEpisodeIndex);
+                double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
+                Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
+                //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
+
+                // Create a name based on deformation episode duration and specified load
+                string deformationEpisodeName = string.Format("Deformation episode {0}: ", deformationEpisodeIndex + 1);
+                string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
+                if (duration >= 0)
+                    deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
+                if (ehminRate != null)
+                {
+                    deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
+                    if (ehminAzi != null)
+                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
+                    else
+                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                }
+                else if (ehminRate_default != 0)
+                {
+                    deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
+                    if (ehminAzi != null)
+                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
+                    else
+                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                }
+                if (OPRate != null)
+                    deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
+                else if (OPRate_default != 0)
+                    deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
+                if (tempChange != null)
+                    deformationEpisodeName += string.Format(" Temperature {0}", tempChange.Name);
+                else if (tempChange_default != 0)
+                    deformationEpisodeName += string.Format(" Temperature {0}degK/{1}", Math.Round(tempChange_default), timeUnitText);
+                if (upliftRate != null)
+                    deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
+                else if (upliftRate_default != 0)
+                    deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
+
+                // If required, set the deformation episode name and then return it
+                if (assignName)
+                    DeformationEpisode(deformationEpisodeName, deformationEpisodeIndex);
+                return deformationEpisodeName;
             }
 
             [Description("Generate explicit DFN?", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
@@ -5121,10 +5204,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Flag to control interval between output of intermediate stage DFMs", "Flag to control interval between output of intermediate stage DFMs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area")]
-            public IntermediateOutputInterval Argument_OutputAtEqualTimeIntervals
+            public int Argument_IntermediateOutputIntervalControl
             {
-                internal get { return this.argument_OutputAtEqualTimeIntervals; }
-                set { this.argument_OutputAtEqualTimeIntervals = value; }
+                internal get { return this.argument_IntermediateOutputIntervalControl; }
+                set { this.argument_IntermediateOutputIntervalControl = value; }
             }
 
             [Description("Output fracture centrelines as polylines?", "Output fracture centrelines as polylines?")]
@@ -5506,7 +5589,7 @@ namespace DFMGenerator_Ocean
                 argument_WriteDFNFiles = false;
                 argument_WriteToProjectFolder = true;
                 argument_DFNFileType = 1;
-                argument_OutputAtEqualTimeIntervals = IntermediateOutputInterval.EqualArea;
+                argument_IntermediateOutputIntervalControl = 2;
                 argument_OutputCentrepoints = false;
                 // Fracture connectivity and anisotropy index control parameters
                 argument_CalculateFractureConnectivityAnisotropy = true;
