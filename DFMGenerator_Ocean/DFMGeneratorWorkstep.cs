@@ -4199,7 +4199,7 @@ namespace DFMGenerator_Ocean
             // otherwise argument_NoFractureSets will be overriden and the number of fracture sets will be set to 2
             private int argument_NoFractureSets = 6;
             private int argument_FractureMode = 0;
-            private double argument_FractureNucleationPosition = -1;
+            private double argument_FractureNucleationPosition = double.NaN;
             // Set argument_CheckAlluFStressShadows to true by default; however this value will only apply if argument_IncludeObliqueFracs is true;
             // otherwise argument_CheckAlluFStressShadows will be overriden and the CheckAlluFStressShadows flag will be set to None
             private bool argument_CheckAlluFStressShadows = true;

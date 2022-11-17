@@ -82,11 +82,11 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.EhminAzi_default(deformationEpisodeIndex), unitTextBox_DE_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_DE_EhminAzi_Units);
             UpdateTextBox(args.EhminRate_default(deformationEpisodeIndex), unitTextBox_DE_EhminRate_default);
             UpdateTextBox(args.EhmaxRate_default(deformationEpisodeIndex), unitTextBox_DE_EhmaxRate_default);
-            UpdateTextBox(args.AppliedOverpressureRate_default(deformationEpisodeIndex), unitTextBox_DE_OPRate_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure, label_DE_OPRate_Units);
-            UpdateTextBox(args.AppliedTemperatureChange_default(deformationEpisodeIndex), unitTextBox_DE_TempChange_default, PetrelProject.WellKnownTemplates.GeophysicalGroup.AbsoluteTemperature, label_DE_TempChange_Units);
-            UpdateTextBox(args.AppliedUpliftRate_default(deformationEpisodeIndex), unitTextBox_DE_UpliftRate_default, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_DE_UpliftRate_Units);
+            UpdateTextBox(args.AppliedOverpressureRate_default(deformationEpisodeIndex), unitTextBox_DE_OPRate_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure); // Units contain a time component; label will be set by SetLoadRateUnits()
+            UpdateTextBox(args.AppliedTemperatureChange_default(deformationEpisodeIndex), unitTextBox_DE_TempChange_default, PetrelProject.WellKnownTemplates.GeophysicalGroup.AbsoluteTemperature); // Units contain a time component; label will be set by SetLoadRateUnits()
+            UpdateTextBox(args.AppliedUpliftRate_default(deformationEpisodeIndex), unitTextBox_DE_UpliftRate_default, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth); // Units contain a time component; label will be set by SetLoadRateUnits()
             UpdateTextBox(args.StressArchingFactor(deformationEpisodeIndex), unitTextBox_DE_StressArchingFactor);
-            SetStrainRateUnits();
+            SetLoadRateUnits();
         }
 
         private void updateArgsFromUI()
@@ -214,14 +214,14 @@ namespace DFMGenerator_Ocean
             }
         }
 
-        private void SetStrainRateUnits()
+        private void SetLoadRateUnits()
         {
             string rateUnitText = string.Format("/{0}", (DFMGenerator_SharedCode.TimeUnits)comboBox_DE_TimeUnits.SelectedIndex);
-            label_DE_EhminRate_Units.Text += rateUnitText;
-            label_DE_EhmaxRate_Units.Text += rateUnitText;
-            label_DE_OPRate_Units.Text += rateUnitText;
-            label_DE_TempChange_Units.Text += rateUnitText;
-            label_DE_UpliftRate_Units.Text += rateUnitText;
+            label_DE_EhminRate_Units.Text = rateUnitText;
+            label_DE_EhmaxRate_Units.Text = rateUnitText;
+            label_DE_OPRate_Units.Text = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure).Symbol + rateUnitText;
+            label_DE_TempChange_Units.Text = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.GeophysicalGroup.AbsoluteTemperature).Symbol+ rateUnitText;
+            label_DE_UpliftRate_Units.Text = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth).Symbol+rateUnitText;
         }
         #endregion
 
@@ -327,5 +327,11 @@ namespace DFMGenerator_Ocean
             }
         }
         #endregion
+
+        private void comboBox_DE_TimeUnits_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // The load rate units will have changed; update the display
+            SetLoadRateUnits();
+        }
     }
 }

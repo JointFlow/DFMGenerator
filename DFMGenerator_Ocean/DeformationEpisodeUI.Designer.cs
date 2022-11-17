@@ -480,6 +480,7 @@ namespace DFMGenerator_Ocean
             this.comboBox_DE_TimeUnits.Name = "comboBox_DE_TimeUnits";
             this.comboBox_DE_TimeUnits.Size = new System.Drawing.Size(99, 22);
             this.comboBox_DE_TimeUnits.TabIndex = 98;
+            this.comboBox_DE_TimeUnits.SelectedIndexChanged += new System.EventHandler(this.comboBox_DE_TimeUnits_SelectedIndexChanged);
             // 
             // toolTipHotspot_Eh
             // 
