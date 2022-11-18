@@ -179,7 +179,8 @@ namespace DFMGenerator_SharedCode
                 // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
                 if (separateIntermediatesBy == IntermediateOutputInterval.SpecifiedTime)
                 {
-                    double nextIntermediateEndTime = (nextStage < DFNControl.IntermediateOutputTimes.Count ? DFNControl.IntermediateOutputTimes[nextStage] : endTime);
+                    double nextListValue = DFNControl.GetIntermediateOutputTime(nextStage - 1); // List of intermediate outputs is zero-based
+                    double nextIntermediateEndTime = (!double.IsNaN(nextListValue) ? nextListValue : endTime); // If the next list value is NaN (i.e. we have reached the end of the list), used the end time instead
                     calculationCompleted = PropagateLocalDFNs(ref currentCalculationElement, nextIntermediateEndTime, timestepList, progressReporter);
                 }
                 else if (separateIntermediatesBy == IntermediateOutputInterval.EqualTime)

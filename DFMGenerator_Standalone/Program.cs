@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRACS
@@ -137,9 +137,9 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Do not use DuctileBoundary as this is not yet implemented");
                 input_file.WriteLine("StressDistributionScenario StressShadow");
                 input_file.WriteLine("% Depth at the start of deformation (in metres, positive downwards) - this will control stress state");
-                input_file.WriteLine("% If InitialDepth is specified, this will be used to calculate effective vertical stress instead of the current depth");
-                input_file.WriteLine("% If InitialDepth is <=0 or NaN, OverwriteDepth will be set to false and InitialDepth will not be used");
-                input_file.WriteLine("InitialDepth -1");
+                input_file.WriteLine("% If DepthAtDeformation is specified, this will be used to calculate the initial vertical stress");
+                input_file.WriteLine("% If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift");
+                input_file.WriteLine("DepthAtDeformation -1");
                 input_file.WriteLine("% Mean density of overlying sediments and fluid in kg/m3");
                 input_file.WriteLine("MeanOverlyingSedimentDensity 2250");
                 input_file.WriteLine("FluidDensity 1000");
@@ -313,7 +313,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("%   CornerpointA Xcoord Ycoord Zcoord");
                 input_file.WriteLine("%   CornerpointB Xcoord Ycoord Zcoord");
                 input_file.WriteLine("% End Gridblock");
-                input_file.WriteLine("% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, ");
+                input_file.WriteLine("% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, DepthAtDeformation, ");
                 input_file.WriteLine("% YoungsMod, PoissonsRatio, Porosity, BiotCoefficient, GeothermalGradient, FrictionCoefficient, CrackSurfaceEnergy,");
                 input_file.WriteLine("% SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution");
                 input_file.WriteLine("% Additional deformation episodes can be overwritten by listing multiple values after the deformation load keywords");
@@ -497,7 +497,7 @@ namespace DFMGenerator_Standalone
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(0); //(DeformationEpisodeDuration);
+            DeformationEpisodeDuration_list.Add(1); //(DeformationEpisodeDuration);
             // Add an additional uplift episode, with uplift of 1800m over 18ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -551,10 +551,10 @@ namespace DFMGenerator_Standalone
             // Do not use DuctileBoundary as this is not yet implemented
             StressDistribution StressDistributionScenario = StressDistribution.StressShadow;
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
-            // If InitialDepth is specified, this will be used to calculate effective vertical stress instead of the current depth
-            // If InitialDepth is <=0 or NaN, OverwriteDepth will be set to false and InitialDepth will not be used
-            double InitialDepth = 2000;// -1;
-            bool OverwriteDepth = (InitialDepth > 0);
+            // If DepthAtDeformation is specified, this will be used to calculate vertical stress
+            // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
+            double DepthAtDeformation = 2000;// -1;
+            //bool OverwriteDepth = (DepthAtDeformation > 0);
             // Mean density of overlying sediments and fluid (kg/m3)
             double MeanOverlyingSedimentDensity = 2250;
             double FluidDensity = 1000;
@@ -986,16 +986,12 @@ namespace DFMGenerator_Standalone
                                     StressDistributionScenario = StressDistribution.DuctileBoundary;
                             }
                             break;
-                        // Depth at the time of deformation - will control stress state
-                        // If DepthAtDeformation is specified, use this to calculate effective vertical stress instead of the current depth
-                        // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used
-                        case "InitialDepth":
-                        case "DepthAtDeformation": // For backwards compatibility
+                        // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
+                        // If DepthAtDeformation is specified, this will be used to calculate vertical stress
+                        // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
+                        case "DepthAtDeformation":
                         case "DepthAtFracture": // For backwards compatibility
-                            {
-                                InitialDepth = Convert.ToDouble(line_split[1]);
-                                OverwriteDepth = (InitialDepth > 0);
-                            }
+                            DepthAtDeformation = Convert.ToDouble(line_split[1]);
                             break;
                         // Mean density of overlying sediments and fluid (kg/m3)
                         case "MeanOverlyingSedimentDensity":
@@ -1473,7 +1469,7 @@ namespace DFMGenerator_Standalone
                 DeformationEpisodeDuration_array.Add(nextDeformationEpisodeDuration_array);
             }
 
-            // Create arrays for variable mechanical property parameters and populate them
+            // Create arrays for variable mechanical property parameters and depth at start of deformation, and populate them with default values
             double[,] YoungsMod_array = new double[NoRows, NoCols];
             double[,] PoissonsRatio_array = new double[NoRows, NoCols];
             double[,] Porosity_array = new double[NoRows, NoCols];
@@ -1486,6 +1482,7 @@ namespace DFMGenerator_Standalone
             double[,] FractureRelaxation_array = new double[NoRows, NoCols];
             double[,] InitialMicrofractureDensity_array = new double[NoRows, NoCols];
             double[,] InitialMicrofractureSizeDistribution_array = new double[NoRows, NoCols];
+            double[,] DepthAtDeformation_array = new double[NoRows, NoCols];
             for (int RowNo = 0; RowNo < NoRows; RowNo++)
                 for (int ColNo = 0; ColNo < NoCols; ColNo++)
                 {
@@ -1511,6 +1508,7 @@ namespace DFMGenerator_Standalone
                     FractureRelaxation_array[RowNo, ColNo] = FractureRelaxation;
                     InitialMicrofractureDensity_array[RowNo, ColNo] = InitialMicrofractureDensity;
                     InitialMicrofractureSizeDistribution_array[RowNo, ColNo] = InitialMicrofractureSizeDistribution;
+                    DepthAtDeformation_array[RowNo, ColNo] = DepthAtDeformation;
                 }
 
             // Create arrays for the top and bottom of the pillars and populate them
@@ -1813,6 +1811,10 @@ namespace DFMGenerator_Standalone
                                 case "b": // For backwards compatibility
                                     propertyArray = SubcriticalPropIndex_array;
                                     break;
+                                case "DepthAtDeformation":
+                                case "DepthAtFracture": // For backwards compatibility
+                                    propertyArray = DepthAtDeformation_array;
+                                    break;
 
                                 default:
                                     Console.WriteLine(string.Format("Warning! Property name {0} is not recognised", propertyName));
@@ -2063,6 +2065,10 @@ namespace DFMGenerator_Standalone
                             case "b": // For backwards compatibility
                                 SubcriticalPropIndex_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
                                 break;
+                            case "DepthAtDeformation":
+                            case "DepthAtFracture": // For backwards compatibility
+                                DepthAtDeformation_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
 
                             case "SWTopCorner":
                                 {
@@ -2164,29 +2170,29 @@ namespace DFMGenerator_Standalone
                     NEbottom = PillarBottoms[RowNo + 1, ColNo + 1];
                     SEbottom = PillarBottoms[RowNo, ColNo + 1];
 
-                    // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the initial depth has been specified
+                    // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
+                    double local_LayerThickness = ((SWtop.Z - SWbottom.Z) + (NWtop.Z - NWbottom.Z) + (NEtop.Z - NEbottom.Z) + (SEtop.Z - SEbottom.Z)) / 4;
+                    double local_Current_Depth = (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4;
+                    double local_DepthAtDeformation = DepthAtDeformation_array[RowNo, ColNo];
                     double local_Depth;
-                    if (OverwriteDepth)
+                    if (local_DepthAtDeformation > 0)
                     {
                         // If the initial depth  has been specified, use this 
-                        local_Depth = InitialDepth;
+                        local_Depth = local_DepthAtDeformation;
                     }
                     else
                     {
                         // Otherwise, calculate the current mean depth of the gridblock minus the total specified uplift
                         // NB Uplift will not be counted for deformation episodes with indefinite duration
-                        double currentMeanDepth = (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4;
-                        double totalUplift = 0;
+                        local_Depth = local_Current_Depth;
                         for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                         {
                             double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][RowNo, ColNo] : AppliedUpliftRate);
                             double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][RowNo, ColNo] : DeformationEpisodeDuration);
                             if (local_DeformationEpisodeDuration > 0)
-                                totalUplift += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
+                                local_Depth += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
                         }
-                        local_Depth = currentMeanDepth + totalUplift;
                     }
-                    double local_LayerThickness = ((SWtop.Z - SWbottom.Z) + (NWtop.Z - NWbottom.Z) + (NEtop.Z - NEbottom.Z) + (SEtop.Z - SEbottom.Z)) / 4;
 
                     // Create a new gridblock object containing the required number of fracture sets
                     GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);
@@ -2358,8 +2364,44 @@ namespace DFMGenerator_Standalone
 #if DEBUG_FRACS
             Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, DFNFileType.{12}, {13}, {14}, {15}, {16}, TimeUnits.{17});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
 #endif
+
+            // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times for this purpose and supply it to the DFNGenerationControl object
+            // NB This list is based on the global deformation episode end times, and ignores local overrides
+            if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
+            {
+                List<double> DeformationEpisodeEndTimes_list = new List<double>();
+                double currentEpisodeEndTime = 0;
+                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                {
+                    double deformationEpisodeDuration = DeformationEpisodeDuration_list[deformationEpisodeNo];
+                    if (DeformationEpisodeDuration_list[deformationEpisodeNo] > 0)
+                    {
+                        currentEpisodeEndTime += deformationEpisodeDuration;
+                        DeformationEpisodeEndTimes_list.Add(currentEpisodeEndTime);
+                    }
+                }
+                dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_list;
+
+#if DEBUG_FRACS
+                string setIntermediateTimes = "dfn_control.IntermediateOutputTimes = {";
+                foreach (double nextEndTime in DeformationEpisodeEndTimes_list)
+                    setIntermediateTimes += string.Format(" {0},", nextEndTime);
+                setIntermediateTimes.TrimEnd(',');
+                setIntermediateTimes += " }";
+                Console.WriteLine(setIntermediateTimes);
+#endif
+            }
+
+            // Set the output folder path
             dfn_control.FolderPath = folderPath;
+
+            // Add the DFNGenerationControl object to the grid
             ModelGrid.DFNControl = dfn_control;
+
+#if DEBUG_FRACS
+            Console.WriteLine(string.Format("dfn_control.FolderPath = {0};", folderPath));
+            Console.WriteLine(string.Format("ModelGrid.DFNControl = dfn_control;"));
+#endif
 
             Console.WriteLine("Grid created");
 

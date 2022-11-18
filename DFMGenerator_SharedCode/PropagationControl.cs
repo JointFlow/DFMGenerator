@@ -373,9 +373,46 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public int NumberOfIntermediateOutputs { get; set; }
         /// <summary>
-        /// List of intermediate output times, if intermediate stage DFNs are to be output by time
+        /// List of intermediate output times, if intermediate stage DFNs are to be output at specified times; stored in SI units (s)
         /// </summary>
-        public List<double> IntermediateOutputTimes;
+        private List<double> intermediateOutputTimes;
+        /// <summary>
+        /// Get the specified intermediate stage output time from the list in SI units (s)
+        /// </summary>
+        /// <param name="stageNo">Index of the intermediate stage (zero-based)</param>
+        /// <returns>The output time for the specified stage in SI units (s), if it has been defined; otherwise NaN</returns>
+        public double GetIntermediateOutputTime(int stageNo)
+        {
+            if (stageNo < 0)
+                stageNo = 0;
+            if (stageNo < intermediateOutputTimes.Count)
+                return intermediateOutputTimes[stageNo];
+            else
+                return double.NaN;
+        }
+        /// <summary>
+        /// List of intermediate output times, if intermediate stage DFNs are to be output at specified times
+        /// This property is used to set the list only; to retrive specific values, use the GetIntermediateOutputTime(int stageNo) function
+        /// The list should be supplied in model time units
+        /// </summary>
+        public List<double> IntermediateOutputTimes
+        {
+            set
+            {
+                // Create a new (empty) list object
+                intermediateOutputTimes = new List<double>();
+
+                // Loop through the list of specified times, converting them from model time units to SI units and adding them to the list only if they are valid (i.e. greater than the previous value, not negative and not NaN)
+                double previousValue = 0;
+                double timeUnitConverter = getTimeUnitsModifier();
+                foreach (double nextValue in value)
+                    if (nextValue > previousValue)
+                    {
+                        intermediateOutputTimes.Add(nextValue * timeUnitConverter);
+                        previousValue = nextValue;
+                    }
+            }
+        }
         /// <summary>
         /// Flag to control interval between output of intermediate stage DFNs; they can either be output at specified times, at equal intervals of time, or at approximately regular intervals of total fracture area
         /// </summary>

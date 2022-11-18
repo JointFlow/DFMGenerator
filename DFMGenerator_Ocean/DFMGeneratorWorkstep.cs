@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -408,12 +408,11 @@ namespace DFMGenerator_Ocean
                     // Do not use DuctileBoundary as this is not yet implemented
                     StressDistribution StressDistributionScenario = (StressDistribution)arguments.Argument_StressDistribution;
                     // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
-                    // If depth at the time of deformation is specified, use this to calculate effective vertical stress instead of the current depth
-                    // If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
+                    // If DepthAtDeformation is specified, this will be used to calculate vertical stress
+                    // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
                     double DepthAtDeformation = -1;
                     if (!double.IsNaN(arguments.Argument_DepthAtDeformation_default))
                         DepthAtDeformation = arguments.Argument_DepthAtDeformation_default;
-                    //bool OverwriteDepth = (DepthAtDeformation > 0);
                     if (!double.IsNaN(arguments.Argument_YoungsMod_default))
                         YoungsMod = arguments.Argument_YoungsMod_default; // Can also be set from grid property
                     Property DepthAtDeformation_grid = arguments.Argument_DepthAtDeformation;
@@ -1005,7 +1004,7 @@ namespace DFMGenerator_Ocean
 
                     // Stress state
                     generalInputParams += string.Format("Stress distribution: {0}\n", StressDistributionScenario);
-                    string defaultDepthAtDeformation = (DepthAtDeformation > 0 ? string.Format("{0}{1}", toProjectDepthUnits.Convert(DepthAtDeformation), DepthUnits) : "current depth");
+                    string defaultDepthAtDeformation = (DepthAtDeformation > 0 ? string.Format("{0}{1}", toProjectDepthUnits.Convert(DepthAtDeformation), DepthUnits) : "current depth plus specified uplift");
                     if (UseGridFor_DepthAtDeformation)
                         generalInputParams += string.Format("Depth at start of deformation: {0}, default {1}\n", DepthAtDeformation_grid.Name, defaultDepthAtDeformation);
                     else
@@ -1160,7 +1159,7 @@ namespace DFMGenerator_Ocean
 #endif
 
                                 // Initialise variables for mean depth and thickness
-                                double local_Depth = 0;
+                                double local_Current_Depth = 0;
                                 double local_LayerThickness = 0;
 
                                 // Find SW cornerpoints; if the top or bottom cells in the SW corner are undefined, use the highest and lowest defined cells
@@ -1196,7 +1195,7 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);
                                 PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);
                                 // Update mean depth and thickness variables
-                                local_Depth -= SW_top_corner.Z;
+                                local_Current_Depth -= SW_top_corner.Z;
                                 local_LayerThickness += (SW_top_corner.Z - SW_bottom_corner.Z);
 
                                 // Find NW cornerpoints; if the top or bottom cells in the NW corner are undefined, use the highest and lowest defined cells
@@ -1232,7 +1231,7 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);
                                 PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);
                                 // Update mean depth and thickness variables
-                                local_Depth -= NW_top_corner.Z;
+                                local_Current_Depth -= NW_top_corner.Z;
                                 local_LayerThickness += (NW_top_corner.Z - NW_bottom_corner.Z);
 
                                 // Find NE cornerpoints; if the top or bottom cells in the NE corner are undefined, use the highest and lowest defined cells
@@ -1268,7 +1267,7 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);
                                 PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);
                                 // Update mean depth and thickness variables
-                                local_Depth -= NE_top_corner.Z;
+                                local_Current_Depth -= NE_top_corner.Z;
                                 local_LayerThickness += (NE_top_corner.Z - NE_bottom_corner.Z);
 
                                 // Find SE cornerpoints; if the top or bottom cells in the SE corner are undefined, use the highest and lowest defined cells
@@ -1304,7 +1303,7 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);
                                 PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);
                                 // Update mean depth and thickness variables
-                                local_Depth -= SE_top_corner.Z;
+                                local_Current_Depth -= SE_top_corner.Z;
                                 local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
 
                                 // Get the depth at the start of deformation from the grid as required
@@ -1379,16 +1378,17 @@ namespace DFMGenerator_Ocean
                                         }
                                     }
                                 }
-                                bool OverWriteDepth = (local_DepthAtDeformation > 0);
 
-                                // Calculate the mean depth and layer thickness
-                                local_Depth = (OverWriteDepth ? local_DepthAtDeformation : local_Depth / 4);
+                                // Calculate the mean current depth of top surface and layer thickness
+                                local_Current_Depth = local_Current_Depth / 4;
                                 local_LayerThickness /= 4;
-
                                 // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
                                 // In this case we will abort this gridblock and move onto the next
-                                if (double.IsNaN(local_Depth) || double.IsNaN(local_LayerThickness))
+                                if (double.IsNaN(local_Current_Depth) || double.IsNaN(local_LayerThickness))
                                     continue;
+                                // We assume that the mean layer thickness at start of deformation is equal to the current layer thickness
+                                // We assume that the mean depth of top surface at start of deformation is equal to the current mean depth minus total specified uplift, unless the depth at the start of deformation has been specified
+                                double local_Depth = (local_DepthAtDeformation>0 ? local_DepthAtDeformation : local_Current_Depth);
 
                                 // Check if the western boundary if faulted
                                 // This will be the case if any of the Petrel cells on the southern boundary are faulted
@@ -1432,11 +1432,11 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Depth));
+                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Current_Depth));
 #endif
 
                                 // Create a new gridblock object containing the required number of fracture sets
-                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);
+                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Current_Depth, NoFractureSets);
 
                                 // Set the gridblock cornerpoints
                                 gc.setGridblockCorners(FractureGrid_SWtop, FractureGrid_SWbottom, FractureGrid_NWtop, FractureGrid_NWbottom, FractureGrid_NEtop, FractureGrid_NEbottom, FractureGrid_SEtop, FractureGrid_SEbottom);
@@ -1991,7 +1991,7 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow("Properties");
                                 PetrelLogger.InfoOutputWindow(string.Format("sv' {0}", gc.StressStrain.Sigma_v_eff));
                                 PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient {2}, Crack surface energy:{3}, Friction coefficient:{4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Depth, NoFractureSets));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
@@ -2382,10 +2382,10 @@ namespace DFMGenerator_Ocean
                                 // If required, update the initial depth
                                 // This is only necessary if the depth is set to the current depth, and there is some uplift specified
                                 // If the initial depth is updated, it will also be necessary to reset the initial in situ stress state
-                                if (!OverWriteDepth && (totalUplift != 0))
+                                if (!(DepthAtDeformation > 0) && (totalUplift != 0))
                                 {
-                                    local_Depth += totalUplift;
-                                    gc.SetInitialThicknessAndDepth(local_LayerThickness, local_Depth);
+                                    local_Current_Depth += totalUplift;
+                                    gc.SetInitialThicknessAndDepth(local_LayerThickness, local_Current_Depth);
                                     gc.StressStrain.ResetStressStrainState();
                                 }
 
@@ -2407,12 +2407,52 @@ namespace DFMGenerator_Ocean
 
                         // Set the DFN generation data
                         DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
+
 #if DEBUG_FRACS
                         PetrelLogger.InfoOutputWindow("");
                         PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, DFNFileType.{12}, {13}, {14}, {15}, {16}, TimeUnits.{17});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
 #endif
+
+                        // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
+                        // NB In this case the DFNGenerationControl will ignore the specified NoIntermediateOutputs value; we recalculate it here only for internal use
+                        if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
+                        {
+                            List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
+                            double currentEpisodeEndTime = 0;
+                            NoIntermediateOutputs = 0;
+                            for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                            {
+                                double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
+                                double deformationEpisodeDuration_GeologicalTimeUnit = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                if (deformationEpisodeDuration_GeologicalTimeUnit > 0)
+                                {
+                                    currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
+                                    DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                    NoIntermediateOutputs++;
+                                }
+                            }
+                            dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_SITimeUnits_list;
+
+#if DEBUG_FRACS
+                            string setIntermediateTimes = "dfn_control.IntermediateOutputTimes = {";
+                            foreach (double nextEndTime in DeformationEpisodeEndTimes_SITimeUnits_list)
+                                setIntermediateTimes += string.Format(" {0},", nextEndTime);
+                            setIntermediateTimes.TrimEnd(',');
+                            setIntermediateTimes += " }";
+                            PetrelLogger.InfoOutputWindow(setIntermediateTimes);
+#endif
+                        }
+
+                        // Set the output folder path
                         dfn_control.FolderPath = folderPath;
+
+                        // Add the DFNGenerationControl object to the grid
                         ModelGrid.DFNControl = dfn_control;
+
+#if DEBUG_FRACS
+                        PetrelLogger.InfoOutputWindow(string.Format("dfn_control.FolderPath = {0};", folderPath));
+                        PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.DFNControl = dfn_control;"));
+#endif
 
                         // Calculate implicit fractures for all gridblocks - unless the calculation has already been cancelled
                         if (!progressBarWrapper.abortCalculation())
@@ -2461,7 +2501,7 @@ namespace DFMGenerator_Ocean
                                 transactionWritePropertyData.Lock(root);
 
                                 // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
-                                int NoStages = (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime ? ModelGrid.DFNControl.IntermediateOutputTimes.Count : NoIntermediateOutputs + 1);
+                                int NoStages = NoIntermediateOutputs + 1;
                                 int NoSets = NoFractureSets;
                                 int NoDipSets = ((Mode1Only || Mode2Only) ? 1 : 2);
                                 int NoCalculationElementsCompleted = 0;
@@ -2486,22 +2526,35 @@ namespace DFMGenerator_Ocean
                                     // Get the endtime for the current stage
                                     // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
                                     double stageEndTime = 0;
+                                    switch (IntermediateOutputIntervalControl)
+                                    {
+                                        case IntermediateOutputInterval.SpecifiedTime:
+                                            double nextListValue = dfn_control.GetIntermediateOutputTime(stageNumber - 1); // List of intermediate outputs is zero-based
+                                            stageEndTime = (!double.IsNaN(nextListValue) ? nextListValue : endTime); // If the next list value is NaN (i.e. we have reached the end of the list), used the end time instead
+                                            break;
+                                        case IntermediateOutputInterval.EqualTime:
+                                            stageEndTime = (stageNumber * endTime) / NoStages;
+                                            break;
+                                        case IntermediateOutputInterval.EqualArea:
+                                            int gridblockTimestepNo = ((stageNumber * NoGridblockTimesteps) / NoStages);
+                                            if (gridblockTimestepNo < 1)
+                                                gridblockTimestepNo = 1;
+                                            if (gridblockTimestepNo > NoGridblockTimesteps)
+                                                gridblockTimestepNo = NoGridblockTimesteps;
+                                            stageEndTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[gridblockTimestepNo - 1] : 0);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+
                                     if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualTime)
                                     {
-                                        stageEndTime = (stageNumber * endTime) / NoStages;
                                     }
                                     else if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualArea)
                                     {
-                                        int gridblockTimestepNo = ((stageNumber * NoGridblockTimesteps) / NoStages);
-                                        if (gridblockTimestepNo < 1)
-                                            gridblockTimestepNo = 1;
-                                        if (gridblockTimestepNo > NoGridblockTimesteps)
-                                            gridblockTimestepNo = NoGridblockTimesteps;
-                                        stageEndTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[gridblockTimestepNo - 1] : 0);
                                     }
                                     else
                                     {
-                                        stageEndTime = (stageNumber < ModelGrid.DFNControl.IntermediateOutputTimes.Count ? ModelGrid.DFNControl.IntermediateOutputTimes[stageNumber - 1] : endTime);
                                     }
 
                                     // Create a stage-specific label for the output file

@@ -2290,18 +2290,18 @@ namespace DFMGenerator_SharedCode
                 uF_radii.Clear();
 
             // Cache useful variables locally
-            double half_h = gbc.ThicknessAtDeformation / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
 
             // Add new values to the array for all bin sizes
             // We will not add a value for zero as this is given by the total microfracture density properties
             // Add a value for all intermediate bin sizes
             for (int r_bin = 1; r_bin < no_r_bins; r_bin++)
             {
-                double rb_maxRad = ((double)r_bin / (double)no_r_bins) * half_h;
+                double rb_maxRad = ((double)r_bin / (double)no_r_bins) * max_uF_radius;
                 uF_radii.Add(rb_maxRad);
             }
             // Add a final value for the maximum size
-            uF_radii.Add(half_h);
+            uF_radii.Add(max_uF_radius);
         }
         /// <summary>
         /// Populate the macrofracture halflength index array based on the current halflengths of macrofractures that nucleated at timestep boundaries
@@ -2592,9 +2592,10 @@ namespace DFMGenerator_SharedCode
                 double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
                 double alpha_uF_b_factor = Math.Pow(CapA, -1 / (b + 1)) * Math.Pow(sqrtpi_Kc_factor, -b / (b + 1));
                 // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-                double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
-                // h_factor is a component related to layer thickness to include in Cum_hGamma: ln(h/2) for b=2; (h/2)^(1/beta) for b!=2
-                double h_factor = gbc.h_factor();
+                // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+                double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2)); 
+                // initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
+                double initial_uF_factor = gbc.Initial_uF_factor;
 
                 // Calculate local helper variables
                 // betac_factor is -beta*c if b<>2, -c if b=2
@@ -2604,7 +2605,7 @@ namespace DFMGenerator_SharedCode
                 // beta_betac1_factor is -beta / (1 - (beta c)) if b!=2, 1 / c if b=2
                 double beta_betac1_factor = (bis2 ? 1 / c_coefficient : -2 / (2 - b - (2 * c_coefficient)));
                 // Cache the cumulative Gamma factor from the previous timestep locally
-                double ts_CumhGamma_Nminus1 = CurrentFractureData.Cum_Gamma_Mminus1 + h_factor;
+                double ts_CumhGamma_Nminus1 = CurrentFractureData.Cum_Gamma_Mminus1 + initial_uF_factor;
                 // Calculate helper variables related to the cumulative Gamma factor
                 double ts_CumhGammaNminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGamma_Nminus1) : Math.Pow(ts_CumhGamma_Nminus1, betac_factor));
                 double ts_CumhGammaNminus1_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGamma_Nminus1) : Math.Pow(ts_CumhGamma_Nminus1, betac1_factor));
@@ -2709,9 +2710,10 @@ namespace DFMGenerator_SharedCode
             bool bis2 = (b_type == bType.Equals2);
             double Kc = MechProps.Kc;
             double SqrtPi = Math.Sqrt(Math.PI);
-            double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+            //double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
             double sqrtpi_Kc_h_factor = Math.Sqrt(2 * h) / (SqrtPi * Kc);
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
             double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
             // Flag to show that the fracture set has not been deactivated
             bool FracturesActive = !(CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated);
@@ -2845,7 +2847,7 @@ namespace DFMGenerator_SharedCode
         {
             // Cache constants locally
             double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
@@ -2886,9 +2888,11 @@ namespace DFMGenerator_SharedCode
             // beta2_betac1betac2_factor is beta^2 / (1 - (beta c)(2 - (beta c)) if b!=2, 1 / c^2 if b=2
             double beta2_betac1betac2_factor = (bis2 ? 1 / Math.Pow(c_coefficient, 2) : Math.Pow(beta, 2) / (betac1_factor * betac2_factor));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb1_factor = (bis2 ? h / 2 : Math.Pow(h / 2, b / 2));
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
-            double hb2_factor = (bis2 ? Math.Pow(half_h, 2) : Math.Pow(half_h, b));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb2_factor = (bis2 ? Math.Pow(h / 2, 2) : Math.Pow(h / 2, b));
 
             // Create local variables to calculate summation
             double tsK_a_MFP30_value = 0;
@@ -2935,7 +2939,7 @@ namespace DFMGenerator_SharedCode
                                 double ts_IPlus_Phi_K_M = PreviousFractureData.getCumulativePhi(tsK, tsM);
 
                                 // Calculate terms for a_MFP32_values
-                                double tsM_a_MFP32_increment = ts_IPlus_Phi_K_M * h * Math.Pow(half_h, -c_coefficient) * ts_halfLength_K_M;
+                                double tsM_a_MFP32_increment = ts_IPlus_Phi_K_M * h * Math.Pow(max_uF_radius, -c_coefficient) * ts_halfLength_K_M;
                                 tsK_a_MFP32_value += tsM_a_MFP32_increment;
                             }
 
@@ -2990,7 +2994,7 @@ namespace DFMGenerator_SharedCode
                                 double tsM_s_MFP32_factor1 = 0;
                                 if ((float)MeanMFPropagationRate_K > 0f) // If the propagation rate is zero there will be no fracture deactivation
                                 {
-                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (half_h) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
+                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (h / 2) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
                                     tsM_s_MFP32_factor1 = (ts_PhiTheta_Kminus1_Mminus1 * beta_betac1_factor * h * hb1_factor * tsK_Duration);
                                 }
                                 double tsM_s_MFP32_increment = (tsM_s_MFP32_factor0 * (Math.Pow(ts_halfLength_K_M, 2) - Math.Pow(ts_halfLength_Kminus1_M, 2)))
@@ -3264,8 +3268,8 @@ namespace DFMGenerator_SharedCode
         public void calculateTotalMicrofracturePopulation(int no_r_bins)
         {
             // Cache constants locally
-            double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            //double h = gbc.ThicknessAtDeformation;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bType b_type = gbc.MechProps.GetbType();
@@ -3279,15 +3283,15 @@ namespace DFMGenerator_SharedCode
             // betac1 factor is (1 - (beta c)) if b!=2, -c if b=2
             double betac1_factor = (b == 2 ? -c_coefficient : 1 - ((2 * c_coefficient) / (2 - b)));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
+            //double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
-            double hb2_factor = (bis2 ? Math.Pow(half_h, 2) : Math.Pow(half_h, b));
+            //double hb2_factor = (bis2 ? Math.Pow(half_h, 2) : Math.Pow(half_h, b));
             // hc_factor is (h/2)^-c
-            double hc_factor = Math.Pow(half_h, -c_coefficient);
+            //double hc_factor = Math.Pow(half_h, -c_coefficient);
             // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
-            double h2c_factor = (c_coefficient == 2 ? Math.Log(half_h) : Math.Pow(half_h, 2 - c_coefficient));
+            double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
             // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
-            double h3c_factor = (c_coefficient == 3 ? Math.Log(half_h) : Math.Pow(half_h, 3 - c_coefficient));
+            double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
             double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
@@ -3326,7 +3330,7 @@ namespace DFMGenerator_SharedCode
             double s_uFP33_increment = 0;
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
-            if (rmin_cutoff < half_h)
+            if (rmin_cutoff < max_uF_radius)
             {
                 // Equations are different for b<2, b=2 and b>2
                 switch (b_type)
@@ -3365,7 +3369,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // Calculate range of radii sizes in the current r-bin
                                 rb_minRad = rb_maxRad;
-                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * half_h;
+                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * max_uF_radius;
 
                                 // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
                                 if (rb_maxRad < rmin_cutoff) continue;
@@ -3511,7 +3515,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // Calculate range of radii sizes in the current r-bin
                                 rb_minRad = rb_maxRad;
-                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * half_h;
+                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * max_uF_radius;
 
                                 // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
                                 if (rb_maxRad < rmin_cutoff) continue;
@@ -3566,8 +3570,8 @@ namespace DFMGenerator_SharedCode
                 // Add additional terms to s_uFP30_increment, s_uFP32_increment and s_uFP33_increment to account for transition deactivation microfractures
                 double transition_deactivation_term = (ts_theta_Nminus1 - ts_theta_dashed_Nminus1) * (ts_CumhGammaN_betac_factor - ts_CumhGammaNminus1_betac_factor);
                 s_uFP30_increment += transition_deactivation_term;
-                s_uFP32_increment += (transition_deactivation_term * Math.Pow(half_h, 2));
-                s_uFP33_increment += (transition_deactivation_term * Math.Pow(half_h, 3));
+                s_uFP32_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 2));
+                s_uFP33_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 3));
 
                 // Area of static microfractures cannot decrease 
                 // Therefore the static microfracture increments s_uFP30, s_uFP32 and s_uFP33 can never be negative; if they are set them to zero
@@ -3603,7 +3607,7 @@ namespace DFMGenerator_SharedCode
         {
             // Cache constants locally
             double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
@@ -3628,9 +3632,11 @@ namespace DFMGenerator_SharedCode
             // beta2_betac1betac2_factor is beta^2 / (1 - (beta c)(2 - (beta c)) if b!=2, 1 / c^2 if b=2
             double beta2_betac1betac2_factor = (bis2 ? 1 / Math.Pow(c_coefficient, 2) : Math.Pow(beta, 2) / (betac1_factor * betac2_factor));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (bis2 ? (half_h) : Math.Pow(half_h, b / 2));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb1_factor = (bis2 ? (h / 2) : Math.Pow(h / 2, b / 2));
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
-            double hb2_factor = (bis2 ? Math.Pow((half_h), 2) : Math.Pow(half_h, b));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb2_factor = (bis2 ? Math.Pow((h / 2), 2) : Math.Pow(h / 2, b));
 
             // Resort index array
             MF_halflengths.Sort();
@@ -3730,7 +3736,7 @@ namespace DFMGenerator_SharedCode
                                     double ts_Phi_K_M = PreviousFractureData.getCumulativePhi(tsK, tsM);
 
                                     // Calculate terms for a_MFP32_values
-                                    double tsM_a_MFP32_M_increment = ts_Phi_K_M * h * Math.Pow(half_h, -c_coefficient) * ts_halfLength_K_M;
+                                    double tsM_a_MFP32_M_increment = ts_Phi_K_M * h * Math.Pow(max_uF_radius, -c_coefficient) * ts_halfLength_K_M;
 
                                     for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
                                     {
@@ -3788,7 +3794,7 @@ namespace DFMGenerator_SharedCode
                                 double tsM_s_MFP32_factor2 = 0;
                                 if ((float)MeanMFPropagationRate_K > 0f) // If the propagation rate is zero there will be no fracture deactivation
                                 {
-                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (half_h) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
+                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (h / 2) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
                                     tsM_s_MFP32_factor1 = (ts_PhiTheta_Kminus1_Mminus1 * beta_betac1_factor * h * hb1_factor * tsK_Duration);
                                     tsM_s_MFP32_factor2 = (ts_PhiTheta_Kminus1_Mminus1 * beta2_betac1betac2_factor * hb2_factor * h) / MeanMFPropagationRate_K;
                                 }
@@ -4131,8 +4137,8 @@ namespace DFMGenerator_SharedCode
         public void calculateCumulativeMicrofracturePopulationArrays()
         {
             // Cache constants locally
-            double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            //double h = gbc.ThicknessAtDeformation;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bType b_type = gbc.MechProps.GetbType();
@@ -4146,11 +4152,11 @@ namespace DFMGenerator_SharedCode
             // betac1 factor is (1 - (beta c)) if b!=2, -c if b=2
             double betac1_factor = (b == 2 ? -c_coefficient : 1 - ((2 * c_coefficient) / (2 - b)));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
+            //double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
             // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
-            double h2c_factor = (c_coefficient == 2 ? Math.Log(half_h) : Math.Pow(half_h, 2 - c_coefficient));
+            double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
             // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
-            double h3c_factor = (c_coefficient == 3 ? Math.Log(half_h) : Math.Pow(half_h, 3 - c_coefficient));
+            double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
             double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
@@ -4160,14 +4166,14 @@ namespace DFMGenerator_SharedCode
             // Resort index array and ensure the maximum value is h/2
             uF_radii.Sort();
             int no_r_bins = uF_radii.Count();
-            while (uF_radii[no_r_bins - 1] > half_h)
+            while (uF_radii[no_r_bins - 1] > max_uF_radius)
             {
                 uF_radii.RemoveAt(no_r_bins - 1);
                 no_r_bins--;
             }
-            if (uF_radii[no_r_bins - 1] < half_h)
+            if (uF_radii[no_r_bins - 1] < max_uF_radius)
             {
-                uF_radii.Add(half_h);
+                uF_radii.Add(max_uF_radius);
                 no_r_bins++;
             }
 
@@ -4203,7 +4209,7 @@ namespace DFMGenerator_SharedCode
             double st_uFP30_component = 0;
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
-            if (rmin_cutoff < half_h)
+            if (rmin_cutoff < max_uF_radius)
             {
                 // Loop through the previous timesteps M to calculate the static data increments
                 // For the current timestep N also calculate the active data values
@@ -4468,10 +4474,10 @@ namespace DFMGenerator_SharedCode
 
                         // Apply multipliers and add terms for transition deactivation microfractures to s_uFP32 and s_uFP33
                         s_uFP32_values[r_bin - 1] /= b2_uFP32_factor;
-                        s_uFP32_values[r_bin - 1] += (st_uFP30_component * Math.Pow(half_h, 2));
+                        s_uFP32_values[r_bin - 1] += (st_uFP30_component * Math.Pow(max_uF_radius, 2));
                         s_uFP32_values[r_bin - 1] *= uFP32_multiplier;
                         s_uFP33_values[r_bin - 1] /= b2_uFP33_factor;
-                        s_uFP33_values[r_bin - 1] += (st_uFP30_component * Math.Pow(half_h, 3));
+                        s_uFP33_values[r_bin - 1] += (st_uFP30_component * Math.Pow(max_uF_radius, 3));
                         s_uFP33_values[r_bin - 1] *= uFP33_multiplier;
                     }
                 }
@@ -4485,8 +4491,8 @@ namespace DFMGenerator_SharedCode
                     a_uFP32_values[r_bin - 1] = 0;
                     a_uFP33_values[r_bin - 1] = 0;
                     s_uFP30_values[r_bin - 1] = CapB * st_uFP30_component;
-                    s_uFP32_values[r_bin - 1] = uFP32_multiplier * Math.Pow(half_h, 2) * st_uFP30_component;
-                    s_uFP33_values[r_bin - 1] = uFP33_multiplier * Math.Pow(half_h, 3) * st_uFP30_component;
+                    s_uFP32_values[r_bin - 1] = uFP32_multiplier * Math.Pow(max_uF_radius, 2) * st_uFP30_component;
+                    s_uFP33_values[r_bin - 1] = uFP33_multiplier * Math.Pow(max_uF_radius, 3) * st_uFP30_component;
 
                     // Loop through the local value arrays
                     for (r_bin--; r_bin > 0; r_bin--)
@@ -4574,20 +4580,20 @@ namespace DFMGenerator_SharedCode
             IMinus_halfMacroFractures = new MacrofractureData(gbc, this, MF_halflengths);
 
             // Set initial microfracture densities according to specified density and distribution coefficients
-            double half_h = gbc.ThicknessAtDeformation / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double rmin_cutoff = gbc.PropControl.minImplicitMicrofractureRadius;
             // NB Since we do not know the number of calculation bins for r at this stage, we can only calculate uFP32 and uFP33 if rmin_cutoff > 0
-            if ((rmin_cutoff > 0) && (rmin_cutoff < half_h))
+            if ((rmin_cutoff > 0) && (rmin_cutoff < max_uF_radius))
             {
                 MicroFractures.a_P30_total = CapB * (Math.Pow(rmin_cutoff, -c_coefficient) - Math.Pow(rmin_cutoff, -c_coefficient));
                 if (c_coefficient == 2)
-                    MicroFractures.a_P32_total = 2 * Math.PI * CapB * (Math.Log(half_h) - Math.Log(rmin_cutoff));
+                    MicroFractures.a_P32_total = 2 * Math.PI * CapB * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
-                    MicroFractures.a_P32_total = Math.PI * CapB * (c_coefficient / (2 - c_coefficient)) * (Math.Pow(half_h, 2 - c_coefficient) - Math.Pow(rmin_cutoff, 2 - c_coefficient));
+                    MicroFractures.a_P32_total = Math.PI * CapB * (c_coefficient / (2 - c_coefficient)) * (Math.Pow(max_uF_radius, 2 - c_coefficient) - Math.Pow(rmin_cutoff, 2 - c_coefficient));
                 if (c_coefficient == 3)
-                    MicroFractures.a_P33_total = 4 * Math.PI * CapB * (Math.Log(half_h) - Math.Log(rmin_cutoff));
+                    MicroFractures.a_P33_total = 4 * Math.PI * CapB * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
-                    MicroFractures.a_P33_total = (4 / 3) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(half_h, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
+                    MicroFractures.a_P33_total = (4 / 3) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(max_uF_radius, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
             }
 
             // Macrofracture growth rate data - set all growth rates to zero
@@ -4601,8 +4607,8 @@ namespace DFMGenerator_SharedCode
             CurrentFractureData = new FractureCalculationData();
 
             // Create an new list for previous fracture calculation data objects and use the CurrentFractureData object for timestep 0 
-            double h_component = gbc.h_factor();
-            PreviousFractureData = new FCD_List(h_component, CurrentFractureData, true);
+            // Initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
+            PreviousFractureData = new FCD_List(gbc.Initial_uF_factor, CurrentFractureData, true);
         }
 
         // Constructors

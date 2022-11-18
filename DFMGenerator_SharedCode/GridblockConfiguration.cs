@@ -1699,14 +1699,13 @@ namespace DFMGenerator_SharedCode
             return TimestepNo;
         }
         /// <summary>
-        /// Component related to layer thickness to include in Cum_hGamma: ln(h/2) for b=2; (h/2)^(1/beta) for b!=2
+        /// Maximum radius that a microfracture can reach before nucleating a macrofracture; normally assumed to be half of the layer thickness, unless a fracture nucleation position within the layer has been specified
         /// </summary>
-        /// <returns></returns>
-        public double h_factor()
-        {
-            double half_h = ThicknessAtDeformation / 2;
-            return (MechProps.GetbType() == bType.Equals2 ? Math.Log(half_h) : Math.Pow(half_h, 1 / MechProps.beta));
-        }
+        public double MaximumMicrofractureRadius { get { double fractureNucleationPosition = PropControl.FractureNucleationPosition; if (fractureNucleationPosition >= 0) return ThicknessAtDeformation * (0.5 + Math.Abs(fractureNucleationPosition - 0.5)); else return 0.5; } }
+        /// <summary>
+        /// Component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
+        /// </summary>
+        public double Initial_uF_factor {  get {  return (MechProps.GetbType() == bType.Equals2 ? Math.Log(MaximumMicrofractureRadius) : Math.Pow(MaximumMicrofractureRadius, 1 / MechProps.beta)); } }
 
         // Functions to return fracture anisotropy and connectivity indices
         /// <summary>
@@ -1906,7 +1905,6 @@ namespace DFMGenerator_SharedCode
             StressDistribution SD = PropControl.StressDistributionCase;
 
             // Cache constants locally
-            double half_h = ThicknessAtDeformation / 2;
             // Cache thermo-poro-elastic properties locally
             double E_r = MechProps.E_r;
             double Nu_r = MechProps.Nu_r;
@@ -1938,7 +1936,7 @@ namespace DFMGenerator_SharedCode
             // Set the number of bins to split the microfracture radii into when calculating uFP33 numerically
             int no_r_bins = PropControl.no_r_bins;
             // Maximum radius of microfractures in the smallest bin - used in determining fracture set deactivation
-            double minrb_maxRad = (1 / (double)no_r_bins) * (half_h);
+            double minrb_maxRad = (1 / (double)no_r_bins) * MaximumMicrofractureRadius;
             // Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set
             // NB we do not need to do this in the evenly distributed stress scenario
             bool checkAlluFStressShadows = PropControl.checkAlluFStressShadows && (SD != StressDistribution.EvenlyDistributedStress);
@@ -2772,24 +2770,27 @@ namespace DFMGenerator_SharedCode
             CurrentExplicitTimestep++;
 
             // Cache constants locally
-            double half_h = ThicknessAtDeformation / 2;
+            double max_uF_radius = MaximumMicrofractureRadius;
             double SqrtPi = Math.Sqrt(Math.PI);
             double CapA = MechProps.CapA;
             double b = MechProps.b_factor;
             bool bis2 = (MechProps.GetbType() == bType.Equals2);
             double beta = MechProps.beta;
             double Kc = MechProps.Kc;
-            // hinvBeta_factor is (h/2)^(1/beta) if b!=2, ln(h/2) if b=2
-            double hinvBeta_factor = (bis2 ? Math.Log(half_h) : Math.Pow(half_h, 1 / beta));
+            // initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
+            double initial_uF_factor = Initial_uF_factor;
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb1_factor = (bis2 ? ThicknessAtDeformation / 2 : Math.Pow(ThicknessAtDeformation / 2, b / 2));
             double GridblockVolume = Area * ThicknessAtDeformation;
             double TimestepDuration = CurrentExplicitTime - TimestepEndTimes[CurrentExplicitTimestep - 1];
             double uF_minRadius = DFNControl.MicrofractureDFNMinimumRadius;
             double MF_minLength = DFNControl.MacrofractureDFNMinimumLength;
+            bool SpecifyFractureNucleationPosition = (PropControl.FractureNucleationPosition >= 0);
+            double FractureNucleationPositionK = (PropControl.FractureNucleationPosition - 0.5) * 2 * ThicknessAtDeformation;
 
             // Flags for calculating microfractures and macrofractures
-            bool calc_uF = ((uF_minRadius > 0) && (uF_minRadius < half_h));
+            bool calc_uF = ((uF_minRadius > 0) && (uF_minRadius < max_uF_radius));
             bool calc_MF = (MF_minLength >= 0);
             bool add_MF_directly = calc_MF && !calc_uF; // We do not need to add macrofractures directly to the DFN if it includes microfractures - macrofractures will be nucleated automatically when microfracture radius reaches h/2
             bool use_MF_min_length_cutoff = (MF_minLength > 0) && !calc_uF; // There cannot be a minimum macrofracture cutoff length if the DFN includes microfractures
@@ -2962,7 +2963,7 @@ namespace DFMGenerator_SharedCode
 
                     // If the propagation distance is greater than 1E+50 then there is probably an error in the calculation (it may be reading a NaN from the from FractureDipSet.DFN_data object)
                     // This will cause the module to hang, as it will get stuck in an infinite (or very long) loop
-                    // We can prevent this by checking the propagation distance, and aborting the function if it is greater than 1E+50
+                    // This can be prevented by checking the propagation distance, and aborting the function if it is greater than 1E+50
                     // This should be implemented in the production code as it will prevent the whole model hanging due to the implicit calculation failing in just one gridblock
                     // However it can also mask other bugs in the implicit calculation; it is therefore useful to switch off this check in development code
                     if (halfLength_M > 1E+50)
@@ -3017,10 +3018,12 @@ namespace DFMGenerator_SharedCode
                             {
                                 // Calculate the radius of the next microfracture - with a maximum value h/2
                                 next_uF_radius = Math.Pow((double)no_uF_toAdd / CapBV, -1 / c_coefficient);
-                                if (next_uF_radius > half_h) next_uF_radius = half_h;
+                                if (next_uF_radius > max_uF_radius) next_uF_radius = max_uF_radius;
 
                                 // Get random location for new microfracture
                                 PointIJK new_uF_centrepoint = fs.convertXYZtoIJK(getRandomPoint(false));
+                                if (SpecifyFractureNucleationPosition)
+                                    new_uF_centrepoint.K = FractureNucleationPositionK;
 
                                 // There are no macrofractures yet so there will be no stress shadows even if we are including stress shadow effects
                                 bool addThisFracture = true;
@@ -3475,13 +3478,13 @@ namespace DFMGenerator_SharedCode
                             if ((new_r_factor > 0) || bis2) // When b>2, microfractures can expand to infinite size; when this happens we will limit the size to half the layer thickness
                                 newRadius = (bis2 ? Math.Exp(new_r_factor) : Math.Pow(new_r_factor, beta));
                             else
-                                newRadius = half_h;
+                                newRadius = max_uF_radius;
 
                             // Check if new radius is greater than h/2 - if so create a new macrofracture
-                            if (newRadius >= half_h)
+                            if (newRadius >= max_uF_radius)
                             {
                                 // Set radius to h/2
-                                uF.Radius = (half_h);
+                                uF.Radius = (max_uF_radius);
 
                                 // Set centrepoint of microfracture to centre of layer - this is to prevent it extending out of layer
                                 uF.CentrePoint.K = 0;
@@ -3551,7 +3554,7 @@ namespace DFMGenerator_SharedCode
                                     uF.NucleatedMacrofracture = true;
 
                                     // Determine LTime of macrofracture nucleation
-                                    double nucleation_LTime = beta * hb1_factor * (hinvBeta_factor - curr_r_factor);
+                                    double nucleation_LTime = beta * hb1_factor * (initial_uF_factor - curr_r_factor);
                                     if (uF.NucleationTimestep == CurrentExplicitTimestep) nucleation_LTime += uF.NucleationLTime;
 
                                     // Create a new MacrofractureSegmentIJK object and add it to the local DFN
@@ -3573,10 +3576,14 @@ namespace DFMGenerator_SharedCode
                             {
                                 uF.Radius = newRadius;
 
-                                // Also move the centrepoint of the microfracture towards centre of layer
-                                // This will prevent the microfracture extending out of layer; however it is only geologically valid if the microfractures grow anisotropically and it may skew the microfracture volumetric distribution
-                                if (uF.CentrePoint.K < (uF.Radius - half_h)) uF.CentrePoint.K = (uF.Radius - half_h);
-                                if (uF.CentrePoint.K > (half_h - uF.Radius)) uF.CentrePoint.K = (half_h - uF.Radius);
+                                // If the fracture nucleation position is undefined and the microfracture tip has reached one of the layer boundaries, move its centrepoint towards centre of layer
+                                // This will prevent the microfracture extending out of layer; however this is only geologically valid if the microfractures grow anisotropically and it may skew the microfracture volumetric distribution
+                                // If the fracture nucleation position is defined, microfractures may extend out of the layer; this can be rectified when generating the microfracture cornerpoints
+                                if (PropControl.FractureNucleationPosition < 0)
+                                {
+                                    if (uF.CentrePoint.K < (uF.Radius - max_uF_radius)) uF.CentrePoint.K = (uF.Radius - max_uF_radius);
+                                    if (uF.CentrePoint.K > (max_uF_radius - uF.Radius)) uF.CentrePoint.K = (max_uF_radius - uF.Radius);
+                                }
                             }
                         } // End if microfracture is active
                     } // Loop to next microfracture
