@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-//#define DEBUG_FRACS
+#define DEBUG_FRACS
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -1306,6 +1306,14 @@ namespace DFMGenerator_Ocean
                                 local_Current_Depth -= SE_top_corner.Z;
                                 local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
 
+                                // Calculate the mean current depth of top surface and layer thickness
+                                local_Current_Depth /= 4;
+                                local_LayerThickness /= 4;
+                                // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
+                                // In this case we will abort this gridblock and move onto the next
+                                if (double.IsNaN(local_Current_Depth) || double.IsNaN(local_LayerThickness))
+                                    continue;
+
                                 // Get the depth at the start of deformation from the grid as required
                                 // This will depend on whether we are averaging the stress and strain data over all Petrel cells that make up the gridblock, or taking the values from a single cell
                                 // First we will create a local variable for the property value in this gridblock; we can then recalculate this without altering the global default value
@@ -1379,16 +1387,381 @@ namespace DFMGenerator_Ocean
                                     }
                                 }
 
-                                // Calculate the mean current depth of top surface and layer thickness
-                                local_Current_Depth = local_Current_Depth / 4;
-                                local_LayerThickness /= 4;
-                                // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
-                                // In this case we will abort this gridblock and move onto the next
-                                if (double.IsNaN(local_Current_Depth) || double.IsNaN(local_LayerThickness))
-                                    continue;
-                                // We assume that the mean layer thickness at start of deformation is equal to the current layer thickness
-                                // We assume that the mean depth of top surface at start of deformation is equal to the current mean depth minus total specified uplift, unless the depth at the start of deformation has been specified
-                                double local_Depth = (local_DepthAtDeformation>0 ? local_DepthAtDeformation : local_Current_Depth);
+                                // Get the deformation load data for each deformation episode
+                                // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
+                                List<double> local_EhminAzi_list = new List<double>();
+                                List<double> local_EhminRate_list = new List<double>();
+                                List<double> local_EhmaxRate_list = new List<double>();
+                                List<double> local_AppliedOverpressureRate_list = new List<double>();
+                                List<double> local_AppliedTemperatureChange_list = new List<double>();
+                                List<double> local_AppliedUpliftRate_list = new List<double>();
+                                List<double> local_StressArchingFactor_list = new List<double>();
+                                List<double> local_DeformationEpisodeDuration_list = new List<double>();
+                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                                {
+                                    // Get the time converter for this episode
+                                    // This can vary between episodes as the time units may be different for each deformation episode
+                                    // NB Times in project units must be divided by the converter to convert to SI units (s)
+                                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
+                                    double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
+
+                                    // Get the deformation load data from the grid as required
+                                    // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                    // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                    double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
+                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
+                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+
+                                    // Get local handles for the properties and flags
+                                    bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
+                                    Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
+                                    bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
+                                    Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
+                                    bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
+                                    Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
+                                    bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                    Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                    bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                    Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                    bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
+                                    Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
+                                    bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
+
+                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                    {
+                                        // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                        double ehmin_orient_x_total = 0;
+                                        double ehmin_orient_y_total = 0;
+                                        int ehmin_orient_novalues = 0;
+                                        double ehmin_rate_total = 0;
+                                        int ehmin_rate_novalues = 0;
+                                        double ehmax_rate_total = 0;
+                                        int ehmax_rate_novalues = 0;
+                                        double OP_rate_total = 0;
+                                        int OP_rate_novalues = 0;
+                                        double temp_rate_total = 0;
+                                        int temp_rate_novalues = 0;
+                                        double uplift_rate_total = 0;
+                                        int uplift_rate_novalues = 0;
+
+                                        // Loop through all the Petrel cells in the gridblock
+                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                {
+                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                    // Update ehmin orientation total if defined
+                                                    if (UseGridFor_EhminAzi)
+                                                    {
+                                                        double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_EhminAzi)
+                                                            cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
+                                                        if (!double.IsNaN(cell_ehmin_orient))
+                                                        {
+                                                            // Trim the ehmin orientation values so they lie within a semicircular range
+                                                            // To try to get a more meaningful average, the range will depend on the previous values
+                                                            // If previous values have tended towards an EW orientation (so total x > total y), the range will be between 0 and pi to better average near EW vectors
+                                                            if (Math.Abs(ehmin_orient_x_total) > 1.2 * Math.Abs(ehmin_orient_y_total))
+                                                            {
+                                                                // Trim the ehmin orientation values so they lie between 0 and pi
+                                                                while (cell_ehmin_orient < 0)
+                                                                    cell_ehmin_orient += Math.PI;
+                                                                while (cell_ehmin_orient >= Math.PI)
+                                                                    cell_ehmin_orient -= Math.PI;
+                                                            }
+                                                            // If previous values have tended towards an NS orientation (so total x < total y), the range will be between -pi/2 and pi/2 to better average near NS vectors
+                                                            else if (Math.Abs(ehmin_orient_y_total) > 1.2 * Math.Abs(ehmin_orient_x_total))
+                                                            {
+                                                                // Trim the ehmin orientation values so they lie between 0 and pi
+                                                                while (cell_ehmin_orient < -(Math.PI / 2))
+                                                                    cell_ehmin_orient += Math.PI;
+                                                                while (cell_ehmin_orient >= (Math.PI / 2))
+                                                                    cell_ehmin_orient -= Math.PI;
+                                                            }
+                                                            // If previous values have no preferred orientation, or this is the first value (so total x = total y), the range will be between -pi/4 and 3*pi/4 to better average near NS vectors
+                                                            else
+                                                            {
+                                                                // Trim the ehmin orientation values so they lie between -pi/4 and 3*pi/4
+                                                                while (cell_ehmin_orient < -(Math.PI / 4))
+                                                                    cell_ehmin_orient += Math.PI;
+                                                                while (cell_ehmin_orient >= (3 * Math.PI / 4))
+                                                                    cell_ehmin_orient -= Math.PI;
+                                                            }
+
+                                                            ehmin_orient_x_total += Math.Sin(cell_ehmin_orient);
+                                                            ehmin_orient_y_total += Math.Cos(cell_ehmin_orient);
+                                                            ehmin_orient_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update ehmin rate total if defined
+                                                    if (UseGridFor_EhminRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
+                                                        if (!double.IsNaN(cell_ehmin_rate))
+                                                        {
+                                                            ehmin_rate_total += cell_ehmin_rate;
+                                                            ehmin_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update ehmax rate total if defined
+                                                    if (UseGridFor_EhmaxRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
+                                                        if (!double.IsNaN(cell_ehmax_rate))
+                                                        {
+                                                            ehmax_rate_total += cell_ehmax_rate;
+                                                            ehmax_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update overpressure rate total if defined
+                                                    if (UseGridFor_AppliedOverpressureRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
+                                                        double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_AppliedOverpressureRate)
+                                                            cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
+                                                        if (!double.IsNaN(cell_OP_rate))
+                                                        {
+                                                            OP_rate_total += cell_OP_rate;
+                                                            OP_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update temperature change total if defined
+                                                    if (UseGridFor_AppliedTemperatureChange)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
+                                                        double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_AppliedTemperatureChange)
+                                                            cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
+                                                        if (!double.IsNaN(cell_temp_rate))
+                                                        {
+                                                            temp_rate_total += cell_temp_rate;
+                                                            temp_rate_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update uplift rate total if defined
+                                                    if (UseGridFor_AppliedUpliftRate)
+                                                    {
+                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                        // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
+                                                        double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
+                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                        if (convertFromGeneral_AppliedUpliftRate)
+                                                            cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
+                                                        if (!double.IsNaN(cell_uplift_rate))
+                                                        {
+                                                            uplift_rate_total += cell_uplift_rate;
+                                                            uplift_rate_novalues++;
+                                                        }
+                                                    }
+                                                }
+
+                                        // Update the gridblock values with the averages - if there is any data to calculate them from
+                                        if (ehmin_orient_novalues > 0)
+                                            local_EhminAzi = Math.Atan(ehmin_orient_x_total / ehmin_orient_y_total);
+                                        if (ehmin_rate_novalues > 0)
+                                            local_EhminRate = ehmin_rate_total / (double)ehmin_rate_novalues;
+                                        if (ehmax_rate_novalues > 0)
+                                            local_EhmaxRate = ehmax_rate_total / (double)ehmax_rate_novalues;
+                                        if (OP_rate_novalues > 0)
+                                            local_AppliedOverpressureRate = OP_rate_total / (double)OP_rate_novalues;
+                                        if (temp_rate_novalues > 0)
+                                            local_AppliedTemperatureChange = temp_rate_total / (double)temp_rate_novalues;
+                                        if (uplift_rate_novalues > 0)
+                                            local_AppliedUpliftRate = uplift_rate_total / (double)uplift_rate_novalues;
+                                    }
+                                    else // We are taking data from a single cell
+                                    {
+                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                        if (HorizontalUpscalingFactor > 1)
+                                        {
+                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                        }
+
+                                        // Create a reference to the cell from which we will read the data
+                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                        // Update ehmin orientation total if defined
+                                        if (UseGridFor_EhminAzi)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_EhminAzi)
+                                                    cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
+                                                if (!double.IsNaN(cell_ehmin_orient))
+                                                {
+                                                    local_EhminAzi = cell_ehmin_orient;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update ehmin rate total if defined
+                                        if (UseGridFor_EhminRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
+                                                if (!double.IsNaN(cell_ehmin_rate))
+                                                {
+                                                    local_EhminRate = cell_ehmin_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update ehmax rate total if defined
+                                        if (UseGridFor_EhmaxRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
+                                                if (!double.IsNaN(cell_ehmax_rate))
+                                                {
+                                                    local_EhmaxRate = cell_ehmax_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update overpressure rate total if defined
+                                        if (UseGridFor_AppliedOverpressureRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
+                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_AppliedOverpressureRate)
+                                                    cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
+                                                if (!double.IsNaN(cell_OP_rate))
+                                                {
+                                                    local_AppliedOverpressureRate = cell_OP_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update temperature change total if defined
+                                        if (UseGridFor_AppliedTemperatureChange)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
+                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_AppliedTemperatureChange)
+                                                    cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
+                                                if (!double.IsNaN(cell_temp_rate))
+                                                {
+                                                    local_AppliedTemperatureChange = cell_temp_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update uplift rate total if defined
+                                        if (UseGridFor_AppliedUpliftRate)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
+                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
+                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                if (convertFromGeneral_AppliedUpliftRate)
+                                                    cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
+                                                if (!double.IsNaN(cell_uplift_rate))
+                                                {
+                                                    local_AppliedUpliftRate = cell_uplift_rate;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Add the data for this deformation episode to the deformation episode lists
+                                    local_EhminAzi_list.Add(local_EhminAzi);
+                                    local_EhminRate_list.Add(local_EhminRate);
+                                    local_EhmaxRate_list.Add(local_EhmaxRate);
+                                    local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                    local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                    local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                    local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                    local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+
+#if DEBUG_FRACS
+                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration{0}, EhminAzi{1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
+#endif
+                                }// End get the stress / strain data from the grid as required
+
+                                // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
+                                double local_Depth;
+                                if (local_DepthAtDeformation > 0)
+                                {
+                                    // If the initial depth  has been specified, use this 
+                                    local_Depth = local_DepthAtDeformation;
+                                }
+                                else
+                                {
+                                    // Otherwise, calculate the current mean depth of the gridblock minus the total specified uplift
+                                    // NB Uplift will not be counted for deformation episodes with indefinite duration
+                                    local_Depth = local_Current_Depth;
+                                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                                    {
+                                        double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
+                                        double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
+                                        if (local_DeformationEpisodeDuration > 0)
+                                            local_Depth += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
+                                    }
+                                }
+
+                                // Create a new gridblock object containing the required number of fracture sets
+                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth, NoFractureSets);
 
                                 // Check if the western boundary if faulted
                                 // This will be the case if any of the Petrel cells on the southern boundary are faulted
@@ -1434,9 +1807,6 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Current_Depth));
 #endif
-
-                                // Create a new gridblock object containing the required number of fracture sets
-                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Current_Depth, NoFractureSets);
 
                                 // Set the gridblock cornerpoints
                                 gc.setGridblockCorners(FractureGrid_SWtop, FractureGrid_SWbottom, FractureGrid_NWtop, FractureGrid_NWbottom, FractureGrid_NEtop, FractureGrid_NEbottom, FractureGrid_SEtop, FractureGrid_SEbottom);
@@ -2038,338 +2408,16 @@ namespace DFMGenerator_Ocean
                                 }
 
                                 // Add the deformation load data 
-                                // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
-                                double totalUplift = 0;
                                 for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                                 {
-                                    // Get the time converter for this episode
-                                    // This can vary between episodes as the time units may be different for each deformation episode
-                                    // NB Times in project units must be divided by the converter to convert to SI units (s)
-                                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
-                                    double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
-
-                                    // Get the deformation load data from the grid as required
-                                    // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                    // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                    double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
-                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-
-                                    // Get local handles for the properties and flags
-                                    bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
-                                    Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
-                                    bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
-                                    Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
-                                    bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
-                                    Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
-                                    Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
-
-                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                    {
-                                        // Create local variables for running total and number of datapoints for each stress/strain state parameter
-                                        double ehmin_orient_x_total = 0;
-                                        double ehmin_orient_y_total = 0;
-                                        int ehmin_orient_novalues = 0;
-                                        double ehmin_rate_total = 0;
-                                        int ehmin_rate_novalues = 0;
-                                        double ehmax_rate_total = 0;
-                                        int ehmax_rate_novalues = 0;
-                                        double OP_rate_total = 0;
-                                        int OP_rate_novalues = 0;
-                                        double temp_rate_total = 0;
-                                        int temp_rate_novalues = 0;
-                                        double uplift_rate_total = 0;
-                                        int uplift_rate_novalues = 0;
-
-                                        // Loop through all the Petrel cells in the gridblock
-                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                {
-                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                    // Update ehmin orientation total if defined
-                                                    if (UseGridFor_EhminAzi)
-                                                    {
-                                                        double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
-                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                        if (convertFromGeneral_EhminAzi)
-                                                            cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
-                                                        if (!double.IsNaN(cell_ehmin_orient))
-                                                        {
-                                                            // Trim the ehmin orientation values so they lie within a semicircular range
-                                                            // To try to get a more meaningful average, the range will depend on the previous values
-                                                            // If previous values have tended towards an EW orientation (so total x > total y), the range will be between 0 and pi to better average near EW vectors
-                                                            if (Math.Abs(ehmin_orient_x_total) > 1.2 * Math.Abs(ehmin_orient_y_total))
-                                                            {
-                                                                // Trim the ehmin orientation values so they lie between 0 and pi
-                                                                while (cell_ehmin_orient < 0)
-                                                                    cell_ehmin_orient += Math.PI;
-                                                                while (cell_ehmin_orient >= Math.PI)
-                                                                    cell_ehmin_orient -= Math.PI;
-                                                            }
-                                                            // If previous values have tended towards an NS orientation (so total x < total y), the range will be between -pi/2 and pi/2 to better average near NS vectors
-                                                            else if (Math.Abs(ehmin_orient_y_total) > 1.2 * Math.Abs(ehmin_orient_x_total))
-                                                            {
-                                                                // Trim the ehmin orientation values so they lie between 0 and pi
-                                                                while (cell_ehmin_orient < -(Math.PI / 2))
-                                                                    cell_ehmin_orient += Math.PI;
-                                                                while (cell_ehmin_orient >= (Math.PI / 2))
-                                                                    cell_ehmin_orient -= Math.PI;
-                                                            }
-                                                            // If previous values have no preferred orientation, or this is the first value (so total x = total y), the range will be between -pi/4 and 3*pi/4 to better average near NS vectors
-                                                            else
-                                                            {
-                                                                // Trim the ehmin orientation values so they lie between -pi/4 and 3*pi/4
-                                                                while (cell_ehmin_orient < -(Math.PI / 4))
-                                                                    cell_ehmin_orient += Math.PI;
-                                                                while (cell_ehmin_orient >= (3 * Math.PI / 4))
-                                                                    cell_ehmin_orient -= Math.PI;
-                                                            }
-
-                                                            ehmin_orient_x_total += Math.Sin(cell_ehmin_orient);
-                                                            ehmin_orient_y_total += Math.Cos(cell_ehmin_orient);
-                                                            ehmin_orient_novalues++;
-                                                        }
-                                                    }
-
-                                                    // Update ehmin rate total if defined
-                                                    if (UseGridFor_EhminRate)
-                                                    {
-                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
-                                                        if (!double.IsNaN(cell_ehmin_rate))
-                                                        {
-                                                            ehmin_rate_total += cell_ehmin_rate;
-                                                            ehmin_rate_novalues++;
-                                                        }
-                                                    }
-
-                                                    // Update ehmax rate total if defined
-                                                    if (UseGridFor_EhmaxRate)
-                                                    {
-                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
-                                                        if (!double.IsNaN(cell_ehmax_rate))
-                                                        {
-                                                            ehmax_rate_total += cell_ehmax_rate;
-                                                            ehmax_rate_novalues++;
-                                                        }
-                                                    }
-
-                                                    // Update overpressure rate total if defined
-                                                    if (UseGridFor_AppliedOverpressureRate)
-                                                    {
-                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
-                                                        double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
-                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                        if (convertFromGeneral_AppliedOverpressureRate)
-                                                            cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
-                                                        if (!double.IsNaN(cell_OP_rate))
-                                                        {
-                                                            OP_rate_total += cell_OP_rate;
-                                                            OP_rate_novalues++;
-                                                        }
-                                                    }
-
-                                                    // Update temperature change total if defined
-                                                    if (UseGridFor_AppliedTemperatureChange)
-                                                    {
-                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
-                                                        double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
-                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                        if (convertFromGeneral_AppliedTemperatureChange)
-                                                            cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
-                                                        if (!double.IsNaN(cell_temp_rate))
-                                                        {
-                                                            temp_rate_total += cell_temp_rate;
-                                                            temp_rate_novalues++;
-                                                        }
-                                                    }
-
-                                                    // Update uplift rate total if defined
-                                                    if (UseGridFor_AppliedUpliftRate)
-                                                    {
-                                                        // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
-                                                        double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
-                                                        // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                        if (convertFromGeneral_AppliedUpliftRate)
-                                                            cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
-                                                        if (!double.IsNaN(cell_uplift_rate))
-                                                        {
-                                                            uplift_rate_total += cell_uplift_rate;
-                                                            uplift_rate_novalues++;
-                                                        }
-                                                    }
-                                                }
-
-                                        // Update the gridblock values with the averages - if there is any data to calculate them from
-                                        if (ehmin_orient_novalues > 0)
-                                            local_EhminAzi = Math.Atan(ehmin_orient_x_total / ehmin_orient_y_total);
-                                        if (ehmin_rate_novalues > 0)
-                                            local_EhminRate = ehmin_rate_total / (double)ehmin_rate_novalues;
-                                        if (ehmax_rate_novalues > 0)
-                                            local_EhmaxRate = ehmax_rate_total / (double)ehmax_rate_novalues;
-                                        if (OP_rate_novalues > 0)
-                                            local_AppliedOverpressureRate = OP_rate_total / (double)OP_rate_novalues;
-                                        if (temp_rate_novalues > 0)
-                                            local_AppliedTemperatureChange = temp_rate_total / (double)temp_rate_novalues;
-                                        if (uplift_rate_novalues > 0)
-                                            local_AppliedUpliftRate = uplift_rate_total / (double)uplift_rate_novalues;
-                                    }
-                                    else // We are taking data from a single cell
-                                    {
-                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                        if (HorizontalUpscalingFactor > 1)
-                                        {
-                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                        }
-
-                                        // Create a reference to the cell from which we will read the data
-                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                        // Update ehmin orientation total if defined
-                                        if (UseGridFor_EhminAzi)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_EhminAzi)
-                                                    cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
-                                                if (!double.IsNaN(cell_ehmin_orient))
-                                                {
-                                                    local_EhminAzi = cell_ehmin_orient;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update ehmin rate total if defined
-                                        if (UseGridFor_EhminRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
-                                                if (!double.IsNaN(cell_ehmin_rate))
-                                                {
-                                                    local_EhminRate = cell_ehmin_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update ehmax rate total if defined
-                                        if (UseGridFor_EhmaxRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
-                                                if (!double.IsNaN(cell_ehmax_rate))
-                                                {
-                                                    local_EhmaxRate = cell_ehmax_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update overpressure rate total if defined
-                                        if (UseGridFor_AppliedOverpressureRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
-                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_AppliedOverpressureRate)
-                                                    cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
-                                                if (!double.IsNaN(cell_OP_rate))
-                                                {
-                                                    local_AppliedOverpressureRate = cell_OP_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update temperature change total if defined
-                                        if (UseGridFor_AppliedTemperatureChange)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
-                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_AppliedTemperatureChange)
-                                                    cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
-                                                if (!double.IsNaN(cell_temp_rate))
-                                                {
-                                                    local_AppliedTemperatureChange = cell_temp_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update uplift rate total if defined
-                                        if (UseGridFor_AppliedUpliftRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
-                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_AppliedUpliftRate)
-                                                    cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
-                                                if (!double.IsNaN(cell_uplift_rate))
-                                                {
-                                                    local_AppliedUpliftRate = cell_uplift_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Update the total uplift
-                                    if (local_DeformationEpisodeDuration > 0)
-                                        totalUplift += (local_DeformationEpisodeDuration * local_AppliedUpliftRate);
+                                    double local_EhminRate = local_EhminRate_list[deformationEpisodeNo];
+                                    double local_EhmaxRate = local_EhmaxRate_list[deformationEpisodeNo];
+                                    double local_EhminAzi = local_EhminAzi_list[deformationEpisodeNo];
+                                    double local_AppliedOverpressureRate = local_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                    double local_AppliedTemperatureChange = local_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                    double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
+                                    double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
+                                    double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
 
                                     // Add the deformation episode to the deformation episode list in the PropControl object
                                     gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
@@ -2378,16 +2426,6 @@ namespace DFMGenerator_Ocean
                                     PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
 #endif
                                 }// End get the stress / strain data from the grid as required
-
-                                // If required, update the initial depth
-                                // This is only necessary if the depth is set to the current depth, and there is some uplift specified
-                                // If the initial depth is updated, it will also be necessary to reset the initial in situ stress state
-                                if (!(DepthAtDeformation > 0) && (totalUplift != 0))
-                                {
-                                    local_Current_Depth += totalUplift;
-                                    gc.SetInitialThicknessAndDepth(local_LayerThickness, local_Current_Depth);
-                                    gc.StressStrain.ResetStressStrainState();
-                                }
 
                                 // Add to grid
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
@@ -2545,16 +2583,6 @@ namespace DFMGenerator_Ocean
                                             break;
                                         default:
                                             break;
-                                    }
-
-                                    if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualTime)
-                                    {
-                                    }
-                                    else if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualArea)
-                                    {
-                                    }
-                                    else
-                                    {
                                     }
 
                                     // Create a stage-specific label for the output file
@@ -4346,10 +4374,10 @@ namespace DFMGenerator_Ocean
                 get { return this.argument_DeformationEpisode.Count; }
             }
             [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
-            private List<string> Argument_DeformationEpisode
+            public List<string> Argument_DeformationEpisode
             {
-                get { return this.argument_DeformationEpisode; }
-                set { this.argument_DeformationEpisode = value; }
+                internal get { return this.argument_DeformationEpisode; }
+                set { if (value != null) this.argument_DeformationEpisode = value; else this.argument_DeformationEpisode = new List<string>(); }
             }
             internal string DeformationEpisode(int episodeIndex)
             {
@@ -4375,10 +4403,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
-            private List<double> Argument_DeformationEpisodeDuration
+            public List<double> Argument_DeformationEpisodeDuration
             {
-                get { return this.argument_DeformationEpisodeDuration; }
-                set { this.argument_DeformationEpisodeDuration = value; }
+                internal get { return this.argument_DeformationEpisodeDuration; }
+                set { if (value != null) this.argument_DeformationEpisodeDuration = value; else this.argument_DeformationEpisodeDuration = new List<double>(); }
             }
             internal double DeformationEpisodeDuration(int episodeIndex)
             {
@@ -4404,10 +4432,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
-            private List<int> Argument_DeformationEpisodeTimeUnits
+            public List<int> Argument_DeformationEpisodeTimeUnits
             {
-                get { return this.argument_DeformationEpisodeTimeUnits; }
-                set { this.argument_DeformationEpisodeTimeUnits = value; }
+                internal get { return this.argument_DeformationEpisodeTimeUnits; }
+                set { if (value != null) this.argument_DeformationEpisodeTimeUnits = value; else this.argument_DeformationEpisodeTimeUnits = new List<int>(); }
             }
             internal int DeformationEpisodeTimeUnits(int episodeIndex)
             {
@@ -4433,10 +4461,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
-            private List<double> Argument_EhminAzi_default
+            public List<double> Argument_EhminAzi_default
             {
-                get { return this.argument_EhminAzi_default; }
-                set { this.argument_EhminAzi_default = value; }
+                internal get { return this.argument_EhminAzi_default; }
+                set { if (value != null) this.argument_EhminAzi_default = value; else this.argument_EhminAzi_default = new List<double>(); }
             }
             internal double EhminAzi_default(int episodeIndex)
             {
@@ -4462,10 +4490,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
-            private List<Droid> Argument_EhminAzi
+            public List<Droid> Argument_EhminAzi
             {
-                get { return this.argument_EhminAzi; }
-                set { this.argument_EhminAzi = value; }
+                internal get { return this.argument_EhminAzi; }
+                set { if (value != null) this.argument_EhminAzi = value; else this.argument_EhminAzi = new List<Droid>(); }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminAzi(int episodeIndex)
             {
@@ -4494,10 +4522,10 @@ namespace DFMGenerator_Ocean
             // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
             // Unit labelling must be handled manually
             [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            private List<double> Argument_EhminRate_default
+            public List<double> Argument_EhminRate_default
             {
-                get { return this.argument_EhminRate_default; }
-                set { this.argument_EhminRate_default = value; }
+                internal get { return this.argument_EhminRate_default; }
+                set { if (value != null) this.argument_EhminRate_default = value; else this.argument_EhminRate_default = new List<double>(); }
             }
             internal double EhminRate_default(int episodeIndex)
             {
@@ -4523,10 +4551,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            private List<Droid> Argument_EhminRate
+            public List<Droid> Argument_EhminRate
             {
-                get { return this.argument_EhminRate; }
-                set { this.argument_EhminRate = value; }
+                internal get { return this.argument_EhminRate; }
+                set { if (value != null) this.argument_EhminRate = value; else this.argument_EhminRate = new List<Droid>(); }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminRate(int episodeIndex)
             {
@@ -4552,10 +4580,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            private List<double> Argument_EhmaxRate_default
+            public List<double> Argument_EhmaxRate_default
             {
-                get { return this.argument_EhmaxRate_default; }
-                set { this.argument_EhmaxRate_default = value; }
+                internal get { return this.argument_EhmaxRate_default; }
+                set { if (value != null) this.argument_EhmaxRate_default = value; else this.argument_EhmaxRate_default = new List<double>(); }
             }
             internal double EhmaxRate_default(int episodeIndex)
             {
@@ -4581,10 +4609,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            private List<Droid> Argument_EhmaxRate
+            public List<Droid> Argument_EhmaxRate
             {
-                get { return this.argument_EhmaxRate; }
-                set { this.argument_EhmaxRate = value; }
+                internal get { return this.argument_EhmaxRate; }
+                set { if (value != null) this.argument_EhmaxRate = value; else this.argument_EhmaxRate = new List<Droid>(); }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhmaxRate(int episodeIndex)
             {
@@ -4610,10 +4638,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
-            private List<double> Argument_AppliedOverpressureRate_default
+            public List<double> Argument_AppliedOverpressureRate_default
             {
-                get { return this.argument_AppliedOverpressureRate_default; }
-                set { this.argument_AppliedOverpressureRate_default = value; }
+                internal get { return this.argument_AppliedOverpressureRate_default; }
+                set { if (value != null) this.argument_AppliedOverpressureRate_default = value; else this.argument_AppliedOverpressureRate_default = new List<double>(); }
             }
             internal double AppliedOverpressureRate_default(int episodeIndex)
             {
@@ -4639,10 +4667,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
-            private List<Droid> Argument_AppliedOverpressureRate
+            public List<Droid> Argument_AppliedOverpressureRate
             {
-                get { return this.argument_AppliedOverpressureRate; }
-                set { this.argument_AppliedOverpressureRate = value; }
+                internal get { return this.argument_AppliedOverpressureRate; }
+                set { if (value != null) this.argument_AppliedOverpressureRate = value; else this.argument_AppliedOverpressureRate = new List<Droid>(); }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedOverpressureRate(int episodeIndex)
             {
@@ -4668,10 +4696,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
-            private List<double> Argument_AppliedTemperatureChange_default
+            public List<double> Argument_AppliedTemperatureChange_default
             {
-                get { return this.argument_AppliedTemperatureChange_default; }
-                set { this.argument_AppliedTemperatureChange_default = value; }
+                internal get { return this.argument_AppliedTemperatureChange_default; }
+                set { if (value != null) this.argument_AppliedTemperatureChange_default = value; else this.argument_AppliedTemperatureChange_default = new List<double>(); }
             }
             internal double AppliedTemperatureChange_default(int episodeIndex)
             {
@@ -4697,10 +4725,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
-            private List<Droid> Argument_AppliedTemperatureChange
+            public List<Droid> Argument_AppliedTemperatureChange
             {
-                get { return this.argument_AppliedTemperatureChange; }
-                set { this.argument_AppliedTemperatureChange = value; }
+                internal get { return this.argument_AppliedTemperatureChange; }
+                set { if (value != null) this.argument_AppliedTemperatureChange = value; else this.argument_AppliedTemperatureChange = new List<Droid>(); }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedTemperatureChange(int episodeIndex)
             {
@@ -4726,10 +4754,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
-            private List<double> Argument_AppliedUpliftRate_default
+            public List<double> Argument_AppliedUpliftRate_default
             {
-                get { return this.argument_AppliedUpliftRate_default; }
-                set { this.argument_AppliedUpliftRate_default = value; }
+                internal get { return this.argument_AppliedUpliftRate_default; }
+                set { if (value != null) this.argument_AppliedUpliftRate_default = value; else this.argument_AppliedUpliftRate_default = new List<double>(); }
             }
             internal double AppliedUpliftRate_default(int episodeIndex)
             {
@@ -4755,10 +4783,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
-            private List<Droid> Argument_AppliedUpliftRate
+            public List<Droid> Argument_AppliedUpliftRate
             {
-                get { return this.argument_AppliedUpliftRate; }
-                set { this.argument_AppliedUpliftRate = value; }
+                internal get { return this.argument_AppliedUpliftRate; }
+                set { if (value != null) this.argument_AppliedUpliftRate = value; else this.argument_AppliedUpliftRate = new List<Droid>(); }
             }
             internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedUpliftRate(int episodeIndex)
             {
@@ -4784,10 +4812,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
-            private List<double> Argument_StressArchingFactor
+            public List<double> Argument_StressArchingFactor
             {
-                get { return this.argument_StressArchingFactor; }
-                set { this.argument_StressArchingFactor = value; }
+                internal get { return this.argument_StressArchingFactor; }
+                set { if (value != null) this.argument_StressArchingFactor = value; else this.argument_StressArchingFactor = new List<double>(); }
             }
             internal double StressArchingFactor(int episodeIndex)
             {
@@ -4834,6 +4862,7 @@ namespace DFMGenerator_Ocean
                 this.argument_AppliedUpliftRate_default.Add(0);
                 this.argument_AppliedUpliftRate.Add(null);
                 this.argument_StressArchingFactor.Add(0);
+
                 return deformationEpisodeIndex;
             }
             /// <summary>
