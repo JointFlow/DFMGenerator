@@ -795,6 +795,8 @@ namespace DFMGenerator_Ocean
                     }
 
                     // Calculation control parameters
+                    // Number of fracture sets
+                    generalInputParams += string.Format("Fracture network comprises {0} fracture sets\n", NoFractureSets);
                     // Fracture mode
                     if (Mode1Only)
                         generalInputParams += "Mode 1 fractures only\n";
@@ -3581,7 +3583,7 @@ namespace DFMGenerator_Ocean
             private double argument_MeanOverlyingSedimentDensity = 2250;
             private double argument_FluidDensity = 1000;
             private double argument_InitialOverpressure = 0;
-            private double argument_InitialStressRelaxation = 1;
+            private double argument_InitialStressRelaxation = 0.5;
             private bool argument_AverageStressStrainData = false;
 
             // Outputs
@@ -3986,6 +3988,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_InitialOverpressure = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Initial stress relaxation", "Initial stress relaxation")]
             public double Argument_InitialStressRelaxation
             {
