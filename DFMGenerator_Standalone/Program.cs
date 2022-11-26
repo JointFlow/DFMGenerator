@@ -142,6 +142,14 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("OutputBulkRockElasticTensors false");
                 input_file.WriteLine("% Flag to calculate and output fracture porosity");
                 input_file.WriteLine("CalculateFracturePorosity true");
+                input_file.WriteLine("% Flag to calculate implicit fracture population distribution functions");
+                input_file.WriteLine("CalculatePopulationDistribution true");
+                input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
+                input_file.WriteLine("No_l_indexPoints 20");
+                input_file.WriteLine("% MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively");
+                input_file.WriteLine("% Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
+                input_file.WriteLine("MaxHMinLength 0");
+                input_file.WriteLine("MaxHMaxLength 0");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Fracture aperture control parameters");
@@ -213,14 +221,6 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Number of bins used in numerical integration of uFP32");
                 input_file.WriteLine("% This controls accuracy of numerical calculation of microfracture populations - increase this to increase accuracy of the numerical integration at expense of runtime");
                 input_file.WriteLine("No_r_bins 10");
-                input_file.WriteLine("% Flag to calculate implicit fracture population distribution functions");
-                input_file.WriteLine("CalculatePopulationDistribution true");
-                input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
-                input_file.WriteLine("No_l_indexPoints 20");
-                input_file.WriteLine("% MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively");
-                input_file.WriteLine("% Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
-                input_file.WriteLine("MaxHMinLength 0");
-                input_file.WriteLine("MaxHMaxLength 0");
                 input_file.WriteLine("% Calculation termination controls");
                 input_file.WriteLine("% The calculation is set to stop automatically when fractures stop growing");
                 input_file.WriteLine("% This can be defined in one of three ways:");
@@ -236,9 +236,9 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("Active_TotalMFP30TerminationRatio -1");
                 input_file.WriteLine("% Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated");
                 input_file.WriteLine("MinimumClearZoneVolume 0.01");
-                input_file.WriteLine("% Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing");
-                input_file.WriteLine("% Set DeformationStageDuration to -1 to continue until fracture saturation is reached");
-                input_file.WriteLine("DeformationStageDuration -1");
+                input_file.WriteLine("% Use the deformation episode duration and maximum timestep limits to stop the calculation before fractures have finished growing");
+                input_file.WriteLine("% Set DeformationEpisodeDuration to -1 to continue until fracture saturation is reached");
+                input_file.WriteLine("DeformationEpisodeDuration -1");
                 input_file.WriteLine("MaxTimesteps 1000");
                 input_file.WriteLine("% DFN geometry controls");
                 input_file.WriteLine("% Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated");
@@ -402,7 +402,7 @@ namespace DFMGenerator_Standalone
             // Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
             bool VariableStrainOrientation = false;
             double EhminCurvature = Math.PI / 16;
-            if (VariableStrainOrientation) 
+            if (VariableStrainOrientation)
                 EhminAzi = Math.PI / 4;
             // Strain rates
             // Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
@@ -488,6 +488,14 @@ namespace DFMGenerator_Standalone
             bool OutputBulkRockElasticTensors = false;
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
+            // Flag to calculate implicit fracture population distribution functions
+            bool CalculatePopulationDistribution = true;
+            // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
+            int No_l_indexPoints = 20;
+            // MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
+            // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
+            double MaxHMinLength = 0;
+            double MaxHMaxLength = 0;
 
             // Fracture aperture control parameters
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -556,14 +564,6 @@ namespace DFMGenerator_Standalone
             // Number of bins used in numerical integration of uFP32
             // This controls accuracy of numerical calculation of microfracture populations - increase this to increase accuracy of the numerical integration at expense of runtime 
             int No_r_bins = 10;
-            // Flag to calculate implicit fracture population distribution functions
-            bool CalculatePopulationDistribution = true;
-            // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
-            int No_l_indexPoints = 20;
-            // MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
-            // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
-            double MaxHMinLength = 0;
-            double MaxHMaxLength = 0;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -579,9 +579,9 @@ namespace DFMGenerator_Standalone
             double Active_TotalMFP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.01;
-            // Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing
-            // Set DeformationStageDuration to -1 to continue until fracture saturation is reached
-            double DeformationStageDuration = -1;
+            // Use the deformation episode duration and maximum timestep limits to stop the calculation before fractures have finished growing
+            // Set DeformationEpisodeDuration to -1 to continue until fracture saturation is reached
+            double DeformationEpisodeDuration = -1;
             int MaxTimesteps = 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
@@ -900,6 +900,26 @@ namespace DFMGenerator_Standalone
                         case "CalculateFracturePorosity_in": // For backwards compatibility
                             CalculateFracturePorosity = (line_split[1] == "true");
                             break;
+                        // Flag to calculate implicit fracture population distribution functions
+                        case "CalculatePopulationDistribution":
+                        case "CalculatePopulationDistribution_in": // For backwards compatibility
+                            CalculatePopulationDistribution = (line_split[1] == "true");
+                            break;
+                        // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
+                        case "No_l_indexPoints":
+                        case "no_l_indexPoints_in": // For backwards compatibility
+                            No_l_indexPoints = Convert.ToInt32(line_split[1]);
+                            break;
+                        // MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
+                        // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
+                        case "MaxHMinLength":
+                        case "maxHMinLength": // For backwards compatibility
+                            MaxHMinLength = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "MaxHMaxLength":
+                        case "maxHMaxLength": // For backwards compatibility
+                            MaxHMaxLength = Convert.ToDouble(line_split[1]);
+                            break;
 
                         // Fracture aperture control parameters
                         // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -1052,26 +1072,6 @@ namespace DFMGenerator_Standalone
                         case "no_r_bins_in": // For backwards compatibility
                             No_r_bins = Convert.ToInt32(line_split[1]);
                             break;
-                        // Flag to calculate implicit fracture population distribution functions
-                        case "CalculatePopulationDistribution":
-                        case "CalculatePopulationDistribution_in": // For backwards compatibility
-                            CalculatePopulationDistribution = (line_split[1] == "true");
-                            break;
-                        // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
-                        case "No_l_indexPoints":
-                        case "no_l_indexPoints_in": // For backwards compatibility
-                            No_l_indexPoints = Convert.ToInt32(line_split[1]);
-                            break;
-                        // MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
-                        // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
-                        case "MaxHMinLength":
-                        case "maxHMinLength": // For backwards compatibility
-                            MaxHMinLength = Convert.ToDouble(line_split[1]);
-                            break;
-                        case "MaxHMaxLength":
-                        case "maxHMaxLength": // For backwards compatibility
-                            MaxHMaxLength = Convert.ToDouble(line_split[1]);
-                            break;
                         // Calculation termination controls
                         // The calculation is set to stop automatically when fractures stop growing
                         // This can be defined in one of three ways:
@@ -1096,11 +1096,12 @@ namespace DFMGenerator_Standalone
                         case "minimum_ClearZone_Volume_in": // For backwards compatibility
                             MinimumClearZoneVolume = Convert.ToDouble(line_split[1]);
                             break;
-                        // Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing
-                        // Set DeformationStageDuration to -1 to continue until fracture saturation is reached
+                        // Use the deformation episode duration and maximum timestep limits to stop the calculation before fractures have finished growing
+                        // Set DeformationEpisodeDuration to -1 to continue until fracture saturation is reached
+                        case "DeformationEpisodeDuration":
                         case "DeformationStageDuration":
                         case "DeformationStageDuration_in": // For backwards compatibility
-                            DeformationStageDuration = Convert.ToDouble(line_split[1]);
+                            DeformationEpisodeDuration = Convert.ToDouble(line_split[1]);
                             break;
                         case "MaxTimesteps":
                         case "maxTimesteps_in": // For backwards compatibility
@@ -1778,7 +1779,7 @@ namespace DFMGenerator_Standalone
 
                     // Set the propagation control data for the gridblock
                     gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                        MinimumClearZoneVolume, DeformationStageDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
+                        MinimumClearZoneVolume, DeformationEpisodeDuration, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, local_Epsilon_hmin_azimuth_in, local_Epsilon_hmin_rate_in, local_Epsilon_hmax_rate_in, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                     // Set folder path for output files
                     gc.PropControl.FolderPath = folderPath;

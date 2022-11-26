@@ -88,12 +88,12 @@ namespace DFMGenerator_Ocean
             // Add help content via PetrelSystem.HelpService
             string helpDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             HelpService helpService = PetrelSystem.HelpService;
-            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm"))
+            PluginHelpManifest helpContentMain = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide.htm"))
             {
                 Text = "DFM Generator Help",
             };
             helpService.Add(helpContentMain);
-            PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf"))
+            PluginHelpManifest helpContentPDF = new PluginHelpManifest(System.IO.Path.Combine(helpDirectory, @"HelpFiles\DFM_Generator_Petrel_UserGuide.pdf"))
             {
                 Text = "DFM Generator Help, pdf format",
             };

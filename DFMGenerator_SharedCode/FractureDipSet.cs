@@ -2219,6 +2219,7 @@ namespace DFMGenerator_SharedCode
                     if (sneff < 0) output = -sneff;
                     break;
                 case FractureMode.Mode2:
+                case FractureMode.Mode3:
                     if (tau > 0) output = tau - (mu * Math.Max(sneff, 0));
                     break;
                 default:
@@ -2746,7 +2747,8 @@ namespace DFMGenerator_SharedCode
                     if (FracturesActive)
                     {
                         mean_MF_PropRate = CapA * Math.Pow(sqrtpi_Kc_h_factor * mean_SigmaD_M, b);
-                        uF_PropRate_Coefficient = (bis2 ? mean_MF_PropRate / hb1_factor : mean_MF_PropRate / (hb1_factor * Math.Abs(beta)));
+                        if (hb1_factor > 0)
+                            uF_PropRate_Coefficient = (bis2 ? mean_MF_PropRate / hb1_factor : mean_MF_PropRate / (hb1_factor * Math.Abs(beta)));
                     }
                 }
                 else // If final driving stress is equal to the initial driving stress then the driving stress will vary through the timestep, so we must calculate a weighted mean
@@ -2759,7 +2761,8 @@ namespace DFMGenerator_SharedCode
                     if (FracturesActive)
                     {
                         mean_MF_PropRate = CapA * (UV_U_term / ((b + 1) * V_M * TimestepDuration_in));
-                        uF_PropRate_Coefficient = (bis2 ? mean_MF_PropRate / hb1_factor : mean_MF_PropRate / (hb1_factor * Math.Abs(beta)));
+                        if (hb1_factor > 0)
+                            uF_PropRate_Coefficient = (bis2 ? mean_MF_PropRate / hb1_factor : mean_MF_PropRate / (hb1_factor * Math.Abs(beta)));
                     }
                 }
             }
@@ -2925,7 +2928,7 @@ namespace DFMGenerator_SharedCode
                             int tsM;
 
                             // Calculate terms for timestep M=0
-                            tsM = 0;
+                            for (tsM = 0; tsM < 1; tsM++)
                             {
                                 // Get index for the K,M element of the half-ts_PropLength and cumulative half-macrofracture deactivation probability arrays
                                 int K_M_index = tsK;
@@ -2940,7 +2943,7 @@ namespace DFMGenerator_SharedCode
                             }
 
                             // Loop through all timesteps M between timestep 1 and timestep K-1 and calculate increments
-                            for (tsM = 1; tsM < tsK; tsM++)
+                            for (; tsM < tsK; tsM++)
                             {
                                 // Cache useful variables locally
                                 double ts_halfLength_K_M = PreviousFractureData.getCumulativeHalfLength(tsK, tsM);
@@ -2967,6 +2970,10 @@ namespace DFMGenerator_SharedCode
                                 double ts_PhiTheta_Kminus1_Mminus1 = (ts_Phi_Kminus1_Mminus1 * ts_theta_dashed_Mminus1);
                                 double ts_dPhiTheta_K_dM = ((ts_Phi_K_Mminus1 * ts_theta_dashed_Mminus1) - (ts_Phi_K_M * ts_theta_dashed_M));
                                 double ts_dPhiTheta_Kminus1_dM = ((ts_Phi_Kminus1_Mminus1 * ts_theta_dashed_Mminus1) - (ts_Phi_Kminus1_M * ts_theta_dashed_M));
+
+                                // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
+                                if (double.IsInfinity(ts_CumhGammaM))
+                                    continue;
 
                                 // Calculate a_MFP30 increments valid if Timestep M < K
                                 double tsM_a_MFP30_increment = ts_dPhiTheta_K_dM * ts_CumhGammaM_betac_factor;
@@ -3003,7 +3010,7 @@ namespace DFMGenerator_SharedCode
                             tsK_s_MFP30_increment *= tsK_Duration;
 
                             // Final timestep M=K=N
-                            tsM = tsK;
+                            for (; tsM == tsK; tsM++)
                             {
                                 // Cache useful variables locally
                                 double ts_halfLength_K_M = PreviousFractureData.getCumulativeHalfLength(tsK, tsM);
@@ -3027,6 +3034,10 @@ namespace DFMGenerator_SharedCode
                                 double ts_PhiTheta_K_Mminus1 = (ts_Phi_K_Mminus1 * ts_theta_dashed_Mminus1);
                                 // For use in calculating residual fracture population
                                 double ts_CumhGammaM_betacminus1_factor = (bis2 ? Math.Exp(betacminus1_factor * ts_CumhGammaM) : Math.Pow(ts_CumhGammaM, betacminus1_factor));
+
+                                // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
+                                if (double.IsInfinity(ts_CumhGammaM))
+                                    continue;
 
                                 // Calculate a_MFP30 increments valid if Timestep M = K
                                 double tsM_a_MFP30_increment = ts_PhiTheta_K_Mminus1 * ts_CumhGammaM_betac_factor;
@@ -3136,6 +3147,10 @@ namespace DFMGenerator_SharedCode
                             double ts_CumhGammaMminus1_betacminus1_factor = (bis2 ? Math.Exp(betacminus1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betacminus1_factor));
                             double ts_StressShadowDecreaseFactor_denominator = inst_F_K * dChiMP_dChiTot_K;
                             double ts_StressShadowDecreaseFactor = (ts_StressShadowDecreaseFactor_denominator > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * MeanMFPropagationRate_K * h * dChi_dMFP32_K * tsK_Duration / ts_StressShadowDecreaseFactor_denominator) : 0);
+
+                            // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
+                            if (double.IsInfinity(ts_CumhGammaM))
+                                break;
 
                             // Calculate a_MFP30 value for Timestep K
                             // If the fracture is not propagating then both gamma_InvBeta_K and inst_F_K will be zero, giving a NaN when calculating the residual a_MFP30 value
@@ -3492,6 +3507,8 @@ namespace DFMGenerator_SharedCode
                                 double ts_rminCumGammaNminus1_betac1_factor = Math.Pow(ts_rminCumGammaNminus1_factor, betac1_factor);
 
                                 // When b>2 the extrapolated initial minimum radius is always greater than 0
+                                // However if b is very large, 1/beta will be large and negative, so ts_rminCumGammaN_factor and ts_rminCumGammaNminus1_factor may tend to infinity; in this case no uFP30 values will be calculated
+                                if (ts_rminCumGammaN_factor < double.PositiveInfinity)
                                 {
                                     // Calculate a_uFP30 value for rmin_cutoff
                                     a_uFP30_value = (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
@@ -3533,6 +3550,8 @@ namespace DFMGenerator_SharedCode
                                 double rb_rmaxCumGammaNminus1_betac1_factor = Math.Pow(rb_rmaxCumGammaNminus1_factor, betac1_factor);
 
                                 // When b>2 the extrapolated initial minimum radius is always greater than 0
+                                // However if b is very large, 1/beta will be large and negative, so rb_rminCumGammaN_factor and rb_rmaxCumGammaN_factor may tend to infinity; in this case no uFP32 or uFP33 values will be calculated
+                                if (rb_rminCumGammaN_factor < double.PositiveInfinity)
                                 {
                                     // Calculate term for a_uFP32_value component
                                     a_uFP32_value += Math.Pow(rb_minRad, 2) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
@@ -3564,7 +3583,9 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Add additional terms to s_uFP30_increment, s_uFP32_increment and s_uFP33_increment to account for transition deactivation microfractures
-                double transition_deactivation_term = (ts_theta_Nminus1 - ts_theta_dashed_Nminus1) * (ts_CumhGammaN_betac_factor - ts_CumhGammaNminus1_betac_factor);
+                double transition_deactivation_term = 0;
+                if (ts_CumhGammaN < double.PositiveInfinity)
+                    transition_deactivation_term = (ts_theta_Nminus1 - ts_theta_dashed_Nminus1) * (ts_CumhGammaN_betac_factor - ts_CumhGammaNminus1_betac_factor);
                 s_uFP30_increment += transition_deactivation_term;
                 s_uFP32_increment += (transition_deactivation_term * Math.Pow(half_h, 2));
                 s_uFP33_increment += (transition_deactivation_term * Math.Pow(half_h, 3));
@@ -3720,7 +3741,7 @@ namespace DFMGenerator_SharedCode
                             int tsM;
 
                             // Calculate terms for timestep M=0
-                            tsM = 0;
+                            for (tsM = 0; tsM < 1; tsM++)
                             {
                                 // We must still calculate values for a_MFP30 and a_MFP32 even if timestep K!=N, in order to check the that the increments in s_MFP32 values do not exceed the decreases in a_MFP32 values
                                 //if (is_tsN)
@@ -3742,7 +3763,7 @@ namespace DFMGenerator_SharedCode
                             }
 
                             // Loop through all timesteps M between timestep 1 and timestep K and calculate increments
-                            for (tsM = 1; tsM <= tsK; tsM++)
+                            for (; tsM <= tsK; tsM++)
                             {
                                 // Cache useful variables locally
                                 double ts_halfLength_K_M = PreviousFractureData.getCumulativeHalfLength(tsK, tsM);
@@ -3773,6 +3794,11 @@ namespace DFMGenerator_SharedCode
 #if DBLOG
                                 if (is_tsN) logFile.WriteLine(string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}", tsM, ts_theta_dashed_Mminus1, ts_theta_dashed_M, ts_Phi_Kminus1_Mminus1, ts_Phi_Kminus1_M, ts_Phi_K_Mminus1, ts_Phi_K_M, ts_PhiTheta_K_Mminus1, ts_PhiTheta_Kminus1_Mminus1, ts_dPhiTheta_K_dM, ts_dPhiTheta_Kminus1_dM));
 #endif
+
+                                // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
+                                if (double.IsInfinity(ts_CumhGammaM))
+                                    continue;
+
                                 // Calculate standard terms for s_MFP30_increments
                                 double tsM_s_MFP30_factor0 = 0;
                                 double tsM_s_MFP30_factor1 = 0;
@@ -3999,6 +4025,10 @@ namespace DFMGenerator_SharedCode
                             double ts_CumhGammaMminus1_betacminus1_factor = (bis2 ? Math.Exp(betacminus1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betacminus1_factor));
                             double ts_StressShadowDecreaseFactor_denominator = inst_F_K * dChiMP_dChiTot_K;
                             double ts_StressShadowDecreaseFactor = (ts_StressShadowDecreaseFactor_denominator > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * MeanMFPropagationRate_K * h * dChi_dMFP32_K * tsK_Duration / ts_StressShadowDecreaseFactor_denominator) : 0);
+
+                            // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
+                            if (double.IsInfinity(ts_CumhGammaM))
+                                break;
 
                             // Calculate the active MFP30 value for all fractures of any length
                             // The cumulative MFP30 and MFP32 datapoints can be calculated by multiplying these base values with probability multipliers calculated for the fracture lengths
@@ -4402,6 +4432,8 @@ namespace DFMGenerator_SharedCode
                                     double rb_rmaxCumGammaMminus1_betac1_factor = Math.Pow(rb_rmaxCumGammaMminus1_factor, betac1_factor);
 
                                     // When b>2 the extrapolated initial minimum radius is always greater than 0
+                                    // However if b is very large, 1/beta will be large and negative, so rb_rminCumGammaM_factor and rb_rmaxCumGammaM_factor may tend to infinity; in this case no uFP30, uFP32 or uFP33 values will be calculated
+                                    if (rb_rminCumGammaM_factor < double.PositiveInfinity)
                                     {
                                         // Only calculate a_uFP30 value if timestep M=N
                                         if (is_tsN)
