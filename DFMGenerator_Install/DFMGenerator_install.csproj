@@ -55,11 +55,11 @@
   </Target>
   -->
   <PropertyGroup>
-    <PreBuildEvent>xcopy "$(SolutionDir)\DFNGenerator_Ocean\Resources\HelpFiles" /s /i /y "$(ProjectDir)HelpFiles"
+    <PreBuildEvent>xcopy "$(SolutionDir)\DFMGenerator_Ocean\Resources\HelpFiles" /s /i /y "$(ProjectDir)HelpFiles"
 mkdir "$(TargetDir)"
 rmdir "$(ProjectDir)\obj\copytemp" /s /q
 "$(ProjectDir)\DeployCopier.exe" "$(ProjectDir)DeployList.xml" "$(ProjectDir)\obj\copytemp" /config:$(ConfigurationName) /platform:"$(PlatformName)"</PreBuildEvent>
-    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFMGenerator_Ocean.dll" "$(TargetDir)DFM_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf"</PostBuildEvent>
+    <PostBuildEvent>"%25Ocean2020Home%25\PluginPackager.exe" /p "$(ProjectDir)\obj\copytemp\DFMGenerator_Ocean.dll" "$(TargetDir)DFMGenerator_2020.pip" "%25Ocean2020Home%25\petrel.exe" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide.htm" -helpfile "$(ProjectDir)\HelpFiles\DFM_Generator_Petrel_UserGuide.pdf"</PostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
