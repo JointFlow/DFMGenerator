@@ -469,6 +469,14 @@ namespace DFMGenerator_Ocean
                     bool CalculateFractureConnectivityAnisotropy = arguments.Argument_CalculateFractureConnectivityAnisotropy;
                     // Flag to calculate and output fracture porosity
                     bool CalculateFracturePorosity = arguments.Argument_CalculateFracturePorosity;
+                    // Implicit fracture population distribution functions will only be calculated if the implicit data is written to file
+                    bool CalculatePopulationDistribution = WriteImplicitDataFiles;
+                    // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
+                    int No_l_indexPoints = 20;
+                    // MaxHMinLength and MaxHMaxLength control the range of fracture lengths in the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
+                    // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known (0 will default to maximum potential length - but may be much greater than actual maximum length)
+                    double MaxHMinLength = 0;
+                    double MaxHMaxLength = 0;
 
                     // Fracture aperture control parameters
                     // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -590,14 +598,6 @@ namespace DFMGenerator_Ocean
                     int No_r_bins = 10;
                     if (arguments.Argument_No_r_bins > 0)
                         No_r_bins = arguments.Argument_No_r_bins;
-                    // Implicit fracture population distribution functions will only be calculated if the implicit data is written to file
-                    bool CalculatePopulationDistribution = WriteImplicitDataFiles;
-                    // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
-                    int No_l_indexPoints = 20;
-                    // MaxHMinLength and MaxHMaxLength control the range of fracture lengths in the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
-                    // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known (0 will default to maximum potential length - but may be much greater than actual maximum length)
-                    double MaxHMinLength = 0;
-                    double MaxHMaxLength = 0;
                     // Minimum macrofracture length cutoff is not yet implemented - keep this at 0
                     double MinMacrofractureLength = 0;
                     // Calculation termination controls
@@ -1041,6 +1041,8 @@ namespace DFMGenerator_Ocean
                     }
 
                     // Calculation control parameters
+                    // Number of fracture sets
+                    generalInputParams += string.Format("Fracture network comprises {0} fracture sets\n", NoFractureSets);
                     // Fracture mode
                     if (Mode1Only)
                         generalInputParams += "Mode 1 fractures only\n";
@@ -4247,7 +4249,7 @@ namespace DFMGenerator_Ocean
             private double argument_FluidDensity = 1000;
             private double argument_InitialOverpressure = 0;
             public double argument_GeothermalGradient = 0.03;
-            private double argument_InitialStressRelaxation = 1;
+            private double argument_InitialStressRelaxation = 0.5;
             private bool argument_AverageStressStrainData = false;
 
             // Outputs
