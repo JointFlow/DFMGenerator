@@ -48,10 +48,6 @@
     </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework, Version=3.13.3.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
-      <HintPath>..\packages\NUnit.3.13.3\lib\net45\nunit.framework.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Slb.Ocean.Basics">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Basics.dll</HintPath>
     </Reference>
@@ -169,12 +165,7 @@
     <EmbeddedResource Include="OceanResources\DFMGeneratorConfig.xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.htm" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide_v2.pdf" />
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide.pdf" />
     <None Include="Resources\Logo1_48.png" />
   </ItemGroup>
   <ItemGroup>
@@ -185,6 +176,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\P32_icon.ico" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide.htm" />
   </ItemGroup>
   <Import Project="..\DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems" Label="Shared" />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

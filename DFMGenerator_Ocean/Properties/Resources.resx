@@ -121,6 +121,12 @@
   <data name="DFMGeneratorConfig" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\OceanResources\DFMGeneratorConfig.xml;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="DFM_Generator_Petrel_UserGuide" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\HelpFiles\DFM_Generator_Petrel_UserGuide.htm;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  </data>
+  <data name="DFM_Generator_Petrel_UserGuide1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\HelpFiles\DFM_Generator_Petrel_UserGuide.pdf;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="Logo1_256" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Logo1_256.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>

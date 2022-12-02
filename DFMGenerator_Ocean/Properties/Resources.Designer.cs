@@ -61,6 +61,36 @@ namespace DFMGenerator_Ocean.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &lt;html xmlns:v=&quot;urn:schemas-microsoft-com:vml&quot;
+        ///xmlns:o=&quot;urn:schemas-microsoft-com:office:office&quot;
+        ///xmlns:w=&quot;urn:schemas-microsoft-com:office:word&quot;
+        ///xmlns:m=&quot;http://schemas.microsoft.com/office/2004/12/omml&quot;
+        ///xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;
+        ///
+        ///&lt;head&gt;
+        ///&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=windows-1252&quot;&gt;
+        ///&lt;meta name=ProgId content=Word.Document&gt;
+        ///&lt;meta name=Generator content=&quot;Microsoft Word 15&quot;&gt;
+        ///&lt;meta name=Originator content=&quot;Microsoft Word 15&quot;&gt;
+        ///&lt;link rel=File-List href=&quot;DFM_Gene [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DFM_Generator_Petrel_UserGuide {
+            get {
+                return ResourceManager.GetString("DFM_Generator_Petrel_UserGuide", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] DFM_Generator_Petrel_UserGuide1 {
+            get {
+                object obj = ResourceManager.GetObject("DFM_Generator_Petrel_UserGuide1", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
         ///&lt;Configuration Type=&quot;Configuration.ConfigurationState&quot; Version=&quot;1.0.0.12&quot; Caption=&quot;DFMGeneratorConfig&quot;&gt;
         ///  &lt;Extensions Type=&quot;Extensibility.ExtensionCollection&quot;&gt;
