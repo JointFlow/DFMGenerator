@@ -566,7 +566,7 @@ namespace DFMGenerator_Standalone
             // Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
             // Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
             // Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
-            double InitialStressRelaxation = -1;// 0.5;
+            double InitialStressRelaxation = 0.5;
 
             // Outputs
             // Output to file

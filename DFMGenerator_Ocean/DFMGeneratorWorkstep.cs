@@ -621,11 +621,7 @@ namespace DFMGenerator_Ocean
                     double MinimumClearZoneVolume = 0;
                     if (!double.IsNaN(arguments.Argument_Minimum_ClearZone_Volume))
                         MinimumClearZoneVolume = arguments.Argument_Minimum_ClearZone_Volume;
-                    // Use the deformation episode duration and maximum timestep limits to stop the calculation before fractures have finished growing
-                    // Set DeformationEpisodeDuration to -1 to continue until fracture saturation is reached
-                    double DeformationEpisodeDuration = -1;
-                    if (!double.IsNaN(arguments.Argument_DeformationDuration))
-                        DeformationEpisodeDuration = arguments.Argument_DeformationDuration;
+                    // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
                     int MaxTimesteps = 1;
                     if (arguments.Argument_MaxNoTimesteps > 0)
                         MaxTimesteps = arguments.Argument_MaxNoTimesteps;
@@ -4253,7 +4249,7 @@ namespace DFMGenerator_Ocean
             private double argument_FluidDensity = 1000;
             private double argument_InitialOverpressure = 0;
             public double argument_GeothermalGradient = 0.03;
-            private double argument_InitialStressRelaxation = 1;
+            private double argument_InitialStressRelaxation = 0.5;
             private bool argument_AverageStressStrainData = false;
 
             // Outputs
