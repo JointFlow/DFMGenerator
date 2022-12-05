@@ -4185,8 +4185,22 @@ namespace DFMGenerator_Ocean
             private int argument_TopLayerK = 1;
             private int argument_BottomLayerK = 1;
             // Deformation load
-            private List<string> argument_DeformationEpisode = new List<string>();
-            private List<double> argument_DeformationEpisodeDuration = new List<double>();
+            private int argument_NoDeformationEpisodes = 0; 
+            private string argument_DeformationEpisode = "";
+            private double argument_DeformationEpisodeDuration = double.NaN;
+
+            private string argument_DeformationEpisode1 = "";
+            private double argument_DeformationEpisodeDuration1 = double.NaN;
+            private string argument_DeformationEpisode2 = "";
+            private double argument_DeformationEpisodeDuration2 = double.NaN;
+            private string argument_DeformationEpisode3 = "";
+            private double argument_DeformationEpisodeDuration3 = double.NaN;
+            private string argument_DeformationEpisode4 = "";
+            private double argument_DeformationEpisodeDuration4 = double.NaN;
+
+
+            //private List<string> argument_DeformationEpisode = new List<string>();
+            //private List<double> argument_DeformationEpisodeDuration = new List<double>();
             private List<int> argument_DeformationEpisodeTimeUnits = new List<int>();
             private List<double> argument_EhminAzi_default = new List<double>();
             private List<Droid> argument_EhminAzi = new List<Droid>();
@@ -4373,63 +4387,102 @@ namespace DFMGenerator_Ocean
             [Description("Number of deformation episodes", "Number of deformation episodes")]
             public int Argument_NoDeformationEpisodes
             {
-                get { return this.argument_DeformationEpisode.Count; }
+                internal get { return this.argument_NoDeformationEpisodes; }
+                set { this.argument_NoDeformationEpisodes = value; }
             }
             [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
-            public List<string> Argument_DeformationEpisode
+            public string Argument_DeformationEpisode
             {
                 internal get { return this.argument_DeformationEpisode; }
-                set { if (value != null) this.argument_DeformationEpisode = value; else this.argument_DeformationEpisode = new List<string>(); }
+                set { if (value != null) this.argument_DeformationEpisode = value; else this.argument_DeformationEpisode = ""; }
             }
             internal string DeformationEpisode(int episodeIndex)
             {
-                try
+                switch (episodeIndex)
                 {
-                    return this.argument_DeformationEpisode[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
+                    case 0:
+                        return this.argument_DeformationEpisode;
+                    case 1:
+                        return this.argument_DeformationEpisode1;
+                    case 2:
+                        return this.argument_DeformationEpisode2;
+                    case 3:
+                        return this.argument_DeformationEpisode3;
+                    case 4:
+                        return this.argument_DeformationEpisode4;
+                    default:
+                        return "";
                 }
             }
             public void DeformationEpisode(string value, int episodeIndex)
             {
-                try
+                switch (episodeIndex)
                 {
-                    this.argument_DeformationEpisode[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_DeformationEpisode.Add(value);
+                    case 0:
+                        this.argument_DeformationEpisode = value;
+                        break;
+                    case 1:
+                        this.argument_DeformationEpisode1 = value;
+                        break;
+                    case 2:
+                         this.argument_DeformationEpisode2 = value;
+                        break;
+                    case 3:
+                         this.argument_DeformationEpisode3 = value;
+                        break;
+                    case 4:
+                         this.argument_DeformationEpisode4 = value;
+                        break;
+                    default:
+                        break;
                 }
             }
 
             [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
-            public List<double> Argument_DeformationEpisodeDuration
+            public double Argument_DeformationEpisodeDuration
             {
                 internal get { return this.argument_DeformationEpisodeDuration; }
-                set { if (value != null) this.argument_DeformationEpisodeDuration = value; else this.argument_DeformationEpisodeDuration = new List<double>(); }
+                set { this.argument_DeformationEpisodeDuration = value; }
             }
             internal double DeformationEpisodeDuration(int episodeIndex)
             {
-                try
+                switch (episodeIndex)
                 {
-                    return this.argument_DeformationEpisodeDuration[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
+                    case 0:
+                        return this.argument_DeformationEpisodeDuration;
+                    case 1:
+                        return this.argument_DeformationEpisodeDuration1;
+                    case 2:
+                        return this.argument_DeformationEpisodeDuration2;
+                    case 3:
+                        return this.argument_DeformationEpisodeDuration3;
+                    case 4:
+                        return this.argument_DeformationEpisodeDuration4;
+                    default:
+                        return double.NaN;
                 }
             }
             public void DeformationEpisodeDuration(double value, int episodeIndex)
             {
-                try
+                switch (episodeIndex)
                 {
-                    this.argument_DeformationEpisodeDuration[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_DeformationEpisodeDuration.Add(value);
+                    case 0:
+                        this.argument_DeformationEpisodeDuration = value;
+                        break;
+                    case 1:
+                        this.argument_DeformationEpisodeDuration1 = value;
+                        break;
+                    case 2:
+                        this.argument_DeformationEpisodeDuration2 = value;
+                        break;
+                    case 3:
+                        this.argument_DeformationEpisodeDuration3 = value;
+                        break;
+                    case 4:
+                        this.argument_DeformationEpisodeDuration4 = value;
+                        break;
+                    default:
+                        break;
                 }
             }
 
@@ -4465,8 +4518,8 @@ namespace DFMGenerator_Ocean
             [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
             public List<double> Argument_EhminAzi_default
             {
-                internal get { return this.argument_EhminAzi_default; }
-                set { if (value != null) this.argument_EhminAzi_default = value; else this.argument_EhminAzi_default = new List<double>(); }
+                internal get { return new List<double>(this.argument_EhminAzi_default); }
+                set { if (value != null) this.argument_EhminAzi_default = new List<double>(value); else this.argument_EhminAzi_default = new List<double>(); }
             }
             internal double EhminAzi_default(int episodeIndex)
             {
@@ -4847,9 +4900,9 @@ namespace DFMGenerator_Ocean
             /// <returns>Index number of the new deformation episode (zero-based)</returns>
             public int AddDeformationEpisode()
             {
-                int deformationEpisodeIndex = Argument_NoDeformationEpisodes; // Zero-based
-                this.argument_DeformationEpisode.Add(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex + 1)); // In the episode name, the index number is 1-based
-                this.argument_DeformationEpisodeDuration.Add(double.NaN);
+                int deformationEpisodeIndex = Argument_NoDeformationEpisodes++; // Zero-based
+                this.DeformationEpisode(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex + 1), deformationEpisodeIndex); // In the episode name, the index number is 1-based
+                this.DeformationEpisodeDuration(double.NaN, deformationEpisodeIndex);
                 this.argument_DeformationEpisodeTimeUnits.Add(2); // Default time units are ma
                 this.argument_EhminAzi_default.Add(0);
                 this.argument_EhminAzi.Add(null);
@@ -4877,8 +4930,8 @@ namespace DFMGenerator_Ocean
                     deformationEpisodeIndex = 0;
                 if (deformationEpisodeIndex >= Argument_NoDeformationEpisodes)
                     deformationEpisodeIndex = Argument_NoDeformationEpisodes - 1;
-                this.argument_DeformationEpisode.RemoveAt(deformationEpisodeIndex);
-                this.argument_DeformationEpisodeDuration.RemoveAt(deformationEpisodeIndex);
+                //this.argument_DeformationEpisode.RemoveAt(deformationEpisodeIndex);
+                //this.argument_DeformationEpisodeDuration.RemoveAt(deformationEpisodeIndex);
                 this.argument_DeformationEpisodeTimeUnits.RemoveAt(deformationEpisodeIndex);
                 this.argument_EhminAzi_default.RemoveAt(deformationEpisodeIndex);
                 this.argument_EhminAzi.RemoveAt(deformationEpisodeIndex);
@@ -5601,7 +5654,7 @@ namespace DFMGenerator_Ocean
                 argument_NoRowsJ = 1;
                 argument_TopLayerK = 1;
                 argument_BottomLayerK = 1;
-                argument_DeformationEpisode.Clear();
+                //argument_DeformationEpisode.Clear();
                 argument_EhminAzi_default.Clear();
                 argument_EhminAzi .Clear();
                 // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
@@ -5618,7 +5671,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default.Clear();
                 argument_AppliedUpliftRate.Clear();
                 argument_StressArchingFactor.Clear();
-                argument_DeformationEpisodeDuration.Clear();
+                //argument_DeformationEpisodeDuration.Clear();
                 argument_DeformationEpisodeTimeUnits.Clear();
                 argument_GenerateExplicitDFN = true;
                 argument_NoIntermediateOutputs = 0;
