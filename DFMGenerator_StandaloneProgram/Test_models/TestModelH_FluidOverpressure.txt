@@ -148,7 +148,7 @@ MaximumClosure 0.0005
 % Set to 6 to model polygonal or strike-slip fractures, or multiple deformation episodes where there are pre-existing fractures oblique to the principal horizontal stresses
 NoFractureSets 2
 % Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
-Mode1Only true
+Mode1Only false
 Mode2Only false
 % Flag to check microfractures against stress shadows of all macrofractures, regardless of set: can be set to None, All or Automatic
 % Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry
@@ -178,8 +178,8 @@ CalculatePopulationDistribution true
 No_l_indexPoints 20
 % MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
 % Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
-MaxHMinLength 10
-MaxHMaxLength 10
+MaxHMinLength 1
+MaxHMaxLength 1
 % Calculation termination controls
 % The calculation is set to stop automatically when fractures stop growing
 % This can be defined in one of three ways:

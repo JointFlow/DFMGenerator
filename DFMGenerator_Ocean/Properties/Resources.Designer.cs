@@ -68,25 +68,15 @@ namespace DFMGenerator_Ocean.Properties {
         ///xmlns=&quot;http://www.w3.org/TR/REC-html40&quot;&gt;
         ///
         ///&lt;head&gt;
-        ///&lt;meta http-equiv=Content-Type content=&quot;text/html; charset=windows-1252&quot;&gt;
-        ///&lt;meta name=ProgId content=Word.Document&gt;
-        ///&lt;meta name=Generator content=&quot;Microsoft Word 15&quot;&gt;
-        ///&lt;meta name=Originator content=&quot;Microsoft Word 15&quot;&gt;
-        ///&lt;link rel=File-List href=&quot;DFM_Gene [rest of string was truncated]&quot;;.
+        ///    &lt;meta http-equiv=Content-Type content=&quot;text/html; charset=windows-1252&quot;&gt;
+        ///    &lt;meta name=ProgId content=Word.Document&gt;
+        ///    &lt;meta name=Generator content=&quot;Microsoft Word 15&quot;&gt;
+        ///    &lt;meta name=Originator content=&quot;Microsoft Word 15&quot;&gt;
+        ///    &lt;link rel=File [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DFM_Generator_Petrel_UserGuide {
             get {
                 return ResourceManager.GetString("DFM_Generator_Petrel_UserGuide", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] DFM_Generator_Petrel_UserGuide1 {
-            get {
-                object obj = ResourceManager.GetObject("DFM_Generator_Petrel_UserGuide1", resourceCulture);
-                return ((byte[])(obj));
             }
         }
         
