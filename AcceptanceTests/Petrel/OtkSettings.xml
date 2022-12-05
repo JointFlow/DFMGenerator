@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <OceanStoreTestKitSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <AcceptanceCheckerParameters>
-    <PipPath>C:\Users\MWelch\Source\Repos\DFMGenerator\Files\DFN_2020.pip</PipPath>
+    <PipPath />
     <Platform>Petrel</Platform>
-    <PdbPath>C:\Users\MWelch\source\repos\DFMGenerator\DFMGenerator_Ocean\bin\Release</PdbPath>
+    <AntivirusPath>C:\Program Files\Windows Defender\MpCmdRun.exe</AntivirusPath>
+    <LicenseServer>@Offshore-pLic03.win.dtu.dk</LicenseServer>
+    <LicenseFeature>Petrel_FAPI</LicenseFeature>
+    <WixPath>C:\Program Files (x86)\WiX Toolset v3.11\bin</WixPath>
+    <BinScopePath>C:\Program Files\Microsoft BinScope 2014\BinScope.exe</BinScopePath>
+    <WindowsSDKPath>C:\Program Files (x86)\Windows Kits\10</WindowsSDKPath>
     <TempDirectory usecustom="false">C:\Users\MWelch\AppData\Local\Temp\</TempDirectory>
     <LastTimeRun>
-      <Timestamp>08/23/2022 11:18:20 UTC2</Timestamp>
+      <Timestamp>Test cases have not been run yet.</Timestamp>
       <SummaryResults>
         <Completed>0</Completed>
         <Failed>0</Failed>
@@ -17,7 +22,7 @@
   </AcceptanceCheckerParameters>
   <SanityRunnerParameters>
     <PetrelProjectPath>.pet</PetrelProjectPath>
-    <PetrelVersion>2020</PetrelVersion>
+    <PetrelVersion>2022</PetrelVersion>
     <LastTimeRun>
       <Timestamp>Test cases have not been run yet.</Timestamp>
       <SummaryResults>
