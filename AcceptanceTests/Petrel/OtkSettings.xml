@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<OceanStoreTestKitSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <AcceptanceCheckerParameters>
+    <PipPath>C:\Users\MWelch\Source\Repos\DFMGenerator\Files\DFN_2020.pip</PipPath>
+    <Platform>Petrel</Platform>
+    <PdbPath>C:\Users\MWelch\source\repos\DFMGenerator\DFMGenerator_Ocean\bin\Release</PdbPath>
+    <TempDirectory usecustom="false">C:\Users\MWelch\AppData\Local\Temp\</TempDirectory>
+    <LastTimeRun>
+      <Timestamp>08/23/2022 11:18:20 UTC2</Timestamp>
+      <SummaryResults>
+        <Completed>0</Completed>
+        <Failed>0</Failed>
+        <Pending>0</Pending>
+        <Skipped>0</Skipped>
+      </SummaryResults>
+    </LastTimeRun>
+  </AcceptanceCheckerParameters>
+  <SanityRunnerParameters>
+    <PetrelProjectPath>.pet</PetrelProjectPath>
+    <PetrelVersion>2020</PetrelVersion>
+    <LastTimeRun>
+      <Timestamp>Test cases have not been run yet.</Timestamp>
+      <SummaryResults>
+        <Completed>0</Completed>
+        <Failed>0</Failed>
+        <Pending>20</Pending>
+        <Skipped>0</Skipped>
+      </SummaryResults>
+    </LastTimeRun>
+  </SanityRunnerParameters>
+</OceanStoreTestKitSettings>

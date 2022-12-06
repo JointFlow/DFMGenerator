@@ -1,6 +1,0 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<OceanDeployList>
-  <CopyList>
-    <Project source="..\OceanDFNStart\OceanDFN_v1_6_080318.csproj" required="True" />
-  </CopyList>
-</OceanDeployList>

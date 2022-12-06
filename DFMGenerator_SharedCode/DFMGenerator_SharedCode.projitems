@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>3763fa9f-9862-4bf7-b072-7e8662d5498c</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>DFMGenerator_SharedCode</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)DFNComponents.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FCD_List.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FractureDipSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FractureSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GeometricObjects.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Grid.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GridblockConfiguration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MacrofractureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MechanicalProperties.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MicrofractureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProgressReporter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PropagationControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)StressStrainState.cs" />
+  </ItemGroup>
+</Project>
