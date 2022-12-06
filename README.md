@@ -1,4 +1,4 @@
-# DFN_Generator
+# Dynamic Fracture Model Generator (DFM Generator)
 
 
 <!-- TABLE OF CONTENTS -->
@@ -25,6 +25,8 @@
 
 The purpose of this project is to provide an easy method to build geologically realistic models of natural fracture networks in geological formations, by simulating the processes of fracture nucleation, growth and interaction, based on geomechanical principles and an understanding of the geological history of the structure. The code provided here implements the method of fracture modelling described in Welch et al. (2020), developed to generate more accurate, better constrained models of large fracture networks than current stochastic techniques. It can efficiently build either implicit fracture models, explicit DFNs, or both, across large (km-scale) geological structures such as folds, major faults or salt diapirs. It will thus have applications in engineering and fluid flow modelling, as well as in understanding the controls on the evolution of fracture networks.
 
+This software was formerly called DFN Generator (Discrete Fracture Network Generator) but has now been renamed DFM Generator (Dynamic Fracture Model Generator). This reflects the fact that the software generates implicit fracture models and data as well as explicit DFNs.
+
 The code is written in C# and is provided with two interfaces: 
 a standalone interface with text file input and output, that can be compiled in standard 
 C# and can run simple models, and a plug-in interface for the Petrel geomodelling package from Schlumberger, 
@@ -43,25 +45,27 @@ The software can be run either as a standalone software or as a plug-in within P
 
 For installation and usage:
 
-Standalone executable and example files (https://github.com/JointFlow/DFNGenerator/blob/main/Files/DFNGenerator_StandaloneProgram.zip)
+Standalone executable and example files (https://github.com/JointFlow/DFNGenerator/blob/main/Files/DFMGenerator_StandaloneProgram.zip)
 
-Standalone: DFN_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFN_Generator_Standalone_UserGuide.pdf)
+Standalone: DFM_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFM_Generator_Standalone_UserGuide.pdf)
 
-Petrel plug-in: DFN_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFN_Generator_Petrel_UserGuide.pdf)
+Petrel plug-in: DFM_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFM_Generator_Petrel_UserGuide.pdf)
 
 For direct use in Petrel via the Ocean Plug-in manager the .pip files can be found here:
 
-Petrel 2016: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2016.pip)
+Petrel 2017: (https://github.com/JointFlow/DFNGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2017.pip)
 
-Petrel 2017: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2017.pip)
+Petrel 2018: (https://github.com/JointFlow/DFNGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2018.pip)
 
-Petrel 2018: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2018.pip)
+Petrel 2019: (https://github.com/JointFlow/DFNGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2019.pip)
 
-Petrel 2019: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2019.pip)
+Petrel 2020: (https://github.com/JointFlow/DFNGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2020.pip)
 
-Petrel 2020: (https://github.com/JointFlow/DFNGenerator/tree/main/DFNGenerator_PetrelInstallers/DFN_2020.pip)
+Petrel 2021: (https://github.com/JointFlow/DFNGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2021.pip)
 
-An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFNGenerator_TechNotes.pdf)
+Petrel 2022: (https://github.com/JointFlow/DFNGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2022.pip)
+
+An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFNGenerator/tree/main/Documentation/DFM_Generator_TechNotes.pdf)
 This is not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
 
 
@@ -110,7 +114,7 @@ Nucleation, Propagation and Interaction of Layer-Bound Fractures. Springer. (htt
 
 The developers kindly acknowledges the Danish Underground Consortium (TotalEnergies E&P Denmark, Noreco & Nordsøfonden) for granting the permission to publish this work. This research has received funding from the Danish Hydrocarbon Research and Technology Centre (DHRTC) under the AWF Improved Recovery programme.
 
-Please note that DFN Generator comes with no warranty and no liability for any consequence arising from its useis accepted. There is also no formal support or service level agreement for the software. However if you encounter any problems, or have any comments or suggestions, please contact us and we will try to help you. Please also report any bugs that you encounter or requests for functionality enhancements in the same way.
+Please note that DFM Generator comes with no warranty and no liability for any consequence arising from its use is accepted. There is also no formal support or service level agreement for the software. However if you encounter any problems, or have any comments or suggestions, please contact us and we will try to help you. Please also report any bugs that you encounter or requests for functionality enhancements in the same way.
 
 
 
