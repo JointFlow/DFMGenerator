@@ -491,13 +491,13 @@ namespace DFMGenerator_Standalone
 #if !READINPUTFROMFILE
             // Add an initial episode with uniaxial extension of -0.01/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.01);
+            EhminRate_list.Add(-0.0001);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(1); //(DeformationEpisodeDuration);
+            DeformationEpisodeDuration_list.Add(6.71);// (DeformationEpisodeDuration);
             // Add an additional uplift episode, with uplift of 1800m over 18ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -553,7 +553,7 @@ namespace DFMGenerator_Standalone
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
             // If DepthAtDeformation is specified, this will be used to calculate vertical stress
             // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
-            double DepthAtDeformation = 2000;// -1;
+            double DepthAtDeformation = -1;
             //bool OverwriteDepth = (DepthAtDeformation > 0);
             // Mean density of overlying sediments and fluid (kg/m3)
             double MeanOverlyingSedimentDensity = 2250;

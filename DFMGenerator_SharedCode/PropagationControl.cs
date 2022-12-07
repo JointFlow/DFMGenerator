@@ -757,12 +757,12 @@ namespace DFMGenerator_SharedCode
             currentDeformationEpisode = 0;
         }*/
         /// <summary>
-        /// Add a new deformation episode with load only; no fluid pressure, thermal or uplift load
+        /// Add a new deformation episode with load only; no fluid pressure, thermal or uplift load in model time units
         /// </summary>
-        /// <param name="Applied_Epsilon_hmin_dashed_in">Minimum applied horizontal strain rate (/s)</param>
-        /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate (/s)</param>
+        /// <param name="Applied_Epsilon_hmin_dashed_in">Minimum applied horizontal strain rate</param>
+        /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate</param>
         /// <param name="Applied_Epsilon_hmin_azimuth_in">Azimuth of minimum applied horizontal strain (radians)</param>
-        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
         public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double DeformationEpisodeDuration_in)
         {
             DeformationEpisodeControl newDeformationEpisode = new DeformationEpisodeControl(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, DeformationEpisodeDuration_in, timeUnits);
@@ -770,22 +770,39 @@ namespace DFMGenerator_SharedCode
             deformationEpisodes.Add(newDeformationEpisode);
         }
         /// <summary>
-        /// Add a new deformation episode with external strain, fluid pressure, thermal and uplift loads
+        /// Add a new deformation episode with external strain, fluid pressure, thermal and uplift loads in model time units
         /// </summary>
-        /// <param name="Applied_Epsilon_hmin_dashed_in">Minimum applied horizontal strain rate (/s)</param>
-        /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate (/s)</param>
+        /// <param name="Applied_Epsilon_hmin_dashed_in">Minimum applied horizontal strain rate</param>
+        /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate</param>
         /// <param name="Applied_Epsilon_hmin_azimuth_in">Azimuth of minimum applied horizontal strain (radians)</param>
-        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/s)</param>
-        /// <param name="AppliedTemperatureChange_in">Rate of in situ temperature change (not including cooling due to uplift) (degK/s)</param>
-        /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/s)</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/unit time)</param>
+        /// <param name="AppliedTemperatureChange_in">Rate of in situ temperature change (not including cooling due to uplift) (degK/unit time)</param>
+        /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/unit time)</param>
         /// <param name="StressArchingFactor_in">Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)</param>
-        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
         public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in)
         {
-            DeformationEpisodeControl newDeformationEpisode = new DeformationEpisodeControl(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, timeUnits);
+            AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, timeUnits);
+        }
+        /// <summary>
+        /// Add a new deformation episode with external strain, fluid pressure, thermal and uplift loads in specified time units
+        /// </summary>
+        /// <param name="Applied_Epsilon_hmin_dashed_in">Minimum applied horizontal strain rate</param>
+        /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate</param>
+        /// <param name="Applied_Epsilon_hmin_azimuth_in">Azimuth of minimum applied horizontal strain (radians)</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/unit time)</param>
+        /// <param name="AppliedTemperatureChange_in">Rate of in situ temperature change (not including cooling due to uplift) (degK/unit time)</param>
+        /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/unit time)</param>
+        /// <param name="StressArchingFactor_in">Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="TimeUnits_in">Time units for deformation episode duration and load rates</param>
+        public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
+        {
+            DeformationEpisodeControl newDeformationEpisode = new DeformationEpisodeControl(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, TimeUnits_in);
             newDeformationEpisode.EpisodeIndex = deformationEpisodes.Count;
             deformationEpisodes.Add(newDeformationEpisode);
         }
+
         /// <summary>
         /// Add new deformation episode objects to the deformation episode list; this will also convert the data to SI time units 
         /// </summary>

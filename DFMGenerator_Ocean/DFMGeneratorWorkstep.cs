@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -806,7 +806,7 @@ namespace DFMGenerator_Ocean
                     List<double> TimeUnitConverter_list = new List<double>();
                     for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                     {
-                        switch (ModelTimeUnits)
+                        switch (DeformationEpisodeTimeUnits_list[deformationEpisodeNo])
                         {
                             case TimeUnits.second:
                                 // In SI units - no change
@@ -885,7 +885,7 @@ namespace DFMGenerator_Ocean
                     // Strain orientation and rate
                     for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                     {
-                        generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo);
+                        generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo) + "\n";
                         generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
@@ -1411,13 +1411,13 @@ namespace DFMGenerator_Ocean
                                     // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
                                     // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
                                     double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
-                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
                                     double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
 
                                     // Get local handles for the properties and flags
                                     bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
@@ -1510,7 +1510,7 @@ namespace DFMGenerator_Ocean
                                                     if (UseGridFor_EhminRate)
                                                     {
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
+                                                        double cell_ehmin_rate = (double)EhminRate_grid[cellRef] / TimeUnitConverter;
                                                         if (!double.IsNaN(cell_ehmin_rate))
                                                         {
                                                             ehmin_rate_total += cell_ehmin_rate;
@@ -1522,7 +1522,7 @@ namespace DFMGenerator_Ocean
                                                     if (UseGridFor_EhmaxRate)
                                                     {
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                        double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
+                                                        double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] / TimeUnitConverter;
                                                         if (!double.IsNaN(cell_ehmax_rate))
                                                         {
                                                             ehmax_rate_total += cell_ehmax_rate;
@@ -1535,7 +1535,7 @@ namespace DFMGenerator_Ocean
                                                     {
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
-                                                        double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
+                                                        double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] / TimeUnitConverter;
                                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                         if (convertFromGeneral_AppliedOverpressureRate)
                                                             cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
@@ -1551,7 +1551,7 @@ namespace DFMGenerator_Ocean
                                                     {
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
-                                                        double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
+                                                        double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] / TimeUnitConverter;
                                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                         if (convertFromGeneral_AppliedTemperatureChange)
                                                             cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
@@ -1567,7 +1567,7 @@ namespace DFMGenerator_Ocean
                                                     {
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
-                                                        double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
+                                                        double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] / TimeUnitConverter;
                                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                         if (convertFromGeneral_AppliedUpliftRate)
                                                             cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
@@ -1636,7 +1636,7 @@ namespace DFMGenerator_Ocean
                                             {
                                                 cellRef.K = PetrelGrid_DataCellK;
                                                 // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] * TimeUnitConverter;
+                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] / TimeUnitConverter;
                                                 if (!double.IsNaN(cell_ehmin_rate))
                                                 {
                                                     local_EhminRate = cell_ehmin_rate;
@@ -1653,7 +1653,7 @@ namespace DFMGenerator_Ocean
                                             {
                                                 cellRef.K = PetrelGrid_DataCellK;
                                                 // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] * TimeUnitConverter;
+                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] / TimeUnitConverter;
                                                 if (!double.IsNaN(cell_ehmax_rate))
                                                 {
                                                     local_EhmaxRate = cell_ehmax_rate;
@@ -1671,7 +1671,7 @@ namespace DFMGenerator_Ocean
                                                 cellRef.K = PetrelGrid_DataCellK;
                                                 // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                 // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
-                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] * TimeUnitConverter;
+                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] / TimeUnitConverter;
                                                 // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                 if (convertFromGeneral_AppliedOverpressureRate)
                                                     cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
@@ -1692,7 +1692,7 @@ namespace DFMGenerator_Ocean
                                                 cellRef.K = PetrelGrid_DataCellK;
                                                 // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                 // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
-                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] * TimeUnitConverter;
+                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] / TimeUnitConverter;
                                                 // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                 if (convertFromGeneral_AppliedTemperatureChange)
                                                     cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
@@ -1713,7 +1713,7 @@ namespace DFMGenerator_Ocean
                                                 cellRef.K = PetrelGrid_DataCellK;
                                                 // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                 // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
-                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] * TimeUnitConverter;
+                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] / TimeUnitConverter;
                                                 // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                 if (convertFromGeneral_AppliedUpliftRate)
                                                     cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
@@ -1737,9 +1737,9 @@ namespace DFMGenerator_Ocean
                                     local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
 
 #if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration{0}, EhminAzi{1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
+                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
 #endif
-                                }// End get the stress / strain data from the grid as required
+                                }// End get the deformation load data for each deformation episode
 
                                 // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
                                 double local_Depth;
@@ -2420,6 +2420,7 @@ namespace DFMGenerator_Ocean
                                     double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
                                     double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
                                     double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
+                                    double local_DeformationEpisodeTimeUnits = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
 
                                     // Add the deformation episode to the deformation episode list in the PropControl object
                                     gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
@@ -4185,39 +4186,112 @@ namespace DFMGenerator_Ocean
             private int argument_TopLayerK = 1;
             private int argument_BottomLayerK = 1;
             // Deformation load
-            private int argument_NoDeformationEpisodes = 0; 
-            private string argument_DeformationEpisode = "";
-            private double argument_DeformationEpisodeDuration = double.NaN;
-
-            private string argument_DeformationEpisode1 = "";
-            private double argument_DeformationEpisodeDuration1 = double.NaN;
-            private string argument_DeformationEpisode2 = "";
-            private double argument_DeformationEpisodeDuration2 = double.NaN;
-            private string argument_DeformationEpisode3 = "";
-            private double argument_DeformationEpisodeDuration3 = double.NaN;
-            private string argument_DeformationEpisode4 = "";
-            private double argument_DeformationEpisodeDuration4 = double.NaN;
-
-
-            //private List<string> argument_DeformationEpisode = new List<string>();
-            //private List<double> argument_DeformationEpisodeDuration = new List<double>();
-            private List<int> argument_DeformationEpisodeTimeUnits = new List<int>();
-            private List<double> argument_EhminAzi_default = new List<double>();
-            private List<Droid> argument_EhminAzi = new List<Droid>();
             // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
             // Therefore these properties are stored in geological time units (typically Ma), not SI units (/s)
             // Unit labelling must be handled manually
-            private List<double> argument_EhminRate_default = new List<double>();
-            private List<Droid> argument_EhminRate = new List<Droid>();
-            private List<double> argument_EhmaxRate_default = new List<double>();
-            private List<Droid> argument_EhmaxRate = new List<Droid>();
-            private List<double> argument_AppliedOverpressureRate_default = new List<double>();
-            private List<Droid> argument_AppliedOverpressureRate = new List<Droid>();
-            private List<double> argument_AppliedTemperatureChange_default = new List<double>();
-            private List<Droid> argument_AppliedTemperatureChange = new List<Droid>();
-            private List<double> argument_AppliedUpliftRate_default = new List<double>();
-            private List<Droid> argument_AppliedUpliftRate = new List<Droid>();
-            private List<double> argument_StressArchingFactor = new List<double>();
+            // The first five deformation episodes will be stored in individual argument variables - these will be saved if they are part of a workflow
+            // The argument variables for the first deformation episode are backward compatible with the arguments for the single deformation episodes in previous versions
+            private string argument_DeformationEpisode = "Deformation episode 1: default";
+            private double argument_DeformationEpisodeDuration = double.NaN;
+            private int argument_DeformationEpisodeTimeUnits = 2;
+            private double argument_EhminAzi_default = 0;
+            private Droid argument_EhminAzi;
+            private double argument_EhminRate_default = -0.01;
+            private Droid argument_EhminRate;
+            private double argument_EhmaxRate_default = 0;
+            private Droid argument_EhmaxRate;
+            private double argument_AppliedOverpressureRate_default = 0;
+            private Droid argument_AppliedOverpressureRate;
+            private double argument_AppliedTemperatureChange_default = 0;
+            private Droid argument_AppliedTemperatureChange;
+            private double argument_AppliedUpliftRate_default = 0;
+            private Droid argument_AppliedUpliftRate;
+            private double argument_StressArchingFactor = 0;
+            // The argument variables for the second deformation episode are set to default values
+            private string argument_DeformationEpisode1 = "";
+            private double argument_DeformationEpisodeDuration1 = double.NaN;
+            private int argument_DeformationEpisodeTimeUnits1 = 2;
+            private double argument_EhminAzi_default1 = 0;
+            private Droid argument_EhminAzi1;
+            private double argument_EhminRate_default1 = 0;
+            private Droid argument_EhminRate1;
+            private double argument_EhmaxRate_default1 = 0;
+            private Droid argument_EhmaxRate1;
+            private double argument_AppliedOverpressureRate_default1 = 0;
+            private Droid argument_AppliedOverpressureRate1;
+            private double argument_AppliedTemperatureChange_default1 = 0;
+            private Droid argument_AppliedTemperatureChange1;
+            private double argument_AppliedUpliftRate_default1 = 0;
+            private Droid argument_AppliedUpliftRate1;
+            private double argument_StressArchingFactor1 = 0;
+            // The argument variables for the third deformation episode are set to default values
+            private string argument_DeformationEpisode2 = "";
+            private double argument_DeformationEpisodeDuration2 = double.NaN;
+            private int argument_DeformationEpisodeTimeUnits2 = 2;
+            private double argument_EhminAzi_default2 = 0;
+            private Droid argument_EhminAzi2;
+            private double argument_EhminRate_default2 = 0;
+            private Droid argument_EhminRate2;
+            private double argument_EhmaxRate_default2 = 0;
+            private Droid argument_EhmaxRate2;
+            private double argument_AppliedOverpressureRate_default2 = 0;
+            private Droid argument_AppliedOverpressureRate2;
+            private double argument_AppliedTemperatureChange_default2 = 0;
+            private Droid argument_AppliedTemperatureChange2;
+            private double argument_AppliedUpliftRate_default2 = 0;
+            private Droid argument_AppliedUpliftRate2;
+            private double argument_StressArchingFactor2 = 0;
+            // The argument variables for the fourth deformation episode are set to default values
+            private string argument_DeformationEpisode3 = "";
+            private double argument_DeformationEpisodeDuration3 = double.NaN;
+            private int argument_DeformationEpisodeTimeUnits3 = 2;
+            private double argument_EhminAzi_default3 = 0;
+            private Droid argument_EhminAzi3;
+            private double argument_EhminRate_default3 = 0;
+            private Droid argument_EhminRate3;
+            private double argument_EhmaxRate_default3 = 0;
+            private Droid argument_EhmaxRate3;
+            private double argument_AppliedOverpressureRate_default3 = 0;
+            private Droid argument_AppliedOverpressureRate3;
+            private double argument_AppliedTemperatureChange_default3 = 0;
+            private Droid argument_AppliedTemperatureChange3;
+            private double argument_AppliedUpliftRate_default3 = 0;
+            private Droid argument_AppliedUpliftRate3;
+            private double argument_StressArchingFactor3 = 0;
+            // The argument variables for the fifth deformation episode are set to default values
+            private string argument_DeformationEpisode4 = "";
+            private double argument_DeformationEpisodeDuration4 = double.NaN;
+            private int argument_DeformationEpisodeTimeUnits4 = 2;
+            private double argument_EhminAzi_default4 = 0;
+            private Droid argument_EhminAzi4;
+            private double argument_EhminRate_default4 = 0;
+            private Droid argument_EhminRate4;
+            private double argument_EhmaxRate_default4 = 0;
+            private Droid argument_EhmaxRate4;
+            private double argument_AppliedOverpressureRate_default4 = 0;
+            private Droid argument_AppliedOverpressureRate4;
+            private double argument_AppliedTemperatureChange_default4 = 0;
+            private Droid argument_AppliedTemperatureChange4;
+            private double argument_AppliedUpliftRate_default4 = 0;
+            private Droid argument_AppliedUpliftRate4;
+            private double argument_StressArchingFactor4 = 0;
+            // Subsequent deformation episodes will be stored in List objects - these will not be saved if they are part of a workflow
+            private List<string> argument_DeformationEpisode_extras = new List<string>();
+            private List<double> argument_DeformationEpisodeDuration_extras = new List<double>();
+            private List<int> argument_DeformationEpisodeTimeUnits_extras = new List<int>();
+            private List<double> argument_EhminAzi_default_extras = new List<double>();
+            private List<Droid> argument_EhminAzi_extras = new List<Droid>();
+            private List<double> argument_EhminRate_default_extras = new List<double>();
+            private List<Droid> argument_EhminRate_extras = new List<Droid>();
+            private List<double> argument_EhmaxRate_default_extras = new List<double>();
+            private List<Droid> argument_EhmaxRate_extras = new List<Droid>();
+            private List<double> argument_AppliedOverpressureRate_default_extras = new List<double>();
+            private List<Droid> argument_AppliedOverpressureRate_extras = new List<Droid>();
+            private List<double> argument_AppliedTemperatureChange_default_extras = new List<double>();
+            private List<Droid> argument_AppliedTemperatureChange_extras = new List<Droid>();
+            private List<double> argument_AppliedUpliftRate_default_extras = new List<double>();
+            private List<Droid> argument_AppliedUpliftRate_extras = new List<Droid>();
+            private List<double> argument_StressArchingFactor_extras = new List<double>();
             private bool argument_GenerateExplicitDFN = true;
             private int argument_NoIntermediateOutputs = 0;
             private bool argument_IncludeObliqueFracs = false;
@@ -4383,637 +4457,52 @@ namespace DFMGenerator_Ocean
                 set { this.argument_BottomLayerK = value; }
             }
 
-            // Deformation load
-            [Description("Number of deformation episodes", "Number of deformation episodes")]
-            public int Argument_NoDeformationEpisodes
-            {
-                internal get { return this.argument_NoDeformationEpisodes; }
-                set { this.argument_NoDeformationEpisodes = value; }
-            }
-            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
-            public string Argument_DeformationEpisode
-            {
-                internal get { return this.argument_DeformationEpisode; }
-                set { if (value != null) this.argument_DeformationEpisode = value; else this.argument_DeformationEpisode = ""; }
-            }
-            internal string DeformationEpisode(int episodeIndex)
-            {
-                switch (episodeIndex)
-                {
-                    case 0:
-                        return this.argument_DeformationEpisode;
-                    case 1:
-                        return this.argument_DeformationEpisode1;
-                    case 2:
-                        return this.argument_DeformationEpisode2;
-                    case 3:
-                        return this.argument_DeformationEpisode3;
-                    case 4:
-                        return this.argument_DeformationEpisode4;
-                    default:
-                        return "";
-                }
-            }
-            public void DeformationEpisode(string value, int episodeIndex)
-            {
-                switch (episodeIndex)
-                {
-                    case 0:
-                        this.argument_DeformationEpisode = value;
-                        break;
-                    case 1:
-                        this.argument_DeformationEpisode1 = value;
-                        break;
-                    case 2:
-                         this.argument_DeformationEpisode2 = value;
-                        break;
-                    case 3:
-                         this.argument_DeformationEpisode3 = value;
-                        break;
-                    case 4:
-                         this.argument_DeformationEpisode4 = value;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
-            public double Argument_DeformationEpisodeDuration
-            {
-                internal get { return this.argument_DeformationEpisodeDuration; }
-                set { this.argument_DeformationEpisodeDuration = value; }
-            }
-            internal double DeformationEpisodeDuration(int episodeIndex)
-            {
-                switch (episodeIndex)
-                {
-                    case 0:
-                        return this.argument_DeformationEpisodeDuration;
-                    case 1:
-                        return this.argument_DeformationEpisodeDuration1;
-                    case 2:
-                        return this.argument_DeformationEpisodeDuration2;
-                    case 3:
-                        return this.argument_DeformationEpisodeDuration3;
-                    case 4:
-                        return this.argument_DeformationEpisodeDuration4;
-                    default:
-                        return double.NaN;
-                }
-            }
-            public void DeformationEpisodeDuration(double value, int episodeIndex)
-            {
-                switch (episodeIndex)
-                {
-                    case 0:
-                        this.argument_DeformationEpisodeDuration = value;
-                        break;
-                    case 1:
-                        this.argument_DeformationEpisodeDuration1 = value;
-                        break;
-                    case 2:
-                        this.argument_DeformationEpisodeDuration2 = value;
-                        break;
-                    case 3:
-                        this.argument_DeformationEpisodeDuration3 = value;
-                        break;
-                    case 4:
-                        this.argument_DeformationEpisodeDuration4 = value;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
-            public List<int> Argument_DeformationEpisodeTimeUnits
-            {
-                internal get { return this.argument_DeformationEpisodeTimeUnits; }
-                set { if (value != null) this.argument_DeformationEpisodeTimeUnits = value; else this.argument_DeformationEpisodeTimeUnits = new List<int>(); }
-            }
-            internal int DeformationEpisodeTimeUnits(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_DeformationEpisodeTimeUnits[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return 0;
-                }
-            }
-            public void DeformationEpisodeTimeUnits(int value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_DeformationEpisodeTimeUnits[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_DeformationEpisodeTimeUnits.Add(value);
-                }
-            }
-
+            // NB most of the deformation load parameters are placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // Only those deformation load parameters included as Arguments in DFM Generator v2.1.1 are placed here
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
             [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
-            public List<double> Argument_EhminAzi_default
+            public double Argument_EhminAzi_default
             {
-                internal get { return new List<double>(this.argument_EhminAzi_default); }
-                set { if (value != null) this.argument_EhminAzi_default = new List<double>(value); else this.argument_EhminAzi_default = new List<double>(); }
-            }
-            internal double EhminAzi_default(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_EhminAzi_default[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void EhminAzi_default(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_EhminAzi_default[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_EhminAzi_default.Add(value);
-                }
+                internal get { return this.argument_EhminAzi_default; }
+                set { this.argument_EhminAzi_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
-            public List<Droid> Argument_EhminAzi
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi
             {
-                internal get { return this.argument_EhminAzi; }
-                set { if (value != null) this.argument_EhminAzi = value; else this.argument_EhminAzi = new List<Droid>(); }
-            }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminAzi(int episodeIndex)
-            {
-                try
-                {
-                    return DataManager.Resolve(this.argument_EhminAzi[episodeIndex]) as Property;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
-                }
-            }
-            public void EhminAzi(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_EhminAzi[episodeIndex] = (value == null ? null : value.Droid);
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_EhminAzi.Add(value == null ? null : value.Droid);
-                }
+                internal get { return DataManager.Resolve(this.argument_EhminAzi) as Property; }
+                set { this.argument_EhminAzi = (value == null ? null : value.Droid); }
             }
 
-            // Unit conversion for the strain rate properties EhminRate and EhmaxRate are carried out when the grid is populated in ExectureSimple(), as there are no inbuilt Petrel units for strain rate 
-            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
-            // Unit labelling must be handled manually
             [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<double> Argument_EhminRate_default
+            public double Argument_EhminRate_default
             {
                 internal get { return this.argument_EhminRate_default; }
-                set { if (value != null) this.argument_EhminRate_default = value; else this.argument_EhminRate_default = new List<double>(); }
-            }
-            internal double EhminRate_default(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_EhminRate_default[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void EhminRate_default(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_EhminRate_default[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_EhminRate_default.Add(value);
-                }
+                set { this.argument_EhminRate_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<Droid> Argument_EhminRate
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
             {
-                internal get { return this.argument_EhminRate; }
-                set { if (value != null) this.argument_EhminRate = value; else this.argument_EhminRate = new List<Droid>(); }
-            }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminRate(int episodeIndex)
-            {
-                try
-                {
-                    return DataManager.Resolve(this.argument_EhminRate[episodeIndex]) as Property;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
-                }
-            }
-            public void EhminRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_EhminRate[episodeIndex] = (value == null ? null : value.Droid);
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_EhminRate.Add(value == null ? null : value.Droid);
-                }
+                internal get { return DataManager.Resolve(this.argument_EhminRate) as Property; }
+                set { this.argument_EhminRate = (value == null ? null : value.Droid); }
             }
 
             [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<double> Argument_EhmaxRate_default
+            public double Argument_EhmaxRate_default
             {
                 internal get { return this.argument_EhmaxRate_default; }
-                set { if (value != null) this.argument_EhmaxRate_default = value; else this.argument_EhmaxRate_default = new List<double>(); }
-            }
-            internal double EhmaxRate_default(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_EhmaxRate_default[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void EhmaxRate_default(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_EhmaxRate_default[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_EhmaxRate_default.Add(value);
-                }
+                set { this.argument_EhmaxRate_default = value; }
             }
 
+            [OptionalInWorkflow]
             [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
-            public List<Droid> Argument_EhmaxRate
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
             {
-                internal get { return this.argument_EhmaxRate; }
-                set { if (value != null) this.argument_EhmaxRate = value; else this.argument_EhmaxRate = new List<Droid>(); }
-            }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhmaxRate(int episodeIndex)
-            {
-                try
-                {
-                    return DataManager.Resolve(this.argument_EhmaxRate[episodeIndex]) as Property;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
-                }
-            }
-            public void EhmaxRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_EhmaxRate[episodeIndex] = (value == null ? null : value.Droid);
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_EhmaxRate.Add(value == null ? null : value.Droid);
-                }
-            }
-
-            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
-            public List<double> Argument_AppliedOverpressureRate_default
-            {
-                internal get { return this.argument_AppliedOverpressureRate_default; }
-                set { if (value != null) this.argument_AppliedOverpressureRate_default = value; else this.argument_AppliedOverpressureRate_default = new List<double>(); }
-            }
-            internal double AppliedOverpressureRate_default(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_AppliedOverpressureRate_default[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void AppliedOverpressureRate_default(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_AppliedOverpressureRate_default[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_AppliedOverpressureRate_default.Add(value);
-                }
-            }
-
-            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
-            public List<Droid> Argument_AppliedOverpressureRate
-            {
-                internal get { return this.argument_AppliedOverpressureRate; }
-                set { if (value != null) this.argument_AppliedOverpressureRate = value; else this.argument_AppliedOverpressureRate = new List<Droid>(); }
-            }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedOverpressureRate(int episodeIndex)
-            {
-                try
-                {
-                    return DataManager.Resolve(this.argument_AppliedOverpressureRate[episodeIndex]) as Property;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
-                }
-            }
-            public void AppliedOverpressureRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_AppliedOverpressureRate[episodeIndex] = (value == null ? null : value.Droid);
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_AppliedOverpressureRate.Add(value == null ? null : value.Droid);
-                }
-            }
-
-            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
-            public List<double> Argument_AppliedTemperatureChange_default
-            {
-                internal get { return this.argument_AppliedTemperatureChange_default; }
-                set { if (value != null) this.argument_AppliedTemperatureChange_default = value; else this.argument_AppliedTemperatureChange_default = new List<double>(); }
-            }
-            internal double AppliedTemperatureChange_default(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_AppliedTemperatureChange_default[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void AppliedTemperatureChange_default(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_AppliedTemperatureChange_default[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_AppliedTemperatureChange_default.Add(value);
-                }
-            }
-
-            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
-            public List<Droid> Argument_AppliedTemperatureChange
-            {
-                internal get { return this.argument_AppliedTemperatureChange; }
-                set { if (value != null) this.argument_AppliedTemperatureChange = value; else this.argument_AppliedTemperatureChange = new List<Droid>(); }
-            }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedTemperatureChange(int episodeIndex)
-            {
-                try
-                {
-                    return DataManager.Resolve(this.argument_AppliedTemperatureChange[episodeIndex]) as Property;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
-                }
-            }
-            public void AppliedTemperatureChange(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_AppliedTemperatureChange[episodeIndex] = (value == null ? null : value.Droid);
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_AppliedTemperatureChange.Add(value == null ? null : value.Droid);
-                }
-            }
-
-            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
-            public List<double> Argument_AppliedUpliftRate_default
-            {
-                internal get { return this.argument_AppliedUpliftRate_default; }
-                set { if (value != null) this.argument_AppliedUpliftRate_default = value; else this.argument_AppliedUpliftRate_default = new List<double>(); }
-            }
-            internal double AppliedUpliftRate_default(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_AppliedUpliftRate_default[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void AppliedUpliftRate_default(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_AppliedUpliftRate_default[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_AppliedUpliftRate_default.Add(value);
-                }
-            }
-
-            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
-            public List<Droid> Argument_AppliedUpliftRate
-            {
-                internal get { return this.argument_AppliedUpliftRate; }
-                set { if (value != null) this.argument_AppliedUpliftRate = value; else this.argument_AppliedUpliftRate = new List<Droid>(); }
-            }
-            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedUpliftRate(int episodeIndex)
-            {
-                try
-                {
-                    return DataManager.Resolve(this.argument_AppliedUpliftRate[episodeIndex]) as Property;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return null;
-                }
-            }
-            public void AppliedUpliftRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_AppliedUpliftRate[episodeIndex] = (value == null ? null : value.Droid);
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_AppliedUpliftRate.Add(value == null ? null : value.Droid);
-                }
-            }
-
-            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
-            public List<double> Argument_StressArchingFactor
-            {
-                internal get { return this.argument_StressArchingFactor; }
-                set { if (value != null) this.argument_StressArchingFactor = value; else this.argument_StressArchingFactor = new List<double>(); }
-            }
-            internal double StressArchingFactor(int episodeIndex)
-            {
-                try
-                {
-                    return this.argument_StressArchingFactor[episodeIndex];
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    return double.NaN;
-                }
-            }
-            public void StressArchingFactor(double value, int episodeIndex)
-            {
-                try
-                {
-                    this.argument_StressArchingFactor[episodeIndex] = value;
-                }
-                catch (System.IndexOutOfRangeException)
-                {
-                    this.argument_StressArchingFactor.Add(value);
-                }
-            }
-            /// <summary>
-            /// Add a new deformation episode to the list, populated with default values
-            /// </summary>
-            /// <returns>Index number of the new deformation episode (zero-based)</returns>
-            public int AddDeformationEpisode()
-            {
-                int deformationEpisodeIndex = Argument_NoDeformationEpisodes++; // Zero-based
-                this.DeformationEpisode(string.Format("Deformation episode {0}: Undefined", deformationEpisodeIndex + 1), deformationEpisodeIndex); // In the episode name, the index number is 1-based
-                this.DeformationEpisodeDuration(double.NaN, deformationEpisodeIndex);
-                this.argument_DeformationEpisodeTimeUnits.Add(2); // Default time units are ma
-                this.argument_EhminAzi_default.Add(0);
-                this.argument_EhminAzi.Add(null);
-                this.argument_EhminRate_default.Add(0);
-                this.argument_EhminRate.Add(null);
-                this.argument_EhmaxRate_default.Add(0);
-                this.argument_EhmaxRate.Add(null);
-                this.argument_AppliedOverpressureRate_default.Add(0);
-                this.argument_AppliedOverpressureRate.Add(null);
-                this.argument_AppliedTemperatureChange_default.Add(0);
-                this.argument_AppliedTemperatureChange.Add(null);
-                this.argument_AppliedUpliftRate_default.Add(0);
-                this.argument_AppliedUpliftRate.Add(null);
-                this.argument_StressArchingFactor.Add(0);
-
-                return deformationEpisodeIndex;
-            }
-            /// <summary>
-            /// Remove a deformation episode at a specified index
-            /// </summary>
-            /// <param name="deformationEpisodeIndex">Index of the deformation episode to remove (zero-based)</param>
-            public void RemoveDeformationEpisode(int deformationEpisodeIndex)
-            {
-                if (deformationEpisodeIndex < 0)
-                    deformationEpisodeIndex = 0;
-                if (deformationEpisodeIndex >= Argument_NoDeformationEpisodes)
-                    deformationEpisodeIndex = Argument_NoDeformationEpisodes - 1;
-                //this.argument_DeformationEpisode.RemoveAt(deformationEpisodeIndex);
-                //this.argument_DeformationEpisodeDuration.RemoveAt(deformationEpisodeIndex);
-                this.argument_DeformationEpisodeTimeUnits.RemoveAt(deformationEpisodeIndex);
-                this.argument_EhminAzi_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_EhminAzi.RemoveAt(deformationEpisodeIndex);
-                this.argument_EhminRate_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_EhminRate.RemoveAt(deformationEpisodeIndex);
-                this.argument_EhmaxRate_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_EhmaxRate.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedOverpressureRate_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedOverpressureRate.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedTemperatureChange_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedTemperatureChange.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedUpliftRate_default.RemoveAt(deformationEpisodeIndex);
-                this.argument_AppliedUpliftRate.RemoveAt(deformationEpisodeIndex);
-                this.argument_StressArchingFactor.RemoveAt(deformationEpisodeIndex);
-
-                // Rename the subsequent deformation episodes with the correct index number
-                for (; deformationEpisodeIndex < Argument_NoDeformationEpisodes; deformationEpisodeIndex++)
-                    GenerateDeformationEpisodeName(deformationEpisodeIndex, true);
-            }
-            /// <summary>
-            /// Create and assign a name for the specified deformation episode based on duration and load
-            /// </summary>
-            /// <param name="deformationEpisodeIndex">Index of the deformation episode to name</param>
-            /// <param name="assignName">If true, will write the new name to the deformation episode name list; if false, will only return it as a string</param>
-            /// <returns></returns>
-            public string GenerateDeformationEpisodeName(int deformationEpisodeIndex, bool assignName)
-            {
-                // Get data from the dialog box
-                double duration = DeformationEpisodeDuration(deformationEpisodeIndex);
-                int timeUnits = DeformationEpisodeTimeUnits(deformationEpisodeIndex);
-                double ehminAzi_default = EhminAzi_default(deformationEpisodeIndex);
-                Property ehminAzi = EhminAzi(deformationEpisodeIndex);
-                double ehminRate_default = EhminRate_default(deformationEpisodeIndex);
-                Property ehminRate = EhminRate(deformationEpisodeIndex);
-                //double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
-                //Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
-                double OPRate_default = AppliedOverpressureRate_default(deformationEpisodeIndex);
-                Property OPRate = AppliedOverpressureRate(deformationEpisodeIndex);
-                double tempChange_default = AppliedTemperatureChange_default(deformationEpisodeIndex);
-                Property tempChange = AppliedTemperatureChange(deformationEpisodeIndex);
-                double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
-                Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
-                //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
-
-                // Create a name based on deformation episode duration and specified load
-                string deformationEpisodeName = string.Format("Deformation episode {0}: ", deformationEpisodeIndex + 1);
-                string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
-                if (duration >= 0)
-                    deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
-                if (ehminRate != null)
-                {
-                    deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
-                    if (ehminAzi != null)
-                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
-                    else
-                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
-                }
-                else if (ehminRate_default != 0)
-                {
-                    deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
-                    if (ehminAzi != null)
-                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
-                    else
-                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
-                }
-                if (OPRate != null)
-                    deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
-                else if (OPRate_default != 0)
-                    deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
-                if (tempChange != null)
-                    deformationEpisodeName += string.Format(" Temperature {0}", tempChange.Name);
-                else if (tempChange_default != 0)
-                    deformationEpisodeName += string.Format(" Temperature {0}degK/{1}", Math.Round(tempChange_default), timeUnitText);
-                if (upliftRate != null)
-                    deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
-                else if (upliftRate_default != 0)
-                    deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
-
-                // If required, set the deformation episode name and then return it
-                if (assignName)
-                    DeformationEpisode(deformationEpisodeName, deformationEpisodeIndex);
-                return deformationEpisodeName;
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate) as Property; }
+                set { this.argument_EhmaxRate = (value == null ? null : value.Droid); }
             }
 
             [Description("Generate explicit DFN?", "Generate explicit DFN? (if false, will only generate implicit fracture data)")]
@@ -5068,7 +4557,9 @@ namespace DFMGenerator_Ocean
                 set { this.argument_PoissonsRatio = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default Porosity", "Default value for Porosity")]
+            // Argument_Porosity_default and Argument_Porosity are placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            /*[Description("Default Porosity", "Default value for Porosity")]
             public double Argument_Porosity_default
             {
                 internal get { return this.argument_Porosity_default; }
@@ -5081,7 +4572,7 @@ namespace DFMGenerator_Ocean
             {
                 internal get { return DataManager.Resolve(this.argument_Porosity) as Property; }
                 set { this.argument_Porosity = (value == null ? null : value.Droid); }
-            }
+            }*/
 
             [Description("Default Biot's coefficient", "Default value for Biot's coefficient")]
             public double Argument_BiotCoefficient_default
@@ -5128,7 +4619,9 @@ namespace DFMGenerator_Ocean
                 set { this.argument_CrackSurfaceEnergy = (value == null ? null : value.Droid); }
             }
 
-            [Description("Default thermal expansion coefficient (/degK)", "Default value for thermal expansion coefficient (/degK)")]
+            // Argument_ThermalExpansionCoefficient_default and Argument_ThermalExpansionCoefficient are placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            /*[Description("Default thermal expansion coefficient (/degK)", "Default value for thermal expansion coefficient (/degK)")]
             public double Argument_ThermalExpansionCoefficient_default
             {
                 internal get { return this.argument_ThermalExpansionCoefficient_default; }
@@ -5141,7 +4634,7 @@ namespace DFMGenerator_Ocean
             {
                 internal get { return DataManager.Resolve(this.argument_ThermalExpansionCoefficient) as Property; }
                 set { this.argument_ThermalExpansionCoefficient = (value == null ? null : value.Droid); }
-            }
+            }*/
 
             [Description("Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation", "Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation")]
             public double Argument_RockStrainRelaxation_default
@@ -5261,13 +4754,15 @@ namespace DFMGenerator_Ocean
                 set { this.argument_DepthAtDeformation_default = value; }
             }
 
-            [OptionalInWorkflow]
+            // Argument_DepthAtDeformation is placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            /*[OptionalInWorkflow]
             [Description("Depth at start of deformation", "Depth at start of deformation")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_DepthAtDeformation
             {
                 internal get { return DataManager.Resolve(this.argument_DepthAtDeformation) as Property; }
                 set { this.argument_DepthAtDeformation = (value == null ? null : value.Droid); }
-            }
+            }*/
 
             [Description("Mean density of overlying sediments (kg/m3)", "Mean density of overlying sediments (kg/m3)")]
             public double Argument_MeanOverlyingSedimentDensity
@@ -5290,12 +4785,14 @@ namespace DFMGenerator_Ocean
                 set { this.argument_InitialOverpressure = value; }
             }
 
-            [Description("Geothermal gradient (degK/m)", "Geothermal gradient (degK/m)")]
+            // Argument_GeothermalGradient is placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            /*[Description("Geothermal gradient (degK/m)", "Geothermal gradient (degK/m)")]
             public double Argument_GeothermalGradient
             {
                 internal get { return this.argument_GeothermalGradient; }
                 set { this.argument_GeothermalGradient = value; }
-            }
+            }*/
 
             [Description("Initial stress relaxation", "Initial stress relaxation")]
             public double Argument_InitialStressRelaxation
@@ -5469,13 +4966,15 @@ namespace DFMGenerator_Ocean
                 set { this.argument_FractureMode = value; }
             }
 
-            [OptionalInWorkflow]
+            // Argument_FractureNucleationPosition is placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            /*[OptionalInWorkflow]
             [Description("Position of fracture nucleation within the layer", "Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; leave blank to nucleate fractures at random locations within the layer")]
             public double Argument_FractureNucleationPosition
             {
                 internal get { return this.argument_FractureNucleationPosition; }
                 set { this.argument_FractureNucleationPosition = value; }
-            }
+            }*/
 
             [Description("Flag to check microfractures against stress shadows of all macrofractures, regardless of set", "Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set")]
             public bool Argument_CheckAlluFStressShadows
@@ -5536,6 +5035,16 @@ namespace DFMGenerator_Ocean
             }
 
             // Calculation termination controls
+            // NB most of the deformation load parameters are placed at the bottom of the Argument properties list, to ensure backwards compatibility
+            // Only those deformation load parameters included as Arguments in DFM Generator v2.1.1 are placed here
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public double Argument_DeformationEpisodeDuration
+            {
+                internal get { return this.argument_DeformationEpisodeDuration; }
+                set { this.argument_DeformationEpisodeDuration = value; }
+            }
+
             [Description("Max number of timesteps", "Maximum number of timesteps")]
             public int Argument_MaxNoTimesteps
             {
@@ -5640,6 +5149,1888 @@ namespace DFMGenerator_Ocean
                 set { this.argument_NoMicrofractureCornerpoints = value; }
             }
 
+            // Deformation load
+            [Description("Number of deformation episodes", "Number of deformation episodes")]
+            internal int Argument_NoDeformationEpisodes
+            {
+                get 
+                {
+                    if (this.argument_DeformationEpisode == "")
+                        return 0;
+                    else if (this.argument_DeformationEpisode1 == "")
+                        return 1;
+                    else if (this.argument_DeformationEpisode2 == "")
+                        return 2;
+                    else if (this.argument_DeformationEpisode3 == "")
+                        return 3;
+                    else if (this.argument_DeformationEpisode4 == "")
+                        return 4;
+                    else
+                        return this.argument_DeformationEpisode_extras.Count + 5; 
+                }
+            }
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            public string Argument_DeformationEpisode
+            {
+                internal get { return this.argument_DeformationEpisode; }
+                set { if (value != null) this.argument_DeformationEpisode = value; else this.argument_DeformationEpisode = ""; }
+            }
+            internal string DeformationEpisode(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_DeformationEpisode;
+                    case 1:
+                        return this.argument_DeformationEpisode1;
+                    case 2:
+                        return this.argument_DeformationEpisode2;
+                    case 3:
+                        return this.argument_DeformationEpisode3;
+                    case 4:
+                        return this.argument_DeformationEpisode4;
+                    default:
+                        try
+                        {
+                            return this.argument_DeformationEpisode_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_DeformationEpisode_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return "";
+                        }
+                }
+            }
+            public void DeformationEpisode(string value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_DeformationEpisode = value;
+                        break;
+                    case 1:
+                        this.argument_DeformationEpisode1 = value;
+                        break;
+                    case 2:
+                        this.argument_DeformationEpisode2 = value;
+                        break;
+                    case 3:
+                        this.argument_DeformationEpisode3 = value;
+                        break;
+                    case 4:
+                        this.argument_DeformationEpisode4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_DeformationEpisode_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_DeformationEpisode_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public double Argument_DeformationEpisodeDuration
+            {
+                internal get { return this.argument_DeformationEpisodeDuration; }
+                set { this.argument_DeformationEpisodeDuration = value; }
+            }*/
+            internal double DeformationEpisodeDuration(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_DeformationEpisodeDuration;
+                    case 1:
+                        return this.argument_DeformationEpisodeDuration1;
+                    case 2:
+                        return this.argument_DeformationEpisodeDuration2;
+                    case 3:
+                        return this.argument_DeformationEpisodeDuration3;
+                    case 4:
+                        return this.argument_DeformationEpisodeDuration4;
+                    default:
+                        try
+                        {
+                            return this.argument_DeformationEpisodeDuration_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_DeformationEpisodeDuration_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void DeformationEpisodeDuration(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_DeformationEpisodeDuration = value;
+                        break;
+                    case 1:
+                        this.argument_DeformationEpisodeDuration1 = value;
+                        break;
+                    case 2:
+                        this.argument_DeformationEpisodeDuration2 = value;
+                        break;
+                    case 3:
+                        this.argument_DeformationEpisodeDuration3 = value;
+                        break;
+                    case 4:
+                        this.argument_DeformationEpisodeDuration4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_DeformationEpisodeDuration_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_DeformationEpisodeDuration_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            public int Argument_DeformationEpisodeTimeUnits
+            {
+                internal get { return this.argument_DeformationEpisodeTimeUnits; }
+                set { this.argument_DeformationEpisodeTimeUnits = value; }
+            }
+            internal int DeformationEpisodeTimeUnits(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_DeformationEpisodeTimeUnits;
+                    case 1:
+                        return this.argument_DeformationEpisodeTimeUnits1;
+                    case 2:
+                        return this.argument_DeformationEpisodeTimeUnits2;
+                    case 3:
+                        return this.argument_DeformationEpisodeTimeUnits3;
+                    case 4:
+                        return this.argument_DeformationEpisodeTimeUnits4;
+                    default:
+                        try
+                        {
+                            return this.argument_DeformationEpisodeTimeUnits_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_DeformationEpisodeTimeUnits_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return 2;
+                        }
+                }
+            }
+            public void DeformationEpisodeTimeUnits(int value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_DeformationEpisodeTimeUnits = value;
+                        break;
+                    case 1:
+                        this.argument_DeformationEpisodeTimeUnits1 = value;
+                        break;
+                    case 2:
+                        this.argument_DeformationEpisodeTimeUnits2 = value;
+                        break;
+                    case 3:
+                        this.argument_DeformationEpisodeTimeUnits3 = value;
+                        break;
+                    case 4:
+                        this.argument_DeformationEpisodeTimeUnits4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_DeformationEpisodeTimeUnits_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_DeformationEpisodeTimeUnits_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
+            public double Argument_EhminAzi_default
+            {
+                internal get { return this.argument_EhminAzi_default; }
+                set { this.argument_EhminAzi_default = value; }
+            }*/
+            internal double EhminAzi_default(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_EhminAzi_default;
+                    case 1:
+                        return this.argument_EhminAzi_default1;
+                    case 2:
+                        return this.argument_EhminAzi_default2;
+                    case 3:
+                        return this.argument_EhminAzi_default3;
+                    case 4:
+                        return this.argument_EhminAzi_default4;
+                    default:
+                        try
+                        {
+                            return this.argument_EhminAzi_default_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_EhminAzi_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void EhminAzi_default(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_EhminAzi_default = value;
+                        break;
+                    case 1:
+                        this.argument_EhminAzi_default1 = value;
+                        break;
+                    case 2:
+                        this.argument_EhminAzi_default2 = value;
+                        break;
+                    case 3:
+                        this.argument_EhminAzi_default3 = value;
+                        break;
+                    case 4:
+                        this.argument_EhminAzi_default4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_EhminAzi_default_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_EhminAzi_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[OptionalInWorkflow]
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminAzi) as Property; }
+                set { this.argument_EhminAzi = (value == null ? null : value.Droid); }
+            }*/
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminAzi(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_EhminAzi) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_EhminAzi1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_EhminAzi2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_EhminAzi3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_EhminAzi4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_EhminAzi_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_EhminAzi_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void EhminAzi(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_EhminAzi = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_EhminAzi1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_EhminAzi2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_EhminAzi3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_EhminAzi4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_EhminAzi_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_EhminAzi_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Unit conversion for the strain rate properties EhminRate and EhmaxRate are carried out when the grid is populated in ExectureSimple(), as there are no inbuilt Petrel units for strain rate 
+            // Therefore strain rate units EhminRate and EhmaxRate are stored in geological time units (typically Ma), not SI units (/s)
+            // Unit labelling must be handled manually
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhminRate_default
+            {
+                internal get { return this.argument_EhminRate_default; }
+                set { this.argument_EhminRate_default = value; }
+            }*/
+            internal double EhminRate_default(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_EhminRate_default;
+                    case 1:
+                        return this.argument_EhminRate_default1;
+                    case 2:
+                        return this.argument_EhminRate_default2;
+                    case 3:
+                        return this.argument_EhminRate_default3;
+                    case 4:
+                        return this.argument_EhminRate_default4;
+                    default:
+                        try
+                        {
+                            return this.argument_EhminRate_default_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_EhminRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void EhminRate_default(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_EhminRate_default = value;
+                        break;
+                    case 1:
+                        this.argument_EhminRate_default1 = value;
+                        break;
+                    case 2:
+                        this.argument_EhminRate_default2 = value;
+                        break;
+                    case 3:
+                        this.argument_EhminRate_default3 = value;
+                        break;
+                    case 4:
+                        this.argument_EhminRate_default4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_EhminRate_default_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_EhminRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[OptionalInWorkflow]
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminRate) as Property; }
+                set { this.argument_EhminRate = (value == null ? null : value.Droid); }
+            }*/
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhminRate(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_EhminRate) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_EhminRate1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_EhminRate2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_EhminRate3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_EhminRate4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_EhminRate_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_EhminRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void EhminRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_EhminRate = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_EhminRate1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_EhminRate2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_EhminRate3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_EhminRate4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_EhminRate_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_EhminRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhmaxRate_default
+            {
+                internal get { return this.argument_EhmaxRate_default; }
+                set { this.argument_EhmaxRate_default = value; }
+            }*/
+            internal double EhmaxRate_default(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_EhmaxRate_default;
+                    case 1:
+                        return this.argument_EhmaxRate_default1;
+                    case 2:
+                        return this.argument_EhmaxRate_default2;
+                    case 3:
+                        return this.argument_EhmaxRate_default3;
+                    case 4:
+                        return this.argument_EhmaxRate_default4;
+                    default:
+                        try
+                        {
+                            return this.argument_EhmaxRate_default_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_EhmaxRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void EhmaxRate_default(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_EhmaxRate_default = value;
+                        break;
+                    case 1:
+                        this.argument_EhmaxRate_default1 = value;
+                        break;
+                    case 2:
+                        this.argument_EhmaxRate_default2 = value;
+                        break;
+                    case 3:
+                        this.argument_EhmaxRate_default3 = value;
+                        break;
+                    case 4:
+                        this.argument_EhmaxRate_default4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_EhmaxRate_default_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_EhmaxRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            // Moved to original position in Argument property list for compatibility with DFM Generator v2.1.1 
+            /*[OptionalInWorkflow]
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate
+            {
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate) as Property; }
+                set { this.argument_EhmaxRate = (value == null ? null : value.Droid); }
+            }*/
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property EhmaxRate(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_EhmaxRate) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_EhmaxRate1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_EhmaxRate2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_EhmaxRate3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_EhmaxRate4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_EhmaxRate_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_EhmaxRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void EhmaxRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_EhmaxRate = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_EhmaxRate1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_EhmaxRate2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_EhmaxRate3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_EhmaxRate4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_EhmaxRate_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_EhmaxRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
+            public double Argument_AppliedOverpressureRate_default
+            {
+                internal get { return this.argument_AppliedOverpressureRate_default; }
+                set { this.argument_AppliedOverpressureRate_default = value; }
+            }
+            internal double AppliedOverpressureRate_default(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_AppliedOverpressureRate_default;
+                    case 1:
+                        return this.argument_AppliedOverpressureRate_default1;
+                    case 2:
+                        return this.argument_AppliedOverpressureRate_default2;
+                    case 3:
+                        return this.argument_AppliedOverpressureRate_default3;
+                    case 4:
+                        return this.argument_AppliedOverpressureRate_default4;
+                    default:
+                        try
+                        {
+                            return this.argument_AppliedOverpressureRate_default_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AppliedOverpressureRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void AppliedOverpressureRate_default(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_AppliedOverpressureRate_default = value;
+                        break;
+                    case 1:
+                        this.argument_AppliedOverpressureRate_default1 = value;
+                        break;
+                    case 2:
+                        this.argument_AppliedOverpressureRate_default2 = value;
+                        break;
+                    case 3:
+                        this.argument_AppliedOverpressureRate_default3 = value;
+                        break;
+                    case 4:
+                        this.argument_AppliedOverpressureRate_default4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_AppliedOverpressureRate_default_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AppliedOverpressureRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedOverpressureRate
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedOverpressureRate) as Property; }
+                set { this.argument_AppliedOverpressureRate = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedOverpressureRate(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_AppliedOverpressureRate) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_AppliedOverpressureRate1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_AppliedOverpressureRate2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_AppliedOverpressureRate3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_AppliedOverpressureRate4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_AppliedOverpressureRate_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AppliedOverpressureRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AppliedOverpressureRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_AppliedOverpressureRate = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_AppliedOverpressureRate1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_AppliedOverpressureRate2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_AppliedOverpressureRate3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_AppliedOverpressureRate4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_AppliedOverpressureRate_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AppliedOverpressureRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public double Argument_AppliedTemperatureChange_default
+            {
+                internal get { return this.argument_AppliedTemperatureChange_default; }
+                set { this.argument_AppliedTemperatureChange_default = value; }
+            }
+            internal double AppliedTemperatureChange_default(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_AppliedTemperatureChange_default;
+                    case 1:
+                        return this.argument_AppliedTemperatureChange_default1;
+                    case 2:
+                        return this.argument_AppliedTemperatureChange_default2;
+                    case 3:
+                        return this.argument_AppliedTemperatureChange_default3;
+                    case 4:
+                        return this.argument_AppliedTemperatureChange_default4;
+                    default:
+                        try
+                        {
+                            return this.argument_AppliedTemperatureChange_default_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AppliedTemperatureChange_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void AppliedTemperatureChange_default(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_AppliedTemperatureChange_default = value;
+                        break;
+                    case 1:
+                        this.argument_AppliedTemperatureChange_default1 = value;
+                        break;
+                    case 2:
+                        this.argument_AppliedTemperatureChange_default2 = value;
+                        break;
+                    case 3:
+                        this.argument_AppliedTemperatureChange_default3 = value;
+                        break;
+                    case 4:
+                        this.argument_AppliedTemperatureChange_default4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_AppliedTemperatureChange_default_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AppliedTemperatureChange_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedTemperatureChange
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedTemperatureChange) as Property; }
+                set { this.argument_AppliedTemperatureChange = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedTemperatureChange(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_AppliedTemperatureChange) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_AppliedTemperatureChange1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_AppliedTemperatureChange2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_AppliedTemperatureChange3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_AppliedTemperatureChange4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_AppliedTemperatureChange_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AppliedTemperatureChange_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AppliedTemperatureChange(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_AppliedTemperatureChange = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_AppliedTemperatureChange1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_AppliedTemperatureChange2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_AppliedTemperatureChange3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_AppliedTemperatureChange4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_AppliedTemperatureChange_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AppliedTemperatureChange_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public double Argument_AppliedUpliftRate_default
+            {
+                internal get { return this.argument_AppliedUpliftRate_default; }
+                set { this.argument_AppliedUpliftRate_default = value; }
+            }
+            internal double AppliedUpliftRate_default(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_AppliedUpliftRate_default;
+                    case 1:
+                        return this.argument_AppliedUpliftRate_default1;
+                    case 2:
+                        return this.argument_AppliedUpliftRate_default2;
+                    case 3:
+                        return this.argument_AppliedUpliftRate_default3;
+                    case 4:
+                        return this.argument_AppliedUpliftRate_default4;
+                    default:
+                        try
+                        {
+                            return this.argument_AppliedUpliftRate_default_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AppliedUpliftRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void AppliedUpliftRate_default(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_AppliedUpliftRate_default = value;
+                        break;
+                    case 1:
+                        this.argument_AppliedUpliftRate_default1 = value;
+                        break;
+                    case 2:
+                        this.argument_AppliedUpliftRate_default2 = value;
+                        break;
+                    case 3:
+                        this.argument_AppliedUpliftRate_default3 = value;
+                        break;
+                    case 4:
+                        this.argument_AppliedUpliftRate_default4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_AppliedUpliftRate_default_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AppliedUpliftRate_default_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedUpliftRate
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedUpliftRate) as Property; }
+                set { this.argument_AppliedUpliftRate = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AppliedUpliftRate(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_AppliedUpliftRate) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_AppliedUpliftRate1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_AppliedUpliftRate2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_AppliedUpliftRate3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_AppliedUpliftRate4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_AppliedUpliftRate_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AppliedUpliftRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AppliedUpliftRate(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_AppliedUpliftRate = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_AppliedUpliftRate1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_AppliedUpliftRate2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_AppliedUpliftRate3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_AppliedUpliftRate4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_AppliedUpliftRate_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AppliedUpliftRate_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+
+            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
+            public double Argument_StressArchingFactor
+            {
+                internal get { return this.argument_StressArchingFactor; }
+                set { this.argument_StressArchingFactor = value; }
+            }
+            internal double StressArchingFactor(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_StressArchingFactor;
+                    case 1:
+                        return this.argument_StressArchingFactor1;
+                    case 2:
+                        return this.argument_StressArchingFactor2;
+                    case 3:
+                        return this.argument_StressArchingFactor3;
+                    case 4:
+                        return this.argument_StressArchingFactor4;
+                    default:
+                        try
+                        {
+                            return this.argument_StressArchingFactor_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_StressArchingFactor_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return double.NaN;
+                        }
+                }
+            }
+            public void StressArchingFactor(double value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressArchingFactor = value;
+                        break;
+                    case 1:
+                        this.argument_StressArchingFactor1 = value;
+                        break;
+                    case 2:
+                        this.argument_StressArchingFactor2 = value;
+                        break;
+                    case 3:
+                        this.argument_StressArchingFactor3 = value;
+                        break;
+                    case 4:
+                        this.argument_StressArchingFactor4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressArchingFactor_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_StressArchingFactor_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            /// <summary>
+            /// Add a new deformation episode to the list, populated with default values
+            /// </summary>
+            /// <returns>Index number of the new deformation episode (zero-based)</returns>
+            public int AddDeformationEpisode()
+            {
+                int episodeIndex = Argument_NoDeformationEpisodes; // Zero-based
+                string episodeName = string.Format("Deformation episode {0}: ", episodeIndex + 1); // In the episode name, the index number is 1-based
+                if (episodeIndex < 5)
+                {
+                    this.DeformationEpisode(episodeName, episodeIndex);
+                }
+                else
+                {
+                    this.argument_DeformationEpisode_extras.Add(episodeName);
+                    this.argument_DeformationEpisodeDuration_extras.Add(double.NaN);
+                    this.argument_DeformationEpisodeTimeUnits_extras.Add(2); // Default time units are ma
+                    this.argument_EhminAzi_default_extras.Add(0);
+                    this.argument_EhminAzi_extras.Add(null);
+                    this.argument_EhminRate_default_extras.Add(0);
+                    this.argument_EhminRate_extras.Add(null);
+                    this.argument_EhmaxRate_default_extras.Add(0);
+                    this.argument_EhmaxRate_extras.Add(null);
+                    this.argument_AppliedOverpressureRate_default_extras.Add(0);
+                    this.argument_AppliedOverpressureRate_extras.Add(null);
+                    this.argument_AppliedTemperatureChange_default_extras.Add(0);
+                    this.argument_AppliedTemperatureChange_extras.Add(null);
+                    this.argument_AppliedUpliftRate_default_extras.Add(0);
+                    this.argument_AppliedUpliftRate_extras.Add(null);
+                    this.argument_StressArchingFactor_extras.Add(0);
+                }
+
+                return episodeIndex;
+            }
+            /// <summary>
+            /// Remove a deformation episode at a specified index
+            /// </summary>
+            /// <param name="episodeIndex">Index of the deformation episode to remove (zero-based)</param>
+            public void RemoveDeformationEpisode(int episodeIndex)
+            {
+                int noDeformationEpisodes = this.Argument_NoDeformationEpisodes;
+
+                if (episodeIndex < 0)
+                {
+                    episodeIndex = 0;
+                }
+                if (episodeIndex < 1)
+                {
+                    this.argument_DeformationEpisodeDuration = this.argument_DeformationEpisodeDuration1;
+                    this.argument_DeformationEpisodeTimeUnits = this.argument_DeformationEpisodeTimeUnits1;
+                    this.argument_EhminAzi_default = this.argument_EhminAzi_default1;
+                    this.argument_EhminAzi = this.argument_EhminAzi1;
+                    this.argument_EhminRate_default = this.argument_EhminRate_default1;
+                    this.argument_EhminRate = this.argument_EhminRate1;
+                    this.argument_EhmaxRate_default = this.argument_EhmaxRate_default1;
+                    this.argument_EhmaxRate = this.argument_EhmaxRate1;
+                    this.argument_AppliedOverpressureRate_default = this.argument_AppliedOverpressureRate_default1;
+                    this.argument_AppliedOverpressureRate = this.argument_AppliedOverpressureRate1;
+                    this.argument_AppliedTemperatureChange_default = this.argument_AppliedTemperatureChange_default1;
+                    this.argument_AppliedTemperatureChange = this.argument_AppliedTemperatureChange1;
+                    this.argument_AppliedUpliftRate_default = this.argument_AppliedUpliftRate_default1;
+                    this.argument_AppliedUpliftRate = this.argument_AppliedUpliftRate1;
+                    this.argument_StressArchingFactor = this.argument_StressArchingFactor1;
+                    if (noDeformationEpisodes > 1)
+                        GenerateDeformationEpisodeName(0, true);
+                    else
+                        argument_DeformationEpisode = "";
+                }
+                if (episodeIndex < 2)
+                {
+                    this.argument_DeformationEpisodeDuration1 = this.argument_DeformationEpisodeDuration2;
+                    this.argument_DeformationEpisodeTimeUnits1 = this.argument_DeformationEpisodeTimeUnits2;
+                    this.argument_EhminAzi_default1 = this.argument_EhminAzi_default2;
+                    this.argument_EhminAzi1 = this.argument_EhminAzi2;
+                    this.argument_EhminRate_default1 = this.argument_EhminRate_default2;
+                    this.argument_EhminRate1 = this.argument_EhminRate2;
+                    this.argument_EhmaxRate_default1 = this.argument_EhmaxRate_default2;
+                    this.argument_EhmaxRate1 = this.argument_EhmaxRate2;
+                    this.argument_AppliedOverpressureRate_default1 = this.argument_AppliedOverpressureRate_default2;
+                    this.argument_AppliedOverpressureRate1 = this.argument_AppliedOverpressureRate2;
+                    this.argument_AppliedTemperatureChange_default1 = this.argument_AppliedTemperatureChange_default2;
+                    this.argument_AppliedTemperatureChange1 = this.argument_AppliedTemperatureChange2;
+                    this.argument_AppliedUpliftRate_default1 = this.argument_AppliedUpliftRate_default2;
+                    this.argument_AppliedUpliftRate1 = this.argument_AppliedUpliftRate2;
+                    this.argument_StressArchingFactor1 = this.argument_StressArchingFactor2;
+                    if (noDeformationEpisodes > 2)
+                        GenerateDeformationEpisodeName(1, true);
+                    else
+                        argument_DeformationEpisode1 = "";
+                }
+                if (episodeIndex < 3)
+                {
+                    this.argument_DeformationEpisodeDuration2 = this.argument_DeformationEpisodeDuration3;
+                    this.argument_DeformationEpisodeTimeUnits2 = this.argument_DeformationEpisodeTimeUnits3;
+                    this.argument_EhminAzi_default2 = this.argument_EhminAzi_default3;
+                    this.argument_EhminAzi2 = this.argument_EhminAzi3;
+                    this.argument_EhminRate_default2 = this.argument_EhminRate_default3;
+                    this.argument_EhminRate2 = this.argument_EhminRate3;
+                    this.argument_EhmaxRate_default2 = this.argument_EhmaxRate_default3;
+                    this.argument_EhmaxRate2 = this.argument_EhmaxRate3;
+                    this.argument_AppliedOverpressureRate_default2 = this.argument_AppliedOverpressureRate_default3;
+                    this.argument_AppliedOverpressureRate2 = this.argument_AppliedOverpressureRate3;
+                    this.argument_AppliedTemperatureChange_default2 = this.argument_AppliedTemperatureChange_default3;
+                    this.argument_AppliedTemperatureChange2 = this.argument_AppliedTemperatureChange3;
+                    this.argument_AppliedUpliftRate_default2 = this.argument_AppliedUpliftRate_default3;
+                    this.argument_AppliedUpliftRate2 = this.argument_AppliedUpliftRate3;
+                    this.argument_StressArchingFactor2 = this.argument_StressArchingFactor3;
+                    if (noDeformationEpisodes > 3)
+                        GenerateDeformationEpisodeName(2, true);
+                    else
+                        argument_DeformationEpisode2 = "";
+                }
+                if (episodeIndex < 4)
+                {
+                    this.argument_DeformationEpisodeDuration3 = this.argument_DeformationEpisodeDuration4;
+                    this.argument_DeformationEpisodeTimeUnits3 = this.argument_DeformationEpisodeTimeUnits4;
+                    this.argument_EhminAzi_default3 = this.argument_EhminAzi_default4;
+                    this.argument_EhminAzi3 = this.argument_EhminAzi4;
+                    this.argument_EhminRate_default3 = this.argument_EhminRate_default4;
+                    this.argument_EhminRate3 = this.argument_EhminRate4;
+                    this.argument_EhmaxRate_default3 = this.argument_EhmaxRate_default4;
+                    this.argument_EhmaxRate3 = this.argument_EhmaxRate4;
+                    this.argument_AppliedOverpressureRate_default3 = this.argument_AppliedOverpressureRate_default4;
+                    this.argument_AppliedOverpressureRate3 = this.argument_AppliedOverpressureRate4;
+                    this.argument_AppliedTemperatureChange_default3 = this.argument_AppliedTemperatureChange_default4;
+                    this.argument_AppliedTemperatureChange3 = this.argument_AppliedTemperatureChange4;
+                    this.argument_AppliedUpliftRate_default3 = this.argument_AppliedUpliftRate_default4;
+                    this.argument_AppliedUpliftRate3 = this.argument_AppliedUpliftRate4;
+                    this.argument_StressArchingFactor3 = this.argument_StressArchingFactor4;
+                    if (noDeformationEpisodes > 4)
+                        GenerateDeformationEpisodeName(3, true);
+                    else
+                        argument_DeformationEpisode3 = "";
+                }
+                if (episodeIndex < 5)
+                {
+                    if (noDeformationEpisodes > 5)
+                    {
+                        try
+                        {
+                            this.argument_DeformationEpisodeDuration4 = this.argument_DeformationEpisodeDuration_extras[0];
+                            this.argument_DeformationEpisodeTimeUnits4 = this.argument_DeformationEpisodeTimeUnits_extras[0];
+                            this.argument_EhminAzi_default4 = this.argument_EhminAzi_default_extras[0];
+                            this.argument_EhminAzi4 = this.argument_EhminAzi_extras[0];
+                            this.argument_EhminRate_default4 = this.argument_EhminRate_default_extras[0];
+                            this.argument_EhminRate4 = this.argument_EhminRate_extras[0];
+                            this.argument_EhmaxRate_default4 = this.argument_EhmaxRate_default_extras[0];
+                            this.argument_EhmaxRate4 = this.argument_EhmaxRate_extras[0];
+                            this.argument_AppliedOverpressureRate_default4 = this.argument_AppliedOverpressureRate_default_extras[0];
+                            this.argument_AppliedOverpressureRate4 = this.argument_AppliedOverpressureRate_extras[0];
+                            this.argument_AppliedTemperatureChange_default4 = this.argument_AppliedTemperatureChange_default_extras[0];
+                            this.argument_AppliedTemperatureChange4 = this.argument_AppliedTemperatureChange_extras[0];
+                            this.argument_AppliedUpliftRate_default4 = this.argument_AppliedUpliftRate_default_extras[0];
+                            this.argument_AppliedUpliftRate4 = this.argument_AppliedUpliftRate_extras[0];
+                            this.argument_StressArchingFactor4 = this.argument_StressArchingFactor_extras[0];
+                            GenerateDeformationEpisodeName(4, true);
+
+                            this.argument_DeformationEpisode_extras.RemoveAt(0);
+                            this.argument_DeformationEpisodeDuration_extras.RemoveAt(0);
+                            this.argument_DeformationEpisodeTimeUnits_extras.RemoveAt(0);
+                            this.argument_EhminAzi_default_extras.RemoveAt(0);
+                            this.argument_EhminAzi_extras.RemoveAt(0);
+                            this.argument_EhminRate_default_extras.RemoveAt(0);
+                            this.argument_EhminRate_extras.RemoveAt(0);
+                            this.argument_EhmaxRate_default_extras.RemoveAt(0);
+                            this.argument_EhmaxRate_extras.RemoveAt(0);
+                            this.argument_AppliedOverpressureRate_default_extras.RemoveAt(0);
+                            this.argument_AppliedOverpressureRate_extras.RemoveAt(0);
+                            this.argument_AppliedTemperatureChange_default_extras.RemoveAt(0);
+                            this.argument_AppliedTemperatureChange_extras.RemoveAt(0);
+                            this.argument_AppliedUpliftRate_default_extras.RemoveAt(0);
+                            this.argument_AppliedUpliftRate_extras.RemoveAt(0);
+                            this.argument_StressArchingFactor_extras.RemoveAt(0);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to remove argument_??_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", 0, 5, Argument_NoDeformationEpisodes));
+                        }
+
+                        // Rename the subsequent deformation episodes with the correct index number
+                        try
+                        {
+                            for (episodeIndex = 5; episodeIndex < noDeformationEpisodes - 1; episodeIndex++)
+                                GenerateDeformationEpisodeName(episodeIndex, true);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to rename argument_DeformationEpisode_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+
+                    }
+                    else
+                    {
+                        this.argument_DeformationEpisode4 = "";
+                        this.argument_DeformationEpisodeDuration4 = double.NaN;
+                        this.argument_DeformationEpisodeTimeUnits4 = 2;
+                        this.argument_EhminAzi_default4 = double.NaN;
+                        this.argument_EhminAzi4 = null;
+                        this.argument_EhminRate_default4 = double.NaN;
+                        this.argument_EhminRate4 = null;
+                        this.argument_EhmaxRate_default4 = double.NaN;
+                        this.argument_EhmaxRate4 = null;
+                        this.argument_AppliedOverpressureRate_default4 = double.NaN;
+                        this.argument_AppliedOverpressureRate4 = null;
+                        this.argument_AppliedTemperatureChange_default4 = double.NaN;
+                        this.argument_AppliedTemperatureChange4 = null;
+                        this.argument_AppliedUpliftRate_default4 = double.NaN;
+                        this.argument_AppliedUpliftRate4 = null;
+                        this.argument_StressArchingFactor4 = double.NaN;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        this.argument_DeformationEpisode_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_DeformationEpisodeDuration_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_DeformationEpisodeTimeUnits_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_EhminAzi_default_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_EhminAzi_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_EhminRate_default_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_EhminRate_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_EhmaxRate_default_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_EhmaxRate_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AppliedOverpressureRate_default_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AppliedOverpressureRate_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AppliedTemperatureChange_default_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AppliedTemperatureChange_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AppliedUpliftRate_default_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AppliedUpliftRate_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressArchingFactor_extras.RemoveAt(episodeIndex - 5);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        PetrelLogger.InfoOutputWindow(string.Format("Tried to remove argument_??_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                    }
+
+                    // Rename the subsequent deformation episodes with the correct index number
+                    try
+                    {
+                        for (; episodeIndex < noDeformationEpisodes - 1; episodeIndex++)
+                            GenerateDeformationEpisodeName(episodeIndex, true);
+                    }
+                    catch (System.ArgumentOutOfRangeException)
+                    {
+                        PetrelLogger.InfoOutputWindow(string.Format("Tried to rename argument_DeformationEpisode_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                    }
+                }
+            }
+            /// <summary>
+            /// Create and assign a name for the specified deformation episode based on duration and load
+            /// </summary>
+            /// <param name="deformationEpisodeIndex">Index of the deformation episode to name</param>
+            /// <param name="assignName">If true, will write the new name to the deformation episode name list; if false, will only return it as a string</param>
+            /// <returns></returns>
+            public string GenerateDeformationEpisodeName(int deformationEpisodeIndex, bool assignName)
+            {
+                // Get data from the dialog box
+                double duration = DeformationEpisodeDuration(deformationEpisodeIndex);
+                int timeUnits = DeformationEpisodeTimeUnits(deformationEpisodeIndex);
+                double ehminAzi_default = EhminAzi_default(deformationEpisodeIndex);
+                Property ehminAzi = EhminAzi(deformationEpisodeIndex);
+                double ehminRate_default = EhminRate_default(deformationEpisodeIndex);
+                Property ehminRate = EhminRate(deformationEpisodeIndex);
+                //double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
+                //Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
+                double OPRate_default = AppliedOverpressureRate_default(deformationEpisodeIndex);
+                Property OPRate = AppliedOverpressureRate(deformationEpisodeIndex);
+                double tempChange_default = AppliedTemperatureChange_default(deformationEpisodeIndex);
+                Property tempChange = AppliedTemperatureChange(deformationEpisodeIndex);
+                double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
+                Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
+                //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
+
+                // Create a name based on deformation episode duration and specified load
+                string deformationEpisodeName = string.Format("Deformation episode {0}:", deformationEpisodeIndex + 1);
+                string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
+                if (duration >= 0)
+                    deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
+                if (ehminRate != null)
+                {
+                    deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
+                    if (ehminAzi != null)
+                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
+                    else
+                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                }
+                else if (ehminRate_default != 0)
+                {
+                    deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
+                    if (ehminAzi != null)
+                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
+                    else
+                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                }
+                if (OPRate != null)
+                    deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
+                else if (OPRate_default != 0)
+                    deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
+                if (tempChange != null)
+                    deformationEpisodeName += string.Format(" Temperature {0}", tempChange.Name);
+                else if (tempChange_default != 0)
+                    deformationEpisodeName += string.Format(" Temperature {0}degK/{1}", Math.Round(tempChange_default), timeUnitText);
+                if (upliftRate != null)
+                    deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
+                else if (upliftRate_default != 0)
+                    deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
+
+                // If required, set the deformation episode name and then return it
+                if (assignName)
+                    DeformationEpisode(deformationEpisodeName, deformationEpisodeIndex);
+                return deformationEpisodeName;
+            }
+
+            // Data for additional deformation episodes
+            [OptionalInWorkflow]
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            public string Argument_DeformationEpisode1
+            {
+                internal get { return this.argument_DeformationEpisode1; }
+                set { if (value != null) this.argument_DeformationEpisode1 = value; else this.argument_DeformationEpisode1 = ""; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            public string Argument_DeformationEpisode2
+            {
+                internal get { return this.argument_DeformationEpisode2; }
+                set { if (value != null) this.argument_DeformationEpisode2 = value; else this.argument_DeformationEpisode2 = ""; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            public string Argument_DeformationEpisode3
+            {
+                internal get { return this.argument_DeformationEpisode3; }
+                set { if (value != null) this.argument_DeformationEpisode3 = value; else this.argument_DeformationEpisode3 = ""; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
+            public string Argument_DeformationEpisode4
+            {
+                internal get { return this.argument_DeformationEpisode4; }
+                set { if (value != null) this.argument_DeformationEpisode4 = value; else this.argument_DeformationEpisode4 = ""; }
+            }
+            [OptionalInWorkflow]
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public double Argument_DeformationEpisodeDuration1
+            {
+                internal get { return this.argument_DeformationEpisodeDuration1; }
+                set { this.argument_DeformationEpisodeDuration1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public double Argument_DeformationEpisodeDuration2
+            {
+                internal get { return this.argument_DeformationEpisodeDuration2; }
+                set { this.argument_DeformationEpisodeDuration2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public double Argument_DeformationEpisodeDuration3
+            {
+                internal get { return this.argument_DeformationEpisodeDuration3; }
+                set { this.argument_DeformationEpisodeDuration3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
+            public double Argument_DeformationEpisodeDuration4
+            {
+                internal get { return this.argument_DeformationEpisodeDuration4; }
+                set { this.argument_DeformationEpisodeDuration4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            public int Argument_DeformationEpisodeTimeUnits1
+            {
+                internal get { return this.argument_DeformationEpisodeTimeUnits1; }
+                set { this.argument_DeformationEpisodeTimeUnits1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            public int Argument_DeformationEpisodeTimeUnits2
+            {
+                internal get { return this.argument_DeformationEpisodeTimeUnits2; }
+                set { this.argument_DeformationEpisodeTimeUnits2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            public int Argument_DeformationEpisodeTimeUnits3
+            {
+                internal get { return this.argument_DeformationEpisodeTimeUnits3; }
+                set { this.argument_DeformationEpisodeTimeUnits3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Deformation episode time units", "Time units for deformation episode (seconds, years or Ma)")]
+            public int Argument_DeformationEpisodeTimeUnits4
+            {
+                internal get { return this.argument_DeformationEpisodeTimeUnits4; }
+                set { this.argument_DeformationEpisodeTimeUnits4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
+            public double Argument_EhminAzi_default1
+            {
+                internal get { return this.argument_EhminAzi_default1; }
+                set { this.argument_EhminAzi_default1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
+            public double Argument_EhminAzi_default2
+            {
+                internal get { return this.argument_EhminAzi_default2; }
+                set { this.argument_EhminAzi_default2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
+            public double Argument_EhminAzi_default3
+            {
+                internal get { return this.argument_EhminAzi_default3; }
+                set { this.argument_EhminAzi_default3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default azimuth of minimum (most tensile) horizontal strain (rad)", "Default value for azimuth of minimum (most tensile) horizontal strain (rad)")]
+            public double Argument_EhminAzi_default4
+            {
+                internal get { return this.argument_EhminAzi_default4; }
+                set { this.argument_EhminAzi_default4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi1
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminAzi1) as Property; }
+                set { this.argument_EhminAzi1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi2
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminAzi2) as Property; }
+                set { this.argument_EhminAzi2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi3
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminAzi3) as Property; }
+                set { this.argument_EhminAzi3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Azimuth of minimum (most tensile) horizontal strain", "Azimuth of minimum (most tensile) horizontal strain")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminAzi4
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminAzi4) as Property; }
+                set { this.argument_EhminAzi4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhminRate_default1
+            {
+                internal get { return this.argument_EhminRate_default1; }
+                set { this.argument_EhminRate_default1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhminRate_default2
+            {
+                internal get { return this.argument_EhminRate_default2; }
+                set { this.argument_EhminRate_default2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhminRate_default3
+            {
+                internal get { return this.argument_EhminRate_default3; }
+                set { this.argument_EhminRate_default3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default minimum horizontal strain rate (/Ma, tensile strain negative)", "Default value for minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhminRate_default4
+            {
+                internal get { return this.argument_EhminRate_default4; }
+                set { this.argument_EhminRate_default4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate1
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminRate1) as Property; }
+                set { this.argument_EhminRate1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate2
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminRate2) as Property; }
+                set { this.argument_EhminRate2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate3
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminRate3) as Property; }
+                set { this.argument_EhminRate3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Minimum horizontal strain rate (/Ma, tensile strain negative)", "Minimum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhminRate4
+            {
+                internal get { return DataManager.Resolve(this.argument_EhminRate4) as Property; }
+                set { this.argument_EhminRate4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhmaxRate_default1
+            {
+                internal get { return this.argument_EhmaxRate_default1; }
+                set { this.argument_EhmaxRate_default1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhmaxRate_default2
+            {
+                internal get { return this.argument_EhmaxRate_default2; }
+                set { this.argument_EhmaxRate_default2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhmaxRate_default3
+            {
+                internal get { return this.argument_EhmaxRate_default3; }
+                set { this.argument_EhmaxRate_default3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default maximum horizontal strain rate (/Ma, tensile strain negative)", "Default value for maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public double Argument_EhmaxRate_default4
+            {
+                internal get { return this.argument_EhmaxRate_default4; }
+                set { this.argument_EhmaxRate_default4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate1
+            {
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate1) as Property; }
+                set { this.argument_EhmaxRate1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate2
+            {
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate2) as Property; }
+                set { this.argument_EhmaxRate2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate3
+            {
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate3) as Property; }
+                set { this.argument_EhmaxRate3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Maximum horizontal strain rate (/Ma, tensile strain negative)", "Maximum horizontal strain rate (/Ma, tensile strain negative)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_EhmaxRate4
+            {
+                internal get { return DataManager.Resolve(this.argument_EhmaxRate4) as Property; }
+                set { this.argument_EhmaxRate4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
+            public double Argument_AppliedOverpressureRate_default1
+            {
+                internal get { return this.argument_AppliedOverpressureRate_default1; }
+                set { this.argument_AppliedOverpressureRate_default1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
+            public double Argument_AppliedOverpressureRate_default2
+            {
+                internal get { return this.argument_AppliedOverpressureRate_default2; }
+                set { this.argument_AppliedOverpressureRate_default2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
+            public double Argument_AppliedOverpressureRate_default3
+            {
+                internal get { return this.argument_AppliedOverpressureRate_default3; }
+                set { this.argument_AppliedOverpressureRate_default3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of increase of fluid overpressure (Pa/Ma)", "Default rate of increase of fluid overpressure (Pa/Ma)")]
+            public double Argument_AppliedOverpressureRate_default4
+            {
+                internal get { return this.argument_AppliedOverpressureRate_default4; }
+                set { this.argument_AppliedOverpressureRate_default4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedOverpressureRate1
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedOverpressureRate1) as Property; }
+                set { this.argument_AppliedOverpressureRate1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedOverpressureRate2
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedOverpressureRate2) as Property; }
+                set { this.argument_AppliedOverpressureRate2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedOverpressureRate3
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedOverpressureRate3) as Property; }
+                set { this.argument_AppliedOverpressureRate3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of increase of fluid overpressure (Pa/Ma)", "Rate of increase of fluid overpressure (Pa/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedOverpressureRate4
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedOverpressureRate4) as Property; }
+                set { this.argument_AppliedOverpressureRate4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public double Argument_AppliedTemperatureChange_default1
+            {
+                internal get { return this.argument_AppliedTemperatureChange_default1; }
+                set { this.argument_AppliedTemperatureChange_default1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public double Argument_AppliedTemperatureChange_default2
+            {
+                internal get { return this.argument_AppliedTemperatureChange_default2; }
+                set { this.argument_AppliedTemperatureChange_default2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public double Argument_AppliedTemperatureChange_default3
+            {
+                internal get { return this.argument_AppliedTemperatureChange_default3; }
+                set { this.argument_AppliedTemperatureChange_default3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Default rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public double Argument_AppliedTemperatureChange_default4
+            {
+                internal get { return this.argument_AppliedTemperatureChange_default4; }
+                set { this.argument_AppliedTemperatureChange_default4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedTemperatureChange1
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedTemperatureChange1) as Property; }
+                set { this.argument_AppliedTemperatureChange1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedTemperatureChange2
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedTemperatureChange2) as Property; }
+                set { this.argument_AppliedTemperatureChange2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedTemperatureChange3
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedTemperatureChange3) as Property; }
+                set { this.argument_AppliedTemperatureChange3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)", "Rate of in situ temperature change (not including cooling due to uplift) (degK/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedTemperatureChange4
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedTemperatureChange4) as Property; }
+                set { this.argument_AppliedTemperatureChange4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public double Argument_AppliedUpliftRate_default1
+            {
+                internal get { return this.argument_AppliedUpliftRate_default1; }
+                set { this.argument_AppliedUpliftRate_default1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public double Argument_AppliedUpliftRate_default2
+            {
+                internal get { return this.argument_AppliedUpliftRate_default2; }
+                set { this.argument_AppliedUpliftRate_default2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public double Argument_AppliedUpliftRate_default3
+            {
+                internal get { return this.argument_AppliedUpliftRate_default3; }
+                set { this.argument_AppliedUpliftRate_default3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Default rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public double Argument_AppliedUpliftRate_default4
+            {
+                internal get { return this.argument_AppliedUpliftRate_default4; }
+                set { this.argument_AppliedUpliftRate_default4 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedUpliftRate1
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedUpliftRate1) as Property; }
+                set { this.argument_AppliedUpliftRate1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedUpliftRate2
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedUpliftRate2) as Property; }
+                set { this.argument_AppliedUpliftRate2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedUpliftRate3
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedUpliftRate3) as Property; }
+                set { this.argument_AppliedUpliftRate3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)", "Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/Ma)")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AppliedUpliftRate4
+            {
+                internal get { return DataManager.Resolve(this.argument_AppliedUpliftRate4) as Property; }
+                set { this.argument_AppliedUpliftRate4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
+            public double Argument_StressArchingFactor1
+            {
+                internal get { return this.argument_StressArchingFactor1; }
+                set { this.argument_StressArchingFactor1 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
+            public double Argument_StressArchingFactor2
+            {
+                internal get { return this.argument_StressArchingFactor2; }
+                set { this.argument_StressArchingFactor2 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
+            public double Argument_StressArchingFactor3
+            {
+                internal get { return this.argument_StressArchingFactor3; }
+                set { this.argument_StressArchingFactor3 = value; }
+            }
+            [OptionalInWorkflow]
+            [Description("Stress arching factor", "Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)")]
+            public double Argument_StressArchingFactor4
+            {
+                internal get { return this.argument_StressArchingFactor4; }
+                set { this.argument_StressArchingFactor4 = value; }
+            }
+
+            // Mechanical properties that are new in DFM Generator v2.2 are placed here at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            [Description("Default Porosity", "Default value for Porosity")]
+            public double Argument_Porosity_default
+            {
+                internal get { return this.argument_Porosity_default; }
+                set { this.argument_Porosity_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Porosity", "Porosity")]
+            public Property Argument_Porosity
+            {
+                internal get { return DataManager.Resolve(this.argument_Porosity) as Property; }
+                set { this.argument_Porosity = (value == null ? null : value.Droid); }
+            }
+
+            [Description("Default thermal expansion coefficient (/degK)", "Default value for thermal expansion coefficient (/degK)")]
+            public double Argument_ThermalExpansionCoefficient_default
+            {
+                internal get { return this.argument_ThermalExpansionCoefficient_default; }
+                set { this.argument_ThermalExpansionCoefficient_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Thermal expansion coefficient", "Thermal expansion coefficient")]
+            public Property Argument_ThermalExpansionCoefficient
+            {
+                internal get { return DataManager.Resolve(this.argument_ThermalExpansionCoefficient) as Property; }
+                set { this.argument_ThermalExpansionCoefficient = (value == null ? null : value.Droid); }
+            }
+
+            // Stress state properties that are new in DFM Generator v2.2 are placed here at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            [OptionalInWorkflow]
+            [Description("Depth at start of deformation", "Depth at start of deformation")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_DepthAtDeformation
+            {
+                internal get { return DataManager.Resolve(this.argument_DepthAtDeformation) as Property; }
+                set { this.argument_DepthAtDeformation = (value == null ? null : value.Droid); }
+            }
+
+            [Description("Geothermal gradient (degK/m)", "Geothermal gradient (degK/m)")]
+            public double Argument_GeothermalGradient
+            {
+                internal get { return this.argument_GeothermalGradient; }
+                set { this.argument_GeothermalGradient = value; }
+            }
+
+            // Calculation control properties that are new in DFM Generator v2.2 are placed here at the bottom of the Argument properties list, to ensure backwards compatibility
+            // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            [OptionalInWorkflow]
+            [Description("Position of fracture nucleation within the layer", "Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; leave blank to nucleate fractures at random locations within the layer")]
+            public double Argument_FractureNucleationPosition
+            {
+                internal get { return this.argument_FractureNucleationPosition; }
+                set { this.argument_FractureNucleationPosition = value; }
+            }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -5654,25 +7045,113 @@ namespace DFMGenerator_Ocean
                 argument_NoRowsJ = 1;
                 argument_TopLayerK = 1;
                 argument_BottomLayerK = 1;
-                //argument_DeformationEpisode.Clear();
-                argument_EhminAzi_default.Clear();
-                argument_EhminAzi .Clear();
+                // Deformation load
                 // Time unit conversion for the load properties EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange and AppliedUpliftRate are carried out when the grid is populated in ExecuteSimple(), as there are no inbuilt Petrel units for these rates
                 // Therefore these properties are stored in geological time units (typically Ma), not SI units (/s)
                 // Unit labelling must be handled manually
-                argument_EhminRate_default.Clear();
-                argument_EhminRate.Clear();
-                argument_EhmaxRate_default.Clear();
-                argument_EhmaxRate.Clear();
-                argument_AppliedOverpressureRate_default.Clear();
-                argument_AppliedOverpressureRate.Clear();
-                argument_AppliedTemperatureChange_default.Clear();
-                argument_AppliedTemperatureChange.Clear();
-                argument_AppliedUpliftRate_default.Clear();
-                argument_AppliedUpliftRate.Clear();
-                argument_StressArchingFactor.Clear();
-                //argument_DeformationEpisodeDuration.Clear();
-                argument_DeformationEpisodeTimeUnits.Clear();
+                // The first five deformation episodes will be stored in individual argument variables - these will be saved if they are part of a workflow
+                // The argument variables for the first deformation episode are backward compatible with the arguments for the single deformation episodes in previous versions
+                argument_DeformationEpisode = "Deformation episode 1: default";
+                argument_DeformationEpisodeDuration = double.NaN;
+                argument_DeformationEpisodeTimeUnits = 2;
+                argument_EhminAzi_default = -0.01;
+                argument_EhminAzi = null;
+                argument_EhminRate_default = 0;
+                argument_EhminRate = null;
+                argument_EhmaxRate_default = 0;
+                argument_EhmaxRate = null;
+                argument_AppliedOverpressureRate_default = 0;
+                argument_AppliedOverpressureRate = null;
+                argument_AppliedTemperatureChange_default = 0;
+                argument_AppliedTemperatureChange = null;
+                argument_AppliedUpliftRate_default = 0;
+                argument_AppliedUpliftRate = null;
+                argument_StressArchingFactor = 0;
+                // The argument variables for the second deformation episode are set to default values
+                argument_DeformationEpisode1 = "";
+                argument_DeformationEpisodeDuration1 = double.NaN;
+                argument_DeformationEpisodeTimeUnits1 = 2;
+                argument_EhminAzi_default1 = 0;
+                argument_EhminAzi1 = null;
+                argument_EhminRate_default1 = 0;
+                argument_EhminRate1 = null;
+                argument_EhmaxRate_default1 = 0;
+                argument_EhmaxRate1 = null;
+                argument_AppliedOverpressureRate_default1 = 0;
+                argument_AppliedOverpressureRate1 = null;
+                argument_AppliedTemperatureChange_default1 = 0;
+                argument_AppliedTemperatureChange1 = null;
+                argument_AppliedUpliftRate_default1 = 0;
+                argument_AppliedUpliftRate1 = null;
+                argument_StressArchingFactor1 = 0;
+                // The argument variables for the third deformation episode are set to default values
+                argument_DeformationEpisode2 = "";
+                argument_DeformationEpisodeDuration2 = double.NaN;
+                argument_DeformationEpisodeTimeUnits2 = 2;
+                argument_EhminAzi_default2 = 0;
+                argument_EhminAzi2 = null;
+                argument_EhminRate_default2 = 0;
+                argument_EhminRate2 = null;
+                argument_EhmaxRate_default2 = 0;
+                argument_EhmaxRate2 = null;
+                argument_AppliedOverpressureRate_default2 = 0;
+                argument_AppliedOverpressureRate2 = null;
+                argument_AppliedTemperatureChange_default2 = 0;
+                argument_AppliedTemperatureChange2 = null;
+                argument_AppliedUpliftRate_default2 = 0;
+                argument_AppliedUpliftRate2 = null;
+                argument_StressArchingFactor2 = 0;
+                // The argument variables for the fourth deformation episode are set to default values
+                argument_DeformationEpisode3 = "";
+                argument_DeformationEpisodeDuration3 = double.NaN;
+                argument_DeformationEpisodeTimeUnits3 = 2;
+                argument_EhminAzi_default3 = 0;
+                argument_EhminAzi3 = null;
+                argument_EhminRate_default3 = 0;
+                argument_EhminRate3 = null;
+                argument_EhmaxRate_default3 = 0;
+                argument_EhmaxRate3 = null;
+                argument_AppliedOverpressureRate_default3 = 0;
+                argument_AppliedOverpressureRate3 = null;
+                argument_AppliedTemperatureChange_default3 = 0;
+                argument_AppliedTemperatureChange3 = null;
+                argument_AppliedUpliftRate_default3 = 0;
+                argument_AppliedUpliftRate3 = null;
+                argument_StressArchingFactor3 = 0;
+                // The argument variables for the fifth deformation episode are set to default values
+                argument_DeformationEpisode4 = "";
+                argument_DeformationEpisodeDuration4 = double.NaN;
+                argument_DeformationEpisodeTimeUnits4 = 2;
+                argument_EhminAzi_default4 = 0;
+                argument_EhminAzi4 = null;
+                argument_EhminRate_default4 = 0;
+                argument_EhminRate4 = null;
+                argument_EhmaxRate_default4 = 0;
+                argument_EhmaxRate4 = null;
+                argument_AppliedOverpressureRate_default4 = 0;
+                argument_AppliedOverpressureRate4 = null;
+                argument_AppliedTemperatureChange_default4 = 0;
+                argument_AppliedTemperatureChange4 = null;
+                argument_AppliedUpliftRate_default4 = 0;
+                argument_AppliedUpliftRate4 = null;
+                argument_StressArchingFactor4 = 0;
+                // Subsequent deformation episodes will be stored in List objects - these will not be saved if they are part of a workflow
+                argument_DeformationEpisode_extras.Clear();
+                argument_DeformationEpisodeDuration_extras.Clear();
+                argument_DeformationEpisodeTimeUnits_extras.Clear();
+                argument_EhminAzi_default_extras.Clear();
+                argument_EhminAzi_extras.Clear();
+                argument_EhminRate_default_extras.Clear();
+                argument_EhminRate_extras.Clear();
+                argument_EhmaxRate_default_extras.Clear();
+                argument_EhmaxRate_extras.Clear();
+                argument_AppliedOverpressureRate_default_extras.Clear();
+                argument_AppliedOverpressureRate_extras.Clear();
+                argument_AppliedTemperatureChange_default_extras.Clear();
+                argument_AppliedTemperatureChange_extras.Clear();
+                argument_AppliedUpliftRate_default_extras.Clear();
+                argument_AppliedUpliftRate_extras.Clear();
+                argument_StressArchingFactor_extras.Clear();
                 argument_GenerateExplicitDFN = true;
                 argument_NoIntermediateOutputs = 0;
                 argument_IncludeObliqueFracs = false;
