@@ -10,7 +10,7 @@ authors:
     orcid: 0000-0001-7868-5079
     affiliation: "1"
     corresponding: true
-  - name: Mikael Lüthje
+  - name: Mikael Luthje
     orcid: 0000-0003-2715-1653
     affilitation: "1, 2" 
 affiliations:
@@ -60,6 +60,6 @@ Both source and compiled code is available to download, along with documentation
 
 # Acknowledgements
 
-The developers kindly acknowledge the Danish Underground Consortium (TotalEnergies E&P Denmark, Noreco & Nordsøfonden) for granting the permission to publish this work. This research has received funding from the Danish Offshore Technology Centre (DOTC) under the AWF Improved Recovery programme.
+The developers kindly acknowledge the Danish Underground Consortium (TotalEnergies E&P Denmark, Noreco & Nordsofonden) for granting the permission to publish this work. This research has received funding from the Danish Offshore Technology Centre (DOTC) under the AWF Improved Recovery programme.
 
 # References
