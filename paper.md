@@ -28,11 +28,13 @@ Dynamic Fracture Model Generator (DFM Generator) is a new code to build geologic
 # Statement of Need
 Natural fracture networks in geological formations can control various physical properties and processes such as mechanical strength, elastic stiffness, seismic response, and subsurface fluid flow. The fracture networks may be related to larger geological structures such as folds, major faults and salt diapirs. An ability to model such networks is therefore important in applications such as geological hazard prediction, monitoring pollutant dispersion and CO2 sequestration.
 
-Fracture models may be of two types (\autoref{fig:Figure1}):
- - Implicit models, where the fracture network is represented by laterally variable continuum properties such as fracture density.
- - Explicit Discrete Fracture Network (DFN) models, where individual fractures are represented as geometric objects.
-
 ![Figure 1: Comparison of an implicit fracture model (left) and an explicit DFN model (right). In the implicit fracture model, fracture density (defined as total fracture area per unit volume) is a continuum property in a grid of discrete cells. In the explicit DFN, individual fractures are represented as geometric objects. While the fracture density can be calculated from the DFN, it also contains other valuable information such as mean fracture length, fracture orientation and connectivity.\label{fig:Figure1}](Fig01.jpg)
+
+Fracture models may be of two types (\autoref{fig:Figure1}):
+
+ - Implicit models, where the fracture network is represented by laterally variable continuum properties such as fracture density.
+ 
+ - Explicit Discrete Fracture Network (DFN) models, where individual fractures are represented as geometric objects.
 
 It is not usually possible to map fractures in the subsurface directly, as they are below the resolution of geophysical imaging techniques. The traditional solution to this problem has been to build stochastic fracture models, in which fractures are placed at random locations and given arbitrary sizes, the only constraint being to match observed fracture densities and orientations from boreholes. However this method takes no account of the geology or the geomechanical processes of fracture formation, and thus often results in inaccurate, poorly constrained and geologically unrealistic models.
 
@@ -47,13 +49,17 @@ Building a fracture model dynamically in this way has advantages over convention
 DFM Generator has been validated by running simulations of actual fractured layers in outcrops and in the subsurface, and comparing the results with observed fracture patterns [@Welch:2019; @Welch:2020].
 
 The main research applications are:
+
  - To study the influence of various mechanical and physical parameters on the evolution and geometry of natural fracture networks.
+
  - To generate fracture models for studying subsurface processes, such as in situ stress, rock failure and fluid flow.
 
 # Code availability
 
 The code is provided with two interfaces: 
+
  - A standalone interface with text file input and output, that can be compiled in standard C Sharp for running simple models.
+
  - A plug-in interface for the Petrel geomodelling package from Schlumberger, for running more complex models of real geological structures.
 
 Both source and compiled code is available to download, along with documentation and user manuals, at https://github.com/JointFlow/DFMGenerator. The current release is v2.1.1.
