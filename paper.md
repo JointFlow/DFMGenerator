@@ -15,9 +15,9 @@ authors:
     affilitation: "1, 2" 
 affiliations:
   - name: Danish Offshore Technology Centre, Danish Technical University, Kgs. Lyngby, 2800, Denmark
-  - index: 1
+    index: 1
   - name: Gas Storage Denmark A/S, Merloesevej 1B, 4296 Nyrup, Denmark
-  - index: 2
+    index: 2
 date: 16 December 2022
 bibliography: paper.bib
 ---
