@@ -410,7 +410,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if both points have identical X, Y and Z coordinates within rounding error, otherwise false</returns>
         public static bool comparePoints(PointXYZ Point1, PointXYZ Point2)
         {
-            if ((Point1 == null) || (Point2 == null))
+            if ((Point1 is null) || (Point2 is null))
                 return false;
             else if ((float)Point1.X != (float)Point2.X)
                 return false;
@@ -1619,6 +1619,30 @@ namespace DFMGenerator_SharedCode
 
             // Return the list of values
             return horizontalValues;
+        }
+
+        // Functions to generate specific elastic tensors
+        /// <summary>
+        /// Create a tensor for the horizontal applied strain from minimum and maximum horizontal strain magnitudes, and azimuth of minimum horizontal strain; Z components will be zero
+        /// </summary>
+        /// <param name="Epsilon_hmin">Minimum horizontal strain (Pa, negative for extensional)</param>
+        /// <param name="Epsilon_hmax">Maximum horizontal strain (Pa, negative for extensional)</param>
+        /// <param name="Epsilon_hmin_azimuth">Azimuth of minimum horizontal strain (rad)<</param>
+        /// <returns>Tensor2D object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
+        public static Tensor2S HorizontalStrainTensor(double Epsilon_hmin, double Epsilon_hmax, double Epsilon_hmin_azimuth)
+        {
+            if (double.IsNaN(Epsilon_hmin_azimuth) || double.IsNaN(Epsilon_hmax) || double.IsNaN(Epsilon_hmin_azimuth))
+                return null;
+
+            // Calculate the horizontal components of the horizontal strain tensor; vertical components will be zero as there is no applied vertical strain
+            double sinazi = Math.Sin(Epsilon_hmin_azimuth);
+            double cosazi = Math.Cos(Epsilon_hmin_azimuth);
+            double epsilon_dashed_xx = (Epsilon_hmin * Math.Pow(sinazi, 2)) + (Epsilon_hmax * Math.Pow(cosazi, 2));
+            double epsilon_dashed_yy = (Epsilon_hmin * Math.Pow(cosazi, 2)) + (Epsilon_hmax * Math.Pow(sinazi, 2));
+            double epsilon_dashed_xy = (Epsilon_hmin - Epsilon_hmax) * sinazi * cosazi;
+
+            // Create a new tensor horizontal strain tensor and return it
+            return new Tensor2S(epsilon_dashed_xx, epsilon_dashed_yy, 0, epsilon_dashed_xy, 0, 0);
         }
 
         // Constructors

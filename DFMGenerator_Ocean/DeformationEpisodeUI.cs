@@ -15,6 +15,7 @@ using Slb.Ocean.Petrel.UI;
 using Slb.Ocean.Petrel.DomainObject.PillarGrid;
 using Slb.Ocean.Petrel.UI.Controls;
 using Slb.Ocean.Petrel.DomainObject;
+using Slb.Ocean.Petrel.DomainObject.Simulation;
 
 namespace DFMGenerator_Ocean
 {
@@ -76,7 +77,10 @@ namespace DFMGenerator_Ocean
             // Unit labelling must be handled manually
             UpdatePropertyPresentationBox(args.EhminRate(deformationEpisodeIndex), presentationBox_DE_EhminRate);
             UpdatePropertyPresentationBox(args.EhmaxRate(deformationEpisodeIndex), presentationBox_DE_EhmaxRate);
-            UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);
+            if (args.FluidPressureTimeSeries(deformationEpisodeIndex) != null)
+                UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_OPRate);
+            else
+                UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);
             UpdatePropertyPresentationBox(args.AppliedTemperatureChange(deformationEpisodeIndex), presentationBox_DE_TempChange);
             UpdatePropertyPresentationBox(args.AppliedUpliftRate(deformationEpisodeIndex), presentationBox_DE_UpliftRate);
             UpdateTextBox(args.EhminAzi_default(deformationEpisodeIndex), unitTextBox_DE_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_DE_EhminAzi_Units);
@@ -97,7 +101,19 @@ namespace DFMGenerator_Ocean
             args.EhminAzi(presentationBox_DE_EhminAzi.Tag as Property, deformationEpisodeIndex);
             args.EhminRate(presentationBox_DE_EhminRate.Tag as Property, deformationEpisodeIndex);
             args.EhmaxRate(presentationBox_DE_EhmaxRate.Tag as Property, deformationEpisodeIndex);
-            args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
+            try
+            {
+                if ((presentationBox_DE_OPRate.Tag != null) && (presentationBox_DE_OPRate.Tag.GetType() == typeof(GridResult)))
+                    args.FluidPressureTimeSeries(presentationBox_DE_OPRate.Tag as GridResult, deformationEpisodeIndex);
+                else
+                    args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
+            }
+            catch(Exception e)
+            {
+                PetrelLogger.InfoOutputWindow(e.Message);
+                PetrelLogger.InfoOutputWindow(e.StackTrace);
+
+            }
             args.AppliedTemperatureChange(presentationBox_DE_TempChange.Tag as Property, deformationEpisodeIndex);
             args.AppliedUpliftRate(presentationBox_DE_UpliftRate.Tag as Property, deformationEpisodeIndex);
             args.EhminAzi_default(GetDoubleFromTextBox(unitTextBox_DE_EhminAzi_default), deformationEpisodeIndex);
@@ -146,6 +162,38 @@ namespace DFMGenerator_Ocean
                 pBox.Image = null;
             }
             pBox.Tag = gprop;
+        }
+        private void UpdateGridResultPresentationBox(GridResult gres, PresentationBox pBox)
+        {
+            if (gres != Property.NullObject)
+            {
+                INameInfoFactory gresNIF = CoreSystem.GetService<INameInfoFactory>(gres);
+                if (gresNIF != null)
+                {
+                    NameInfo gresName = gresNIF.GetNameInfo(gres);
+                    pBox.Text = gresName.Name;
+                }
+                else
+                {
+                    pBox.Text = gres.Name;
+                }
+                IImageInfoFactory gresImgIF = CoreSystem.GetService<IImageInfoFactory>(gres);
+                if (gresImgIF != null)
+                {
+                    ImageInfo gresImage = gresImgIF.GetImageInfo(gres);
+                    pBox.Image = gresImage.GetDisplayImage(new ImageInfoContext());
+                }
+                else
+                {
+                    //pBox.Image = PetrelImages.Property;
+                }
+            }
+            else
+            {
+                pBox.Text = "";
+                pBox.Image = null;
+            }
+            pBox.Tag = gres;
         }
         private void UpdateTextBox(double number, System.Windows.Forms.TextBox tBox)
         {
@@ -257,8 +305,10 @@ namespace DFMGenerator_Ocean
 
         private void dropTarget_DE_OPRate_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_DE_OPRate);
+            if (e.Data.GetData(typeof(object)).GetType() == typeof(GridResult))
+                UpdateGridResultPresentationBox(e.Data.GetData(typeof(object)) as GridResult, presentationBox_DE_OPRate);
+            else
+                UpdatePropertyPresentationBox(e.Data.GetData(typeof(object)) as Property, presentationBox_DE_OPRate);
         }
 
         private void dropTarget_DE_TempChange_DragDrop(object sender, DragEventArgs e)

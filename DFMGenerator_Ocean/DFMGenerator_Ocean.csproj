@@ -88,6 +88,10 @@
     <Reference Include="Slb.Ocean.Petrel.Modeling">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Modeling.dll</HintPath>
     </Reference>
+    <Reference Include="Slb.Ocean.Petrel.ReservoirEngineering, Version=20.1.0.0, Culture=neutral, PublicKeyToken=14ef4a483ef6a64b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.ReservoirEngineering.dll</HintPath>
+    </Reference>
     <Reference Include="Slb.Ocean.Petrel.Seismic">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Seismic.dll</HintPath>
     </Reference>
@@ -185,8 +189,8 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del "$(ProjectDir)plugin.xml"
-"%25Ocean2020Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe"
-"%25Ocean2020Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe" "$(TargetDir)"
+"%25Ocean2022Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2022HOME_x64%25\petrel.exe"
+"%25Ocean2022Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2022HOME_x64%25\petrel.exe" "$(TargetDir)"
 xcopy "$(ProjectDir)Resources\HelpFiles" /s /i /y "$(TargetDir)HelpFiles"
 </PostBuildEvent>
   </PropertyGroup>

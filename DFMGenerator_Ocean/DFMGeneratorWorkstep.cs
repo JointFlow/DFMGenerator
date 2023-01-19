@@ -23,6 +23,7 @@ using Slb.Ocean.Geometry;
 using Slb.Ocean.Petrel.DomainObject;
 using Slb.Ocean.Petrel.DomainObject.Shapes;
 using Slb.Ocean.Units;
+using Slb.Ocean.Petrel.DomainObject.Simulation;
 
 using DFMGenerator_SharedCode;
 
@@ -207,7 +208,16 @@ namespace DFMGenerator_Ocean
                     // Global deformation load parameter lists
                     // These contain one entry for each deformation episode, in order
                     // They will be copied to all gridblocks
-                    int noDeformationEpisodes = arguments.Argument_NoDeformationEpisodes;
+                    int noDefinedDeformationEpisodes = arguments.Argument_NoDeformationEpisodes;
+                    int noTotalDeformationEpisodes = 0;
+                    // Geological time
+                    // Deformation duration and load rates must be converted from geological time units to SI time units manually, as there is no Petrel template for inverse geological time
+                    // They may be set independently for each deformation episode
+                    // NB Times in project units must be divided by the converter to convert to SI units (s)
+                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
+                    List<TimeUnits> DeformationEpisodeTimeUnits_list = new List<TimeUnits>();
+                    List<double> TimeUnitConverter_list = new List<double>();
+                    // Load data
                     List<double> EhminAzi_list = new List<double>();
                     List<double> EhminRate_GeologicalTimeUnits_list = new List<double>();
                     List<double> EhmaxRate_GeologicalTimeUnits_list = new List<double>();
@@ -216,7 +226,6 @@ namespace DFMGenerator_Ocean
                     List<double> AppliedUpliftRate_GeologicalTimeUnits_list = new List<double>();
                     List<double> StressArchingFactor_list = new List<double>();
                     List<double> DeformationEpisodeDuration_GeologicalTimeUnits_list = new List<double>();
-                    List<TimeUnits> DeformationEpisodeTimeUnits_list = new List<TimeUnits>();
                     List<Property> EhminAzi_grid_list = new List<Property>();
                     List<Property> EhminRate_grid_list = new List<Property>();
                     List<Property> EhmaxRate_grid_list = new List<Property>();
@@ -229,8 +238,36 @@ namespace DFMGenerator_Ocean
                     List<bool> UseGridFor_AppliedOverpressureRate_list = new List<bool>();
                     List<bool> UseGridFor_AppliedTemperatureChange_list = new List<bool>();
                     List<bool> UseGridFor_AppliedUpliftRate_list = new List<bool>();
-                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    // Sub episode data; used if one of the supplied grid property arguments is a GridPropertyResult object
+                    Case activeCase = null;
+                    List<bool> SubEpisodesDefined_list = new List<bool>();
+                    List<List<double>> SubEpisodeDurations_GeologicalTimeUnits_list = new List<List<Double>>();
+                    List<bool> UseGridPropertyTimeSeriesFor_FluidPressure_list = new List<bool>();
+                    List<GridResult> FluidPressure_result_list = new List<GridResult>();
+                    List<List<GridProperty>> FluidPressure_grid_list = new List<List<GridProperty>>();
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                     {
+                        TimeUnits currentEpisodeTimeUnit = (TimeUnits)arguments.DeformationEpisodeTimeUnits(deformationEpisodeNo);
+                        double currentEpisodeTimeUnitConverter = 1;
+                        DeformationEpisodeTimeUnits_list.Add(currentEpisodeTimeUnit);
+                        switch (currentEpisodeTimeUnit)
+                        {
+                            case TimeUnits.second:
+                                // In SI units - no change
+                                break;
+                            case TimeUnits.year:
+                                // Convert from yr to s
+                                currentEpisodeTimeUnitConverter = 365.25d * 24d * 3600d;
+                                break;
+                            case TimeUnits.ma:
+                                // Convert from ma to s
+                                currentEpisodeTimeUnitConverter = 1000000d * 365.25d * 24d * 3600d;
+                                break;
+                            default:
+                                break;
+                        }
+                        TimeUnitConverter_list.Add(currentEpisodeTimeUnitConverter);
+
                         double next_EhminAzi_GeologicalTimeUnits = arguments.EhminAzi_default(deformationEpisodeNo);
                         if (!double.IsNaN(next_EhminAzi_GeologicalTimeUnits))
                             EhminAzi_list.Add(next_EhminAzi_GeologicalTimeUnits);
@@ -297,7 +334,88 @@ namespace DFMGenerator_Ocean
                         else
                             DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(DeformationEpisodeDuration_GeologicalTimeUnits);
 
-                        DeformationEpisodeTimeUnits_list.Add((TimeUnits)arguments.DeformationEpisodeTimeUnits(deformationEpisodeNo));
+                        // Check if one of the supplied grid property arguments is a GridResult object; if so we will subdivide the deformation episode into sub episodes according to the number of elements in the corresponding GridPropertyTimeSeries object
+                        bool subEpisodesDefined = arguments.SubdivideDeformationEpisode(deformationEpisodeNo);
+                        // Get the current selected simulation case
+                        try
+                        {
+                            ICases cses = PetrelProject.Cases;
+                            PetrelLogger.InfoOutputWindow(string.Format("The cases object is {0}", cses.ToString()));
+                            List<Case> selectedCases = cses.GetSelected<Case>().ToList();
+                            PetrelLogger.InfoOutputWindow(string.Format("There are {0} selected cases", selectedCases.Count));
+                            if (selectedCases.Count > 0)
+                                PetrelLogger.InfoOutputWindow(string.Format("The first selected case is  {0}", selectedCases[0].Name));
+                            else
+                                PetrelLogger.InfoOutputWindow(string.Format("There are no selected cases"));
+
+
+                            activeCase = selectedCases.First<Case>();// PetrelProject.Cases.GetSelected<Case>().First<Case>();
+                            PetrelLogger.InfoOutputWindow(string.Format("The case selected by the First method is {0} of type {1}", activeCase.Name, activeCase.GetType().Name));
+
+                        }
+                        // If no simulation case is selected we cannot use dynamic data for the load input
+                        catch (Exception)
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case selected; cannot use dynamic data for the load input");
+                            subEpisodesDefined = false;
+                        }
+                        SubEpisodesDefined_list.Add(subEpisodesDefined);
+                        if (subEpisodesDefined)
+                        {
+                            // Get the appropriate GetGridPropertyTimeSeries objects from the current selected simulation case and the specified results
+                            // Also get the time index from one of the results
+                            int noSubEpisodes = 0;
+                            List<DateTime> timeSeriesIndex = new List<DateTime>();
+                            bool UseGridPropertyTimeSeriesFor_FluidPressure = false;
+                            List<GridProperty> fluidPressureGridPropertyList = null;
+                            GridResult fluidPressureResult = arguments.FluidPressureTimeSeries(deformationEpisodeNo);
+                            FluidPressure_result_list.Add(fluidPressureResult);
+                            if (fluidPressureResult != null)
+                            {
+                                GridPropertyTimeSeries fluidPressureTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(fluidPressureResult);
+                                UseGridPropertyTimeSeriesFor_FluidPressure = (fluidPressureTimeSeries != null) && (fluidPressureTimeSeries.SampleCount > 0);
+                                if (UseGridPropertyTimeSeriesFor_FluidPressure)
+                                {
+                                    if (noSubEpisodes <= 0)
+                                    {
+                                        timeSeriesIndex = fluidPressureTimeSeries.TimeSamples.ToList();
+                                        // NB there will be one fewer sub episodes than data points in the GetGridPropertyTimeSeries, since the first datapoints in the series represents the start time and initial state
+                                        noSubEpisodes = timeSeriesIndex.Count - 1;
+                                    }
+                                    fluidPressureGridPropertyList = fluidPressureTimeSeries.Samples.ToList();
+                                }
+                            }
+                            UseGridPropertyTimeSeriesFor_FluidPressure_list.Add(UseGridPropertyTimeSeriesFor_FluidPressure);
+                            FluidPressure_grid_list.Add(fluidPressureGridPropertyList);
+
+                            // Create a list of sub episode durations
+                            List<double> subEpisodeDurations = new List<double>();
+                            for (int subEpisodeNo = 1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
+                            {
+                                // The sub episode duration is the difference between the current and previous time indices
+                                double subEpisodeDuration = (timeSeriesIndex[subEpisodeNo] - timeSeriesIndex[subEpisodeNo - 1]).TotalSeconds;
+
+                                // Convert to the selected time units for this episode
+                                subEpisodeDuration /= currentEpisodeTimeUnitConverter;
+                                // Add to the list
+                                subEpisodeDurations.Add(subEpisodeDuration);
+
+                                // Update the total number of deformation sub episodes (including unitary episodes)
+                                noTotalDeformationEpisodes++;
+                            }
+                            SubEpisodeDurations_GeologicalTimeUnits_list.Add(subEpisodeDurations);
+                        }
+                        else
+                        {
+                            // Add nulls to the lists of sub episode durations and grid properties
+                            SubEpisodeDurations_GeologicalTimeUnits_list.Add(null);
+                            UseGridPropertyTimeSeriesFor_FluidPressure_list.Add(false);
+                            FluidPressure_result_list.Add(null);
+                            FluidPressure_grid_list.Add(null);
+
+                            // Update the total number of deformation sub episodes (including unitary episodes)
+                            noTotalDeformationEpisodes++;
+                        }
                     }
 
 #if DEBUG_FRACS
@@ -678,7 +796,7 @@ namespace DFMGenerator_Ocean
                     string ProjectTimeUnits = PetrelUnitSystem.GetDisplayUnit(GeologicalTimeTemplate).Symbol;
                     // Load rate units - these may be set independently for each deformation episode
                     List<string> ProjectTimeUnits_list = new List<string>();
-                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                         ProjectTimeUnits_list.Add(string.Format("{0}", DeformationEpisodeTimeUnits_list[deformationEpisodeNo]));
                     // Azimuth
                     Template AzimuthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth;
@@ -777,7 +895,7 @@ namespace DFMGenerator_Ocean
                     List<bool> convertFromGeneral_AppliedOverpressureRate_list = new List<bool>();
                     List<bool> convertFromGeneral_AppliedTemperatureChange_list = new List<bool>();
                     List<bool> convertFromGeneral_AppliedUpliftRate_list = new List<bool>();
-                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                     {
                         convertFromGeneral_EhminAzi_list.Add(UseGridFor_EhminAzi_list[deformationEpisodeNo] ? EhminAzi_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
                         convertFromGeneral_AppliedOverpressureRate_list.Add(UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo] ? AppliedOverpressureRate_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
@@ -798,33 +916,6 @@ namespace DFMGenerator_Ocean
                     // Thermal expansion coefficient
                     IUnitConverter toSIThermalExpansionCoefficientUnits = PetrelUnitSystem.GetConverterFromUI(ThermalExpansionCoefficientTemplate);
                     bool convertFromGeneral_ThermalExpansionCoefficient = (UseGridFor_ThermalExpansionCoefficient ? ThermalExpansionCoefficient_grid.Template.Equals(GeneralTemplate) : false);
-                    // Geological time
-                    // Deformation duration and load rates must be converted from geological time units to SI time units manually, as there is no Petrel template for inverse geological time
-                    // They may be set independently for each deformation episode
-                    // NB Times in project units must be divided by the converter to convert to SI units (s)
-                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
-                    List<double> TimeUnitConverter_list = new List<double>();
-                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
-                    {
-                        switch (DeformationEpisodeTimeUnits_list[deformationEpisodeNo])
-                        {
-                            case TimeUnits.second:
-                                // In SI units - no change
-                                TimeUnitConverter_list.Add(1);
-                                break;
-                            case TimeUnits.year:
-                                // Convert from yr to s
-                                TimeUnitConverter_list.Add(365.25d * 24d * 3600d);
-                                break;
-                            case TimeUnits.ma:
-                                // Convert from ma to s
-                                TimeUnitConverter_list.Add(1000000d * 365.25d * 24d * 3600d);
-                                break;
-                            default:
-                                TimeUnitConverter_list.Add(1);
-                                break;
-                        }
-                    }
                     // If the friction grid property is supplied as a friction angle, this will be converted to a friction coefficient
                     bool convertFromFrictionAngle_FrictionCoefficient = (UseGridFor_FrictionCoefficient ? FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle) : false);
 
@@ -883,10 +974,13 @@ namespace DFMGenerator_Ocean
                     generalInputParams += string.Format("Layers {0}-{1}\n", PetrelGrid_TopCellK + 1, PetrelGrid_BaseCellK + 1);
 
                     // Strain orientation and rate
-                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                     {
                         generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo) + "\n";
-                        generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
+                            generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                        if (SubEpisodesDefined_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
                         if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
                         else
@@ -899,7 +993,9 @@ namespace DFMGenerator_Ocean
                             generalInputParams += string.Format("Maximum strain rate: {0}, default {1}/{2}\n", EhmaxRate_grid_list[deformationEpisodeNo].Name, EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         else
                             generalInputParams += string.Format("Maximum strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
-                        if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
+                        if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
+                            generalInputParams += string.Format("Dynamic fluid pressure data from case {0}, property {1}", activeCase.Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                        else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
                             generalInputParams += string.Format("Rate of fluid overpressure: {0}{1}/{2}\n", toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
@@ -1399,7 +1495,10 @@ namespace DFMGenerator_Ocean
                                 List<double> local_AppliedUpliftRate_list = new List<double>();
                                 List<double> local_StressArchingFactor_list = new List<double>();
                                 List<double> local_DeformationEpisodeDuration_list = new List<double>();
-                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                                List<double> local_InitialAbsoluteVerticalStress_list = new List<double>();
+                                List<double> local_InitialFluidPressure_list = new List<double>();
+                                List<Tensor2S> local_InitialHorizontalStrain_list = new List<Tensor2S>();
+                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                                 {
                                     // Get the time converter for this episode
                                     // This can vary between episodes as the time units may be different for each deformation episode
@@ -1726,19 +1825,228 @@ namespace DFMGenerator_Ocean
                                         }
                                     }
 
-                                    // Add the data for this deformation episode to the deformation episode lists
-                                    local_EhminAzi_list.Add(local_EhminAzi);
-                                    local_EhminRate_list.Add(local_EhminRate);
-                                    local_EhmaxRate_list.Add(local_EhmaxRate);
-                                    local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
-                                    local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
-                                    local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
-                                    local_StressArchingFactor_list.Add(local_StressArchingFactor);
-                                    local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+                                    // Check if the deformation episode is subdivided into sub episodes
+                                    if (SubEpisodesDefined_list[deformationEpisodeNo])
+                                    {
+                                        // Get the number and durations of the sub episodes
+                                        List<double> subEpisodeDuration_list = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                        int noSubEpisodes = subEpisodeDuration_list.Count;
+
+                                        // Get list of GridProperty objects defining fluid pressure for each sub episode
+                                        List<GridProperty> local_FluidPressure_grid_list = FluidPressure_grid_list[deformationEpisodeNo];
+                                        bool UseGridFor_FluidPressure = UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo] && (local_FluidPressure_grid_list.Count >= noSubEpisodes + 1);
+
+                                        // Create variables for the initial and final load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
+                                        double initialFluidPressure = double.NaN;
+                                        double finalFluidPressure = double.NaN;
+
+                                        // Get local handles for the initial grid properties
+                                        GridProperty local_FluidPressure_grid_initial = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[0] : null);
+
+                                        // Loop through each sub episode; if the deformation episode is not subdivided, we must still go through the loop once to add the deformation episode data to the lists
+                                        for (int subEpisodeNo = 0; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
+                                        {
+                                            // Get the sub episode duration
+                                            local_DeformationEpisodeDuration = subEpisodeDuration_list[subEpisodeNo] * TimeUnitConverter;
+
+                                            // Get the initial load values
+                                            // For the first sub episode, get the initial load values from the grid properties
+                                            if (subEpisodeNo == 0)
+                                            {
+                                                // Get local handles for the final grid properties
+                                                GridProperty local_FluidPressure_grid = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[0] : null);
+
+                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                                    double fluidPressure_total = 0;
+                                                    int fluidPressure_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update final fluid pressure total if defined
+                                                                if (UseGridFor_FluidPressure)
+                                                                {
+                                                                    // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                    double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_fluidpressure))
+                                                                    {
+                                                                        fluidPressure_total += cell_fluidpressure;
+                                                                        fluidPressure_novalues++;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (fluidPressure_novalues > 0)
+                                                        initialFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update final fluid pressure total if defined
+                                                    if (UseGridFor_FluidPressure)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                            double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
+                                                            if (!double.IsNaN(cell_fluidpressure))
+                                                            {
+                                                                initialFluidPressure = cell_fluidpressure;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                }
+                                            } // End get the initial load values from the grid properties for the first sub episode
+                                            // For later sub episodes, update the initial load values with the final load values from the previous sub episode
+                                            else
+                                            {
+                                                initialFluidPressure = finalFluidPressure;
+                                            }
+
+                                            // Get the final load values from the grid properties
+                                            {
+                                                // Get local handles for the final grid properties
+                                                GridProperty local_FluidPressure_grid = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[subEpisodeNo + 1] : null);
+
+                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                                    double fluidPressure_total = 0;
+                                                    int fluidPressure_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update final fluid pressure total if defined
+                                                                if (UseGridFor_FluidPressure)
+                                                                {
+                                                                    // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                    double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_fluidpressure))
+                                                                    {
+                                                                        fluidPressure_total += cell_fluidpressure;
+                                                                        fluidPressure_novalues++;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (fluidPressure_novalues > 0)
+                                                        finalFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update final fluid pressure total if defined
+                                                    if (UseGridFor_FluidPressure)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                            double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
+                                                            if (!double.IsNaN(cell_fluidpressure))
+                                                            {
+                                                                finalFluidPressure = cell_fluidpressure;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                }
+                                            } // End get the final load values from the grid properties
+
+                                            // Get the load rates for the sub episode, where defined
+                                            bool overrideFluidPressure = (UseGridFor_FluidPressure) && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
+                                            if (overrideFluidPressure)
+                                                local_AppliedOverpressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+
+                                            // Add the data for this sub episode to the deformation episode lists
+                                            local_EhminAzi_list.Add(local_EhminAzi);
+                                            local_EhminRate_list.Add(local_EhminRate);
+                                            local_EhmaxRate_list.Add(local_EhmaxRate);
+                                            local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                            local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                            local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                            local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                            local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+
+                                            // Add data for the inital data lists
+                                            local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
+                                            local_InitialFluidPressure_list.Add(initialFluidPressure);
+                                            local_InitialHorizontalStrain_list.Add(null);
 
 #if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
+                                            string strainLoadText = string.Format("EhminAzi {0}, EhminRate {1}, EhmaxRate {2}", local_EhminAzi, local_EhminRate, local_EhmaxRate);
+                                            string fluidPressureLoadText = (overrideFluidPressure ? string.Format("Initial fluid pressure {0}, Final fluid pressure {1}, OP rate {2}", initialFluidPressure, finalFluidPressure, local_AppliedOverpressureRate) : string.Format("OP rate {0}", local_AppliedOverpressureRate));
+                                            string stressLoadText = string.Format("Uplift rate {0}", local_AppliedUpliftRate);
+                                            PetrelLogger.InfoOutputWindow(string.Format("New deformation sub episode: Duration {0}, {1}, {2}, Temp change {3}, {4}, Stress arching factor {5});", local_DeformationEpisodeDuration, strainLoadText, fluidPressureLoadText, local_AppliedTemperatureChange, stressLoadText, local_StressArchingFactor));
 #endif
+                                        }// End get the deformation load data for each sub episode
+                                    }
+                                    else
+                                    {
+                                        // Add the data for this deformation episode to the deformation episode lists
+                                        local_EhminAzi_list.Add(local_EhminAzi);
+                                        local_EhminRate_list.Add(local_EhminRate);
+                                        local_EhmaxRate_list.Add(local_EhmaxRate);
+                                        local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                        local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                        local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                        local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                        local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+
+                                        // Add null values for the inital data lists
+                                        local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
+                                        local_InitialFluidPressure_list.Add(double.NaN);
+                                        local_InitialHorizontalStrain_list.Add(null);
+
+#if DEBUG_FRACS
+                                        PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
+#endif
+                                    }
                                 }// End get the deformation load data for each deformation episode
 
                                 // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
@@ -1753,7 +2061,7 @@ namespace DFMGenerator_Ocean
                                     // Otherwise, calculate the current mean depth of the gridblock minus the total specified uplift
                                     // NB Uplift will not be counted for deformation episodes with indefinite duration
                                     local_Depth = local_Current_Depth;
-                                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
                                     {
                                         double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
                                         double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
@@ -2410,7 +2718,7 @@ namespace DFMGenerator_Ocean
                                 }
 
                                 // Add the deformation load data 
-                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
                                 {
                                     double local_EhminRate = local_EhminRate_list[deformationEpisodeNo];
                                     double local_EhmaxRate = local_EhmaxRate_list[deformationEpisodeNo];
@@ -2420,13 +2728,13 @@ namespace DFMGenerator_Ocean
                                     double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
                                     double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
                                     double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeTimeUnits = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
+                                    double local_InitialFluidPressure = local_InitialFluidPressure_list[deformationEpisodeNo];
 
                                     // Add the deformation episode to the deformation episode list in the PropControl object
-                                    gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
+                                    gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, double.NaN, local_InitialFluidPressure, null);
 
 #if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, double.NaN, local_InitialFluidPressure, null));
 #endif
                                 }// End get the stress / strain data from the grid as required
 
@@ -2461,15 +2769,33 @@ namespace DFMGenerator_Ocean
                             List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
                             double currentEpisodeEndTime = 0;
                             NoIntermediateOutputs = 0;
-                            for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                            for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                             {
                                 double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
-                                double deformationEpisodeDuration_GeologicalTimeUnit = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo];
-                                if (deformationEpisodeDuration_GeologicalTimeUnit > 0)
+                                if (SubEpisodesDefined_list[deformationEpisodeNo])
                                 {
-                                    currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
-                                    DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
-                                    NoIntermediateOutputs++;
+                                    List<double> subEpisodeDurations_GeologicalTime = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                    int noSubEpisodes = subEpisodeDurations_GeologicalTime.Count;
+                                    for (int subEpisodeNo = 0; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
+                                    {
+                                        double subEpisodeDuration_GeologicalTimeUnit = subEpisodeDurations_GeologicalTime[subEpisodeNo];
+                                        if (subEpisodeDuration_GeologicalTimeUnit > 0)
+                                        {
+                                            currentEpisodeEndTime += (subEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
+                                            DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                            NoIntermediateOutputs++;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    double deformationEpisodeDuration_GeologicalTimeUnit = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                    if (deformationEpisodeDuration_GeologicalTimeUnit > 0)
+                                    {
+                                        currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
+                                        DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                        NoIntermediateOutputs++;
+                                    }
                                 }
                             }
                             dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_SITimeUnits_list;
@@ -4207,6 +4533,7 @@ namespace DFMGenerator_Ocean
             private double argument_AppliedUpliftRate_default = 0;
             private Droid argument_AppliedUpliftRate;
             private double argument_StressArchingFactor = 0;
+            private GridResult argument_FluidPressureTimeSeries;
             // The argument variables for the second deformation episode are set to default values
             private string argument_DeformationEpisode1 = "";
             private double argument_DeformationEpisodeDuration1 = double.NaN;
@@ -4224,6 +4551,7 @@ namespace DFMGenerator_Ocean
             private double argument_AppliedUpliftRate_default1 = 0;
             private Droid argument_AppliedUpliftRate1;
             private double argument_StressArchingFactor1 = 0;
+            private GridResult argument_FluidPressureTimeSeries1;
             // The argument variables for the third deformation episode are set to default values
             private string argument_DeformationEpisode2 = "";
             private double argument_DeformationEpisodeDuration2 = double.NaN;
@@ -4241,6 +4569,7 @@ namespace DFMGenerator_Ocean
             private double argument_AppliedUpliftRate_default2 = 0;
             private Droid argument_AppliedUpliftRate2;
             private double argument_StressArchingFactor2 = 0;
+            private GridResult argument_FluidPressureTimeSeries2;
             // The argument variables for the fourth deformation episode are set to default values
             private string argument_DeformationEpisode3 = "";
             private double argument_DeformationEpisodeDuration3 = double.NaN;
@@ -4258,6 +4587,7 @@ namespace DFMGenerator_Ocean
             private double argument_AppliedUpliftRate_default3 = 0;
             private Droid argument_AppliedUpliftRate3;
             private double argument_StressArchingFactor3 = 0;
+            private GridResult argument_FluidPressureTimeSeries3;
             // The argument variables for the fifth deformation episode are set to default values
             private string argument_DeformationEpisode4 = "";
             private double argument_DeformationEpisodeDuration4 = double.NaN;
@@ -4275,6 +4605,7 @@ namespace DFMGenerator_Ocean
             private double argument_AppliedUpliftRate_default4 = 0;
             private Droid argument_AppliedUpliftRate4;
             private double argument_StressArchingFactor4 = 0;
+            private GridResult argument_FluidPressureTimeSeries4;
             // Subsequent deformation episodes will be stored in List objects - these will not be saved if they are part of a workflow
             private List<string> argument_DeformationEpisode_extras = new List<string>();
             private List<double> argument_DeformationEpisodeDuration_extras = new List<double>();
@@ -4292,6 +4623,7 @@ namespace DFMGenerator_Ocean
             private List<double> argument_AppliedUpliftRate_default_extras = new List<double>();
             private List<Droid> argument_AppliedUpliftRate_extras = new List<Droid>();
             private List<double> argument_StressArchingFactor_extras = new List<double>();
+            private List<GridResult> argument_FluidPressureTimeSeries_extras = new List<GridResult>();
             private bool argument_GenerateExplicitDFN = true;
             private int argument_NoIntermediateOutputs = 0;
             private bool argument_IncludeObliqueFracs = false;
@@ -6238,6 +6570,7 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default_extras.Add(0);
                     this.argument_AppliedUpliftRate_extras.Add(null);
                     this.argument_StressArchingFactor_extras.Add(0);
+                    this.argument_FluidPressureTimeSeries_extras.Add(null);
                 }
 
                 return episodeIndex;
@@ -6271,6 +6604,7 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default = this.argument_AppliedUpliftRate_default1;
                     this.argument_AppliedUpliftRate = this.argument_AppliedUpliftRate1;
                     this.argument_StressArchingFactor = this.argument_StressArchingFactor1;
+                    this.argument_FluidPressureTimeSeries = this.argument_FluidPressureTimeSeries1;
                     if (noDeformationEpisodes > 1)
                         GenerateDeformationEpisodeName(0, true);
                     else
@@ -6293,6 +6627,7 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default1 = this.argument_AppliedUpliftRate_default2;
                     this.argument_AppliedUpliftRate1 = this.argument_AppliedUpliftRate2;
                     this.argument_StressArchingFactor1 = this.argument_StressArchingFactor2;
+                    this.argument_FluidPressureTimeSeries1 = this.argument_FluidPressureTimeSeries2;
                     if (noDeformationEpisodes > 2)
                         GenerateDeformationEpisodeName(1, true);
                     else
@@ -6315,6 +6650,7 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default2 = this.argument_AppliedUpliftRate_default3;
                     this.argument_AppliedUpliftRate2 = this.argument_AppliedUpliftRate3;
                     this.argument_StressArchingFactor2 = this.argument_StressArchingFactor3;
+                    this.argument_FluidPressureTimeSeries2 = this.argument_FluidPressureTimeSeries3;
                     if (noDeformationEpisodes > 3)
                         GenerateDeformationEpisodeName(2, true);
                     else
@@ -6337,6 +6673,7 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default3 = this.argument_AppliedUpliftRate_default4;
                     this.argument_AppliedUpliftRate3 = this.argument_AppliedUpliftRate4;
                     this.argument_StressArchingFactor3 = this.argument_StressArchingFactor4;
+                    this.argument_FluidPressureTimeSeries3 = this.argument_FluidPressureTimeSeries4;
                     if (noDeformationEpisodes > 4)
                         GenerateDeformationEpisodeName(3, true);
                     else
@@ -6363,6 +6700,7 @@ namespace DFMGenerator_Ocean
                             this.argument_AppliedUpliftRate_default4 = this.argument_AppliedUpliftRate_default_extras[0];
                             this.argument_AppliedUpliftRate4 = this.argument_AppliedUpliftRate_extras[0];
                             this.argument_StressArchingFactor4 = this.argument_StressArchingFactor_extras[0];
+                            this.argument_FluidPressureTimeSeries4 = this.argument_FluidPressureTimeSeries_extras[0];
                             GenerateDeformationEpisodeName(4, true);
 
                             this.argument_DeformationEpisode_extras.RemoveAt(0);
@@ -6381,6 +6719,7 @@ namespace DFMGenerator_Ocean
                             this.argument_AppliedUpliftRate_default_extras.RemoveAt(0);
                             this.argument_AppliedUpliftRate_extras.RemoveAt(0);
                             this.argument_StressArchingFactor_extras.RemoveAt(0);
+                            this.argument_FluidPressureTimeSeries_extras.RemoveAt(0);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -6417,6 +6756,7 @@ namespace DFMGenerator_Ocean
                         this.argument_AppliedUpliftRate_default4 = double.NaN;
                         this.argument_AppliedUpliftRate4 = null;
                         this.argument_StressArchingFactor4 = double.NaN;
+                        this.argument_FluidPressureTimeSeries4 = null;
                     }
                 }
                 else
@@ -6439,6 +6779,7 @@ namespace DFMGenerator_Ocean
                         this.argument_AppliedUpliftRate_default_extras.RemoveAt(episodeIndex - 5);
                         this.argument_AppliedUpliftRate_extras.RemoveAt(episodeIndex - 5);
                         this.argument_StressArchingFactor_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_FluidPressureTimeSeries_extras.RemoveAt(episodeIndex - 5);
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
@@ -6481,6 +6822,7 @@ namespace DFMGenerator_Ocean
                 double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
                 Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
                 //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
+                GridResult fluidPressure = FluidPressureTimeSeries(deformationEpisodeIndex);
 
                 // Create a name based on deformation episode duration and specified load
                 string deformationEpisodeName = string.Format("Deformation episode {0}:", deformationEpisodeIndex + 1);
@@ -6503,7 +6845,9 @@ namespace DFMGenerator_Ocean
                     else
                         deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
                 }
-                if (OPRate != null)
+                if (fluidPressure != null)
+                    deformationEpisodeName += string.Format(" Fluid Pressure {0}", fluidPressure.Name);
+                else if (OPRate != null)
                     deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
                 else if (OPRate_default != 0)
                     deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
@@ -7031,6 +7375,107 @@ namespace DFMGenerator_Ocean
                 set { this.argument_FractureNucleationPosition = value; }
             }
 
+            // These functions will return information if any deformation episodes have one or more GridResult objects specified in place of Property objects
+            // In this case, the deformation episode will be subdivided, according to the number of points in the corresponding GridPropertyTimeSeries
+            internal bool SubdivideDeformationEpisode(int episodeIndex)
+            {
+                return !(FluidPressureTimeSeries(episodeIndex) == null);
+            }
+
+            // Fluid pressure can also be specified as a time series from a simulation case - this will overwrite the AppliedOverpressureRate property to define fluid overpressure in the model
+            // This allows the output from geomechanical or reservoir models to be used directly
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a time series from a simulation case result", "Fluid pressure as a time series from a simulation case result")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_FluidPressureTimeSeries
+            {
+                internal get { return this.argument_FluidPressureTimeSeries; }
+                set { this.argument_FluidPressureTimeSeries = (value == null ? null : value); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult FluidPressureTimeSeries(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_FluidPressureTimeSeries;
+                    case 1:
+                        return this.argument_FluidPressureTimeSeries1;
+                    case 2:
+                        return this.argument_FluidPressureTimeSeries2;
+                    case 3:
+                        return this.argument_FluidPressureTimeSeries3;
+                    case 4:
+                        return this.argument_FluidPressureTimeSeries4;
+                    default:
+                        try
+                        {
+                            return this.argument_FluidPressureTimeSeries_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_FluidPressureTimeSeries_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void FluidPressureTimeSeries(Slb.Ocean.Petrel.DomainObject.Simulation.GridResult value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_FluidPressureTimeSeries = (value == null ? null : value);
+                        break;
+                    case 1:
+                        this.argument_FluidPressureTimeSeries1 = (value == null ? null : value);
+                        break;
+                    case 2:
+                        this.argument_FluidPressureTimeSeries2 = (value == null ? null : value);
+                        break;
+                    case 3:
+                        this.argument_FluidPressureTimeSeries3 = (value == null ? null : value);
+                        break;
+                    case 4:
+                        this.argument_FluidPressureTimeSeries4 = (value == null ? null : value);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_FluidPressureTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_FluidPressureTimeSeries_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a time series from a simulation case result", "Fluid pressure as a time series from a simulation case result")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_FluidPressureTimeSeries1
+            {
+                internal get { return this.argument_FluidPressureTimeSeries1; }
+                set { this.argument_FluidPressureTimeSeries1 = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a time series from a simulation case result", "Fluid pressure as a time series from a simulation case result")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_FluidPressureTimeSeries2
+            {
+                internal get { return this.argument_FluidPressureTimeSeries2; }
+                set { this.argument_FluidPressureTimeSeries2 = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a time series from a simulation case result", "Fluid pressure as a time series from a simulation case result")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_FluidPressureTimeSeries3
+            {
+                internal get { return this.argument_FluidPressureTimeSeries3; }
+                set { this.argument_FluidPressureTimeSeries3 = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a time series from a simulation case result", "Fluid pressure as a time series from a simulation case result")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_FluidPressureTimeSeries4
+            {
+                internal get { return this.argument_FluidPressureTimeSeries4; }
+                set { this.argument_FluidPressureTimeSeries4 = (value == null ? null : value); }
+            }
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -7067,6 +7512,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default = 0;
                 argument_AppliedUpliftRate = null;
                 argument_StressArchingFactor = 0;
+                argument_FluidPressureTimeSeries = null;
                 // The argument variables for the second deformation episode are set to default values
                 argument_DeformationEpisode1 = "";
                 argument_DeformationEpisodeDuration1 = double.NaN;
@@ -7084,6 +7530,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default1 = 0;
                 argument_AppliedUpliftRate1 = null;
                 argument_StressArchingFactor1 = 0;
+                argument_FluidPressureTimeSeries1 = null;
                 // The argument variables for the third deformation episode are set to default values
                 argument_DeformationEpisode2 = "";
                 argument_DeformationEpisodeDuration2 = double.NaN;
@@ -7101,6 +7548,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default2 = 0;
                 argument_AppliedUpliftRate2 = null;
                 argument_StressArchingFactor2 = 0;
+                argument_FluidPressureTimeSeries2 = null;
                 // The argument variables for the fourth deformation episode are set to default values
                 argument_DeformationEpisode3 = "";
                 argument_DeformationEpisodeDuration3 = double.NaN;
@@ -7118,6 +7566,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default3 = 0;
                 argument_AppliedUpliftRate3 = null;
                 argument_StressArchingFactor3 = 0;
+                argument_FluidPressureTimeSeries3 = null;
                 // The argument variables for the fifth deformation episode are set to default values
                 argument_DeformationEpisode4 = "";
                 argument_DeformationEpisodeDuration4 = double.NaN;
@@ -7135,6 +7584,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default4 = 0;
                 argument_AppliedUpliftRate4 = null;
                 argument_StressArchingFactor4 = 0;
+                argument_FluidPressureTimeSeries4 = null;
                 // Subsequent deformation episodes will be stored in List objects - these will not be saved if they are part of a workflow
                 argument_DeformationEpisode_extras.Clear();
                 argument_DeformationEpisodeDuration_extras.Clear();
@@ -7152,6 +7602,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default_extras.Clear();
                 argument_AppliedUpliftRate_extras.Clear();
                 argument_StressArchingFactor_extras.Clear();
+                argument_FluidPressureTimeSeries_extras.Clear();
                 argument_GenerateExplicitDFN = true;
                 argument_NoIntermediateOutputs = 0;
                 argument_IncludeObliqueFracs = false;

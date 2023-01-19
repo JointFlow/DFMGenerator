@@ -852,10 +852,10 @@ namespace DFMGenerator_Ocean
             args.ResetDefaults();
             updateUIFromArgs();
         }
-        #endregion
 
         private void btnAddDeformationEpisode_Click(object sender, EventArgs e)
         {
+            updateArgsFromUI();
             int deformationEpisodeIndex = args.AddDeformationEpisode();
             DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, deformationEpisodeIndex, context);
             PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
@@ -865,6 +865,7 @@ namespace DFMGenerator_Ocean
 
         private void btnEditDeformationEpisode_Click(object sender, EventArgs e)
         {
+            updateArgsFromUI();
             int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
             if (deformationEpisodeIndex < 0)
                 return;
@@ -875,6 +876,7 @@ namespace DFMGenerator_Ocean
 
         private void btnRemoveDeformationEpisode_Click(object sender, EventArgs e)
         {
+            updateArgsFromUI();
             int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
             if (deformationEpisodeIndex < 0)
                 return;
@@ -882,5 +884,6 @@ namespace DFMGenerator_Ocean
             listBox_DeformationEpisodes.SelectedIndex = -1;
             updateUIFromArgs();
         }
+        #endregion
     }
 }
