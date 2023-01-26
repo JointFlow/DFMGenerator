@@ -17,6 +17,128 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private GridblockConfiguration gbc;
 
+        // Lithostatic stress state and pore fluid pressure controls
+        // These define the initial stress state, prior to deformation 
+        /// <summary>
+        /// Gravitational constant (m/s2)
+        /// </summary>
+        public const double Gravity = 9.81;
+        /// <summary>
+        /// Mean bulk density of overlying rock, including pore fluid (kg/m3)
+        /// </summary>
+        public double MeanOverlyingBulkRockDensity { get; private set; }
+        /// <summary>
+        /// Pore fluid density (kg/m3)
+        /// </summary>
+        public double FluidDensity { get; private set; }
+        /// <summary>
+        /// Lithostatic stress: component of vertical stress due to the weight of the overlying rock column, including pore fluid (Pa)
+        /// Normal this is equal to the vertical component of absolute stress SigmaZZ, although they may diverge due to stress arching
+        /// </summary>
+        public double LithostaticStress { get { return gbc.DepthAtDeformation * MeanOverlyingBulkRockDensity * Gravity; } }
+        /// <summary>
+        /// Hydrostatic fluid pressure: component of pore fluid pressure due to the weight of the overlying fluid column (Pa)
+        /// </summary>
+        private double HydrostaticFluidPressure { get { return gbc.DepthAtDeformation * FluidDensity * Gravity; } }
+        /// <summary>
+        /// Fluid overpressure: component of additional pore fluid pressure above hydrostatic gradient (Pa)
+        /// </summary>
+        private double FluidOverpressure { get; set; }
+        /// <summary>
+        /// Pore fluid pressure (Pa)
+        /// </summary>
+        public double P_f { get { return HydrostaticFluidPressure + FluidOverpressure; } }
+        /// <summary>
+        /// Terzaghi effective lithostatic stress (Pa)
+        /// </summary>
+        /// <returns></returns>
+        public double LithostaticStress_eff_Terzaghi { get { return LithostaticStress - P_f; } }
+        /// <summary>
+        /// Biot effective lithostatic stress (Pa)
+        /// </summary>
+        /// <returns></returns>
+        public double LithostaticStress_eff_Biot { get { return LithostaticStress - (gbc.MechProps.Biot * P_f); } }
+
+        // Rates of change of lithostatic stress state and pore fluid pressure  controls
+        /// <summary>
+        /// Rate of uplift and erosion; must be specified in SI units (m/s)
+        /// This will control both lithostatic stress and hydrostatic fluid pressure
+        /// </summary>
+        public double UpliftRate { private get; set; }
+        /// <summary>
+        /// Rate of change of fluid overpressure; must be specified in SI units (Pa/s)
+        /// </summary>
+        public double FluidOverpressureRate { private get; set; }
+        /// <summary>
+        /// Rate of change of lithostatic stress, due to uplift and erosion/subsidence and burial (Pa/s)
+        /// Normal this is equal to the vertical component of the rate of change of absolute stress SigmaZZ_dashed, although they may diverge due to stress arching
+        /// </summary>
+        public double LithostaticStress_dashed { get { return -UpliftRate * MeanOverlyingBulkRockDensity * Gravity; } }
+        /// <summary>
+        /// Rate of change of fluid pressure (Pa/s)
+        /// </summary>
+        public double P_f_dashed { get { return (-UpliftRate * FluidDensity * Gravity) + FluidOverpressureRate; } }
+        /// <summary>
+        /// Rate of change of Terzaghi effective lithostatic stress (Pa/s)
+        /// </summary>
+        /// <returns></returns>
+        public double LithostaticStress_eff_Terzaghi_dashed { get { return LithostaticStress_dashed - P_f_dashed; } }
+        /// <summary>
+        /// Rate of change of Biot effective lithostatic stress (Pa/s)
+        /// </summary>
+        /// <returns></returns>
+        public double LithostaticStress_eff_Biot_dashed { get { return LithostaticStress_dashed - (gbc.MechProps.Biot * P_f_dashed); } }
+
+        // Initial stress and strain state
+        /// <summary>
+        /// Proportion of initial compaction-induced differential stress relaxation: set to 0 for full initial compaction-induced differential stress, set to 1 for no initial compaction-induced differential stress
+        /// </summary>
+        private double initialstressrelaxation;
+        /// <summary>
+        /// Proportion of initial compaction-induced differential stress relaxation: set to 0 for full initial compaction-induced differential stress, set to 1 for no initial compaction-induced differential stress
+        /// </summary>
+        public double InitialStressRelaxation { get { return initialstressrelaxation; } private set { if (value > 1) value = 1; if (value < 0) value = 0; initialstressrelaxation = value; } }
+
+        // Geothermal controls
+        /// <summary>
+        /// Geothermal gradient (degK/m)
+        /// </summary>
+        public double GeothermalGradient { get; set; }
+
+        // Effective stress state
+        /// <summary>
+        /// Current in situ Terzaghi effective stress tensor
+        /// </summary>
+        private Tensor2S sigma_eff;
+        /// <summary>
+        /// Rate of change of in situ Terzaghi effective stress tensor in model time units
+        /// </summary>
+        private Tensor2S sigma_eff_dashed;
+        /// <summary>
+        /// Current in situ Terzaghi effective stress tensor
+        /// </summary>
+        public Tensor2S Sigma_eff { get { return sigma_eff; } private set { sigma_eff = new Tensor2S(value); } }
+        /// <summary>
+        /// Rate of change of in situ Terzaghi effective stress tensor; must be specified in SI units (Pa/s)
+        /// </summary>
+        public Tensor2S Sigma_eff_dashed { get { return sigma_eff_dashed; } private set { sigma_eff_dashed = new Tensor2S(value); } }
+        /// <summary>
+        /// Current in situ absolute stress tensor
+        /// </summary>
+        public Tensor2S Sigma { get { return Sigma_eff + new Tensor2S(P_f, P_f, P_f, 0, 0, 0); } }
+        /// <summary>
+        /// Rate of change of in situ absolute stress tensor
+        /// </summary>
+        public Tensor2S Sigma_dashed { get { return Sigma_eff_dashed + new Tensor2S(P_f_dashed, P_f_dashed, P_f_dashed, 0, 0, 0); } }
+        /// <summary>
+        /// Current in situ Biot effective stress tensor
+        /// </summary>
+        public Tensor2S Sigma_eff_Biot { get { double BiotCorrection = (1 - gbc.MechProps.Biot) * P_f; return Sigma_eff + new Tensor2S(BiotCorrection, BiotCorrection, BiotCorrection, 0, 0, 0); } }
+        /// <summary>
+        /// Rate of change of in situ Biot effective stress tensor
+        /// </summary>
+        public Tensor2S Sigma_eff_dashed_Biot { get { double BiotCorrection = (1 - gbc.MechProps.Biot) * P_f_dashed; return Sigma_eff_dashed + new Tensor2S(BiotCorrection, BiotCorrection, BiotCorrection, 0, 0, 0); } }
+
         // Cumulative strain data
         /// <summary>
         /// Cumulative inelastic (relaxed) strain in host rock
@@ -51,19 +173,19 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Current bulk rock elastic strain tensor, including compactional strain
         /// </summary>
-        public Tensor2S el_Epsilon { get { return el_epsilon; } private set { el_epsilon = value; } }
+        public Tensor2S el_Epsilon { get { return el_epsilon; } private set { el_epsilon = new Tensor2S(value); } }
         /// <summary>
         /// Rate of change of internal elastic strain tensor (includes applied external strain and strain relaxation); must be specified in SI units (/s)
         /// </summary>
-        public Tensor2S el_Epsilon_dashed { get { return el_epsilon_dashed; } set { el_epsilon_dashed = value; } }
+        public Tensor2S el_Epsilon_dashed { get { return el_epsilon_dashed; } set { el_epsilon_dashed = new Tensor2S(value); } }
         /// <summary>
         /// Current bulk rock compactional strain tensor; this is the implied strain to compensate for prior compaction of the rockmass, and compaction of the grains due to fluid pressure or temperature change; not subject to strain relaxation
         /// </summary>
-        public Tensor2S el_Epsilon_compactional { get { return new Tensor2S(el_epsilon_compactional); } private set { el_epsilon_compactional = value; } }
+        public Tensor2S el_Epsilon_compactional { get { return new Tensor2S(el_epsilon_compactional); } private set { el_epsilon_compactional = new Tensor2S(value); } }
         /// <summary>
         /// Rate of change of bulk rock compactional strain tensor; this is the implied strain to compensate for prior compaction of the rockmass, and compaction of the grains due to fluid pressure or temperature change
         /// </summary>
-        public Tensor2S el_Epsilon_compactional_dashed { get { return new Tensor2S(el_epsilon_compactional_dashed); } set { el_epsilon_compactional_dashed = value; } }
+        public Tensor2S el_Epsilon_compactional_dashed { get { return new Tensor2S(el_epsilon_compactional_dashed); } set { el_epsilon_compactional_dashed = new Tensor2S(value); } }
         /// <summary>
         /// Current bulk rock elastic strain, excluding compactional strain; this is the elastic strain that is subject to strain relaxation
         /// </summary>
@@ -138,109 +260,53 @@ namespace DFMGenerator_SharedCode
             }
         }
 
-        // Initial stress and strain state
+        // Functions to update and recalculate the stress and strain tensors
+        // The first set of functions are used to add a specified load to the effective stress and strain tensors
+        // This generally cause misalignment of the effective stress and strain tensors (they will no longer be consistent according to Hooke's Law)
+        // The second set of functions can then be used to realign the effective stress and strain tensors so they are consistent according to Hooke's Law
+        // NB this cannot be done automatically as it requires data on the bulk rock stiffness (either elastic moduli or compliance tensor) which may change through time
+        // Functions to update the Terzaghi effective stress and elastic strain tensors to take account of applied deformation
         /// <summary>
-        /// Proportion of initial compaction-induced differential stress relaxation: set to 0 for full initial compaction-induced differential stress, set to 1 for no initial compaction-induced differential stress
+        /// Update the effective stress and bulk rock elastic strain tensors, and fluid pressure, based on the respective rate of change tensors and the timestep duration
         /// </summary>
-        private double initialstressrelaxation;
+        /// <param name="TimestepDuration">Timestep duration in model time units</param>
+        public void UpdateStressStrainState(double TimestepDuration)
+        {
+            // Change in effective stress tensor is given by the rate of change of effective stress tensor multiplied by the timestep duration
+            sigma_eff += (TimestepDuration * sigma_eff_dashed);
+            // Change in bulk rock elastic strain tensor is given by the rate of change of elastic strain tensor multiplied by the timestep duration
+            el_epsilon += (TimestepDuration * el_epsilon_dashed);
+            // Change in bulk rock compactional elastic strain tensor is given by the rate of change of compactional elastic strain tensor multiplied by the timestep duration
+            el_epsilon_compactional += (TimestepDuration * el_epsilon_compactional_dashed);
+            // Change in fluid overpressure is given by the rate of change of fluid overpressure multiplied by the timestep duration
+            FluidOverpressure += (TimestepDuration * FluidOverpressureRate);
+            // NB Uplift must be applied within the gridblock object
+        }
         /// <summary>
-        /// Proportion of initial compaction-induced differential stress relaxation: set to 0 for full initial compaction-induced differential stress, set to 1 for no initial compaction-induced differential stress
+        /// Adjust the stress and strain tensors to a specified stress and strain state
         /// </summary>
-        public double InitialStressRelaxation { get { return initialstressrelaxation; } private set { if (value > 1) value = 1; if (value < 0) value = 0; initialstressrelaxation = value; } }
-        
-        // Stress state controls
-        /// <summary>
-        /// Mean bulk density of overlying rock (kg/m3)
-        /// </summary>
-        public double MeanOverlyingBulkRockDensity { get; private set; }
-        /// <summary>
-        /// Pore fluid density (kg/m3)
-        /// </summary>
-        public double FluidDensity { get; private set; }
-        /// <summary>
-        /// Fluid overpressure (i.e. pore pressure above hydrostatic gradient) (Pa)
-        /// </summary>
-        public double FluidOverpressure { get; private set; }
-        /// <summary>
-        /// Gravitational constant (m/s2)
-        /// </summary>
-        private const double Gravity= 9.81;
-        /// <summary>
-        /// Absolute vertical (lithostatic) stress (Pa)
-        /// </summary>
-        public double Sigma_v { get { return gbc.DepthAtDeformation * MeanOverlyingBulkRockDensity * Gravity; } }
-        /// <summary>
-        /// Fluid pressure (Pa)
-        /// </summary>
-        public double P_f { get { return (gbc.DepthAtDeformation * FluidDensity * Gravity) + FluidOverpressure; } }
-        /// <summary>
-        /// Terzaghi effective vertical stress (Pa)
-        /// </summary>
-        /// <returns></returns>
-        public double Sigma_v_eff_Terzaghi { get { return Sigma_v - P_f; } }
-        /// <summary>
-        /// Biot effective vertical stress (Pa)
-        /// </summary>
-        /// <returns></returns>
-        public double Sigma_v_eff_Biot { get { return Sigma_v - (gbc.MechProps.Biot * P_f); } }
-        /// <summary>
-        /// Rate of change of absolute vertical (lithostatic) stress (Pa/s)
-        /// </summary>
-        public double Sigma_v_dashed { get { return -UpliftRate * MeanOverlyingBulkRockDensity * Gravity; } }
-        /// <summary>
-        /// Rate of change of fluid pressure (Pa/s)
-        /// </summary>
-        public double P_f_dashed { get { return (-UpliftRate * FluidDensity * Gravity) + FluidOverpressureRate; } }
-        /// <summary>
-        /// Rate of change of Terzaghi effective vertical stress (Pa/s)
-        /// </summary>
-        /// <returns></returns>
-        public double Sigma_v_eff_Terzaghi_dashed { get { return Sigma_v_dashed - P_f_dashed; } }
-        /// <summary>
-        /// Rate of change of Biot effective vertical stress (Pa/s)
-        /// </summary>
-        /// <returns></returns>
-        public double Sigma_v_eff_Biot_dashed { get { return Sigma_v_dashed - (gbc.MechProps.Biot * P_f_dashed); } }
+        /// <param name="StressStrainState_in">DeformationEpisodeStressStrainInitialiser object containing the required absolute vertical stress, pore fluid pressure and elastic strain tensor (only XX, YY and XY components will be used)</param>
+        public void SetStressStrainState(DeformationEpisodeStressStrainInitialiser StressStrainState_in)
+        {
+            // Reset the fluid pressure, if this has been supplied
+            // NB This must be done first as it will be used to calculate the effective vertical stress
+            if (StressStrainState_in.SetInitialFluidPressure)
+                FluidOverpressure = StressStrainState_in.FluidPressure - HydrostaticFluidPressure;
 
-        // Geothermal controls
-        /// <summary>
-        /// Geothermal gradient (degK/m)
-        /// </summary>
-        public double GeothermalGradient { get; set; }
+            // Reset the vertical effective stress, if this has been supplied
+            if (StressStrainState_in.SetInitialAbsoluteVerticalStress)
+                sigma_eff.Component(Tensor2SComponents.ZZ, StressStrainState_in.AbsoluteVerticalStress - P_f);
 
-        // Effective stress state
-        /// <summary>
-        /// Current in situ Terzaghi effective stress tensor
-        /// </summary>
-        private Tensor2S sigma_eff;
-        /// <summary>
-        /// Rate of change of in situ Terzaghi effective stress tensor in model time units
-        /// </summary>
-        private Tensor2S sigma_eff_dashed;
-        /// <summary>
-        /// Current in situ Terzaghi effective stress tensor
-        /// </summary>
-        public Tensor2S Sigma_eff { get { return sigma_eff; } private set { sigma_eff = value; } }
-        /// <summary>
-        /// Rate of change of in situ Terzaghi effective stress tensor; must be specified in SI units (Pa/s)
-        /// </summary>
-        public Tensor2S Sigma_eff_dashed { get { return sigma_eff_dashed; } private set { sigma_eff_dashed = value; } }
-        /// <summary>
-        /// Current in situ Biot effective stress tensor
-        /// </summary>
-        public Tensor2S Sigma_eff_Biot { get { double BiotCorrection = (1 - gbc.MechProps.Biot) * P_f; return Sigma_eff + new Tensor2S(BiotCorrection, BiotCorrection, BiotCorrection, 0, 0, 0); } }
-        /// <summary>
-        /// Rate of change of in situ Biot effective stress tensor
-        /// </summary>
-        public Tensor2S Sigma_eff_dashed_Biot { get { double BiotCorrection = (1 - gbc.MechProps.Biot) * P_f_dashed; return Sigma_eff_dashed + new Tensor2S(BiotCorrection, BiotCorrection, BiotCorrection, 0, 0, 0); } }
-        /// <summary>
-        /// Rate of change of fluid pressure; must be specified in SI units (Pa/s)
-        /// </summary>
-        public double FluidOverpressureRate { get; set; }
-        /// <summary>
-        /// Rate of uplift; must be specified in SI units (m/s)
-        /// </summary>
-        public double UpliftRate { get; set; }
+            // Reset the horizontal components of the elastic strain tensor, if these have been supplied
+            if (StressStrainState_in.SetInitialHorizontalElasticStrain)
+            {
+                Tensor2S HorizontalStrain_in = StressStrainState_in.HorizontalElasticStrain;
+                el_epsilon.Component(Tensor2SComponents.XX, HorizontalStrain_in.Component(Tensor2SComponents.XX));
+                el_epsilon.Component(Tensor2SComponents.YY, HorizontalStrain_in.Component(Tensor2SComponents.YY));
+                el_epsilon.Component(Tensor2SComponents.XY, HorizontalStrain_in.Component(Tensor2SComponents.XY));
+            }
+        }
+        // Functions to realign the Terzaghi effective stress and elastic strain tensors
         /// <summary>
         /// Recalculate the effective stress and rate of change of effective stress tensors from the elastic strain and strain rate tensors and the effective vertical stress, using the supplied bulk rock compliance tensor
         /// </summary>
@@ -320,22 +386,6 @@ namespace DFMGenerator_SharedCode
 
         // Reset and data input functions
         /// <summary>
-        /// Update the effective stress and bulk rock elastic strain tensors, based on the respective rate of change tensors and the timestep duration
-        /// </summary>
-        /// <param name="TimestepDuration">Timestep duration in model time units</param>
-        public void UpdateStressStrainState(double TimestepDuration)
-        {
-            // Change in effective stress tensor is given by the rate of change of effective stress tensor multiplied by the timestep duration
-            sigma_eff += (TimestepDuration * sigma_eff_dashed);
-            // Change in bulk rock elastic strain tensor is given by the rate of change of elastic strain tensor multiplied by the timestep duration
-            el_epsilon += (TimestepDuration * el_epsilon_dashed);
-            // Change in bulk rock compactional elastic strain tensor is given by the rate of change of compactional elastic strain tensor multiplied by the timestep duration
-            el_epsilon_compactional += (TimestepDuration * el_epsilon_compactional_dashed);
-            // Change in fluid overpressure is given by the rate of change of fluid overpressure multiplied by the timestep duration
-            FluidOverpressure += (TimestepDuration * FluidOverpressureRate);
-            // NB Uplift must be applied within the gridblock object
-        }
-        /// <summary>
         /// Reset the elastic strain tensor to the initial compactional strain, and reset the strain rate tensor
         /// </summary>
         private void Reset_Elastic_Strain()
@@ -345,12 +395,12 @@ namespace DFMGenerator_SharedCode
             double Nu_r = gbc.MechProps.Nu_r;
 
             // Recalculate initial compactional strain
-            double horizontalCompactionalStrain = InitialStressRelaxation * (1 - (2 * Nu_r)) * (Sigma_v_eff_Terzaghi / E_r);
-            double verticalCompactionalStrain = -InitialStressRelaxation * ((2 * Nu_r * (1 - (2 * Nu_r))) / (1 - Nu_r)) * (Sigma_v_eff_Terzaghi / E_r);
+            double horizontalCompactionalStrain = InitialStressRelaxation * (1 - (2 * Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
+            double verticalCompactionalStrain = -InitialStressRelaxation * ((2 * Nu_r * (1 - (2 * Nu_r))) / (1 - Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
             el_epsilon_compactional = new Tensor2S(horizontalCompactionalStrain, horizontalCompactionalStrain, verticalCompactionalStrain, 0, 0, 0);
 
             // Reset the bulk rock elastic strain to the initial compactional strain plus the lithostatic strain
-            double lithostaticStrain = ((1 + Nu_r) * (1 - (2 * Nu_r)) / (1 - Nu_r)) * (Sigma_v_eff_Terzaghi / E_r);
+            double lithostaticStrain = ((1 + Nu_r) * (1 - (2 * Nu_r)) / (1 - Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
             el_epsilon = new Tensor2S(0, 0, lithostaticStrain, 0, 0, 0) + el_Epsilon_compactional;
 
             // Reset the rate of change of elastic strain and compactional strain tensors to zero
@@ -358,14 +408,14 @@ namespace DFMGenerator_SharedCode
             el_epsilon_compactional_dashed = new Tensor2S();
         }
         /// <summary>
-        /// Reset the stress tensor to the initial stress with no applied horizontal strain, and reset the rate of change of stress tensor
+        /// Reset the stress tensor to the initial lithostatic stress state with no applied horizontal strain, and reset the rate of change of stress tensor
         /// </summary>
         private void Reset_Stress()
         {
             // Reset the stress tensor to the initial stress with no applied horizontal strain (but including initial stress relaxation)
             double Nu_r = gbc.MechProps.Nu_r;
-            double Sigma_h0_eff = (((InitialStressRelaxation * (1 - Nu_r)) + ((1 - InitialStressRelaxation) * Nu_r)) / (1 - Nu_r)) * Sigma_v_eff_Terzaghi;
-            sigma_eff = new Tensor2S(Sigma_h0_eff, Sigma_h0_eff, Sigma_v_eff_Terzaghi, 0, 0, 0);
+            double Sigma_h0_eff = (((InitialStressRelaxation * (1 - Nu_r)) + ((1 - InitialStressRelaxation) * Nu_r)) / (1 - Nu_r)) * LithostaticStress_eff_Terzaghi;
+            sigma_eff = new Tensor2S(Sigma_h0_eff, Sigma_h0_eff, LithostaticStress_eff_Terzaghi, 0, 0, 0);
 
             // Reset the rate of change of stress tensor
             sigma_eff_dashed = new Tensor2S();

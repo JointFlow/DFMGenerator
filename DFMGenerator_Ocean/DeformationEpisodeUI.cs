@@ -77,10 +77,11 @@ namespace DFMGenerator_Ocean
             // Unit labelling must be handled manually
             UpdatePropertyPresentationBox(args.EhminRate(deformationEpisodeIndex), presentationBox_DE_EhminRate);
             UpdatePropertyPresentationBox(args.EhmaxRate(deformationEpisodeIndex), presentationBox_DE_EhmaxRate);
-            if (args.FluidPressureTimeSeries(deformationEpisodeIndex) != null)
+            /*if (args.FluidPressureTimeSeries(deformationEpisodeIndex) != null)
                 UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_OPRate);
             else
-                UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);
+                UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);*/
+            UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);
             UpdatePropertyPresentationBox(args.AppliedTemperatureChange(deformationEpisodeIndex), presentationBox_DE_TempChange);
             UpdatePropertyPresentationBox(args.AppliedUpliftRate(deformationEpisodeIndex), presentationBox_DE_UpliftRate);
             UpdateTextBox(args.EhminAzi_default(deformationEpisodeIndex), unitTextBox_DE_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_DE_EhminAzi_Units);
@@ -91,6 +92,12 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.AppliedUpliftRate_default(deformationEpisodeIndex), unitTextBox_DE_UpliftRate_default, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth); // Units contain a time component; label will be set by SetLoadRateUnits()
             UpdateTextBox(args.StressArchingFactor(deformationEpisodeIndex), unitTextBox_DE_StressArchingFactor);
             SetLoadRateUnits();
+            UpdateCasePresentationBox(args.SimulationCase(deformationEpisodeIndex), presentationBox_DE_SimCase);
+            UpdateGridResultPresentationBox(args.ElasticStrainXXTimeSeries(deformationEpisodeIndex), presentationBox_DE_ElasticStrainXX);
+            UpdateGridResultPresentationBox(args.ElasticStrainYYTimeSeries(deformationEpisodeIndex), presentationBox_DE_ElasticStrainYY);
+            UpdateGridResultPresentationBox(args.ElasticStrainXYTimeSeries(deformationEpisodeIndex), presentationBox_DE_ElasticStrainXY);
+            UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_FP);
+            UpdateGridResultPresentationBox(args.AbsoluteVerticalStressTimeSeries(deformationEpisodeIndex), presentationBox_DE_Sv);
         }
 
         private void updateArgsFromUI()
@@ -101,19 +108,20 @@ namespace DFMGenerator_Ocean
             args.EhminAzi(presentationBox_DE_EhminAzi.Tag as Property, deformationEpisodeIndex);
             args.EhminRate(presentationBox_DE_EhminRate.Tag as Property, deformationEpisodeIndex);
             args.EhmaxRate(presentationBox_DE_EhmaxRate.Tag as Property, deformationEpisodeIndex);
-            try
+            /*try
             {
                 if ((presentationBox_DE_OPRate.Tag != null) && (presentationBox_DE_OPRate.Tag.GetType() == typeof(GridResult)))
                     args.FluidPressureTimeSeries(presentationBox_DE_OPRate.Tag as GridResult, deformationEpisodeIndex);
                 else
                     args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 PetrelLogger.InfoOutputWindow(e.Message);
                 PetrelLogger.InfoOutputWindow(e.StackTrace);
 
-            }
+            }*/
+            args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
             args.AppliedTemperatureChange(presentationBox_DE_TempChange.Tag as Property, deformationEpisodeIndex);
             args.AppliedUpliftRate(presentationBox_DE_UpliftRate.Tag as Property, deformationEpisodeIndex);
             args.EhminAzi_default(GetDoubleFromTextBox(unitTextBox_DE_EhminAzi_default), deformationEpisodeIndex);
@@ -123,6 +131,12 @@ namespace DFMGenerator_Ocean
             args.AppliedTemperatureChange_default(GetDoubleFromTextBox(unitTextBox_DE_TempChange_default), deformationEpisodeIndex);
             args.AppliedUpliftRate_default(GetDoubleFromTextBox(unitTextBox_DE_UpliftRate_default), deformationEpisodeIndex);
             args.StressArchingFactor(GetDoubleFromTextBox(unitTextBox_DE_StressArchingFactor), deformationEpisodeIndex);
+            args.SimulationCase(presentationBox_DE_SimCase.Tag as Case, deformationEpisodeIndex);
+            args.ElasticStrainXXTimeSeries(presentationBox_DE_ElasticStrainXX.Tag as GridResult, deformationEpisodeIndex);
+            args.ElasticStrainYYTimeSeries(presentationBox_DE_ElasticStrainYY.Tag as GridResult, deformationEpisodeIndex);
+            args.ElasticStrainXYTimeSeries(presentationBox_DE_ElasticStrainXY.Tag as GridResult, deformationEpisodeIndex);
+            args.FluidPressureTimeSeries(presentationBox_DE_FP.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteVerticalStressTimeSeries(presentationBox_DE_Sv.Tag as GridResult, deformationEpisodeIndex);
 
             // Update the deformation episode name
             args.GenerateDeformationEpisodeName(deformationEpisodeIndex, true);
@@ -165,7 +179,7 @@ namespace DFMGenerator_Ocean
         }
         private void UpdateGridResultPresentationBox(GridResult gres, PresentationBox pBox)
         {
-            if (gres != Property.NullObject)
+            if (gres != GridResult.NullObject)
             {
                 INameInfoFactory gresNIF = CoreSystem.GetService<INameInfoFactory>(gres);
                 if (gresNIF != null)
@@ -185,7 +199,7 @@ namespace DFMGenerator_Ocean
                 }
                 else
                 {
-                    //pBox.Image = PetrelImages.Property;
+                    pBox.Image = PetrelImages.Property;
                 }
             }
             else
@@ -194,6 +208,38 @@ namespace DFMGenerator_Ocean
                 pBox.Image = null;
             }
             pBox.Tag = gres;
+        }
+        private void UpdateCasePresentationBox(Case cs, PresentationBox pBox)
+        {
+            if (cs != Case.NullObject)
+            {
+                INameInfoFactory csNIF = CoreSystem.GetService<INameInfoFactory>(cs);
+                if (csNIF != null)
+                {
+                    NameInfo csName = csNIF.GetNameInfo(cs);
+                    pBox.Text = csName.Name;
+                }
+                else
+                {
+                    pBox.Text = cs.Name;
+                }
+                IImageInfoFactory csImgIF = CoreSystem.GetService<IImageInfoFactory>(cs);
+                if (csImgIF != null)
+                {
+                    ImageInfo csImage = csImgIF.GetImageInfo(cs);
+                    pBox.Image = csImage.GetDisplayImage(new ImageInfoContext());
+                }
+                else
+                {
+                    pBox.Image = PetrelImages.Case;
+                }
+            }
+            else
+            {
+                pBox.Text = "";
+                pBox.Image = null;
+            }
+            pBox.Tag = cs;
         }
         private void UpdateTextBox(double number, System.Windows.Forms.TextBox tBox)
         {
@@ -303,12 +349,17 @@ namespace DFMGenerator_Ocean
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_DE_EhmaxRate);
         }
 
-        private void dropTarget_DE_OPRate_DragDrop(object sender, DragEventArgs e)
+        /*private void dropTarget_DE_OPRate_DragDrop(object sender, DragEventArgs e)
         {
             if (e.Data.GetData(typeof(object)).GetType() == typeof(GridResult))
                 UpdateGridResultPresentationBox(e.Data.GetData(typeof(object)) as GridResult, presentationBox_DE_OPRate);
             else
                 UpdatePropertyPresentationBox(e.Data.GetData(typeof(object)) as Property, presentationBox_DE_OPRate);
+        }*/
+        private void dropTarget_DE_OPRate_DragDrop(object sender, DragEventArgs e)
+        {
+            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
+            UpdatePropertyPresentationBox(droppedProperty, presentationBox_DE_OPRate);
         }
 
         private void dropTarget_DE_TempChange_DragDrop(object sender, DragEventArgs e)
@@ -321,6 +372,42 @@ namespace DFMGenerator_Ocean
         {
             Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_DE_UpliftRate);
+        }
+
+        private void dropTarget_DE_SimCase_DragDrop(object sender, DragEventArgs e)
+        {
+            Case droppedCase = e.Data.GetData(typeof(object)) as Case;
+            UpdateCasePresentationBox(droppedCase, presentationBox_DE_SimCase);
+        }
+
+        private void dropTarget_DE_ElasticStrainXX_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_ElasticStrainXX);
+        }
+
+        private void dropTarget_DE_ElasticStrainYY_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_ElasticStrainYY);
+        }
+
+        private void dropTarget_DE_ElasticStrainXY_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_ElasticStrainXY);
+        }
+
+        private void dropTarget_DE_FP_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_FP);
+        }
+
+        private void dropTarget_DE_Sv_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_Sv);
         }
 
         private void presentationBox_DE_EhminAzi_KeyDown(object sender, KeyEventArgs e)
@@ -376,12 +463,66 @@ namespace DFMGenerator_Ocean
                 e.Handled = true;
             }
         }
-        #endregion
+
+        private void presentationBox_DE_SimCase_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateCasePresentationBox(Case.NullObject, presentationBox_DE_SimCase);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_DE_ElasticStrainXX_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_ElasticStrainXX);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox__DE_ElasticStrainYY_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_ElasticStrainYY);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox__DE_ElasticStrainXY_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_ElasticStrainXY);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_DE_FP_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_FP);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_DE_Sv_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_Sv);
+                e.Handled = true;
+            }
+        }
 
         private void comboBox_DE_TimeUnits_SelectedIndexChanged(object sender, EventArgs e)
         {
             // The load rate units will have changed; update the display
             SetLoadRateUnits();
         }
+        #endregion
     }
 }

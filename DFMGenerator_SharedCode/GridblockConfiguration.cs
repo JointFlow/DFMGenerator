@@ -2034,7 +2034,7 @@ namespace DFMGenerator_SharedCode
             // Loop through the deformation episodes
             int currentDeformationEpisodeIndex = 0;
             double endLastTimestep = 0;
-            foreach (DeformationEpisodeControl currentDeformationEpisode in PropControl.DeformationEpisodes)
+            foreach (DeformationEpisodeLoadControl currentDeformationEpisode in PropControl.DeformationEpisodes)
             {
                 // Check if we have already reached the maximum timestep limit; if so, end the calculation
                 if (CurrentImplicitTimestep >= maxTimesteps)
@@ -2077,21 +2077,25 @@ namespace DFMGenerator_SharedCode
                 compactionalStrainRate.ComponentAdd(Tensor2SComponents.YY, verticalCompactionalStrainRate);
 
                 // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
-                // NB we need to take a copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
-                StressStrain.el_Epsilon_dashed = new Tensor2S(appliedStrainRate);
-                StressStrain.el_Epsilon_compactional_dashed = new Tensor2S(compactionalStrainRate);
+                // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
+                StressStrain.el_Epsilon_dashed = appliedStrainRate;
+                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
 
                 // Calculate the equivalent vertical stress due to fluid pressure and temperature changes, and add this to the stress rate tensor
                 // NB This is dependent on the degree of stress arching; if there is no stress arching, vertical stress will be equal to lithostatic stress and there will be no vertical stress change
-                double verticalAbsoluteStressRate = StressStrain.Sigma_v_dashed;
+                double verticalAbsoluteStressRate = StressStrain.LithostaticStress_dashed;
                 double hydrostaticPressureRate = fluidPressureRate - overpressureRate;
                 double verticalEffectiveStressRate_SubsidenceSupported = (verticalAbsoluteStressRate - hydrostaticPressureRate) - ((1 - stressArchingFactor) * overpressureRate);
                 double verticalEffectiveStressRate_StressArchSupported = -internalStressRate_StressArchSupported;
                 StressStrain.Sigma_eff_dashed.Component(Tensor2SComponents.ZZ, verticalEffectiveStressRate_SubsidenceSupported + verticalEffectiveStressRate_StressArchSupported);
 
-                // We will start the calculation from the current stress and strain state, as defined in the StressStrain object
-                // To start from an initial (undeformed) state, call the StressStrain.ResetStressStrainState() before calling this function, or call the CalculateFractureData(PropagationControl pc_in) overload of this function
-                // We will however recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
+                // Usually the calculation will start from the stress and strain state at the end of the previous deformation episode, or the initial lithostatic load state if this is the first episode
+                // However if coupling with output from geomechanical modelling, it may be necessary to adjust the stress and strain state to match the state in the geomechanical model output
+                // This is done by passing the  object from the current DeformationEpisodeLoadControl to the StressStrainState.SetStressStrainState function
+                if (currentDeformationEpisode.InitialStressStrainDefined)
+                    StressStrain.SetStressStrainState(currentDeformationEpisode.InitialStressStrain);
+
+                // We will also recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
                 foreach (Gridblock_FractureSet fs in FractureSets)
                 {
                     fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
@@ -2168,9 +2172,9 @@ namespace DFMGenerator_SharedCode
                         case StrainRelaxationCase.NoStrainRelaxation:
                             {
                                 // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
-                                // NB we need to take a copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
-                                StressStrain.el_Epsilon_dashed = new Tensor2S(appliedStrainRate);
-                                StressStrain.el_Epsilon_compactional_dashed = new Tensor2S(compactionalStrainRate);
+                                // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
+                                StressStrain.el_Epsilon_dashed = appliedStrainRate;
+                                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
                             }
                             break;
                         case StrainRelaxationCase.UniformStrainRelaxation:
@@ -2187,7 +2191,7 @@ namespace DFMGenerator_SharedCode
                                 // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation
                                 // Note that when the initial elastic strain equals the applied strain rate times tr, the rate of change of elastic strain will be zero; this represents equilibrium.
                                 StressStrain.el_Epsilon_dashed = appliedStrainRate - (el_epsilon_noncomp / tr);
-                                StressStrain.el_Epsilon_compactional_dashed = new Tensor2S(compactionalStrainRate);
+                                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
 
                                 // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
                                 // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from to rounding errors
@@ -2223,7 +2227,7 @@ namespace DFMGenerator_SharedCode
                                 Tensor4_2Sx2S depf_depel = S_F / S_beff;
                                 Tensor2S f_epsilon_noncomp = (depf_depel * el_epsilon_noncomp);
                                 StressStrain.el_Epsilon_dashed = appliedStrainRate - (f_epsilon_noncomp / tf);
-                                StressStrain.el_Epsilon_compactional_dashed = new Tensor2S(compactionalStrainRate);
+                                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
 
                                 // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
                                 // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from rounding errors
