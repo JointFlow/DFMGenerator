@@ -9,6 +9,7 @@ using Slb.Ocean.Petrel.UI;
 using Slb.Ocean.Petrel.DomainObject.PillarGrid;
 using Slb.Ocean.Petrel.UI.Controls;
 using Slb.Ocean.Petrel.DomainObject;
+using Slb.Ocean.Petrel.DomainObject.Simulation;
 
 namespace DFMGenerator_Ocean
 {
@@ -92,19 +93,41 @@ namespace DFMGenerator_Ocean
             EnableNoFractureSets();
 
             // Mechanical properties
-            UpdatePropertyPresentationBox(args.Argument_YoungsMod, presentationBox_YoungsMod);
+            // NB either standard grid properties or simulation case results can be input for the standard elastic and plastic parameters
+            if (args.Argument_YoungsMod_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_YoungsMod_GR, presentationBox_YoungsMod);
+            else
+                UpdatePropertyPresentationBox(args.Argument_YoungsMod, presentationBox_YoungsMod);
             UpdateTextBox(args.Argument_YoungsMod_default, unitTextBox_YoungsMod_default, PetrelProject.WellKnownTemplates.GeomechanicGroup.YoungsModulus, label_YoungsMod_Units);
-            UpdatePropertyPresentationBox(args.Argument_PoissonsRatio, presentationBox_PoissonsRatio);
+            if (args.Argument_PoissonsRatio_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_PoissonsRatio_GR, presentationBox_PoissonsRatio);
+            else
+                UpdatePropertyPresentationBox(args.Argument_PoissonsRatio, presentationBox_PoissonsRatio);
             UpdateTextBox(args.Argument_PoissonsRatio_default, unitTextBox_PoissonsRatio_default, PetrelProject.WellKnownTemplates.GeophysicalGroup.PoissonRatio);
-            UpdatePropertyPresentationBox(args.Argument_Porosity, presentationBox_Porosity);
+            if (args.Argument_Porosity_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_Porosity_GR, presentationBox_Porosity);
+            else
+                UpdatePropertyPresentationBox(args.Argument_Porosity, presentationBox_Porosity);
             UpdateTextBox(args.Argument_Porosity_default, unitTextBox_Porosity_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity);
-            UpdatePropertyPresentationBox(args.Argument_BiotCoefficient, presentationBox_BiotCoefficient);
+            if (args.Argument_BiotCoefficient_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_BiotCoefficient_GR, presentationBox_BiotCoefficient);
+            else
+                UpdatePropertyPresentationBox(args.Argument_BiotCoefficient, presentationBox_BiotCoefficient);
             UpdateTextBox(args.Argument_BiotCoefficient_default, unitTextBox_BiotCoefficient_default, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdatePropertyPresentationBox(args.Argument_ThermalExpansionCoefficient, presentationBox_ThermalExpansionCoefficient);
+            if (args.Argument_ThermalExpansionCoefficient_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_ThermalExpansionCoefficient_GR, presentationBox_ThermalExpansionCoefficient);
+            else
+                UpdatePropertyPresentationBox(args.Argument_ThermalExpansionCoefficient, presentationBox_ThermalExpansionCoefficient);
             UpdateTextBox(args.Argument_ThermalExpansionCoefficient_default, unitTextBox_ThermalExpansionCoefficient_default, PetrelProject.WellKnownTemplates.GeophysicalGroup.InverseTemperature);
-            UpdatePropertyPresentationBox(args.Argument_FrictionCoefficient, presentationBox_FrictionCoefficient);
+            if (args.Argument_FrictionCoefficient_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_FrictionCoefficient_GR, presentationBox_FrictionCoefficient);
+            else
+                UpdatePropertyPresentationBox(args.Argument_FrictionCoefficient, presentationBox_FrictionCoefficient);
             UpdateTextBox(args.Argument_FrictionCoefficient_default, unitTextBox_FrictionCoefficient_default, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdatePropertyPresentationBox(args.Argument_CrackSurfaceEnergy, presentationBox_CrackSurfaceEnergy);
+            if (args.Argument_CrackSurfaceEnergy_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_CrackSurfaceEnergy_GR, presentationBox_CrackSurfaceEnergy);
+            else
+                UpdatePropertyPresentationBox(args.Argument_CrackSurfaceEnergy, presentationBox_CrackSurfaceEnergy);
             UpdateTextBox(args.Argument_CrackSurfaceEnergy_default, unitTextBox_CrackSurfaceEnergy_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.SurfaceTension, label_CrackSurfaceEnergy_Units);
             UpdatePropertyPresentationBox(args.Argument_RockStrainRelaxation, presentationBox_RockStrainRelaxation);
             UpdateTextBox(args.Argument_RockStrainRelaxation_default, unitTextBox_RockStrainRelaxation_default, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_RockStrainRelaxation_Units);
@@ -210,20 +233,58 @@ namespace DFMGenerator_Ocean
             args.Argument_IncludeObliqueFracs = checkBox_IncludeObliqueFracs.Checked;
 
             // Mechanical properties
-            args.Argument_YoungsMod = presentationBox_YoungsMod.Tag as Property;
-            args.Argument_YoungsMod_default = GetDoubleFromTextBox(unitTextBox_YoungsMod_default);
-            args.Argument_PoissonsRatio = presentationBox_PoissonsRatio.Tag as Property;
-            args.Argument_PoissonsRatio_default = GetDoubleFromTextBox(unitTextBox_PoissonsRatio_default);
-            args.Argument_Porosity = presentationBox_Porosity.Tag as Property;
-            args.Argument_Porosity_default = GetDoubleFromTextBox(unitTextBox_Porosity_default);
-            args.Argument_BiotCoefficient = presentationBox_BiotCoefficient.Tag as Property;
-            args.Argument_BiotCoefficient_default = GetDoubleFromTextBox(unitTextBox_BiotCoefficient_default);
-            args.Argument_ThermalExpansionCoefficient = presentationBox_ThermalExpansionCoefficient.Tag as Property;
-            args.Argument_ThermalExpansionCoefficient_default = GetDoubleFromTextBox(unitTextBox_ThermalExpansionCoefficient_default);
-            args.Argument_FrictionCoefficient = presentationBox_FrictionCoefficient.Tag as Property;
-            args.Argument_FrictionCoefficient_default = GetDoubleFromTextBox(unitTextBox_FrictionCoefficient_default);
-            args.Argument_CrackSurfaceEnergy = presentationBox_CrackSurfaceEnergy.Tag as Property;
-            args.Argument_CrackSurfaceEnergy_default = GetDoubleFromTextBox(unitTextBox_CrackSurfaceEnergy_default);
+            // NB either standard grid properties or simulation case results can be input for the standard elastic and plastic parameters
+            try
+            {
+                args.Argument_YoungsMod_GR = presentationBox_YoungsMod.Tag as GridResult;
+                if (args.Argument_YoungsMod_GR != GridResult.NullObject)
+                    args.Argument_YoungsMod = Property.NullObject;
+                else
+                    args.Argument_YoungsMod = presentationBox_YoungsMod.Tag as Property;
+                args.Argument_YoungsMod_default = GetDoubleFromTextBox(unitTextBox_YoungsMod_default);
+                args.Argument_PoissonsRatio_GR = presentationBox_PoissonsRatio.Tag as GridResult;
+                if (args.Argument_PoissonsRatio_GR != GridResult.NullObject)
+                    args.Argument_PoissonsRatio = Property.NullObject;
+                else
+                    args.Argument_PoissonsRatio = presentationBox_PoissonsRatio.Tag as Property;
+                args.Argument_PoissonsRatio_default = GetDoubleFromTextBox(unitTextBox_PoissonsRatio_default);
+                args.Argument_Porosity_GR = presentationBox_Porosity.Tag as GridResult;
+                if (args.Argument_Porosity_GR != GridResult.NullObject)
+                    args.Argument_Porosity = Property.NullObject;
+                else
+                    args.Argument_Porosity = presentationBox_Porosity.Tag as Property;
+                args.Argument_Porosity_default = GetDoubleFromTextBox(unitTextBox_Porosity_default);
+                args.Argument_BiotCoefficient_GR = presentationBox_BiotCoefficient.Tag as GridResult;
+                if (args.Argument_BiotCoefficient_GR != GridResult.NullObject)
+                    args.Argument_BiotCoefficient = Property.NullObject;
+                else
+                    args.Argument_BiotCoefficient = presentationBox_BiotCoefficient.Tag as Property;
+                args.Argument_BiotCoefficient_default = GetDoubleFromTextBox(unitTextBox_BiotCoefficient_default);
+                args.Argument_ThermalExpansionCoefficient_GR = presentationBox_ThermalExpansionCoefficient.Tag as GridResult;
+                if (args.Argument_ThermalExpansionCoefficient_GR != GridResult.NullObject)
+                    args.Argument_ThermalExpansionCoefficient = Property.NullObject;
+                else
+                    args.Argument_ThermalExpansionCoefficient = presentationBox_ThermalExpansionCoefficient.Tag as Property;
+                args.Argument_ThermalExpansionCoefficient_default = GetDoubleFromTextBox(unitTextBox_ThermalExpansionCoefficient_default);
+                args.Argument_FrictionCoefficient_GR = presentationBox_FrictionCoefficient.Tag as GridResult;
+                if (args.Argument_FrictionCoefficient_GR != GridResult.NullObject)
+                    args.Argument_FrictionCoefficient = Property.NullObject;
+                else
+                    args.Argument_FrictionCoefficient = presentationBox_FrictionCoefficient.Tag as Property;
+                args.Argument_FrictionCoefficient_default = GetDoubleFromTextBox(unitTextBox_FrictionCoefficient_default);
+                args.Argument_CrackSurfaceEnergy_GR = presentationBox_CrackSurfaceEnergy.Tag as GridResult;
+                if (args.Argument_CrackSurfaceEnergy_GR != GridResult.NullObject)
+                    args.Argument_CrackSurfaceEnergy = Property.NullObject;
+                else
+                    args.Argument_CrackSurfaceEnergy = presentationBox_CrackSurfaceEnergy.Tag as Property;
+                args.Argument_CrackSurfaceEnergy_default = GetDoubleFromTextBox(unitTextBox_CrackSurfaceEnergy_default);
+            }
+            catch (Exception e)
+            {
+                PetrelLogger.InfoOutputWindow(e.Message);
+                PetrelLogger.InfoOutputWindow(e.StackTrace);
+            }
+
             args.Argument_RockStrainRelaxation = presentationBox_RockStrainRelaxation.Tag as Property;
             args.Argument_RockStrainRelaxation_default = GetDoubleFromTextBox(unitTextBox_RockStrainRelaxation_default);
             args.Argument_FractureStrainRelaxation = presentationBox_FractureStrainRelaxation.Tag as Property;
@@ -366,6 +427,38 @@ namespace DFMGenerator_Ocean
                 pBox.Image = null;
             }
             pBox.Tag = gprop;
+        }
+        private void UpdateGridResultPresentationBox(GridResult gres, PresentationBox pBox)
+        {
+            if (gres != GridResult.NullObject)
+            {
+                INameInfoFactory gresNIF = CoreSystem.GetService<INameInfoFactory>(gres);
+                if (gresNIF != null)
+                {
+                    NameInfo gresName = gresNIF.GetNameInfo(gres);
+                    pBox.Text = gresName.Name;
+                }
+                else
+                {
+                    pBox.Text = gres.Name;
+                }
+                IImageInfoFactory gresImgIF = CoreSystem.GetService<IImageInfoFactory>(gres);
+                if (gresImgIF != null)
+                {
+                    ImageInfo gresImage = gresImgIF.GetImageInfo(gres);
+                    pBox.Image = gresImage.GetDisplayImage(new ImageInfoContext());
+                }
+                else
+                {
+                    pBox.Image = PetrelImages.Property;
+                }
+            }
+            else
+            {
+                pBox.Text = "";
+                pBox.Image = null;
+            }
+            pBox.Tag = gres;
         }
         private void UpdateTextBox(string text, System.Windows.Forms.TextBox tBox)
         {
@@ -614,45 +707,65 @@ namespace DFMGenerator_Ocean
 
         private void dropTarget_YoungsMod_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_YoungsMod);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_YoungsMod);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_YoungsMod);
         }
 
         private void dropTarget_PoissonsRatio_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_PoissonsRatio);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_PoissonsRatio);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_PoissonsRatio);
         }
 
         private void dropTarget_Porosity_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_Porosity);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_Porosity);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_Porosity);
         }
 
         private void dropTarget_BiotCoefficient_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_BiotCoefficient);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_BiotCoefficient);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_BiotCoefficient);
         }
 
         private void dropTarget_ThermalExpansionCoefficient_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_ThermalExpansionCoefficient);
-
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_ThermalExpansionCoefficient);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_ThermalExpansionCoefficient);
         }
 
         private void dropTarget_FrictionCoefficient_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_FrictionCoefficient);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_FrictionCoefficient);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_FrictionCoefficient);
         }
 
         private void dropTarget_CrackSurfaceEnergy_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_CrackSurfaceEnergy);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_CrackSurfaceEnergy);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_CrackSurfaceEnergy);
         }
 
         private void dropTarget_RockStrainRelaxation_DragDrop(object sender, DragEventArgs e)

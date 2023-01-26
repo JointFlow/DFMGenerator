@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -99,23 +99,21 @@ namespace DFMGenerator_Ocean
                 try
                 {
                     // Get handle to grid and check a valid grid has been supplied
-                    object GridObject = arguments.Argument_Grid;
-
-                    if (GridObject == null)
+                    Grid PetrelGrid = arguments.Argument_Grid;
+                    if (PetrelGrid == null)
                     {
                         PetrelLogger.WarnBox("Please provide valid grid object");
                         return;
                     }
-                    Grid PetrelGrid = arguments.Argument_Grid;
 
                     // Get reference to parent object of grid
-                    IParentSourceFactory psFactory = CoreSystem.GetService<IParentSourceFactory>(GridObject);
+                    IParentSourceFactory psFactory = CoreSystem.GetService<IParentSourceFactory>(PetrelGrid);
                     if (psFactory == null)
                     {
                         PetrelLogger.InfoOutputWindow("The object does not have any parent or not known by Ocean.");
                         return;
                     }
-                    IParentSource parentSource = psFactory.GetParentSource(GridObject);
+                    IParentSource parentSource = psFactory.GetParentSource(PetrelGrid);
                     object parent = parentSource.Parent;
 
                     // Find name of parent
@@ -278,9 +276,9 @@ namespace DFMGenerator_Ocean
                         }
                         TimeUnitConverter_list.Add(currentEpisodeTimeUnitConverter);
 
-                        double next_EhminAzi_GeologicalTimeUnits = arguments.EhminAzi_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_EhminAzi_GeologicalTimeUnits))
-                            EhminAzi_list.Add(next_EhminAzi_GeologicalTimeUnits);
+                        double next_EhminAzi = arguments.EhminAzi_default(deformationEpisodeNo);
+                        if (!double.IsNaN(next_EhminAzi))
+                            EhminAzi_list.Add(next_EhminAzi);
                         else
                             EhminAzi_list.Add(EhminAzi);
                         Property next_EhminAzi_grid = arguments.EhminAzi(deformationEpisodeNo);
@@ -364,9 +362,14 @@ namespace DFMGenerator_Ocean
                                 }
                                 else
                                 {
-                                    PetrelLogger.InfoOutputWindow("No simulation case is specified or active; cannot use dynamic data for the load input");
-                                    subEpisodesDefined = false;
+                                    throw new Exception("No case found");
                                 }
+                            }
+                            // Check if the grid for the selected case is the same as the selected model grid
+                            if (activeCase.Grid != PetrelGrid)
+                            {
+                                PetrelLogger.InfoOutputWindow("Simulation case uses a different grid to that specified for model geometry; cannot use dynamic data for the load input");
+                                subEpisodesDefined = false;
                             }
                         }
                         // If no simulation case is selected we cannot use dynamic data for the load input
@@ -526,42 +529,109 @@ namespace DFMGenerator_Ocean
                     DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(1E-5);*/
 #endif
                     // Mechanical properties
+                    // NB either standard grid properties or simulation case results can be input for the standard elastic and plastic parameters
+                    // If simulation case results are specified, these are taken from the case specified in the deformation load
+                    // If different cases are specified for multiple deformation episodes, the simulation case results will be taken from the last specified case
+                    bool caseDefined = !(activeCase is null);
                     double YoungsMod = 1E+10;
                     if (!double.IsNaN(arguments.Argument_YoungsMod_default))
                         YoungsMod = arguments.Argument_YoungsMod_default; // Can also be set from grid property
+                    GridProperty YoungsMod_gridProperty = null;
+                    GridResult YoungsMod_gridResult = arguments.Argument_YoungsMod_GR;
+                    if (caseDefined && !(YoungsMod_gridResult is null))
+                    {
+                        GridPropertyTimeSeries YoungsModTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(YoungsMod_gridResult);
+                        if (!(YoungsModTimeSeries is null) && (YoungsModTimeSeries.SampleCount > 0))
+                            YoungsMod_gridProperty = YoungsModTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_YoungsMod = (YoungsMod_gridProperty != null);
                     Property YoungsMod_grid = arguments.Argument_YoungsMod;
-                    bool UseGridFor_YoungsMod = (YoungsMod_grid != null);
+                    bool UseGridFor_YoungsMod = !UseGridPropertyFor_YoungsMod && (YoungsMod_grid != null);
                     double PoissonsRatio = 0.25;
                     if (!double.IsNaN(arguments.Argument_PoissonsRatio_default))
                         PoissonsRatio = arguments.Argument_PoissonsRatio_default; // Can also be set from grid property
+                    GridProperty PoissonsRatio_gridProperty = null;
+                    GridResult PoissonsRatio_gridResult = arguments.Argument_PoissonsRatio_GR;
+                    if (caseDefined && !(PoissonsRatio_gridResult is null))
+                    {
+                        GridPropertyTimeSeries PoissonsRatioTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(PoissonsRatio_gridResult);
+                        if (!(PoissonsRatioTimeSeries is null) && (PoissonsRatioTimeSeries.SampleCount > 0))
+                            PoissonsRatio_gridProperty = PoissonsRatioTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_PoissonsRatio = (PoissonsRatio_gridProperty != null);
                     Property PoissonsRatio_grid = arguments.Argument_PoissonsRatio;
-                    bool UseGridFor_PoissonsRatio = (PoissonsRatio_grid != null);
+                    bool UseGridFor_PoissonsRatio = !UseGridPropertyFor_PoissonsRatio && (PoissonsRatio_grid != null);
                     double Porosity = 0.2;
                     if (!double.IsNaN(arguments.Argument_Porosity_default))
                         Porosity = arguments.Argument_Porosity_default; // Can also be set from grid property
+                    GridProperty Porosity_gridProperty = null;
+                    GridResult Porosity_gridResult = arguments.Argument_Porosity_GR;
+                    if (caseDefined && !(Porosity_gridResult is null))
+                    {
+                        GridPropertyTimeSeries PorosityTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(Porosity_gridResult);
+                        if (!(PorosityTimeSeries is null) && (PorosityTimeSeries.SampleCount > 0))
+                            Porosity_gridProperty = PorosityTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_Porosity = (Porosity_gridProperty != null);
                     Property Porosity_grid = arguments.Argument_Porosity;
-                    bool UseGridFor_Porosity = (Porosity_grid != null);
+                    bool UseGridFor_Porosity = !UseGridPropertyFor_Porosity && (Porosity_grid != null);
                     double BiotCoefficient = 1;
                     if (!double.IsNaN(arguments.Argument_BiotCoefficient_default))
                         BiotCoefficient = arguments.Argument_BiotCoefficient_default; // Can also be set from grid property
+                    GridProperty BiotCoefficient_gridProperty = null;
+                    GridResult BiotCoefficient_gridResult = arguments.Argument_BiotCoefficient_GR;
+                    if (caseDefined && !(BiotCoefficient_gridResult is null))
+                    {
+                        GridPropertyTimeSeries BiotCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(BiotCoefficient_gridResult);
+                        if (!(BiotCoefficientTimeSeries is null) && (BiotCoefficientTimeSeries.SampleCount > 0))
+                            BiotCoefficient_gridProperty = BiotCoefficientTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_BiotCoefficient = (BiotCoefficient_gridProperty != null);
                     Property BiotCoefficient_grid = arguments.Argument_BiotCoefficient;
-                    bool UseGridFor_BiotCoefficient = (BiotCoefficient_grid != null);
+                    bool UseGridFor_BiotCoefficient = !UseGridPropertyFor_BiotCoefficient && (BiotCoefficient_grid != null);
                     // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
                     double ThermalExpansionCoefficient = 4E-5;
                     if (!double.IsNaN(arguments.Argument_ThermalExpansionCoefficient_default))
                         ThermalExpansionCoefficient = arguments.Argument_ThermalExpansionCoefficient_default; // Can also be set from grid property
+                    GridProperty ThermalExpansionCoefficient_gridProperty = null;
+                    GridResult ThermalExpansionCoefficient_gridResult = arguments.Argument_ThermalExpansionCoefficient_GR;
+                    if (caseDefined && !(ThermalExpansionCoefficient_gridResult is null))
+                    {
+                        GridPropertyTimeSeries ThermalExpansionCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(ThermalExpansionCoefficient_gridResult);
+                        if (!(ThermalExpansionCoefficientTimeSeries is null) && (ThermalExpansionCoefficientTimeSeries.SampleCount > 0))
+                            ThermalExpansionCoefficient_gridProperty = ThermalExpansionCoefficientTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_ThermalExpansionCoefficient = (ThermalExpansionCoefficient_gridProperty != null);
                     Property ThermalExpansionCoefficient_grid = arguments.Argument_ThermalExpansionCoefficient;
-                    bool UseGridFor_ThermalExpansionCoefficient = (ThermalExpansionCoefficient_grid != null);
+                    bool UseGridFor_ThermalExpansionCoefficient = !UseGridPropertyFor_ThermalExpansionCoefficient && (ThermalExpansionCoefficient_grid != null);
                     double FrictionCoefficient = 0.5;
                     if (!double.IsNaN(arguments.Argument_FrictionCoefficient_default))
                         FrictionCoefficient = arguments.Argument_FrictionCoefficient_default; // Can also be set from grid property
+                    GridProperty FrictionCoefficient_gridProperty = null;
+                    GridResult FrictionCoefficient_gridResult = arguments.Argument_FrictionCoefficient_GR;
+                    if (caseDefined && !(FrictionCoefficient_gridResult is null))
+                    {
+                        GridPropertyTimeSeries FrictionCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(FrictionCoefficient_gridResult);
+                        if (!(FrictionCoefficientTimeSeries is null) && (FrictionCoefficientTimeSeries.SampleCount > 0))
+                            FrictionCoefficient_gridProperty = FrictionCoefficientTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_FrictionCoefficient = (FrictionCoefficient_gridProperty != null);
                     Property FrictionCoefficient_grid = arguments.Argument_FrictionCoefficient;
-                    bool UseGridFor_FrictionCoefficient = (FrictionCoefficient_grid != null);
+                    bool UseGridFor_FrictionCoefficient = !UseGridPropertyFor_FrictionCoefficient && (FrictionCoefficient_grid != null);
                     double CrackSurfaceEnergy = 1000;
                     if (!double.IsNaN(arguments.Argument_CrackSurfaceEnergy_default))
                         CrackSurfaceEnergy = arguments.Argument_CrackSurfaceEnergy_default; // Can also be set from grid property
+                    GridProperty CrackSurfaceEnergy_gridProperty = null;
+                    GridResult CrackSurfaceEnergy_gridResult = arguments.Argument_CrackSurfaceEnergy_GR;
+                    if (caseDefined && !(CrackSurfaceEnergy_gridResult is null))
+                    {
+                        GridPropertyTimeSeries CrackSurfaceEnergyTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(CrackSurfaceEnergy_gridResult);
+                        if (!(CrackSurfaceEnergyTimeSeries is null) && (CrackSurfaceEnergyTimeSeries.SampleCount > 0))
+                            CrackSurfaceEnergy_gridProperty = CrackSurfaceEnergyTimeSeries.Samples.First<GridProperty>();
+                    }
+                    bool UseGridPropertyFor_CrackSurfaceEnergy = (CrackSurfaceEnergy_gridProperty != null);
                     Property CrackSurfaceEnergy_grid = arguments.Argument_CrackSurfaceEnergy;
-                    bool UseGridFor_CrackSurfaceEnergy = (CrackSurfaceEnergy_grid != null);
+                    bool UseGridFor_CrackSurfaceEnergy = !UseGridPropertyFor_CrackSurfaceEnergy && (CrackSurfaceEnergy_grid != null);
                     // Strain relaxation data
                     // Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
                     double RockStrainRelaxation = 0;
@@ -1055,13 +1125,13 @@ namespace DFMGenerator_Ocean
                     for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                     {
                         generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo) + "\n";
-                        if (DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
+                        if (DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] >= 0)
                             generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (SubEpisodesDefined_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
                         if (UseGridPropertyTimeSeriesFor_Eh_list[deformationEpisodeNo])
                         {
-                            generalInputParams += string.Format("Dynamic horizontal strain data from case {0}: XX strain from {1}, YY strain from {2}, XY strain from {3}", activeCase.Name, Exx_result_list[deformationEpisodeNo].Name, Eyy_result_list[deformationEpisodeNo].Name, Exy_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic horizontal strain data from case {0}: XX strain from {1}, YY strain from {2}, XY strain from {3}\n", activeCase.Name, Exx_result_list[deformationEpisodeNo].Name, Eyy_result_list[deformationEpisodeNo].Name, Exy_result_list[deformationEpisodeNo].Name);
                         }
                         else
                         {
@@ -1079,7 +1149,7 @@ namespace DFMGenerator_Ocean
                                 generalInputParams += string.Format("Maximum strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         }
                         if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Dynamic fluid pressure data from case {0}, property {1}", activeCase.Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic fluid pressure data from case {0}, property {1}\n", activeCase.Name, FluidPressure_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
@@ -1089,13 +1159,13 @@ namespace DFMGenerator_Ocean
                         else if (AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
                             generalInputParams += string.Format("Rate of temperature change: {0}{1}/{2}\n", toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (UseGridPropertyTimeSeriesFor_Sv_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Dynamic vertical stress data from case {0}, property {1}", activeCase.Name, Sv_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic vertical stress data from case {0}, property {1}\n", activeCase.Name, Sv_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Rate of uplift: {0}, default {1}{2}/{3}\n", AppliedUpliftRate_grid_list[deformationEpisodeNo].Name, toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
                             generalInputParams += string.Format("Rate of uplift: {0}{1}/{2}\n", toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (StressArchingFactor_list[deformationEpisodeNo] == 1)
-                        generalInputParams += string.Format("Complete stress arching; no subsidence at surface\n");
+                            generalInputParams += string.Format("Complete stress arching; no subsidence at surface\n");
                         else if (StressArchingFactor_list[deformationEpisodeNo] == 1)
                             generalInputParams += string.Format("No stress arching; subsidence at surface\n");
                         else
@@ -1119,31 +1189,45 @@ namespace DFMGenerator_Ocean
                     }
 
                     // Mechanical properties
-                    if (UseGridFor_YoungsMod)
+                    if (UseGridPropertyFor_YoungsMod)
+                        generalInputParams += string.Format("Young's Modulus: {0} from case {1}, default {2}{3}\n", YoungsMod_gridResult.Name, activeCase.Name, toProjectYoungsModUnits.Convert(YoungsMod), YoungsModUnits);
+                    else if (UseGridFor_YoungsMod)
                         generalInputParams += string.Format("Young's Modulus: {0}, default {1}{2}\n", YoungsMod_grid.Name, toProjectYoungsModUnits.Convert(YoungsMod), YoungsModUnits);
                     else
                         generalInputParams += string.Format("Young's Modulus: {0}{1}\n", toProjectYoungsModUnits.Convert(YoungsMod), YoungsModUnits);
-                    if (UseGridFor_PoissonsRatio)
+                    if (UseGridPropertyFor_PoissonsRatio)
+                        generalInputParams += string.Format("Poisson's ratio: {0} from case {1}, default {2}\n", PoissonsRatio_gridResult.Name, activeCase.Name, PoissonsRatio);
+                    else if (UseGridFor_PoissonsRatio)
                         generalInputParams += string.Format("Poisson's ratio: {0}, default {1}\n", PoissonsRatio_grid.Name, PoissonsRatio);
                     else
                         generalInputParams += string.Format("Poisson's ratio: {0}\n", PoissonsRatio);
-                    if (UseGridFor_Porosity)
+                    if (UseGridPropertyFor_Porosity)
+                        generalInputParams += string.Format("Porosity: {0} from case {1}, default {2}{3}\n", Porosity_gridResult.Name, activeCase.Name, toProjectPorosityUnits.Convert(Porosity), PorosityUnits);
+                    else if (UseGridFor_Porosity)
                         generalInputParams += string.Format("Porosity: {0}, default {1}{2}\n", Porosity_grid.Name, toProjectPorosityUnits.Convert(Porosity), PorosityUnits);
                     else
                         generalInputParams += string.Format("Porosity: {0}{1}\n", toProjectPorosityUnits.Convert(Porosity), PorosityUnits);
-                    if (UseGridFor_BiotCoefficient)
+                    if (UseGridPropertyFor_BiotCoefficient)
+                        generalInputParams += string.Format("Biot's coefficient: {0} from case {1}, default {2}\n", BiotCoefficient_gridResult.Name, activeCase.Name, BiotCoefficient);
+                    else if (UseGridFor_BiotCoefficient)
                         generalInputParams += string.Format("Biot's coefficient: {0}, default {1}\n", BiotCoefficient_grid.Name, BiotCoefficient);
                     else
                         generalInputParams += string.Format("Biot's coefficient: {0}\n", BiotCoefficient);
-                    if (UseGridFor_ThermalExpansionCoefficient)
+                    if (UseGridPropertyFor_ThermalExpansionCoefficient)
+                        generalInputParams += string.Format("Thermal expansion coefficient: {0} from case {1}, default {2}{3}\n", ThermalExpansionCoefficient_gridResult.Name, activeCase.Name, toProjectThermalExpansionCoefficientUnits.Convert(ThermalExpansionCoefficient), ThermalExpansionCoefficientUnits);
+                    else if (UseGridFor_ThermalExpansionCoefficient)
                         generalInputParams += string.Format("Thermal expansion coefficient: {0}, default {1}{2}\n", ThermalExpansionCoefficient_grid.Name, toProjectThermalExpansionCoefficientUnits.Convert(ThermalExpansionCoefficient), ThermalExpansionCoefficientUnits);
                     else
                         generalInputParams += string.Format("Thermal expansion coefficient: {0}{1}\n", toProjectThermalExpansionCoefficientUnits.Convert(ThermalExpansionCoefficient), ThermalExpansionCoefficientUnits);
-                    if (UseGridFor_FrictionCoefficient)
+                    if (UseGridPropertyFor_FrictionCoefficient)
+                        generalInputParams += string.Format("Friction coefficient: {0} from case {1}, default {2}\n", FrictionCoefficient_gridResult.Name, activeCase.Name, FrictionCoefficient);
+                    else if (UseGridFor_FrictionCoefficient)
                         generalInputParams += string.Format("Friction coefficient: {0}, default {1}\n", FrictionCoefficient_grid.Name, FrictionCoefficient);
                     else
                         generalInputParams += string.Format("Friction coefficient: {0}\n", FrictionCoefficient);
-                    if (UseGridFor_CrackSurfaceEnergy)
+                    if (UseGridPropertyFor_CrackSurfaceEnergy)
+                        generalInputParams += string.Format("Crack surface energy: {0} from case {1}, default {2}{3}\n", CrackSurfaceEnergy_gridResult.Name, activeCase.Name, toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
+                    else if (UseGridFor_CrackSurfaceEnergy)
                         generalInputParams += string.Format("Crack surface energy: {0}, default {1}{2}\n", CrackSurfaceEnergy_grid.Name, toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
                     else
                         generalInputParams += string.Format("Crack surface energy: {0}{1}\n", toProjectCrackSurfaceEnergyUnits.Convert(CrackSurfaceEnergy), CrackSurfaceEnergyUnits);
@@ -1584,9 +1668,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update Young's Modulus total if defined
-                                                if (UseGridFor_YoungsMod)
+                                                if (UseGridPropertyFor_YoungsMod || UseGridFor_YoungsMod)
                                                 {
-                                                    double cell_YoungsMod = (double)YoungsMod_grid[cellRef];
+                                                    double cell_YoungsMod = UseGridPropertyFor_YoungsMod ? (double)YoungsMod_gridProperty[cellRef] : (double)YoungsMod_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_YoungsMod)
                                                         cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
@@ -1598,9 +1682,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update Poisson's ratio total if defined
-                                                if (UseGridFor_PoissonsRatio)
+                                                if (UseGridPropertyFor_PoissonsRatio || UseGridFor_PoissonsRatio)
                                                 {
-                                                    double cell_PoissonsRatio = (double)PoissonsRatio_grid[cellRef];
+                                                    double cell_PoissonsRatio = UseGridPropertyFor_PoissonsRatio ? (double)PoissonsRatio_gridProperty[cellRef] : (double)PoissonsRatio_grid[cellRef];
                                                     if (!double.IsNaN(cell_PoissonsRatio))
                                                     {
                                                         PoissonsRatio_total += cell_PoissonsRatio;
@@ -1609,9 +1693,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update porosity total if defined
-                                                if (UseGridFor_Porosity)
+                                                if (UseGridPropertyFor_Porosity || UseGridFor_Porosity)
                                                 {
-                                                    double cell_Porosity = (double)Porosity_grid[cellRef];
+                                                    double cell_Porosity = UseGridPropertyFor_Porosity ? (double)Porosity_gridProperty[cellRef] : (double)Porosity_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_Porosity)
                                                         cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
@@ -1623,9 +1707,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update Biot coefficient total if defined
-                                                if (UseGridFor_BiotCoefficient)
+                                                if (UseGridPropertyFor_BiotCoefficient || UseGridFor_BiotCoefficient)
                                                 {
-                                                    double cell_BiotCoeff = (double)BiotCoefficient_grid[cellRef];
+                                                    double cell_BiotCoeff = UseGridPropertyFor_BiotCoefficient ? (double)BiotCoefficient_gridProperty[cellRef] : (double)BiotCoefficient_grid[cellRef];
                                                     if (!double.IsNaN(cell_BiotCoeff))
                                                     {
                                                         BiotCoeff_total += cell_BiotCoeff;
@@ -1634,9 +1718,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update thermal expansion coefficient total if defined
-                                                if (UseGridFor_ThermalExpansionCoefficient)
+                                                if (UseGridPropertyFor_ThermalExpansionCoefficient || UseGridFor_ThermalExpansionCoefficient)
                                                 {
-                                                    double cell_ThermalExpansionCoefficient = (double)ThermalExpansionCoefficient_grid[cellRef];
+                                                    double cell_ThermalExpansionCoefficient = UseGridPropertyFor_ThermalExpansionCoefficient ? (double)ThermalExpansionCoefficient_gridProperty[cellRef] : (double)ThermalExpansionCoefficient_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_ThermalExpansionCoefficient)
                                                         cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
@@ -1648,9 +1732,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update crack surface energy total if defined
-                                                if (UseGridFor_CrackSurfaceEnergy)
+                                                if (UseGridPropertyFor_CrackSurfaceEnergy || UseGridFor_CrackSurfaceEnergy)
                                                 {
-                                                    double cell_CrackSurfaceEnergy = (double)CrackSurfaceEnergy_grid[cellRef];
+                                                    double cell_CrackSurfaceEnergy = UseGridPropertyFor_CrackSurfaceEnergy ? (double)CrackSurfaceEnergy_gridProperty[cellRef] : (double)CrackSurfaceEnergy_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_CrackSurfaceEnergy)
                                                         cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
@@ -1662,9 +1746,9 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Update friction coefficient total if defined
-                                                if (UseGridFor_FrictionCoefficient)
+                                                if (UseGridPropertyFor_FrictionCoefficient || UseGridFor_FrictionCoefficient)
                                                 {
-                                                    double cell_FrictionCoeff = (double)FrictionCoefficient_grid[cellRef];
+                                                    double cell_FrictionCoeff = UseGridPropertyFor_FrictionCoefficient ? (double)FrictionCoefficient_gridProperty[cellRef] : (double)FrictionCoefficient_grid[cellRef];
                                                     // If the property has a FrictionAngle template, convert this to a friction coefficient
                                                     if (convertFromFrictionAngle_FrictionCoefficient)
                                                         cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
@@ -1801,13 +1885,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update Young's Modulus total if defined
-                                    if (UseGridFor_YoungsMod)
+                                    if (UseGridPropertyFor_YoungsMod || UseGridFor_YoungsMod)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_YoungsMod = (double)YoungsMod_grid[cellRef];
+                                            double cell_YoungsMod = UseGridPropertyFor_YoungsMod ? (double)YoungsMod_gridProperty[cellRef] : (double)YoungsMod_grid[cellRef];
                                             // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                             if (convertFromGeneral_YoungsMod)
                                                 cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
@@ -1820,13 +1904,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update Poisson's ratio total if defined
-                                    if (UseGridFor_PoissonsRatio)
+                                    if (UseGridPropertyFor_PoissonsRatio || UseGridFor_PoissonsRatio)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_PoissonsRatio = (double)PoissonsRatio_grid[cellRef];
+                                            double cell_PoissonsRatio = UseGridPropertyFor_PoissonsRatio ? (double)PoissonsRatio_gridProperty[cellRef] : (double)PoissonsRatio_grid[cellRef];
                                             if (!double.IsNaN(cell_PoissonsRatio))
                                             {
                                                 local_PoissonsRatio = cell_PoissonsRatio;
@@ -1836,13 +1920,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update porosity total if defined
-                                    if (UseGridFor_Porosity)
+                                    if (UseGridPropertyFor_Porosity || UseGridFor_Porosity)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_Porosity = (double)Porosity_grid[cellRef];
+                                            double cell_Porosity = UseGridPropertyFor_Porosity ? (double)Porosity_gridProperty[cellRef] : (double)Porosity_grid[cellRef];
                                             // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                             if (convertFromGeneral_Porosity)
                                                 cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
@@ -1855,13 +1939,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update Biot coefficient total if defined
-                                    if (UseGridFor_BiotCoefficient)
+                                    if (UseGridPropertyFor_BiotCoefficient || UseGridFor_BiotCoefficient)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_BiotCoeff = (double)BiotCoefficient_grid[cellRef];
+                                            double cell_BiotCoeff = UseGridPropertyFor_BiotCoefficient ? (double)BiotCoefficient_gridProperty[cellRef] : (double)BiotCoefficient_grid[cellRef];
                                             if (!double.IsNaN(cell_BiotCoeff))
                                             {
                                                 local_BiotCoefficient = cell_BiotCoeff;
@@ -1871,13 +1955,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update thermal expansion coefficient total if defined
-                                    if (UseGridFor_ThermalExpansionCoefficient)
+                                    if (UseGridPropertyFor_ThermalExpansionCoefficient || UseGridFor_ThermalExpansionCoefficient)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_ThermalExpansionCoefficient = (double)ThermalExpansionCoefficient_grid[cellRef];
+                                            double cell_ThermalExpansionCoefficient = UseGridPropertyFor_ThermalExpansionCoefficient ? (double)ThermalExpansionCoefficient_gridProperty[cellRef] : (double)ThermalExpansionCoefficient_grid[cellRef];
                                             // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                             if (convertFromGeneral_ThermalExpansionCoefficient)
                                                 cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
@@ -1890,13 +1974,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update crack surface energy total if defined
-                                    if (UseGridFor_CrackSurfaceEnergy)
+                                    if (UseGridPropertyFor_CrackSurfaceEnergy || UseGridFor_CrackSurfaceEnergy)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_CrackSurfaceEnergy = (double)CrackSurfaceEnergy_grid[cellRef];
+                                            double cell_CrackSurfaceEnergy = UseGridPropertyFor_CrackSurfaceEnergy ? (double)CrackSurfaceEnergy_gridProperty[cellRef] : (double)CrackSurfaceEnergy_grid[cellRef];
                                             // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                             if (convertFromGeneral_CrackSurfaceEnergy)
                                                 cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
@@ -1909,13 +1993,13 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Update friction coefficient total if defined
-                                    if (UseGridFor_FrictionCoefficient)
+                                    if (UseGridPropertyFor_FrictionCoefficient || UseGridFor_FrictionCoefficient)
                                     {
                                         // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                         {
                                             cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_FrictionCoeff = (double)FrictionCoefficient_grid[cellRef];
+                                            double cell_FrictionCoeff = UseGridPropertyFor_FrictionCoefficient ? (double)FrictionCoefficient_gridProperty[cellRef] : (double)FrictionCoefficient_grid[cellRef];
                                             // If the property has a FrictionAngle template, convert this to a friction coefficient
                                             if (convertFromFrictionAngle_FrictionCoefficient)
                                                 cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
@@ -2541,8 +2625,8 @@ namespace DFMGenerator_Ocean
                                             if (subEpisodeNo < 0)
                                                 continue;
 
-                                                // Get the sub episode duration
-                                                local_DeformationEpisodeDuration = subEpisodeDuration_list[subEpisodeNo] * TimeUnitConverter;
+                                            // Get the sub episode duration
+                                            local_DeformationEpisodeDuration = subEpisodeDuration_list[subEpisodeNo] * TimeUnitConverter;
 
                                             // Get the load rates for the sub episode, where defined
                                             bool overideEhRate = UseGridFor_Eh && !double.IsNaN(initialExx) && !double.IsNaN(finalExx) && !double.IsNaN(initialEyy) && !double.IsNaN(finalEyy) && !double.IsNaN(initialExy) && !double.IsNaN(finalExy);
@@ -2903,7 +2987,17 @@ namespace DFMGenerator_Ocean
                                     gc.PropControl.AddDeformationEpisode(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialHorizontalStrain, local_InitialFluidPressure, local_InitialAbsoluteVerticalStress);
 
 #if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode(Tensor2S({0}, {1}, 0, {2}, 0, 0), {3}, {4}, {5}, {6}, {7}, Tensor2S({8}, {9}, 0, {10}, 0, 0), {11}, {12});", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY), local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialHorizontalStrain.Component(Tensor2SComponents.XX), local_InitialHorizontalStrain.Component(Tensor2SComponents.YY), local_InitialHorizontalStrain.Component(Tensor2SComponents.XY), local_InitialFluidPressure, local_InitialAbsoluteVerticalStress));
+                                    string local_EhRate_info; 
+                                    if (local_EhRate is null)
+                                        local_EhRate_info= "null";
+                                    else
+                                        local_EhRate_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY));
+                                    string local_InitialHorizontalStrain_info;
+                                    if (local_InitialHorizontalStrain is null)
+                                        local_InitialHorizontalStrain_info = "null";
+                                    else
+                                        local_InitialHorizontalStrain_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_InitialHorizontalStrain.Component(Tensor2SComponents.XX), local_InitialHorizontalStrain.Component(Tensor2SComponents.YY), local_InitialHorizontalStrain.Component(Tensor2SComponents.XY));
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8});", local_EhRate_info, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialHorizontalStrain_info, local_InitialFluidPressure, local_InitialAbsoluteVerticalStress));
 #endif
                                 }// End get the stress / strain data from the grid as required
 
@@ -4842,6 +4936,14 @@ namespace DFMGenerator_Ocean
             private Droid argument_CrackSurfaceEnergy;
             private double argument_ThermalExpansionCoefficient_default = 4E-5;
             private Droid argument_ThermalExpansionCoefficient;
+            // Arguments to allow simulation results to be input for the standard elastic and plastic parameters
+            private GridResult argument_YoungsMod_GR;
+            private GridResult argument_PoissonsRatio_GR;
+            private GridResult argument_Porosity_GR;
+            private GridResult argument_BiotCoefficient_GR;
+            private GridResult argument_FrictionCoefficient_GR;
+            private GridResult argument_CrackSurfaceEnergy_GR;
+            private GridResult argument_ThermalExpansionCoefficient_GR;
             // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
             private double argument_RockStrainRelaxation_default = 0;
             private Droid argument_RockStrainRelaxation;
@@ -4867,7 +4969,7 @@ namespace DFMGenerator_Ocean
             private double argument_MeanOverlyingSedimentDensity = 2250;
             private double argument_FluidDensity = 1000;
             private double argument_InitialOverpressure = 0;
-            public double argument_GeothermalGradient = 0.03;
+            private double argument_GeothermalGradient = 0.03;
             private double argument_InitialStressRelaxation = 0.5;
             private bool argument_AverageStressStrainData = false;
 
@@ -5166,6 +5268,8 @@ namespace DFMGenerator_Ocean
                 internal get { return DataManager.Resolve(this.argument_ThermalExpansionCoefficient) as Property; }
                 set { this.argument_ThermalExpansionCoefficient = (value == null ? null : value.Droid); }
             }*/
+
+            // Arguments to allow simulation results to be input for the standard elastic and plastic parameters are placed at the bottom of the Argument properties list, to ensure backwards compatibility
 
             [Description("Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation", "Default rock strain relaxation time constant (s); set to 0 for no rock strain relaxation")]
             public double Argument_RockStrainRelaxation_default
@@ -5684,7 +5788,7 @@ namespace DFMGenerator_Ocean
             [Description("Number of deformation episodes", "Number of deformation episodes")]
             internal int Argument_NoDeformationEpisodes
             {
-                get 
+                get
                 {
                     if (this.argument_DeformationEpisode == "")
                         return 0;
@@ -5697,7 +5801,7 @@ namespace DFMGenerator_Ocean
                     else if (this.argument_DeformationEpisode4 == "")
                         return 4;
                     else
-                        return this.argument_DeformationEpisode_extras.Count + 5; 
+                        return this.argument_DeformationEpisode_extras.Count + 5;
                 }
             }
             [Description("Deformation episode name", "Name for deformation episode, based on index, duration and deformation load")]
@@ -6769,7 +6873,12 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default_extras.Add(0);
                     this.argument_AppliedUpliftRate_extras.Add(null);
                     this.argument_StressArchingFactor_extras.Add(0);
+                    this.argument_SimulationCase_extras.Add(null);
+                    this.argument_ElasticStrainXXTimeSeries_extras.Add(null);
+                    this.argument_ElasticStrainYYTimeSeries_extras.Add(null);
+                    this.argument_ElasticStrainXYTimeSeries_extras.Add(null);
                     this.argument_FluidPressureTimeSeries_extras.Add(null);
+                    this.argument_AbsoluteVerticalStressTimeSeries_extras.Add(null);
                 }
 
                 return episodeIndex;
@@ -6803,7 +6912,12 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default = this.argument_AppliedUpliftRate_default1;
                     this.argument_AppliedUpliftRate = this.argument_AppliedUpliftRate1;
                     this.argument_StressArchingFactor = this.argument_StressArchingFactor1;
+                    this.argument_SimulationCase = this.argument_SimulationCase1;
+                    this.argument_ElasticStrainXXTimeSeries = this.argument_ElasticStrainXXTimeSeries1;
+                    this.argument_ElasticStrainYYTimeSeries = this.argument_ElasticStrainYYTimeSeries1;
+                    this.argument_ElasticStrainXYTimeSeries = this.argument_ElasticStrainXYTimeSeries1;
                     this.argument_FluidPressureTimeSeries = this.argument_FluidPressureTimeSeries1;
+                    this.argument_AbsoluteVerticalStressTimeSeries = this.argument_AbsoluteVerticalStressTimeSeries1;
                     if (noDeformationEpisodes > 1)
                         GenerateDeformationEpisodeName(0, true);
                     else
@@ -6826,7 +6940,12 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default1 = this.argument_AppliedUpliftRate_default2;
                     this.argument_AppliedUpliftRate1 = this.argument_AppliedUpliftRate2;
                     this.argument_StressArchingFactor1 = this.argument_StressArchingFactor2;
+                    this.argument_SimulationCase1 = this.argument_SimulationCase2;
+                    this.argument_ElasticStrainXXTimeSeries1 = this.argument_ElasticStrainXXTimeSeries2;
+                    this.argument_ElasticStrainYYTimeSeries1 = this.argument_ElasticStrainYYTimeSeries2;
+                    this.argument_ElasticStrainXYTimeSeries1 = this.argument_ElasticStrainXYTimeSeries2;
                     this.argument_FluidPressureTimeSeries1 = this.argument_FluidPressureTimeSeries2;
+                    this.argument_AbsoluteVerticalStressTimeSeries1 = this.argument_AbsoluteVerticalStressTimeSeries2;
                     if (noDeformationEpisodes > 2)
                         GenerateDeformationEpisodeName(1, true);
                     else
@@ -6849,7 +6968,12 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default2 = this.argument_AppliedUpliftRate_default3;
                     this.argument_AppliedUpliftRate2 = this.argument_AppliedUpliftRate3;
                     this.argument_StressArchingFactor2 = this.argument_StressArchingFactor3;
+                    this.argument_SimulationCase2 = this.argument_SimulationCase3;
+                    this.argument_ElasticStrainXXTimeSeries2 = this.argument_ElasticStrainXXTimeSeries3;
+                    this.argument_ElasticStrainYYTimeSeries2 = this.argument_ElasticStrainYYTimeSeries3;
+                    this.argument_ElasticStrainXYTimeSeries2 = this.argument_ElasticStrainXYTimeSeries3;
                     this.argument_FluidPressureTimeSeries2 = this.argument_FluidPressureTimeSeries3;
+                    this.argument_AbsoluteVerticalStressTimeSeries2 = this.argument_AbsoluteVerticalStressTimeSeries3;
                     if (noDeformationEpisodes > 3)
                         GenerateDeformationEpisodeName(2, true);
                     else
@@ -6872,7 +6996,12 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_default3 = this.argument_AppliedUpliftRate_default4;
                     this.argument_AppliedUpliftRate3 = this.argument_AppliedUpliftRate4;
                     this.argument_StressArchingFactor3 = this.argument_StressArchingFactor4;
+                    this.argument_SimulationCase3 = this.argument_SimulationCase4;
+                    this.argument_ElasticStrainXXTimeSeries3 = this.argument_ElasticStrainXXTimeSeries4;
+                    this.argument_ElasticStrainYYTimeSeries3 = this.argument_ElasticStrainYYTimeSeries4;
+                    this.argument_ElasticStrainXYTimeSeries3 = this.argument_ElasticStrainXYTimeSeries4;
                     this.argument_FluidPressureTimeSeries3 = this.argument_FluidPressureTimeSeries4;
+                    this.argument_AbsoluteVerticalStressTimeSeries3 = this.argument_AbsoluteVerticalStressTimeSeries4;
                     if (noDeformationEpisodes > 4)
                         GenerateDeformationEpisodeName(3, true);
                     else
@@ -6899,7 +7028,13 @@ namespace DFMGenerator_Ocean
                             this.argument_AppliedUpliftRate_default4 = this.argument_AppliedUpliftRate_default_extras[0];
                             this.argument_AppliedUpliftRate4 = this.argument_AppliedUpliftRate_extras[0];
                             this.argument_StressArchingFactor4 = this.argument_StressArchingFactor_extras[0];
+                            this.argument_SimulationCase4 = this.argument_SimulationCase_extras[0];
+                            this.argument_ElasticStrainXXTimeSeries4 = this.argument_ElasticStrainXXTimeSeries_extras[0];
+                            this.argument_ElasticStrainYYTimeSeries4 = this.argument_ElasticStrainYYTimeSeries_extras[0];
+                            this.argument_ElasticStrainXYTimeSeries4 = this.argument_ElasticStrainXYTimeSeries_extras[0];
                             this.argument_FluidPressureTimeSeries4 = this.argument_FluidPressureTimeSeries_extras[0];
+                            this.argument_AbsoluteVerticalStressTimeSeries4 = this.argument_AbsoluteVerticalStressTimeSeries_extras[0];
+
                             GenerateDeformationEpisodeName(4, true);
 
                             this.argument_DeformationEpisode_extras.RemoveAt(0);
@@ -6918,7 +7053,12 @@ namespace DFMGenerator_Ocean
                             this.argument_AppliedUpliftRate_default_extras.RemoveAt(0);
                             this.argument_AppliedUpliftRate_extras.RemoveAt(0);
                             this.argument_StressArchingFactor_extras.RemoveAt(0);
+                            this.argument_SimulationCase_extras.RemoveAt(0);
+                            this.argument_ElasticStrainXXTimeSeries_extras.RemoveAt(0);
+                            this.argument_ElasticStrainYYTimeSeries_extras.RemoveAt(0);
+                            this.argument_ElasticStrainXYTimeSeries_extras.RemoveAt(0);
                             this.argument_FluidPressureTimeSeries_extras.RemoveAt(0);
+                            this.argument_AbsoluteVerticalStressTimeSeries_extras.RemoveAt(0);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -6955,7 +7095,12 @@ namespace DFMGenerator_Ocean
                         this.argument_AppliedUpliftRate_default4 = double.NaN;
                         this.argument_AppliedUpliftRate4 = null;
                         this.argument_StressArchingFactor4 = double.NaN;
+                        this.argument_SimulationCase4 = null;
+                        this.argument_ElasticStrainXXTimeSeries4 = null;
+                        this.argument_ElasticStrainYYTimeSeries4 = null;
+                        this.argument_ElasticStrainXYTimeSeries4 = null;
                         this.argument_FluidPressureTimeSeries4 = null;
+                        this.argument_AbsoluteVerticalStressTimeSeries4 = null;
                     }
                 }
                 else
@@ -6978,7 +7123,12 @@ namespace DFMGenerator_Ocean
                         this.argument_AppliedUpliftRate_default_extras.RemoveAt(episodeIndex - 5);
                         this.argument_AppliedUpliftRate_extras.RemoveAt(episodeIndex - 5);
                         this.argument_StressArchingFactor_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_SimulationCase_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_ElasticStrainXXTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_ElasticStrainYYTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_ElasticStrainXYTimeSeries_extras.RemoveAt(episodeIndex - 5);
                         this.argument_FluidPressureTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_AbsoluteVerticalStressTimeSeries_extras.RemoveAt(episodeIndex - 5);
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
@@ -7005,59 +7155,83 @@ namespace DFMGenerator_Ocean
             /// <returns></returns>
             public string GenerateDeformationEpisodeName(int deformationEpisodeIndex, bool assignName)
             {
-                // Get data from the dialog box
-                double duration = DeformationEpisodeDuration(deformationEpisodeIndex);
-                int timeUnits = DeformationEpisodeTimeUnits(deformationEpisodeIndex);
-                double ehminAzi_default = EhminAzi_default(deformationEpisodeIndex);
-                Property ehminAzi = EhminAzi(deformationEpisodeIndex);
-                double ehminRate_default = EhminRate_default(deformationEpisodeIndex);
-                Property ehminRate = EhminRate(deformationEpisodeIndex);
-                //double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
-                //Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
-                double OPRate_default = AppliedOverpressureRate_default(deformationEpisodeIndex);
-                Property OPRate = AppliedOverpressureRate(deformationEpisodeIndex);
-                double tempChange_default = AppliedTemperatureChange_default(deformationEpisodeIndex);
-                Property tempChange = AppliedTemperatureChange(deformationEpisodeIndex);
-                double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
-                Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
-                //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
-                GridResult fluidPressure = FluidPressureTimeSeries(deformationEpisodeIndex);
 
-                // Create a name based on deformation episode duration and specified load
+                // The name should start with the deformation episode index number
                 string deformationEpisodeName = string.Format("Deformation episode {0}:", deformationEpisodeIndex + 1);
-                string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
-                if (duration >= 0)
-                    deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
-                if (ehminRate != null)
+                if (SubdivideDeformationEpisode(deformationEpisodeIndex))
                 {
-                    deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
-                    if (ehminAzi != null)
-                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
-                    else
-                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                    // For a dynamic deformation episode, create a name based on the simulation case
+
+                    // Get data from the dialog box
+                    Case simCase = SimulationCase(deformationEpisodeIndex);
+                    //GridResult exx = ElasticStrainXXTimeSeries(deformationEpisodeIndex);
+                    //GridResult eyy = ElasticStrainYYTimeSeries(deformationEpisodeIndex);
+                    //GridResult exy = ElasticStrainXYTimeSeries(deformationEpisodeIndex);
+                    //GridResult fluidPressure = FluidPressureTimeSeries(deformationEpisodeIndex);
+                    //GridResult sV = AbsoluteVerticalStressTimeSeries(deformationEpisodeIndex);
+
+                    deformationEpisodeName += string.Format(" Simulation case {0}", simCase.Name);
+
+                    /*if ((exx != null) && (eyy != null) && (exy != null))
+                    {
+                        deformationEpisodeName += string.Format(" Strain ({0},{1},{2})", exx.Name, eyy.Name, exy.Name);
+                    }
+                    if (fluidPressure != null)
+                        deformationEpisodeName += string.Format(" Fluid Pressure {0}", fluidPressure.Name);*/
                 }
-                else if (ehminRate_default != 0)
+                else
                 {
-                    deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
-                    if (ehminAzi != null)
-                        deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
-                    else
-                        deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                    // Otherwise create a name based on deformation episode duration and specified load
+
+                    // Get data from the dialog box
+                    double duration = DeformationEpisodeDuration(deformationEpisodeIndex);
+                    int timeUnits = DeformationEpisodeTimeUnits(deformationEpisodeIndex);
+                    double ehminAzi_default = EhminAzi_default(deformationEpisodeIndex);
+                    Property ehminAzi = EhminAzi(deformationEpisodeIndex);
+                    double ehminRate_default = EhminRate_default(deformationEpisodeIndex);
+                    Property ehminRate = EhminRate(deformationEpisodeIndex);
+                    //double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
+                    //Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
+                    double OPRate_default = AppliedOverpressureRate_default(deformationEpisodeIndex);
+                    Property OPRate = AppliedOverpressureRate(deformationEpisodeIndex);
+                    double tempChange_default = AppliedTemperatureChange_default(deformationEpisodeIndex);
+                    Property tempChange = AppliedTemperatureChange(deformationEpisodeIndex);
+                    double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
+                    Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
+                    //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
+
+                    string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
+                    if (duration >= 0)
+                        deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
+                    if (ehminRate != null)
+                    {
+                        deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
+                        if (ehminAzi != null)
+                            deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
+                        else
+                            deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                    }
+                    else if (ehminRate_default != 0)
+                    {
+                        deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
+                        if (ehminAzi != null)
+                            deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
+                        else
+                            deformationEpisodeName += string.Format(" azimuth {0}deg", Math.Round(ehminAzi_default * (180 / Math.PI)));
+                    }
+                    if (OPRate != null)
+                        deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
+                    else if (OPRate_default != 0)
+                        deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
+                    if (tempChange != null)
+                        deformationEpisodeName += string.Format(" Temperature {0}", tempChange.Name);
+                    else if (tempChange_default != 0)
+                        deformationEpisodeName += string.Format(" Temperature {0}degK/{1}", Math.Round(tempChange_default), timeUnitText);
+                    if (upliftRate != null)
+                        deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
+                    else if (upliftRate_default != 0)
+                        deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
                 }
-                if (fluidPressure != null)
-                    deformationEpisodeName += string.Format(" Fluid Pressure {0}", fluidPressure.Name);
-                else if (OPRate != null)
-                    deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
-                else if (OPRate_default != 0)
-                    deformationEpisodeName += string.Format(" Overpressure {0}Pa/{1}", Math.Round(OPRate_default), timeUnitText);
-                if (tempChange != null)
-                    deformationEpisodeName += string.Format(" Temperature {0}", tempChange.Name);
-                else if (tempChange_default != 0)
-                    deformationEpisodeName += string.Format(" Temperature {0}degK/{1}", Math.Round(tempChange_default), timeUnitText);
-                if (upliftRate != null)
-                    deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
-                else if (upliftRate_default != 0)
-                    deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
 
                 // If required, set the deformation episode name and then return it
                 if (assignName)
@@ -8140,6 +8314,57 @@ namespace DFMGenerator_Ocean
                 internal get { return this.argument_AbsoluteVerticalStressTimeSeries4; }
                 set { this.argument_AbsoluteVerticalStressTimeSeries4 = (value == null ? null : value); }
             }
+            // Arguments to allow simulation results to be input for the standard elastic and plastic parameters
+            [OptionalInWorkflow]
+            [Description("Young's Modulus", "Young's Modulus")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_YoungsMod_GR
+            {
+                internal get { return this.argument_YoungsMod_GR; }
+                set { this.argument_YoungsMod_GR = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Poisson's ratio", "Poisson's ratio")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_PoissonsRatio_GR
+            {
+                internal get { return this.argument_PoissonsRatio_GR; }
+                set { this.argument_PoissonsRatio_GR = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Porosity", "Porosity")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_Porosity_GR
+            {
+                internal get { return this.argument_Porosity_GR; }
+                set { this.argument_Porosity_GR = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Biot's coefficient", "Biot's coefficient")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_BiotCoefficient_GR
+            {
+                internal get { return this.argument_BiotCoefficient_GR; }
+                set { this.argument_BiotCoefficient_GR = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Friction coefficient", "Friction coefficient")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_FrictionCoefficient_GR
+            {
+                internal get { return this.argument_FrictionCoefficient_GR; }
+                set { this.argument_FrictionCoefficient_GR = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Crack surface energy", "Crack surface energy")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_CrackSurfaceEnergy_GR
+            {
+                internal get { return this.argument_CrackSurfaceEnergy_GR; }
+                set { this.argument_CrackSurfaceEnergy_GR = (value == null ? null : value); }
+            }
+            [OptionalInWorkflow]
+            [Description("Thermal expansion coefficient", "Thermal expansion coefficient")]
+            public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_ThermalExpansionCoefficient_GR
+            {
+                internal get { return this.argument_ThermalExpansionCoefficient_GR; }
+                set { this.argument_ThermalExpansionCoefficient_GR = (value == null ? null : value); }
+            }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -8310,6 +8535,15 @@ namespace DFMGenerator_Ocean
                 argument_FrictionCoefficient = null;
                 argument_CrackSurfaceEnergy_default = 1000;
                 argument_CrackSurfaceEnergy = null;
+                // Arguments to allow simulation results to be input for the standard elastic and plastic parameters
+                argument_YoungsMod_GR = null;
+                argument_PoissonsRatio_GR = null;
+                argument_Porosity_GR = null;
+                argument_BiotCoefficient_GR = null;
+                argument_FrictionCoefficient_GR = null;
+                argument_CrackSurfaceEnergy_GR = null;
+                argument_ThermalExpansionCoefficient_GR = null;
+                // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
                 // NB the rock strain relaxation and fracture relaxation time constants must be supplied in SI units (seconds), not geological time units
                 argument_RockStrainRelaxation_default = 0;
                 argument_RockStrainRelaxation = null;
@@ -8445,16 +8679,16 @@ namespace DFMGenerator_Ocean
         public System.Drawing.Bitmap Image
         {
             //get { return PetrelImages.Modules; }
-            get { return DFMGenerator_Ocean.Properties.Resources.Logo1_48; } 
+            get { return DFMGenerator_Ocean.Properties.Resources.Logo1_48; }
             private set
             {
                 // TODO: implement set
                 this.RaiseImageChanged();
             }
         }
-#endregion
+        #endregion
 
-#region IDescriptionSource Members
+        #region IDescriptionSource Members
 
         /// <summary>
         /// Gets the description of the DFMGenerator
@@ -8482,7 +8716,7 @@ namespace DFMGenerator_Ocean
                 get { return instance; }
             }
 
-#region IDescription Members
+            #region IDescription Members
 
             /// <summary>
             /// Gets the name of DFMGenerator
@@ -8506,9 +8740,9 @@ namespace DFMGenerator_Ocean
                 get { return "Petrel UI for DFM Generator module"; }
             }
 
-#endregion
+            #endregion
         }
-#endregion
+        #endregion
 
         public class UIFactory : WorkflowEditorUIFactory
         {

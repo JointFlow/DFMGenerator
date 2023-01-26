@@ -77,10 +77,6 @@ namespace DFMGenerator_Ocean
             // Unit labelling must be handled manually
             UpdatePropertyPresentationBox(args.EhminRate(deformationEpisodeIndex), presentationBox_DE_EhminRate);
             UpdatePropertyPresentationBox(args.EhmaxRate(deformationEpisodeIndex), presentationBox_DE_EhmaxRate);
-            /*if (args.FluidPressureTimeSeries(deformationEpisodeIndex) != null)
-                UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_OPRate);
-            else
-                UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);*/
             UpdatePropertyPresentationBox(args.AppliedOverpressureRate(deformationEpisodeIndex), presentationBox_DE_OPRate);
             UpdatePropertyPresentationBox(args.AppliedTemperatureChange(deformationEpisodeIndex), presentationBox_DE_TempChange);
             UpdatePropertyPresentationBox(args.AppliedUpliftRate(deformationEpisodeIndex), presentationBox_DE_UpliftRate);
@@ -108,19 +104,6 @@ namespace DFMGenerator_Ocean
             args.EhminAzi(presentationBox_DE_EhminAzi.Tag as Property, deformationEpisodeIndex);
             args.EhminRate(presentationBox_DE_EhminRate.Tag as Property, deformationEpisodeIndex);
             args.EhmaxRate(presentationBox_DE_EhmaxRate.Tag as Property, deformationEpisodeIndex);
-            /*try
-            {
-                if ((presentationBox_DE_OPRate.Tag != null) && (presentationBox_DE_OPRate.Tag.GetType() == typeof(GridResult)))
-                    args.FluidPressureTimeSeries(presentationBox_DE_OPRate.Tag as GridResult, deformationEpisodeIndex);
-                else
-                    args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
-            }
-            catch (Exception e)
-            {
-                PetrelLogger.InfoOutputWindow(e.Message);
-                PetrelLogger.InfoOutputWindow(e.StackTrace);
-
-            }*/
             args.AppliedOverpressureRate(presentationBox_DE_OPRate.Tag as Property, deformationEpisodeIndex);
             args.AppliedTemperatureChange(presentationBox_DE_TempChange.Tag as Property, deformationEpisodeIndex);
             args.AppliedUpliftRate(presentationBox_DE_UpliftRate.Tag as Property, deformationEpisodeIndex);
@@ -349,13 +332,6 @@ namespace DFMGenerator_Ocean
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_DE_EhmaxRate);
         }
 
-        /*private void dropTarget_DE_OPRate_DragDrop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetData(typeof(object)).GetType() == typeof(GridResult))
-                UpdateGridResultPresentationBox(e.Data.GetData(typeof(object)) as GridResult, presentationBox_DE_OPRate);
-            else
-                UpdatePropertyPresentationBox(e.Data.GetData(typeof(object)) as Property, presentationBox_DE_OPRate);
-        }*/
         private void dropTarget_DE_OPRate_DragDrop(object sender, DragEventArgs e)
         {
             Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
