@@ -1065,7 +1065,11 @@ namespace DFMGenerator_Ocean
                     IUnitConverter toSIThermalExpansionCoefficientUnits = PetrelUnitSystem.GetConverterFromUI(ThermalExpansionCoefficientTemplate);
                     bool convertFromGeneral_ThermalExpansionCoefficient = (UseGridFor_ThermalExpansionCoefficient ? ThermalExpansionCoefficient_grid.Template.Equals(GeneralTemplate) : false);
                     // If the friction grid property is supplied as a friction angle, this will be converted to a friction coefficient
-                    bool convertFromFrictionAngle_FrictionCoefficient = (UseGridFor_FrictionCoefficient ? FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle) : false);
+                    bool convertFromFrictionAngle_FrictionCoefficient = false;
+                    if (UseGridPropertyFor_FrictionCoefficient)
+                        convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_gridResult.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
+                    if (UseGridFor_FrictionCoefficient)
+                        convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
 
                     // Get path for output files
                     string folderPath = "";
@@ -1317,6 +1321,8 @@ namespace DFMGenerator_Ocean
                         generalInputParams += "Mode 2 fractures only\n";
                     else
                         generalInputParams += "Optimal fracture mode\n";
+                    if (FractureNucleationPosition >= 0)
+                        generalInputParams += string.Format("Fractures nucleate at relative height {0} within the layer (0=base, 1=top)\n", FractureNucleationPosition);
                     if (CheckAlluFStressShadows == AutomaticFlag.All)
                         generalInputParams += "Include stress shadow interaction between different fracture sets\n";
                     generalInputParams += string.Format("Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes: {0}\n", AnisotropyCutoff);
@@ -2929,9 +2935,9 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, TimeUnits.{18}, {19}, {20});",
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21});",
                                     CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
 #endif
 
@@ -7170,8 +7176,10 @@ namespace DFMGenerator_Ocean
                     //GridResult fluidPressure = FluidPressureTimeSeries(deformationEpisodeIndex);
                     //GridResult sV = AbsoluteVerticalStressTimeSeries(deformationEpisodeIndex);
 
-                    deformationEpisodeName += string.Format(" Simulation case {0}", simCase.Name);
-
+                    if (simCase != null)
+                        deformationEpisodeName += string.Format(" Simulation case {0}", simCase.Name);
+                    else
+                        deformationEpisodeName += string.Format(" Selected simulation case");
                     /*if ((exx != null) && (eyy != null) && (exy != null))
                     {
                         deformationEpisodeName += string.Format(" Strain ({0},{1},{2})", exx.Name, eyy.Name, exy.Name);

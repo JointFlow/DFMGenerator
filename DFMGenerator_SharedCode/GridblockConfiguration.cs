@@ -1701,7 +1701,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Maximum radius that a microfracture can reach before nucleating a macrofracture; normally assumed to be half of the layer thickness, unless a fracture nucleation position within the layer has been specified
         /// </summary>
-        public double MaximumMicrofractureRadius { get { double fractureNucleationPosition = PropControl.FractureNucleationPosition; if (fractureNucleationPosition >= 0) return ThicknessAtDeformation * (0.5 + Math.Abs(fractureNucleationPosition - 0.5)); else return 0.5; } }
+        public double MaximumMicrofractureRadius { get { double fractureNucleationPosition = PropControl.FractureNucleationPosition; return ThicknessAtDeformation * (0.5 + (fractureNucleationPosition >= 0 ? Math.Abs(fractureNucleationPosition - 0.5) : 0)); } }
         /// <summary>
         /// Component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
         /// </summary>
@@ -2814,7 +2814,7 @@ namespace DFMGenerator_SharedCode
             double uF_minRadius = DFNControl.MicrofractureDFNMinimumRadius;
             double MF_minLength = DFNControl.MacrofractureDFNMinimumLength;
             bool SpecifyFractureNucleationPosition = (PropControl.FractureNucleationPosition >= 0);
-            double FractureNucleationPositionK = (PropControl.FractureNucleationPosition - 0.5) * 2 * ThicknessAtDeformation;
+            double FractureNucleationPosition_w = PropControl.FractureNucleationPosition;
 
             // Flags for calculating microfractures and macrofractures
             bool calc_uF = ((uF_minRadius > 0) && (uF_minRadius < max_uF_radius));
@@ -3048,9 +3048,15 @@ namespace DFMGenerator_SharedCode
                                 if (next_uF_radius > max_uF_radius) next_uF_radius = max_uF_radius;
 
                                 // Get random location for new microfracture
-                                PointIJK new_uF_centrepoint = fs.convertXYZtoIJK(getRandomPoint(false));
+                                // Get random location for new microfracture
+                                PointXYZ new_uf_centrepointXYZ = getRandomPoint(false);
                                 if (SpecifyFractureNucleationPosition)
-                                    new_uF_centrepoint.K = FractureNucleationPositionK;
+                                {
+                                    double u, v;
+                                    if (getPositionRelativeToGridblock(out u, out v, new_uf_centrepointXYZ.X, new_uf_centrepointXYZ.Y))
+                                        new_uf_centrepointXYZ = getAbsolutePosition(u, v, FractureNucleationPosition_w);
+                                }
+                                PointIJK new_uF_centrepointIJK = fs.convertXYZtoIJK(new_uf_centrepointXYZ);
 
                                 // There are no macrofractures yet so there will be no stress shadows even if we are including stress shadow effects
                                 bool addThisFracture = true;
@@ -3062,7 +3068,7 @@ namespace DFMGenerator_SharedCode
                                     DipDirection dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
 
                                     // Create a new MicrofractureIJK object and add it to the local DFN
-                                    MicrofractureIJK new_local_uF = new MicrofractureIJK(fs, dipsetIndex, new_uF_centrepoint, next_uF_radius, dipdir, initialLTime, 0);
+                                    MicrofractureIJK new_local_uF = new MicrofractureIJK(fs, dipsetIndex, new_uF_centrepointIJK, next_uF_radius, dipdir, initialLTime, 0);
                                     fs.LocalDFNMicrofractures.Add(new_local_uF);
 
                                     // Create a corresponding MicrofractureXYZ object and add it to the global DFN
@@ -3102,6 +3108,12 @@ namespace DFMGenerator_SharedCode
                         {
                             // Get random location for new microfracture
                             PointXYZ new_uf_centrepointXYZ = getRandomPoint(false);
+                            if (SpecifyFractureNucleationPosition)
+                            {
+                                double u, v;
+                                if (getPositionRelativeToGridblock(out u, out v, new_uf_centrepointXYZ.X, new_uf_centrepointXYZ.Y))
+                                    new_uf_centrepointXYZ = getAbsolutePosition(u, v, FractureNucleationPosition_w);
+                            }
                             PointIJK new_uF_centrepointIJK = fs.convertXYZtoIJK(new_uf_centrepointXYZ);
 
                             // If we are including stress shadow effects, check whether this point lies in the stress shadow of an existing macrofracture and if so set flag to ignore it
