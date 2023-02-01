@@ -12,7 +12,7 @@ authors:
     corresponding: true
   - name: Mikael Luthje
     orcid: 0000-0003-2715-1653
-    affilitation: "1, 2" 
+    affiliation: "1, 2" 
 affiliations:
   - name: Danish Offshore Technology Centre, Danish Technical University, Kgs. Lyngby, 2800, Denmark
     index: 1
