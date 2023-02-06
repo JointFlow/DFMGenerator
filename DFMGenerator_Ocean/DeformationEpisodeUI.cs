@@ -89,11 +89,13 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.StressArchingFactor(deformationEpisodeIndex), unitTextBox_DE_StressArchingFactor);
             SetLoadRateUnits();
             UpdateCasePresentationBox(args.SimulationCase(deformationEpisodeIndex), presentationBox_DE_SimCase);
-            UpdateGridResultPresentationBox(args.ElasticStrainXXTimeSeries(deformationEpisodeIndex), presentationBox_DE_ElasticStrainXX);
-            UpdateGridResultPresentationBox(args.ElasticStrainYYTimeSeries(deformationEpisodeIndex), presentationBox_DE_ElasticStrainYY);
-            UpdateGridResultPresentationBox(args.ElasticStrainXYTimeSeries(deformationEpisodeIndex), presentationBox_DE_ElasticStrainXY);
+            UpdateGridResultPresentationBox(args.AbsoluteStressXXTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXX);
+            UpdateGridResultPresentationBox(args.AbsoluteStressYYTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYY);
+            UpdateGridResultPresentationBox(args.AbsoluteStressXYTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXY);
+            UpdateGridResultPresentationBox(args.AbsoluteStressZXTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZX);
+            UpdateGridResultPresentationBox(args.AbsoluteStressYZTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYZ);
+            UpdateGridResultPresentationBox(args.AbsoluteStressZZTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZZ);
             UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_FP);
-            UpdateGridResultPresentationBox(args.AbsoluteVerticalStressTimeSeries(deformationEpisodeIndex), presentationBox_DE_Sv);
         }
 
         private void updateArgsFromUI()
@@ -115,11 +117,13 @@ namespace DFMGenerator_Ocean
             args.AppliedUpliftRate_default(GetDoubleFromTextBox(unitTextBox_DE_UpliftRate_default), deformationEpisodeIndex);
             args.StressArchingFactor(GetDoubleFromTextBox(unitTextBox_DE_StressArchingFactor), deformationEpisodeIndex);
             args.SimulationCase(presentationBox_DE_SimCase.Tag as Case, deformationEpisodeIndex);
-            args.ElasticStrainXXTimeSeries(presentationBox_DE_ElasticStrainXX.Tag as GridResult, deformationEpisodeIndex);
-            args.ElasticStrainYYTimeSeries(presentationBox_DE_ElasticStrainYY.Tag as GridResult, deformationEpisodeIndex);
-            args.ElasticStrainXYTimeSeries(presentationBox_DE_ElasticStrainXY.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteStressXXTimeSeries(presentationBox_DE_AbsoluteStressXX.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteStressYYTimeSeries(presentationBox_DE_AbsoluteStressYY.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteStressXYTimeSeries(presentationBox_DE_AbsoluteStressXY.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteStressZXTimeSeries(presentationBox_DE_AbsoluteStressZX.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteStressYZTimeSeries(presentationBox_DE_AbsoluteStressYZ.Tag as GridResult, deformationEpisodeIndex);
+            args.AbsoluteStressZZTimeSeries(presentationBox_DE_AbsoluteStressZZ.Tag as GridResult, deformationEpisodeIndex);
             args.FluidPressureTimeSeries(presentationBox_DE_FP.Tag as GridResult, deformationEpisodeIndex);
-            args.AbsoluteVerticalStressTimeSeries(presentationBox_DE_Sv.Tag as GridResult, deformationEpisodeIndex);
 
             // Update the deformation episode name
             args.GenerateDeformationEpisodeName(deformationEpisodeIndex, true);
@@ -356,34 +360,46 @@ namespace DFMGenerator_Ocean
             UpdateCasePresentationBox(droppedCase, presentationBox_DE_SimCase);
         }
 
-        private void dropTarget_DE_ElasticStrainXX_DragDrop(object sender, DragEventArgs e)
+        private void dropTarget_DE_AbsoluteStressXX_DragDrop(object sender, DragEventArgs e)
         {
             GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_ElasticStrainXX);
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressXX);
         }
 
-        private void dropTarget_DE_ElasticStrainYY_DragDrop(object sender, DragEventArgs e)
+        private void dropTarget_DE_AbsoluteStressYY_DragDrop(object sender, DragEventArgs e)
         {
             GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_ElasticStrainYY);
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressYY);
         }
 
-        private void dropTarget_DE_ElasticStrainXY_DragDrop(object sender, DragEventArgs e)
+        private void dropTarget_DE_AbsoluteStressXY_DragDrop(object sender, DragEventArgs e)
         {
             GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_ElasticStrainXY);
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressXY);
+        }
+
+        private void dropTarget_DE_AbsoluteStressZX_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressZX);
+        }
+
+        private void dropTarget_DE_AbsoluteStressYZ_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressYZ);
+        }
+
+        private void dropTarget_DE_AbsoluteStressZZ_DragDrop(object sender, DragEventArgs e)
+        {
+            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
+            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressZZ);
         }
 
         private void dropTarget_DE_FP_DragDrop(object sender, DragEventArgs e)
         {
             GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
             UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_FP);
-        }
-
-        private void dropTarget_DE_Sv_DragDrop(object sender, DragEventArgs e)
-        {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_Sv);
         }
 
         private void presentationBox_DE_EhminAzi_KeyDown(object sender, KeyEventArgs e)
@@ -449,29 +465,56 @@ namespace DFMGenerator_Ocean
             }
         }
 
-        private void presentationBox_DE_ElasticStrainXX_KeyDown(object sender, KeyEventArgs e)
+        private void presentationBox_DE_AbsoluteStressXX_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
-                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_ElasticStrainXX);
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_AbsoluteStressXX);
                 e.Handled = true;
             }
         }
 
-        private void presentationBox__DE_ElasticStrainYY_KeyDown(object sender, KeyEventArgs e)
+        private void presentationBox__DE_AbsoluteStressYY_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
-                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_ElasticStrainYY);
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_AbsoluteStressYY);
                 e.Handled = true;
             }
         }
 
-        private void presentationBox__DE_ElasticStrainXY_KeyDown(object sender, KeyEventArgs e)
+        private void presentationBox__DE_AbsoluteStressXY_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
-                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_ElasticStrainXY);
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_AbsoluteStressXY);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_DE_AbsoluteStressZX_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_AbsoluteStressZX);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_DE_AbsoluteStressYZ_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_AbsoluteStressYZ);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_DE_AbsoluteStressZZ_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_AbsoluteStressZZ);
                 e.Handled = true;
             }
         }
@@ -481,15 +524,6 @@ namespace DFMGenerator_Ocean
             if (e.KeyCode == Keys.Delete)
             {
                 UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_FP);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_DE_Sv_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdateGridResultPresentationBox(GridResult.NullObject, presentationBox_DE_Sv);
                 e.Handled = true;
             }
         }

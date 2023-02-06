@@ -30,66 +30,56 @@ namespace DFMGenerator_Ocean
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem4 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem5 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem6 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo13 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem19 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo60 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem88 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo61 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem89 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem90 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem91 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo62 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem92 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo63 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem93 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo64 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem94 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo65 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem95 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo66 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem96 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem16 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem17 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem18 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo56 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem81 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo57 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem82 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DeformationEpisodeUI));
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo14 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem20 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo15 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem21 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo16 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem22 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo17 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem23 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo18 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem24 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem25 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem26 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo19 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem27 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo20 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem28 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem29 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo21 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem30 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem31 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo22 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem32 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem33 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo23 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem34 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo24 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem35 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator8 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem36 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            this.unitTextBox_DE_EhmaxRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.unitTextBox_DE_EhminRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.unitTextBox_DE_EhminAzi_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_DE_EhminAzi_Units = new System.Windows.Forms.Label();
-            this.label_DE_EhmaxRate_Units = new System.Windows.Forms.Label();
-            this.label_DE_EhminRate_Units = new System.Windows.Forms.Label();
-            this.label_DE_EhmaxRate_default = new System.Windows.Forms.Label();
-            this.label_DE_EhminRate_default = new System.Windows.Forms.Label();
-            this.label_DE_EhminAzi_default = new System.Windows.Forms.Label();
-            this.presentationBox_DE_EhmaxRate = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.presentationBox_DE_EhminRate = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.presentationBox_DE_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.dropTarget_DE_EhmaxRate = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.dropTarget_DE_EhminRate = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.dropTarget_DE_EhminAzi = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.label_DE_EhmaxRate = new System.Windows.Forms.Label();
-            this.label_DE_EhminRate = new System.Windows.Forms.Label();
-            this.label_DE_EhminAzi = new System.Windows.Forms.Label();
-            this.unitTextBox_DE_DeformationDuration = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_DE_DeformationDuration = new System.Windows.Forms.Label();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator16 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem83 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo58 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem84 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator17 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem85 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo59 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem86 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator18 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem87 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             this.btn_DE_Cancel = new System.Windows.Forms.Button();
             this.btn_DE_OK = new System.Windows.Forms.Button();
+            this.toolTipManager_DeformationEpisode = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
+            this.tabControl1 = new Slb.Ocean.Petrel.UI.Controls.TabControl();
+            this.tabStatic = new Slb.Ocean.Petrel.UI.Controls.TabPage();
+            this.tabDynamic = new Slb.Ocean.Petrel.UI.Controls.TabPage();
+            this.toolTipHotspot_DE_OPRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_UpliftRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_TempChange = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_EhminRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_Eh = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.comboBox_DE_TimeUnits = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
+            this.unitTextBox_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_DE_StressArchingFactor = new System.Windows.Forms.Label();
             this.unitTextBox_DE_UpliftRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.unitTextBox_DE_TempChange_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.unitTextBox_DE_OPRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
@@ -108,219 +98,65 @@ namespace DFMGenerator_Ocean
             this.label_DE_UpliftRate = new System.Windows.Forms.Label();
             this.label_DE_TempChange = new System.Windows.Forms.Label();
             this.label_DE_OPRate = new System.Windows.Forms.Label();
-            this.unitTextBox_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_DE_StressArchingFactor = new System.Windows.Forms.Label();
-            this.comboBox_DE_TimeUnits = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
-            this.toolTipManager_DeformationEpisode = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
-            this.toolTipHotspot_DE_Eh = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_EhminRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_TempChange = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_UpliftRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_OPRate = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.groupBox_DE_DynamicLoad = new System.Windows.Forms.GroupBox();
-            this.presentationBox_DE_Sv = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.presentationBox_DE_FP = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.dropTarget_DE_Sv = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.dropTarget_DE_FP = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.label_DE_Sv = new System.Windows.Forms.Label();
-            this.label_DE_FP = new System.Windows.Forms.Label();
-            this.presentationBox_DE_ElasticStrainXY = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.presentationBox_DE_ElasticStrainYY = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.presentationBox_DE_ElasticStrainXX = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
-            this.dropTarget_DE_ElasticStrainXY = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.dropTarget_DE_ElasticStrainYY = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.dropTarget_DE_ElasticStrainXX = new Slb.Ocean.Petrel.UI.DropTarget();
-            this.label_DE_ElasticStrainXY = new System.Windows.Forms.Label();
-            this.label_DE_ElasticStrainYY = new System.Windows.Forms.Label();
-            this.label_DE_ElasticStrainXX = new System.Windows.Forms.Label();
-            this.toolTipHotspot_DE_ElasticStrain = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_FP = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_DynamicLoad = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.unitTextBox_DE_DeformationDuration = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_DE_DeformationDuration = new System.Windows.Forms.Label();
+            this.unitTextBox_DE_EhmaxRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.unitTextBox_DE_EhminRate_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.unitTextBox_DE_EhminAzi_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_DE_EhminAzi_Units = new System.Windows.Forms.Label();
+            this.label_DE_EhmaxRate_Units = new System.Windows.Forms.Label();
+            this.label_DE_EhminRate_Units = new System.Windows.Forms.Label();
+            this.label_DE_EhmaxRate_default = new System.Windows.Forms.Label();
+            this.label_DE_EhminRate_default = new System.Windows.Forms.Label();
+            this.label_DE_EhminAzi_default = new System.Windows.Forms.Label();
+            this.presentationBox_DE_EhmaxRate = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.presentationBox_DE_EhminRate = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.presentationBox_DE_EhminAzi = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.dropTarget_DE_EhmaxRate = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.dropTarget_DE_EhminRate = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.dropTarget_DE_EhminAzi = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.label_DE_EhmaxRate = new System.Windows.Forms.Label();
+            this.label_DE_EhminRate = new System.Windows.Forms.Label();
+            this.label_DE_EhminAzi = new System.Windows.Forms.Label();
             this.toolTipHotspot_DE_SimCase = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.presentationBox_DE_SimCase = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
             this.dropTarget_DE_SimCase = new Slb.Ocean.Petrel.UI.DropTarget();
             this.label_DE_SimCase = new System.Windows.Forms.Label();
-            this.toolTipHotspot_DE_Sv = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_DynamicLoad = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_AbsoluteStress = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_FP = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.presentationBox_DE_AbsoluteStressZZ = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.presentationBox_DE_FP = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.dropTarget_DE_AbsoluteStressZZ = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.dropTarget_DE_FP = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.label_DE_AbsoluteStressZZ = new System.Windows.Forms.Label();
+            this.label_DE_FP = new System.Windows.Forms.Label();
+            this.presentationBox_DE_AbsoluteStressXY = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.presentationBox_DE_AbsoluteStressYY = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.presentationBox_DE_AbsoluteStressXX = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.dropTarget_DE_AbsoluteStressXY = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.dropTarget_DE_AbsoluteStressYY = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.dropTarget_DE_AbsoluteStressXX = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.label_DE_AbsoluteStressXY = new System.Windows.Forms.Label();
+            this.label_DE_AbsoluteStressYY = new System.Windows.Forms.Label();
+            this.label_DE_AbsoluteStressXX = new System.Windows.Forms.Label();
+            this.label_DE_AbsoluteStressZX = new System.Windows.Forms.Label();
+            this.dropTarget_DE_AbsoluteStressZX = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.presentationBox_DE_AbsoluteStressZX = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
+            this.label_DE_AbsoluteStressYZ = new System.Windows.Forms.Label();
+            this.dropTarget_DE_AbsoluteStressYZ = new Slb.Ocean.Petrel.UI.DropTarget();
+            this.presentationBox_DE_AbsoluteStressYZ = new Slb.Ocean.Petrel.UI.Controls.PresentationBox();
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).BeginInit();
-            this.groupBox_DE_DynamicLoad.SuspendLayout();
+            this.tabControl1.SuspendLayout();
+            this.tabStatic.SuspendLayout();
+            this.tabDynamic.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // unitTextBox_DE_EhmaxRate_default
-            // 
-            this.unitTextBox_DE_EhmaxRate_default.Location = new System.Drawing.Point(532, 95);
-            this.unitTextBox_DE_EhmaxRate_default.Name = "unitTextBox_DE_EhmaxRate_default";
-            this.unitTextBox_DE_EhmaxRate_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_DE_EhmaxRate_default.TabIndex = 72;
-            // 
-            // unitTextBox_DE_EhminRate_default
-            // 
-            this.unitTextBox_DE_EhminRate_default.Location = new System.Drawing.Point(532, 67);
-            this.unitTextBox_DE_EhminRate_default.Name = "unitTextBox_DE_EhminRate_default";
-            this.unitTextBox_DE_EhminRate_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_DE_EhminRate_default.TabIndex = 71;
-            // 
-            // unitTextBox_DE_EhminAzi_default
-            // 
-            this.unitTextBox_DE_EhminAzi_default.Location = new System.Drawing.Point(532, 39);
-            this.unitTextBox_DE_EhminAzi_default.Name = "unitTextBox_DE_EhminAzi_default";
-            this.unitTextBox_DE_EhminAzi_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_DE_EhminAzi_default.TabIndex = 70;
-            // 
-            // label_DE_EhminAzi_Units
-            // 
-            this.label_DE_EhminAzi_Units.AutoSize = true;
-            this.label_DE_EhminAzi_Units.Location = new System.Drawing.Point(652, 42);
-            this.label_DE_EhminAzi_Units.Name = "label_DE_EhminAzi_Units";
-            this.label_DE_EhminAzi_Units.Size = new System.Drawing.Size(25, 13);
-            this.label_DE_EhminAzi_Units.TabIndex = 69;
-            this.label_DE_EhminAzi_Units.Text = "deg";
-            // 
-            // label_DE_EhmaxRate_Units
-            // 
-            this.label_DE_EhmaxRate_Units.AutoSize = true;
-            this.label_DE_EhmaxRate_Units.Location = new System.Drawing.Point(652, 98);
-            this.label_DE_EhmaxRate_Units.Name = "label_DE_EhmaxRate_Units";
-            this.label_DE_EhmaxRate_Units.Size = new System.Drawing.Size(26, 13);
-            this.label_DE_EhmaxRate_Units.TabIndex = 68;
-            this.label_DE_EhmaxRate_Units.Text = "/ma";
-            // 
-            // label_DE_EhminRate_Units
-            // 
-            this.label_DE_EhminRate_Units.AutoSize = true;
-            this.label_DE_EhminRate_Units.Location = new System.Drawing.Point(651, 70);
-            this.label_DE_EhminRate_Units.Name = "label_DE_EhminRate_Units";
-            this.label_DE_EhminRate_Units.Size = new System.Drawing.Size(26, 13);
-            this.label_DE_EhminRate_Units.TabIndex = 67;
-            this.label_DE_EhminRate_Units.Text = "/ma";
-            // 
-            // label_DE_EhmaxRate_default
-            // 
-            this.label_DE_EhmaxRate_default.AutoSize = true;
-            this.label_DE_EhmaxRate_default.Location = new System.Drawing.Point(456, 98);
-            this.label_DE_EhmaxRate_default.Name = "label_DE_EhmaxRate_default";
-            this.label_DE_EhmaxRate_default.Size = new System.Drawing.Size(73, 13);
-            this.label_DE_EhmaxRate_default.TabIndex = 66;
-            this.label_DE_EhmaxRate_default.Text = "Default value:";
-            // 
-            // label_DE_EhminRate_default
-            // 
-            this.label_DE_EhminRate_default.AutoSize = true;
-            this.label_DE_EhminRate_default.Location = new System.Drawing.Point(457, 70);
-            this.label_DE_EhminRate_default.Name = "label_DE_EhminRate_default";
-            this.label_DE_EhminRate_default.Size = new System.Drawing.Size(73, 13);
-            this.label_DE_EhminRate_default.TabIndex = 65;
-            this.label_DE_EhminRate_default.Text = "Default value:";
-            // 
-            // label_DE_EhminAzi_default
-            // 
-            this.label_DE_EhminAzi_default.AutoSize = true;
-            this.label_DE_EhminAzi_default.Location = new System.Drawing.Point(456, 42);
-            this.label_DE_EhminAzi_default.Name = "label_DE_EhminAzi_default";
-            this.label_DE_EhminAzi_default.Size = new System.Drawing.Size(73, 13);
-            this.label_DE_EhminAzi_default.TabIndex = 64;
-            this.label_DE_EhminAzi_default.Text = "Default value:";
-            // 
-            // presentationBox_DE_EhmaxRate
-            // 
-            this.presentationBox_DE_EhmaxRate.Location = new System.Drawing.Point(316, 93);
-            this.presentationBox_DE_EhmaxRate.Name = "presentationBox_DE_EhmaxRate";
-            this.presentationBox_DE_EhmaxRate.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_EhmaxRate.TabIndex = 63;
-            this.presentationBox_DE_EhmaxRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhmaxRate_KeyDown);
-            // 
-            // presentationBox_DE_EhminRate
-            // 
-            this.presentationBox_DE_EhminRate.Location = new System.Drawing.Point(316, 65);
-            this.presentationBox_DE_EhminRate.Name = "presentationBox_DE_EhminRate";
-            this.presentationBox_DE_EhminRate.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_EhminRate.TabIndex = 62;
-            this.presentationBox_DE_EhminRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhminRate_KeyDown);
-            // 
-            // presentationBox_DE_EhminAzi
-            // 
-            this.presentationBox_DE_EhminAzi.Location = new System.Drawing.Point(316, 37);
-            this.presentationBox_DE_EhminAzi.Name = "presentationBox_DE_EhminAzi";
-            this.presentationBox_DE_EhminAzi.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_EhminAzi.TabIndex = 61;
-            this.presentationBox_DE_EhminAzi.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhminAzi_KeyDown);
-            // 
-            // dropTarget_DE_EhmaxRate
-            // 
-            this.dropTarget_DE_EhmaxRate.AllowDrop = true;
-            this.dropTarget_DE_EhmaxRate.Location = new System.Drawing.Point(284, 92);
-            this.dropTarget_DE_EhmaxRate.Name = "dropTarget_DE_EhmaxRate";
-            this.dropTarget_DE_EhmaxRate.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_EhmaxRate.TabIndex = 60;
-            this.dropTarget_DE_EhmaxRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhmaxRate_DragDrop);
-            // 
-            // dropTarget_DE_EhminRate
-            // 
-            this.dropTarget_DE_EhminRate.AllowDrop = true;
-            this.dropTarget_DE_EhminRate.Location = new System.Drawing.Point(284, 64);
-            this.dropTarget_DE_EhminRate.Name = "dropTarget_DE_EhminRate";
-            this.dropTarget_DE_EhminRate.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_EhminRate.TabIndex = 59;
-            this.dropTarget_DE_EhminRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhminRate_DragDrop);
-            // 
-            // dropTarget_DE_EhminAzi
-            // 
-            this.dropTarget_DE_EhminAzi.AllowDrop = true;
-            this.dropTarget_DE_EhminAzi.Location = new System.Drawing.Point(284, 36);
-            this.dropTarget_DE_EhminAzi.Name = "dropTarget_DE_EhminAzi";
-            this.dropTarget_DE_EhminAzi.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_EhminAzi.TabIndex = 58;
-            this.dropTarget_DE_EhminAzi.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhminAzi_DragDrop);
-            // 
-            // label_DE_EhmaxRate
-            // 
-            this.label_DE_EhmaxRate.AutoSize = true;
-            this.label_DE_EhmaxRate.Location = new System.Drawing.Point(22, 98);
-            this.label_DE_EhmaxRate.Name = "label_DE_EhmaxRate";
-            this.label_DE_EhmaxRate.Size = new System.Drawing.Size(234, 13);
-            this.label_DE_EhmaxRate.TabIndex = 57;
-            this.label_DE_EhmaxRate.Text = "Maximum horizontal strain rate (tensile negative):";
-            // 
-            // label_DE_EhminRate
-            // 
-            this.label_DE_EhminRate.AutoSize = true;
-            this.label_DE_EhminRate.Location = new System.Drawing.Point(22, 70);
-            this.label_DE_EhminRate.Name = "label_DE_EhminRate";
-            this.label_DE_EhminRate.Size = new System.Drawing.Size(231, 13);
-            this.label_DE_EhminRate.TabIndex = 56;
-            this.label_DE_EhminRate.Text = "Minimum horizontal strain rate (tensile negative):";
-            // 
-            // label_DE_EhminAzi
-            // 
-            this.label_DE_EhminAzi.AutoSize = true;
-            this.label_DE_EhminAzi.Location = new System.Drawing.Point(21, 42);
-            this.label_DE_EhminAzi.Name = "label_DE_EhminAzi";
-            this.label_DE_EhminAzi.Size = new System.Drawing.Size(166, 13);
-            this.label_DE_EhminAzi.TabIndex = 55;
-            this.label_DE_EhminAzi.Text = "Minimum horizontal strain azimuth:";
-            // 
-            // unitTextBox_DE_DeformationDuration
-            // 
-            this.unitTextBox_DE_DeformationDuration.Location = new System.Drawing.Point(316, 11);
-            this.unitTextBox_DE_DeformationDuration.Name = "unitTextBox_DE_DeformationDuration";
-            this.unitTextBox_DE_DeformationDuration.Size = new System.Drawing.Size(135, 20);
-            this.unitTextBox_DE_DeformationDuration.TabIndex = 75;
-            // 
-            // label_DE_DeformationDuration
-            // 
-            this.label_DE_DeformationDuration.AutoSize = true;
-            this.label_DE_DeformationDuration.Location = new System.Drawing.Point(22, 14);
-            this.label_DE_DeformationDuration.Name = "label_DE_DeformationDuration";
-            this.label_DE_DeformationDuration.Size = new System.Drawing.Size(169, 13);
-            this.label_DE_DeformationDuration.TabIndex = 73;
-            this.label_DE_DeformationDuration.Text = "Max deformation episode duration:";
             // 
             // btn_DE_Cancel
             // 
             this.btn_DE_Cancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btn_DE_Cancel.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.btn_DE_Cancel.Location = new System.Drawing.Point(650, 411);
+            this.btn_DE_Cancel.Location = new System.Drawing.Point(683, 296);
             this.btn_DE_Cancel.Name = "btn_DE_Cancel";
             this.btn_DE_Cancel.Size = new System.Drawing.Size(75, 23);
             this.btn_DE_Cancel.TabIndex = 77;
@@ -332,7 +168,7 @@ namespace DFMGenerator_Ocean
             // 
             this.btn_DE_OK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btn_DE_OK.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.btn_DE_OK.Location = new System.Drawing.Point(569, 411);
+            this.btn_DE_OK.Location = new System.Drawing.Point(602, 296);
             this.btn_DE_OK.Name = "btn_DE_OK";
             this.btn_DE_OK.Size = new System.Drawing.Size(75, 23);
             this.btn_DE_OK.TabIndex = 76;
@@ -340,628 +176,850 @@ namespace DFMGenerator_Ocean
             this.btn_DE_OK.UseVisualStyleBackColor = true;
             this.btn_DE_OK.Click += new System.EventHandler(this.btn_DE_OK_Click);
             // 
-            // unitTextBox_DE_UpliftRate_default
+            // tabControl1
             // 
-            this.unitTextBox_DE_UpliftRate_default.Location = new System.Drawing.Point(532, 179);
-            this.unitTextBox_DE_UpliftRate_default.Name = "unitTextBox_DE_UpliftRate_default";
-            this.unitTextBox_DE_UpliftRate_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_DE_UpliftRate_default.TabIndex = 95;
+            this.tabControl1.AllowDrop = true;
+            this.tabControl1.Location = new System.Drawing.Point(12, 12);
+            this.tabControl1.Name = "tabControl1";
+            this.tabControl1.SelectedIndex = 1;
+            this.tabControl1.Size = new System.Drawing.Size(746, 275);
+            this.tabControl1.TabIndex = 107;
+            this.tabControl1.TabPages.AddRange(new Slb.Ocean.Petrel.UI.Controls.TabPage[] {
+            this.tabStatic,
+            this.tabDynamic});
             // 
-            // unitTextBox_DE_TempChange_default
+            // tabStatic
             // 
-            this.unitTextBox_DE_TempChange_default.Location = new System.Drawing.Point(532, 151);
-            this.unitTextBox_DE_TempChange_default.Name = "unitTextBox_DE_TempChange_default";
-            this.unitTextBox_DE_TempChange_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_DE_TempChange_default.TabIndex = 94;
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_OPRate);
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_StressArchingFactor);
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_UpliftRate);
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_TempChange);
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_EhminRate);
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_EhminAzi);
+            this.tabStatic.Controls.Add(this.toolTipHotspot_DE_Eh);
+            this.tabStatic.Controls.Add(this.comboBox_DE_TimeUnits);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_StressArchingFactor);
+            this.tabStatic.Controls.Add(this.label_DE_StressArchingFactor);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_UpliftRate_default);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_TempChange_default);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_OPRate_default);
+            this.tabStatic.Controls.Add(this.label_DE_OPRate_Units);
+            this.tabStatic.Controls.Add(this.label_DE_UpliftRate_Units);
+            this.tabStatic.Controls.Add(this.label_DE_TempChange_Units);
+            this.tabStatic.Controls.Add(this.label_DE_UpliftRate_default);
+            this.tabStatic.Controls.Add(this.label_DE_TempChange_default);
+            this.tabStatic.Controls.Add(this.label_DE_OPRate_default);
+            this.tabStatic.Controls.Add(this.presentationBox_DE_UpliftRate);
+            this.tabStatic.Controls.Add(this.presentationBox_DE_TempChange);
+            this.tabStatic.Controls.Add(this.presentationBox_DE_OPRate);
+            this.tabStatic.Controls.Add(this.dropTarget_DE_UpliftRate);
+            this.tabStatic.Controls.Add(this.dropTarget_DE_TempChange);
+            this.tabStatic.Controls.Add(this.dropTarget_DE_OPRate);
+            this.tabStatic.Controls.Add(this.label_DE_UpliftRate);
+            this.tabStatic.Controls.Add(this.label_DE_TempChange);
+            this.tabStatic.Controls.Add(this.label_DE_OPRate);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_DeformationDuration);
+            this.tabStatic.Controls.Add(this.label_DE_DeformationDuration);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_EhmaxRate_default);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_EhminRate_default);
+            this.tabStatic.Controls.Add(this.unitTextBox_DE_EhminAzi_default);
+            this.tabStatic.Controls.Add(this.label_DE_EhminAzi_Units);
+            this.tabStatic.Controls.Add(this.label_DE_EhmaxRate_Units);
+            this.tabStatic.Controls.Add(this.label_DE_EhminRate_Units);
+            this.tabStatic.Controls.Add(this.label_DE_EhmaxRate_default);
+            this.tabStatic.Controls.Add(this.label_DE_EhminRate_default);
+            this.tabStatic.Controls.Add(this.label_DE_EhminAzi_default);
+            this.tabStatic.Controls.Add(this.presentationBox_DE_EhmaxRate);
+            this.tabStatic.Controls.Add(this.presentationBox_DE_EhminRate);
+            this.tabStatic.Controls.Add(this.presentationBox_DE_EhminAzi);
+            this.tabStatic.Controls.Add(this.dropTarget_DE_EhmaxRate);
+            this.tabStatic.Controls.Add(this.dropTarget_DE_EhminRate);
+            this.tabStatic.Controls.Add(this.dropTarget_DE_EhminAzi);
+            this.tabStatic.Controls.Add(this.label_DE_EhmaxRate);
+            this.tabStatic.Controls.Add(this.label_DE_EhminRate);
+            this.tabStatic.Controls.Add(this.label_DE_EhminAzi);
+            this.tabStatic.Name = "tabStatic";
+            this.tabStatic.Size = new System.Drawing.Size(738, 243);
+            this.tabStatic.Text = "Static load";
             // 
-            // unitTextBox_DE_OPRate_default
+            // tabDynamic
             // 
-            this.unitTextBox_DE_OPRate_default.Location = new System.Drawing.Point(532, 123);
-            this.unitTextBox_DE_OPRate_default.Name = "unitTextBox_DE_OPRate_default";
-            this.unitTextBox_DE_OPRate_default.Size = new System.Drawing.Size(114, 20);
-            this.unitTextBox_DE_OPRate_default.TabIndex = 93;
+            this.tabDynamic.Controls.Add(this.label_DE_AbsoluteStressYZ);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_AbsoluteStressYZ);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_AbsoluteStressYZ);
+            this.tabDynamic.Controls.Add(this.label_DE_AbsoluteStressZX);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_AbsoluteStressZX);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_AbsoluteStressZX);
+            this.tabDynamic.Controls.Add(this.label_DE_SimCase);
+            this.tabDynamic.Controls.Add(this.toolTipHotspot_DE_SimCase);
+            this.tabDynamic.Controls.Add(this.label_DE_AbsoluteStressXX);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_SimCase);
+            this.tabDynamic.Controls.Add(this.label_DE_AbsoluteStressYY);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_SimCase);
+            this.tabDynamic.Controls.Add(this.label_DE_AbsoluteStressXY);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_AbsoluteStressXX);
+            this.tabDynamic.Controls.Add(this.toolTipHotspot_DE_DynamicLoad);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_AbsoluteStressYY);
+            this.tabDynamic.Controls.Add(this.toolTipHotspot_DE_AbsoluteStress);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_AbsoluteStressXY);
+            this.tabDynamic.Controls.Add(this.toolTipHotspot_DE_FP);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_AbsoluteStressXX);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_AbsoluteStressZZ);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_AbsoluteStressYY);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_FP);
+            this.tabDynamic.Controls.Add(this.presentationBox_DE_AbsoluteStressXY);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_AbsoluteStressZZ);
+            this.tabDynamic.Controls.Add(this.label_DE_FP);
+            this.tabDynamic.Controls.Add(this.dropTarget_DE_FP);
+            this.tabDynamic.Controls.Add(this.label_DE_AbsoluteStressZZ);
+            this.tabDynamic.Name = "tabDynamic";
+            this.tabDynamic.Size = new System.Drawing.Size(738, 243);
+            this.tabDynamic.Text = "Dynamic load";
             // 
-            // label_DE_OPRate_Units
+            // toolTipHotspot_DE_OPRate
             // 
-            this.label_DE_OPRate_Units.AutoSize = true;
-            this.label_DE_OPRate_Units.Location = new System.Drawing.Point(651, 126);
-            this.label_DE_OPRate_Units.Name = "label_DE_OPRate_Units";
-            this.label_DE_OPRate_Units.Size = new System.Drawing.Size(39, 13);
-            this.label_DE_OPRate_Units.TabIndex = 92;
-            this.label_DE_OPRate_Units.Text = "Pa/ma";
+            this.toolTipHotspot_DE_OPRate.Location = new System.Drawing.Point(698, 125);
+            this.toolTipHotspot_DE_OPRate.Name = "toolTipHotspot_DE_OPRate";
+            this.toolTipHotspot_DE_OPRate.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_OPRate.TabIndex = 153;
+            toolTipItem88.Text = "Rate of change of fluid overpressure, excluding pressure change caused by uplift." +
+    "";
+            toolTipInfo60.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem88});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_OPRate, toolTipInfo60);
             // 
-            // label_DE_UpliftRate_Units
+            // toolTipHotspot_DE_StressArchingFactor
             // 
-            this.label_DE_UpliftRate_Units.AutoSize = true;
-            this.label_DE_UpliftRate_Units.Location = new System.Drawing.Point(651, 182);
-            this.label_DE_UpliftRate_Units.Name = "label_DE_UpliftRate_Units";
-            this.label_DE_UpliftRate_Units.Size = new System.Drawing.Size(34, 13);
-            this.label_DE_UpliftRate_Units.TabIndex = 91;
-            this.label_DE_UpliftRate_Units.Text = "m/ma";
+            this.toolTipHotspot_DE_StressArchingFactor.Location = new System.Drawing.Point(450, 207);
+            this.toolTipHotspot_DE_StressArchingFactor.Name = "toolTipHotspot_DE_StressArchingFactor";
+            this.toolTipHotspot_DE_StressArchingFactor.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_StressArchingFactor.TabIndex = 152;
+            toolTipItem89.Text = "he Stress Arching Factor controls the proportion of vertical stress change due to" +
+    " fluid pressure and thermal loads that is accommodated by stress arching:";
+            toolTipItem90.ShowBullet = true;
+            toolTipItem90.Text = "Set to 0 for no stress arching (no change in vertical stress)";
+            toolTipItem91.ShowBullet = true;
+            toolTipItem91.Text = "Set to 1 for complete stress arching (change in vertical stress is equal to chang" +
+    "e in horizontal stress)";
+            toolTipInfo61.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem89,
+            toolTipItem90,
+            toolTipItem91});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_StressArchingFactor, toolTipInfo61);
             // 
-            // label_DE_TempChange_Units
+            // toolTipHotspot_DE_UpliftRate
             // 
-            this.label_DE_TempChange_Units.AutoSize = true;
-            this.label_DE_TempChange_Units.Location = new System.Drawing.Point(651, 154);
-            this.label_DE_TempChange_Units.Name = "label_DE_TempChange_Units";
-            this.label_DE_TempChange_Units.Size = new System.Drawing.Size(51, 13);
-            this.label_DE_TempChange_Units.TabIndex = 90;
-            this.label_DE_TempChange_Units.Text = "degK/ma";
+            this.toolTipHotspot_DE_UpliftRate.Location = new System.Drawing.Point(698, 181);
+            this.toolTipHotspot_DE_UpliftRate.Name = "toolTipHotspot_DE_UpliftRate";
+            this.toolTipHotspot_DE_UpliftRate.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_UpliftRate.TabIndex = 151;
+            toolTipItem92.Text = "Rate of uplift. This will cause change in lithostatic stress, fluid pressure and " +
+    "temperature, determined by the fluid and overburden densities and the geothermal" +
+    " gradient.";
+            toolTipInfo62.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem92});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_UpliftRate, toolTipInfo62);
             // 
-            // label_DE_UpliftRate_default
+            // toolTipHotspot_DE_TempChange
             // 
-            this.label_DE_UpliftRate_default.AutoSize = true;
-            this.label_DE_UpliftRate_default.Location = new System.Drawing.Point(456, 182);
-            this.label_DE_UpliftRate_default.Name = "label_DE_UpliftRate_default";
-            this.label_DE_UpliftRate_default.Size = new System.Drawing.Size(73, 13);
-            this.label_DE_UpliftRate_default.TabIndex = 89;
-            this.label_DE_UpliftRate_default.Text = "Default value:";
+            this.toolTipHotspot_DE_TempChange.Location = new System.Drawing.Point(698, 153);
+            this.toolTipHotspot_DE_TempChange.Name = "toolTipHotspot_DE_TempChange";
+            this.toolTipHotspot_DE_TempChange.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_TempChange.TabIndex = 150;
+            toolTipItem93.Text = "Rate of temperature change, excluding temperature change caused by uplift.";
+            toolTipInfo63.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem93});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_TempChange, toolTipInfo63);
             // 
-            // label_DE_TempChange_default
+            // toolTipHotspot_DE_EhminRate
             // 
-            this.label_DE_TempChange_default.AutoSize = true;
-            this.label_DE_TempChange_default.Location = new System.Drawing.Point(456, 154);
-            this.label_DE_TempChange_default.Name = "label_DE_TempChange_default";
-            this.label_DE_TempChange_default.Size = new System.Drawing.Size(73, 13);
-            this.label_DE_TempChange_default.TabIndex = 88;
-            this.label_DE_TempChange_default.Text = "Default value:";
+            this.toolTipHotspot_DE_EhminRate.Location = new System.Drawing.Point(698, 83);
+            this.toolTipHotspot_DE_EhminRate.Name = "toolTipHotspot_DE_EhminRate";
+            this.toolTipHotspot_DE_EhminRate.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_EhminRate.TabIndex = 149;
+            toolTipItem94.Text = resources.GetString("toolTipItem94.Text");
+            toolTipInfo64.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem94});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_EhminRate, toolTipInfo64);
             // 
-            // label_DE_OPRate_default
+            // toolTipHotspot_DE_EhminAzi
             // 
-            this.label_DE_OPRate_default.AutoSize = true;
-            this.label_DE_OPRate_default.Location = new System.Drawing.Point(456, 126);
-            this.label_DE_OPRate_default.Name = "label_DE_OPRate_default";
-            this.label_DE_OPRate_default.Size = new System.Drawing.Size(73, 13);
-            this.label_DE_OPRate_default.TabIndex = 87;
-            this.label_DE_OPRate_default.Text = "Default value:";
+            this.toolTipHotspot_DE_EhminAzi.Location = new System.Drawing.Point(698, 41);
+            this.toolTipHotspot_DE_EhminAzi.Name = "toolTipHotspot_DE_EhminAzi";
+            this.toolTipHotspot_DE_EhminAzi.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_EhminAzi.TabIndex = 148;
+            toolTipItem95.Text = resources.GetString("toolTipItem95.Text");
+            toolTipInfo65.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem95});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_EhminAzi, toolTipInfo65);
             // 
-            // presentationBox_DE_UpliftRate
+            // toolTipHotspot_DE_Eh
             // 
-            this.presentationBox_DE_UpliftRate.Location = new System.Drawing.Point(316, 177);
-            this.presentationBox_DE_UpliftRate.Name = "presentationBox_DE_UpliftRate";
-            this.presentationBox_DE_UpliftRate.Size = new System.Drawing.Size(134, 22);
-            this.presentationBox_DE_UpliftRate.TabIndex = 86;
-            this.presentationBox_DE_UpliftRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_UpliftRate_KeyDown);
-            // 
-            // presentationBox_DE_TempChange
-            // 
-            this.presentationBox_DE_TempChange.Location = new System.Drawing.Point(316, 149);
-            this.presentationBox_DE_TempChange.Name = "presentationBox_DE_TempChange";
-            this.presentationBox_DE_TempChange.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_TempChange.TabIndex = 85;
-            this.presentationBox_DE_TempChange.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_TempChange_KeyDown);
-            // 
-            // presentationBox_DE_OPRate
-            // 
-            this.presentationBox_DE_OPRate.Location = new System.Drawing.Point(316, 121);
-            this.presentationBox_DE_OPRate.Name = "presentationBox_DE_OPRate";
-            this.presentationBox_DE_OPRate.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_OPRate.TabIndex = 84;
-            this.presentationBox_DE_OPRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_OPRate_KeyDown);
-            // 
-            // dropTarget_DE_UpliftRate
-            // 
-            this.dropTarget_DE_UpliftRate.AllowDrop = true;
-            this.dropTarget_DE_UpliftRate.Location = new System.Drawing.Point(284, 176);
-            this.dropTarget_DE_UpliftRate.Name = "dropTarget_DE_UpliftRate";
-            this.dropTarget_DE_UpliftRate.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_UpliftRate.TabIndex = 83;
-            this.dropTarget_DE_UpliftRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_UpliftRate_DragDrop);
-            // 
-            // dropTarget_DE_TempChange
-            // 
-            this.dropTarget_DE_TempChange.AllowDrop = true;
-            this.dropTarget_DE_TempChange.Location = new System.Drawing.Point(284, 148);
-            this.dropTarget_DE_TempChange.Name = "dropTarget_DE_TempChange";
-            this.dropTarget_DE_TempChange.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_TempChange.TabIndex = 82;
-            this.dropTarget_DE_TempChange.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_TempChange_DragDrop);
-            // 
-            // dropTarget_DE_OPRate
-            // 
-            this.dropTarget_DE_OPRate.AllowDrop = true;
-            this.dropTarget_DE_OPRate.Location = new System.Drawing.Point(284, 121);
-            this.dropTarget_DE_OPRate.Name = "dropTarget_DE_OPRate";
-            this.dropTarget_DE_OPRate.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_OPRate.TabIndex = 81;
-            this.dropTarget_DE_OPRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_OPRate_DragDrop);
-            // 
-            // label_DE_UpliftRate
-            // 
-            this.label_DE_UpliftRate.AutoSize = true;
-            this.label_DE_UpliftRate.Location = new System.Drawing.Point(22, 182);
-            this.label_DE_UpliftRate.Name = "label_DE_UpliftRate";
-            this.label_DE_UpliftRate.Size = new System.Drawing.Size(55, 13);
-            this.label_DE_UpliftRate.TabIndex = 80;
-            this.label_DE_UpliftRate.Text = "Uplift rate:";
-            // 
-            // label_DE_TempChange
-            // 
-            this.label_DE_TempChange.AutoSize = true;
-            this.label_DE_TempChange.Location = new System.Drawing.Point(22, 154);
-            this.label_DE_TempChange.Name = "label_DE_TempChange";
-            this.label_DE_TempChange.Size = new System.Drawing.Size(143, 13);
-            this.label_DE_TempChange.TabIndex = 79;
-            this.label_DE_TempChange.Text = "Rate of temperature change:";
-            // 
-            // label_DE_OPRate
-            // 
-            this.label_DE_OPRate.AutoSize = true;
-            this.label_DE_OPRate.Location = new System.Drawing.Point(22, 126);
-            this.label_DE_OPRate.Name = "label_DE_OPRate";
-            this.label_DE_OPRate.Size = new System.Drawing.Size(117, 13);
-            this.label_DE_OPRate.TabIndex = 78;
-            this.label_DE_OPRate.Text = "Fluid overpressure rate:";
-            // 
-            // unitTextBox_DE_StressArchingFactor
-            // 
-            this.unitTextBox_DE_StressArchingFactor.Location = new System.Drawing.Point(316, 205);
-            this.unitTextBox_DE_StressArchingFactor.Name = "unitTextBox_DE_StressArchingFactor";
-            this.unitTextBox_DE_StressArchingFactor.Size = new System.Drawing.Size(134, 20);
-            this.unitTextBox_DE_StressArchingFactor.TabIndex = 97;
-            // 
-            // label_DE_StressArchingFactor
-            // 
-            this.label_DE_StressArchingFactor.AutoSize = true;
-            this.label_DE_StressArchingFactor.Location = new System.Drawing.Point(22, 208);
-            this.label_DE_StressArchingFactor.Name = "label_DE_StressArchingFactor";
-            this.label_DE_StressArchingFactor.Size = new System.Drawing.Size(111, 13);
-            this.label_DE_StressArchingFactor.TabIndex = 96;
-            this.label_DE_StressArchingFactor.Text = "Stress Arching Factor:";
+            this.toolTipHotspot_DE_Eh.Location = new System.Drawing.Point(616, 13);
+            this.toolTipHotspot_DE_Eh.Name = "toolTipHotspot_DE_Eh";
+            this.toolTipHotspot_DE_Eh.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_Eh.TabIndex = 147;
+            toolTipItem96.Text = resources.GetString("toolTipItem96.Text");
+            toolTipInfo66.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem96});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Eh, toolTipInfo66);
             // 
             // comboBox_DE_TimeUnits
             // 
             this.comboBox_DE_TimeUnits.DisableMouseWheelScrolling = false;
             this.comboBox_DE_TimeUnits.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem4.Text = "seconds";
-            comboBoxItem5.Text = "years";
-            comboBoxItem6.Text = "ma";
+            comboBoxItem16.Text = "seconds";
+            comboBoxItem17.Text = "years";
+            comboBoxItem18.Text = "ma";
             this.comboBox_DE_TimeUnits.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem4,
-            comboBoxItem5,
-            comboBoxItem6});
-            this.comboBox_DE_TimeUnits.Location = new System.Drawing.Point(457, 11);
+            comboBoxItem16,
+            comboBoxItem17,
+            comboBoxItem18});
+            this.comboBox_DE_TimeUnits.Location = new System.Drawing.Point(447, 13);
             this.comboBox_DE_TimeUnits.Name = "comboBox_DE_TimeUnits";
             this.comboBox_DE_TimeUnits.Size = new System.Drawing.Size(99, 22);
-            this.comboBox_DE_TimeUnits.TabIndex = 98;
+            this.comboBox_DE_TimeUnits.TabIndex = 146;
             this.comboBox_DE_TimeUnits.SelectedIndexChanged += new System.EventHandler(this.comboBox_DE_TimeUnits_SelectedIndexChanged);
             // 
-            // toolTipHotspot_DE_Eh
+            // unitTextBox_DE_StressArchingFactor
             // 
-            this.toolTipHotspot_DE_Eh.Location = new System.Drawing.Point(626, 11);
-            this.toolTipHotspot_DE_Eh.Name = "toolTipHotspot_DE_Eh";
-            this.toolTipHotspot_DE_Eh.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_Eh.TabIndex = 99;
-            toolTipItem19.Text = resources.GetString("toolTipItem19.Text");
-            toolTipInfo13.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem19});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Eh, toolTipInfo13);
+            this.unitTextBox_DE_StressArchingFactor.Location = new System.Drawing.Point(306, 207);
+            this.unitTextBox_DE_StressArchingFactor.Name = "unitTextBox_DE_StressArchingFactor";
+            this.unitTextBox_DE_StressArchingFactor.Size = new System.Drawing.Size(134, 20);
+            this.unitTextBox_DE_StressArchingFactor.TabIndex = 145;
             // 
-            // toolTipHotspot_DE_EhminAzi
+            // label_DE_StressArchingFactor
             // 
-            this.toolTipHotspot_DE_EhminAzi.Location = new System.Drawing.Point(708, 39);
-            this.toolTipHotspot_DE_EhminAzi.Name = "toolTipHotspot_DE_EhminAzi";
-            this.toolTipHotspot_DE_EhminAzi.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_EhminAzi.TabIndex = 100;
-            toolTipItem20.Text = resources.GetString("toolTipItem20.Text");
-            toolTipInfo14.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem20});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_EhminAzi, toolTipInfo14);
+            this.label_DE_StressArchingFactor.AutoSize = true;
+            this.label_DE_StressArchingFactor.Location = new System.Drawing.Point(12, 210);
+            this.label_DE_StressArchingFactor.Name = "label_DE_StressArchingFactor";
+            this.label_DE_StressArchingFactor.Size = new System.Drawing.Size(111, 13);
+            this.label_DE_StressArchingFactor.TabIndex = 144;
+            this.label_DE_StressArchingFactor.Text = "Stress Arching Factor:";
             // 
-            // toolTipHotspot_DE_EhminRate
+            // unitTextBox_DE_UpliftRate_default
             // 
-            this.toolTipHotspot_DE_EhminRate.Location = new System.Drawing.Point(708, 81);
-            this.toolTipHotspot_DE_EhminRate.Name = "toolTipHotspot_DE_EhminRate";
-            this.toolTipHotspot_DE_EhminRate.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_EhminRate.TabIndex = 101;
-            toolTipItem21.Text = resources.GetString("toolTipItem21.Text");
-            toolTipInfo15.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem21});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_EhminRate, toolTipInfo15);
+            this.unitTextBox_DE_UpliftRate_default.Location = new System.Drawing.Point(522, 181);
+            this.unitTextBox_DE_UpliftRate_default.Name = "unitTextBox_DE_UpliftRate_default";
+            this.unitTextBox_DE_UpliftRate_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_UpliftRate_default.TabIndex = 143;
             // 
-            // toolTipHotspot_DE_TempChange
+            // unitTextBox_DE_TempChange_default
             // 
-            this.toolTipHotspot_DE_TempChange.Location = new System.Drawing.Point(708, 151);
-            this.toolTipHotspot_DE_TempChange.Name = "toolTipHotspot_DE_TempChange";
-            this.toolTipHotspot_DE_TempChange.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_TempChange.TabIndex = 102;
-            toolTipItem22.Text = "Rate of temperature change, excluding temperature change caused by uplift.";
-            toolTipInfo16.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem22});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_TempChange, toolTipInfo16);
+            this.unitTextBox_DE_TempChange_default.Location = new System.Drawing.Point(522, 153);
+            this.unitTextBox_DE_TempChange_default.Name = "unitTextBox_DE_TempChange_default";
+            this.unitTextBox_DE_TempChange_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_TempChange_default.TabIndex = 142;
             // 
-            // toolTipHotspot_DE_UpliftRate
+            // unitTextBox_DE_OPRate_default
             // 
-            this.toolTipHotspot_DE_UpliftRate.Location = new System.Drawing.Point(708, 179);
-            this.toolTipHotspot_DE_UpliftRate.Name = "toolTipHotspot_DE_UpliftRate";
-            this.toolTipHotspot_DE_UpliftRate.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_UpliftRate.TabIndex = 103;
-            toolTipItem23.Text = "Rate of uplift. This will cause change in lithostatic stress, fluid pressure and " +
-    "temperature, determined by the fluid and overburden densities and the geothermal" +
-    " gradient.";
-            toolTipInfo17.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem23});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_UpliftRate, toolTipInfo17);
+            this.unitTextBox_DE_OPRate_default.Location = new System.Drawing.Point(522, 125);
+            this.unitTextBox_DE_OPRate_default.Name = "unitTextBox_DE_OPRate_default";
+            this.unitTextBox_DE_OPRate_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_OPRate_default.TabIndex = 141;
             // 
-            // toolTipHotspot_DE_StressArchingFactor
+            // label_DE_OPRate_Units
             // 
-            this.toolTipHotspot_DE_StressArchingFactor.Location = new System.Drawing.Point(460, 205);
-            this.toolTipHotspot_DE_StressArchingFactor.Name = "toolTipHotspot_DE_StressArchingFactor";
-            this.toolTipHotspot_DE_StressArchingFactor.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_StressArchingFactor.TabIndex = 104;
-            toolTipItem24.Text = "he Stress Arching Factor controls the proportion of vertical stress change due to" +
-    " fluid pressure and thermal loads that is accommodated by stress arching:";
-            toolTipItem25.ShowBullet = true;
-            toolTipItem25.Text = "Set to 0 for no stress arching (no change in vertical stress)";
-            toolTipItem26.ShowBullet = true;
-            toolTipItem26.Text = "Set to 1 for complete stress arching (change in vertical stress is equal to chang" +
-    "e in horizontal stress)";
-            toolTipInfo18.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem24,
-            toolTipItem25,
-            toolTipItem26});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_StressArchingFactor, toolTipInfo18);
+            this.label_DE_OPRate_Units.AutoSize = true;
+            this.label_DE_OPRate_Units.Location = new System.Drawing.Point(641, 128);
+            this.label_DE_OPRate_Units.Name = "label_DE_OPRate_Units";
+            this.label_DE_OPRate_Units.Size = new System.Drawing.Size(39, 13);
+            this.label_DE_OPRate_Units.TabIndex = 140;
+            this.label_DE_OPRate_Units.Text = "Pa/ma";
             // 
-            // toolTipHotspot_DE_OPRate
+            // label_DE_UpliftRate_Units
             // 
-            this.toolTipHotspot_DE_OPRate.Location = new System.Drawing.Point(708, 123);
-            this.toolTipHotspot_DE_OPRate.Name = "toolTipHotspot_DE_OPRate";
-            this.toolTipHotspot_DE_OPRate.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_OPRate.TabIndex = 105;
-            toolTipItem27.Text = "Rate of change of fluid overpressure, excluding pressure change caused by uplift." +
-    "";
-            toolTipInfo19.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem27});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_OPRate, toolTipInfo19);
+            this.label_DE_UpliftRate_Units.AutoSize = true;
+            this.label_DE_UpliftRate_Units.Location = new System.Drawing.Point(641, 184);
+            this.label_DE_UpliftRate_Units.Name = "label_DE_UpliftRate_Units";
+            this.label_DE_UpliftRate_Units.Size = new System.Drawing.Size(34, 13);
+            this.label_DE_UpliftRate_Units.TabIndex = 139;
+            this.label_DE_UpliftRate_Units.Text = "m/ma";
             // 
-            // groupBox_DE_DynamicLoad
+            // label_DE_TempChange_Units
             // 
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.toolTipHotspot_DE_Sv);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.toolTipHotspot_DE_SimCase);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.presentationBox_DE_SimCase);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.dropTarget_DE_SimCase);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.label_DE_SimCase);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.toolTipHotspot_DE_DynamicLoad);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.toolTipHotspot_DE_ElasticStrain);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.toolTipHotspot_DE_FP);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.presentationBox_DE_Sv);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.presentationBox_DE_FP);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.dropTarget_DE_Sv);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.dropTarget_DE_FP);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.label_DE_Sv);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.label_DE_FP);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.presentationBox_DE_ElasticStrainXY);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.presentationBox_DE_ElasticStrainYY);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.presentationBox_DE_ElasticStrainXX);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.dropTarget_DE_ElasticStrainXY);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.dropTarget_DE_ElasticStrainYY);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.dropTarget_DE_ElasticStrainXX);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.label_DE_ElasticStrainXY);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.label_DE_ElasticStrainYY);
-            this.groupBox_DE_DynamicLoad.Controls.Add(this.label_DE_ElasticStrainXX);
-            this.groupBox_DE_DynamicLoad.Location = new System.Drawing.Point(17, 231);
-            this.groupBox_DE_DynamicLoad.Name = "groupBox_DE_DynamicLoad";
-            this.groupBox_DE_DynamicLoad.Size = new System.Drawing.Size(513, 203);
-            this.groupBox_DE_DynamicLoad.TabIndex = 106;
-            this.groupBox_DE_DynamicLoad.TabStop = false;
-            this.groupBox_DE_DynamicLoad.Text = "Dynamic load data";
+            this.label_DE_TempChange_Units.AutoSize = true;
+            this.label_DE_TempChange_Units.Location = new System.Drawing.Point(641, 156);
+            this.label_DE_TempChange_Units.Name = "label_DE_TempChange_Units";
+            this.label_DE_TempChange_Units.Size = new System.Drawing.Size(51, 13);
+            this.label_DE_TempChange_Units.TabIndex = 138;
+            this.label_DE_TempChange_Units.Text = "degK/ma";
             // 
-            // presentationBox_DE_Sv
+            // label_DE_UpliftRate_default
             // 
-            this.presentationBox_DE_Sv.Location = new System.Drawing.Point(298, 165);
-            this.presentationBox_DE_Sv.Name = "presentationBox_DE_Sv";
-            this.presentationBox_DE_Sv.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_Sv.TabIndex = 100;
-            this.presentationBox_DE_Sv.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_Sv_KeyDown);
+            this.label_DE_UpliftRate_default.AutoSize = true;
+            this.label_DE_UpliftRate_default.Location = new System.Drawing.Point(446, 184);
+            this.label_DE_UpliftRate_default.Name = "label_DE_UpliftRate_default";
+            this.label_DE_UpliftRate_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_UpliftRate_default.TabIndex = 137;
+            this.label_DE_UpliftRate_default.Text = "Default value:";
             // 
-            // presentationBox_DE_FP
+            // label_DE_TempChange_default
             // 
-            this.presentationBox_DE_FP.Location = new System.Drawing.Point(298, 135);
-            this.presentationBox_DE_FP.Name = "presentationBox_DE_FP";
-            this.presentationBox_DE_FP.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_FP.TabIndex = 99;
-            this.presentationBox_DE_FP.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_FP_KeyDown);
+            this.label_DE_TempChange_default.AutoSize = true;
+            this.label_DE_TempChange_default.Location = new System.Drawing.Point(446, 156);
+            this.label_DE_TempChange_default.Name = "label_DE_TempChange_default";
+            this.label_DE_TempChange_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_TempChange_default.TabIndex = 136;
+            this.label_DE_TempChange_default.Text = "Default value:";
             // 
-            // dropTarget_DE_Sv
+            // label_DE_OPRate_default
             // 
-            this.dropTarget_DE_Sv.AllowDrop = true;
-            this.dropTarget_DE_Sv.Location = new System.Drawing.Point(266, 164);
-            this.dropTarget_DE_Sv.Name = "dropTarget_DE_Sv";
-            this.dropTarget_DE_Sv.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_Sv.TabIndex = 98;
-            this.dropTarget_DE_Sv.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_Sv_DragDrop);
+            this.label_DE_OPRate_default.AutoSize = true;
+            this.label_DE_OPRate_default.Location = new System.Drawing.Point(446, 128);
+            this.label_DE_OPRate_default.Name = "label_DE_OPRate_default";
+            this.label_DE_OPRate_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_OPRate_default.TabIndex = 135;
+            this.label_DE_OPRate_default.Text = "Default value:";
             // 
-            // dropTarget_DE_FP
+            // presentationBox_DE_UpliftRate
             // 
-            this.dropTarget_DE_FP.AllowDrop = true;
-            this.dropTarget_DE_FP.Location = new System.Drawing.Point(266, 135);
-            this.dropTarget_DE_FP.Name = "dropTarget_DE_FP";
-            this.dropTarget_DE_FP.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_FP.TabIndex = 97;
-            this.dropTarget_DE_FP.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_FP_DragDrop);
+            this.presentationBox_DE_UpliftRate.Location = new System.Drawing.Point(306, 179);
+            this.presentationBox_DE_UpliftRate.Name = "presentationBox_DE_UpliftRate";
+            this.presentationBox_DE_UpliftRate.Size = new System.Drawing.Size(134, 22);
+            this.presentationBox_DE_UpliftRate.TabIndex = 134;
+            this.presentationBox_DE_UpliftRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_UpliftRate_KeyDown);
             // 
-            // label_DE_Sv
+            // presentationBox_DE_TempChange
             // 
-            this.label_DE_Sv.AutoSize = true;
-            this.label_DE_Sv.Location = new System.Drawing.Point(6, 170);
-            this.label_DE_Sv.Name = "label_DE_Sv";
-            this.label_DE_Sv.Size = new System.Drawing.Size(118, 13);
-            this.label_DE_Sv.TabIndex = 96;
-            this.label_DE_Sv.Text = "Absolute vertical stress:";
+            this.presentationBox_DE_TempChange.Location = new System.Drawing.Point(306, 151);
+            this.presentationBox_DE_TempChange.Name = "presentationBox_DE_TempChange";
+            this.presentationBox_DE_TempChange.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_TempChange.TabIndex = 133;
+            this.presentationBox_DE_TempChange.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_TempChange_KeyDown);
             // 
-            // label_DE_FP
+            // presentationBox_DE_OPRate
             // 
-            this.label_DE_FP.AutoSize = true;
-            this.label_DE_FP.Location = new System.Drawing.Point(6, 140);
-            this.label_DE_FP.Name = "label_DE_FP";
-            this.label_DE_FP.Size = new System.Drawing.Size(75, 13);
-            this.label_DE_FP.TabIndex = 95;
-            this.label_DE_FP.Text = "Fluid pressure:";
+            this.presentationBox_DE_OPRate.Location = new System.Drawing.Point(306, 123);
+            this.presentationBox_DE_OPRate.Name = "presentationBox_DE_OPRate";
+            this.presentationBox_DE_OPRate.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_OPRate.TabIndex = 132;
+            this.presentationBox_DE_OPRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_OPRate_KeyDown);
             // 
-            // presentationBox_DE_ElasticStrainXY
+            // dropTarget_DE_UpliftRate
             // 
-            this.presentationBox_DE_ElasticStrainXY.Location = new System.Drawing.Point(298, 107);
-            this.presentationBox_DE_ElasticStrainXY.Name = "presentationBox_DE_ElasticStrainXY";
-            this.presentationBox_DE_ElasticStrainXY.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_ElasticStrainXY.TabIndex = 94;
-            this.presentationBox_DE_ElasticStrainXY.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox__DE_ElasticStrainXY_KeyDown);
+            this.dropTarget_DE_UpliftRate.AllowDrop = true;
+            this.dropTarget_DE_UpliftRate.Location = new System.Drawing.Point(274, 178);
+            this.dropTarget_DE_UpliftRate.Name = "dropTarget_DE_UpliftRate";
+            this.dropTarget_DE_UpliftRate.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_UpliftRate.TabIndex = 131;
+            this.dropTarget_DE_UpliftRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_UpliftRate_DragDrop);
             // 
-            // presentationBox_DE_ElasticStrainYY
+            // dropTarget_DE_TempChange
             // 
-            this.presentationBox_DE_ElasticStrainYY.Location = new System.Drawing.Point(298, 77);
-            this.presentationBox_DE_ElasticStrainYY.Name = "presentationBox_DE_ElasticStrainYY";
-            this.presentationBox_DE_ElasticStrainYY.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_ElasticStrainYY.TabIndex = 93;
-            this.presentationBox_DE_ElasticStrainYY.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox__DE_ElasticStrainYY_KeyDown);
+            this.dropTarget_DE_TempChange.AllowDrop = true;
+            this.dropTarget_DE_TempChange.Location = new System.Drawing.Point(274, 150);
+            this.dropTarget_DE_TempChange.Name = "dropTarget_DE_TempChange";
+            this.dropTarget_DE_TempChange.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_TempChange.TabIndex = 130;
+            this.dropTarget_DE_TempChange.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_TempChange_DragDrop);
             // 
-            // presentationBox_DE_ElasticStrainXX
+            // dropTarget_DE_OPRate
             // 
-            this.presentationBox_DE_ElasticStrainXX.Location = new System.Drawing.Point(298, 48);
-            this.presentationBox_DE_ElasticStrainXX.Name = "presentationBox_DE_ElasticStrainXX";
-            this.presentationBox_DE_ElasticStrainXX.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_ElasticStrainXX.TabIndex = 92;
-            this.presentationBox_DE_ElasticStrainXX.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_ElasticStrainXX_KeyDown);
+            this.dropTarget_DE_OPRate.AllowDrop = true;
+            this.dropTarget_DE_OPRate.Location = new System.Drawing.Point(274, 123);
+            this.dropTarget_DE_OPRate.Name = "dropTarget_DE_OPRate";
+            this.dropTarget_DE_OPRate.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_OPRate.TabIndex = 129;
+            this.dropTarget_DE_OPRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_OPRate_DragDrop);
             // 
-            // dropTarget_DE_ElasticStrainXY
+            // label_DE_UpliftRate
             // 
-            this.dropTarget_DE_ElasticStrainXY.AllowDrop = true;
-            this.dropTarget_DE_ElasticStrainXY.Location = new System.Drawing.Point(266, 106);
-            this.dropTarget_DE_ElasticStrainXY.Name = "dropTarget_DE_ElasticStrainXY";
-            this.dropTarget_DE_ElasticStrainXY.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_ElasticStrainXY.TabIndex = 91;
-            this.dropTarget_DE_ElasticStrainXY.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_ElasticStrainXY_DragDrop);
+            this.label_DE_UpliftRate.AutoSize = true;
+            this.label_DE_UpliftRate.Location = new System.Drawing.Point(12, 184);
+            this.label_DE_UpliftRate.Name = "label_DE_UpliftRate";
+            this.label_DE_UpliftRate.Size = new System.Drawing.Size(55, 13);
+            this.label_DE_UpliftRate.TabIndex = 128;
+            this.label_DE_UpliftRate.Text = "Uplift rate:";
             // 
-            // dropTarget_DE_ElasticStrainYY
+            // label_DE_TempChange
             // 
-            this.dropTarget_DE_ElasticStrainYY.AllowDrop = true;
-            this.dropTarget_DE_ElasticStrainYY.Location = new System.Drawing.Point(266, 77);
-            this.dropTarget_DE_ElasticStrainYY.Name = "dropTarget_DE_ElasticStrainYY";
-            this.dropTarget_DE_ElasticStrainYY.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_ElasticStrainYY.TabIndex = 90;
-            this.dropTarget_DE_ElasticStrainYY.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_ElasticStrainYY_DragDrop);
+            this.label_DE_TempChange.AutoSize = true;
+            this.label_DE_TempChange.Location = new System.Drawing.Point(12, 156);
+            this.label_DE_TempChange.Name = "label_DE_TempChange";
+            this.label_DE_TempChange.Size = new System.Drawing.Size(143, 13);
+            this.label_DE_TempChange.TabIndex = 127;
+            this.label_DE_TempChange.Text = "Rate of temperature change:";
             // 
-            // dropTarget_DE_ElasticStrainXX
+            // label_DE_OPRate
             // 
-            this.dropTarget_DE_ElasticStrainXX.AllowDrop = true;
-            this.dropTarget_DE_ElasticStrainXX.Location = new System.Drawing.Point(266, 48);
-            this.dropTarget_DE_ElasticStrainXX.Name = "dropTarget_DE_ElasticStrainXX";
-            this.dropTarget_DE_ElasticStrainXX.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_ElasticStrainXX.TabIndex = 89;
-            this.dropTarget_DE_ElasticStrainXX.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_ElasticStrainXX_DragDrop);
+            this.label_DE_OPRate.AutoSize = true;
+            this.label_DE_OPRate.Location = new System.Drawing.Point(12, 128);
+            this.label_DE_OPRate.Name = "label_DE_OPRate";
+            this.label_DE_OPRate.Size = new System.Drawing.Size(117, 13);
+            this.label_DE_OPRate.TabIndex = 126;
+            this.label_DE_OPRate.Text = "Fluid overpressure rate:";
             // 
-            // label_DE_ElasticStrainXY
+            // unitTextBox_DE_DeformationDuration
             // 
-            this.label_DE_ElasticStrainXY.AutoSize = true;
-            this.label_DE_ElasticStrainXY.Location = new System.Drawing.Point(6, 112);
-            this.label_DE_ElasticStrainXY.Name = "label_DE_ElasticStrainXY";
-            this.label_DE_ElasticStrainXY.Size = new System.Drawing.Size(86, 13);
-            this.label_DE_ElasticStrainXY.TabIndex = 88;
-            this.label_DE_ElasticStrainXY.Text = "Elastic strain XY:";
+            this.unitTextBox_DE_DeformationDuration.Location = new System.Drawing.Point(306, 13);
+            this.unitTextBox_DE_DeformationDuration.Name = "unitTextBox_DE_DeformationDuration";
+            this.unitTextBox_DE_DeformationDuration.Size = new System.Drawing.Size(135, 20);
+            this.unitTextBox_DE_DeformationDuration.TabIndex = 125;
             // 
-            // label_DE_ElasticStrainYY
+            // label_DE_DeformationDuration
             // 
-            this.label_DE_ElasticStrainYY.AutoSize = true;
-            this.label_DE_ElasticStrainYY.Location = new System.Drawing.Point(5, 82);
-            this.label_DE_ElasticStrainYY.Name = "label_DE_ElasticStrainYY";
-            this.label_DE_ElasticStrainYY.Size = new System.Drawing.Size(86, 13);
-            this.label_DE_ElasticStrainYY.TabIndex = 87;
-            this.label_DE_ElasticStrainYY.Text = "Elastic strain YY:";
+            this.label_DE_DeformationDuration.AutoSize = true;
+            this.label_DE_DeformationDuration.Location = new System.Drawing.Point(12, 16);
+            this.label_DE_DeformationDuration.Name = "label_DE_DeformationDuration";
+            this.label_DE_DeformationDuration.Size = new System.Drawing.Size(169, 13);
+            this.label_DE_DeformationDuration.TabIndex = 124;
+            this.label_DE_DeformationDuration.Text = "Max deformation episode duration:";
             // 
-            // label_DE_ElasticStrainXX
+            // unitTextBox_DE_EhmaxRate_default
             // 
-            this.label_DE_ElasticStrainXX.AutoSize = true;
-            this.label_DE_ElasticStrainXX.Location = new System.Drawing.Point(6, 53);
-            this.label_DE_ElasticStrainXX.Name = "label_DE_ElasticStrainXX";
-            this.label_DE_ElasticStrainXX.Size = new System.Drawing.Size(86, 13);
-            this.label_DE_ElasticStrainXX.TabIndex = 86;
-            this.label_DE_ElasticStrainXX.Text = "Elastic strain XX:";
+            this.unitTextBox_DE_EhmaxRate_default.Location = new System.Drawing.Point(522, 97);
+            this.unitTextBox_DE_EhmaxRate_default.Name = "unitTextBox_DE_EhmaxRate_default";
+            this.unitTextBox_DE_EhmaxRate_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_EhmaxRate_default.TabIndex = 123;
             // 
-            // toolTipHotspot_DE_ElasticStrain
+            // unitTextBox_DE_EhminRate_default
             // 
-            this.toolTipHotspot_DE_ElasticStrain.Location = new System.Drawing.Point(439, 48);
-            this.toolTipHotspot_DE_ElasticStrain.Name = "toolTipHotspot_DE_ElasticStrain";
-            this.toolTipHotspot_DE_ElasticStrain.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_ElasticStrain.TabIndex = 107;
-            toolTipItem28.Text = resources.GetString("toolTipItem28.Text");
-            toolTipItem29.Text = "NB All three components (XX, YY and XY) are required to override the static horiz" +
-    "ontal strain load.";
-            toolTipInfo20.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem28,
-            toolTipSeparator5,
-            toolTipItem29});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_ElasticStrain, toolTipInfo20);
+            this.unitTextBox_DE_EhminRate_default.Location = new System.Drawing.Point(522, 69);
+            this.unitTextBox_DE_EhminRate_default.Name = "unitTextBox_DE_EhminRate_default";
+            this.unitTextBox_DE_EhminRate_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_EhminRate_default.TabIndex = 122;
             // 
-            // toolTipHotspot_DE_FP
+            // unitTextBox_DE_EhminAzi_default
             // 
-            this.toolTipHotspot_DE_FP.Location = new System.Drawing.Point(439, 135);
-            this.toolTipHotspot_DE_FP.Name = "toolTipHotspot_DE_FP";
-            this.toolTipHotspot_DE_FP.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_FP.TabIndex = 108;
-            toolTipItem30.Text = resources.GetString("toolTipItem30.Text");
-            toolTipItem31.Text = "NB This represents the total pore fluid pressure, not the overpressure.";
-            toolTipInfo21.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem30,
-            toolTipSeparator6,
-            toolTipItem31});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_FP, toolTipInfo21);
+            this.unitTextBox_DE_EhminAzi_default.Location = new System.Drawing.Point(522, 41);
+            this.unitTextBox_DE_EhminAzi_default.Name = "unitTextBox_DE_EhminAzi_default";
+            this.unitTextBox_DE_EhminAzi_default.Size = new System.Drawing.Size(114, 20);
+            this.unitTextBox_DE_EhminAzi_default.TabIndex = 121;
             // 
-            // toolTipHotspot_DE_DynamicLoad
+            // label_DE_EhminAzi_Units
             // 
-            this.toolTipHotspot_DE_DynamicLoad.Location = new System.Drawing.Point(487, 0);
-            this.toolTipHotspot_DE_DynamicLoad.Name = "toolTipHotspot_DE_DynamicLoad";
-            this.toolTipHotspot_DE_DynamicLoad.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_DynamicLoad.TabIndex = 110;
-            toolTipItem32.Text = resources.GetString("toolTipItem32.Text");
-            toolTipItem33.Text = "NB to output one intermediate fracture growth step per simulation timestep, set \"" +
-    "Interval between intermediate outputs\" on the outputs tab of the main dialog box" +
-    " to \"By deformation episode\"";
-            toolTipInfo22.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem32,
-            toolTipSeparator7,
-            toolTipItem33});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_DynamicLoad, toolTipInfo22);
+            this.label_DE_EhminAzi_Units.AutoSize = true;
+            this.label_DE_EhminAzi_Units.Location = new System.Drawing.Point(642, 44);
+            this.label_DE_EhminAzi_Units.Name = "label_DE_EhminAzi_Units";
+            this.label_DE_EhminAzi_Units.Size = new System.Drawing.Size(25, 13);
+            this.label_DE_EhminAzi_Units.TabIndex = 120;
+            this.label_DE_EhminAzi_Units.Text = "deg";
+            // 
+            // label_DE_EhmaxRate_Units
+            // 
+            this.label_DE_EhmaxRate_Units.AutoSize = true;
+            this.label_DE_EhmaxRate_Units.Location = new System.Drawing.Point(642, 100);
+            this.label_DE_EhmaxRate_Units.Name = "label_DE_EhmaxRate_Units";
+            this.label_DE_EhmaxRate_Units.Size = new System.Drawing.Size(26, 13);
+            this.label_DE_EhmaxRate_Units.TabIndex = 119;
+            this.label_DE_EhmaxRate_Units.Text = "/ma";
+            // 
+            // label_DE_EhminRate_Units
+            // 
+            this.label_DE_EhminRate_Units.AutoSize = true;
+            this.label_DE_EhminRate_Units.Location = new System.Drawing.Point(641, 72);
+            this.label_DE_EhminRate_Units.Name = "label_DE_EhminRate_Units";
+            this.label_DE_EhminRate_Units.Size = new System.Drawing.Size(26, 13);
+            this.label_DE_EhminRate_Units.TabIndex = 118;
+            this.label_DE_EhminRate_Units.Text = "/ma";
+            // 
+            // label_DE_EhmaxRate_default
+            // 
+            this.label_DE_EhmaxRate_default.AutoSize = true;
+            this.label_DE_EhmaxRate_default.Location = new System.Drawing.Point(446, 100);
+            this.label_DE_EhmaxRate_default.Name = "label_DE_EhmaxRate_default";
+            this.label_DE_EhmaxRate_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_EhmaxRate_default.TabIndex = 117;
+            this.label_DE_EhmaxRate_default.Text = "Default value:";
+            // 
+            // label_DE_EhminRate_default
+            // 
+            this.label_DE_EhminRate_default.AutoSize = true;
+            this.label_DE_EhminRate_default.Location = new System.Drawing.Point(447, 72);
+            this.label_DE_EhminRate_default.Name = "label_DE_EhminRate_default";
+            this.label_DE_EhminRate_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_EhminRate_default.TabIndex = 116;
+            this.label_DE_EhminRate_default.Text = "Default value:";
+            // 
+            // label_DE_EhminAzi_default
+            // 
+            this.label_DE_EhminAzi_default.AutoSize = true;
+            this.label_DE_EhminAzi_default.Location = new System.Drawing.Point(446, 44);
+            this.label_DE_EhminAzi_default.Name = "label_DE_EhminAzi_default";
+            this.label_DE_EhminAzi_default.Size = new System.Drawing.Size(73, 13);
+            this.label_DE_EhminAzi_default.TabIndex = 115;
+            this.label_DE_EhminAzi_default.Text = "Default value:";
+            // 
+            // presentationBox_DE_EhmaxRate
+            // 
+            this.presentationBox_DE_EhmaxRate.Location = new System.Drawing.Point(306, 95);
+            this.presentationBox_DE_EhmaxRate.Name = "presentationBox_DE_EhmaxRate";
+            this.presentationBox_DE_EhmaxRate.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_EhmaxRate.TabIndex = 114;
+            this.presentationBox_DE_EhmaxRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhmaxRate_KeyDown);
+            // 
+            // presentationBox_DE_EhminRate
+            // 
+            this.presentationBox_DE_EhminRate.Location = new System.Drawing.Point(306, 67);
+            this.presentationBox_DE_EhminRate.Name = "presentationBox_DE_EhminRate";
+            this.presentationBox_DE_EhminRate.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_EhminRate.TabIndex = 113;
+            this.presentationBox_DE_EhminRate.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhminRate_KeyDown);
+            // 
+            // presentationBox_DE_EhminAzi
+            // 
+            this.presentationBox_DE_EhminAzi.Location = new System.Drawing.Point(306, 39);
+            this.presentationBox_DE_EhminAzi.Name = "presentationBox_DE_EhminAzi";
+            this.presentationBox_DE_EhminAzi.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_EhminAzi.TabIndex = 112;
+            this.presentationBox_DE_EhminAzi.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_EhminAzi_KeyDown);
+            // 
+            // dropTarget_DE_EhmaxRate
+            // 
+            this.dropTarget_DE_EhmaxRate.AllowDrop = true;
+            this.dropTarget_DE_EhmaxRate.Location = new System.Drawing.Point(274, 94);
+            this.dropTarget_DE_EhmaxRate.Name = "dropTarget_DE_EhmaxRate";
+            this.dropTarget_DE_EhmaxRate.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_EhmaxRate.TabIndex = 111;
+            this.dropTarget_DE_EhmaxRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhmaxRate_DragDrop);
+            // 
+            // dropTarget_DE_EhminRate
+            // 
+            this.dropTarget_DE_EhminRate.AllowDrop = true;
+            this.dropTarget_DE_EhminRate.Location = new System.Drawing.Point(274, 66);
+            this.dropTarget_DE_EhminRate.Name = "dropTarget_DE_EhminRate";
+            this.dropTarget_DE_EhminRate.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_EhminRate.TabIndex = 110;
+            this.dropTarget_DE_EhminRate.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhminRate_DragDrop);
+            // 
+            // dropTarget_DE_EhminAzi
+            // 
+            this.dropTarget_DE_EhminAzi.AllowDrop = true;
+            this.dropTarget_DE_EhminAzi.Location = new System.Drawing.Point(274, 38);
+            this.dropTarget_DE_EhminAzi.Name = "dropTarget_DE_EhminAzi";
+            this.dropTarget_DE_EhminAzi.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_EhminAzi.TabIndex = 109;
+            this.dropTarget_DE_EhminAzi.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_EhminAzi_DragDrop);
+            // 
+            // label_DE_EhmaxRate
+            // 
+            this.label_DE_EhmaxRate.AutoSize = true;
+            this.label_DE_EhmaxRate.Location = new System.Drawing.Point(12, 100);
+            this.label_DE_EhmaxRate.Name = "label_DE_EhmaxRate";
+            this.label_DE_EhmaxRate.Size = new System.Drawing.Size(234, 13);
+            this.label_DE_EhmaxRate.TabIndex = 108;
+            this.label_DE_EhmaxRate.Text = "Maximum horizontal strain rate (tensile negative):";
+            // 
+            // label_DE_EhminRate
+            // 
+            this.label_DE_EhminRate.AutoSize = true;
+            this.label_DE_EhminRate.Location = new System.Drawing.Point(12, 72);
+            this.label_DE_EhminRate.Name = "label_DE_EhminRate";
+            this.label_DE_EhminRate.Size = new System.Drawing.Size(231, 13);
+            this.label_DE_EhminRate.TabIndex = 107;
+            this.label_DE_EhminRate.Text = "Minimum horizontal strain rate (tensile negative):";
+            // 
+            // label_DE_EhminAzi
+            // 
+            this.label_DE_EhminAzi.AutoSize = true;
+            this.label_DE_EhminAzi.Location = new System.Drawing.Point(11, 44);
+            this.label_DE_EhminAzi.Name = "label_DE_EhminAzi";
+            this.label_DE_EhminAzi.Size = new System.Drawing.Size(166, 13);
+            this.label_DE_EhminAzi.TabIndex = 106;
+            this.label_DE_EhminAzi.Text = "Minimum horizontal strain azimuth:";
             // 
             // toolTipHotspot_DE_SimCase
             // 
-            this.toolTipHotspot_DE_SimCase.Location = new System.Drawing.Point(439, 19);
+            this.toolTipHotspot_DE_SimCase.Location = new System.Drawing.Point(445, 7);
             this.toolTipHotspot_DE_SimCase.Name = "toolTipHotspot_DE_SimCase";
             this.toolTipHotspot_DE_SimCase.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_SimCase.TabIndex = 114;
-            toolTipItem34.Text = "Select a simulation case which contains all the required grid property results. I" +
+            this.toolTipHotspot_DE_SimCase.TabIndex = 137;
+            toolTipItem81.Text = "Select a simulation case which contains all the required grid property results. I" +
     "f none is selected, the current active case will be used.";
-            toolTipInfo23.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem34});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_SimCase, toolTipInfo23);
+            toolTipInfo56.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem81});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_SimCase, toolTipInfo56);
             // 
             // presentationBox_DE_SimCase
             // 
-            this.presentationBox_DE_SimCase.Location = new System.Drawing.Point(298, 19);
+            this.presentationBox_DE_SimCase.Location = new System.Drawing.Point(304, 7);
             this.presentationBox_DE_SimCase.Name = "presentationBox_DE_SimCase";
             this.presentationBox_DE_SimCase.Size = new System.Drawing.Size(135, 22);
-            this.presentationBox_DE_SimCase.TabIndex = 113;
+            this.presentationBox_DE_SimCase.TabIndex = 136;
             this.presentationBox_DE_SimCase.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_SimCase_KeyDown);
             // 
             // dropTarget_DE_SimCase
             // 
             this.dropTarget_DE_SimCase.AllowDrop = true;
-            this.dropTarget_DE_SimCase.Location = new System.Drawing.Point(266, 19);
+            this.dropTarget_DE_SimCase.Location = new System.Drawing.Point(272, 7);
             this.dropTarget_DE_SimCase.Name = "dropTarget_DE_SimCase";
             this.dropTarget_DE_SimCase.Size = new System.Drawing.Size(26, 23);
-            this.dropTarget_DE_SimCase.TabIndex = 112;
+            this.dropTarget_DE_SimCase.TabIndex = 135;
             this.dropTarget_DE_SimCase.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_SimCase_DragDrop);
             // 
             // label_DE_SimCase
             // 
             this.label_DE_SimCase.AutoSize = true;
-            this.label_DE_SimCase.Location = new System.Drawing.Point(6, 24);
+            this.label_DE_SimCase.Location = new System.Drawing.Point(12, 12);
             this.label_DE_SimCase.Name = "label_DE_SimCase";
             this.label_DE_SimCase.Size = new System.Drawing.Size(84, 13);
-            this.label_DE_SimCase.TabIndex = 111;
+            this.label_DE_SimCase.TabIndex = 134;
             this.label_DE_SimCase.Text = "Simulation case:";
             // 
-            // toolTipHotspot_DE_Sv
+            // toolTipHotspot_DE_DynamicLoad
             // 
-            this.toolTipHotspot_DE_Sv.Location = new System.Drawing.Point(439, 165);
-            this.toolTipHotspot_DE_Sv.Name = "toolTipHotspot_DE_Sv";
-            this.toolTipHotspot_DE_Sv.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_Sv.TabIndex = 115;
-            toolTipItem35.Text = resources.GetString("toolTipItem35.Text");
-            toolTipItem36.Text = "NB This represents the absolute vertical stress excluding pore pressure, not the " +
-    "effective stress.";
-            toolTipInfo24.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem35,
-            toolTipSeparator8,
-            toolTipItem36});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Sv, toolTipInfo24);
+            this.toolTipHotspot_DE_DynamicLoad.Location = new System.Drawing.Point(706, 7);
+            this.toolTipHotspot_DE_DynamicLoad.Name = "toolTipHotspot_DE_DynamicLoad";
+            this.toolTipHotspot_DE_DynamicLoad.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_DynamicLoad.TabIndex = 133;
+            toolTipItem82.Text = resources.GetString("toolTipItem82.Text");
+            toolTipItem83.Text = "NB to output one intermediate fracture growth step per simulation timestep, set \"" +
+    "Interval between intermediate outputs\" on the outputs tab of the main dialog box" +
+    " to \"By deformation episode\"";
+            toolTipInfo57.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem82,
+            toolTipSeparator16,
+            toolTipItem83});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_DynamicLoad, toolTipInfo57);
+            // 
+            // toolTipHotspot_DE_AbsoluteStress
+            // 
+            this.toolTipHotspot_DE_AbsoluteStress.Location = new System.Drawing.Point(445, 35);
+            this.toolTipHotspot_DE_AbsoluteStress.Name = "toolTipHotspot_DE_AbsoluteStress";
+            this.toolTipHotspot_DE_AbsoluteStress.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_AbsoluteStress.TabIndex = 131;
+            toolTipItem84.Text = resources.GetString("toolTipItem84.Text");
+            toolTipItem85.Text = "NB At a minimum the ZZ component is required to override the static horizontal st" +
+    "rain load. Other components will be ignored if not specified.";
+            toolTipInfo58.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem84,
+            toolTipSeparator17,
+            toolTipItem85});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_AbsoluteStress, toolTipInfo58);
+            // 
+            // toolTipHotspot_DE_FP
+            // 
+            this.toolTipHotspot_DE_FP.Location = new System.Drawing.Point(445, 203);
+            this.toolTipHotspot_DE_FP.Name = "toolTipHotspot_DE_FP";
+            this.toolTipHotspot_DE_FP.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_FP.TabIndex = 132;
+            toolTipItem86.Text = resources.GetString("toolTipItem86.Text");
+            toolTipItem87.Text = "NB This represents the total pore fluid pressure, not the overpressure.";
+            toolTipInfo59.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem86,
+            toolTipSeparator18,
+            toolTipItem87});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_FP, toolTipInfo59);
+            // 
+            // presentationBox_DE_AbsoluteStressZZ
+            // 
+            this.presentationBox_DE_AbsoluteStressZZ.Location = new System.Drawing.Point(304, 175);
+            this.presentationBox_DE_AbsoluteStressZZ.Name = "presentationBox_DE_AbsoluteStressZZ";
+            this.presentationBox_DE_AbsoluteStressZZ.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_AbsoluteStressZZ.TabIndex = 130;
+            this.presentationBox_DE_AbsoluteStressZZ.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_AbsoluteStressZZ_KeyDown);
+            // 
+            // presentationBox_DE_FP
+            // 
+            this.presentationBox_DE_FP.Location = new System.Drawing.Point(304, 203);
+            this.presentationBox_DE_FP.Name = "presentationBox_DE_FP";
+            this.presentationBox_DE_FP.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_FP.TabIndex = 129;
+            this.presentationBox_DE_FP.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_FP_KeyDown);
+            // 
+            // dropTarget_DE_AbsoluteStressZZ
+            // 
+            this.dropTarget_DE_AbsoluteStressZZ.AllowDrop = true;
+            this.dropTarget_DE_AbsoluteStressZZ.Location = new System.Drawing.Point(272, 174);
+            this.dropTarget_DE_AbsoluteStressZZ.Name = "dropTarget_DE_AbsoluteStressZZ";
+            this.dropTarget_DE_AbsoluteStressZZ.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_AbsoluteStressZZ.TabIndex = 128;
+            this.dropTarget_DE_AbsoluteStressZZ.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_AbsoluteStressZZ_DragDrop);
+            // 
+            // dropTarget_DE_FP
+            // 
+            this.dropTarget_DE_FP.AllowDrop = true;
+            this.dropTarget_DE_FP.Location = new System.Drawing.Point(272, 203);
+            this.dropTarget_DE_FP.Name = "dropTarget_DE_FP";
+            this.dropTarget_DE_FP.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_FP.TabIndex = 127;
+            this.dropTarget_DE_FP.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_FP_DragDrop);
+            // 
+            // label_DE_AbsoluteStressZZ
+            // 
+            this.label_DE_AbsoluteStressZZ.AutoSize = true;
+            this.label_DE_AbsoluteStressZZ.Location = new System.Drawing.Point(12, 180);
+            this.label_DE_AbsoluteStressZZ.Name = "label_DE_AbsoluteStressZZ";
+            this.label_DE_AbsoluteStressZZ.Size = new System.Drawing.Size(127, 13);
+            this.label_DE_AbsoluteStressZZ.TabIndex = 126;
+            this.label_DE_AbsoluteStressZZ.Text = "Absolute (total) stress ZZ:";
+            // 
+            // label_DE_FP
+            // 
+            this.label_DE_FP.AutoSize = true;
+            this.label_DE_FP.Location = new System.Drawing.Point(12, 208);
+            this.label_DE_FP.Name = "label_DE_FP";
+            this.label_DE_FP.Size = new System.Drawing.Size(75, 13);
+            this.label_DE_FP.TabIndex = 125;
+            this.label_DE_FP.Text = "Fluid pressure:";
+            // 
+            // presentationBox_DE_AbsoluteStressXY
+            // 
+            this.presentationBox_DE_AbsoluteStressXY.Location = new System.Drawing.Point(304, 91);
+            this.presentationBox_DE_AbsoluteStressXY.Name = "presentationBox_DE_AbsoluteStressXY";
+            this.presentationBox_DE_AbsoluteStressXY.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_AbsoluteStressXY.TabIndex = 124;
+            this.presentationBox_DE_AbsoluteStressXY.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox__DE_AbsoluteStressXY_KeyDown);
+            // 
+            // presentationBox_DE_AbsoluteStressYY
+            // 
+            this.presentationBox_DE_AbsoluteStressYY.Location = new System.Drawing.Point(304, 63);
+            this.presentationBox_DE_AbsoluteStressYY.Name = "presentationBox_DE_AbsoluteStressYY";
+            this.presentationBox_DE_AbsoluteStressYY.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_AbsoluteStressYY.TabIndex = 123;
+            this.presentationBox_DE_AbsoluteStressYY.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox__DE_AbsoluteStressYY_KeyDown);
+            // 
+            // presentationBox_DE_AbsoluteStressXX
+            // 
+            this.presentationBox_DE_AbsoluteStressXX.Location = new System.Drawing.Point(304, 35);
+            this.presentationBox_DE_AbsoluteStressXX.Name = "presentationBox_DE_AbsoluteStressXX";
+            this.presentationBox_DE_AbsoluteStressXX.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_AbsoluteStressXX.TabIndex = 122;
+            this.presentationBox_DE_AbsoluteStressXX.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_AbsoluteStressXX_KeyDown);
+            // 
+            // dropTarget_DE_AbsoluteStressXY
+            // 
+            this.dropTarget_DE_AbsoluteStressXY.AllowDrop = true;
+            this.dropTarget_DE_AbsoluteStressXY.Location = new System.Drawing.Point(272, 91);
+            this.dropTarget_DE_AbsoluteStressXY.Name = "dropTarget_DE_AbsoluteStressXY";
+            this.dropTarget_DE_AbsoluteStressXY.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_AbsoluteStressXY.TabIndex = 121;
+            this.dropTarget_DE_AbsoluteStressXY.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_AbsoluteStressXY_DragDrop);
+            // 
+            // dropTarget_DE_AbsoluteStressYY
+            // 
+            this.dropTarget_DE_AbsoluteStressYY.AllowDrop = true;
+            this.dropTarget_DE_AbsoluteStressYY.Location = new System.Drawing.Point(272, 63);
+            this.dropTarget_DE_AbsoluteStressYY.Name = "dropTarget_DE_AbsoluteStressYY";
+            this.dropTarget_DE_AbsoluteStressYY.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_AbsoluteStressYY.TabIndex = 120;
+            this.dropTarget_DE_AbsoluteStressYY.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_AbsoluteStressYY_DragDrop);
+            // 
+            // dropTarget_DE_AbsoluteStressXX
+            // 
+            this.dropTarget_DE_AbsoluteStressXX.AllowDrop = true;
+            this.dropTarget_DE_AbsoluteStressXX.Location = new System.Drawing.Point(272, 35);
+            this.dropTarget_DE_AbsoluteStressXX.Name = "dropTarget_DE_AbsoluteStressXX";
+            this.dropTarget_DE_AbsoluteStressXX.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_AbsoluteStressXX.TabIndex = 119;
+            this.dropTarget_DE_AbsoluteStressXX.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_AbsoluteStressXX_DragDrop);
+            // 
+            // label_DE_AbsoluteStressXY
+            // 
+            this.label_DE_AbsoluteStressXY.AutoSize = true;
+            this.label_DE_AbsoluteStressXY.Location = new System.Drawing.Point(12, 96);
+            this.label_DE_AbsoluteStressXY.Name = "label_DE_AbsoluteStressXY";
+            this.label_DE_AbsoluteStressXY.Size = new System.Drawing.Size(127, 13);
+            this.label_DE_AbsoluteStressXY.TabIndex = 118;
+            this.label_DE_AbsoluteStressXY.Text = "Absolute (total) stress XY:";
+            // 
+            // label_DE_AbsoluteStressYY
+            // 
+            this.label_DE_AbsoluteStressYY.AutoSize = true;
+            this.label_DE_AbsoluteStressYY.Location = new System.Drawing.Point(12, 68);
+            this.label_DE_AbsoluteStressYY.Name = "label_DE_AbsoluteStressYY";
+            this.label_DE_AbsoluteStressYY.Size = new System.Drawing.Size(127, 13);
+            this.label_DE_AbsoluteStressYY.TabIndex = 117;
+            this.label_DE_AbsoluteStressYY.Text = "Absolute (total) stress YY:";
+            // 
+            // label_DE_AbsoluteStressXX
+            // 
+            this.label_DE_AbsoluteStressXX.AutoSize = true;
+            this.label_DE_AbsoluteStressXX.Location = new System.Drawing.Point(12, 40);
+            this.label_DE_AbsoluteStressXX.Name = "label_DE_AbsoluteStressXX";
+            this.label_DE_AbsoluteStressXX.Size = new System.Drawing.Size(127, 13);
+            this.label_DE_AbsoluteStressXX.TabIndex = 116;
+            this.label_DE_AbsoluteStressXX.Text = "Absolute (total) stress XX:";
+            // 
+            // label_DE_AbsoluteStressZX
+            // 
+            this.label_DE_AbsoluteStressZX.AutoSize = true;
+            this.label_DE_AbsoluteStressZX.Location = new System.Drawing.Point(12, 124);
+            this.label_DE_AbsoluteStressZX.Name = "label_DE_AbsoluteStressZX";
+            this.label_DE_AbsoluteStressZX.Size = new System.Drawing.Size(127, 13);
+            this.label_DE_AbsoluteStressZX.TabIndex = 139;
+            this.label_DE_AbsoluteStressZX.Text = "Absolute (total) stress ZX:";
+            // 
+            // dropTarget_DE_AbsoluteStressZX
+            // 
+            this.dropTarget_DE_AbsoluteStressZX.AllowDrop = true;
+            this.dropTarget_DE_AbsoluteStressZX.Location = new System.Drawing.Point(272, 119);
+            this.dropTarget_DE_AbsoluteStressZX.Name = "dropTarget_DE_AbsoluteStressZX";
+            this.dropTarget_DE_AbsoluteStressZX.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_AbsoluteStressZX.TabIndex = 140;
+            this.dropTarget_DE_AbsoluteStressZX.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_AbsoluteStressZX_DragDrop);
+            // 
+            // presentationBox_DE_AbsoluteStressZX
+            // 
+            this.presentationBox_DE_AbsoluteStressZX.Location = new System.Drawing.Point(304, 119);
+            this.presentationBox_DE_AbsoluteStressZX.Name = "presentationBox_DE_AbsoluteStressZX";
+            this.presentationBox_DE_AbsoluteStressZX.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_AbsoluteStressZX.TabIndex = 141;
+            this.presentationBox_DE_AbsoluteStressZX.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_AbsoluteStressZX_KeyDown);
+            // 
+            // label_DE_AbsoluteStressYZ
+            // 
+            this.label_DE_AbsoluteStressYZ.AutoSize = true;
+            this.label_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(12, 152);
+            this.label_DE_AbsoluteStressYZ.Name = "label_DE_AbsoluteStressYZ";
+            this.label_DE_AbsoluteStressYZ.Size = new System.Drawing.Size(127, 13);
+            this.label_DE_AbsoluteStressYZ.TabIndex = 142;
+            this.label_DE_AbsoluteStressYZ.Text = "Absolute (total) stress YZ:";
+            // 
+            // dropTarget_DE_AbsoluteStressYZ
+            // 
+            this.dropTarget_DE_AbsoluteStressYZ.AllowDrop = true;
+            this.dropTarget_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(272, 147);
+            this.dropTarget_DE_AbsoluteStressYZ.Name = "dropTarget_DE_AbsoluteStressYZ";
+            this.dropTarget_DE_AbsoluteStressYZ.Size = new System.Drawing.Size(26, 23);
+            this.dropTarget_DE_AbsoluteStressYZ.TabIndex = 143;
+            this.dropTarget_DE_AbsoluteStressYZ.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropTarget_DE_AbsoluteStressYZ_DragDrop);
+            // 
+            // presentationBox_DE_AbsoluteStressYZ
+            // 
+            this.presentationBox_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(304, 147);
+            this.presentationBox_DE_AbsoluteStressYZ.Name = "presentationBox_DE_AbsoluteStressYZ";
+            this.presentationBox_DE_AbsoluteStressYZ.Size = new System.Drawing.Size(135, 22);
+            this.presentationBox_DE_AbsoluteStressYZ.TabIndex = 144;
+            this.presentationBox_DE_AbsoluteStressYZ.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_DE_AbsoluteStressYZ_KeyDown);
             // 
             // DeformationEpisodeUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(737, 446);
-            this.Controls.Add(this.groupBox_DE_DynamicLoad);
-            this.Controls.Add(this.toolTipHotspot_DE_OPRate);
-            this.Controls.Add(this.toolTipHotspot_DE_StressArchingFactor);
-            this.Controls.Add(this.toolTipHotspot_DE_UpliftRate);
-            this.Controls.Add(this.toolTipHotspot_DE_TempChange);
-            this.Controls.Add(this.toolTipHotspot_DE_EhminRate);
-            this.Controls.Add(this.toolTipHotspot_DE_EhminAzi);
-            this.Controls.Add(this.toolTipHotspot_DE_Eh);
-            this.Controls.Add(this.comboBox_DE_TimeUnits);
-            this.Controls.Add(this.unitTextBox_DE_StressArchingFactor);
-            this.Controls.Add(this.label_DE_StressArchingFactor);
-            this.Controls.Add(this.unitTextBox_DE_UpliftRate_default);
-            this.Controls.Add(this.unitTextBox_DE_TempChange_default);
-            this.Controls.Add(this.unitTextBox_DE_OPRate_default);
-            this.Controls.Add(this.label_DE_OPRate_Units);
-            this.Controls.Add(this.label_DE_UpliftRate_Units);
-            this.Controls.Add(this.label_DE_TempChange_Units);
-            this.Controls.Add(this.label_DE_UpliftRate_default);
-            this.Controls.Add(this.label_DE_TempChange_default);
-            this.Controls.Add(this.label_DE_OPRate_default);
-            this.Controls.Add(this.presentationBox_DE_UpliftRate);
-            this.Controls.Add(this.presentationBox_DE_TempChange);
-            this.Controls.Add(this.presentationBox_DE_OPRate);
-            this.Controls.Add(this.dropTarget_DE_UpliftRate);
-            this.Controls.Add(this.dropTarget_DE_TempChange);
-            this.Controls.Add(this.dropTarget_DE_OPRate);
-            this.Controls.Add(this.label_DE_UpliftRate);
-            this.Controls.Add(this.label_DE_TempChange);
-            this.Controls.Add(this.label_DE_OPRate);
+            this.ClientSize = new System.Drawing.Size(770, 331);
+            this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.btn_DE_Cancel);
             this.Controls.Add(this.btn_DE_OK);
-            this.Controls.Add(this.unitTextBox_DE_DeformationDuration);
-            this.Controls.Add(this.label_DE_DeformationDuration);
-            this.Controls.Add(this.unitTextBox_DE_EhmaxRate_default);
-            this.Controls.Add(this.unitTextBox_DE_EhminRate_default);
-            this.Controls.Add(this.unitTextBox_DE_EhminAzi_default);
-            this.Controls.Add(this.label_DE_EhminAzi_Units);
-            this.Controls.Add(this.label_DE_EhmaxRate_Units);
-            this.Controls.Add(this.label_DE_EhminRate_Units);
-            this.Controls.Add(this.label_DE_EhmaxRate_default);
-            this.Controls.Add(this.label_DE_EhminRate_default);
-            this.Controls.Add(this.label_DE_EhminAzi_default);
-            this.Controls.Add(this.presentationBox_DE_EhmaxRate);
-            this.Controls.Add(this.presentationBox_DE_EhminRate);
-            this.Controls.Add(this.presentationBox_DE_EhminAzi);
-            this.Controls.Add(this.dropTarget_DE_EhmaxRate);
-            this.Controls.Add(this.dropTarget_DE_EhminRate);
-            this.Controls.Add(this.dropTarget_DE_EhminAzi);
-            this.Controls.Add(this.label_DE_EhmaxRate);
-            this.Controls.Add(this.label_DE_EhminRate);
-            this.Controls.Add(this.label_DE_EhminAzi);
             this.Name = "DeformationEpisodeUI";
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).EndInit();
-            this.groupBox_DE_DynamicLoad.ResumeLayout(false);
-            this.groupBox_DE_DynamicLoad.PerformLayout();
+            this.tabControl1.ResumeLayout(false);
+            this.tabStatic.ResumeLayout(false);
+            this.tabStatic.PerformLayout();
+            this.tabDynamic.ResumeLayout(false);
+            this.tabDynamic.PerformLayout();
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhmaxRate_default;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhminRate_default;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhminAzi_default;
-        private System.Windows.Forms.Label label_DE_EhminAzi_Units;
-        private System.Windows.Forms.Label label_DE_EhmaxRate_Units;
-        private System.Windows.Forms.Label label_DE_EhminRate_Units;
-        private System.Windows.Forms.Label label_DE_EhmaxRate_default;
-        private System.Windows.Forms.Label label_DE_EhminRate_default;
-        private System.Windows.Forms.Label label_DE_EhminAzi_default;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhmaxRate;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhminRate;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhminAzi;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhmaxRate;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhminRate;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhminAzi;
-        private System.Windows.Forms.Label label_DE_EhmaxRate;
-        private System.Windows.Forms.Label label_DE_EhminRate;
-        private System.Windows.Forms.Label label_DE_EhminAzi;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_DeformationDuration;
-        private System.Windows.Forms.Label label_DE_DeformationDuration;
         private System.Windows.Forms.Button btn_DE_Cancel;
         private System.Windows.Forms.Button btn_DE_OK;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipManager toolTipManager_DeformationEpisode;
+        private Slb.Ocean.Petrel.UI.Controls.TabControl tabControl1;
+        private Slb.Ocean.Petrel.UI.Controls.TabPage tabStatic;
+        private Slb.Ocean.Petrel.UI.Controls.TabPage tabDynamic;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_OPRate;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_StressArchingFactor;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_UpliftRate;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_TempChange;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_EhminRate;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_EhminAzi;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_Eh;
+        private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_DE_TimeUnits;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_StressArchingFactor;
+        private System.Windows.Forms.Label label_DE_StressArchingFactor;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_UpliftRate_default;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_TempChange_default;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_OPRate_default;
@@ -980,40 +1038,53 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_DE_UpliftRate;
         private System.Windows.Forms.Label label_DE_TempChange;
         private System.Windows.Forms.Label label_DE_OPRate;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_StressArchingFactor;
-        private System.Windows.Forms.Label label_DE_StressArchingFactor;
-        private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_DE_TimeUnits;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipManager toolTipManager_DeformationEpisode;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_Eh;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_EhminAzi;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_EhminRate;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_TempChange;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_UpliftRate;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_StressArchingFactor;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_OPRate;
-        private System.Windows.Forms.GroupBox groupBox_DE_DynamicLoad;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_DynamicLoad;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_ElasticStrain;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_FP;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_Sv;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_FP;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_Sv;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_FP;
-        private System.Windows.Forms.Label label_DE_Sv;
-        private System.Windows.Forms.Label label_DE_FP;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_ElasticStrainXY;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_ElasticStrainYY;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_ElasticStrainXX;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_ElasticStrainXY;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_ElasticStrainYY;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_ElasticStrainXX;
-        private System.Windows.Forms.Label label_DE_ElasticStrainXY;
-        private System.Windows.Forms.Label label_DE_ElasticStrainYY;
-        private System.Windows.Forms.Label label_DE_ElasticStrainXX;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_Sv;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_SimCase;
-        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_SimCase;
-        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_SimCase;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_DeformationDuration;
+        private System.Windows.Forms.Label label_DE_DeformationDuration;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhmaxRate_default;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhminRate_default;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_DE_EhminAzi_default;
+        private System.Windows.Forms.Label label_DE_EhminAzi_Units;
+        private System.Windows.Forms.Label label_DE_EhmaxRate_Units;
+        private System.Windows.Forms.Label label_DE_EhminRate_Units;
+        private System.Windows.Forms.Label label_DE_EhmaxRate_default;
+        private System.Windows.Forms.Label label_DE_EhminRate_default;
+        private System.Windows.Forms.Label label_DE_EhminAzi_default;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhmaxRate;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhminRate;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_EhminAzi;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhmaxRate;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhminRate;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_EhminAzi;
+        private System.Windows.Forms.Label label_DE_EhmaxRate;
+        private System.Windows.Forms.Label label_DE_EhminRate;
+        private System.Windows.Forms.Label label_DE_EhminAzi;
         private System.Windows.Forms.Label label_DE_SimCase;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_SimCase;
+        private System.Windows.Forms.Label label_DE_AbsoluteStressXX;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_SimCase;
+        private System.Windows.Forms.Label label_DE_AbsoluteStressYY;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_SimCase;
+        private System.Windows.Forms.Label label_DE_AbsoluteStressXY;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressXX;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_DynamicLoad;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressYY;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_AbsoluteStress;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressXY;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_FP;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressXX;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressZZ;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressYY;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_FP;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressXY;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressZZ;
+        private System.Windows.Forms.Label label_DE_FP;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_FP;
+        private System.Windows.Forms.Label label_DE_AbsoluteStressZZ;
+        private System.Windows.Forms.Label label_DE_AbsoluteStressYZ;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressYZ;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressYZ;
+        private System.Windows.Forms.Label label_DE_AbsoluteStressZX;
+        private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressZX;
+        private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressZX;
     }
 }

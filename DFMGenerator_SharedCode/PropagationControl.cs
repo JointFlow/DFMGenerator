@@ -24,15 +24,15 @@ namespace DFMGenerator_SharedCode
     public enum IntermediateOutputInterval { SpecifiedTime, EqualTime, EqualArea }
 
     /// <summary>
-    /// Used to initialise the initial stress and elastic strain state at the start of a deformation episode
+    /// Used to initialise the stress state at the start of a deformation episode
     /// </summary>
-    class DeformationEpisodeStressStrainInitialiser
+    class DeformationEpisodeStressInitialiser
     {
-        // Stress and strain state is defined in terms of vertical stress, horizontal strain and total pore fluid pressure
+        // Stress state is defined in terms of absolute (total) stress tensor and total pore fluid pressure
         /// <summary>
         /// Absolute vertical stress (Pa)
         /// </summary>
-        public double AbsoluteVerticalStress { get; private set; }
+        public double AbsoluteVerticalStress { get { if (AbsoluteStress is null) return double.NaN; else return AbsoluteStress.Component(Tensor2SComponents.ZZ); } }
         /// <summary>
         /// Flag for whether the initial absolute vertical stress is defined
         /// </summary>
@@ -46,46 +46,51 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public bool SetInitialFluidPressure { get { return !double.IsNaN(FluidPressure); } }
         /// <summary>
-        /// Tensor for horizontal elastic strain
+        /// Absolute (total) stress tensor (Pa)
         /// </summary>
-        public Tensor2S HorizontalElasticStrain { get; private set; }
+        public Tensor2S AbsoluteStress { get; private set; }
         /// <summary>
-        /// Flag for whether the initial horizontal elastic strain is defined
+        /// Flag for whether the full absolute stress tensor is defined
         /// </summary>
-        public bool SetInitialHorizontalElasticStrain { get { return !(HorizontalElasticStrain is null); } }
+        public bool SetInitialStressTensor { get; private set; }
 
         // Constructors
         /// <summary>
-        /// Define initial stress strain state by absolute vertical stress, total pore fluid pressure and horizontal strain tensor
+        /// Define initial stress strain state by absolute vertical stress and total pore fluid pressure; horizontal stress components undefined
         /// </summary>
         /// <param name="AbsoluteVerticalStress_in">Absolute vertical stress (Pa)</param>
         /// <param name="FluidPressure_in">Total pore fluid pressure (Pa)</param>
-        /// <param name="HorizontalElasticStrain_in">Tensor for horizontal elastic strain</param>
-        public DeformationEpisodeStressStrainInitialiser(double AbsoluteVerticalStress_in, double FluidPressure_in, Tensor2S HorizontalElasticStrain_in)
+        public DeformationEpisodeStressInitialiser(double AbsoluteVerticalStress_in, double FluidPressure_in)
         {
-            AbsoluteVerticalStress = AbsoluteVerticalStress_in;
-            FluidPressure = FluidPressure_in;
-            if (HorizontalElasticStrain_in is null)
-                HorizontalElasticStrain = null;
+            if (!double.IsNaN(AbsoluteVerticalStress_in))
+            {
+                AbsoluteStress = new Tensor2S(0, 0, AbsoluteVerticalStress_in, 0, 0, 0);
+            }
             else
-                HorizontalElasticStrain = new Tensor2S(HorizontalElasticStrain_in.Component(Tensor2SComponents.XX), HorizontalElasticStrain_in.Component(Tensor2SComponents.YY), 0, HorizontalElasticStrain_in.Component(Tensor2SComponents.XY), 0, 0);
+            {
+                AbsoluteStress = null;
+            }
+            FluidPressure = FluidPressure_in;
+            SetInitialStressTensor = false;
         }
         /// <summary>
-        /// Define initial stress strain state by absolute vertical stress, total pore fluid pressure, minimum and maximum horizontal strain and minimum horizontal strain azimuth
+        /// Define initial stress strain state by the full absolute (total) stress tensor and total pore fluid pressure
         /// </summary>
-        /// <param name="AbsoluteVerticalStress_in">Absolute vertical stress (Pa)</param>
+        /// <param name="AbsoluteStress_in">Tensor for absolute (total) stress (Pa)</param>
         /// <param name="FluidPressure_in">Total pore fluid pressure (Pa)</param>
-        /// <param name="Epsilon_hmin_in">Minimum horizontal elastic strain (extension negative)</param>
-        /// <param name="Epsilon_hmax_in">Maximum horizontal elastic strain (extension negative)</param>
-        /// <param name="Epsilon_hmin_azimuth_in">Azimuth of minimum horizontal strain (rad)</param>
-        public DeformationEpisodeStressStrainInitialiser(double AbsoluteVerticalStress_in, double FluidPressure_in, double Epsilon_hmin_in, double Epsilon_hmax_in, double Epsilon_hmin_azimuth_in)
+        public DeformationEpisodeStressInitialiser(Tensor2S AbsoluteStress_in, double FluidPressure_in)
         {
-            AbsoluteVerticalStress = AbsoluteVerticalStress_in;
             FluidPressure = FluidPressure_in;
-            if (!double.IsNaN(Epsilon_hmin_in) && !double.IsNaN(Epsilon_hmax_in) && !double.IsNaN(Epsilon_hmin_azimuth_in))
-                HorizontalElasticStrain = Tensor2S.HorizontalStrainTensor(Epsilon_hmin_in, Epsilon_hmax_in, Epsilon_hmin_azimuth_in);
+            if (AbsoluteStress_in is null)
+            {
+                AbsoluteStress = null;
+                SetInitialStressTensor = false;
+            }
             else
-                HorizontalElasticStrain = null;
+            {
+                AbsoluteStress = new Tensor2S(AbsoluteStress_in);
+                SetInitialStressTensor = true;
+            }
         }
     }
 
@@ -150,7 +155,7 @@ namespace DFMGenerator_SharedCode
             // If the supplied tensor is null, set to zero
             if (Applied_Epsilon_dashed_in is null)
             {
-                // Create a new tensor applied strain rate tensor
+                // Create a new applied strain rate tensor
                 applied_Epsilon_dashed = new Tensor2S();
             }
             else
@@ -175,7 +180,7 @@ namespace DFMGenerator_SharedCode
                 double ehyy = Applied_Epsilon_dashed_in.Component(Tensor2SComponents.YY) / timeUnits_Modifier;
                 double ehxy = Applied_Epsilon_dashed_in.Component(Tensor2SComponents.XY) / timeUnits_Modifier;
 
-                // Create a new tensor applied strain rate tensor
+                // Create a new applied strain rate tensor
                 applied_Epsilon_dashed = new Tensor2S(ehxx, ehyy, 0, ehxy, 0, 0);
             }
         }
@@ -236,6 +241,63 @@ namespace DFMGenerator_SharedCode
                 StressArchingFactor = StressArchingFactor_in;
         }
 
+        // Stress load (not required)
+        // This is not required, but if defined will override the horizontal strain laod
+        /// <summary>
+        /// Absolute stress rate tensor
+        /// </summary>
+        private Tensor2S absolute_Stress_dashed;
+        /// <summary>
+        /// Absolute stress rate tensor
+        /// </summary>
+        public Tensor2S Absolute_Stress_dashed { get { return absolute_Stress_dashed; } }
+        /// <summary>
+        /// Flag to define whether a stress load is defined for the deformation episode
+        /// </summary>
+        public bool StressLoadDefined { get { return !(absolute_Stress_dashed is null); } }
+        /// <summary>
+        /// Set the absolute stress load by supplying a stress rate tensor
+        /// </summary>
+        /// <param name="Absolute_Stress_dashed_in">Tensor for absolute stress rate load</param>
+        /// <param name="TimeUnits_in">Time units of input data</param>
+        public void SetAbsoluteStress(Tensor2S Absolute_Stress_dashed_in, TimeUnits TimeUnits_in)
+        {
+            // If the supplied tensor is null, set to zero
+            if (Absolute_Stress_dashed_in is null)
+            {
+                // Create a new tensor applied strain rate tensor
+                absolute_Stress_dashed = new Tensor2S();
+            }
+            else
+            {
+                // Convert input values to SI time units
+                double timeUnits_Modifier = 1;
+                switch (TimeUnits_in)
+                {
+                    case TimeUnits.second:
+                        // In SI units - no change
+                        break;
+                    case TimeUnits.year:
+                        timeUnits_Modifier = 365.25d * 24d * 3600d; // Convert from yr to s
+                        break;
+                    case TimeUnits.ma:
+                        timeUnits_Modifier = 1000000d * 365.25d * 24d * 3600d; // Convert from ma to s
+                        break;
+                    default:
+                        break;
+                }
+                double sxx = Absolute_Stress_dashed_in.Component(Tensor2SComponents.XX) / timeUnits_Modifier;
+                double syy = Absolute_Stress_dashed_in.Component(Tensor2SComponents.YY) / timeUnits_Modifier;
+                double szz = Absolute_Stress_dashed_in.Component(Tensor2SComponents.ZZ) / timeUnits_Modifier;
+                double sxy = Absolute_Stress_dashed_in.Component(Tensor2SComponents.XY) / timeUnits_Modifier;
+                double syz = Absolute_Stress_dashed_in.Component(Tensor2SComponents.YZ) / timeUnits_Modifier;
+                double szx = Absolute_Stress_dashed_in.Component(Tensor2SComponents.ZX) / timeUnits_Modifier;
+
+                // Create a new tensor applied strain rate tensor
+                absolute_Stress_dashed = new Tensor2S(sxx, syy, szz, sxy, syz, szx);
+            }
+        }
+
         // Deformation episode duration and total uplift
         /// <summary>
         /// Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing
@@ -276,36 +338,32 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double DeformationEpisodeUplift { get { return (DeformationEpisodeDuration > 0 ? AppliedUpliftRate * DeformationEpisodeDuration : 0); } }
 
-        // Initial stress and strain state (not required)
+        // Initial stress state (not required)
         /// <summary>
-        /// Describes the initial stress and elastic strain state at the start of the deformation episode
+        /// Describes the initial stress state at the start of the deformation episode
         /// </summary>
-        public DeformationEpisodeStressStrainInitialiser InitialStressStrain { get; private set; }
+        public DeformationEpisodeStressInitialiser InitialStressState{ get; private set; }
         /// <summary>
-        /// Flag to define whether initial stress and elastic strain state at the start of the deformation episode is defined
+        /// Flag to define whether initial stress state at the start of the deformation episode is defined
         /// </summary>
-        public bool InitialStressStrainDefined { get { return !(InitialStressStrain is null); } }
+        public bool InitialStressStateDefined { get { return !(InitialStressState is null); } }
         /// <summary>
-        /// Set the initial stress and elastic strain state at the start of the deformation episode
+        /// Set the initial stress state at the start of the deformation episode with a full stress tensor
         /// </summary>
-        /// <param name="HorizontalElasticStrain_in">Tensor for horizontal elastic strain</param>
-        /// <param name="FluidPressure_in">Total pore fluid pressure (Pa)</param>
-        /// <param name="AbsoluteVerticalStress_in">Absolute vertical stress (Pa)</param>
-        public void SetInitialStressStrain(Tensor2S HorizontalElasticStrain_in, double FluidPressure_in, double AbsoluteVerticalStress_in)
+        /// <param name="AbsoluteStress_in">Tensor for initial absolute (total) stress</param>
+        /// <param name="FluidPressure_in">Initial total pore fluid pressure (Pa)</param>
+        public void SetInitialStressStrain(Tensor2S AbsoluteStress_in, double FluidPressure_in)
         {
-            InitialStressStrain = new DeformationEpisodeStressStrainInitialiser(AbsoluteVerticalStress_in, FluidPressure_in, HorizontalElasticStrain_in);
+            InitialStressState = new DeformationEpisodeStressInitialiser(AbsoluteStress_in, FluidPressure_in);
         }
         /// <summary>
-        /// Set the initial stress and elastic strain state at the start of the deformation episode
+        /// Set the initial stress state at the start of the deformation episode with vertical stress and fluid pressure only
         /// </summary>
-        /// <param name="Epsilon_hmin_in">Minimum horizontal elastic strain</param>
-        /// <param name="Epsilon_hmax_in">Maximum horizontal elastic strain</param>
-        /// <param name="Epsilon_hmin_azimuth_in">Azimuth of minimum horizontal elastic strain (rad)</param>
-        /// <param name="FluidPressure_in">Total pore fluid pressure (Pa)</param>
-        /// <param name="AbsoluteVerticalStress_in">Absolute vertical stress (Pa)</param>
-        public void SetInitialStressStrain(double Epsilon_hmin_in, double Epsilon_hmax_in, double Epsilon_hmin_azimuth_in, double FluidPressure_in, double AbsoluteVerticalStress_in)
+        /// <param name="AbsoluteVerticalStress_in">Absolute (total) vertical stress (Pa)</param>
+        /// <param name="FluidPressure_in">Initial total pore fluid pressure (Pa)</param>
+        public void SetInitialStressStrain(double AbsoluteVerticalStress_in, double FluidPressure_in)
         {
-            InitialStressStrain = new DeformationEpisodeStressStrainInitialiser(AbsoluteVerticalStress_in, FluidPressure_in, Epsilon_hmin_in, Epsilon_hmax_in, Epsilon_hmin_azimuth_in);
+            InitialStressState = new DeformationEpisodeStressInitialiser(AbsoluteVerticalStress_in, FluidPressure_in);
         }
 
         // Constructors
@@ -389,6 +447,18 @@ namespace DFMGenerator_SharedCode
             // Episode name: default to null - will return "Deformation Episode {EpisodeIndex}"
         }
         /// <summary>
+        /// Constructor: Set the absolute stress and fluid pressure loads
+        /// </summary>
+        /// <param name="Absolute_Stress_dashed_in">Tensor for absolute stress rate load</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/s)</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="TimeUnits_in">Time units of input data</param>
+        public DeformationEpisodeLoadControl(Tensor2S Absolute_Stress_dashed_in, double AppliedOverpressureRate_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
+            : this (null, Absolute_Stress_dashed_in,  AppliedOverpressureRate_in,  DeformationEpisodeDuration_in,  TimeUnits_in)
+        {
+            // Episode name: default to null - will return "Deformation Episode {EpisodeIndex}"
+        }
+        /// <summary>
         /// Constructor: Give the episode a distinct name and set the external strain, fluid pressure, thermal and uplift loads
         /// </summary>
         /// <param name="EpisodeName_in">Deformation episode name</param>
@@ -440,6 +510,33 @@ namespace DFMGenerator_SharedCode
 
             // Set fluid pressure, thermal and uplift loads
             SetFPThermalUpliftLoad(AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, TimeUnits_in);
+
+            // Set the deformation episode duration
+            SetDeformationEpisodeDuration(DeformationEpisodeDuration_in, TimeUnits_in);
+        }
+        /// <summary>
+        /// Constructor: Give the episode a distinct name and set the absolute stress and fluid pressure loads
+        /// </summary>
+        /// <param name="EpisodeName_in">Deformation episode name</param>
+        /// <param name="Absolute_Stress_dashed_in">Tensor for absolute stress rate load</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/s)</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="TimeUnits_in">Time units of input data</param>
+        public DeformationEpisodeLoadControl(string EpisodeName_in, Tensor2S Absolute_Stress_dashed_in, double AppliedOverpressureRate_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
+        {
+            // Set the deformation episode name
+            EpisodeName = EpisodeName_in;
+            // Set the deformation episode index to -1; this will be when the deformation episode is added to the list in a PropagationControl object
+            EpisodeIndex = -1;
+
+            // Create a tensor for the applied external strain load and populate it with zeros
+            applied_Epsilon_dashed = new Tensor2S();
+
+            // Set the stress load
+            SetAbsoluteStress(Absolute_Stress_dashed_in, TimeUnits_in);
+
+            // Set fluid pressure, thermal and uplift loads
+            SetFPThermalUpliftLoad(AppliedOverpressureRate_in, double.NaN, double.NaN, double.NaN, TimeUnits_in);
 
             // Set the deformation episode duration
             SetDeformationEpisodeDuration(DeformationEpisodeDuration_in, TimeUnits_in);
@@ -927,10 +1024,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
         public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in)
         {
-            AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, timeUnits);
+            AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, double.NaN, double.NaN, timeUnits);
         }
         /// <summary>
-        /// Add a new deformation episode with applied strain, fluid pressure, thermal and uplift loads in specified time units
+        /// Add a new deformation episode with applied strain, fluid pressure, thermal and uplift loads in model time units
         /// </summary>
         /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate</param>
         /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/unit time)</param>
@@ -938,15 +1035,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/unit time)</param>
         /// <param name="StressArchingFactor_in">Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)</param>
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
-        /// <param name="InitialEpsilon_in">Horizontal elastic strain tensor at the start of the deformation episode; if initial values are all null, no initial load will be specified</param>
-        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if initial values are all null, no initial load will be specified</param>
-        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if initial values are all null, no initial load will be specified</param>
-        public void AddDeformationEpisode(Tensor2S Applied_Epsilon_dashed_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, Tensor2S InitialEpsilon_in, double InitialFluidPressure_in, double InitialAbsoluteVerticalStress_in)
+        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if NaN, no initial vertical stress will be specified</param>
+        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if NaN, no initial fluid pressure will be specified</param>
+        public void AddDeformationEpisode(Tensor2S Applied_Epsilon_dashed_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, double InitialAbsoluteVerticalStress_in, double InitialFluidPressure_in)
         {
-            AddDeformationEpisode(Applied_Epsilon_dashed_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, InitialEpsilon_in, InitialFluidPressure_in, InitialAbsoluteVerticalStress_in, timeUnits);
+            AddDeformationEpisode(Applied_Epsilon_dashed_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, InitialAbsoluteVerticalStress_in, InitialFluidPressure_in, timeUnits);
         }
         /// <summary>
-        /// Add a new deformation episode with applied strain, fluid pressure, thermal and uplift loads in specified time units
+        /// Add a new deformation episode with applied strain, fluid pressure, thermal and uplift loads in model time units
         /// </summary>
         /// <param name="Applied_Epsilon_hmin_dashed_in">Minimum applied horizontal strain rate</param>
         /// <param name="Applied_Epsilon_hmax_dashed_in">Maximum applied horizontal strain rate</param>
@@ -956,14 +1052,27 @@ namespace DFMGenerator_SharedCode
         /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/unit time)</param>
         /// <param name="StressArchingFactor_in">Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)</param>
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
-        /// <param name="InitialEpsilon_hmin_in">Minimum horizontal elastic strain at the start of the deformation episode; if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialEpsilon_hmax_in">Maximum horizontal elastic strain at the start of the deformation episode; if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialEpsilon_hmin_azimuth_in">Azimuth of minimum horizontal elastic strain at the start of the deformation episode (rad); if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if initial values are all NaN/null, no initial load will be specified</param>
-        public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, double InitialEpsilon_hmin_in, double InitialEpsilon_hmax_in, double InitialEpsilon_hmin_azimuth_in, double InitialFluidPressure_in, double InitialAbsoluteVerticalStress_in)
+        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if NaN, no initial vertical stress will be specified</param>
+        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if NaN, no initial fluid pressure will be specified</param>
+        public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, double InitialAbsoluteVerticalStress_in, double InitialFluidPressure_in)
         {
-            AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, InitialEpsilon_hmin_in, InitialEpsilon_hmax_in, InitialEpsilon_hmin_azimuth_in, InitialFluidPressure_in, InitialAbsoluteVerticalStress_in, timeUnits);
+            AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, InitialAbsoluteVerticalStress_in, InitialFluidPressure_in, timeUnits);
+        }
+        /// <summary>
+        /// Add a new deformation episode with absolute stress and fluid pressure loads in model time units
+        /// </summary>
+        /// <param name="AbsoluteStress_dashed_in">Absolute (total) stress rate tensor</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/unit time)</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="InitialAbsoluteStress_in">Absolute (total) stress tensor at the start of the deformation episode (Pa); if null, no initial stress state will be specified</param>
+        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if NaN, no initial fluid pressure will be specified</param>
+        public void AddDeformationEpisode(Tensor2S AbsoluteStress_dashed_in, double AppliedOverpressureRate_in, double DeformationEpisodeDuration_in, Tensor2S InitialAbsoluteStress_in, double InitialFluidPressure_in)
+        {
+            DeformationEpisodeLoadControl newDeformationEpisode = new DeformationEpisodeLoadControl(AbsoluteStress_dashed_in, AppliedOverpressureRate_in, DeformationEpisodeDuration_in, timeUnits);
+            if (!(InitialAbsoluteStress_in is null) || !double.IsNaN(InitialFluidPressure_in))
+                newDeformationEpisode.SetInitialStressStrain(InitialAbsoluteStress_in, InitialFluidPressure_in);
+            newDeformationEpisode.EpisodeIndex = deformationEpisodes.Count;
+            deformationEpisodes.Add(newDeformationEpisode);
         }
         /// <summary>
         /// Add a new deformation episode with applied strain, fluid pressure, thermal and uplift loads in specified time units
@@ -974,15 +1083,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/unit time)</param>
         /// <param name="StressArchingFactor_in">Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)</param>
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
-        /// <param name="InitialEpsilon_in">Horizontal elastic strain tensor at the start of the deformation episode; if initial values are all null, no initial load will be specified</param>
-        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if initial values are all null, no initial load will be specified</param>
-        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if initial values are all null, no initial load will be specified</param>
+        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if NaN, no initial vertical stress will be specified</param>
+        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if NaN, no initial fluid pressure will be specified</param>
         /// <param name="TimeUnits_in">Time units for deformation episode duration and load rates</param>
-        public void AddDeformationEpisode(Tensor2S Applied_Epsilon_dashed_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, Tensor2S InitialEpsilon_in, double InitialFluidPressure_in, double InitialAbsoluteVerticalStress_in, TimeUnits TimeUnits_in)
+        public void AddDeformationEpisode(Tensor2S Applied_Epsilon_dashed_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, double InitialAbsoluteVerticalStress_in, double InitialFluidPressure_in, TimeUnits TimeUnits_in)
         {
             DeformationEpisodeLoadControl newDeformationEpisode = new DeformationEpisodeLoadControl(Applied_Epsilon_dashed_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, TimeUnits_in);
-            if (!double.IsNaN(InitialAbsoluteVerticalStress_in) || !double.IsNaN(InitialFluidPressure_in) || !(InitialEpsilon_in is null))
-                newDeformationEpisode.SetInitialStressStrain(InitialEpsilon_in, InitialFluidPressure_in, InitialAbsoluteVerticalStress_in);
+            if (!double.IsNaN(InitialAbsoluteVerticalStress_in) || !double.IsNaN(InitialFluidPressure_in))
+                newDeformationEpisode.SetInitialStressStrain(InitialAbsoluteVerticalStress_in, InitialFluidPressure_in);
             newDeformationEpisode.EpisodeIndex = deformationEpisodes.Count;
             deformationEpisodes.Add(newDeformationEpisode);
         }
@@ -997,17 +1105,31 @@ namespace DFMGenerator_SharedCode
         /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/unit time)</param>
         /// <param name="StressArchingFactor_in">Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)</param>
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
-        /// <param name="InitialEpsilon_hmin_in">Minimum horizontal elastic strain at the start of the deformation episode; if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialEpsilon_hmax_in">Maximum horizontal elastic strain at the start of the deformation episode; if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialEpsilon_hmin_azimuth_in">Azimuth of minimum horizontal elastic strain at the start of the deformation episode (rad); if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if initial values are all NaN/null, no initial load will be specified</param>
-        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if initial values are all NaN/null, no initial load will be specified</param>
+        /// <param name="InitialAbsoluteVerticalStress_in">Absolute vertical stress at the start of the deformation episode (Pa); if NaN, no initial vertical stress will be specified</param>
+        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if NaN, no initial fluid pressure will be specified</param>
         /// <param name="TimeUnits_in">Time units for deformation episode duration and load rates</param>
-        public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, double InitialEpsilon_hmin_in, double InitialEpsilon_hmax_in, double InitialEpsilon_hmin_azimuth_in, double InitialFluidPressure_in, double InitialAbsoluteVerticalStress_in, TimeUnits TimeUnits_in)
+        public void AddDeformationEpisode(double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, double Applied_Epsilon_hmin_azimuth_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double StressArchingFactor_in, double DeformationEpisodeDuration_in, double InitialAbsoluteVerticalStress_in, double InitialFluidPressure_in, TimeUnits TimeUnits_in)
         {
             DeformationEpisodeLoadControl newDeformationEpisode = new DeformationEpisodeLoadControl(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, StressArchingFactor_in, DeformationEpisodeDuration_in, TimeUnits_in);
-            if (!double.IsNaN(InitialAbsoluteVerticalStress_in) || !double.IsNaN(InitialFluidPressure_in) || (!double.IsNaN(InitialEpsilon_hmin_in) && !double.IsNaN(InitialEpsilon_hmax_in) && !double.IsNaN(InitialEpsilon_hmin_azimuth_in)))
-                newDeformationEpisode.SetInitialStressStrain(InitialEpsilon_hmin_in, InitialEpsilon_hmax_in, InitialEpsilon_hmin_azimuth_in, InitialFluidPressure_in, InitialAbsoluteVerticalStress_in);
+            if (!double.IsNaN(InitialAbsoluteVerticalStress_in) || !double.IsNaN(InitialFluidPressure_in))
+                newDeformationEpisode.SetInitialStressStrain(InitialAbsoluteVerticalStress_in, InitialFluidPressure_in);
+            newDeformationEpisode.EpisodeIndex = deformationEpisodes.Count;
+            deformationEpisodes.Add(newDeformationEpisode);
+        }
+        /// <summary>
+        /// Add a new deformation episode with absolute stress and fluid pressure loads in specified time units
+        /// </summary>
+        /// <param name="AbsoluteStress_dashed_in">Absolute (total) stress rate tensor</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/unit time)</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration: if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="InitialAbsoluteStress_in">Absolute (total) stress tensor at the start of the deformation episode (Pa); if null, no initial stress state will be specified</param>
+        /// <param name="InitialFluidPressure_in">Total pore fluid pressure at the start of the deformation episode (Pa); if NaN, no initial fluid pressure will be specified</param>
+        /// <param name="TimeUnits_in">Time units for deformation episode duration and load rates</param>
+        public void AddDeformationEpisode(Tensor2S AbsoluteStress_dashed_in, double AppliedOverpressureRate_in, double DeformationEpisodeDuration_in, Tensor2S InitialAbsoluteStress_in, double InitialFluidPressure_in, TimeUnits TimeUnits_in)
+        {
+            DeformationEpisodeLoadControl newDeformationEpisode = new DeformationEpisodeLoadControl(AbsoluteStress_dashed_in, AppliedOverpressureRate_in, DeformationEpisodeDuration_in, TimeUnits_in);
+            if (!(InitialAbsoluteStress_in is null) || !double.IsNaN(InitialFluidPressure_in))
+                newDeformationEpisode.SetInitialStressStrain(InitialAbsoluteStress_in, InitialFluidPressure_in);
             newDeformationEpisode.EpisodeIndex = deformationEpisodes.Count;
             deformationEpisodes.Add(newDeformationEpisode);
         }

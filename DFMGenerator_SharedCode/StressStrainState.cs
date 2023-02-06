@@ -286,7 +286,7 @@ namespace DFMGenerator_SharedCode
         /// Adjust the stress and strain tensors to a specified stress and strain state
         /// </summary>
         /// <param name="StressStrainState_in">DeformationEpisodeStressStrainInitialiser object containing the required absolute vertical stress, pore fluid pressure and elastic strain tensor (only XX, YY and XY components will be used)</param>
-        public void SetStressStrainState(DeformationEpisodeStressStrainInitialiser StressStrainState_in)
+        public void SetStressStrainState(DeformationEpisodeStressInitialiser StressStrainState_in)
         {
             // Reset the fluid pressure, if this has been supplied
             // NB This must be done first as it will be used to calculate the effective vertical stress
@@ -298,9 +298,9 @@ namespace DFMGenerator_SharedCode
                 sigma_eff.Component(Tensor2SComponents.ZZ, StressStrainState_in.AbsoluteVerticalStress - P_f);
 
             // Reset the horizontal components of the elastic strain tensor, if these have been supplied
-            if (StressStrainState_in.SetInitialHorizontalElasticStrain)
+            if (StressStrainState_in.SetInitialStressTensor)
             {
-                Tensor2S HorizontalStrain_in = StressStrainState_in.HorizontalElasticStrain;
+                Tensor2S HorizontalStrain_in = StressStrainState_in.AbsoluteStress;
                 el_epsilon.Component(Tensor2SComponents.XX, HorizontalStrain_in.Component(Tensor2SComponents.XX));
                 el_epsilon.Component(Tensor2SComponents.YY, HorizontalStrain_in.Component(Tensor2SComponents.YY));
                 el_epsilon.Component(Tensor2SComponents.XY, HorizontalStrain_in.Component(Tensor2SComponents.XY));

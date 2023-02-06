@@ -2092,8 +2092,8 @@ namespace DFMGenerator_SharedCode
                 // Usually the calculation will start from the stress and strain state at the end of the previous deformation episode, or the initial lithostatic load state if this is the first episode
                 // However if coupling with output from geomechanical modelling, it may be necessary to adjust the stress and strain state to match the state in the geomechanical model output
                 // This is done by passing the  object from the current DeformationEpisodeLoadControl to the StressStrainState.SetStressStrainState function
-                if (currentDeformationEpisode.InitialStressStrainDefined)
-                    StressStrain.SetStressStrainState(currentDeformationEpisode.InitialStressStrain);
+                if (currentDeformationEpisode.InitialStressStateDefined)
+                    StressStrain.SetStressStrainState(currentDeformationEpisode.InitialStressState);
 
                 // We will also recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
                 foreach (Gridblock_FractureSet fs in FractureSets)
