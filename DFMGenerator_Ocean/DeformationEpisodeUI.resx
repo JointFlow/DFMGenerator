@@ -120,22 +120,31 @@
   <metadata name="toolTipManager_DeformationEpisode.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <data name="toolTipItem82.Text" xml:space="preserve">
-    <value>DFM Generator can use results from a geomechanical simulation to define the load for a deformation episode. To do this, enter dynamic grid property results from a simulation case for the components of the absolute (total) stress tensor and the fluid pressure. This will override the corresponding static properties, and the deformation episode will be subdivided based on the number of timesteps in the simulation.</value>
-  </data>
-  <data name="toolTipItem84.Text" xml:space="preserve">
-    <value>Enter the XX, YY, XY, ZX, YZ and ZZ elements of the absolute (total) stress tensor here to override the static horizontal strain load. The effective stress will be adjusted at the start of the deformation episode to match the initial stress in the specified results, and the subsequent effective stress rate will be calculated from the specified result data.</value>
-  </data>
-  <data name="toolTipItem86.Text" xml:space="preserve">
-    <value>Enter the fluid pressure grid property result here to override the static fluid overpressure rate. The fluid will be adjusted at the start of the deformation episode to match the initial pressure in the specified result, and the subsequent fluid overpressure rate will be taken from the specified result data.</value>
-  </data>
-  <data name="toolTipItem94.Text" xml:space="preserve">
+  <data name="toolTipItem7.Text" xml:space="preserve">
     <value>NB extensional strain is negative, so the minimum horizontal strain rate represents the maximum extension rate, and should have predominantly negative values; typical values are in the range -0.001 to -0.01/ma. The maximum horizontal strain rate may be negative, zero or positive.</value>
   </data>
-  <data name="toolTipItem95.Text" xml:space="preserve">
+  <data name="toolTipItem8.Text" xml:space="preserve">
     <value>This represents the direction of maximum extension, and controls the orientation of the fractures in the DFN: the primary fracture set forms perpendicular to this and the secondary fracture set forms parallel to this. If a grid property is specified, the fractures will bend at cell boundaries to reflect changes in the strain orientation.</value>
   </data>
-  <data name="toolTipItem96.Text" xml:space="preserve">
-    <value>Fracturing is driven by an applied horizontal strain, specified as a minimum and maximum strain rate and an orientation. Specify the horizontal strain data as a grid property to model lateral variations in the strain orientation and rate. If no grid property is specified, the model will apply the specified default values to all cells.</value>
+  <data name="toolTipItem9.Text" xml:space="preserve">
+    <value>With a static load, fracturing is driven by an applied horizontal strain (specified as a minimum and maximum strain rate and an orientation), fluid overpressure, thermal contraction and/or uplift. Specify the strain orientation and rate, fluid pressure, temperature change or uplift rate as grid properties to model lateral variations in the load data. If no grid property is specified, the model will apply the specified default values to all cells.</value>
+  </data>
+  <data name="toolTipItem11.Text" xml:space="preserve">
+    <value>With a dynamic load, DFM Generator uses results from a geomechanical simulation to define the load for a deformation episode. To do this, specify a simulation case and the grid property results from that simulation case for the components of the absolute (total) stress tensor and the fluid pressure. </value>
+  </data>
+  <data name="toolTipItem12.Text" xml:space="preserve">
+    <value>If only the fluid pressure and ZZ component of the total stress are specified, the static fluid overpressure load and uplift rate will be overridden but the horizontal strain load will be used to calculate the horizontal stress components.</value>
+  </data>
+  <data name="toolTipItem14.Text" xml:space="preserve">
+    <value>If the vertical shear stress components (YZ and ZX) are unspecified, they will be taken as zero and the fracture set will be horizontally symmetrical. If they are speicifed, the fracture set will not be horizontally symmetrical.  </value>
+  </data>
+  <data name="toolTipItem17.Text" xml:space="preserve">
+    <value>Enter the XX, YY, XY, ZX, YZ and ZZ elements of the absolute (total) stress tensor here to override the static horizontal strain load. The effective stress will be adjusted at the start of the deformation episode to match the initial stress in the specified results, and the subsequent effective stress rate will be calculated from the specified result data.</value>
+  </data>
+  <data name="toolTipItem18.Text" xml:space="preserve">
+    <value>NB If only the ZZ component is specified, the static horizontal strain load will be used to calculate horizontal stress. At a minimum the XX, YY and XY components are required to override the static horizontal strain load. The YZ and ZX components will be set to 0 if not specified.</value>
+  </data>
+  <data name="toolTipItem19.Text" xml:space="preserve">
+    <value>Enter the fluid pressure grid property result here to override the static fluid overpressure rate. The fluid will be adjusted at the start of the deformation episode to match the initial pressure in the specified result, and the subsequent fluid overpressure rate will be taken from the specified result data.</value>
   </data>
 </root>

@@ -2045,55 +2045,73 @@ namespace DFMGenerator_SharedCode
                 // Update the index of the current deformation episode
                 currentDeformationEpisodeIndex++;
 
-                // Create a local copy of the applied strain rate tensor
-                Tensor2S appliedStrainRate = currentDeformationEpisode.Applied_Epsilon_dashed;
+                // Check if the load for this deformation episode is defined by strain or stress
+                // NB some dynamic loads may still be defined in terms of strain, if only the fluid pressure and/or vertical stress are defined dynamically
+                // Loads will only be defined in terms of stress is at a minimum the ZZ, XX, YY and XY components of the absolute stress rate tensor are defined
+                bool stressLoad = currentDeformationEpisode.StressLoadDefined;
 
-                // Create a local tensor for the compactional strain rate
+                // Create local copies of the applied strain rate and compactional strain rate tensors
+                Tensor2S appliedStrainRate = currentDeformationEpisode.Applied_Epsilon_dashed;
                 Tensor2S compactionalStrainRate = new Tensor2S();
 
-                // Set the fluid overpressure and uplift rates in the StressStrain object
+                // Create local copies of the overpressure rate, uplift rate, stress arching factor and rate of temperature change
                 double overpressureRate = currentDeformationEpisode.AppliedOverpressureRate;
                 double upliftRate = currentDeformationEpisode.AppliedUpliftRate;
                 double stressArchingFactor = currentDeformationEpisode.StressArchingFactor;
-                StressStrain.FluidOverpressureRate = overpressureRate;
-                StressStrain.UpliftRate = upliftRate;
                 double fluidPressureRate = StressStrain.P_f_dashed;
-
-                // Calculate the compactional horizontal strain due to fluid pressure and temperature changes, and subtract this from the local applied strain rate tensor
-                // This is taken from Miller (1995), but modified to allow the degree of stress arching to be varied
-                // NB We do not need to add the vertical strain component to the applied strain rate tensor
-                // This will be calculated automatically during partial inversion as long as the compactional stress has been added to the vertical component of the stress rate tensor
-                // However we do need to add it to the compactional strain rate tensor
                 double tempChangeRate = currentDeformationEpisode.AppliedTemperatureChange - (upliftRate * StressStrain.GeothermalGradient);
-                double internalStressRate = (OneMinusBiot * fluidPressureRate) - (ThermalExpansionCoefficient * Kb_r * tempChangeRate);
-                double internalStressRate_StressArchSupported = stressArchingFactor * ((OneMinusBiot * overpressureRate) - (ThermalExpansionCoefficient * Kb_r * tempChangeRate));
-                double horizontalCompactionalStrainRate = ((1 - (2 * Nu_r)) / E_r) * internalStressRate;
-                double verticalCompactionalStrainRate = ((1 - (2 * Nu_r)) / E_r) * internalStressRate_StressArchSupported;
-                appliedStrainRate.ComponentAdd(Tensor2SComponents.XX, -horizontalCompactionalStrainRate);
-                appliedStrainRate.ComponentAdd(Tensor2SComponents.YY, -horizontalCompactionalStrainRate);
-                compactionalStrainRate.ComponentAdd(Tensor2SComponents.XX, horizontalCompactionalStrainRate);
-                compactionalStrainRate.ComponentAdd(Tensor2SComponents.YY, horizontalCompactionalStrainRate);
-                compactionalStrainRate.ComponentAdd(Tensor2SComponents.YY, horizontalCompactionalStrainRate);
-                compactionalStrainRate.ComponentAdd(Tensor2SComponents.YY, verticalCompactionalStrainRate);
 
-                // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
-                // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
-                StressStrain.el_Epsilon_dashed = appliedStrainRate;
-                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
+                if (stressLoad)
+                {
+                    // If the load is defined in terms of stress, we simply need to set the Terzaghi effective stress rate tensor in the StressStrain object
+                    // Since the stress load is defined in terms the absolute stress, we will need to subtract the fluid pressure rate from the XX, YY and ZZ components
+                    Tensor2S appliedEffectiveStressRate = currentDeformationEpisode.Absolute_Stress_dashed - new Tensor2S(-fluidPressureRate, -fluidPressureRate, -fluidPressureRate, 0, 0, 0);
+                    StressStrain.Sigma_eff_dashed = appliedEffectiveStressRate;
+                }
+                else
+                {
+                    // The load is defined in terms of strain
+                    // Calculate the compactional horizontal strain due to fluid pressure and temperature changes, and subtract this from the local applied strain rate tensor
+                    // This is taken from Miller (1995), but modified to allow the degree of stress arching to be varied
+                    // NB We do not need to add the vertical strain component to the applied strain rate tensor
+                    // This will be calculated automatically during partial inversion as long as the compactional stress has been added to the vertical component of the stress rate tensor
+                    // However we do need to add it to the compactional strain rate tensor
+                    double internalStressRate = (OneMinusBiot * fluidPressureRate) - (ThermalExpansionCoefficient * Kb_r * tempChangeRate);
+                    double internalStressRate_StressArchSupported = stressArchingFactor * ((OneMinusBiot * overpressureRate) - (ThermalExpansionCoefficient * Kb_r * tempChangeRate));
+                    double horizontalCompactionalStrainRate = ((1 - (2 * Nu_r)) / E_r) * internalStressRate;
+                    double verticalCompactionalStrainRate = ((1 - (2 * Nu_r)) / E_r) * internalStressRate_StressArchSupported;
+                    appliedStrainRate.ComponentAdd(Tensor2SComponents.XX, -horizontalCompactionalStrainRate);
+                    appliedStrainRate.ComponentAdd(Tensor2SComponents.YY, -horizontalCompactionalStrainRate);
+                    compactionalStrainRate.ComponentAdd(Tensor2SComponents.XX, -horizontalCompactionalStrainRate);
+                    compactionalStrainRate.ComponentAdd(Tensor2SComponents.YY, -horizontalCompactionalStrainRate);
+                    compactionalStrainRate.ComponentAdd(Tensor2SComponents.ZZ, -verticalCompactionalStrainRate);
 
-                // Calculate the equivalent vertical stress due to fluid pressure and temperature changes, and add this to the stress rate tensor
-                // NB This is dependent on the degree of stress arching; if there is no stress arching, vertical stress will be equal to lithostatic stress and there will be no vertical stress change
-                double verticalAbsoluteStressRate = StressStrain.LithostaticStress_dashed;
-                double hydrostaticPressureRate = fluidPressureRate - overpressureRate;
-                double verticalEffectiveStressRate_SubsidenceSupported = (verticalAbsoluteStressRate - hydrostaticPressureRate) - ((1 - stressArchingFactor) * overpressureRate);
-                double verticalEffectiveStressRate_StressArchSupported = -internalStressRate_StressArchSupported;
-                StressStrain.Sigma_eff_dashed.Component(Tensor2SComponents.ZZ, verticalEffectiveStressRate_SubsidenceSupported + verticalEffectiveStressRate_StressArchSupported);
+                    // Set the applied strain rate and compactional strain rate tensors in the StressStrain object
+                    // These may vary during the deformation episode due to viscoleastic strain relaxation; in this case they will be recalculated and updated within each timestep
+                    // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate and will not change during the deformation episode
+                    // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
+                    StressStrain.el_Epsilon_dashed = appliedStrainRate;
+                    StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
+
+                    // Set the fluid overpressure and uplift rates in the StressStrain object
+                    // These will not vary during the deformation episode
+                    StressStrain.FluidOverpressureRate = overpressureRate;
+                    StressStrain.UpliftRate = upliftRate;
+
+                    // Calculate the equivalent vertical stress due to fluid pressure and temperature changes, and add this to the stress rate tensor
+                    // NB This is dependent on the degree of stress arching; if there is no stress arching, vertical stress will be equal to lithostatic stress and there will be no vertical stress change
+                    double verticalAbsoluteStressRate = StressStrain.LithostaticStress_dashed;
+                    double hydrostaticPressureRate = fluidPressureRate - overpressureRate;
+                    double verticalEffectiveStressRate_SubsidenceSupported = (verticalAbsoluteStressRate - hydrostaticPressureRate) - ((1 - stressArchingFactor) * overpressureRate);
+                    double verticalEffectiveStressRate_StressArchSupported = -internalStressRate_StressArchSupported;
+                    StressStrain.Sigma_eff_dashed.Component(Tensor2SComponents.ZZ, verticalEffectiveStressRate_SubsidenceSupported + verticalEffectiveStressRate_StressArchSupported);
+                }
 
                 // Usually the calculation will start from the stress and strain state at the end of the previous deformation episode, or the initial lithostatic load state if this is the first episode
                 // However if coupling with output from geomechanical modelling, it may be necessary to adjust the stress and strain state to match the state in the geomechanical model output
                 // This is done by passing the  object from the current DeformationEpisodeLoadControl to the StressStrainState.SetStressStrainState function
                 if (currentDeformationEpisode.InitialStressStateDefined)
-                    StressStrain.SetStressStrainState(currentDeformationEpisode.InitialStressState);
+                    StressStrain.SetStressState(currentDeformationEpisode.InitialStressState);
 
                 // We will also recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
                 foreach (Gridblock_FractureSet fs in FractureSets)
@@ -2164,135 +2182,167 @@ namespace DFMGenerator_SharedCode
                         }
                     }
 
-                    // Calculate the tensors for the rate of change of internal elastic strain and compactional strain in this timestep
-                    // This will include applied external strain, uplift, fluid overpressure and temperature changes and strain relaxation,
-                    // NB the initial elastic strain tensor will be as it was at the end of the previous timestep, or in its default state
-                    switch (SRC)
+                    if (stressLoad)
                     {
-                        case StrainRelaxationCase.NoStrainRelaxation:
-                            {
-                                // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
-                                // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
-                                StressStrain.el_Epsilon_dashed = appliedStrainRate;
-                                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
-                            }
-                            break;
-                        case StrainRelaxationCase.UniformStrainRelaxation:
-                            {
-                                // In this scenario the total elastic strain and rate of change of elastic strain both follow exponential curves that are valid across all timesteps, representing the solution to the differential equation combining applied strain and strain relaxation.
-                                // We could therefore calculate exact values for both initial elastic strain and strain rate at the start of each timestep.
-                                // However this would lead to slight discrepencies between the calculated initial elastic strain and the elastic strain accumulated during the previous timestep,
-                                // since the model assumes a constant rate of change of strain during each timestep, rather than an exponential decay. This would be especially noticeable during early timesteps.
-                                // Therefore instead we will use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
+                        // If the load is defined in terms of stress, we will use the compliance tensor or bulk rock elastic properties to calculate the elastic strain
+                        // In this case we will assume no strain relaxation or additional compactional strain within this timestep
 
-                                // To calculate the rate of elastic strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
-                                Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
+                        // Recalculate the tensors for current elastic strain and rate of change of elastic strain
+                        // The method for doing this will depend on the stress distribution scenario
+                        switch (SD)
+                        {
+                            case StressDistribution.EvenlyDistributedStress:
+                                // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
+                                // We must therefore use the current bulk rock compliance tensor to recalculate the stress tensors
+                                StressStrain.RecalculateStrain(S_beff);
+                                break;
+                            case StressDistribution.StressShadow:
+                                // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
+                                // We can therefore recalculate the strain tensors from just the Young's Modulus and Poisson's ratio of the host rock
+                                StressStrain.RecalculateStrain(E_r, Nu_r);
+                                break;
+                            case StressDistribution.DuctileBoundary:
+                                // Not yet implemented
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        // If the load is defined in terms of strain, we must first calculate the actual elastic horizontal strain rate for this timestep, taking into account strain relaxation
+                        // Then we will use partial inversion of the compliance tensor or bulk rock elastic properties to calculate the effective stress
 
-                                // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation
-                                // Note that when the initial elastic strain equals the applied strain rate times tr, the rate of change of elastic strain will be zero; this represents equilibrium.
-                                StressStrain.el_Epsilon_dashed = appliedStrainRate - (el_epsilon_noncomp / tr);
-                                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
-
-                                // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
-                                // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from to rounding errors
-                                // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
-                                bool StaticStrain = true;
-                                foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                        // Calculate the tensors for the rate of change of internal elastic strain and compactional strain in this timestep
+                        // This will include applied external strain, uplift, fluid overpressure and temperature changes and strain relaxation,
+                        // NB the initial elastic strain tensor will be as it was at the end of the previous timestep, or in its default state
+                        switch (SRC)
+                        {
+                            case StrainRelaxationCase.NoStrainRelaxation:
                                 {
-                                    if ((float)el_epsilon_noncomp.Component(ij) == (float)(appliedStrainRate.Component(ij) * tr))
-                                        StressStrain.el_Epsilon_dashed.Component(ij, 0);
-                                    else
-                                        StaticStrain = false;
+                                    // If there is no strain relaxation, the rate of change of elastic strain is the applied strain rate.
+                                    // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
+                                    StressStrain.el_Epsilon_dashed = appliedStrainRate;
+                                    StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
                                 }
-
-                                // If necessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                                if (!StaticStrain && (TimestepDuration > tr))
-                                    TimestepDuration = tr;
-                            }
-                            break;
-                        case StrainRelaxationCase.FractureOnlyStrainRelaxation:
-                            {
-                                // In this scenario the rate of strain relaxation varies with time as the fracture system grows. Therefore the differential equation combining applied strain and strain relaxation also changes with time,
-                                // so there are no exponential curves for the total elastic strain and rate of change of elastic strain that are valid across all timesteps.
-                                // We must therefore use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
-
-                                // The rate of change of elastic strain will be a function of the fracture population, and also the stress distribution scenario. 
-                                // If there are no fractures, it will revert to the No Strain Relaxation scenario where the rate of change of elastic strain is the applied strain rate.
-                                // To calculate the rate of strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
-                                Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
-
-                                // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation on the fractures
-                                // Note that when the elastic strain accommodated on the fractures [given by depf_depel * bulk rock elastic strain] equals the applied strain rate times tf,
-                                // the rate of change of elastic strain will be zero; this represents equilibrium.
-                                Tensor4_2Sx2S depf_depel = S_F / S_beff;
-                                Tensor2S f_epsilon_noncomp = (depf_depel * el_epsilon_noncomp);
-                                StressStrain.el_Epsilon_dashed = appliedStrainRate - (f_epsilon_noncomp / tf);
-                                StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
-
-                                // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
-                                // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from rounding errors
-                                // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
-                                bool StaticStrain = true;
-                                foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                                break;
+                            case StrainRelaxationCase.UniformStrainRelaxation:
                                 {
-                                    if ((float)f_epsilon_noncomp.Component(ij) == (float)(appliedStrainRate.Component(ij) * tf))
-                                        StressStrain.el_Epsilon_dashed.Component(ij, 0);
-                                    else
-                                        StaticStrain = false;
-                                }
+                                    // In this scenario the total elastic strain and rate of change of elastic strain both follow exponential curves that are valid across all timesteps, representing the solution to the differential equation combining applied strain and strain relaxation.
+                                    // We could therefore calculate exact values for both initial elastic strain and strain rate at the start of each timestep.
+                                    // However this would lead to slight discrepencies between the calculated initial elastic strain and the elastic strain accumulated during the previous timestep,
+                                    // since the model assumes a constant rate of change of strain during each timestep, rather than an exponential decay. This would be especially noticeable during early timesteps.
+                                    // Therefore instead we will use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
 
-                                // If neccessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                                if (!StaticStrain)
-                                {
-                                    // In the equilibrium equation for fracture only strain relaxation, the strain rate tensor, a 2nd order tensor is multiplied by depf_depel, a 4th order tensor
-                                    // Therefore, unlike in the rock strain relaxation scenario, equilibrium may be reached at different times for different components of the strain tensor
-                                    // We will therefore examine each horizontal component in turn to determine the time until equilibrium is reached, and reduce the maximum timestep duration if necessary
-                                    // First we will calculate the sum of the squares of the horizontal stain components - we need this to compare the individual components with to see if they can be rounded down to zero
-                                    double strain_magnitude_comparator = Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XX), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.YY), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XY), 2);
+                                    // To calculate the rate of elastic strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
+                                    Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
+
+                                    // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation
+                                    // Note that when the initial elastic strain equals the applied strain rate times tr, the rate of change of elastic strain will be zero; this represents equilibrium.
+                                    StressStrain.el_Epsilon_dashed = appliedStrainRate - (el_epsilon_noncomp / tr);
+                                    StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
+
+                                    // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
+                                    // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from to rounding errors
+                                    // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
+                                    bool StaticStrain = true;
                                     foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
                                     {
-                                        // Get appropriate components of the noncompactional elastic strain and fracture strain tensors
-                                        double epel_ij = el_epsilon_noncomp.Component(ij);
-                                        double depf_ij = f_epsilon_noncomp.Component(ij);
+                                        if ((float)el_epsilon_noncomp.Component(ij) == (float)(appliedStrainRate.Component(ij) * tr))
+                                            StressStrain.el_Epsilon_dashed.Component(ij, 0);
+                                        else
+                                            StaticStrain = false;
+                                    }
 
-                                        // If the fracture strain tensor component is zero, or within rounding error of zero, there is no relaxation of this component so we can move on to the next
-                                        if (Math.Pow(depf_ij, 2) <= strain_magnitude_comparator / 1000000)
-                                            continue;
+                                    // If necessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
+                                    if (!StaticStrain && (TimestepDuration > tr))
+                                        TimestepDuration = tr;
+                                }
+                                break;
+                            case StrainRelaxationCase.FractureOnlyStrainRelaxation:
+                                {
+                                    // In this scenario the rate of strain relaxation varies with time as the fracture system grows. Therefore the differential equation combining applied strain and strain relaxation also changes with time,
+                                    // so there are no exponential curves for the total elastic strain and rate of change of elastic strain that are valid across all timesteps.
+                                    // We must therefore use the residual elastic strain at the end of the previous timestep as the initial elastic strain, and to calculate the rate of change of elastic strain.
 
-                                        // Now insert the two tensor components into the equilibrium equation to determine the time until equilibrium is reached
-                                        double timeToEquilibrium = tf * (epel_ij / depf_ij);
+                                    // The rate of change of elastic strain will be a function of the fracture population, and also the stress distribution scenario. 
+                                    // If there are no fractures, it will revert to the No Strain Relaxation scenario where the rate of change of elastic strain is the applied strain rate.
+                                    // To calculate the rate of strain relaxation at the start of the timestep, we must first subtract the initial compactional strain, as this does not undergo relaxation.
+                                    Tensor2S el_epsilon_noncomp = StressStrain.el_Epsilon_noncompactional;
 
-                                        // If necessary, reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                                        // NB if the calculated time to equilibrium is zero or negative, we can ignore it
-                                        if ((timeToEquilibrium > 0) && (TimestepDuration > timeToEquilibrium))
-                                            TimestepDuration = timeToEquilibrium;
+                                    // The rate of change of elastic strain is then given by the applied strain rate minus the rate of elastic strain relaxation on the fractures
+                                    // Note that when the elastic strain accommodated on the fractures [given by depf_depel * bulk rock elastic strain] equals the applied strain rate times tf,
+                                    // the rate of change of elastic strain will be zero; this represents equilibrium.
+                                    Tensor4_2Sx2S depf_depel = S_F / S_beff;
+                                    Tensor2S f_epsilon_noncomp = (depf_depel * el_epsilon_noncomp);
+                                    StressStrain.el_Epsilon_dashed = appliedStrainRate - (f_epsilon_noncomp / tf);
+                                    StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
+
+                                    // If any of the initial horizontal elastic strain components already at equilibrium value, then the rate of change of these components of the elastic strain will be zero
+                                    // We should therefore set them explicitly to zero in the elastic strain rate tensor, to remove nonzero values resulting from rounding errors
+                                    // Also set up a flag indicating whether the elastic strain is static during this timestep (i.e. all horizontal components of the strain rate tensor are zero)
+                                    bool StaticStrain = true;
+                                    foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                                    {
+                                        if ((float)f_epsilon_noncomp.Component(ij) == (float)(appliedStrainRate.Component(ij) * tf))
+                                            StressStrain.el_Epsilon_dashed.Component(ij, 0);
+                                        else
+                                            StaticStrain = false;
+                                    }
+
+                                    // If neccessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
+                                    if (!StaticStrain)
+                                    {
+                                        // In the equilibrium equation for fracture only strain relaxation, the strain rate tensor, a 2nd order tensor is multiplied by depf_depel, a 4th order tensor
+                                        // Therefore, unlike in the rock strain relaxation scenario, equilibrium may be reached at different times for different components of the strain tensor
+                                        // We will therefore examine each horizontal component in turn to determine the time until equilibrium is reached, and reduce the maximum timestep duration if necessary
+                                        // First we will calculate the sum of the squares of the horizontal stain components - we need this to compare the individual components with to see if they can be rounded down to zero
+                                        double strain_magnitude_comparator = Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XX), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.YY), 2) + Math.Pow(f_epsilon_noncomp.Component(Tensor2SComponents.XY), 2);
+                                        foreach (Tensor2SComponents ij in new Tensor2SComponents[3] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.XY })
+                                        {
+                                            // Get appropriate components of the noncompactional elastic strain and fracture strain tensors
+                                            double epel_ij = el_epsilon_noncomp.Component(ij);
+                                            double depf_ij = f_epsilon_noncomp.Component(ij);
+
+                                            // If the fracture strain tensor component is zero, or within rounding error of zero, there is no relaxation of this component so we can move on to the next
+                                            if (Math.Pow(depf_ij, 2) <= strain_magnitude_comparator / 1000000)
+                                                continue;
+
+                                            // Now insert the two tensor components into the equilibrium equation to determine the time until equilibrium is reached
+                                            double timeToEquilibrium = tf * (epel_ij / depf_ij);
+
+                                            // If necessary, reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
+                                            // NB if the calculated time to equilibrium is zero or negative, we can ignore it
+                                            if ((timeToEquilibrium > 0) && (TimestepDuration > timeToEquilibrium))
+                                                TimestepDuration = timeToEquilibrium;
+                                        }
                                     }
                                 }
-                            }
-                            break;
-                        default:
-                            break;
-                    }
+                                break;
+                            default:
+                                break;
+                        }
 
-                    // Recalculate the tensors for current in situ stress and rate of change of in situ stress
-                    // The method for doing this will depend on the stress distribution scenario
-                    switch (SD)
-                    {
-                        case StressDistribution.EvenlyDistributedStress:
-                            // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
-                            // We must therefore use partial inversion of the current bulk rock compliance tensor to recalculate the stress tensors
-                            StressStrain.RecalculateEffectiveStressState(S_beff);
-                            break;
-                        case StressDistribution.StressShadow:
-                            // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
-                            // We can therefore recalculate the stress tensors from just the Young's Modulus and Poisson's ratio of the host rock
-                            StressStrain.RecalculateEffectiveStressState(E_r, Nu_r);
-                            break;
-                        case StressDistribution.DuctileBoundary:
-                            // Not yet implemented
-                            break;
-                        default:
-                            break;
+                        // Recalculate the tensors for current in situ stress and rate of change of in situ stress
+                        // The method for doing this will depend on the stress distribution scenario
+                        switch (SD)
+                        {
+                            case StressDistribution.EvenlyDistributedStress:
+                                // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
+                                // We must therefore use partial inversion of the current bulk rock compliance tensor to recalculate the stress tensors
+                                StressStrain.RecalculateEffectiveStressState(S_beff);
+                                break;
+                            case StressDistribution.StressShadow:
+                                // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
+                                // We can therefore recalculate the stress tensors from just the Young's Modulus and Poisson's ratio of the host rock
+                                StressStrain.RecalculateEffectiveStressState(E_r, Nu_r);
+                                break;
+                            case StressDistribution.DuctileBoundary:
+                                // Not yet implemented
+                                break;
+                            default:
+                                break;
+                        }
                     }
 
                     // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep

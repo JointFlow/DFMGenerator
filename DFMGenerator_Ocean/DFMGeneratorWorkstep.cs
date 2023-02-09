@@ -1,6 +1,6 @@
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -3119,7 +3119,6 @@ namespace DFMGenerator_Ocean
                                         gc.PropControl.AddDeformationEpisode(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure);
                                     else
                                         gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
-
 
 #if DEBUG_FRACS
                                     if (local_AbsoluteStressRate is null)

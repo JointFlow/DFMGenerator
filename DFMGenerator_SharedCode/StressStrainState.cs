@@ -121,7 +121,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Rate of change of in situ Terzaghi effective stress tensor; must be specified in SI units (Pa/s)
         /// </summary>
-        public Tensor2S Sigma_eff_dashed { get { return sigma_eff_dashed; } private set { sigma_eff_dashed = new Tensor2S(value); } }
+        public Tensor2S Sigma_eff_dashed { get { return sigma_eff_dashed; } set { sigma_eff_dashed = new Tensor2S(value); } }
         /// <summary>
         /// Current in situ absolute stress tensor
         /// </summary>
@@ -155,7 +155,7 @@ namespace DFMGenerator_SharedCode
 
         // Elastic strain data
         /// <summary>
-        /// Current bulk rock elastic strain tensor, including compactional strain
+        /// Current bulk rock elastic strain tensor, including compactional strain; this is related to the Terzaghi effective stress via Hooke's Law
         /// </summary>
         private Tensor2S el_epsilon;
         /// <summary>
@@ -283,27 +283,29 @@ namespace DFMGenerator_SharedCode
             // NB Uplift must be applied within the gridblock object
         }
         /// <summary>
-        /// Adjust the stress and strain tensors to a specified stress and strain state
+        /// Adjust the stress tensors to a specified stress state
         /// </summary>
-        /// <param name="StressStrainState_in">DeformationEpisodeStressStrainInitialiser object containing the required absolute vertical stress, pore fluid pressure and elastic strain tensor (only XX, YY and XY components will be used)</param>
-        public void SetStressStrainState(DeformationEpisodeStressInitialiser StressStrainState_in)
+        /// <param name="StressState_in">DeformationEpisodeStressInitialiser object containing the required pore fluid pressure and either the absolute vertical stress or the full absolute stress tensor</param>
+        public void SetStressState(DeformationEpisodeStressInitialiser StressState_in)
         {
             // Reset the fluid pressure, if this has been supplied
             // NB This must be done first as it will be used to calculate the effective vertical stress
-            if (StressStrainState_in.SetInitialFluidPressure)
-                FluidOverpressure = StressStrainState_in.FluidPressure - HydrostaticFluidPressure;
+            if (StressState_in.SetInitialFluidPressure)
+                FluidOverpressure = StressState_in.FluidPressure - HydrostaticFluidPressure;
 
-            // Reset the vertical effective stress, if this has been supplied
-            if (StressStrainState_in.SetInitialAbsoluteVerticalStress)
-                sigma_eff.Component(Tensor2SComponents.ZZ, StressStrainState_in.AbsoluteVerticalStress - P_f);
-
+            // Reset only the vertical effective stress, if this has been supplied
+            if (StressState_in.SetInitialAbsoluteVerticalStress)
+                sigma_eff.Component(Tensor2SComponents.ZZ, StressState_in.AbsoluteVerticalStress - P_f);
             // Reset the horizontal components of the elastic strain tensor, if these have been supplied
-            if (StressStrainState_in.SetInitialStressTensor)
+            if (StressState_in.SetInitialStressTensor)
             {
-                Tensor2S HorizontalStrain_in = StressStrainState_in.AbsoluteStress;
-                el_epsilon.Component(Tensor2SComponents.XX, HorizontalStrain_in.Component(Tensor2SComponents.XX));
-                el_epsilon.Component(Tensor2SComponents.YY, HorizontalStrain_in.Component(Tensor2SComponents.YY));
-                el_epsilon.Component(Tensor2SComponents.XY, HorizontalStrain_in.Component(Tensor2SComponents.XY));
+                Tensor2S AbsoluteStress_in = StressState_in.AbsoluteStress;
+                sigma_eff.Component(Tensor2SComponents.XX, AbsoluteStress_in.Component(Tensor2SComponents.XX) - P_f);
+                sigma_eff.Component(Tensor2SComponents.YY, AbsoluteStress_in.Component(Tensor2SComponents.YY) - P_f);
+                sigma_eff.Component(Tensor2SComponents.ZZ, AbsoluteStress_in.Component(Tensor2SComponents.ZZ) - P_f);
+                sigma_eff.Component(Tensor2SComponents.XY, AbsoluteStress_in.Component(Tensor2SComponents.XY));
+                sigma_eff.Component(Tensor2SComponents.YZ, AbsoluteStress_in.Component(Tensor2SComponents.YZ));
+                sigma_eff.Component(Tensor2SComponents.ZX, AbsoluteStress_in.Component(Tensor2SComponents.ZX));
             }
         }
         // Functions to realign the Terzaghi effective stress and elastic strain tensors
@@ -382,6 +384,61 @@ namespace DFMGenerator_SharedCode
             // Calculate zz component of elastic strain rate tensor
             double ed_zz = (sveffd - (Nu_r * sigmad_xx) - (Nu_r * sigmad_yy)) / E_r;
             el_epsilon_dashed.Component(Tensor2SComponents.ZZ, ed_zz);
+        }
+        /// <summary>
+        /// Recalculate the elastic strain and the elastic strain rate tensors from the Terzaghi effective stress and effective stress rate tensors, using the supplied bulk rock compliance tensor
+        /// </summary>
+        /// <param name="ComplianceTensor">Bulk rock compliance tensor (may be anisotropic)</param>
+        public void RecalculateStrain(Tensor4_2Sx2S ComplianceTensor)
+        {
+            // The elastic strain tensor is calculated by multiplying the compliance tensor with the Terzaghi effective stress tensor
+            el_epsilon = ComplianceTensor * sigma_eff;
+            el_epsilon_dashed = ComplianceTensor * sigma_eff_dashed;
+        }
+        /// <summary>
+        /// Recalculate the elastic strain and the elastic strain rate tensors from the Terzaghi effective stress and effective stress rate tensors, assuming an isotropic bulk rock compliance tensor
+        /// </summary>
+        /// <param name="E_r">Bulk rock Young's modulus (isotropic)</param>
+        /// <param name="Nu_r">Bulk rock Poisson's ratio (isotropic)</param>
+        public void RecalculateStrain(double E_r, double Nu_r)
+        {
+            // Calculate helper variables
+            double Nur_Er = E_r / Nu_r;
+            double OnePlusNur_Er = (1 + Nu_r) / E_r;
+
+            // Cache the effective stress tensor components locally
+            double s_xx = sigma_eff.Component(Tensor2SComponents.XX);
+            double s_yy = sigma_eff.Component(Tensor2SComponents.YY);
+            double s_zz = sigma_eff.Component(Tensor2SComponents.ZZ);
+            double s_xy = sigma_eff.Component(Tensor2SComponents.XY);
+            double s_yz = sigma_eff.Component(Tensor2SComponents.YZ);
+            double s_zx = sigma_eff.Component(Tensor2SComponents.ZX);
+
+            // Calculate the elastic tensor components and recreate the elastic strain tensor
+            double e_xx = (s_xx / E_r) - (s_yy * Nur_Er) - (s_zz * Nur_Er);
+            double e_yy = (s_yy / E_r) - (s_xx * Nur_Er) - (s_zz * Nur_Er);
+            double e_zz = (s_zz / E_r) - (s_xx * Nur_Er) - (s_yy * Nur_Er);
+            double e_xy = s_xy * OnePlusNur_Er;
+            double e_yz = s_yz * OnePlusNur_Er;
+            double e_zx = s_zx * OnePlusNur_Er;
+            el_epsilon = new Tensor2S(e_xx, e_yy, e_zz, e_xy, e_yz, e_zx);
+
+            // Cache the effective stress rate tensor components locally
+            double sd_xx = sigma_eff_dashed.Component(Tensor2SComponents.XX);
+            double sd_yy = sigma_eff_dashed.Component(Tensor2SComponents.YY);
+            double sd_zz = sigma_eff_dashed.Component(Tensor2SComponents.ZZ);
+            double sd_xy = sigma_eff_dashed.Component(Tensor2SComponents.XY);
+            double sd_yz = sigma_eff_dashed.Component(Tensor2SComponents.YZ);
+            double sd_zx = sigma_eff_dashed.Component(Tensor2SComponents.ZX);
+
+            // Calculate the elastic tensor components and recreate the elastic strain tensor
+            double ed_xx = (sd_xx / E_r) - (sd_yy * Nur_Er) - (sd_zz * Nur_Er);
+            double ed_yy = (sd_yy / E_r) - (sd_xx * Nur_Er) - (sd_zz * Nur_Er);
+            double ed_zz = (sd_zz / E_r) - (sd_xx * Nur_Er) - (sd_yy * Nur_Er);
+            double ed_xy = sd_xy * OnePlusNur_Er;
+            double ed_yz = sd_yz * OnePlusNur_Er;
+            double ed_zx = sd_zx * OnePlusNur_Er;
+            el_epsilon = new Tensor2S(ed_xx, ed_yy, ed_zz, ed_xy, ed_yz, ed_zx);
         }
 
         // Reset and data input functions
