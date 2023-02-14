@@ -454,7 +454,24 @@ namespace DFMGenerator_SharedCode
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
         /// <param name="TimeUnits_in">Time units of input data</param>
         public DeformationEpisodeLoadControl(Tensor2S Absolute_Stress_dashed_in, double AppliedOverpressureRate_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
-            : this (null, Absolute_Stress_dashed_in,  AppliedOverpressureRate_in,  DeformationEpisodeDuration_in,  TimeUnits_in)
+            : this (null, Absolute_Stress_dashed_in,  AppliedOverpressureRate_in, 0, 0,  DeformationEpisodeDuration_in,  TimeUnits_in)
+        {
+            // Defaults:
+
+            // Rate of in situ temperature change: default 0degK/s
+            // Rate of uplift and erosion: default 0m/s
+        }
+        /// <summary>
+        /// Constructor: Give the episode a distinct name and set the absolute stress and fluid pressure loads, temperature and uplift rate
+        /// </summary>
+        /// <param name="Absolute_Stress_dashed_in">Tensor for absolute stress rate load</param>
+        /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/s)</param>
+        /// <param name="AppliedTemperatureChange_in">Rate of in situ temperature change (not including cooling due to uplift) (degK/s)</param>
+        /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/s)</param>
+        /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
+        /// <param name="TimeUnits_in">Time units of input data</param>
+        public DeformationEpisodeLoadControl(Tensor2S Absolute_Stress_dashed_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
+            : this(null, Absolute_Stress_dashed_in, AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, DeformationEpisodeDuration_in, TimeUnits_in)
         {
             // Episode name: default to null - will return "Deformation Episode {EpisodeIndex}"
         }
@@ -515,14 +532,16 @@ namespace DFMGenerator_SharedCode
             SetDeformationEpisodeDuration(DeformationEpisodeDuration_in, TimeUnits_in);
         }
         /// <summary>
-        /// Constructor: Give the episode a distinct name and set the absolute stress and fluid pressure loads
+        /// Constructor: Give the episode a distinct name and set the absolute stress and fluid pressure loads, temperature and uplift rate
         /// </summary>
         /// <param name="EpisodeName_in">Deformation episode name</param>
         /// <param name="Absolute_Stress_dashed_in">Tensor for absolute stress rate load</param>
         /// <param name="AppliedOverpressureRate_in">Rate of increase of fluid overpressure (Pa/s)</param>
+        /// <param name="AppliedTemperatureChange_in">Rate of in situ temperature change (not including cooling due to uplift) (degK/s)</param>
+        /// <param name="AppliedUpliftRate_in">Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/s)</param>
         /// <param name="DeformationEpisodeDuration_in">Deformation episode duration (s): if negative, the deformation episode will terminate automatically when the fractures stop growing</param>
         /// <param name="TimeUnits_in">Time units of input data</param>
-        public DeformationEpisodeLoadControl(string EpisodeName_in, Tensor2S Absolute_Stress_dashed_in, double AppliedOverpressureRate_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
+        public DeformationEpisodeLoadControl(string EpisodeName_in, Tensor2S Absolute_Stress_dashed_in, double AppliedOverpressureRate_in, double AppliedTemperatureChange_in, double AppliedUpliftRate_in, double DeformationEpisodeDuration_in, TimeUnits TimeUnits_in)
         {
             // Set the deformation episode name
             EpisodeName = EpisodeName_in;
@@ -536,7 +555,7 @@ namespace DFMGenerator_SharedCode
             SetAbsoluteStress(Absolute_Stress_dashed_in, TimeUnits_in);
 
             // Set fluid pressure, thermal and uplift loads
-            SetFPThermalUpliftLoad(AppliedOverpressureRate_in, double.NaN, double.NaN, double.NaN, TimeUnits_in);
+            SetFPThermalUpliftLoad(AppliedOverpressureRate_in, AppliedTemperatureChange_in, AppliedUpliftRate_in, double.NaN, TimeUnits_in);
 
             // Set the deformation episode duration
             SetDeformationEpisodeDuration(DeformationEpisodeDuration_in, TimeUnits_in);

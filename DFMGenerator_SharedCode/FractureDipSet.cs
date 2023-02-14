@@ -1524,15 +1524,13 @@ namespace DFMGenerator_SharedCode
                 {
                     foreach (Tensor2SComponents ij in Enum.GetValues(typeof(Tensor2SComponents)).Cast<Tensor2SComponents>())
                     {
-                        if (ij != Tensor2SComponents.YZ)
+                        if ((ij != Tensor2SComponents.YZ) && (ij != Tensor2SComponents.ZX))
                         {
                             uF_ComplianceTensorBase.Component(ij, Tensor2SComponents.YZ, 0);
                             uF_ComplianceTensorBase.Component(Tensor2SComponents.YZ, ij, 0);
                             MF_ComplianceTensorBase.Component(ij, Tensor2SComponents.YZ, 0);
                             MF_ComplianceTensorBase.Component(Tensor2SComponents.YZ, ij, 0);
-                        }
-                        if (ij != Tensor2SComponents.ZX)
-                        {
+
                             uF_ComplianceTensorBase.Component(ij, Tensor2SComponents.ZX, 0);
                             uF_ComplianceTensorBase.Component(Tensor2SComponents.ZX, ij, 0);
                             MF_ComplianceTensorBase.Component(ij, Tensor2SComponents.ZX, 0);
@@ -4685,14 +4683,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
         /// <param name="Mode_in">Fracture mode</param>
-        /// <param name="BimodalConjugate_in">Flag for a bimodal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
         /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BimodalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
+        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
         {
             // Reference to grandparent GridblockConfiguration object
             gbc = gbc_in;
@@ -4701,7 +4699,7 @@ namespace DFMGenerator_SharedCode
 
             // Set the fracture Mode, biazimuthal conjugate and include reverse fractures flags
             Mode = Mode_in;
-            BiazimuthalConjugate = BimodalConjugate_in;
+            BiazimuthalConjugate = BiazimuthalConjugate_in;
             IncludeReverseFractures = IncludeReverseFractures_in;
 
             // Set fracture dip

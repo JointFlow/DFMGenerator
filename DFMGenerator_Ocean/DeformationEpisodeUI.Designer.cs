@@ -797,7 +797,7 @@ namespace DFMGenerator_Ocean
             // label_DE_AbsoluteStressYZ
             // 
             this.label_DE_AbsoluteStressYZ.AutoSize = true;
-            this.label_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(12, 180);
+            this.label_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(12, 152);
             this.label_DE_AbsoluteStressYZ.Name = "label_DE_AbsoluteStressYZ";
             this.label_DE_AbsoluteStressYZ.Size = new System.Drawing.Size(127, 13);
             this.label_DE_AbsoluteStressYZ.TabIndex = 142;
@@ -806,7 +806,7 @@ namespace DFMGenerator_Ocean
             // dropTarget_DE_AbsoluteStressYZ
             // 
             this.dropTarget_DE_AbsoluteStressYZ.AllowDrop = true;
-            this.dropTarget_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(272, 175);
+            this.dropTarget_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(272, 147);
             this.dropTarget_DE_AbsoluteStressYZ.Name = "dropTarget_DE_AbsoluteStressYZ";
             this.dropTarget_DE_AbsoluteStressYZ.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_AbsoluteStressYZ.TabIndex = 143;
@@ -814,7 +814,7 @@ namespace DFMGenerator_Ocean
             // 
             // presentationBox_DE_AbsoluteStressYZ
             // 
-            this.presentationBox_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(304, 175);
+            this.presentationBox_DE_AbsoluteStressYZ.Location = new System.Drawing.Point(304, 147);
             this.presentationBox_DE_AbsoluteStressYZ.Name = "presentationBox_DE_AbsoluteStressYZ";
             this.presentationBox_DE_AbsoluteStressYZ.Size = new System.Drawing.Size(135, 22);
             this.presentationBox_DE_AbsoluteStressYZ.TabIndex = 144;
@@ -823,7 +823,7 @@ namespace DFMGenerator_Ocean
             // label_DE_AbsoluteStressZX
             // 
             this.label_DE_AbsoluteStressZX.AutoSize = true;
-            this.label_DE_AbsoluteStressZX.Location = new System.Drawing.Point(12, 152);
+            this.label_DE_AbsoluteStressZX.Location = new System.Drawing.Point(12, 180);
             this.label_DE_AbsoluteStressZX.Name = "label_DE_AbsoluteStressZX";
             this.label_DE_AbsoluteStressZX.Size = new System.Drawing.Size(127, 13);
             this.label_DE_AbsoluteStressZX.TabIndex = 139;
@@ -832,7 +832,7 @@ namespace DFMGenerator_Ocean
             // dropTarget_DE_AbsoluteStressZX
             // 
             this.dropTarget_DE_AbsoluteStressZX.AllowDrop = true;
-            this.dropTarget_DE_AbsoluteStressZX.Location = new System.Drawing.Point(272, 147);
+            this.dropTarget_DE_AbsoluteStressZX.Location = new System.Drawing.Point(272, 175);
             this.dropTarget_DE_AbsoluteStressZX.Name = "dropTarget_DE_AbsoluteStressZX";
             this.dropTarget_DE_AbsoluteStressZX.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_DE_AbsoluteStressZX.TabIndex = 140;
@@ -840,7 +840,7 @@ namespace DFMGenerator_Ocean
             // 
             // presentationBox_DE_AbsoluteStressZX
             // 
-            this.presentationBox_DE_AbsoluteStressZX.Location = new System.Drawing.Point(304, 147);
+            this.presentationBox_DE_AbsoluteStressZX.Location = new System.Drawing.Point(304, 175);
             this.presentationBox_DE_AbsoluteStressZX.Name = "presentationBox_DE_AbsoluteStressZX";
             this.presentationBox_DE_AbsoluteStressZX.Size = new System.Drawing.Size(135, 22);
             this.presentationBox_DE_AbsoluteStressZX.TabIndex = 141;

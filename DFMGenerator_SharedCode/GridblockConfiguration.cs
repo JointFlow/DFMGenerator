@@ -2055,11 +2055,18 @@ namespace DFMGenerator_SharedCode
                 Tensor2S compactionalStrainRate = new Tensor2S();
 
                 // Create local copies of the overpressure rate, uplift rate, stress arching factor and rate of temperature change
+                // NB If a stress load is defined, the stress arching factor will be set to NaN
                 double overpressureRate = currentDeformationEpisode.AppliedOverpressureRate;
                 double upliftRate = currentDeformationEpisode.AppliedUpliftRate;
                 double stressArchingFactor = currentDeformationEpisode.StressArchingFactor;
-                double fluidPressureRate = StressStrain.P_f_dashed;
                 double tempChangeRate = currentDeformationEpisode.AppliedTemperatureChange - (upliftRate * StressStrain.GeothermalGradient);
+
+                // Set the fluid overpressure and uplift rates in the StressStrain object
+                // These will not vary during the deformation episode
+                StressStrain.FluidOverpressureRate = overpressureRate;
+                StressStrain.UpliftRate = upliftRate;
+                // Now we can get the rate of change of fluid pressure, which includes changes in both hydrostatic pressure and fluid overpressure
+                double fluidPressureRate = StressStrain.P_f_dashed;
 
                 if (stressLoad)
                 {
@@ -2092,11 +2099,6 @@ namespace DFMGenerator_SharedCode
                     // NB we need to keep the local copy of the applied strain rate tensor, as the ZZ component of the StressStrain.el_Epsilon_dashed tensor may be changed when calculating the stress tensors
                     StressStrain.el_Epsilon_dashed = appliedStrainRate;
                     StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
-
-                    // Set the fluid overpressure and uplift rates in the StressStrain object
-                    // These will not vary during the deformation episode
-                    StressStrain.FluidOverpressureRate = overpressureRate;
-                    StressStrain.UpliftRate = upliftRate;
 
                     // Calculate the equivalent vertical stress due to fluid pressure and temperature changes, and add this to the stress rate tensor
                     // NB This is dependent on the degree of stress arching; if there is no stress arching, vertical stress will be equal to lithostatic stress and there will be no vertical stress change
@@ -4634,19 +4636,21 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoFractureSets_in">Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public void resetFractures(int NoFractureSets_in, double B_in, double c_in, bool IncludeReverseFractures_in)
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        public void resetFractures(int NoFractureSets_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
         {
             NoFractureSets = NoFractureSets_in;
-            resetFractures(B_in, c_in, IncludeReverseFractures_in);
+            resetFractures(B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
         }
         /// <summary>
         /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new fracture sets each containing two dip sets (Mode 1 and Mode 2)
         /// </summary>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public void resetFractures(double B_in, double c_in, bool IncludeReverseFractures_in)
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        public void resetFractures(double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
         {
             // Clear all existing data
             ClearFractureData();
@@ -4655,7 +4659,7 @@ namespace DFMGenerator_SharedCode
             for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
             {
                 double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets));
-                Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, B_in, c_in, IncludeReverseFractures_in);
+                Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
                 FractureSets.Add(new_FractureSet);
             }
 

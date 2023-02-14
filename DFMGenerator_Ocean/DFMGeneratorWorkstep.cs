@@ -179,6 +179,11 @@ namespace DFMGenerator_Ocean
                     // Time units set to seconds - unit conversion from geological time units is carried out automatically by the Petrel unit conversion functionality
                     // NB the calculation code uses seconds internally in any case, so this will not lead to any loss in accuracy
                     TimeUnits ModelTimeUnits = TimeUnits.second;
+                    // Flag to determine whether to generate biazimuthal conjugate dipsets; these are dipsets that contain equal numbers of fractures dipping in opposite directions
+                    // By default, biazimuthal conjugate dipsets will be used since this will reduce the required number of dipsets
+                    // However if any of the deformation episodes use a stress load tensor which includes the vertical shear components (YZ and ZX) then the resulting fracture network will not be symmetrical about strike
+                    // In this case we must use multiple dipsets contains only fractures dipping in opposite directions
+                    bool BiazimuthalConjugate = true;
                     // Deformation load
                     // Multiple deformation episodes can be added
                     // Deformation load parameter defaults: the following describe the default values that will be applied to all deformation episodes unless otherwise specified
@@ -491,6 +496,9 @@ namespace DFMGenerator_Ocean
                                     }
                                     szxGridPropertyList = szxTimeSeries.Samples.ToList();
                                     syzGridPropertyList = syzTimeSeries.Samples.ToList();
+
+                                    // The fracture sets will not be symmetical about strike, so we cannot use biazimuthal conjugate fracture sets
+                                    BiazimuthalConjugate = false;
                                 }
                             }
                             UseGridPropertyTimeSeriesFor_ShvComponents_list.Add(UseGridPropertyTimeSeriesFor_ShvComponents);
@@ -2566,10 +2574,10 @@ namespace DFMGenerator_Ocean
                                                                 // Update final absolute vertical stress total if defined
                                                                 if (UseGridFor_Szz)
                                                                 {
-                                                                    double cell_sv = (double)local_Szz_grid[cellRef];
-                                                                    if (!double.IsNaN(cell_sv))
+                                                                    double cell_szz = (double)local_Szz_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_szz))
                                                                     {
-                                                                        szz_total += cell_sv;
+                                                                        szz_total += cell_szz;
                                                                         szz_novalues++;
                                                                     }
                                                                 }
@@ -2665,10 +2673,10 @@ namespace DFMGenerator_Ocean
                                                         for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                                         {
                                                             cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_sv = (double)local_Szz_grid[cellRef];
-                                                            if (!double.IsNaN(cell_sv))
+                                                            double cell_szz = (double)local_Szz_grid[cellRef];
+                                                            if (!double.IsNaN(cell_szz))
                                                             {
-                                                                finalSzz = cell_sv;
+                                                                finalSzz = cell_szz;
                                                                 break;
                                                             }
                                                         }
@@ -2707,8 +2715,8 @@ namespace DFMGenerator_Ocean
                                                             double cell_syz = (double)local_Syz_grid[cellRef];
                                                             if (!double.IsNaN(cell_szx) && !double.IsNaN(cell_syz))
                                                             {
-                                                                finalSxx = cell_szx;
-                                                                finalSyy = cell_syz;
+                                                                finalSzx = cell_szx;
+                                                                finalSyz = cell_syz;
                                                                 break;
                                                             }
                                                         }
@@ -3048,12 +3056,12 @@ namespace DFMGenerator_Ocean
                                 else if (Mode2Only)
                                     gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
                                 else
-                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, AllowReverseFractures);
+                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
 
 #if DEBUG_FRACS
                                 PetrelLogger.InfoOutputWindow("Properties");
-                                PetrelLogger.InfoOutputWindow(string.Format("sv' {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
-                                PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient {2}, Crack surface energy:{3}, Friction coefficient:{4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
+                                PetrelLogger.InfoOutputWindow(string.Format("sv': {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
+                                PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient: {2}, Crack surface energy: {3}, Friction coefficient: {4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
@@ -3132,13 +3140,13 @@ namespace DFMGenerator_Ocean
                                     }
                                     else
                                     {
-                                        string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
-                                        string local_InitialHorizontalStrain_info;
+                                        string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
+                                        string local_InitialAbsoluteStress_info;
                                         if (local_InitialAbsoluteStress is null)
-                                            local_InitialHorizontalStrain_info = "null";
+                                            local_InitialAbsoluteStress_info = "null";
                                         else
-                                            local_InitialHorizontalStrain_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5}", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialHorizontalStrain_info, local_InitialFluidPressure));
+                                            local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
                                     }
 #endif
                                 }// End get the stress / strain data from the grid as required

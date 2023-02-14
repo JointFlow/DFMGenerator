@@ -5287,27 +5287,64 @@ namespace DFMGenerator_SharedCode
             max_historic_a_MFP33 = 0;
         }
         /// <summary>
-        /// Constructor: Create fracture set with two bimodal conjugate dip sets: vertical Mode 1 and optimally oriented Mode 2
+        /// Constructor: Create fracture set with multiple dip sets in optimal orientations for dilatant, normal and (if required) reverse shear displacement  
         /// </summary>
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="Strike_in">Fracture strike (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool IncludeReverseFractures_in) : this(gbc_in)
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in) : this(gbc_in)
         {
             // Fracture strike
             Strike = Strike_in;
 
             // Create vertical Mode 1 dip set and add it to the list
             double opt_dip = Math.PI / 2;
-            FractureDipSet DipSet1 = new FractureDipSet(gbc, this, FractureMode.Mode1, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+            FractureDipSet DipSet1 = new FractureDipSet(gbc, this, FractureMode.Mode1, BiazimuthalConjugate_in, IncludeReverseFractures_in, opt_dip, B_in, c_in);
             FractureDipSets.Add(DipSet1);
 
-            // Create optimally oriented Mode 2 dip set and add it to the list
+            // If the set is a biazimuthal conjugate set, only one inclined dip set will be created, containing fractures dipping in both directions
+            // // Otherwise two inclined dip sets will be created dipping in opposite directions, each containing half the initial microfracture population
             opt_dip = ((Math.PI / 2) + Math.Atan(gbc.MechProps.MuFr)) / 2;
-            FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
-            FractureDipSets.Add(DipSet2);
+            if (BiazimuthalConjugate_in)
+            {
+                // Create two optimally oriented Mode 2 dip sets and add them to the list
+                FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
+                FractureDipSets.Add(DipSet2);
+
+                FractureDipSet DipSet3 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, -opt_dip, B_in / 2, c_in);
+                FractureDipSets.Add(DipSet3);
+            }
+            else
+            {
+                // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
+                FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+                FractureDipSets.Add(DipSet2);
+            }
+
+            // If reverse fractures are allowed, create one or two additional low angle shear dip sets optimally oriented for reverse displacement
+            // NB If the friction coefficient is 0, optimally oriented reverse fractures will have the same orientation as optimally oriented normal fractures, so there is no need to create an extra set
+            if (IncludeReverseFractures_in && (gbc.MechProps.MuFr > 0))
+            {
+                opt_dip = ((Math.PI / 2) + Math.Atan(gbc.MechProps.MuFr)) / 2;
+                if (BiazimuthalConjugate_in)
+                {
+                    // Create two optimally oriented Mode 2 dip sets and add them to the list
+                    FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
+                    FractureDipSets.Add(DipSet4);
+
+                    FractureDipSet DipSet5 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, -opt_dip, B_in / 2, c_in);
+                    FractureDipSets.Add(DipSet5);
+                }
+                else
+                {
+                    // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
+                    FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+                    FractureDipSets.Add(DipSet4);
+                }
+            }
 
             // Create the FractureDipSets_SortedByW list as a copy of the FractureDipSets list, and sort it by stress shadow width
             FractureDipSets_SortedByW = new List<FractureDipSet>(FractureDipSets);
@@ -5322,7 +5359,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in) : this(gbc_in)
         {
             // Fracture strike
@@ -5343,13 +5380,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="Strike_in">Fracture strike (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="Mode1_UniformAperture_in">Fixed aperture for Mode 1 fractures in the uniform aperture case (m)</param>
         /// <param name="Mode2_UniformAperture_in">Fixed aperture for Mode 2 fractures in the uniform aperture case (m)</param>
         /// <param name="Mode1_SizeDependentApertureMultiplier_in">Multiplier for Mode 1 fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
         /// <param name="Mode2_SizeDependentApertureMultiplier_in">Multiplier for Mode 2 fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool IncludeReverseFractures_in, double Mode1_UniformAperture_in, double Mode2_UniformAperture_in, double Mode1_SizeDependentApertureMultiplier_in, double Mode2_SizeDependentApertureMultiplier_in)
-            : this(gbc_in, Strike_in, B_in, c_in, IncludeReverseFractures_in)
+        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Mode1_UniformAperture_in, double Mode2_UniformAperture_in, double Mode1_SizeDependentApertureMultiplier_in, double Mode2_SizeDependentApertureMultiplier_in)
+            : this(gbc_in, Strike_in, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in)
         {
             // Set the fracture aperture control data for uniform and size-dependent aperture
             SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
@@ -5363,7 +5401,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
         /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
         public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
