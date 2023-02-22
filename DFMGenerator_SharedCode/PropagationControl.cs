@@ -119,9 +119,9 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private Tensor2S applied_Epsilon_dashed;
         /// <summary>
-        /// Azimuth of minimum applied horizontal strain (radians)
+        /// Azimuth of minimum applied horizontal strain (radians); if the load is defined in terms of stress, will return the azimuth of the minimum horizontal stress
         /// </summary>
-        public double Applied_Epsilon_hmin_azimuth { get { return applied_Epsilon_dashed.GetMinimumHorizontalAzimuth(); } }
+        public double Applied_Epsilon_hmin_azimuth { get { if (StressLoadDefined) return absolute_Stress_dashed.GetMinimumHorizontalAzimuth(); else return applied_Epsilon_dashed.GetMinimumHorizontalAzimuth(); } }
         /// <summary>
         /// Minimum applied horizontal strain rate (/s)
         /// </summary>
@@ -636,7 +636,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// List of intermediate output times, if intermediate stage DFNs are to be output at specified times; stored in SI units (s)
         /// </summary>
-        private List<double> intermediateOutputTimes;
+        public List<double> intermediateOutputTimes;
         /// <summary>
         /// Get the specified intermediate stage output time from the list in SI units (s)
         /// </summary>

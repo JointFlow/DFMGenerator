@@ -507,7 +507,6 @@ namespace DFMGenerator_Standalone
             List<Tensor2S> InitialAbsoluteStress_list = new List<Tensor2S>();
 #if !READINPUTFROMFILE
             // Add an initial episode with a stress load
-            EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(0.074004377);
@@ -516,10 +515,12 @@ namespace DFMGenerator_Standalone
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.second;
             DeformationEpisodeDuration_list.Add(31622400);// (DeformationEpisodeDuration);
-            AbsoluteStressRate_list.Add(new Tensor2S(0.023741777980166, 0.0319753086419753, -0.0819844161100992, -0.00390703662593605, -0.040058724195507, 0.025769731266444));
+
+            AbsoluteStressRate_list.Add(new Tensor2S(0.023741777980166, 0.0319753086419753, -0.0819844161100992, -0.00390703662593605, -0.40058724195507, 0.25769731266444));
+            EhminAzi_list.Add(EhminAzi);
+            BiazimuthalConjugate = false;
             InitialFluidPressure_list.Add(11889183);
-            InitialAbsoluteStress_list.Add(new Tensor2S(45567500, 45855080, 63135844, -521898.5, 3544336.5, -2663104.75));
-            // This is where it fails
+            InitialAbsoluteStress_list.Add(new Tensor2S(45567500, 45855080, 63135844, -521898.5, 35443365, -26631047.5));
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
@@ -529,9 +530,9 @@ namespace DFMGenerator_Standalone
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.second;
             DeformationEpisodeDuration_list.Add(31622400);// (DeformationEpisodeDuration);
-            AbsoluteStressRate_list.Add(new Tensor2S(0.0391878488077118, -0.0494397513952309, -0.302051496702182, 0.0207332582826968, -0.0430657740360223, 0.0387283996860731));
+            AbsoluteStressRate_list.Add(new Tensor2S(0.0391878488077118, -0.0494397513952309, -0.302051496702182, 0.0207332582826968, -0.430657740360223, 0.387283996860731));
             InitialFluidPressure_list.Add(14229379);
-            InitialAbsoluteStress_list.Add(new Tensor2S(46318272, 46866216, 60543300, -645448.375, 2277583.5, -1848204));
+            InitialAbsoluteStress_list.Add(new Tensor2S(46318272, 46866216, 60543300, -645448.375, 22775835, -18482040));
             /*// Add an initial episode with uniaxial extension of -0.01/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(-0.0001);
@@ -2342,16 +2343,6 @@ namespace DFMGenerator_Standalone
                     // Set folder path for output files
                     gc.PropControl.FolderPath = folderPath;
 
-                    // Create the fracture sets
-                    double local_InitialMicrofractureDensity = InitialMicrofractureDensity_array[RowNo, ColNo];
-                    double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_array[RowNo, ColNo];
-                    if (Mode1Only)
-                        gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
-                    else if (Mode2Only)
-                        gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
-                    else
-                        gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
-
 #if DEBUG_FRACS
                     Console.WriteLine(string.Format("Cell {0} {1} ", RowNo, ColNo));
                     Console.WriteLine(string.Format("SWtop {0} {1} {2}", SWtop.X, SWtop.Y, SWtop.Z));
@@ -2373,7 +2364,60 @@ namespace DFMGenerator_Standalone
                     Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}); ",
                         CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                         MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
-                    Console.WriteLine(string.Format("gc.resetFractures({0}, {1}, {2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
+#endif
+
+                    // Add the deformation load data 
+                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+                    {
+                        // Get the deformation load properties for this deformation episode in this gridblock
+                        double local_EhminAzi = (deformationEpisodeNo < EhminAzi_array.Count ? EhminAzi_array[deformationEpisodeNo][RowNo, ColNo] : EhminAzi);
+                        double local_EhminRate = (deformationEpisodeNo < EhminRate_array.Count ? EhminRate_array[deformationEpisodeNo][RowNo, ColNo] : EhminRate);
+                        double local_EhmaxRate = (deformationEpisodeNo < EhmaxRate_array.Count ? EhmaxRate_array[deformationEpisodeNo][RowNo, ColNo] : EhmaxRate);
+                        double local_AppliedOverpressureRate = (deformationEpisodeNo < AppliedOverpressureRate_array.Count ? AppliedOverpressureRate_array[deformationEpisodeNo][RowNo, ColNo] : AppliedOverpressureRate);
+                        double local_AppliedTemperatureChange = (deformationEpisodeNo < AppliedTemperatureChange_array.Count ? AppliedTemperatureChange_array[deformationEpisodeNo][RowNo, ColNo] : AppliedTemperatureChange);
+                        double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][RowNo, ColNo] : AppliedUpliftRate);
+                        double local_StressArchingFactor = (deformationEpisodeNo < StressArchingFactor_array.Count ? StressArchingFactor_array[deformationEpisodeNo][RowNo, ColNo] : StressArchingFactor);
+                        double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][RowNo, ColNo] : DeformationEpisodeDuration);
+                        Tensor2S local_AbsoluteStressRate = (deformationEpisodeNo < AbsoluteStressRate_array.Count ? AbsoluteStressRate_array[deformationEpisodeNo][RowNo, ColNo] : AbsoluteStressRate);
+                        double local_InitialFluidPressure = (deformationEpisodeNo < InitialFluidPressure_array.Count ? InitialFluidPressure_array[deformationEpisodeNo][RowNo, ColNo] : InitialFluidPressure);
+                        Tensor2S local_InitialAbsoluteStress = (deformationEpisodeNo < InitialAbsoluteStress_array.Count ? InitialAbsoluteStress_array[deformationEpisodeNo][RowNo, ColNo] : InitialAbsoluteStress);
+
+                        // Add the deformation episode to the deformation episode list in the PropControl object
+                        if (local_AbsoluteStressRate is null)
+                        {
+                            gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
+#if DEBUG_FRACS
+                            Console.WriteLine(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
+#endif
+                        }
+                        else
+                        {
+                            gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
+#if DEBUG_FRACS
+                            string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
+                            string local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
+                            Console.WriteLine(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
+#endif
+                        }
+                    }
+
+                    // Create the fracture sets
+                    double local_InitialMicrofractureDensity = InitialMicrofractureDensity_array[RowNo, ColNo];
+                    double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_array[RowNo, ColNo];
+                    if (Mode1Only)
+                        gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
+                    else if (Mode2Only)
+                        gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
+                    else
+                        gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
+
+#if DEBUG_FRACS
+                    if (Mode1Only)
+                        Console.WriteLine(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
+                    else if (Mode2Only)
+                        Console.WriteLine(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
+                    else
+                        Console.WriteLine(string.Format("gc.resetFractures({0}, {1}, {2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
 #endif
 
                     // Set the fracture aperture control data for fracture porosity calculation
@@ -2411,42 +2455,7 @@ namespace DFMGenerator_Standalone
 #endif
                     }
 
-                    // Add the deformation load data 
-                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
-                    {
-                        // Get the deformation load properties for this deformation episode in this gridblock
-                        double local_EhminAzi = (deformationEpisodeNo < EhminAzi_array.Count ? EhminAzi_array[deformationEpisodeNo][RowNo, ColNo] : EhminAzi);
-                        double local_EhminRate = (deformationEpisodeNo < EhminRate_array.Count ? EhminRate_array[deformationEpisodeNo][RowNo, ColNo] : EhminRate);
-                        double local_EhmaxRate = (deformationEpisodeNo < EhmaxRate_array.Count ? EhmaxRate_array[deformationEpisodeNo][RowNo, ColNo] : EhmaxRate);
-                        double local_AppliedOverpressureRate = (deformationEpisodeNo < AppliedOverpressureRate_array.Count ? AppliedOverpressureRate_array[deformationEpisodeNo][RowNo, ColNo] : AppliedOverpressureRate);
-                        double local_AppliedTemperatureChange = (deformationEpisodeNo < AppliedTemperatureChange_array.Count ? AppliedTemperatureChange_array[deformationEpisodeNo][RowNo, ColNo] : AppliedTemperatureChange);
-                        double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][RowNo, ColNo] : AppliedUpliftRate);
-                        double local_StressArchingFactor = (deformationEpisodeNo < StressArchingFactor_array.Count ? StressArchingFactor_array[deformationEpisodeNo][RowNo, ColNo] : StressArchingFactor);
-                        double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][RowNo, ColNo] : DeformationEpisodeDuration);
-                        Tensor2S local_AbsoluteStressRate = (deformationEpisodeNo < AbsoluteStressRate_array.Count ? AbsoluteStressRate_array[deformationEpisodeNo][RowNo, ColNo] : AbsoluteStressRate);
-                        double local_InitialFluidPressure = (deformationEpisodeNo < InitialFluidPressure_array.Count ? InitialFluidPressure_array[deformationEpisodeNo][RowNo, ColNo] : InitialFluidPressure);
-                        Tensor2S local_InitialAbsoluteStress = (deformationEpisodeNo < InitialAbsoluteStress_array.Count ? InitialAbsoluteStress_array[deformationEpisodeNo][RowNo, ColNo] : InitialAbsoluteStress);
-
-                        // Add the deformation episode to the deformation episode list in the PropControl object
-                        if (local_AbsoluteStressRate is null)
-                        {
-                            gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
-#if DEBUG_FRACS
-                            Console.WriteLine(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
-#endif
-                        }
-                        else
-                        {
-                            gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
-#if DEBUG_FRACS
-                            string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
-                            string local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
-                            Console.WriteLine(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
-#endif
-                        }
-                    }
-
-                    // Add to grid
+                    // Add the gridblock to the grid
                     ModelGrid.AddGridblock(gc, RowNo, ColNo);
 
 #if DEBUG_FRACS

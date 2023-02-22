@@ -50,11 +50,16 @@ namespace DFMGenerator_SharedCode
         /// Flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer thickness cutoff
         /// </summary>
         public bool DFNThicknessCutoffActivated { get; private set; }
+        /// <summary>
+        /// Flag to indicate if the implicit calculation ran to completion before hitting the timestep limit in every gridblock
+        /// </summary>
+        public bool HitTimestepLimit { get; private set; }
 
         // Functions to calculate fracture population data and generate the DFN
         /// <summary>
         /// Calculate fracture data for each cell in the gridblock based on existing GridblockConfiguration.PropagationControl objects, without updating progress
         /// </summary>
+        /// <returns>True if the calculation runs to completion before hitting the timestep limit in all gridblocks; false if the timestep limit is hit in any gridblock</returns>
         public void CalculateAllFractureData()
         {
             CalculateAllFractureData(null);
@@ -65,6 +70,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="progressReporter">Reference to a progress reporter - can be any object implementing the IProgressReporterWrapper interface</param>
         public void CalculateAllFractureData(IProgressReporterWrapper progressReporter)
         {
+            // Set the flag to indicate if the implicit calculation ran to completion before hitting the timestep limit in every gridblock
+            // This will be true if the calculation runs to completion before hitting the timestep limit in every gridblock, and false if the timestep limit is hit in any gridblock
+            HitTimestepLimit = false;
+
             // Create variable to loop through the grid rows and columns
             int NoRows, RowNo, NoCols, ColNo;
 
@@ -89,11 +98,11 @@ namespace DFMGenerator_SharedCode
             // Loop through every gridblock in every row in the grid
             int NoGridblocksCalculated = 0;
             NoRows = Gridblocks.Count();
-            for(RowNo = 0; RowNo < NoRows; RowNo++)
+            for (RowNo = 0; RowNo < NoRows; RowNo++)
             {
                 List<GridblockConfiguration> GridRow = Gridblocks[RowNo];
                 NoCols = GridRow.Count();
-                for(ColNo = 0; ColNo < NoCols; ColNo++)
+                for (ColNo = 0; ColNo < NoCols; ColNo++)
                 {
                     // Check if calculation has been aborted
                     if (progressReporter.abortCalculation())
@@ -109,8 +118,9 @@ namespace DFMGenerator_SharedCode
                     if (Gridblock != null)
                     {
                         // Run the calculation function for the specified gridblock
-                        Gridblock.CalculateFractureData();
-
+                        bool local_HitTimestepLimit = Gridblock.CalculateFractureData();
+                        if (local_HitTimestepLimit)
+                            HitTimestepLimit = true;
                     }
 
                     // Update progress
@@ -151,7 +161,7 @@ namespace DFMGenerator_SharedCode
             TimeUnits timeUnits = DFNControl.timeUnits;
             double timeUnits_Modifier = DFNControl.getTimeUnitsModifier();
 
-            // Initialise flags to indicate that the explicit DFN was not generated in some or any gridblocks, due to the layer thickness cutoff
+            // Initialise flag to indicate that the explicit DFN was not generated in some or any gridblocks, due to the layer thickness cutoff
             DFNThicknessCutoffActivated = false;
 
             // Generate a list of timestep end times for all timesteps in every gridblock in the grid
@@ -312,7 +322,7 @@ namespace DFMGenerator_SharedCode
                                         List<PointXYZ> cornerPoints = frac.GetFractureCornerpointsInXYZ(nouFCornerPoints);
                                         // Loop through each point and write the coordinates to file
                                         int pointNo = 1;
-                                        foreach(PointXYZ cornerPoint in cornerPoints)
+                                        foreach (PointXYZ cornerPoint in cornerPoints)
                                         {
                                             string pointCoords = string.Format("{0} {1} {2} {3}", pointNo++, cornerPoint.X, cornerPoint.Y, cornerPoint.Z);
                                             uF_outputFile.WriteLine(pointCoords);
@@ -383,7 +393,7 @@ namespace DFMGenerator_SharedCode
 
                                     // Loop through each macrofracture and count the total number of segments and cornerpoints, excluding zero length segments
                                     foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
-                                    { 
+                                    {
                                         foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
                                         {
                                             int nonZeroLengthSegments = 0;
@@ -564,7 +574,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="totalNoCalculationElements">Reference parameter for the total number of calculation elements (i.e. the total number of timesteps in all gridblocks)</param>
         /// <returns>New list of GridblockTimestepControl objects representing all timesteps in every gridblock in the grid</returns>
-        private List<GridblockTimestepControl> GetTimestepList (out int totalNoCalculationElements)
+        private List<GridblockTimestepControl> GetTimestepList(out int totalNoCalculationElements)
         {
             // Create a new list of GridblockTimestepControl objects and set the total number of calculation elements (i.e. the number of GridblockTimestepControl objects) to 0
             totalNoCalculationElements = 0;
@@ -960,8 +970,11 @@ namespace DFMGenerator_SharedCode
             // Initialise random number generator for placing fractures
             RandomNumberGenerator = new Random();
 
-            // Initialise flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer tthickness cutoff
+            // Initialise the flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer thickness cutoff
             DFNThicknessCutoffActivated = false;
+
+            // Initialise the flag to indicate if the implicit calculation ran to completion before hitting the timestep limit in every gridblock
+            HitTimestepLimit = false;
+        }
     }
-}
 }

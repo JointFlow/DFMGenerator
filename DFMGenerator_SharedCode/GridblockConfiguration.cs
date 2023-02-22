@@ -1897,10 +1897,12 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Calculate the implicit fracture model based on the parameters specified in the existing GridblockConfiguration.PropagationControl object
         /// </summary>
-        public void CalculateFractureData()
+        /// <returns>True if the calculation runs to completion before hitting the timestep limit; false if the timestep limit is hit</returns>
+        public bool CalculateFractureData()
         {
             // Declare local variables
             bool CalculationCompleted = false;
+            bool HitTimestepLimit = false;
             StrainRelaxationCase SRC = MechProps.GetStrainRelaxationCase();
             StressDistribution SD = PropControl.StressDistributionCase;
 
@@ -2606,7 +2608,10 @@ namespace DFMGenerator_SharedCode
                         CalculationCompleted = true;
                     // Check if we have exceeded maximum number of timesteps
                     if (CurrentImplicitTimestep >= maxTimesteps)
+                    {
                         CalculationCompleted = true;
+                        HitTimestepLimit = true;
+                    }
                     // Check if all fracture sets are deactivated
                     if (AllSetsDeactivated && StopWhenAllSetsDeactivated)
                         CalculationCompleted = true;
@@ -2824,16 +2829,17 @@ namespace DFMGenerator_SharedCode
             if (writeImplicitDataToFile)
                 outputFile.Close();
 
-            return;
+            return HitTimestepLimit;
         }
         /// <summary>
         /// Calculate fracture data based on user-specified PropagationControl object, building on existing fracture populations 
         /// </summary>
         /// <param name="pc_in">PropagationControl object containing propagation control data</param>
-        public void CalculateFractureData(PropagationControl pc_in)
+        /// <returns>True if the calculation runs to completion before hitting the timestep limit; false if the timestep limit is hit</returns>
+        public bool CalculateFractureData(PropagationControl pc_in)
         {
             PropControl = pc_in;
-            CalculateFractureData();
+            return CalculateFractureData();
         }
         /// <summary>
         /// Grow the explicit DFN for the next timestep, based on data from the implicit model calculation, cached in the appropriate FCD_list objects
@@ -3116,8 +3122,14 @@ namespace DFMGenerator_SharedCode
                                 // Generate a new microfracture and add it to the DFN
                                 if (addThisFracture)
                                 {
-                                    // Set a random dip direction
-                                    DipDirection dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                    // Set the fracture dip direction
+                                    // If this is a biazimuthal conjugate fracture dipset, set a random dip direction
+                                    // Otherwise set the fracture to dip direction to JPlus - there will be a mirror dipsets with a negative dip, dipping towards JMinus)
+                                    DipDirection dipdir;
+                                    if (fds.BiazimuthalConjugate)
+                                        dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                    else
+                                        dipdir = DipDirection.JPlus;
 
                                     // Create a new MicrofractureIJK object and add it to the local DFN
                                     MicrofractureIJK new_local_uF = new MicrofractureIJK(fs, dipsetIndex, new_uF_centrepointIJK, next_uF_radius, dipdir, initialLTime, 0);
@@ -3224,8 +3236,14 @@ namespace DFMGenerator_SharedCode
                             // If the point is not in a stress shadow or we are not including stress shadow effects, generate a new microfracture and add it to the DFN
                             if (addThisFracture)
                             {
-                                // Set a random dip direction
-                                DipDirection dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                // Set the fracture dip direction
+                                // If this is a biazimuthal conjugate fracture dipset, set a random dip direction
+                                // Otherwise set the fracture to dip direction to JPlus - there will be a mirror dipsets with a negative dip, dipping towards JMinus)
+                                DipDirection dipdir;
+                                if (fds.BiazimuthalConjugate)
+                                    dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                else
+                                    dipdir = DipDirection.JPlus;
 
                                 // Create a new MicrofractureIJK object and add it to the local DFN
                                 MicrofractureIJK new_local_uF = new MicrofractureIJK(fs, dipsetIndex, new_uF_centrepointIJK, uF_minRadius, dipdir, NucleationLTime, CurrentExplicitTimestep);
@@ -3319,8 +3337,14 @@ namespace DFMGenerator_SharedCode
                                 // If the new macrofracture is valid, generate a new macrofracture object and add it to the DFN
                                 if (addThisFracture)
                                 {
-                                    // Set a random dip direction
-                                    DipDirection dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                    // Set the fracture dip direction
+                                    // If this is a biazimuthal conjugate fracture dipset, set a random dip direction
+                                    // Otherwise set the fracture to dip direction to JPlus - there will be a mirror dipsets with a negative dip, dipping towards JMinus)
+                                    DipDirection dipdir;
+                                    if (fds.BiazimuthalConjugate)
+                                        dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                    else
+                                        dipdir = DipDirection.JPlus;
 
                                     // Create a new MacrofractureSegmentIJK object and add it to the local DFN
                                     MacrofractureSegmentIJK new_local_MF = new MacrofractureSegmentIJK(fs, dipsetIndex, new_MF_nucleationpoint, PropagationDirection.IPlus, PropagationDirection.IPlus, dipdir, initialLTime, 0);
@@ -3439,8 +3463,14 @@ namespace DFMGenerator_SharedCode
                                 // Update counter for number of active fractures nucleating in this timestep
                                 Dict_NoActiveNucleating[fs_index] += 2;
 #endif
-                                // Set a random dip direction
-                                DipDirection dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                // Set the fracture dip direction
+                                // If this is a biazimuthal conjugate fracture dipset, set a random dip direction
+                                // Otherwise set the fracture to dip direction to JPlus - there will be a mirror dipsets with a negative dip, dipping towards JMinus)
+                                DipDirection dipdir;
+                                if (fds.BiazimuthalConjugate)
+                                    dipdir = ((randGen.Next(2) == 0) ? DipDirection.JPlus : DipDirection.JMinus);
+                                else
+                                    dipdir = DipDirection.JPlus;
 
                                 // Create a new MacrofractureSegmentIJK object and add it to the local DFN
                                 MacrofractureSegmentIJK new_local_MF = new MacrofractureSegmentIJK(fs, dipsetIndex, new_MF_nucleationpointIJK, PropagationDirection.IPlus, PropagationDirection.IPlus, dipdir, NucleationLTime, CurrentExplicitTimestep);

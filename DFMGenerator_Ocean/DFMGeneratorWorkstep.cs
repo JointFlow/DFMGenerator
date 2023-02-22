@@ -198,11 +198,11 @@ namespace DFMGenerator_Ocean
                     // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
                     double EhmaxRate_GeologicalTimeUnits = 0;
                     // Fluid pressure, thermal and uplift loads
-                    // Rate of increase of fluid overpressure (Pa/ModelTImeUnit)
+                    // Rate of increase of fluid overpressure (Pa/ModelTimeUnit)
                     double AppliedOverpressureRate_GeologicalTimeUnits = 0;
-                    // Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTImeUnit)
+                    // Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTimeUnit)
                     double AppliedTemperatureChange_GeologicalTimeUnits = 0;
-                    // Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTImeUnit)
+                    // Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTimeUnit)
                     double AppliedUpliftRate_GeologicalTimeUnits = 0;
                     // Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)
                     double StressArchingFactor = 0;
@@ -211,7 +211,9 @@ namespace DFMGenerator_Ocean
                     // Global deformation load parameter lists
                     // These contain one entry for each deformation episode, in order
                     // They will be copied to all gridblocks
+                    // Get the number of user-defined deformation episodes, i.e. not including sub episodes defined by dynamic load data taken from GridPropertyTimeSeries objects
                     int noDefinedDeformationEpisodes = arguments.Argument_NoDeformationEpisodes;
+                    // Create a counter for the total number of deformation episodes, i.e. including sub episodes defined by dynamic load data taken from GridPropertyTimeSeries objects
                     int noTotalDeformationEpisodes = 0;
                     // Geological time
                     // Deformation duration and load rates must be converted from geological time units to SI time units manually, as there is no Petrel template for inverse geological time
@@ -245,6 +247,7 @@ namespace DFMGenerator_Ocean
                     Case activeCase = null;
                     List<bool> SubEpisodesDefined_list = new List<bool>();
                     List<List<double>> SubEpisodeDurations_GeologicalTimeUnits_list = new List<List<Double>>();
+                    List<List<string>> SubEpisodeNameOverride_list = new List<List<string>>();
                     List<bool> UseGridPropertyTimeSeriesFor_Szz_list = new List<bool>();
                     List<bool> UseGridPropertyTimeSeriesFor_StressTensor_list = new List<bool>();
                     List<bool> UseGridPropertyTimeSeriesFor_ShvComponents_list = new List<bool>();
@@ -507,25 +510,31 @@ namespace DFMGenerator_Ocean
 
                             // Create a list of sub episode durations
                             List<double> subEpisodeDurations = new List<double>();
-                            for (int subEpisodeNo = 1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
+                            List<string> subEpisodeNameOverrides = new List<string>();
+                            for (int subEpisodeNo = 0; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
                             {
                                 // The sub episode duration is the difference between the current and previous time indices
-                                double subEpisodeDuration = (timeSeriesIndex[subEpisodeNo] - timeSeriesIndex[subEpisodeNo - 1]).TotalSeconds;
+                                double subEpisodeDuration = (timeSeriesIndex[subEpisodeNo + 1] - timeSeriesIndex[subEpisodeNo]).TotalSeconds;
 
                                 // Convert to the selected time units for this episode
                                 subEpisodeDuration /= currentEpisodeTimeUnitConverter;
                                 // Add to the list
                                 subEpisodeDurations.Add(subEpisodeDuration);
 
+                                // Add a name override to the sub episode name override list
+                                subEpisodeNameOverrides.Add(timeSeriesIndex[subEpisodeNo + 1].ToString());
+
                                 // Update the total number of deformation sub episodes (including unitary episodes)
                                 noTotalDeformationEpisodes++;
                             }
                             SubEpisodeDurations_GeologicalTimeUnits_list.Add(subEpisodeDurations);
+                            SubEpisodeNameOverride_list.Add(subEpisodeNameOverrides);
                         }
                         else
                         {
                             // Add nulls to the lists of sub episode durations and grid properties
                             SubEpisodeDurations_GeologicalTimeUnits_list.Add(null);
+                            SubEpisodeNameOverride_list.Add(null);
                             UseGridPropertyTimeSeriesFor_Szz_list.Add(false);
                             UseGridPropertyTimeSeriesFor_StressTensor_list.Add(false);
                             UseGridPropertyTimeSeriesFor_ShvComponents_list.Add(false);
@@ -985,8 +994,11 @@ namespace DFMGenerator_Ocean
                         Number_uF_Points = arguments.Argument_NoMicrofractureCornerpoints;
 
                     // Flag to assign discrete fractures to sets based on azimuth
-                    // Currently set to false as set assignment adds a high overhead in computational cost; this could be allowed as an option in future
-                    bool assignOrientationSets = true;// false;
+                    bool assignOrientationSets = true;
+
+                    // Get the number of dipsets in each fracture set, and a list of labels for the dipsets, based on selected inputs
+                    int NoDipSets = Gridblock_FractureSet.DefaultDipSets(Mode1Only, Mode2Only, BiazimuthalConjugate, AllowReverseFractures);
+                    List<string> DipSetLabels = Gridblock_FractureSet.DefaultDipSetLabels(Mode1Only, Mode2Only, BiazimuthalConjugate, AllowReverseFractures);
 
                     // Create Petrel unit converters to convert geological time and other properties from SI to project units, and strings for the unit labels
                     // Geological time units
@@ -1124,45 +1136,45 @@ namespace DFMGenerator_Ocean
 
                     // Get path for output files
                     string folderPath = "";
-                    if (WriteToProjectFolder)
+                    try
                     {
-                        IProjectInfo pi = PetrelProject.GetProjectInfo(DataManager.DataSourceManager);
-                        folderPath = Path.Combine(pi.ProjectStorageDirectory.Parent.FullName, ModelName);
-                        folderPath = folderPath + Path.DirectorySeparatorChar;
-                        // If the output folder does not exist, create it
-                        if (!Directory.Exists(folderPath))
-                            Directory.CreateDirectory(folderPath);
-                    }
-                    else
-                    {
-                        var homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
-                        if (homeDrive != null)
+                        if (WriteToProjectFolder)
                         {
-                            var homePath = Environment.GetEnvironmentVariable("HOMEPATH");
-                            if (homePath != null)
-                            {
-                                string fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
-                                folderPath = Path.Combine(fullHomePath, "DFMFolder");
-                                folderPath = folderPath + Path.DirectorySeparatorChar;
-                                // If the output folder does not exist, create it
-                                if (!Directory.Exists(folderPath))
-                                    Directory.CreateDirectory(folderPath);
-                            }
-                        }
-                    }
-                    if (WriteImplicitDataFiles || WriteDFNFiles)
-                    {
-                        // Check that the folder for the output files exists; if not then do not write them
-                        if (!Directory.Exists(folderPath))
-                        {
-                            PetrelLogger.InfoOutputWindow("Cannot find project folder to write output files to; no output files will be written");
-                            WriteImplicitDataFiles = false;
-                            WriteDFNFiles = false;
+                            IProjectInfo pi = PetrelProject.GetProjectInfo(DataManager.DataSourceManager);
+                            folderPath = Path.Combine(pi.ProjectStorageDirectory.Parent.FullName, ModelName);
+                            folderPath = folderPath + Path.DirectorySeparatorChar;
                         }
                         else
                         {
+                            var homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
+                            if (homeDrive != null)
+                            {
+                                var homePath = Environment.GetEnvironmentVariable("HOMEPATH");
+                                if (homePath != null)
+                                {
+                                    string fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
+                                    folderPath = Path.Combine(fullHomePath, "DFMFolder");
+                                    folderPath = folderPath + Path.DirectorySeparatorChar;
+                                }
+                            }
+                        }
+                        if (WriteImplicitDataFiles || WriteDFNFiles)
+                        {
+                            // If the output folder does not exist, create it
+                            if (!Directory.Exists(folderPath))
+                                Directory.CreateDirectory(folderPath);
+                            // If this has not worked, throw an exception
+                            if (!Directory.Exists(folderPath))
+                                throw (new Exception("Could not create output folder"));
+
                             PetrelLogger.InfoOutputWindow("Output files will be written to " + folderPath);
                         }
+                    }
+                    catch (Exception)
+                    {
+                        PetrelLogger.InfoOutputWindow("Cannot create a folder to write output files to; no output files will be written");
+                        WriteImplicitDataFiles = false;
+                        WriteDFNFiles = false;
                     }
 
                     // Write input parameters to comments section
@@ -3050,14 +3062,6 @@ namespace DFMGenerator_Ocean
                                 // Set folder path for output files
                                 gc.PropControl.FolderPath = folderPath;
 
-                                // Create the fracture sets
-                                if (Mode1Only)
-                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
-                                else if (Mode2Only)
-                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
-                                else
-                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
-
 #if DEBUG_FRACS
                                 PetrelLogger.InfoOutputWindow("Properties");
                                 PetrelLogger.InfoOutputWindow(string.Format("sv': {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
@@ -3070,43 +3074,7 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21});",
                                     CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                                     MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, (Mode1Only ? "Mode1" : (Mode2Only ? "Mode2" : "NoModeSpecified")), AllowReverseFractures));
 #endif
-
-                                // Set the fracture aperture control data for fracture porosity calculation
-                                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
-                                {
-                                    double Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in;
-                                    if (fs_index == 0)
-                                    {
-                                        Mode1_UniformAperture_in = Mode1HMin_UniformAperture;
-                                        Mode2_UniformAperture_in = Mode2HMin_UniformAperture;
-                                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMin_SizeDependentApertureMultiplier;
-                                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMin_SizeDependentApertureMultiplier;
-                                    }
-                                    else if ((fs_index == (NoFractureSets / 2)) && ((NoFractureSets % 2) == 0))
-                                    {
-                                        Mode1_UniformAperture_in = Mode1HMax_UniformAperture;
-                                        Mode2_UniformAperture_in = Mode2HMax_UniformAperture;
-                                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMax_SizeDependentApertureMultiplier;
-                                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMax_SizeDependentApertureMultiplier;
-                                    }
-                                    else
-                                    {
-                                        double relativeAngle = Math.PI * ((double)fs_index / (double)NoFractureSets);
-                                        double HMinComponent = Math.Pow(Math.Cos(relativeAngle), 2);
-                                        double HMaxComponent = Math.Pow(Math.Sin(relativeAngle), 2);
-                                        Mode1_UniformAperture_in = (Mode1HMin_UniformAperture * HMinComponent) + (Mode1HMax_UniformAperture * HMaxComponent);
-                                        Mode2_UniformAperture_in = (Mode2HMin_UniformAperture * HMinComponent) + (Mode2HMax_UniformAperture * HMaxComponent);
-                                        Mode1_SizeDependentApertureMultiplier_in = (Mode1HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode1HMax_SizeDependentApertureMultiplier * HMaxComponent);
-                                        Mode2_SizeDependentApertureMultiplier_in = (Mode2HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode2HMax_SizeDependentApertureMultiplier * HMaxComponent);
-                                    }
-                                    gc.FractureSets[fs_index].SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
-
-#if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.FractureSets[{0}].SetFractureApertureControlData(({1}, {2}, {3}, {4});", fs_index, Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in));
-#endif
-                                }
 
                                 // Add the deformation load data 
                                 for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
@@ -3149,9 +3117,61 @@ namespace DFMGenerator_Ocean
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
                                     }
 #endif
-                                }// End get the stress / strain data from the grid as required
+                                }// End add the deformation load data
 
-                                // Add to grid
+                                // Create the fracture sets
+                                if (Mode1Only)
+                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
+                                else if (Mode2Only)
+                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
+                                else
+                                    gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
+
+#if DEBUG_FRACS
+                                if (Mode1Only)
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
+                                else if (Mode2Only)
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
+                                else
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
+#endif
+
+                                // Set the fracture aperture control data for fracture porosity calculation
+                                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                                {
+                                    double Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in;
+                                    if (fs_index == 0)
+                                    {
+                                        Mode1_UniformAperture_in = Mode1HMin_UniformAperture;
+                                        Mode2_UniformAperture_in = Mode2HMin_UniformAperture;
+                                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMin_SizeDependentApertureMultiplier;
+                                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMin_SizeDependentApertureMultiplier;
+                                    }
+                                    else if ((fs_index == (NoFractureSets / 2)) && ((NoFractureSets % 2) == 0))
+                                    {
+                                        Mode1_UniformAperture_in = Mode1HMax_UniformAperture;
+                                        Mode2_UniformAperture_in = Mode2HMax_UniformAperture;
+                                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMax_SizeDependentApertureMultiplier;
+                                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMax_SizeDependentApertureMultiplier;
+                                    }
+                                    else
+                                    {
+                                        double relativeAngle = Math.PI * ((double)fs_index / (double)NoFractureSets);
+                                        double HMinComponent = Math.Pow(Math.Cos(relativeAngle), 2);
+                                        double HMaxComponent = Math.Pow(Math.Sin(relativeAngle), 2);
+                                        Mode1_UniformAperture_in = (Mode1HMin_UniformAperture * HMinComponent) + (Mode1HMax_UniformAperture * HMaxComponent);
+                                        Mode2_UniformAperture_in = (Mode2HMin_UniformAperture * HMinComponent) + (Mode2HMax_UniformAperture * HMaxComponent);
+                                        Mode1_SizeDependentApertureMultiplier_in = (Mode1HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode1HMax_SizeDependentApertureMultiplier * HMaxComponent);
+                                        Mode2_SizeDependentApertureMultiplier_in = (Mode2HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode2HMax_SizeDependentApertureMultiplier * HMaxComponent);
+                                    }
+                                    gc.FractureSets[fs_index].SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
+
+#if DEBUG_FRACS
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.FractureSets[{0}].SetFractureApertureControlData(({1}, {2}, {3}, {4});", fs_index, Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in));
+#endif
+                                }
+
+                                // Add the gridblock to the grid
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
 
 #if DEBUG_FRACS
@@ -3177,6 +3197,8 @@ namespace DFMGenerator_Ocean
 
                         // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
                         // NB In this case the DFNGenerationControl will ignore the specified NoIntermediateOutputs value; we recalculate it here only for internal use
+                        // Also create a local list of output stage name overrides
+                        List<string> OutputStageNameOverride = new List<string>();
                         if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
                         {
                             List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
@@ -3188,6 +3210,7 @@ namespace DFMGenerator_Ocean
                                 if (SubEpisodesDefined_list[deformationEpisodeNo])
                                 {
                                     List<double> subEpisodeDurations_GeologicalTime = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                    List<string> subEpisodeNameOverrides = SubEpisodeNameOverride_list[deformationEpisodeNo];
                                     int noSubEpisodes = subEpisodeDurations_GeologicalTime.Count;
                                     for (int subEpisodeNo = 0; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
                                     {
@@ -3196,6 +3219,7 @@ namespace DFMGenerator_Ocean
                                         {
                                             currentEpisodeEndTime += (subEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
                                             DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                            OutputStageNameOverride.Add(subEpisodeNameOverrides[subEpisodeNo]);
                                             NoIntermediateOutputs++;
                                         }
                                     }
@@ -3207,6 +3231,7 @@ namespace DFMGenerator_Ocean
                                     {
                                         currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
                                         DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                        OutputStageNameOverride.Add(null);
                                         NoIntermediateOutputs++;
                                     }
                                 }
@@ -3217,7 +3242,7 @@ namespace DFMGenerator_Ocean
                             string setIntermediateTimes = "dfn_control.IntermediateOutputTimes = {";
                             foreach (double nextEndTime in DeformationEpisodeEndTimes_SITimeUnits_list)
                                 setIntermediateTimes += string.Format(" {0},", nextEndTime);
-                            setIntermediateTimes.TrimEnd(',');
+                            setIntermediateTimes = setIntermediateTimes.TrimEnd(',');
                             setIntermediateTimes += " }";
                             PetrelLogger.InfoOutputWindow(setIntermediateTimes);
 #endif
@@ -3240,6 +3265,8 @@ namespace DFMGenerator_Ocean
                             PetrelLogger.InfoOutputWindow("Start calculating implicit data");
                             progressBar.SetProgressText("Calculating implicit data");
                             ModelGrid.CalculateAllFractureData(progressBarWrapper);
+                            if (ModelGrid.HitTimestepLimit)
+                                PetrelLogger.InfoOutputWindow("The calculation stopped before completion in one or more cells as the timestep limit was exceeded. To prevent this, adjust the calculation termination criteria on the Control Parameters tab.");
                         }
 
                         // Calculate explicit DFN - unless the calculation has already been cancelled
@@ -3282,10 +3309,8 @@ namespace DFMGenerator_Ocean
 
                                 // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
                                 int NoStages = NoIntermediateOutputs + 1;
-                                int NoSets = NoFractureSets;
-                                int NoDipSets = ((Mode1Only || Mode2Only) ? 1 : 2);
                                 int NoCalculationElementsCompleted = 0;
-                                int NoElements = NoActiveGridblocks * ((NoSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoSets * NoDipSets) + 1 : 0) + (CalculateFracturePorosity ? 1 : 0));
+                                int NoElements = NoActiveGridblocks * ((NoFractureSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoFractureSets * NoDipSets) + 1 : 0) + (CalculateFracturePorosity ? 1 : 0));
                                 NoElements *= NoStages;
                                 // Bulk rock elastic tensors are only output for the final stage
                                 if (OutputBulkRockElasticTensors)
@@ -3306,11 +3331,13 @@ namespace DFMGenerator_Ocean
                                     // Get the endtime for the current stage
                                     // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
                                     double stageEndTime = 0;
+                                    string stageNameOverride = null;
                                     switch (IntermediateOutputIntervalControl)
                                     {
                                         case IntermediateOutputInterval.SpecifiedTime:
                                             double nextListValue = dfn_control.GetIntermediateOutputTime(stageNumber - 1); // List of intermediate outputs is zero-based
                                             stageEndTime = (!double.IsNaN(nextListValue) ? nextListValue : endTime); // If the next list value is NaN (i.e. we have reached the end of the list), used the end time instead
+                                            stageNameOverride = (stageNumber <= OutputStageNameOverride.Count ? OutputStageNameOverride[stageNumber - 1] : "_final");
                                             break;
                                         case IntermediateOutputInterval.EqualTime:
                                             stageEndTime = (stageNumber * endTime) / NoStages;
@@ -3328,7 +3355,11 @@ namespace DFMGenerator_Ocean
                                     }
 
                                     // Create a stage-specific label for the output file
-                                    string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(stageEndTime), ProjectTimeUnits));
+                                    string outputLabel;
+                                    if (stageNameOverride is null)
+                                        outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(stageEndTime), ProjectTimeUnits));
+                                    else
+                                        outputLabel = "_" + stageNameOverride;
 
 #if DEBUG_FRACS
                                     PetrelLogger.InfoOutputWindow("");
@@ -3364,7 +3395,7 @@ namespace DFMGenerator_Ocean
                                         for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                         {
                                             // Create a subfolder for the fracture dip set
-                                            string dipsetLabel = (Mode2Only || (DipSetNo > 0)) ? "Inclined" : "Vertical";
+                                            string dipsetLabel = (DipSetNo < DipSetLabels.Count ? DipSetLabels[DipSetNo] : "");
                                             string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
                                             PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
 
@@ -4091,8 +4122,16 @@ namespace DFMGenerator_Ocean
                                 int NoStages = ModelGrid.DFNGrowthStages.Count;
                                 foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                 {
+                                    string stageNameOverride = null;
+                                    if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
+                                        stageNameOverride = (stageNumber <= OutputStageNameOverride.Count ? OutputStageNameOverride[stageNumber - 1] : "_final");
+
                                     // Create a stage-specific label for the output file
-                                    string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
+                                    string outputLabel;
+                                    if (stageNameOverride is null)
+                                        outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
+                                    else
+                                        outputLabel = "_" + stageNameOverride;
 
                                     // Create a new fracture network object
                                     FractureNetwork fractureNetwork;

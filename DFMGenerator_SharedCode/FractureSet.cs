@@ -5246,6 +5246,87 @@ namespace DFMGenerator_SharedCode
             }
         }
 
+        // Functions to return default numbers of and labels for dipsets
+        /// <summary>
+        /// Get the default number of fracture dipsets that will be created for the given parameters
+        /// </summary>
+        /// <param name="Mode1Only">Flag to generate Mode 1 vertical fractures only</param>
+        /// <param name="Mode2Only">Flag to generate Mode 2 inclined fractures only</param>
+        /// <param name="BiazimuthalConjugate">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <returns>Default number of fracture dipsets</returns>
+        public static int DefaultDipSets(bool Mode1Only, bool Mode2Only, bool BiazimuthalConjugate, bool IncludeReverseFractures)
+        {
+            if (Mode1Only)
+                return 1;
+            else if (Mode2Only)
+                return 1;
+            else
+            {
+                if (BiazimuthalConjugate)
+                {
+                    if (IncludeReverseFractures)
+                        return 3;
+                    else
+                        return 2;
+                }
+                else
+                {
+                    if (IncludeReverseFractures)
+                        return 5;
+                    else
+                        return 3;
+                }
+            }
+        }
+        /// <summary>
+        /// Get a list of default labels for the fracture dipsets that will be created for the given parameters
+        /// </summary>
+        /// <param name="Mode1Only">Flag to generate Mode 1 vertical fractures only</param>
+        /// <param name="Mode2Only">Flag to generate Mode 2 inclined fractures only</param>
+        /// <param name="BiazimuthalConjugate">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <returns>List of strings representing default labels for each of the fracture dipsets, in order of index number</returns>
+        public static List<string> DefaultDipSetLabels(bool Mode1Only, bool Mode2Only, bool BiazimuthalConjugate, bool IncludeReverseFractures)
+        {
+            List<string> output = new List<string>();
+            if (Mode1Only)
+            {
+                output.Add("Vertical");
+            }
+            else if (Mode2Only)
+            {
+                output.Add("InclinedNormal");
+            }
+            else
+            {
+                output.Add("Vertical");
+                if (BiazimuthalConjugate)
+                {
+                    output.Add("InclinedNormal");
+                }
+                else
+                {
+                    output.Add("InclinedNormal_R");
+                    output.Add("InclinedNormal_L");
+                }
+                if (IncludeReverseFractures)
+                {
+                    if (BiazimuthalConjugate)
+                    {
+                        output.Add("InclinedReverse");
+                    }
+                    else
+                    {
+                        output.Add("InclinedReverse_R");
+                        output.Add("InclinedReverse_L");
+                    }
+                }
+
+            }
+            return output;
+        }
+
         // Constructors
         /// <summary>
         /// Default constructor: Create an empty fracture set
@@ -5310,18 +5391,18 @@ namespace DFMGenerator_SharedCode
             opt_dip = ((Math.PI / 2) + Math.Atan(gbc.MechProps.MuFr)) / 2;
             if (BiazimuthalConjugate_in)
             {
+                // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
+                FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+                FractureDipSets.Add(DipSet2);
+            }
+            else
+            {
                 // Create two optimally oriented Mode 2 dip sets and add them to the list
                 FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
                 FractureDipSets.Add(DipSet2);
 
                 FractureDipSet DipSet3 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, -opt_dip, B_in / 2, c_in);
                 FractureDipSets.Add(DipSet3);
-            }
-            else
-            {
-                // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
-                FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
-                FractureDipSets.Add(DipSet2);
             }
 
             // If reverse fractures are allowed, create one or two additional low angle shear dip sets optimally oriented for reverse displacement
@@ -5331,18 +5412,18 @@ namespace DFMGenerator_SharedCode
                 opt_dip = ((Math.PI / 2) + Math.Atan(gbc.MechProps.MuFr)) / 2;
                 if (BiazimuthalConjugate_in)
                 {
+                    // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
+                    FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+                    FractureDipSets.Add(DipSet4);
+                }
+                else
+                {
                     // Create two optimally oriented Mode 2 dip sets and add them to the list
                     FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
                     FractureDipSets.Add(DipSet4);
 
                     FractureDipSet DipSet5 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, -opt_dip, B_in / 2, c_in);
                     FractureDipSets.Add(DipSet5);
-                }
-                else
-                {
-                    // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
-                    FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
-                    FractureDipSets.Add(DipSet4);
                 }
             }
 
