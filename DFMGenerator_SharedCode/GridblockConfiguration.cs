@@ -1041,26 +1041,39 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public int HMax_FractureSet_Index { get { return NoFractureSets / 2; } }
         /// <summary>
-        /// Get a name for a specified fracture set, indicating its orientation
+        /// Get a name for a specified fracture set in this gridblock, indicating its orientation
         /// </summary>
         /// <param name="indexNo">Index number of the fracture set</param>
         /// <returns>String representing the fracture set name</returns>
         public string getFractureSetName(int indexNo)
         {
+            return getFractureSetName(indexNo, NoFractureSets);
+        }
+        /// <summary>
+        /// Get a name for a specified fracture set in a generic gridblock, indicating its orientation
+        /// </summary>
+        /// <param name="indexNo">Index number of the fracture set</param>
+        /// <param name="noFractureSets">Total number of fracture sets in the gridblock</param>
+        /// <returns>String representing the fracture set name</returns>
+        public static string getFractureSetName(int indexNo, int noFractureSets)
+        {
+            int hMin_FractureSet_Index = 0;
+            int hMax_FractureSet_Index = noFractureSets / 2;
+
             string name;
-            if (NoFractureSets == 1)
+            if (noFractureSets == 1)
                 name = "HMin";
-            else if (indexNo < HMax_FractureSet_Index)
+            else if (indexNo < hMax_FractureSet_Index)
             {
                 name = "HMin";
-                if (indexNo > HMin_FractureSet_Index)
-                    name += string.Format("+{0}deg", (indexNo - HMin_FractureSet_Index) * (180 / NoFractureSets));
+                if (indexNo > hMin_FractureSet_Index)
+                    name += string.Format("+{0}deg", (indexNo - hMin_FractureSet_Index) * (180 / noFractureSets));
             }
             else
             {
                 name = "HMax";
-                if (indexNo > HMax_FractureSet_Index)
-                    name += string.Format("+{0}deg", (indexNo - HMax_FractureSet_Index) * (180 / NoFractureSets));
+                if (indexNo > hMax_FractureSet_Index)
+                    name += string.Format("+{0}deg", (indexNo - hMax_FractureSet_Index) * (180 / noFractureSets));
             }
             return name;
         }
@@ -1469,13 +1482,13 @@ namespace DFMGenerator_SharedCode
             } // End loop through each fracture set K
         }
         /// <summary>
-                 /// Get the mean width of the exclusion zone around fractures from set I, as seen by a propagating fracture from dipset J, during a specified timestep
-                 /// </summary>
-                 /// <param name="fsI">Fracture set of the intersecting fractures</param>
-                 /// <param name="fsJ">Fracture set containing the propagating fracture</param>
-                 /// <param name="dipSetJ">Fracture dipset containing the propagating fracture</param>
-                 /// <param name="Timestep_M">Timestep during which the fractures are propagating; set to -1 to use current data</param>
-                 /// <returns></returns>
+        /// Get the mean width of the exclusion zone around fractures from set I, as seen by a propagating fracture from dipset J, during a specified timestep
+        /// </summary>
+        /// <param name="fsI">Fracture set of the intersecting fractures</param>
+        /// <param name="fsJ">Fracture set containing the propagating fracture</param>
+        /// <param name="dipSetJ">Fracture dipset containing the propagating fracture</param>
+        /// <param name="Timestep_M">Timestep during which the fractures are propagating; set to -1 to use current data</param>
+        /// <returns></returns>
         public double getCrossFSExclusionZoneWidth(Gridblock_FractureSet fsI, Gridblock_FractureSet fsJ, FractureDipSet dipSetJ, int Timestep_M)
         {
             // Get the index number of timestep M-1, so we can retrieve MFP32 values for the end of the previous timestep
@@ -1705,7 +1718,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
         /// </summary>
-        public double Initial_uF_factor {  get {  return (MechProps.GetbType() == bType.Equals2 ? Math.Log(MaximumMicrofractureRadius) : Math.Pow(MaximumMicrofractureRadius, 1 / MechProps.beta)); } }
+        public double Initial_uF_factor { get { return (MechProps.GetbType() == bType.Equals2 ? Math.Log(MaximumMicrofractureRadius) : Math.Pow(MaximumMicrofractureRadius, 1 / MechProps.beta)); } }
 
         // Functions to return fracture anisotropy and connectivity indices
         /// <summary>
@@ -1967,6 +1980,8 @@ namespace DFMGenerator_SharedCode
                 String namecomb = PropControl.FolderPath + fileName;
                 outputFile = new StreamWriter(namecomb);
             }
+            bool useSetNames = false;
+            bool useDipSetNames = true;
 
             // Write header to logfile
             if (writeImplicitDataToFile)
@@ -1988,10 +2003,11 @@ namespace DFMGenerator_SharedCode
                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
                 {
                     Gridblock_FractureSet fs = FractureSets[fs_index];
-
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
+                    int NoDipSets = fs.FractureDipSets.Count();
+                    List<string> dipSetLabels = fs.DipSetLabels();
+                    for (int dipsetIndex = 0; dipsetIndex < NoDipSets; dipsetIndex++)
                     {
-                        headerLine1 += string.Format("FS {0} Dip {1}deg", getFractureSetName(fs_index), (int)(fds.Dip * (180 / Math.PI))) + FSheader1;
+                        headerLine1 += string.Format("FS {0} {1}", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex))) + FSheader1;
                         headerLine2 += FSheader2;
                         TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                     }
@@ -2047,6 +2063,23 @@ namespace DFMGenerator_SharedCode
                 // Update the index of the current deformation episode
                 currentDeformationEpisodeIndex++;
 
+                // Flag for whether to stop the calculation when all sets have been deactivated
+                // By default we will continue until the end of the specified deformation duration
+                bool StopWhenAllSetsDeactivated = false;
+
+                // Get the deformation episode duration
+                double CurrentDeformationEpisodeDuration = currentDeformationEpisode.DeformationEpisodeDuration;
+                // If the deformation stage duration is negative or NaN, then we will stop automatically when all fracture sets have been deactivated
+                // We will set the deformation stage duration to infinity and set the calculation to stop automatically when all sets have been deactivated
+                if (double.IsNaN(CurrentDeformationEpisodeDuration) || (CurrentDeformationEpisodeDuration < 0))
+                {
+                    CurrentDeformationEpisodeDuration = double.PositiveInfinity;
+                    StopWhenAllSetsDeactivated = true;
+                }
+                // Calculate the end time of the current deformation episode
+                // If the current deformation episode duration is uncertain (infinite) then the current deformation episode end time will also be set to infinity
+                double CurrentDeformationEpisodeEndTime = endLastTimestep + CurrentDeformationEpisodeDuration;
+
                 // Check if the load for this deformation episode is defined by strain or stress
                 // NB some dynamic loads may still be defined in terms of strain, if only the fluid pressure and/or vertical stress are defined dynamically
                 // Loads will only be defined in terms of stress is at a minimum the ZZ, XX, YY and XY components of the absolute stress rate tensor are defined
@@ -2076,6 +2109,27 @@ namespace DFMGenerator_SharedCode
                     // Since the stress load is defined in terms the absolute stress, we will need to subtract the fluid pressure rate from the XX, YY and ZZ components
                     Tensor2S appliedEffectiveStressRate = currentDeformationEpisode.Absolute_Stress_dashed - new Tensor2S(-fluidPressureRate, -fluidPressureRate, -fluidPressureRate, 0, 0, 0);
                     StressStrain.Sigma_eff_dashed = appliedEffectiveStressRate;
+
+                    // Recalculate the tensors for current elastic strain and rate of change of elastic strain
+                    // The method for doing this will depend on the stress distribution scenario
+                    switch (SD)
+                    {
+                        case StressDistribution.EvenlyDistributedStress:
+                            // In the evenly distributed stress scenario, the bulk rock compliance tensor will change as the fractures grow
+                            // We must therefore use the current bulk rock compliance tensor to recalculate the stress tensors
+                            StressStrain.RecalculateStrain(S_beff);
+                            break;
+                        case StressDistribution.StressShadow:
+                            // In the stress shadow scenario, the bulk compliance tensor is isotropic and does not change
+                            // We can therefore recalculate the strain tensors from just the Young's Modulus and Poisson's ratio of the host rock
+                            StressStrain.RecalculateStrain(E_r, Nu_r);
+                            break;
+                        case StressDistribution.DuctileBoundary:
+                            // Not yet implemented
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 else
                 {
@@ -2144,19 +2198,6 @@ namespace DFMGenerator_SharedCode
                             }
                         }
                     }
-                }
-
-                // Get the deformation episode duration
-                double CurrentDeformationEpisodeEndTime = endLastTimestep + currentDeformationEpisode.DeformationEpisodeDuration;
-                // Flag for whether to stop the calculation when all sets have been deactivated
-                // By default we will continue until the end of the specified deformation duration
-                bool StopWhenAllSetsDeactivated = false;
-                // If the deformation stage duration is negative, then we will stop automatically when all fracture sets have been deactivated
-                // We will set the deformation stage duration to infinity and set the calculation to stop automatically when all sets have been deactivated
-                if (CurrentDeformationEpisodeEndTime < 0)
-                {
-                    CurrentDeformationEpisodeEndTime = double.PositiveInfinity;
-                    StopWhenAllSetsDeactivated = true;
                 }
 
                 // Loop through the timesteps
@@ -2527,8 +2568,8 @@ namespace DFMGenerator_SharedCode
                         // Write timestep data
                         timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, minMaxElStrain[0], minMaxElStrain[1], minMaxTotStrain[0], minMaxTotStrain[1]);
 #if LOGDFNPOP
-                    timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_eff.Component(Tensor2SComponents.XX), StressStrain.Sigma_eff.Component(Tensor2SComponents.YY), StressStrain.Sigma_eff.Component(Tensor2SComponents.XY), StressStrain.Sigma_eff.Component(Tensor2SComponents.ZZ));
-                    //timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_dashed.Component(Tensor2SComponents.XX), StressStrain.Sigma_dashed.Component(Tensor2SComponents.YY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.XY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.ZZ));
+                        timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_eff.Component(Tensor2SComponents.XX), StressStrain.Sigma_eff.Component(Tensor2SComponents.YY), StressStrain.Sigma_eff.Component(Tensor2SComponents.XY), StressStrain.Sigma_eff.Component(Tensor2SComponents.ZZ));
+                        //timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_dashed.Component(Tensor2SComponents.XX), StressStrain.Sigma_dashed.Component(Tensor2SComponents.YY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.XY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.ZZ));
 #endif
                         // Write data for each fracture set
                         foreach (Gridblock_FractureSet fs in FractureSets)
@@ -2539,12 +2580,12 @@ namespace DFMGenerator_SharedCode
                                 fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
                                     fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #if LOGDFNPOP
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), 
-                                fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getPhi(), fds.getInstantaneousF(), fds.getMeanMFPropagationRate(), fds.getConstantDrivingStressU(), fds.getVariableDrivingStressV(), 
-                            //    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolume());
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
-                            //    fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolume(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
+                                    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getPhi(), fds.getInstantaneousF(), fds.getMeanMFPropagationRate(), fds.getConstantDrivingStressU(), fds.getVariableDrivingStressV(), 
+                                //    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolume());
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
+                                //    fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolume(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #endif
                                 timestepData = timestepData + fractureSetData;
                             }
@@ -2672,8 +2713,13 @@ namespace DFMGenerator_SharedCode
                         maxIndexLength = (maxHMinLength * HMinComponent) + (maxHMaxLength * HMaxComponent);
                     }
 
-                    foreach (FractureDipSet fds in fs.FractureDipSets)
+                    int NoDipSets = fs.FractureDipSets.Count();
+                    List<string> dipSetLabels = fs.DipSetLabels();
+                    for (int dipsetIndex = 0; dipsetIndex < NoDipSets; dipsetIndex++)
                     {
+                        // Get a reference to the fracture dip set object
+                        FractureDipSet fds = fs.FractureDipSets[dipsetIndex];
+
                         // Check to see if a maximum length has been set for the macrofracture cumulative population distribution function index values
                         if (maxIndexLength > 0) // If a maximum length has been set, generate the halflength index array manually
                         {
@@ -2725,7 +2771,7 @@ namespace DFMGenerator_SharedCode
                         if (writeImplicitDataToFile)
                         {
                             // Create strings for header data and write to file
-                            string headerData = string.Format("FS {0} Dip {1}deg", fs_index, (int)(fds.Dip * (180 / Math.PI)));
+                            string headerData = string.Format("FS {0} {1}", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex)));
                             outputFile.WriteLine(headerData);
 
                             // Write macrofracture data
@@ -2806,7 +2852,7 @@ namespace DFMGenerator_SharedCode
                 outputFile.WriteLine("Terminating fracture dipset (Jm):\tPropagating fracture set (I):");
                 string headerLine = "\t";
                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
-                    headerLine += string.Format("FS {0}\t", fs_index);
+                    headerLine += string.Format("FS {0}\t", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()));
                 outputFile.WriteLine(headerLine);
 
                 // Write table data
@@ -2823,7 +2869,7 @@ namespace DFMGenerator_SharedCode
                         outputFile.WriteLine(tableRow);
                     }
                 }
-            } 
+            }
 
             // Close the log file
             if (writeImplicitDataToFile)
@@ -3229,7 +3275,7 @@ namespace DFMGenerator_SharedCode
                                                 addThisFracture = false;
                                             }
                                         }
-                                    } 
+                                    }
                                 } // End check macrofractures from adjacent gridblocks
                             } // End check whether this point lies in the stress shadow of an existing macrofracture
 
@@ -3921,8 +3967,40 @@ namespace DFMGenerator_SharedCode
             }
 
             // Get a reference to the fracture dip set for the new segment
-            // We will assume both fracture sets contain equivalent dip sets with the same index numbers
-            int newSegment_DipSetIndex = initiatorSegment.FractureDipSetIndex;
+            int newSegment_DipSetIndex;
+            int noNewFSDipSets = newSegment_fs.FractureDipSets.Count;
+            int initiatorSegmentDipSet = initiatorSegment.FractureDipSetIndex;
+            // If there is an equivalent dipset number in the new segment, and the dip of the equivalent dipset lies within the allowed range, then we will assign the new segment to the equivalent dipset
+            if ((initiatorSegmentDipSet < noNewFSDipSets) && (Math.Abs(initiatorSegment.getDip() - newSegment_fs.FractureDipSets[initiatorSegmentDipSet].Dip) <= maxAngularDifference))
+            {
+                newSegment_DipSetIndex = initiatorSegmentDipSet;
+            }
+            else // Otherwise we will find the dipset that best matches the initiator segment dip
+            {
+                newSegment_DipSetIndex = 0;
+                double dipVariability = double.PositiveInfinity;
+                for (int dipSetNo = 0; dipSetNo < noNewFSDipSets; dipSetNo++)
+                {
+                    FractureDipSet test_fds = newSegment_fs.FractureDipSets[dipSetNo];
+                    double test_DipVariability = Math.Abs(initiatorSegment.getDip() - test_fds.Dip);
+                    if (test_DipVariability < dipVariability)
+                    {
+                        dipVariability = test_DipVariability;
+                        newSegment_DipSetIndex = dipSetNo;
+                    }
+                    // For biazimuthal conjugate sets, also check if a match can be made by inverting the dip direction
+                    if (test_fds.BiazimuthalConjugate)
+                    {
+                        test_DipVariability = Math.Abs(Math.PI - initiatorSegment.getDip() - test_fds.Dip);
+                        if (test_DipVariability < dipVariability)
+                        {
+                            dipVariability = test_DipVariability;
+                            newSegment_DipSetIndex = dipSetNo;
+                            newSegment_DipDir = (newSegment_DipDir == DipDirection.JPlus ? DipDirection.JMinus : DipDirection.JPlus);
+                        }
+                    }
+                }
+            }
 
             // Find the nucleation timestep of the new fracture segment by checking the real nucleation time of the new segment
             // Since the gridblocks have independent timesteps, this may be earlier than the current timestep reached in the calculation of this gridblock

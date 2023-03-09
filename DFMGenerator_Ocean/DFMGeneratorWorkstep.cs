@@ -16,14 +16,16 @@ using Slb.Ocean.Petrel;
 using Slb.Ocean.Petrel.UI;
 using Slb.Ocean.Petrel.Workflow;
 using Slb.Ocean.Petrel.DomainObject.PillarGrid;
-using Slb.Ocean.Petrel.Data;
-using Slb.Ocean.Petrel.Data.Persistence;
 using Slb.Ocean.Basics;
 using Slb.Ocean.Geometry;
 using Slb.Ocean.Petrel.DomainObject;
 using Slb.Ocean.Petrel.DomainObject.Shapes;
 using Slb.Ocean.Units;
 using Slb.Ocean.Petrel.DomainObject.Simulation;
+#if MANAGED_PERSISTENCE
+using Slb.Ocean.Petrel.Data;
+using Slb.Ocean.Petrel.Data.Persistence;
+#endif
 
 using DFMGenerator_SharedCode;
 
@@ -35,7 +37,7 @@ namespace DFMGenerator_Ocean
     /// </summary>
     class DFMGeneratorWorkstep : Workstep<DFMGeneratorWorkstep.Arguments>, IExecutorSource, IAppearance, IDescriptionSource
     {
-        #region Overridden Workstep methods
+#region Overridden Workstep methods
 
         /// <summary>
         /// Creates an empty Argument instance
@@ -68,9 +70,9 @@ namespace DFMGenerator_Ocean
                 return "JointFlow.DFMGenerator_Code.DFMGenerator_Ocean.DFMGenerator";
             }
         }
-        #endregion
+#endregion
 
-        #region IExecutorSource Members and Executor class
+#region IExecutorSource Members and Executor class
 
         /// <summary>
         /// Creates the Executor instance for this workstep. This class will do the work of the Workstep.
@@ -1198,9 +1200,9 @@ namespace DFMGenerator_Ocean
                             generalInputParams += string.Format("Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
                         if (UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo])
                         {
-                            generalInputParams += string.Format("Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, XY stress from {3}, ZZ stress from {4}", activeCase.Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", activeCase.Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
                             if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
-                                generalInputParams += string.Format(", ZX stress from {0}, YZ stress from {1}\n", activeCase.Name, Szx_result_list[deformationEpisodeNo].Name, Syz_result_list[deformationEpisodeNo].Name);
+                                generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", activeCase.Name, Syz_result_list[deformationEpisodeNo].Name, Szx_result_list[deformationEpisodeNo].Name);
                             else
                                 generalInputParams += "\n";
                         }
@@ -3376,21 +3378,7 @@ namespace DFMGenerator_Ocean
                                     for (int FractureSetNo = 0; FractureSetNo < NoFractureSets; FractureSetNo++)
                                     {
                                         // Set a name for the fracture set
-                                        string FractureSetName;
-                                        if (NoFractureSets == 1)
-                                            FractureSetName = "HMin";
-                                        else if (FractureSetNo < hmax_index)
-                                        {
-                                            FractureSetName = "HMin";
-                                            if (FractureSetNo > hmin_index)
-                                                FractureSetName += string.Format("+{0}deg", (FractureSetNo - hmin_index) * (180 / NoFractureSets));
-                                        }
-                                        else
-                                        {
-                                            FractureSetName = "HMax";
-                                            if (FractureSetNo > hmax_index)
-                                                FractureSetName += string.Format("+{0}deg", (FractureSetNo - hmin_index) * (180 / NoFractureSets));
-                                        }
+                                        string FractureSetName = GridblockConfiguration.getFractureSetName(FractureSetNo, NoFractureSets);
 
                                         for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                         {
@@ -3436,6 +3424,11 @@ namespace DFMGenerator_Ocean
                                                     if (fractureGridCell == null)
                                                         continue;
 
+                                                    // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise move on to the next gridblock
+                                                    if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
+                                                        continue;
+                                                    FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
                                                     // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                     int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                                     int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
@@ -3444,7 +3437,6 @@ namespace DFMGenerator_Ocean
 
                                                     // Get data from GridblockConfiguration object
                                                     double cell_MF_P30_tot, cell_MF_P32_tot, cell_uF_P32_tot, cell_MF_MeanLength;
-                                                    FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
                                                     if (finalStage)
                                                     {
                                                         cell_MF_P30_tot = (fds.a_MFP30_total() + fds.sII_MFP30_total() + fds.sIJ_MFP30_total()) / 2;
@@ -3545,6 +3537,11 @@ namespace DFMGenerator_Ocean
                                                         if (fractureGridCell == null)
                                                             continue;
 
+                                                        // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise move on to the next gridblock
+                                                        if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
+                                                            continue;
+                                                        FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
                                                         // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                         int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                                         int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
@@ -3552,7 +3549,6 @@ namespace DFMGenerator_Ocean
                                                         int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
 
                                                         // Get data from GridblockConfiguration object
-                                                        FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
                                                         double UnconnectedTipRatio, RelayTipRatio, ConnectedTipRatio, EndTime;
                                                         if (finalStage)
                                                         {
@@ -4704,9 +4700,9 @@ namespace DFMGenerator_Ocean
             }
         }
 
-        #endregion
+#endregion
 
-        #region Arguments
+#region Arguments
         /// <summary>
         /// ArgumentPackage class for DFMGenerator.
         /// Each public property is an argument in the package.  The name, type and
@@ -9060,9 +9056,9 @@ namespace DFMGenerator_Ocean
             }
 #endif
         }
-        #endregion
+#endregion
 
-        #region IAppearance Members
+#region IAppearance Members
         public event EventHandler<TextChangedEventArgs> TextChanged;
         protected void RaiseTextChanged()
         {
@@ -9098,9 +9094,9 @@ namespace DFMGenerator_Ocean
                 this.RaiseImageChanged();
             }
         }
-        #endregion
+#endregion
 
-        #region IDescriptionSource Members
+#region IDescriptionSource Members
 
         /// <summary>
         /// Gets the description of the DFMGenerator
@@ -9128,7 +9124,7 @@ namespace DFMGenerator_Ocean
                 get { return instance; }
             }
 
-            #region IDescription Members
+#region IDescription Members
 
             /// <summary>
             /// Gets the name of DFMGenerator
@@ -9152,9 +9148,9 @@ namespace DFMGenerator_Ocean
                 get { return "Petrel UI for DFM Generator module"; }
             }
 
-            #endregion
+#endregion
         }
-        #endregion
+#endregion
 
         public class UIFactory : WorkflowEditorUIFactory
         {

@@ -346,11 +346,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Recalculate the azimuthal and horizontal shear strains acting on the fractures, for a specified strain or strain rate tensor
         /// </summary>
-        /// <param name="HorizontalStrainTensor">Current strain or strain rate tensor</param>
-        public void RecalculateHorizontalStrainRatios(Tensor2S HorizontalStrainTensor)
+        /// <param name="AppliedStrainTensor">Current strain or strain rate tensor</param>
+        public void RecalculateHorizontalStrainRatios(Tensor2S AppliedStrainTensor)
         {
-            VectorXYZ horizontalStrainOnFracture = HorizontalStrainTensor * azimuthVector;
-            VectorXYZ horizontalStrainAlongStrike = HorizontalStrainTensor * strikeVector;
+            VectorXYZ horizontalStrainOnFracture = AppliedStrainTensor * azimuthVector;
+            VectorXYZ horizontalStrainAlongStrike = AppliedStrainTensor * strikeVector;
             eaad = azimuthVector & horizontalStrainOnFracture;
             easd = strikeVector & horizontalStrainOnFracture;
             essd = strikeVector & horizontalStrainAlongStrike;
@@ -367,6 +367,11 @@ namespace DFMGenerator_SharedCode
             double ea_squared = eaa_squared + eas_squared;
             eaa2d_eh2d = (ea_squared > 0 ? eaa_squared / ea_squared : 1);
             eaaasd_eh2d = (ea_squared > 0 ? (eaad * easd) / ea_squared : 0);
+
+            // Recalculate the strain rations for non-biazimuthal dipsets individually
+            foreach (FractureDipSet fds in FractureDipSets)
+                if (!fds.BiazimuthalConjugate)
+                    fds.RecalculateStrainRatios(AppliedStrainTensor);
         }
 
         // Fracture data
@@ -5303,26 +5308,72 @@ namespace DFMGenerator_SharedCode
                 output.Add("Vertical");
                 if (BiazimuthalConjugate)
                 {
-                    output.Add("InclinedNormal");
+                    output.Add("InclinedSteep");
                 }
                 else
                 {
-                    output.Add("InclinedNormal_R");
-                    output.Add("InclinedNormal_L");
+                    output.Add("InclinedSteep_R");
+                    output.Add("InclinedSteep_L");
                 }
                 if (IncludeReverseFractures)
                 {
                     if (BiazimuthalConjugate)
                     {
-                        output.Add("InclinedReverse");
+                        output.Add("InclinedShallow");
                     }
                     else
                     {
-                        output.Add("InclinedReverse_R");
-                        output.Add("InclinedReverse_L");
+                        output.Add("InclinedShallow_R");
+                        output.Add("InclinedShallow_L");
                     }
                 }
 
+            }
+            return output;
+        }
+        /// <summary>
+        /// Get a list of labels for the fracture dipsets in this fracture set
+        /// </summary>
+        /// <returns>List of strings representing labels for each of the fracture dipsets, in order of index number</returns>
+        public List<string> DipSetLabels()
+        {
+            List<string> output = new List<string>();
+            foreach (FractureDipSet fds in FractureDipSets)
+            {
+                if ((float)fds.Dip <= 0f)
+                {
+                    output.Add("Horizontal");
+                }
+                else if ((float)fds.Dip < (float)(Math.PI / 4))
+                {
+                    if (fds.BiazimuthalConjugate)
+                        output.Add("InclinedShallow");
+                    else
+                        output.Add("InclinedShallow_R");
+                }
+                else if ((float)fds.Dip < (float)(Math.PI / 2))
+                {
+                    if (fds.BiazimuthalConjugate)
+                        output.Add("InclinedSteep");
+                    else
+                        output.Add("InclinedSteep_R");
+                }
+                else if ((float)fds.Dip == (float)(Math.PI / 2))
+                {
+                    output.Add("Vertical");
+                }
+                else if ((float)fds.Dip <= (float)(Math.PI * 3 / 4))
+                {
+                    output.Add("InclinedSteep_L");
+                }
+                else if ((float)fds.Dip < (float)(Math.PI))
+                {
+                    output.Add("InclinedShallow_L");
+                }
+                else
+                {
+                    output.Add("Horizontal");
+                }
             }
             return output;
         }
@@ -5401,7 +5452,7 @@ namespace DFMGenerator_SharedCode
                 FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
                 FractureDipSets.Add(DipSet2);
 
-                FractureDipSet DipSet3 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, -opt_dip, B_in / 2, c_in);
+                FractureDipSet DipSet3 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, Math.PI - opt_dip, B_in / 2, c_in);
                 FractureDipSets.Add(DipSet3);
             }
 
@@ -5409,7 +5460,7 @@ namespace DFMGenerator_SharedCode
             // NB If the friction coefficient is 0, optimally oriented reverse fractures will have the same orientation as optimally oriented normal fractures, so there is no need to create an extra set
             if (IncludeReverseFractures_in && (gbc.MechProps.MuFr > 0))
             {
-                opt_dip = ((Math.PI / 2) + Math.Atan(gbc.MechProps.MuFr)) / 2;
+                opt_dip = ((Math.PI / 2) - Math.Atan(gbc.MechProps.MuFr)) / 2;
                 if (BiazimuthalConjugate_in)
                 {
                     // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
@@ -5422,7 +5473,7 @@ namespace DFMGenerator_SharedCode
                     FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
                     FractureDipSets.Add(DipSet4);
 
-                    FractureDipSet DipSet5 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, -opt_dip, B_in / 2, c_in);
+                    FractureDipSet DipSet5 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, Math.PI - opt_dip, B_in / 2, c_in);
                     FractureDipSets.Add(DipSet5);
                 }
             }

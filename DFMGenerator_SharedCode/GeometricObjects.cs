@@ -1473,67 +1473,37 @@ namespace DFMGenerator_SharedCode
                 // This is especially important if the eigenvector is close to one of the X, Y and Z axes
                 // The optimal permutation is to calculate the indices in ascending order of the absolute values of the three diagonal components in the characteristic equation
 
-                // Calculate the absolute values of the three diagonal components in the characteristic equation
-                double xx_diagonal_abs = Math.Abs(components[Tensor2SComponents.XX] - eigenvalue);
-                double yy_diagonal_abs = Math.Abs(components[Tensor2SComponents.YY] - eigenvalue);
-                double zz_diagonal_abs = Math.Abs(components[Tensor2SComponents.ZZ] - eigenvalue);
-
-                // Put them in a list and sort them in ascending order
-                List<double> diagonals = new List<double>();
-                diagonals.Add(xx_diagonal_abs);
-                diagonals.Add(yy_diagonal_abs);
-                diagonals.Add(zz_diagonal_abs);
-                diagonals.Sort();
+                // Calculate the values of the three diagonal components in the characteristic equation
+                Dictionary<VectorComponents, double> diagonals = new Dictionary<VectorComponents, double>();
+                diagonals[VectorComponents.X] = components[Tensor2SComponents.XX] - eigenvalue;
+                diagonals[VectorComponents.Y] = components[Tensor2SComponents.YY] - eigenvalue;
+                diagonals[VectorComponents.Z] = components[Tensor2SComponents.ZZ] - eigenvalue;
 
                 // Create three indices i, j and k and assign them in ascending order of the absolute values of the three diagonal components in the characteristic equation
                 VectorComponents i, j, k;
-                if (xx_diagonal_abs == diagonals[0])
+                if ((Math.Abs(diagonals[VectorComponents.Z]) < Math.Abs(diagonals[VectorComponents.X])) && (Math.Abs(diagonals[VectorComponents.Z]) < Math.Abs(diagonals[VectorComponents.Y])))
                 {
                     i = VectorComponents.X;
-                    if (zz_diagonal_abs == diagonals[2])
-                    {
-                        j = VectorComponents.Y;
-                        k = VectorComponents.Z;
-                    }
-                    else
-                    {
-                        j = VectorComponents.Z;
-                        k = VectorComponents.Y;
-                    }
+                    j = VectorComponents.Y;
+                    k = VectorComponents.Z;
                 }
-                else if (yy_diagonal_abs == diagonals[0])
+                else if ((Math.Abs(diagonals[VectorComponents.Y]) < Math.Abs(diagonals[VectorComponents.X])) && (Math.Abs(diagonals[VectorComponents.Y]) < Math.Abs(diagonals[VectorComponents.Z])))
                 {
-                    i = VectorComponents.Y;
-                    if (zz_diagonal_abs == diagonals[2])
-                    {
-                        j = VectorComponents.X;
-                        k = VectorComponents.Z;
-                    }
-                    else
-                    {
-                        j = VectorComponents.Z;
-                        k = VectorComponents.X;
-                    }
+                    i = VectorComponents.Z;
+                    j = VectorComponents.X;
+                    k = VectorComponents.Y;
                 }
                 else
                 {
-                    i = VectorComponents.Z;
-                    if (yy_diagonal_abs == diagonals[2])
-                    {
-                        j = VectorComponents.X;
-                        k = VectorComponents.Y;
-                    }
-                    else
-                    {
-                        j = VectorComponents.Y;
-                        k = VectorComponents.X;
-                    }
+                    i = VectorComponents.Y;
+                    j = VectorComponents.Z;
+                    k = VectorComponents.X;
                 }
 
                 // Calculate the three components of the eigenvector
-                double ei = diagonals[1] - (Math.Pow(Component(j, k), 2) / diagonals[2]);
-                double ej = ((Component(i, k) * Component(j, k)) / diagonals[2]) - Component(i, j);
-                double ek = ((Component(i, j) * Component(j, k)) - (Component(i, k) * diagonals[1])) / diagonals[2];
+                double ei = (Component(i, j) * Component(j, k)) - (Component(i, k) * diagonals[j]);
+                double ej = (Component(i, k) * Component(i, j)) - (Component(j, k) * diagonals[i]);
+                double ek = (diagonals[i] * diagonals[j]) - Math.Pow(Component(i, j), 2);
 
                 // Combine them to form a vector
                 VectorXYZ eigenvector = new VectorXYZ(0, 0, 0);

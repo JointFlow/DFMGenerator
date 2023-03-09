@@ -1260,6 +1260,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double s_MFP33(int index) { return (Math.PI / 4) * gbc.ThicknessAtDeformation * s_MFP32(index); }
 
+        // Dynamic and geomechanical data
         /// <summary>
         /// Unit vector for the direction of shear stress on the fracture surface
         /// </summary>
@@ -1431,22 +1432,36 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase.DoubleShearColumnComponents();
 
                             // Recalculate fracture mode factors
-                            double sindip = Math.Sin(Dip);
-                            double cosdip = Math.Cos(Dip);
-                            Maa = sindip;
-                            Mas = 0;
-                            Mss = sindip / 2;
-                            Mav = 0;
-                            Mva = 0;
-                            Mvv = Math.Pow(cosdip, 2) / sindip;
-                            Mhh = (fs.eaa2d_eh2d * Maa) + (fs.eaaasd_eh2d * Mas) + (fs.eas2d_eh2d * Mss);
+                            if (BiazimuthalConjugate)
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double Maa = sindip;
+                                double Mas = 0;
+                                double Mss = sindip / 2;
+                                Maa_eaa2d_eh2d = fs.eaa2d_eh2d * Maa;
+                                Mas_eaaasd_eh2d = fs.eaaasd_eh2d * Mas;
+                                Mss_eas2d_eh2d = fs.eas2d_eh2d * Mss;
+                            }
+                            else
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
+                                double Mff = Math.Pow(oneMinusNur, 2) / oneMinus2Nur;
+                                double Mfw = 0;
+                                double Mww = oneMinusNur / 2;
+                                double Mfs = 0;
+                                double Mss = 1 / 2;
+                                Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
+                                Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
+                                Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
+                            }
+
                             // Remove rounding errors
                             {
-                                double Mtot = Maa + Mas + Mss;
-                                if ((float)(Mtot + Maa) == (float)Mtot) Maa = 0;
-                                if ((float)(Mtot + Mss) == (float)Mtot) Mss = 0;
-                                if ((float)(Mtot + Mhh) == (float)Mtot) Mhh = 0;
-                                if ((float)(Mtot + Mvv) == (float)Mtot) Mvv = 0;
+                                double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
+                                if ((float)(Mtot + Maa_eaa2d_eh2d) == (float)Mtot) Maa_eaa2d_eh2d = 0;
+                                if ((float)(Mtot + Mas_eaaasd_eh2d) == (float)Mtot) Mas_eaaasd_eh2d = 0;
+                                if ((float)(Mtot + Mss_eas2d_eh2d) == (float)Mtot) Mss_eas2d_eh2d = 0;
                             }
                         }
                         break;
@@ -1470,8 +1485,6 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase.DoubleShearColumnComponents();
 
                             // Recalculate fracture mode factors
-                            double sindip = Math.Sin(Dip);
-                            double cosdip = Math.Cos(Dip);
                             double sinpitch, cospitch;
                             if (double.IsNaN(ShearStressPitch))
                             {
@@ -1483,21 +1496,37 @@ namespace DFMGenerator_SharedCode
                                 sinpitch = Math.Sin(ShearStressPitch);
                                 cospitch = Math.Cos(ShearStressPitch);
                             }
-                            Maa = cosdip * ((sindip * cosdip) - (mufr * sinpitch * Math.Pow(sindip, 2)));
-                            Mas = -(mufr / oneMinusNur / 2) * cospitch * Math.Pow(sindip, 2);
-                            Mss = sindip / 2;
-                            Mav = -Maa;
-                            Mvv = cosdip * ((sindip * cosdip) + (mufr * sinpitch * Math.Pow(cosdip, 2)));
-                            Mva = -Mvv;
-                            Mhh = (fs.eaa2d_eh2d * Maa) + (fs.eaaasd_eh2d * Mas) + (fs.eas2d_eh2d * Mss);
+                            if (BiazimuthalConjugate)
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double cosdip = Math.Cos(Dip);
+                                double sincosdip = sindip * cosdip;
+                                double Maa = cosdip * (sincosdip - (mufr * sinpitch * Math.Pow(sindip, 2)));
+                                double Mas = -(mufr / oneMinusNur / 2) * cospitch * Math.Pow(sindip, 2);
+                                double Mss = sindip / 2;
+                                Maa_eaa2d_eh2d = fs.eaa2d_eh2d * Maa;
+                                Mas_eaaasd_eh2d = fs.eaaasd_eh2d * Mas;
+                                Mss_eas2d_eh2d = fs.eas2d_eh2d * Mss;
+                            }
+                            else
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
+                                double Mff = 0;
+                                double Mfw = -(Math.Pow(oneMinusNur, 2) / (2 * oneMinus2Nur)) * mufr * sinpitch;
+                                double Mww = oneMinusNur / 2;
+                                double Mfs = -(oneMinusNur / (2 * oneMinus2Nur)) * mufr * cospitch;
+                                double Mss = 1 / 2;
+                                Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
+                                Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
+                                Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
+                            }
                             // Remove rounding errors
                             {
-                                double Mtot = Maa + Mas + Mss;
-                                if ((float)(Mtot + Maa) == (float)Mtot) { Maa = 0; Mav = 0; }
-                                if ((float)(Mtot + Mas) == (float)Mtot) Mas = 0;
-                                if ((float)(Mtot + Mss) == (float)Mtot) Mss = 0;
-                                if ((float)(Mtot + Mhh) == (float)Mtot) Mhh = 0;
-                                if ((float)(Mtot + Mvv) == (float)Mtot) { Mvv = 0; Mva = 0; }
+                                double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
+                                if ((float)(Mtot + Maa_eaa2d_eh2d) == (float)Mtot) Maa_eaa2d_eh2d = 0;
+                                if ((float)(Mtot + Mas_eaaasd_eh2d) == (float)Mtot) Mas_eaaasd_eh2d = 0;
+                                if ((float)(Mtot + Mss_eas2d_eh2d) == (float)Mtot) Mss_eas2d_eh2d = 0;
                             }
                         }
                         break;
@@ -1508,13 +1537,9 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase = new Tensor4_2Sx2S();
 
                             // Set all mode factors to zero
-                            Maa = 0;
-                            Mas = 0;
-                            Mss = 0;
-                            Mav = 0;
-                            Mva = 0;
-                            Mvv = 0;
-                            Mhh = 0;
+                            Maa_eaa2d_eh2d = 0;
+                            Mas_eaaasd_eh2d = 0;
+                            Mss_eas2d_eh2d = 0;
                         }
                         break;
                 }
@@ -1547,13 +1572,9 @@ namespace DFMGenerator_SharedCode
                 MF_ComplianceTensorBase = new Tensor4_2Sx2S();
 
                 // Set all mode factors to zero
-                Maa = 0;
-                Mas = 0;
-                Mss = 0;
-                Mav = 0;
-                Mva = 0;
-                Mvv = 0;
-                Mhh = 0;
+                Maa_eaa2d_eh2d = 0;
+                Mas_eaaasd_eh2d = 0;
+                Mss_eas2d_eh2d = 0;
             }
         }
         /// <summary>
@@ -1897,38 +1918,85 @@ namespace DFMGenerator_SharedCode
             return Total_uF_Porosity(ApertureControl) + Total_MF_Porosity(ApertureControl);
         }
 
+        // Applied strain components
+        // NB for biazimuthal conjugate fracture sets, these are defined in terms of fracture azimuth and strike and are thus contained within the fracture set
+        /// <summary>
+        /// Ratio of incremental normal strain to total incremental normal strain on the fracture, given by eff^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double eff2d_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental normal strain x downdip shear strain to total incremental normal strain on the fracture, given by eff*efw / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efffwd_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental downdip shear strain to total incremental normal strain on the fracture, given by efw^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efw2d_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental normal strain x alongstrike shear strain to total incremental normal strain on the fracture, given by eff*efs / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efffsd_e2d{ get; set; }
+        /// <summary>
+        /// Ratio of incremental alongstrike shear strain to total incremental normal strain on the fracture, given by efs^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efs2d_e2d { get { return 1 - eff2d_e2d - efw2d_e2d; } } 
+        /// <summary>
+        /// Recalculate the applied strain components acting on the fractures, for a specified strain or strain rate tensor
+        /// </summary>
+        /// <param name="AppliedStrainTensor">Current strain or strain rate tensor</param>
+        public void RecalculateStrainRatios(Tensor2S AppliedStrainTensor)
+        {
+            VectorXYZ strikeVector = fs.StrikeVector;
+            VectorXYZ normalStrainOnFracture = AppliedStrainTensor * normalVector;
+            VectorXYZ downDipStrainOnFracture = AppliedStrainTensor * dipVector;
+            VectorXYZ alongStrikeStrainOnFracture = AppliedStrainTensor * strikeVector;
+            double effd = normalVector & normalStrainOnFracture;
+            double efwd = dipVector & normalStrainOnFracture;
+            double ewwd = dipVector & downDipStrainOnFracture;
+            double efsd = strikeVector & normalStrainOnFracture;
+            double essd = strikeVector & alongStrikeStrainOnFracture;
+
+            // Set the strain ratios to zero if they are small - this will avoid rounding errors
+            double emax = effd + efwd + ewwd + efsd + essd;
+            if ((float)(emax + effd) == (float)emax)
+                effd= 0;
+            if ((float)(emax + efwd) == (float)emax)
+                efwd = 0;
+            if ((float)(emax + ewwd) == (float)emax)
+                ewwd = 0;
+            if ((float)(emax + efsd) == (float)emax)
+                efsd = 0;
+            if ((float)(emax + essd) == (float)emax)
+                essd = 0;
+            double eff_squared = Math.Pow(effd, 2);
+            double efw_squared = Math.Pow(efwd, 2);
+            double efs_squared = Math.Pow(efsd, 2);
+            double e_squared = eff_squared + efw_squared + efs_squared;
+            eff2d_e2d = (e_squared > 0 ? eff_squared / e_squared : 1);
+            efw2d_e2d = (e_squared > 0 ? efw_squared / e_squared : 0);
+            efffwd_e2d = (e_squared > 0 ? (effd * efwd) / e_squared : 0);
+            efffsd_e2d = (e_squared > 0 ? (effd * efsd) / e_squared : 0);
+        }
+
         // Fracture mode factors - these form the basis for the stress shadow width
         // They represent the ratio of far-field displacement (i.e. applied strain) to displacement on a fracture, normalised to remove the effects of fracture size and geometry
+        // For convenience, these are combined with the respective strain components when they are calculated, so they need only be multiplied by geometric factors to determine stress shadow widths
         /// <summary>
         /// Fracture Mode Factor Maa: azimuthal strain => azimuthal displacement
         /// </summary>
-        private double Maa;
+        private double Maa_eaa2d_eh2d { get; set; }
         /// <summary>
         /// Fracture Mode Factor Mas: strike-parallel shear strain => azimuthal displacement
         /// </summary>
-        private double Mas;
+        private double Mas_eaaasd_eh2d { get; set; }
         /// <summary>
         /// Fracture Mode Factor Mss: strike-parallel shear strain => strike-slip displacement
         /// </summary>
-        private double Mss;
-        /// <summary>
-        /// Fracture Mode Factor Mva: vertical strain => azimuthal displacement
-        /// </summary>
-        private double Mva;
-        /// <summary>
-        /// Fracture Mode Factor Mav: azimuthal strain => vertical displacement
-        /// </summary>
-        private double Mav;
-        /// <summary>
-        /// Fracture Mode Factor Mvv: vertical strain => vertical displacement
-        /// </summary>
-        private double Mvv;
-        // NB mode factors Mas, Mvs, Msa and Msv will all be zero at all times
-        // Azimuthal or vertical strain will not generate strike-slip displacement, and horizontal shear strain will not generate azimuthal or vertical displacement
+        private double Mss_eas2d_eh2d { get; set; }
         /// <summary>
         /// Fracture Mode Factor Mhh: maximum horizontal strain => horizontal displacement
         /// </summary>
-        private double Mhh;
+        private double Mhh_eh2d { get { return Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d; } }
 
         // Stress shadow width
         /// <summary>
@@ -1937,7 +2005,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Max_uF_StressShadowWidth_r
         {
-            get { return Mhh * (8 / Math.PI); }
+            get { return Mhh_eh2d * (8 / Math.PI); }
         }
         /// <summary>
         /// Ratio of mean stress shadow width to microfracture radius - returns a value regardless of the FractureDistribution case
@@ -1945,7 +2013,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_uF_StressShadowWidth_r
         {
-            get { return Mhh * (16 / (3 * Math.PI)); }
+            get { return Mhh_eh2d * (16 / (3 * Math.PI)); }
         }
         /// <summary>
         /// Maximum half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1953,7 +2021,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Max_MF_StressShadowWidth
         {
-            get { return Mhh * 2 * gbc.ThicknessAtDeformation; }
+            get { return Mhh_eh2d * 2 * gbc.ThicknessAtDeformation; }
         }
         /// <summary>
         /// Mean half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1961,7 +2029,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_MF_StressShadowWidth
         {
-            get { return Mhh * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
+            get { return Mhh_eh2d * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
         }
         /// <summary>
         /// Azimuthal component of mean half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1969,7 +2037,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_Azimuthal_MF_StressShadowWidth
         {
-            get { return (fs.eaa2d_eh2d * Maa) * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
+            get { return Maa_eaa2d_eh2d * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
         }
         /// <summary>
         /// Strike-slip shear component of mean half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1977,7 +2045,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_Shear_MF_StressShadowWidth
         {
-            get { return ((fs.eaaasd_eh2d * Mas) + (fs.eas2d_eh2d * Mss)) * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
+            get { return (Mas_eaaasd_eh2d + Mss_eas2d_eh2d) * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
         }
 
         // Stress shadow volume functions
@@ -4648,7 +4716,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
         public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in)
-                : this(gbc_in, fs_in, FractureMode.Mode1, true, false, Math.PI / 2, 1d, 2d)
+                : this(gbc_in, fs_in, FractureMode.Mode1, true, false, Math.PI / 2, 0.001, 3d)
         {
             // Defaults:
 
@@ -4656,7 +4724,7 @@ namespace DFMGenerator_SharedCode
             // Bimodal conjugate flag: set to true
             // Include reverse fractures: set to false
 
-            // Initial microfracture distribution - set to power law, B=1, c=2
+            // Initial microfracture distribution - set to power law, B=0.001, c=3
         }
         /// <summary>
         /// Constructor: input fracture mode, dip and initial fracture distribution parameters
@@ -4664,13 +4732,13 @@ namespace DFMGenerator_SharedCode
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
         /// <param name="Mode_in">Fracture mode</param>
-        /// <param name="BimodalConjugate_in">Flag for a bimodal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BimodalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in)
-            : this(gbc_in, fs_in, Mode_in, BimodalConjugate_in, IncludeReverseFractures_in, Dip_in, B_in, c_in, 0.0005, 1E-5)
+        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in)
+            : this(gbc_in, fs_in, Mode_in, BiazimuthalConjugate_in, IncludeReverseFractures_in, Dip_in, B_in, c_in, 0.0005, 1E-5)
         {
             // Defaults for fracture aperture control data for uniform and size-dependent aperture:
 
@@ -4704,6 +4772,12 @@ namespace DFMGenerator_SharedCode
 
             // Set fracture dip
             Dip = Dip_in;
+
+            // Set the applied strain components to default values
+            eff2d_e2d = 1;
+            efw2d_e2d = 0;
+            efffwd_e2d = 0;
+            efffsd_e2d = 0;
 
             // Set the initial shear stress pitch to NaN and the initial shear stress vector to (0,0,0)
             // This represents no shear stress on the fracture

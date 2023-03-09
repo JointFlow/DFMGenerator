@@ -421,11 +421,11 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 3;
-            int NoCols = 3;
+            int NoRows = 1;// 3;
+            int NoCols = 1;// 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 20;
-            double Length_NS = 20;
+            double Width_EW = 60;// 20;
+            double Length_NS = 60;// 20;
             double LayerThickness = 12.1909582031248;//1;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
@@ -510,29 +510,37 @@ namespace DFMGenerator_Standalone
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(0.074004377);
+            //AppliedOverpressureRate_list.Add(0.344004377);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.second;
             DeformationEpisodeDuration_list.Add(31622400);// (DeformationEpisodeDuration);
-
+            //DeformationEpisodeDuration_list.Add(316224000);// (DeformationEpisodeDuration);
             AbsoluteStressRate_list.Add(new Tensor2S(0.023741777980166, 0.0319753086419753, -0.0819844161100992, -0.00390703662593605, -0.40058724195507, 0.25769731266444));
+            //AbsoluteStressRate_list.Add(new Tensor2S(0.28926536693457, 1.40352190507435, -0.0821534791120238, 0, 0, 0));
             EhminAzi_list.Add(EhminAzi);
             BiazimuthalConjugate = false;
             InitialFluidPressure_list.Add(11889183);
             InitialAbsoluteStress_list.Add(new Tensor2S(45567500, 45855080, 63135844, -521898.5, 35443365, -26631047.5));
-            EhminAzi_list.Add(EhminAzi);
+            //InitialAbsoluteStress_list.Add(new Tensor2S(122568651.747142, 300867075.007942, 63135843.9935424, 0, 0, 0));
+            /*EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(0.059941368594622);
+            //AppliedOverpressureRate_list.Add(0.059941368594622);
+            AppliedOverpressureRate_list.Add(0.329941368594622);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.second;
-            DeformationEpisodeDuration_list.Add(31622400);// (DeformationEpisodeDuration);
-            AbsoluteStressRate_list.Add(new Tensor2S(0.0391878488077118, -0.0494397513952309, -0.302051496702182, 0.0207332582826968, -0.430657740360223, 0.387283996860731));
+            //DeformationEpisodeDuration_list.Add(31622400);// (DeformationEpisodeDuration);
+            DeformationEpisodeDuration_list.Add(316224000);// (DeformationEpisodeDuration);
+            //AbsoluteStressRate_list.Add(new Tensor2S(0.0391878488077118, -0.0494397513952309, -0.302051496702182, 0.0207332582826968, -0.430657740360223, 0.387283996860731));
+            AbsoluteStressRate_list.Add(new Tensor2S(-0.391878488077118, -0.494397513952309, 0.302051496702182, 0.0207332582826968, 0, 0));
+            EhminAzi_list.Add(EhminAzi);
             InitialFluidPressure_list.Add(14229379);
-            InitialAbsoluteStress_list.Add(new Tensor2S(46318272, 46866216, 60543300, -645448.375, 22775835, -18482040));
+            //InitialAbsoluteStress_list.Add(new Tensor2S(46318272, 46866216, 60543300, -645448.375, 22775835, -18482040));
+            InitialAbsoluteStress_list.Add(new Tensor2S(46318272, 46866216, 60543300, -645448.375, 0, 0));*/
             /*// Add an initial episode with uniaxial extension of -0.01/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(-0.0001);
@@ -702,7 +710,7 @@ namespace DFMGenerator_Standalone
             // Set to 1 to generate a single fracture set, perpendicular to ehmin
             // Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehmax; this is typical of a single stage of deformation in intact rock
             // Set to 6 or more to generate oblique fractures; this is typical of multiple stages of deformation with fracture reactivation, or transtensional strain
-            int NoFractureSets = 2;
+            int NoFractureSets = 6;// 2;
             // Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
             bool Mode1Only = false;
             bool Mode2Only = false;
@@ -717,7 +725,7 @@ namespace DFMGenerator_Standalone
             // For now we will set this to 1 (always use isotropic method) as this seems to give more reliable results
             double AnisotropyCutoff = 1;// 0.5;
             // Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
-            bool AllowReverseFractures = false;
+            bool AllowReverseFractures = true;// false;
             // Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration

@@ -403,7 +403,7 @@ namespace DFMGenerator_SharedCode
         public void RecalculateStrain(double E_r, double Nu_r)
         {
             // Calculate helper variables
-            double Nur_Er = E_r / Nu_r;
+            double Nur_Er = Nu_r / E_r;
             double OnePlusNur_Er = (1 + Nu_r) / E_r;
 
             // Cache the effective stress tensor components locally
