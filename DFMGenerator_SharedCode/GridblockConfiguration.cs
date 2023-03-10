@@ -2130,6 +2130,7 @@ namespace DFMGenerator_SharedCode
                         default:
                             break;
                     }
+                    appliedStrainRate = StressStrain.el_Epsilon_dashed;
                 }
                 else
                 {

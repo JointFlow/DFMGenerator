@@ -438,7 +438,7 @@ namespace DFMGenerator_SharedCode
             double ed_xy = sd_xy * OnePlusNur_Er;
             double ed_yz = sd_yz * OnePlusNur_Er;
             double ed_zx = sd_zx * OnePlusNur_Er;
-            el_epsilon = new Tensor2S(ed_xx, ed_yy, ed_zz, ed_xy, ed_yz, ed_zx);
+            el_epsilon_dashed = new Tensor2S(ed_xx, ed_yy, ed_zz, ed_xy, ed_yz, ed_zx);
         }
 
         // Reset and data input functions

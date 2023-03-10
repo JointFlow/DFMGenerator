@@ -368,7 +368,7 @@ namespace DFMGenerator_SharedCode
             eaa2d_eh2d = (ea_squared > 0 ? eaa_squared / ea_squared : 1);
             eaaasd_eh2d = (ea_squared > 0 ? (eaad * easd) / ea_squared : 0);
 
-            // Recalculate the strain rations for non-biazimuthal dipsets individually
+            // Recalculate the strain ratios for non-biazimuthal dipsets individually
             foreach (FractureDipSet fds in FractureDipSets)
                 if (!fds.BiazimuthalConjugate)
                     fds.RecalculateStrainRatios(AppliedStrainTensor);
