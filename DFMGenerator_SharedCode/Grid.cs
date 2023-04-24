@@ -120,7 +120,16 @@ namespace DFMGenerator_SharedCode
                         // Run the calculation function for the specified gridblock
                         bool local_HitTimestepLimit = Gridblock.CalculateFractureData();
                         if (local_HitTimestepLimit)
+                        {
+                            // Give a message saying that the timestep limit was exceeded
+                            // NB to avoid excessive messaging, this message will only be given once per model, for the first gridblock which exceeds the limit
+                            if (!HitTimestepLimit)
+                            {
+                                string timestepLimitMessage = string.Format("The calculation stopped before completion in cell {0},{1} as the timestep limit was exceeded. To prevent this, adjust the calculation termination criteria on the Control Parameters tab.", ColNo, RowNo);
+                                progressReporter.OutputMessage(timestepLimitMessage);
+                            }
                             HitTimestepLimit = true;
+                        }
                     }
 
                     // Update progress
@@ -653,10 +662,31 @@ namespace DFMGenerator_SharedCode
                 currentTime = nextTimestep.EndTimestepTime;
 
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
-                if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
-                    nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
-                else
-                    DFNThicknessCutoffActivated = true;
+                try
+                {
+                    if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
+                    {
+                        nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                    }
+                    else
+                    {
+                        // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
+                        // NB to avoid excessive messaging, this message will only be given once per model, for the first gridblock which triggers the thickness cutoff
+                        if (!DFNThicknessCutoffActivated)
+                        {
+                            string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the cell at {0},{1} due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y);
+                            progressReporter.OutputMessage(thicknessLimitMessage);
+                        }
+                        DFNThicknessCutoffActivated = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in cell at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
+                    progressReporter.OutputMessage(string.Format("Error {0}:", e.Message));
+                    //progressReporter.OutputMessage(e.StackTrace);
+                }
+
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -709,10 +739,30 @@ namespace DFMGenerator_SharedCode
                     currentTime = nextTimestep.EndTimestepTime;
 
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
-                if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
-                    nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
-                else
-                    DFNThicknessCutoffActivated = true;
+                try
+                {
+                    if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
+                    {
+                        nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                    }
+                    else
+                    {
+                        // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
+                        // NB to avoid excessive messaging, this message will only be given once per model, for the first gridblock which triggers the thickness cutoff
+                        if (!DFNThicknessCutoffActivated)
+                        {
+                            string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the cell at {0},{1} due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y);
+                            progressReporter.OutputMessage(thicknessLimitMessage);
+                        }
+                        DFNThicknessCutoffActivated = true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in the cell at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
+                    progressReporter.OutputMessage(string.Format("Error {0}:", e.Message));
+                    //progressReporter.OutputMessage(e.StackTrace);
+                }
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);

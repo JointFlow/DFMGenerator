@@ -34,6 +34,10 @@ namespace DFMGenerator_SharedCode
         /// Reference to parent FractureGrid object - this does not need to be filled as the GridblockConfiguration can also function as a standalone object
         /// </summary>
         private FractureGrid gd;
+        /// <summary>
+        /// Reference to the parent FractureGrid object's random number generator
+        /// </summary>
+        public Random RandGen { get { return gd.RandomNumberGenerator; } }
 
         // Gridblock geometry data
         /// <summary>
@@ -349,6 +353,8 @@ namespace DFMGenerator_SharedCode
                 Length_NSide = Math.Sqrt(Length_NSide_squared);
                 Length_ESide = Math.Sqrt(Length_ESide_squared);
                 Length_SSide = Math.Sqrt(Length_SSide_squared);
+                Length_SEtoNW_diagonal = Math.Sqrt(Math.Pow(NWCorner.X - SECorner.X, 2) + Math.Pow(NWCorner.Y - SECorner.Y, 2));
+                Length_NEtoSW_diagonal = Math.Sqrt(Math.Pow(NECorner.X - SWCorner.X, 2) + Math.Pow(NECorner.Y - SWCorner.Y, 2));
 
                 // Calculate internal angles of the SW and NE corners, projected onto horizontal plane
                 // Use cosine law and dot product of the two adjacent sides
@@ -410,6 +416,35 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Length_SSide { get; private set; }
         /// <summary>
+        /// Length of the SE to NW diagonal of the middle surface of the gridblock, projected onto the horizontal, projected onto horizontal plane; recalculated whenever gridblock cornerpoints are changed
+        /// </summary>
+        public double Length_SEtoNW_diagonal { get; private set; }
+        /// <summary>
+        /// Length of the NE to EW diagonal of the middle surface of the gridblock, projected onto the horizontal, projected onto horizontal plane; recalculated whenever gridblock cornerpoints are changed
+        /// </summary>
+        public double Length_NEtoSW_diagonal { get; private set; }
+        /// <summary>
+        /// Maximum internal length within the middle surface of the gridblock - given by the maximum length of the sides and diagonals
+        /// </summary>
+        public double MaxGridblockLength
+        {
+            get
+            {
+                double output = Length_WSide;
+                if (output < Length_NSide)
+                    output = Length_NSide;
+                if (output < Length_ESide)
+                    output = Length_ESide;
+                if (output < Length_SSide)
+                    output = Length_SSide;
+                if (output < Length_SEtoNW_diagonal)
+                    output = Length_SEtoNW_diagonal;
+                if (output < Length_NEtoSW_diagonal)
+                    output = Length_NEtoSW_diagonal;
+                return output;
+            }
+        }
+        /// <summary>
         /// Internal angle of the SW corner of the middle surface of the gridblock, projected onto the horizontal (radians); recalculated whenever gridblock cornerpoints are changed
         /// </summary>
         public double Angle_SWcorner { get; private set; }
@@ -417,6 +452,111 @@ namespace DFMGenerator_SharedCode
         /// Internal angle of the NE corner of the middle surface of the gridblock, projected onto the horizontal (radians); recalculated whenever gridblock cornerpoints are changed
         /// </summary>
         public double Angle_NEcorner { get; private set; }
+        /// <summary>
+        /// Get the position of the intersection between a line parallel to the X or Y axis, passing through a specified point, and a specified boundary segment projected onto the middle surface of the gridblock
+        /// Note that the intersecting line is considered infinite in either direction but it must intersect the boundary segment between the gridblock cornerpoints, otherwise the function will return NaN
+        /// </summary>
+        /// <param name="point">Position of a point through which the intersecting line passes</param>
+        /// <param name="intersectionLine">Direction of the intersecting line: specify N or S for a line parallel to the Y axis and E or W for a line parallel to the X axis </param>
+        /// <param name="boundary">Boundary with which to calculate the intersection</param>
+        /// <param name="crossesOutward">Output flag to determine whether the line crosses out from the gridblock (true) or into the gridblock (false)</param>
+        /// <returns>The Y coordinate of the intersection point if the intersecting line is N-S; the X coordinate of the intersetion point if the intersecting line is E-W, NaN if the line does not intersect the specified boundary segment</returns>
+        private double getBoundaryIntersection(PointXYZ point, GridDirection intersectionLine, GridDirection boundary, out bool crossesOutward)
+        {
+            // By default set crossesOutward flag to false
+            crossesOutward = false;
+
+            // Get left and right cornerpoints for the selected boundary
+            PointXYZ leftCorner = null;
+            PointXYZ rightCorner = null;
+            switch (boundary)
+            {
+
+                case GridDirection.N:
+                    leftCorner = getNWMidPoint();
+                    rightCorner = getNEMidPoint();
+                    break;
+                case GridDirection.E:
+                    leftCorner = getNEMidPoint();
+                    rightCorner = getSEMidPoint();
+                    break;
+                case GridDirection.S:
+                    leftCorner = getSEMidPoint();
+                    rightCorner = getSWMidPoint();
+                    break;
+                case GridDirection.W:
+                    leftCorner = getSWMidPoint();
+                    rightCorner = getNWMidPoint();
+                    break;
+                // If no boundary is specified return NaN
+                case GridDirection.None:
+                default:
+                    return double.NaN;
+            }
+
+            // Get the coordinates for the line and boundary cornerpoints relative to the direction of the line (i)
+            double intersection_j, leftCorner_i, leftCorner_j, rightCorner_i, rightCorner_j;
+            switch (intersectionLine)
+            {
+                // Line is parallel to the positive y axis: i=+Y, j=+X
+                case GridDirection.N:
+                    intersection_j = point.X;
+                    leftCorner_i = leftCorner.Y;
+                    leftCorner_j = leftCorner.X;
+                    rightCorner_i = rightCorner.Y;
+                    rightCorner_j = rightCorner.X;
+                    break;
+                // Line is parallel to the positive x axis: i=+X, j=-Y
+                case GridDirection.E:
+                    intersection_j = -point.Y;
+                    leftCorner_i = leftCorner.X;
+                    leftCorner_j = -leftCorner.Y;
+                    rightCorner_i = rightCorner.X;
+                    rightCorner_j = -rightCorner.Y;
+                    break;
+                // Line is parallel to the negative y axis: i=-Y, j=-X
+                case GridDirection.S:
+                    intersection_j = -point.X;
+                    leftCorner_i = -leftCorner.Y;
+                    leftCorner_j = -leftCorner.X;
+                    rightCorner_i = -rightCorner.Y;
+                    rightCorner_j = -rightCorner.X;
+                    break;
+                // Line is parallel to the negative x axis: i=-X, j=+Y
+                case GridDirection.W:
+                    intersection_j = point.Y;
+                    leftCorner_i = -leftCorner.X;
+                    leftCorner_j = leftCorner.Y;
+                    rightCorner_i = -rightCorner.X;
+                    rightCorner_j = rightCorner.Y;
+                    break;
+                // If no line direction is specified return NaN
+                case GridDirection.None:
+                default:
+                    return double.NaN;
+            }
+
+            // Determine whether the line intersects the boundary between the cornerpoints; if so, determine which direction it is crossing, if not return NaN
+            // Also return NaN if the boundary is parallel to the line (i.e. leftCorner_j == rightCorner_j)
+            if (leftCorner_j == rightCorner_j) // If leftCorner_j == rightCorner_j the line is parallel to the line
+                return double.NaN;
+            else if ((leftCorner_j <= intersection_j) && (intersection_j <= rightCorner_j)) // If leftCorner_j < rightCorner_j the line is crossing outwards
+                crossesOutward = true;
+            else if ((leftCorner_j >= intersection_j) && (intersection_j >= rightCorner_j)) // If leftCorner_j > rightCorner_j the line is crossing inwards
+                crossesOutward = false;
+            else // If intersection_j does not lie between leftCorner_j and rightCorner_j the line does not intersect the boundary segment between the cornerpoints 
+                return double.NaN;
+
+            // Calculate the position of the intersection and return it
+            // This is valid whether leftCorner_j < rightCorner_j or leftCorner_j > rightCorner_j
+            double relativeIntersectionPoint = (intersection_j - leftCorner_j) / (rightCorner_j - leftCorner_j);
+            double intersection_i = (leftCorner_i * (1 - relativeIntersectionPoint)) + (rightCorner_i * relativeIntersectionPoint);
+            // If the line direction is S or W, the i coordinates must be inverted to convert to X or Y coordinates respectively
+            if ((intersectionLine == GridDirection.S) || (intersectionLine == GridDirection.W))
+                return -intersection_i;
+            else
+                return intersection_i;
+        }
         /// <summary>
         /// Function to return the position of a location specified relative to the horizontal projection of the gridblock boundaries (uv coordinates) in grid (XY) coordinates
         /// </summary>
@@ -752,7 +892,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Create a point at a random location within the gridblock
         /// </summary>
-        /// <param name="useQuickMethod">If true, use quick calculation (valid for any shape cell but there will be a bias in the point location if the gridblock is not a parallelipiped), otherwise use long calculation (slower but gives a perfectly random position regardless of gridblock shape)</param>
+        /// <param name="useQuickMethod">If true, use quick calculation (not valid for concave or inverted gridblocks, and there will be a bias in the point location if the gridblock is not a parallelipiped), otherwise use long calculation (slower but gives a perfectly random position regardless of gridblock shape)</param>
         /// <returns>PointXYZ object representing a randomly located point in grid (XYZ) coordinates</returns>
         public PointXYZ getRandomPoint(bool useQuickMethod)
         {
@@ -762,11 +902,11 @@ namespace DFMGenerator_SharedCode
             if (checkCornerpointsDefined())
             {
                 // Get reference to the random number generator
-                Random randGen = gd.RandomNumberGenerator;
+                Random randGen = RandGen;
 
                 if (useQuickMethod)
                 {
-                    // Quick calculation: valid for any shape cell but there will be a bias in the point location if the gridblock is not a parallelipiped
+                    // Quick calculation: not valid for concave or inverted gridblocks, and there will be a bias in the point location if the gridblock is not a parallelipiped
 
                     // Get a random position relative to the relative to the gridblock boundaries (uvw coordinates)
                     double u = randGen.NextDouble();
@@ -808,33 +948,46 @@ namespace DFMGenerator_SharedCode
             return output;
         }
         /// <summary>
-        /// Check if a specified point lies within the gridblock
+        /// Check if a specified point lies within the gridblock (strictly speaking, a vertical projection of the gridblock from the middle surface, where the edges connecting the upper and lower surfaces are rotated to vertical)
         /// </summary>
         /// <param name="point_in">Point in XYZ coordinates</param>
         /// <returns>true if point_in lies within the gridblock, false if it does not</returns>
         public bool checkPointInGridblock(PointXYZ point_in)
         {
-            // Get the location of the point relative to the horizontal projection of the gridblock boundaries (uvw coordinates)
-            double u, v, w;
-            // If the u, v and w coordinates can be calculated then we must check if they are within the range 0 to 1
-            if (getPositionRelativeToGridblock(out u, out v, out w, point_in))
-            {
-                // Check if point is out of bounds, if so return false
-                if (u < 0) return false;
-                if (u > 1) return false;
-                if (v < 0) return false;
-                if (v > 1) return false;
-                if (w < 0) return false;
-                if (w > 1) return false;
+            // Cache coordinates locally
+            double pointX = point_in.X;
+            double pointY = point_in.Y;
+            double pointZ = point_in.Z;
 
-                // Point is in bounds, return true
-                return true;
-            }
-            else
+            // To check whether the projection of the point lies within the gridblock on the XY plane, count the number of gridblock boundaries crossed by an infinite line projected north from the point, and the dircetion of crossing
+            // If the number of boundaries crossed outward is one more then the number of boundaries crossed inwards, the point must lie inside the gridblock
+            // Otherwise the point must lie outside the gridblock
+            // This is valid regardless of gridblock geometry - even for concave or inverted gridblocks (NB for inverted gridblocks, the inverted section is considered to lie outside the gridblock)
+            int noBoundariesCrossed = 0;
+            foreach (GridDirection boundary in new GridDirection[4] { GridDirection.N, GridDirection.E, GridDirection.S, GridDirection.W })
             {
-                // If the u, v and w coordinates cannot be calculated then the point must lie outside the gridblock (or the cornerpoints are undefined)
-                return false;
+                bool crossesOutwards;
+                double intersectionY = getBoundaryIntersection(point_in, GridDirection.N, boundary, out crossesOutwards);
+                if (intersectionY >= pointY)
+                {
+                    if (crossesOutwards)
+                        noBoundariesCrossed++;
+                    else
+                        noBoundariesCrossed--;
+                }
             }
+            if (noBoundariesCrossed != 1)
+                return false;
+
+            // If the projection of the point lies within the gridblock on the XY plane, the point will lie within the gridblock if its Z coordinate lies between the upper and lower surfaces of the gridblock
+            double centreZ = getCentreZ(pointX, pointY);
+            double TVT = getTVT(pointX, pointY);
+            double topSurfaceIntersection = centreZ + (TVT / 2);
+            double bottomSurfaceIntersection = centreZ - (TVT / 2);
+            if ((pointZ >= bottomSurfaceIntersection) && (pointZ <= topSurfaceIntersection))
+                return true;
+            else
+                return false;
         }
         /// <summary>
         /// Get a reference to the fracture set in this gridblock that best matches the orientation and strike of another fracture set (typically in another gridblock)
@@ -2948,7 +3101,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // Get reference to the random number generator
-            Random randGen = gd.RandomNumberGenerator;
+            Random randGen = RandGen;
 
             // Create a temporary list for the maximum macrofracture propagation lengths
             List<List<double>> maxPropLengths = new List<List<double>>();
@@ -3153,15 +3306,12 @@ namespace DFMGenerator_SharedCode
                                 if (next_uF_radius > max_uF_radius) next_uF_radius = max_uF_radius;
 
                                 // Get random location for new microfracture
-                                // Get random location for new microfracture
-                                PointXYZ new_uf_centrepointXYZ = getRandomPoint(false);
+                                PointIJK new_uF_centrepointIJK;
                                 if (SpecifyFractureNucleationPosition)
-                                {
-                                    double u, v;
-                                    if (getPositionRelativeToGridblock(out u, out v, new_uf_centrepointXYZ.X, new_uf_centrepointXYZ.Y))
-                                        new_uf_centrepointXYZ = getAbsolutePosition(u, v, FractureNucleationPosition_w);
-                                }
-                                PointIJK new_uF_centrepointIJK = fs.convertXYZtoIJK(new_uf_centrepointXYZ);
+                                    new_uF_centrepointIJK = fs.getRandomNucleationPoint(FractureNucleationPosition_w);
+                                else
+                                    new_uF_centrepointIJK = fs.getRandomNucleationPoint();
+                                PointXYZ new_uf_centrepointXYZ = fs.convertIJKtoXYZ(new_uF_centrepointIJK);
 
                                 // There are no macrofractures yet so there will be no stress shadows even if we are including stress shadow effects
                                 bool addThisFracture = true;
@@ -3218,14 +3368,12 @@ namespace DFMGenerator_SharedCode
                         while (NucleationLTime < ts_PropLength)
                         {
                             // Get random location for new microfracture
-                            PointXYZ new_uf_centrepointXYZ = getRandomPoint(false);
+                            PointIJK new_uF_centrepointIJK;
                             if (SpecifyFractureNucleationPosition)
-                            {
-                                double u, v;
-                                if (getPositionRelativeToGridblock(out u, out v, new_uf_centrepointXYZ.X, new_uf_centrepointXYZ.Y))
-                                    new_uf_centrepointXYZ = getAbsolutePosition(u, v, FractureNucleationPosition_w);
-                            }
-                            PointIJK new_uF_centrepointIJK = fs.convertXYZtoIJK(new_uf_centrepointXYZ);
+                                new_uF_centrepointIJK = fs.getRandomNucleationPoint(FractureNucleationPosition_w);
+                            else
+                                new_uF_centrepointIJK = fs.getRandomNucleationPoint();
+                            PointXYZ new_uf_centrepointXYZ = fs.convertIJKtoXYZ(new_uF_centrepointIJK);
 
                             // If we are including stress shadow effects, check whether this point lies in the stress shadow of an existing macrofracture and if so set flag to ignore it
                             bool addThisFracture = true;
@@ -3374,7 +3522,7 @@ namespace DFMGenerator_SharedCode
                                 Dict_NoActiveNucleating[fs_index] += 2;
 #endif
                                 // Get random location for new macrofracture nucleation point
-                                PointIJK new_MF_nucleationpoint = fs.convertXYZtoIJK(getRandomPoint(false));
+                                PointIJK new_MF_nucleationpoint = fs.getRandomNucleationPoint(0.5);
 
                                 // Any existing fractures have zero length,so this point cannot lie in the exclusion zone of an existing macrofracture
                                 bool addThisFracture = true;
@@ -3440,8 +3588,8 @@ namespace DFMGenerator_SharedCode
                             Dict_NoTotalNucleating[fs_index] += 2;
 #endif
                             // Get random location for new macrofracture nucleation point
-                            PointXYZ new_MF_nucleationpointXYZ = getRandomPoint(false);
-                            PointIJK new_MF_nucleationpointIJK = fs.convertXYZtoIJK(new_MF_nucleationpointXYZ);
+                            PointIJK new_MF_nucleationpointIJK = fs.getRandomNucleationPoint(0.5);
+                            PointXYZ new_MF_nucleationpointXYZ = fs.convertIJKtoXYZ(new_MF_nucleationpointIJK);
 
                             // If we are including stress shadow effects, check whether this point lies in the exclusion zone of an existing macrofracture and if so set flag to ignore it
                             bool addThisFracture = true;
@@ -3767,7 +3915,7 @@ namespace DFMGenerator_SharedCode
             // Loop through each macrofracture segment in the gridblock list
             if (calc_MF)
             {
-                // First we will check again that macrofracture segments nucleated at time zero with has zero length do not lie in the exclusion zone of macrofracture from another set
+                // First we will check again that macrofracture segments nucleated at time zero with zero length do not lie in the exclusion zone of macrofracture from another set
                 // This is necessary to deactivate dormant initial macrofractures that now lie within the exclusion zones of macrofractures from other sets
                 if (checkAlluFStressShadows)
                 {
@@ -3837,7 +3985,7 @@ namespace DFMGenerator_SharedCode
                             } // End check if the maximum propagation length is zero
                         } // End check if macrofracture segment is active, nucleated at timestep zero and currently has length zero
                     } // Loop to next macrofracture segment
-                } // End check again that macrofracture segments nucleated at time zero with has zero length do not lie in the exclusion zone of macrofracture from another set
+                } // End check again that macrofracture segments nucleated at time zero with zero length do not lie in the exclusion zone of macrofracture from another set
 
                 // Propagate macrofracture segments
                 foreach (MacrofractureSegmentHolder segmentHolder in MacrofractureSegments)
@@ -4010,7 +4158,7 @@ namespace DFMGenerator_SharedCode
             double newSegment_NucleationLTime = newSegment_fs.FractureDipSets[newSegment_DipSetIndex].ConvertTimeToLength(newSegmentNucleationTime, newSegment_NucleationTimestep);
 
             // Create a new macrofracture segment and add it to the local DFN
-            MacrofractureSegmentIJK newSegment = new MacrofractureSegmentIJK(newSegment_fs, newSegment_DipSetIndex, newSegment_fs.convertXYZtoIJK(insertionPoint), FromBoundary, newSegment_PropDir, original_PropDir, newSegment_DipDir, newSegment_NucleationLTime, newSegment_NucleationTimestep);
+           MacrofractureSegmentIJK newSegment = new MacrofractureSegmentIJK(newSegment_fs, newSegment_DipSetIndex, newSegment_fs.convertXYZtoIJK(insertionPoint), FromBoundary, newSegment_PropDir, original_PropDir, newSegment_DipDir, newSegment_NucleationLTime, newSegment_NucleationTimestep);
 
             // Check if there is a boundary-tracking fracture at the insertion point
             // If so, do not add this fracture segment, and set the initiator node fracture deactivation mechanism to Intersection

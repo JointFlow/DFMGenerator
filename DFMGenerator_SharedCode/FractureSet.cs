@@ -58,6 +58,22 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public PointIJK SEMidPoint { get; private set; }
         /// <summary>
+        /// Minimum I coordinate of all cornerpoints
+        /// </summary>
+        private double MinI { get; set; }
+        /// <summary>
+        /// Maximum I coordinate of all cornerpoints
+        /// </summary>
+        private double MaxI { get; set; }
+        /// <summary>
+        /// Minimum J coordinate of all cornerpoints
+        /// </summary>
+        private double MinJ { get; set; }
+        /// <summary>
+        /// Maximum J coordinate of all cornerpoints
+        /// </summary>
+        private double MaxJ { get; set; }
+        /// <summary>
         /// Set the values of the local copies centrepoints of corner pillars in fracture set (IJK) coordinates
         /// </summary>
         public void setCornerPoints()
@@ -69,6 +85,19 @@ namespace DFMGenerator_SharedCode
                 NWMidPoint = convertXYZtoIJK(gbc.getNWMidPoint());
                 NEMidPoint = convertXYZtoIJK(gbc.getNEMidPoint());
                 SEMidPoint = convertXYZtoIJK(gbc.getSEMidPoint());
+
+                // Find the minimum and maximum I values
+                MinI = SWMidPoint.I;
+                MaxI = SWMidPoint.I;
+                MinJ = SWMidPoint.J;
+                MaxJ = SWMidPoint.J;
+                foreach (PointIJK cornerPoint in new PointIJK[3] { NWMidPoint, NEMidPoint, SEMidPoint })
+                {
+                    if (MinI > cornerPoint.I) MinI = cornerPoint.I;
+                    if (MaxI < cornerPoint.I) MaxI = cornerPoint.I;
+                    if (MinJ > cornerPoint.J) MinJ = cornerPoint.J;
+                    if (MaxJ < cornerPoint.J) MaxJ = cornerPoint.J;
+                }
             }
         }
 
@@ -123,8 +152,6 @@ namespace DFMGenerator_SharedCode
         /// StressDistribution object describing the spatial distribution of the fractures: EvenlyDistributedStress gives a random fracture distribution, StressShadow and DuctileBoundary gives a regular spacing
         /// </summary>
         public StressDistribution FractureDistribution { get; set; }
-
-
         /// <summary>
         /// Calculate the I coordinate (relative to fracture strike) of a point in grid (XYZ) coordinates
         /// </summary>
@@ -281,6 +308,128 @@ namespace DFMGenerator_SharedCode
         {
             gbc.getBoundaryCornerpoints(boundary, out UpperLeftCorner, out UpperRightCorner, out LowerLeftCorner, out LowerRightCorner);
         }
+        /// <summary>
+        /// Get the I coordinate of the intersection between a fracture with a specified J coordinate, and a specified boundary segment
+        /// Note that the fracture is considered infinite in either direction but it must intersect the boundary segment between the gridblock cornerpoints, otherwise the function will return NaN
+        /// </summary>
+        /// <param name="intersection_j">J coordinate of the fracture</param>
+        /// <param name="boundary">Boundary with which to calculate the intersection</param>
+        /// <param name="propDir">Direction of propagation, used to determine whether whether the fracture crosses out from or into the gridblock</param>
+        /// <param name="crossesOutward">Output flag to determine whether the fracture crosses out from the gridblock (true) or into the gridblock (false)</param>
+        /// <returns>The I coordinate of the intersection point; NaN if the fracture does not intersect the specified boundary segment when extended to infinity</returns>
+        private double getBoundaryIntersection(double intersection_j, GridDirection boundary, PropagationDirection propDir, out bool crossesOutward)
+        {
+            // By default set crossesOutward flag to false
+            crossesOutward = false;
+
+            // Get the coordinates for the fracture and boundary cornerpoints relative to the direction of the fracture (i)
+            double leftCorner_i, leftCorner_j, rightCorner_i, rightCorner_j;
+            getBoundaryEndPoints(boundary, out leftCorner_i, out leftCorner_j, out rightCorner_i, out rightCorner_j);
+
+            // Determine whether the fracture intersects the boundary between the cornerpoints; if so, determine which direction it is crossing, if not return NaN
+            // Also return NaN if the boundary is parallel to the fracture (i.e. leftCorner_j == rightCorner_j)
+            if (leftCorner_j == rightCorner_j) // If leftCorner_j == rightCorner_j the line is parallel to the line
+                return double.NaN;
+            else if ((leftCorner_j <= intersection_j) && (intersection_j <= rightCorner_j)) // If leftCorner_j < rightCorner_j the fracture is crossing outwards
+                crossesOutward = true;
+            else if ((leftCorner_j >= intersection_j) && (intersection_j >= rightCorner_j)) // If leftCorner_j > rightCorner_j the fracture is crossing inwards
+                crossesOutward = false;
+            else // If intersection_j does not lie between leftCorner_j and rightCorner_j the fracture does not intersect the boundary segment between the cornerpoints 
+                return double.NaN;
+            // If the fracture is propagating in the IMinus direction, reverse the flag for whether the fracture crosses out from or into the gridblock
+            if (propDir == PropagationDirection.IMinus)
+                crossesOutward = !crossesOutward;
+
+            // Calculate the position of the intersection and return it
+            // This is valid whether rightCorner_j > leftCorner_j or leftCorner_j > rightCorner_j
+            double relativeIntersectionPoint = (intersection_j - leftCorner_j) / (rightCorner_j - leftCorner_j);
+            return (leftCorner_i * (1 - relativeIntersectionPoint)) + (rightCorner_i * relativeIntersectionPoint);
+        }
+        /// <summary>
+        /// Create a random fracture nucleation position within the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public PointIJK getRandomNucleationPoint()
+        {
+            return getRandomNucleationPoint(-1);
+        }
+        /// <summary>
+        /// Create a random fracture nucleation position within the gridblock - the depth can either be random or specified relative to the gridblock
+        /// </summary>
+        /// <param name="FractureNucleationPosition_w">Specified depth of nucleation relative to the gridblock: set to 0 for the base of the layer, 0.5 for the centre of the layer, 1 for the top of the layer, and -1 for a random depth within the layer</param>
+        /// <returns>A random point within the layer in IJK coordinates</returns>
+        public PointIJK getRandomNucleationPoint(double FractureNucleationPosition_w)
+        {
+            // Get reference to the random number generator
+            Random randGen = gbc.RandGen;
+
+            // Get range of allowable I and J values
+            double IRange = MaxI - MinI;
+            double JRange = MaxJ - MinJ;
+
+            // Set the default location to the SW cornerpoint
+            double nucleationPointI = SWMidPoint.I;
+            double nucleationPointJ = SWMidPoint.J;
+
+            // Find a random pair of I and J coordinates that lie within the gridblock
+            // If this cannot be done within 1000 attempts, it will revert to the default - this way the function will always return a point
+            for (int MaxTries = 0; MaxTries < 1000; MaxTries++)
+            {
+                // Select random I and J coordinates within the range of allowable values, and see if they lie within the gridblock
+                double pointI = MinI + (IRange * randGen.NextDouble());
+                double pointJ = MinJ + (JRange * randGen.NextDouble());
+
+                // Check whether the point lies within the gridblock, and whether an infinite extension of the fracture will cross at least one gridblock boundary outwards in each direction
+                int IPlusBoundaryIntersections = 0;
+                int IMinusBoundaryIntersections = 0;
+                foreach (GridDirection boundary in new GridDirection[4] { GridDirection.N, GridDirection.E, GridDirection.S, GridDirection.W })
+                {
+                    bool crossesOutwards;
+                    double boundaryIntersection = getBoundaryIntersection(pointJ, boundary, PropagationDirection.IPlus, out crossesOutwards);
+                    if (boundaryIntersection >= pointI)
+                    {
+                        if (crossesOutwards)
+                            IPlusBoundaryIntersections++;
+                        else
+                            IPlusBoundaryIntersections--;
+                    }
+                    if (boundaryIntersection < pointI)
+                    {
+                        // For boundary intersections in the IMinus direction, we must reverse the outwards direction
+                        if (!crossesOutwards)
+                            IMinusBoundaryIntersections++;
+                        else
+                            IMinusBoundaryIntersections--;
+                    }
+                }
+
+                if ((IPlusBoundaryIntersections == 1) && (IMinusBoundaryIntersections == 1))
+                {
+                    nucleationPointI = pointI;
+                    nucleationPointJ = pointJ;
+                    break;
+                }
+            }
+
+            // Create a PointIJK object at the specificied I and J coordinates with K=0
+            PointIJK nucleationPoint = new PointIJK(nucleationPointI, nucleationPointJ, 0);
+
+            // If the relative nucleation depth is 0.5, then K=0 and there is no need for further calculation
+            // Otherwise we will need to calculate the K coordinate
+            if (FractureNucleationPosition_w != 0.5)
+            {
+                // If the specified relative nucleation depth is negative or no relative nucleation depth is specified, generate a random value
+                if (double.IsNaN(FractureNucleationPosition_w))
+                    FractureNucleationPosition_w = randGen.NextDouble();
+                double TVT = getTVTAtPoint(nucleationPoint);
+                nucleationPoint.K = TVT * (FractureNucleationPosition_w - 0.5);
+            }
+
+            // Return the new point
+            return nucleationPoint;
+        }
+
+        // Incremental strain acting on the fractures 
         /// <summary>
         /// Incremental azimuthal strain acting on the fractures (i.e. component of strain rate tensor on the fracture plane parallel to fracture azimuth)
         /// </summary>
@@ -4871,107 +5020,227 @@ namespace DFMGenerator_SharedCode
             double propNode_J = propagatingSegment.PropNode.J;
             PropagationDirection propNode_dir = propagatingSegment.LocalPropDir;
 
-            // Loop through each boundary in turn and check if propagating segment intersects it
-            foreach (GridDirection boundary in Enum.GetValues(typeof(GridDirection)).Cast<GridDirection>())
+            // Create a list of outward boundary intersections along the line of the fracture, extended infinitely in each direction
+            List<double> outwardBoundaryIntersections = new List<double>();
+            List<GridDirection> outwardBoundaries = new List<GridDirection>();
+            foreach (GridDirection boundary in new GridDirection[4] { GridDirection.N, GridDirection.E, GridDirection.S, GridDirection.W })
             {
                 // Get the boundary segment endpoints
                 double boundaryleftI, boundaryleftJ, boundaryrightI, boundaryrightJ;
                 getBoundaryEndPoints(boundary, out boundaryleftI, out boundaryleftJ, out boundaryrightI, out boundaryrightJ);
 
-                // The intersection criteria are slightly different for fractures propagating in the IPlus and IMinus directions so we must code these separately
+                // Get the intersection point between the fracture and the boundary segment
+                bool crossesOutwards;
+                double intersectionI = getBoundaryIntersection(propNode_J, boundary, propNode_dir, out crossesOutwards);
+
+                // If there is an intersection point crossing outwards, add it to the list, then move on to the next boundary
+                if (!double.IsNaN(intersectionI) && crossesOutwards)
+                {
+                    outwardBoundaryIntersections.Add(intersectionI);
+                    outwardBoundaries.Add(boundary);
+                }
+            } // End loop through boundaries
+            int noBoundariesCrossed = outwardBoundaryIntersections.Count;
+
+            // If there are no boundary intersections in the extended line of the fracture, something has gone wrong
+            // In this case we set the propagation length to zero but do not deactivate the fracture
+            if (noBoundariesCrossed < 1)
+            {
+                propagationLength = 0;
+                //throw (new Exception(string.Format("Fracture in cell at {0},{1} azimuth {2}, propagating node at I={3},J={4} has no boundary intersections", gbc.SWtop.X, gbc.SWtop.Y, Azimuth, propNode_I, propNode_J)));
+            }
+            // If there is only one outward boundary intersection, we only need to check if the boundary lies behind the projected tip of the fracture
+            // This will record a boundary crossing even if the current fracture tip is already outside the gridblock - this is necessary for inverted gridblocks
+            else if (noBoundariesCrossed == 1)
+            {
+                // Get the intersection point and boundary intersected
+                double intersectionI = outwardBoundaryIntersections[0];
+                GridDirection boundary = outwardBoundaries[0];
+
+                // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
+                // This calculation is slightly different for fractures propagating in the IPlus and IMinus directions
                 if (propNode_dir == PropagationDirection.IPlus) // Propagating fracture is propagating in the IPlus direction
                 {
-                    // Check the boundary is not parallel to or behind the propagating segment
-                    if (boundaryleftJ < boundaryrightJ)
+                    // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I + propagationLength)
+                    // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
+                    if (intersectionI < propNode_I + propagationLength)
                     {
-                        // Get intersection point between boundary segment and the line of the fracture
-                        double relativeJ = (propNode_J - boundaryleftJ) / (boundaryrightJ - boundaryleftJ);
-                        double intersectionI = (boundaryleftI * (1 - relativeJ)) + (boundaryrightI * relativeJ);
+                        // Set the return value to true
+                        crossesBoundary = true;
 
-                        // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
-                        // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I + propagationLength)
-                        // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
-                        // Also we do not check if the current fracture tip lies within the boundary - this should always be the case, but not checking allows it always indentify instances where the tip lies on the boundary, allowing for rounding errors
-                        if (intersectionI < propNode_I + propagationLength)
+                        // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                        boundaryCrossed = boundary;
+                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                        // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                        if (!NoNeighbour || terminateIfNoNeighbour)
+                            propagationLength = intersectionI - propNode_I;
+
+                        // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                        // The exact status and flags will depend on the boundary type and input settings
+                        if (terminateIfIntersects)
                         {
-                            // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
-                            boundaryCrossed = boundary;
-                            bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
-
-                            // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
-                            if (!NoNeighbour || terminateIfNoNeighbour)
-                                propagationLength = intersectionI - propNode_I;
-
-                            // Set the propagating macrofracture segment status and flags, if we have specified to do so
-                            // The exact status and flags will depend on the boundary type and input settings
-                            if (terminateIfIntersects)
+                            if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
                             {
-                                if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                                propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
                             }
-
-                            // Set the return value to true
-                            crossesBoundary = true;
-                        } // End check if the boundary intersection point lies within the projection line of the fracture
-                    } // End check the boundary is not parallel to or behind the propagating segment
+                            else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                            }
+                            // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                        } // End set the propagating macrofracture segment status and flags
+                    } // End check if the boundary intersection point lies behind the projected fracture tip
                 } // End Propagating fracture is propagating in the IPlus direction
                 else // Propagating fracture is propagating in the IMinus direction
                 {
-                    // Check the boundary is not parallel to or behind the propagating segment
-                    if (boundaryleftJ > boundaryrightJ)
+                    // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I - propagationLength)
+                    // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
+                    if (intersectionI > propNode_I - propagationLength)
                     {
-                        // Get intersection point between boundary segment and the line of the fracture
-                        double relativeJ = (boundaryleftJ - propNode_J) / (boundaryleftJ - boundaryrightJ);
-                        double intersectionI = (boundaryleftI * (1 - relativeJ)) + (boundaryrightI * relativeJ);
+                        // Set the return value to true
+                        crossesBoundary = true;
 
-                        // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
+                        // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                        boundaryCrossed = boundary;
+                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                        // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                        if (!NoNeighbour || terminateIfNoNeighbour)
+                            propagationLength = propNode_I - intersectionI;
+
+                        // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                        // The exact status and flags will depend on the boundary type and input settings
+                        if (terminateIfIntersects)
+                        {
+                            if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                            }
+                            else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                            }
+                            // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                        } // End set the propagating macrofracture segment status and flags
+                    } // End check if the boundary intersection point lies behind the projected fracture tip
+                } // End Propagating fracture is propagating in the IMinus direction
+            } // End if there is only one outward boundary intersection
+            // If there is more than one outward boundary intersection, the cell must be concave
+            // In this case we need to check if the boundary lies in front of the current tip of the fracture as well as behind the projected tip of the fracture
+            // This will only record a boundary crossing if the current fracture tip is inside the gridblock and behind the boundary - this is necessary to prevent intersections with concave boundary segments being recorded
+            // However we must also check that there is at least one boundary ahead of the propagating fracture
+            // If there is not, we set the propagation length to zero but do not deactivate the fracture - this can occasionally happen where an inverted cell bounds a concave cell so a fracture nucleates on the wrong side of the boundary segment 
+            else
+            {
+                bool boundaryAhead = false;
+
+                // We will need to check each boundary intersection
+                for (int boundaryNo = 0; boundaryNo < noBoundariesCrossed; boundaryNo++)
+                {
+                    // Get the intersection point and boundary intersected
+                    double intersectionI = outwardBoundaryIntersections[boundaryNo];
+                    GridDirection boundary = outwardBoundaries[boundaryNo];
+
+                    // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
+                    // This calculation is slightly different for fractures propagating in the IPlus and IMinus directions
+                    if (propNode_dir == PropagationDirection.IPlus) // Propagating fracture is propagating in the IPlus direction
+                    {
+                        // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I + propagationLength)
+                        // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
+                        // An intersection will be recorded if the fracture tip lies on the intersecting segment, within rounding error
+                        if ((float)intersectionI >= (float)propNode_I)
+                        {
+                            boundaryAhead = true;
+
+                            if (intersectionI < propNode_I + propagationLength)
+                            {
+                                // Set the return value to true
+                                crossesBoundary = true;
+
+                                // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                                boundaryCrossed = boundary;
+                                bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                                // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                                if (!NoNeighbour || terminateIfNoNeighbour)
+                                    propagationLength = intersectionI - propNode_I;
+
+                                // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                                // The exact status and flags will depend on the boundary type and input settings
+                                if (terminateIfIntersects)
+                                {
+                                    if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                                } // End set the propagating macrofracture segment status and flags
+                            } // End check if the boundary intersection point lies behind the projected fracture tip
+                        } // End check if the boundary intersection point lies ahead of the current fracture tip
+                    } // End Propagating fracture is propagating in the IPlus direction
+                    else // Propagating fracture is propagating in the IMinus direction
+                    {
                         // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I - propagationLength)
                         // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
-                        // Also we do not check if the current fracture tip lies within the boundary - this should always be the case, but not checking allows it always indentify instances where the tip lies on the boundary, allowing for rounding errors
-                        if (intersectionI > propNode_I - propagationLength)
+                        // An intersection will be recorded if the fracture tip lies on the intersecting segment
+                        if ((float)intersectionI <= (float)propNode_I)
                         {
-                            // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
-                            boundaryCrossed = boundary;
-                            bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+                            boundaryAhead = true;
 
-                            // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
-                            if (!NoNeighbour || terminateIfNoNeighbour)
-                                propagationLength = propNode_I - intersectionI;
-
-                            // Set the propagating macrofracture segment status and flags, if we have specified to do so
-                            // The exact status and flags will depend on the boundary type and input settings
-                            if (terminateIfIntersects)
+                            if (intersectionI > propNode_I - propagationLength)
                             {
-                                if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
-                            }
+                                // Set the return value to true
+                                crossesBoundary = true;
 
-                            // Set the return value to true
-                            crossesBoundary = true;
-                        } // End check if the boundary intersection point lies within the projection line of the fracture
-                    } // End check the boundary is not parallel to or behind the propagating segment
-                } // End Propagating fracture is propagating in the IMinus direction
-            } // End loop through boundaries
+                                // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                                boundaryCrossed = boundary;
+                                bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
 
-            // We have not intersected any boundaries
+                                // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                                if (!NoNeighbour || terminateIfNoNeighbour)
+                                    propagationLength = propNode_I - intersectionI;
+
+                                // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                                // The exact status and flags will depend on the boundary type and input settings
+                                if (terminateIfIntersects)
+                                {
+                                    if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                                }
+                            } // End set the propagating macrofracture segment status and flags
+                        } // End check if the boundary intersection point lies behind the projected fracture tip
+                    } // End check if the boundary intersection point lies ahead of the current fracture tip
+                } // End loop through each boundary intersection
+
+                // If there are no boundary intersections ahead of the fracture tip, we set the propagation length to zero but do not deactivate the fracture
+                if (!boundaryAhead)
+                {
+                    propagationLength = 0;
+                    //throw (new Exception(string.Format("Fracture in cell at {0},{1} azimuth {2}, propagating node at I={3},J={4} has no boundary intersections", gbc.SWtop.X, gbc.SWtop.Y, Azimuth, propNode_I, propNode_J)));
+                }
+            } // End if there is more than one outward boundary intersection
+
+            // Return true if the fracture will intersect a boundary, otherwise false
             return crossesBoundary;
         }
         /// <summary>

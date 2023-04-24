@@ -359,39 +359,42 @@ namespace DFMGenerator_Ocean
 
                         // Check if one of the supplied grid property arguments is a GridResult object; if so we will subdivide the deformation episode into sub episodes according to the number of elements in the corresponding GridPropertyTimeSeries object
                         bool subEpisodesDefined = arguments.SubdivideDeformationEpisode(deformationEpisodeNo);
-                        // Get the current selected simulation case
-                        try
+                        // If required, get the current selected simulation case
+                        if (subEpisodesDefined)
                         {
-                            Case selectedCase = arguments.SimulationCase(deformationEpisodeNo);
-                            if (selectedCase != null)
+                            try
                             {
-                                activeCase = selectedCase;
-                            }
-                            else
-                            {
-                                List<Case> selectedCases = PetrelProject.Cases.GetSelected<Case>().ToList();
-                                if (selectedCases.Count > 0)
+                                Case selectedCase = arguments.SimulationCase(deformationEpisodeNo);
+                                if (selectedCase != null)
                                 {
-                                    activeCase = selectedCases.First<Case>();
-                                    PetrelLogger.InfoOutputWindow(string.Format("No simulation case is specified for deformation episode {0}, so the active case {1} will be used", deformationEpisodeNo, activeCase.Name));
+                                    activeCase = selectedCase;
                                 }
                                 else
                                 {
-                                    throw new Exception("No case found");
+                                    List<Case> selectedCases = PetrelProject.Cases.GetSelected<Case>().ToList();
+                                    if (selectedCases.Count > 0)
+                                    {
+                                        activeCase = selectedCases.First<Case>();
+                                        PetrelLogger.InfoOutputWindow(string.Format("No simulation case is specified for deformation episode {0}, so the active case {1} will be used", deformationEpisodeNo, activeCase.Name));
+                                    }
+                                    else
+                                    {
+                                        throw new Exception("No case found");
+                                    }
+                                }
+                                // Check if the grid for the selected case is the same as the selected model grid
+                                if (activeCase.Grid != PetrelGrid)
+                                {
+                                    PetrelLogger.InfoOutputWindow("Simulation case uses a different grid to that specified for model geometry; cannot use dynamic data for the load input");
+                                    subEpisodesDefined = false;
                                 }
                             }
-                            // Check if the grid for the selected case is the same as the selected model grid
-                            if (activeCase.Grid != PetrelGrid)
+                            // If no simulation case is selected we cannot use dynamic data for the load input
+                            catch (Exception)
                             {
-                                PetrelLogger.InfoOutputWindow("Simulation case uses a different grid to that specified for model geometry; cannot use dynamic data for the load input");
+                                PetrelLogger.InfoOutputWindow("No simulation case is specified or active; cannot use dynamic data for the load input");
                                 subEpisodesDefined = false;
                             }
-                        }
-                        // If no simulation case is selected we cannot use dynamic data for the load input
-                        catch (Exception)
-                        {
-                            PetrelLogger.InfoOutputWindow("No simulation case is specified or active; cannot use dynamic data for the load input");
-                            subEpisodesDefined = false;
                         }
                         SubEpisodesDefined_list.Add(subEpisodesDefined);
                         if (subEpisodesDefined)
@@ -3001,14 +3004,14 @@ namespace DFMGenerator_Ocean
                                 }
 
                                 PetrelLogger.InfoOutputWindow("Geometry");
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);", SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);", SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);", NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);", NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);", NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWtop = new PointXYZ({0}, {1}, {2});", SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWbottom = new PointXYZ({0}, {1}, {2});", SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWtop = new PointXYZ({0}, {1}, {2});", NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWbottom = new PointXYZ({0}, {1}, {2});", NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEtop = new PointXYZ({0}, {1}, {2});", NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ({0}, {1}, {2});", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ({0}, {1}, {2});", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ({0}, {1}, {2});", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Current_Depth));
 #endif
 
@@ -3267,8 +3270,6 @@ namespace DFMGenerator_Ocean
                             PetrelLogger.InfoOutputWindow("Start calculating implicit data");
                             progressBar.SetProgressText("Calculating implicit data");
                             ModelGrid.CalculateAllFractureData(progressBarWrapper);
-                            if (ModelGrid.HitTimestepLimit)
-                                PetrelLogger.InfoOutputWindow("The calculation stopped before completion in one or more cells as the timestep limit was exceeded. To prevent this, adjust the calculation termination criteria on the Control Parameters tab.");
                         }
 
                         // Calculate explicit DFN - unless the calculation has already been cancelled
@@ -3277,8 +3278,6 @@ namespace DFMGenerator_Ocean
                             PetrelLogger.InfoOutputWindow("Start generating explicit DFN");
                             progressBar.SetProgressText("Generating explicit DFN");
                             ModelGrid.GenerateDFN(progressBarWrapper);
-                            if (ModelGrid.DFNThicknessCutoffActivated)
-                                PetrelLogger.InfoOutputWindow("The explicit DFN was not generated in one or more cells due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.");
                         }
 
                         // If the calculation has already been cancelled, do not write any output data
@@ -5870,6 +5869,7 @@ namespace DFMGenerator_Ocean
             // NB most of the deformation load parameters are placed at the bottom of the Argument properties list, to ensure backwards compatibility
             // Only those deformation load parameters included as Arguments in DFM Generator v2.1.1 are placed here
             // This is to ensure that projects with DFM Generator v2.1.1 modules in the workflow will correctly load the saved module data when opened in DFM Generator v2.2 
+            [OptionalInWorkflow]
             [Description("Duration of the deformation episode (Ma)", "Duration of the deformation episode (Ma); set to -1 to continue until fracture saturation is reached")]
             public double Argument_DeformationEpisodeDuration
             {

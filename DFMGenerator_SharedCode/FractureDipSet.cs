@@ -2713,13 +2713,13 @@ namespace DFMGenerator_SharedCode
 
                 // If the ratio of active to maximum potential half macrofractures is close to zero, the specified d_MFP33 will never be reached
                 // If (V_factor + U_factor1) <= 0 then driving stress is decreasing and will never be sufficient to reach the specified d_MFP33
-                // In these cases we cannot calculate an optimal duration, so will deactivate the fracture set and return the default value infinity (no optimal duration calculated)
+                // In these cases we cannot calculate an optimal duration, so will return the default value infinity (no optimal duration calculated)
                 if (((float)ts_ahalfMF_uF_ratio > 0f) && ((float)(V_factor + U_factor1) > 0f))
                 {
                     double UV_factor = alpha_uF_b_factor * Math.Pow(V_factor + U_factor2, 1 / (b + 1));
 
                     // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
-                    if (UV_factor > U)
+                    if ((float)UV_factor > (float)U)
                     {
                         // Use the formula for increasing stress to calculate optimal duration
                         optdur = (UV_factor - U) / V;
@@ -2733,7 +2733,7 @@ namespace DFMGenerator_SharedCode
                 }
                 else
                 {
-                    CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
+                    //CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
                 }
 
                 // Finally, if the normal stress on the fracture will reach zero (from either a positive or negative value) before the calculated optimal duration, we will set this as the optimal timestep duration

@@ -421,8 +421,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 3;
-            int NoCols = 3;
+            int NoRows = 2;// 3;
+            int NoCols = 2;// 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 20;
             double Length_NS = 20;
@@ -457,12 +457,13 @@ namespace DFMGenerator_Standalone
             // With no strain relaxation, strain rate will control rate of horizontal stress increase
             // With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
             // Ehmin is most tensile (i.e. most negative) horizontal strain rate
-            double EhminRate = 0;
+            double EhminRate = -0.01;//0;
             // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-            double EhmaxRate = 0;
+            double EhmaxRate = -0.005;//0;
             // Set VariableStrainMagnitude to add random variation to the input strain rates
             // Strain rates for each gridblock will vary randomly from 0 to 2x specified values
             bool VariableStrainMagnitude = false;
+            double VariableStrainSmoothingFactor = 0;
             // Set TestComplexGeometry true to generate a geometry with non-orthogonal gridblock boundaries and convergent stress orientations - use this to check if fracture generation algorithms can cope with complex geometry
             // TestComplexGeometry will override the normal strain orientation data, so VariableStrainOrientation must be set to false; however the variable strain magnitude should be set to true
             bool TestComplexGeometry = false;
@@ -507,6 +508,15 @@ namespace DFMGenerator_Standalone
             List<Tensor2S> InitialAbsoluteStress_list = new List<Tensor2S>();
 #if !READINPUTFROMFILE
             // Add an initial episode with a stress load
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(StressArchingFactor);
+            ModelTimeUnits = TimeUnits.ma;
+            DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);
             /*EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(0.074004377);
@@ -576,6 +586,7 @@ namespace DFMGenerator_Standalone
             double YoungsMod = 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
             bool VariableYoungsMod = false;
+            double VariableYoungsModSmoothingFactor = 2;
             double PoissonsRatio = 0.25;
             double Porosity = 0.2;
             double BiotCoefficient = 1;
@@ -740,7 +751,7 @@ namespace DFMGenerator_Standalone
             // Set false to allow fractures to propagate outside of the outer grid boundary
             bool CropAtBoundary = true;
             // Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
-            bool LinkStressShadows = false;
+            bool LinkStressShadows = true;// false;
             // Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set 
             // Set to Pi/4 rad (45 degrees) by default
             double MaxConsistencyAngle = Math.PI / 4;
@@ -1506,8 +1517,37 @@ namespace DFMGenerator_Standalone
                             double strainMultiplier = RandomNumberGenerator.NextDouble() * 2;
                             double local_EhminRate = nextEhminRate * strainMultiplier;
                             double local_EhmaxRate = nextEhmaxRate * strainMultiplier;
-                            nextEhminRate_array[RowNo, ColNo] = local_EhminRate;
-                            nextEhmaxRate_array[RowNo, ColNo] = local_EhmaxRate;
+                            if (VariableStrainSmoothingFactor > 0)
+                            {
+                                double neighbourEhminRate, neighbourEhmaxRate;
+                                if ((ColNo > 0) && (RowNo > 0))
+                                {
+                                    neighbourEhminRate = (nextEhminRate_array[RowNo - 1, ColNo - 1] + nextEhminRate_array[RowNo - 1, ColNo] + nextEhminRate_array[RowNo, ColNo - 1]) / 3;
+                                    neighbourEhmaxRate = (nextEhmaxRate_array[RowNo - 1, ColNo - 1] + nextEhmaxRate_array[RowNo - 1, ColNo] + nextEhmaxRate_array[RowNo, ColNo - 1]) / 3;
+                                }
+                                else if (ColNo > 0)
+                                {
+                                    neighbourEhminRate = nextEhminRate_array[RowNo, ColNo - 1];
+                                    neighbourEhmaxRate = nextEhmaxRate_array[RowNo, ColNo - 1];
+                                }
+                                else if (RowNo > 0)
+                                {
+                                    neighbourEhminRate = nextEhminRate_array[RowNo - 1, ColNo];
+                                    neighbourEhmaxRate = nextEhmaxRate_array[RowNo - 1, ColNo];
+                                }
+                                else
+                                {
+                                    neighbourEhminRate = nextEhminRate;
+                                    neighbourEhmaxRate = nextEhmaxRate;
+                                }
+                                nextEhminRate_array[RowNo, ColNo] = ((neighbourEhminRate * VariableStrainSmoothingFactor) + local_EhminRate) / (VariableStrainSmoothingFactor + 1);
+                                nextEhmaxRate_array[RowNo, ColNo] = ((neighbourEhmaxRate * VariableStrainSmoothingFactor) + local_EhmaxRate) / (VariableStrainSmoothingFactor + 1);
+                            }
+                            else
+                            {
+                                nextEhminRate_array[RowNo, ColNo] = local_EhminRate;
+                                nextEhmaxRate_array[RowNo, ColNo] = local_EhmaxRate;
+                            }
                         }
                         else
                         {
@@ -1523,7 +1563,7 @@ namespace DFMGenerator_Standalone
                         nextInitialFluidPressure_array[RowNo, ColNo] = nextInitialFluidPressure;
                         nextInitialAbsoluteStess_array[RowNo, ColNo] = nextInitialAbsoluteStess;
                     }
-                
+
                 // Add the new arrays to the appropriate list
                 EhminAzi_array.Add(nextEhminAzi_array);
                 EhminRate_array.Add(nextEhminRate_array);
@@ -1557,9 +1597,41 @@ namespace DFMGenerator_Standalone
                 {
                     // Set local values for mechanical properties and add them to the appropriate arrays
                     if (VariableYoungsMod)
-                        YoungsMod_array[RowNo, ColNo] = YoungsMod * (1 + (((double)(NoCols - ColNo) / (double)NoCols) * 0.05));
+                    {
+                        //YoungsMod_array[RowNo, ColNo] = YoungsMod * (1 + (((double)(NoCols - ColNo) / (double)NoCols) * 0.05));
+                        double youngsModMultiplier = RandomNumberGenerator.NextDouble() * 2;
+                        double local_YoungsMod = YoungsMod * youngsModMultiplier;
+                        if (VariableYoungsModSmoothingFactor >= 0)
+                        {
+                            double neighbourYoungsMod;
+                            if ((ColNo > 0) && (RowNo > 0))
+                            {
+                                neighbourYoungsMod = (YoungsMod_array[RowNo - 1, ColNo - 1] + YoungsMod_array[RowNo - 1, ColNo] + YoungsMod_array[RowNo, ColNo - 1]) / 3;
+                            }
+                            else if (ColNo > 0)
+                            {
+                                neighbourYoungsMod = YoungsMod_array[RowNo, ColNo - 1];
+                            }
+                            else if (RowNo > 0)
+                            {
+                                neighbourYoungsMod = YoungsMod_array[RowNo - 1, ColNo];
+                            }
+                            else
+                            {
+                                neighbourYoungsMod = YoungsMod;
+                            }
+                            YoungsMod_array[RowNo, ColNo] = ((neighbourYoungsMod * VariableYoungsModSmoothingFactor) + local_YoungsMod) / (VariableYoungsModSmoothingFactor + 1);
+                            Console.WriteLine(string.Format("Cell {0},{1} ehmin rate {2} Youngs Mod {3}", RowNo, ColNo, EhminRate_array[0][RowNo, ColNo], YoungsMod_array[RowNo, ColNo]));
+                        }
+                        else
+                        {
+                            YoungsMod_array[RowNo, ColNo] = YoungsMod * (1 + (((double)(ColNo) / (double)NoCols) * 1));
+                        }
+                    }
                     else
+                    {
                         YoungsMod_array[RowNo, ColNo] = YoungsMod;
+                    }
                     PoissonsRatio_array[RowNo, ColNo] = PoissonsRatio;
                     Porosity_array[RowNo, ColNo] = Porosity;
                     BiotCoefficient_array[RowNo, ColNo] = BiotCoefficient;
@@ -1600,6 +1672,69 @@ namespace DFMGenerator_Standalone
                     PillarTops[RowNo, ColNo] = PillarTop;
                     PillarBottoms[RowNo, ColNo] = PillarBottom;
                 }
+
+            /*PillarTops[0, 0] = new PointXYZ(579529.003522498, 6242567.11599888, -2790.31392421875);
+            PillarBottoms[0, 0] = new PointXYZ(579528.798121165, 6242567.34900155, -2796.40992421875);
+            PillarTops[1, 0] = new PointXYZ(579490.302865076, 6242639.98364086, -2785.532671875);
+            PillarBottoms[1, 0] = new PointXYZ(579490.068952623, 6242640.26077959, -2791.05092109375);
+            PillarTops[1, 1] = new PointXYZ(579522.919630286, 6242684.47650283, -2778.765159375);
+            PillarBottoms[1, 1] = new PointXYZ(579522.589252403, 6242684.8296086, -2784.69417421875);
+            PillarTops[0, 1] = new PointXYZ(579566.190333579, 6242607.66491038, -2782.85823046875);
+            PillarBottoms[0, 1] = new PointXYZ(579565.949917245, 6242607.91995218, -2788.7741484375);
+            PillarTops[2, 0] = new PointXYZ(579462.115837969, 6242714.03325091, -2774.1520828125);
+            PillarBottoms[2, 0] = new PointXYZ(579461.755961482, 6242714.37031465, -2781.5899171875);
+            //PillarTops[2, 1]= new PointXYZ(579474.819795827, 6242778.69355795, -2768.86243359375);
+            // PillarBottoms[2, 1]= new PointXYZ(579474.27157384, 6242779.15065535, -2776.7232375);
+            PillarTops[2, 1] = new PointXYZ(579475, 6242768, -2768.86243359375);
+            PillarBottoms[2, 1] = new PointXYZ(579475, 6242768, -2776.7232375);
+            PillarTops[3, 0] = new PointXYZ(579437.179513681, 6242732.92471259, -2765.122978125);
+            PillarBottoms[3, 0] = new PointXYZ(579436.743308121, 6242733.42119845, -2774.2794796875);
+            PillarTops[3, 1] = new PointXYZ(579470.48291385, 6242776.2781815, -2763.03432421875);
+            PillarBottoms[3, 1] = new PointXYZ(579469.923218037, 6242776.86345756, -2772.24321328125);
+            PillarTops[1, 2] = new PointXYZ(579570.138400909, 6242708.64158499, -2774.224115625);
+            PillarBottoms[1, 2] = new PointXYZ(579569.805431011, 6242708.98093494, -2780.43173671875);
+            PillarTops[0, 2] = new PointXYZ(579608.199123414, 6242641.54737876, -2776.94022890625);
+            PillarBottoms[0, 2] = new PointXYZ(579607.949035609, 6242641.79618406, -2782.7114859375);
+            PillarTops[2, 2] = new PointXYZ(579536.907507678, 6242764.82239216, -2768.39987578125);
+            PillarBottoms[2, 2] = new PointXYZ(579536.455810804, 6242765.2836305, -2775.7082296875);
+            PillarTops[3, 2] = new PointXYZ(579516.117092782, 6242801.52963449, -2762.44675078125);
+            PillarBottoms[3, 2] = new PointXYZ(579515.615370112, 6242802.03647429, -2771.218978125);
+            PillarTops[1, 3] = new PointXYZ(579625.338702895, 6242717.71231128, -2771.1255140625);
+            PillarBottoms[1, 3] = new PointXYZ(579625.054227459, 6242718.00046211, -2777.741221875);
+            PillarTops[0, 3] = new PointXYZ(579657.310078067, 6242659.13924268, -2773.67553515625);
+            PillarBottoms[0, 3] = new PointXYZ(579657.088697323, 6242659.35966229, -2779.44232734375);
+            PillarTops[2, 3] = new PointXYZ(579595.943416998, 6242768.18831933, -2767.60513359375);
+            PillarBottoms[2, 3] = new PointXYZ(579595.631762305, 6242768.50407731, -2774.63934609375);
+            PillarTops[3, 3] = new PointXYZ(579568.995445128, 6242811.64909635, -2762.73666796875);
+            PillarBottoms[3, 3] = new PointXYZ(579568.639964587, 6242812.00636323, -2770.77517265625);*/
+
+            /*PillarTops[0, 0] = new PointXYZ(579490.302865076, 6242639.98364086, -2785.532671875);
+            PillarBottoms[0, 0] = new PointXYZ(579490.068952623, 6242640.26077959, -2791.05092109375);
+            PillarTops[0, 1] = new PointXYZ(579522.919630286, 6242684.47650283, -2778.765159375);
+            PillarBottoms[0, 1] = new PointXYZ(579522.589252403, 6242684.8296086, -2784.69417421875);
+            PillarTops[1, 0] = new PointXYZ(579462.115837969, 6242714.03325091, -2774.1520828125);
+            PillarBottoms[1, 0] = new PointXYZ(579461.755961482, 6242714.37031465, -2781.5899171875);
+            PillarTops[1, 1]= new PointXYZ(579474.819795827, 6242778.69355795, -2768.86243359375);
+            PillarBottoms[1, 1]= new PointXYZ(579474.27157384, 6242779.15065535, -2776.7232375);
+            PillarTops[2, 0] = new PointXYZ(579437.179513681, 6242732.92471259, -2765.122978125);
+            PillarBottoms[2, 0] = new PointXYZ(579436.743308121, 6242733.42119845, -2774.2794796875);
+            PillarTops[2, 1] = new PointXYZ(579470.48291385, 6242776.2781815, -2763.03432421875);
+            PillarBottoms[2, 1] = new PointXYZ(579469.923218037, 6242776.86345756, -2772.24321328125);
+            PillarTops[0, 2] = new PointXYZ(579570.138400909, 6242708.64158499, -2774.224115625);
+            PillarBottoms[0, 2] = new PointXYZ(579569.805431011, 6242708.98093494, -2780.43173671875);
+            PillarTops[1, 2] = new PointXYZ(579536.907507678, 6242764.82239216, -2768.39987578125);
+            PillarBottoms[1, 2] = new PointXYZ(579536.455810804, 6242765.2836305, -2775.7082296875);
+            PillarTops[2, 2] = new PointXYZ(579516.117092782, 6242801.52963449, -2762.44675078125);
+            PillarBottoms[2, 2] = new PointXYZ(579515.615370112, 6242802.03647429, -2771.218978125);*/
+
+            /*PillarTops[0, 0]= new PointXYZ(579474.819795827, 6242778.69355795, -2768.86243359375);
+            PillarBottoms[0, 0]= new PointXYZ(579474.27157384, 6242779.15065535, -2776.7232375);
+            PillarTops[0, 1] = new PointXYZ(579536.907507678, 6242764.82239216, -2768.39987578125);
+            PillarBottoms[0, 1] = new PointXYZ(579536.455810804, 6242765.2836305, -2775.7082296875);
+            PillarTops[1, 1] = new PointXYZ(579516.117092782, 6242801.52963449, -2762.44675078125);
+            PillarBottoms[1, 1] = new PointXYZ(579515.615370112, 6242802.03647429, -2771.218978125);
+            PillarTops[1, 0] = new PointXYZ(579470.48291385, 6242776.2781815, -2763.03432421875);
+            PillarBottoms[1, 0] = new PointXYZ(579469.923218037, 6242776.86345756, -2772.24321328125);*/
 
 #if READINPUTFROMFILE
             // Read include files and set property and geometry overrides
@@ -2325,7 +2460,7 @@ namespace DFMGenerator_Standalone
 
                     // Set the propagation control data for the gridblock
                     gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                        MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
+                         MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
 
                     // Set folder path for output files
                     gc.PropControl.FolderPath = folderPath;
