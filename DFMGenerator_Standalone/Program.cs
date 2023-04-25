@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRACS
@@ -459,7 +459,7 @@ namespace DFMGenerator_Standalone
             // Ehmin is most tensile (i.e. most negative) horizontal strain rate
             double EhminRate = -0.01;//0;
             // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-            double EhmaxRate = -0.005;//0;
+            double EhmaxRate = -0.008;//0;
             // Set VariableStrainMagnitude to add random variation to the input strain rates
             // Strain rates for each gridblock will vary randomly from 0 to 2x specified values
             bool VariableStrainMagnitude = false;
@@ -614,7 +614,7 @@ namespace DFMGenerator_Standalone
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
             // Do not use DuctileBoundary as this is not yet implemented
-            StressDistribution StressDistributionScenario = StressDistribution.StressShadow;
+            StressDistribution StressDistributionScenario = StressDistribution.EvenlyDistributedStress;// StressDistribution.StressShadow;
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
             // If DepthAtDeformation is specified, this will be used to calculate vertical stress
             // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
@@ -751,7 +751,7 @@ namespace DFMGenerator_Standalone
             // Set false to allow fractures to propagate outside of the outer grid boundary
             bool CropAtBoundary = true;
             // Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
-            bool LinkStressShadows = true;// false;
+            bool LinkStressShadows = false;
             // Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set 
             // Set to Pi/4 rad (45 degrees) by default
             double MaxConsistencyAngle = Math.PI / 4;

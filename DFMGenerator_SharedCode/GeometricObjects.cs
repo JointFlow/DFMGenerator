@@ -2151,6 +2151,7 @@ namespace DFMGenerator_SharedCode
 
                 // Create a list of row components for the smaller submatrices, comprising all the rows in the current submatrix except the first
                 List<Tensor2SComponents> submatrixRows = new List<Tensor2SComponents>(RowComponents);
+                Tensor2SComponents toprow = submatrixRows[0];
                 submatrixRows.RemoveAt(0);
 
                 // We can now generate a series of smaller submatrices by removing each column in turn from the current submatrix
@@ -2165,7 +2166,8 @@ namespace DFMGenerator_SharedCode
                     submatrixCols.Remove(column);
 
                     // Calculate the increment to the overall determinant and add it to the current value
-                    determinant += polarity * components[Tensor2SComponents.XX][column] * SubmatrixDeterminant(submatrixRows, submatrixCols);
+                    double increment = polarity * components[toprow][column] * SubmatrixDeterminant(submatrixRows, submatrixCols);
+                    determinant += increment;
 
                     // The next smaller submatrix will have the opposite polarity to this one
                     polarity = -polarity;
