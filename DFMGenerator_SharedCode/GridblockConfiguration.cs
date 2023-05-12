@@ -2068,10 +2068,10 @@ namespace DFMGenerator_SharedCode
         {
             // Declare local variables
             bool CalculationCompleted = false;
-            bool HitTimestepLimit = false;
+            bool WithinTimestepLimit = true;
             StrainRelaxationCase SRC = MechProps.GetStrainRelaxationCase();
             StressDistribution SD = PropControl.StressDistributionCase;
-
+            
             // Cache constants locally
             // Cache thermo-poro-elastic properties locally
             double E_r = MechProps.E_r;
@@ -2805,7 +2805,7 @@ namespace DFMGenerator_SharedCode
                     if (CurrentImplicitTimestep >= maxTimesteps)
                     {
                         CalculationCompleted = true;
-                        HitTimestepLimit = true;
+                        WithinTimestepLimit = false;
                     }
                     // Check if all fracture sets are deactivated
                     if (AllSetsDeactivated && StopWhenAllSetsDeactivated)
@@ -3029,7 +3029,7 @@ namespace DFMGenerator_SharedCode
             if (writeImplicitDataToFile)
                 outputFile.Close();
 
-            return HitTimestepLimit;
+            return WithinTimestepLimit;
         }
         /// <summary>
         /// Calculate fracture data based on user-specified PropagationControl object, building on existing fracture populations 
@@ -3895,7 +3895,7 @@ namespace DFMGenerator_SharedCode
                                 // If the fracture nucleation position is undefined and the microfracture tip has reached one of the layer boundaries, move its centrepoint towards centre of layer
                                 // This will prevent the microfracture extending out of layer; however this is only geologically valid if the microfractures grow anisotropically and it may skew the microfracture volumetric distribution
                                 // If the fracture nucleation position is defined, microfractures may extend out of the layer; this can be rectified when generating the microfracture cornerpoints
-                                if (PropControl.FractureNucleationPosition < 0)
+                                if (!SpecifyFractureNucleationPosition)
                                 {
                                     if (uF.CentrePoint.K < (uF.Radius - max_uF_radius)) uF.CentrePoint.K = (uF.Radius - max_uF_radius);
                                     if (uF.CentrePoint.K > (max_uF_radius - uF.Radius)) uF.CentrePoint.K = (max_uF_radius - uF.Radius);

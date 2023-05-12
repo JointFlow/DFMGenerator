@@ -218,7 +218,7 @@ namespace DFMGenerator_SharedCode
         /// Get the true vertical thickness of the layer at a specified point in grid (XYZ) coordinates
         /// </summary>
         /// <param name="point_in">Input point in XYZ coordinates</param>
-        /// <returns>point_t of the gridblock (m)</returns>
+        /// <returns>True vertical thickness of the gridblock (m)</returns>
         public double getTVTAtPoint(PointXYZ point_in)
         {
             // Return point_t of gridblock at point x,y
@@ -419,7 +419,7 @@ namespace DFMGenerator_SharedCode
             if (FractureNucleationPosition_w != 0.5)
             {
                 // If the specified relative nucleation depth is negative or no relative nucleation depth is specified, generate a random value
-                if (double.IsNaN(FractureNucleationPosition_w))
+                if (!(FractureNucleationPosition_w >= 0))
                     FractureNucleationPosition_w = randGen.NextDouble();
                 double TVT = getTVTAtPoint(nucleationPoint);
                 nucleationPoint.K = TVT * (FractureNucleationPosition_w - 0.5);

@@ -247,6 +247,7 @@ namespace DFMGenerator_Ocean
                     List<bool> UseGridFor_AppliedUpliftRate_list = new List<bool>();
                     // Sub episode data; used if one of the supplied grid property arguments is a GridPropertyResult object
                     Case activeCase = null;
+                    List<Case> Case_list = new List<Case>();
                     List<bool> SubEpisodesDefined_list = new List<bool>();
                     List<List<double>> SubEpisodeDurations_GeologicalTimeUnits_list = new List<List<Double>>();
                     List<List<string>> SubEpisodeNameOverride_list = new List<List<string>>();
@@ -297,6 +298,11 @@ namespace DFMGenerator_Ocean
                         else
                             EhminAzi_list.Add(EhminAzi);
                         Property next_EhminAzi_grid = arguments.EhminAzi(deformationEpisodeNo);
+                        if ((next_EhminAzi_grid != null) && (next_EhminAzi_grid.Grid != PetrelGrid))
+                        {
+                            next_EhminAzi_grid = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Minimum horizontal strain azimuth property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                        }
                         EhminAzi_grid_list.Add(next_EhminAzi_grid);
                         UseGridFor_EhminAzi_list.Add(next_EhminAzi_grid != null);
 
@@ -306,6 +312,11 @@ namespace DFMGenerator_Ocean
                         else
                             EhminRate_GeologicalTimeUnits_list.Add(EhminRate_GeologicalTimeUnits);
                         Property next_EhminRate_grid = arguments.EhminRate(deformationEpisodeNo);
+                        if ((next_EhminRate_grid != null) && (next_EhminRate_grid.Grid != PetrelGrid))
+                        {
+                            next_EhminRate_grid = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Minimum horizontal strain rate property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                        }
                         EhminRate_grid_list.Add(next_EhminRate_grid);
                         UseGridFor_EhminRate_list.Add(next_EhminRate_grid != null);
 
@@ -315,6 +326,11 @@ namespace DFMGenerator_Ocean
                         else
                             EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
                         Property next_EhmaxRate_grid = arguments.EhmaxRate(deformationEpisodeNo);
+                        if ((next_EhmaxRate_grid != null) && (next_EhmaxRate_grid.Grid != PetrelGrid))
+                        {
+                            next_EhmaxRate_grid = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Maximum horizontal strain rate property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                        }
                         EhmaxRate_grid_list.Add(next_EhmaxRate_grid);
                         UseGridFor_EhmaxRate_list.Add(next_EhmaxRate_grid != null);
 
@@ -324,6 +340,11 @@ namespace DFMGenerator_Ocean
                         else
                             AppliedOverpressureRate_GeologicalTimeUnits_list.Add(AppliedOverpressureRate_GeologicalTimeUnits);
                         Property next_AppliedOverpressureRate_grid = arguments.AppliedOverpressureRate(deformationEpisodeNo);
+                        if ((next_AppliedOverpressureRate_grid != null) && (next_AppliedOverpressureRate_grid.Grid != PetrelGrid))
+                        {
+                            next_AppliedOverpressureRate_grid = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Applied fluid overpressure rate property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                        }
                         AppliedOverpressureRate_grid_list.Add(next_AppliedOverpressureRate_grid);
                         UseGridFor_AppliedOverpressureRate_list.Add(next_AppliedOverpressureRate_grid != null);
 
@@ -333,6 +354,11 @@ namespace DFMGenerator_Ocean
                         else
                             AppliedTemperatureChange_GeologicalTimeUnits_list.Add(AppliedTemperatureChange_GeologicalTimeUnits);
                         Property next_AppliedTemperatureChange_grid = arguments.AppliedTemperatureChange(deformationEpisodeNo);
+                        if ((next_AppliedTemperatureChange_grid != null) && (next_AppliedTemperatureChange_grid.Grid != PetrelGrid))
+                        {
+                            next_AppliedTemperatureChange_grid = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Applied temperature change rate property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                        }
                         AppliedTemperatureChange_grid_list.Add(next_AppliedTemperatureChange_grid);
                         UseGridFor_AppliedTemperatureChange_list.Add(next_AppliedTemperatureChange_grid != null);
 
@@ -342,6 +368,11 @@ namespace DFMGenerator_Ocean
                         else
                             AppliedUpliftRate_GeologicalTimeUnits_list.Add(AppliedUpliftRate_GeologicalTimeUnits);
                         Property next_AppliedUpliftRate_grid = arguments.AppliedUpliftRate(deformationEpisodeNo);
+                        if ((next_AppliedUpliftRate_grid != null) && (next_AppliedUpliftRate_grid.Grid != PetrelGrid))
+                        {
+                            next_AppliedUpliftRate_grid = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Applied uplift rate property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                        }
                         AppliedUpliftRate_grid_list.Add(next_AppliedUpliftRate_grid);
                         UseGridFor_AppliedUpliftRate_list.Add(next_AppliedUpliftRate_grid != null);
 
@@ -357,25 +388,28 @@ namespace DFMGenerator_Ocean
                         else
                             DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(DeformationEpisodeDuration_GeologicalTimeUnits);
 
-                        // Check if one of the supplied grid property arguments is a GridResult object; if so we will subdivide the deformation episode into sub episodes according to the number of elements in the corresponding GridPropertyTimeSeries object
-                        bool subEpisodesDefined = arguments.SubdivideDeformationEpisode(deformationEpisodeNo);
-                        // If required, get the current selected simulation case
-                        if (subEpisodesDefined)
+                        // Check if one of the supplied grid property arguments is a GridResult object, and if a corresponding simulation case can be found
+                        // If so we will subdivide the deformation episode into sub episodes according to the number of elements in the corresponding GridPropertyTimeSeries object
+                        bool subEpisodesDefined = false;
+                        Case selectedCase = null;
+                        if (arguments.SubdivideDeformationEpisode(deformationEpisodeNo))
                         {
+                            // Create an output message to specify which simulation case will be used
+                            string simCaseMessage = "";
                             try
                             {
-                                Case selectedCase = arguments.SimulationCase(deformationEpisodeNo);
+                                selectedCase = arguments.SimulationCase(deformationEpisodeNo);
                                 if (selectedCase != null)
                                 {
-                                    activeCase = selectedCase;
+                                    simCaseMessage = string.Format("Deformation episode {0} uses dynamic data from simulation case {1}", deformationEpisodeNo + 1, selectedCase.Name);
                                 }
                                 else
                                 {
                                     List<Case> selectedCases = PetrelProject.Cases.GetSelected<Case>().ToList();
                                     if (selectedCases.Count > 0)
                                     {
-                                        activeCase = selectedCases.First<Case>();
-                                        PetrelLogger.InfoOutputWindow(string.Format("No simulation case is specified for deformation episode {0}, so the active case {1} will be used", deformationEpisodeNo, activeCase.Name));
+                                        selectedCase = selectedCases.First<Case>();
+                                        simCaseMessage = string.Format("No simulation case is specified for deformation episode {0}, so the active case {1} will be used", deformationEpisodeNo + 1, selectedCase.Name);
                                     }
                                     else
                                     {
@@ -383,19 +417,27 @@ namespace DFMGenerator_Ocean
                                     }
                                 }
                                 // Check if the grid for the selected case is the same as the selected model grid
-                                if (activeCase.Grid != PetrelGrid)
+                                if (selectedCase.Grid != PetrelGrid)
                                 {
-                                    PetrelLogger.InfoOutputWindow("Simulation case uses a different grid to that specified for model geometry; cannot use dynamic data for the load input");
+                                    simCaseMessage = string.Format("Simulation case {0} uses a different grid to that specified for model geometry; cannot use dynamic data for the load input", selectedCase.Name);
                                     subEpisodesDefined = false;
+                                }
+                                else
+                                {
+                                    subEpisodesDefined = true;
+                                    if (activeCase is null)
+                                        activeCase = selectedCase;
                                 }
                             }
                             // If no simulation case is selected we cannot use dynamic data for the load input
                             catch (Exception)
                             {
-                                PetrelLogger.InfoOutputWindow("No simulation case is specified or active; cannot use dynamic data for the load input");
+                                simCaseMessage = string.Format("No simulation case is specified or active for deformation episode {0}; cannot use dynamic data for the load input", deformationEpisodeNo + 1);
                                 subEpisodesDefined = false;
                             }
+                            PetrelLogger.InfoOutputWindow(simCaseMessage);
                         }
+                        Case_list.Add(selectedCase);
                         SubEpisodesDefined_list.Add(subEpisodesDefined);
                         if (subEpisodesDefined)
                         {
@@ -410,7 +452,7 @@ namespace DFMGenerator_Ocean
                             FluidPressure_result_list.Add(fluidPressureResult);
                             if (fluidPressureResult != null)
                             {
-                                GridPropertyTimeSeries fluidPressureTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(fluidPressureResult);
+                                GridPropertyTimeSeries fluidPressureTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(fluidPressureResult);
                                 UseGridPropertyTimeSeriesFor_FluidPressure = (fluidPressureTimeSeries != null) && (fluidPressureTimeSeries.SampleCount > 1);
                                 if (UseGridPropertyTimeSeriesFor_FluidPressure)
                                 {
@@ -422,6 +464,10 @@ namespace DFMGenerator_Ocean
                                     }
                                     fluidPressureGridPropertyList = fluidPressureTimeSeries.Samples.ToList();
                                 }
+                                else
+                                {
+                                    PetrelLogger.InfoOutputWindow(string.Format("Could not read fluid pressure result data for deformation episode {0}; will use default value instead", deformationEpisodeNo + 1));
+                                }
                             }
                             UseGridPropertyTimeSeriesFor_FluidPressure_list.Add(UseGridPropertyTimeSeriesFor_FluidPressure);
                             FluidPressure_grid_list.Add(fluidPressureGridPropertyList);
@@ -432,7 +478,7 @@ namespace DFMGenerator_Ocean
                             Szz_result_list.Add(szzResult);
                             if (szzResult != null)
                             {
-                                GridPropertyTimeSeries szzTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(szzResult);
+                                GridPropertyTimeSeries szzTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(szzResult);
                                 UseGridPropertyTimeSeriesFor_Szz = (szzTimeSeries != null) && (szzTimeSeries.SampleCount > 1);
                                 if (UseGridPropertyTimeSeriesFor_Szz)
                                 {
@@ -443,6 +489,10 @@ namespace DFMGenerator_Ocean
                                         noSubEpisodes = timeSeriesIndex.Count - 1;
                                     }
                                     szzGridPropertyList = szzTimeSeries.Samples.ToList();
+                                }
+                                else
+                                {
+                                    PetrelLogger.InfoOutputWindow(string.Format("Could not read result data for stress component szz for deformation episode {0}; will use default value instead", deformationEpisodeNo + 1));
                                 }
                             }
                             UseGridPropertyTimeSeriesFor_Szz_list.Add(UseGridPropertyTimeSeriesFor_Szz);
@@ -460,9 +510,9 @@ namespace DFMGenerator_Ocean
                             Sxy_result_list.Add(sxyResult);
                             if (UseGridPropertyTimeSeriesFor_Szz && (sxxResult != null) && (syyResult != null) && (sxyResult != null))
                             {
-                                GridPropertyTimeSeries sxxTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(sxxResult);
-                                GridPropertyTimeSeries syyTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(syyResult);
-                                GridPropertyTimeSeries sxyTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(sxyResult);
+                                GridPropertyTimeSeries sxxTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(sxxResult);
+                                GridPropertyTimeSeries syyTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(syyResult);
+                                GridPropertyTimeSeries sxyTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(sxyResult);
                                 UseGridPropertyTimeSeriesFor_StressTensor = (sxxTimeSeries != null) && (sxxTimeSeries.SampleCount > 1) && (syyTimeSeries != null) && (syyTimeSeries.SampleCount > 1) && (sxyTimeSeries != null) && (sxyTimeSeries.SampleCount > 1);
                                 if (UseGridPropertyTimeSeriesFor_StressTensor)
                                 {
@@ -475,6 +525,10 @@ namespace DFMGenerator_Ocean
                                     sxxGridPropertyList = sxxTimeSeries.Samples.ToList();
                                     syyGridPropertyList = syyTimeSeries.Samples.ToList();
                                     sxyGridPropertyList = sxyTimeSeries.Samples.ToList();
+                                }
+                                else
+                                {
+                                    PetrelLogger.InfoOutputWindow(string.Format("Could not read result data for stress components sxx, syy and sxy for deformation episode {0}; will use default value instead", deformationEpisodeNo + 1));
                                 }
                             }
                             UseGridPropertyTimeSeriesFor_StressTensor_list.Add(UseGridPropertyTimeSeriesFor_StressTensor);
@@ -491,8 +545,8 @@ namespace DFMGenerator_Ocean
                             Syz_result_list.Add(syzResult);
                             if (UseGridPropertyTimeSeriesFor_StressTensor && (szxResult != null) && (syzResult != null))
                             {
-                                GridPropertyTimeSeries szxTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(szxResult);
-                                GridPropertyTimeSeries syzTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(syzResult);
+                                GridPropertyTimeSeries szxTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(szxResult);
+                                GridPropertyTimeSeries syzTimeSeries = selectedCase.Results.GetGridPropertyTimeSeries(syzResult);
                                 UseGridPropertyTimeSeriesFor_ShvComponents = (szxTimeSeries != null) && (szxTimeSeries.SampleCount > 1) && (syzTimeSeries != null) && (syzTimeSeries.SampleCount > 1);
                                 if (UseGridPropertyTimeSeriesFor_ShvComponents)
                                 {
@@ -507,6 +561,10 @@ namespace DFMGenerator_Ocean
 
                                     // The fracture sets will not be symmetical about strike, so we cannot use biazimuthal conjugate fracture sets
                                     BiazimuthalConjugate = false;
+                                }
+                                else
+                                {
+                                    PetrelLogger.InfoOutputWindow(string.Format("Could not read result data for stress components szx and syz for deformation episode {0}; will use default value instead", deformationEpisodeNo + 1));
                                 }
                             }
                             UseGridPropertyTimeSeriesFor_ShvComponents_list.Add(UseGridPropertyTimeSeriesFor_ShvComponents);
@@ -603,56 +661,132 @@ namespace DFMGenerator_Ocean
                         YoungsMod = arguments.Argument_YoungsMod_default; // Can also be set from grid property
                     GridProperty YoungsMod_gridProperty = null;
                     GridResult YoungsMod_gridResult = arguments.Argument_YoungsMod_GR;
-                    if (caseDefined && !(YoungsMod_gridResult is null))
+                    if (!(YoungsMod_gridResult is null))
                     {
-                        GridPropertyTimeSeries YoungsModTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(YoungsMod_gridResult);
-                        if (!(YoungsModTimeSeries is null) && (YoungsModTimeSeries.SampleCount > 0))
-                            YoungsMod_gridProperty = YoungsModTimeSeries.Samples.First<GridProperty>();
+                        if (caseDefined)
+                        {
+                            GridPropertyTimeSeries YoungsModTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(YoungsMod_gridResult);
+                            if (!(YoungsModTimeSeries is null) && (YoungsModTimeSeries.SampleCount > 0))
+                                YoungsMod_gridProperty = YoungsModTimeSeries.Samples.First<GridProperty>();
+                            else
+                                PetrelLogger.InfoOutputWindow("Could not read Young's Modulus result data; will use default value instead");
+                            if ((YoungsMod_gridProperty != null) && (YoungsMod_gridProperty.Grid != PetrelGrid))
+                            {
+                                YoungsMod_gridProperty = null;
+                                PetrelLogger.InfoOutputWindow("Young's Modulus result data is defined on a different grid; will use default value instead");
+                            }
+                        }
+                        else
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case defined for Young's Modulus result data; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_YoungsMod = (YoungsMod_gridProperty != null);
                     Property YoungsMod_grid = arguments.Argument_YoungsMod;
+                    if ((YoungsMod_grid != null) && (YoungsMod_grid.Grid != PetrelGrid))
+                    {
+                        YoungsMod_grid = null;
+                        PetrelLogger.InfoOutputWindow("Young's Modulus property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_YoungsMod = !UseGridPropertyFor_YoungsMod && (YoungsMod_grid != null);
                     double PoissonsRatio = 0.25;
                     if (!double.IsNaN(arguments.Argument_PoissonsRatio_default))
                         PoissonsRatio = arguments.Argument_PoissonsRatio_default; // Can also be set from grid property
                     GridProperty PoissonsRatio_gridProperty = null;
                     GridResult PoissonsRatio_gridResult = arguments.Argument_PoissonsRatio_GR;
-                    if (caseDefined && !(PoissonsRatio_gridResult is null))
+                    if (!(PoissonsRatio_gridResult is null))
                     {
-                        GridPropertyTimeSeries PoissonsRatioTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(PoissonsRatio_gridResult);
-                        if (!(PoissonsRatioTimeSeries is null) && (PoissonsRatioTimeSeries.SampleCount > 0))
-                            PoissonsRatio_gridProperty = PoissonsRatioTimeSeries.Samples.First<GridProperty>();
+                        if (caseDefined)
+                        {
+                            GridPropertyTimeSeries PoissonsRatioTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(PoissonsRatio_gridResult);
+                            if (!(PoissonsRatioTimeSeries is null) && (PoissonsRatioTimeSeries.SampleCount > 0))
+                                PoissonsRatio_gridProperty = PoissonsRatioTimeSeries.Samples.First<GridProperty>();
+                            else
+                                PetrelLogger.InfoOutputWindow("Could not read Poisson's ratio result data; will use default value instead");
+                            if ((PoissonsRatio_gridProperty != null) && (PoissonsRatio_gridProperty.Grid != PetrelGrid))
+                            {
+                                PoissonsRatio_gridProperty = null;
+                                PetrelLogger.InfoOutputWindow("Poisson's ratio result data is defined on a different grid; will use default value instead");
+                            }
+                        }
+                        else
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case defined for Poisson's ratio result data; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_PoissonsRatio = (PoissonsRatio_gridProperty != null);
                     Property PoissonsRatio_grid = arguments.Argument_PoissonsRatio;
+                    if ((PoissonsRatio_grid != null) && (PoissonsRatio_grid.Grid != PetrelGrid))
+                    {
+                        PoissonsRatio_grid = null;
+                        PetrelLogger.InfoOutputWindow("Poisson's ratio property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_PoissonsRatio = !UseGridPropertyFor_PoissonsRatio && (PoissonsRatio_grid != null);
                     double Porosity = 0.2;
                     if (!double.IsNaN(arguments.Argument_Porosity_default))
                         Porosity = arguments.Argument_Porosity_default; // Can also be set from grid property
                     GridProperty Porosity_gridProperty = null;
                     GridResult Porosity_gridResult = arguments.Argument_Porosity_GR;
-                    if (caseDefined && !(Porosity_gridResult is null))
+                    if (!(Porosity_gridResult is null))
                     {
-                        GridPropertyTimeSeries PorosityTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(Porosity_gridResult);
-                        if (!(PorosityTimeSeries is null) && (PorosityTimeSeries.SampleCount > 0))
-                            Porosity_gridProperty = PorosityTimeSeries.Samples.First<GridProperty>();
+                        if (caseDefined)
+                        {
+                            GridPropertyTimeSeries PorosityTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(Porosity_gridResult);
+                            if (!(PorosityTimeSeries is null) && (PorosityTimeSeries.SampleCount > 0))
+                                Porosity_gridProperty = PorosityTimeSeries.Samples.First<GridProperty>();
+                            else
+                                PetrelLogger.InfoOutputWindow("Could not read Porosity result data; will use default value instead");
+                            if ((Porosity_gridProperty != null) && (Porosity_gridProperty.Grid != PetrelGrid))
+                            {
+                                Porosity_gridProperty = null;
+                                PetrelLogger.InfoOutputWindow("Porosity result data is defined on a different grid; will use default value instead");
+                            }
+                        }
+                        else
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case defined for Porosity result data; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_Porosity = (Porosity_gridProperty != null);
                     Property Porosity_grid = arguments.Argument_Porosity;
+                    if ((Porosity_grid != null) && (Porosity_grid.Grid != PetrelGrid))
+                    {
+                        Porosity_grid = null;
+                        PetrelLogger.InfoOutputWindow("Porosity property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_Porosity = !UseGridPropertyFor_Porosity && (Porosity_grid != null);
                     double BiotCoefficient = 1;
                     if (!double.IsNaN(arguments.Argument_BiotCoefficient_default))
                         BiotCoefficient = arguments.Argument_BiotCoefficient_default; // Can also be set from grid property
                     GridProperty BiotCoefficient_gridProperty = null;
                     GridResult BiotCoefficient_gridResult = arguments.Argument_BiotCoefficient_GR;
-                    if (caseDefined && !(BiotCoefficient_gridResult is null))
+                    if (!(BiotCoefficient_gridResult is null))
                     {
-                        GridPropertyTimeSeries BiotCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(BiotCoefficient_gridResult);
-                        if (!(BiotCoefficientTimeSeries is null) && (BiotCoefficientTimeSeries.SampleCount > 0))
-                            BiotCoefficient_gridProperty = BiotCoefficientTimeSeries.Samples.First<GridProperty>();
+                        if (caseDefined)
+                        {
+                            GridPropertyTimeSeries BiotCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(BiotCoefficient_gridResult);
+                            if (!(BiotCoefficientTimeSeries is null) && (BiotCoefficientTimeSeries.SampleCount > 0))
+                                BiotCoefficient_gridProperty = BiotCoefficientTimeSeries.Samples.First<GridProperty>();
+                            else
+                                PetrelLogger.InfoOutputWindow("Could not read Biot coefficient result data; will use default value instead");
+                            if ((BiotCoefficient_gridProperty != null) && (BiotCoefficient_gridProperty.Grid != PetrelGrid))
+                            {
+                                BiotCoefficient_gridProperty = null;
+                                PetrelLogger.InfoOutputWindow("Biot coefficient result data is defined on a different grid; will use default value instead");
+                            }
+                        }
+                        else
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case defined for Biot coefficient result data; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_BiotCoefficient = (BiotCoefficient_gridProperty != null);
                     Property BiotCoefficient_grid = arguments.Argument_BiotCoefficient;
+                    if ((BiotCoefficient_grid != null) && (BiotCoefficient_grid.Grid != PetrelGrid))
+                    {
+                        BiotCoefficient_grid = null;
+                        PetrelLogger.InfoOutputWindow("Biot coefficient property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_BiotCoefficient = !UseGridPropertyFor_BiotCoefficient && (BiotCoefficient_grid != null);
                     // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
                     double ThermalExpansionCoefficient = 4E-5;
@@ -660,28 +794,66 @@ namespace DFMGenerator_Ocean
                         ThermalExpansionCoefficient = arguments.Argument_ThermalExpansionCoefficient_default; // Can also be set from grid property
                     GridProperty ThermalExpansionCoefficient_gridProperty = null;
                     GridResult ThermalExpansionCoefficient_gridResult = arguments.Argument_ThermalExpansionCoefficient_GR;
-                    if (caseDefined && !(ThermalExpansionCoefficient_gridResult is null))
+                    if (!(ThermalExpansionCoefficient_gridResult is null))
                     {
-                        GridPropertyTimeSeries ThermalExpansionCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(ThermalExpansionCoefficient_gridResult);
-                        if (!(ThermalExpansionCoefficientTimeSeries is null) && (ThermalExpansionCoefficientTimeSeries.SampleCount > 0))
-                            ThermalExpansionCoefficient_gridProperty = ThermalExpansionCoefficientTimeSeries.Samples.First<GridProperty>();
+                        if (caseDefined)
+                        {
+                            GridPropertyTimeSeries ThermalExpansionCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(ThermalExpansionCoefficient_gridResult);
+                            if (!(ThermalExpansionCoefficientTimeSeries is null) && (ThermalExpansionCoefficientTimeSeries.SampleCount > 0))
+                                ThermalExpansionCoefficient_gridProperty = ThermalExpansionCoefficientTimeSeries.Samples.First<GridProperty>();
+                            else
+                                PetrelLogger.InfoOutputWindow("Could not read thermal expansion coefficient result data; will use default value instead");
+                            if ((ThermalExpansionCoefficient_gridProperty != null) && (ThermalExpansionCoefficient_gridProperty.Grid != PetrelGrid))
+                            {
+                                ThermalExpansionCoefficient_gridProperty = null;
+                                PetrelLogger.InfoOutputWindow("Thermal expansion coefficient result data is defined on a different grid; will use default value instead");
+                            }
+                        }
+                        else
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case defined for thermal expansion coefficient result data; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_ThermalExpansionCoefficient = (ThermalExpansionCoefficient_gridProperty != null);
                     Property ThermalExpansionCoefficient_grid = arguments.Argument_ThermalExpansionCoefficient;
+                    if ((ThermalExpansionCoefficient_grid != null) && (ThermalExpansionCoefficient_grid.Grid != PetrelGrid))
+                    {
+                        ThermalExpansionCoefficient_grid = null;
+                        PetrelLogger.InfoOutputWindow("Thermal expansion coefficient property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_ThermalExpansionCoefficient = !UseGridPropertyFor_ThermalExpansionCoefficient && (ThermalExpansionCoefficient_grid != null);
                     double FrictionCoefficient = 0.5;
                     if (!double.IsNaN(arguments.Argument_FrictionCoefficient_default))
                         FrictionCoefficient = arguments.Argument_FrictionCoefficient_default; // Can also be set from grid property
                     GridProperty FrictionCoefficient_gridProperty = null;
                     GridResult FrictionCoefficient_gridResult = arguments.Argument_FrictionCoefficient_GR;
-                    if (caseDefined && !(FrictionCoefficient_gridResult is null))
+                    if (!(FrictionCoefficient_gridResult is null))
                     {
-                        GridPropertyTimeSeries FrictionCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(FrictionCoefficient_gridResult);
-                        if (!(FrictionCoefficientTimeSeries is null) && (FrictionCoefficientTimeSeries.SampleCount > 0))
-                            FrictionCoefficient_gridProperty = FrictionCoefficientTimeSeries.Samples.First<GridProperty>();
+                        if (caseDefined)
+                        {
+                            GridPropertyTimeSeries FrictionCoefficientTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(FrictionCoefficient_gridResult);
+                            if (!(FrictionCoefficientTimeSeries is null) && (FrictionCoefficientTimeSeries.SampleCount > 0))
+                                FrictionCoefficient_gridProperty = FrictionCoefficientTimeSeries.Samples.First<GridProperty>();
+                            else
+                                PetrelLogger.InfoOutputWindow("Could not read friction coefficient result data; will use default value instead");
+                            if ((FrictionCoefficient_gridProperty != null) && (FrictionCoefficient_gridProperty.Grid != PetrelGrid))
+                            {
+                                FrictionCoefficient_gridProperty = null;
+                                PetrelLogger.InfoOutputWindow("Friction coefficient result data is defined on a different grid; will use default value instead");
+                            }
+                        }
+                        else
+                        {
+                            PetrelLogger.InfoOutputWindow("No simulation case defined for friction coefficient result data; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_FrictionCoefficient = (FrictionCoefficient_gridProperty != null);
                     Property FrictionCoefficient_grid = arguments.Argument_FrictionCoefficient;
+                    if ((FrictionCoefficient_grid != null) && (FrictionCoefficient_grid.Grid != PetrelGrid))
+                    {
+                        FrictionCoefficient_grid = null;
+                        PetrelLogger.InfoOutputWindow("Friction coefficient property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_FrictionCoefficient = !UseGridPropertyFor_FrictionCoefficient && (FrictionCoefficient_grid != null);
                     double CrackSurfaceEnergy = 1000;
                     if (!double.IsNaN(arguments.Argument_CrackSurfaceEnergy_default))
@@ -693,9 +865,19 @@ namespace DFMGenerator_Ocean
                         GridPropertyTimeSeries CrackSurfaceEnergyTimeSeries = activeCase.Results.GetGridPropertyTimeSeries(CrackSurfaceEnergy_gridResult);
                         if (!(CrackSurfaceEnergyTimeSeries is null) && (CrackSurfaceEnergyTimeSeries.SampleCount > 0))
                             CrackSurfaceEnergy_gridProperty = CrackSurfaceEnergyTimeSeries.Samples.First<GridProperty>();
+                        if ((CrackSurfaceEnergy_gridProperty != null) && (CrackSurfaceEnergy_gridProperty.Grid != PetrelGrid))
+                        {
+                            CrackSurfaceEnergy_gridProperty = null;
+                            PetrelLogger.InfoOutputWindow("Crack surface energy result data is defined on a different grid; will use default value instead");
+                        }
                     }
                     bool UseGridPropertyFor_CrackSurfaceEnergy = (CrackSurfaceEnergy_gridProperty != null);
                     Property CrackSurfaceEnergy_grid = arguments.Argument_CrackSurfaceEnergy;
+                    if ((CrackSurfaceEnergy_grid != null) && (CrackSurfaceEnergy_grid.Grid != PetrelGrid))
+                    {
+                        CrackSurfaceEnergy_grid = null;
+                        PetrelLogger.InfoOutputWindow("Crack surface energy property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_CrackSurfaceEnergy = !UseGridPropertyFor_CrackSurfaceEnergy && (CrackSurfaceEnergy_grid != null);
                     // Strain relaxation data
                     // Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
@@ -703,30 +885,55 @@ namespace DFMGenerator_Ocean
                     if (!double.IsNaN(arguments.Argument_RockStrainRelaxation_default))
                         RockStrainRelaxation = arguments.Argument_RockStrainRelaxation_default; // Can also be set from grid property
                     Property RockStrainRelaxation_grid = arguments.Argument_RockStrainRelaxation;
+                    if ((RockStrainRelaxation_grid != null) && (RockStrainRelaxation_grid.Grid != PetrelGrid))
+                    {
+                        RockStrainRelaxation_grid = null;
+                        PetrelLogger.InfoOutputWindow("Rock strain relaxation property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_RockStrainRelaxation = (RockStrainRelaxation_grid != null);
                     // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
                     double FractureRelaxation = 0;
                     if (!double.IsNaN(arguments.Argument_FractureStrainRelaxation_default))
                         FractureRelaxation = arguments.Argument_FractureStrainRelaxation_default; // Can also be set from grid property
                     Property FractureRelaxation_grid = arguments.Argument_FractureStrainRelaxation;
+                    if ((FractureRelaxation_grid != null) && (FractureRelaxation_grid.Grid != PetrelGrid))
+                    {
+                        FractureRelaxation_grid = null;
+                        PetrelLogger.InfoOutputWindow("Fracture strain relaxation property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_FractureRelaxation = (FractureRelaxation_grid != null);
                     // Density of initial microfractures
                     double InitialMicrofractureDensity = 0;
                     if (!double.IsNaN(arguments.Argument_InitialMicrofractureDensity_default))
                         InitialMicrofractureDensity = arguments.Argument_InitialMicrofractureDensity_default; // Can also be set from grid property
                     Property InitialMicrofractureDensity_grid = arguments.Argument_InitialMicrofractureDensity;
+                    if ((InitialMicrofractureDensity_grid != null) && (InitialMicrofractureDensity_grid.Grid != PetrelGrid))
+                    {
+                        InitialMicrofractureDensity_grid = null;
+                        PetrelLogger.InfoOutputWindow("Initial microfracture density property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_InitialMicrofractureDensity = (InitialMicrofractureDensity_grid != null);
                     // Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
                     double InitialMicrofractureSizeDistribution = 3;
                     if (!double.IsNaN(arguments.Argument_InitialMicrofractureSizeDistribution_default))
                         InitialMicrofractureSizeDistribution = arguments.Argument_InitialMicrofractureSizeDistribution_default; // Can also be set from grid property
                     Property InitialMicrofractureSizeDistribution_grid = arguments.Argument_InitialMicrofractureSizeDistribution;
+                    if ((InitialMicrofractureSizeDistribution_grid != null) && (InitialMicrofractureSizeDistribution_grid.Grid != PetrelGrid))
+                    {
+                        InitialMicrofractureSizeDistribution_grid = null;
+                        PetrelLogger.InfoOutputWindow("Initial microfracture size distribution property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_InitialMicrofractureSizeDistribution = (InitialMicrofractureSizeDistribution_grid != null);
                     // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
                     double SubcriticalPropIndex = 10;
                     if (!double.IsNaN(arguments.Argument_SubcriticalPropagationIndex_default))
                         SubcriticalPropIndex = arguments.Argument_SubcriticalPropagationIndex_default; // Can also be set from grid property
                     Property SubcriticalPropIndex_grid = arguments.Argument_SubcriticalPropagationIndex;
+                    if ((SubcriticalPropIndex_grid != null) && (SubcriticalPropIndex_grid.Grid != PetrelGrid))
+                    {
+                        SubcriticalPropIndex_grid = null;
+                        PetrelLogger.InfoOutputWindow("Subcritical fracture propagation index property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_SubcriticalPropIndex = (SubcriticalPropIndex_grid != null);
                     double CriticalPropagationRate = 2000;
                     if (!double.IsNaN(arguments.Argument_CriticalPropagationRate))
@@ -747,6 +954,11 @@ namespace DFMGenerator_Ocean
                     if (!double.IsNaN(arguments.Argument_YoungsMod_default))
                         YoungsMod = arguments.Argument_YoungsMod_default; // Can also be set from grid property
                     Property DepthAtDeformation_grid = arguments.Argument_DepthAtDeformation;
+                    if ((DepthAtDeformation_grid != null) && (DepthAtDeformation_grid.Grid != PetrelGrid))
+                    {
+                        DepthAtDeformation_grid = null;
+                        PetrelLogger.InfoOutputWindow("Depth at time of deformation property data is defined on a different grid; will use default value instead");
+                    }
                     bool UseGridFor_DepthAtDeformation = (DepthAtDeformation_grid != null);
                     // Mean density of overlying sediments and fluid (kg/m3)
                     double MeanOverlyingSedimentDensity = 2250;
@@ -1203,9 +1415,9 @@ namespace DFMGenerator_Ocean
                             generalInputParams += string.Format("Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
                         if (UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo])
                         {
-                            generalInputParams += string.Format("Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", activeCase.Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", Case_list[deformationEpisodeNo].Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
                             if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
-                                generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", activeCase.Name, Syz_result_list[deformationEpisodeNo].Name, Szx_result_list[deformationEpisodeNo].Name);
+                                generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", Syz_result_list[deformationEpisodeNo].Name, Szx_result_list[deformationEpisodeNo].Name);
                             else
                                 generalInputParams += "\n";
                         }
@@ -1225,7 +1437,7 @@ namespace DFMGenerator_Ocean
                                 generalInputParams += string.Format("Maximum strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         }
                         if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Dynamic fluid pressure data from case {0}, property {1}\n", activeCase.Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
@@ -1235,7 +1447,7 @@ namespace DFMGenerator_Ocean
                         else if (AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
                             generalInputParams += string.Format("Rate of temperature change: {0}{1}/{2}\n", toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (UseGridPropertyTimeSeriesFor_Szz_list[deformationEpisodeNo] && !UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Dynamic vertical stress data from case {0}, property {1}\n", activeCase.Name, Szz_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format("Dynamic vertical stress data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format("Rate of uplift: {0}, default {1}{2}/{3}\n", AppliedUpliftRate_grid_list[deformationEpisodeNo].Name, toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
@@ -4383,11 +4595,14 @@ namespace DFMGenerator_Ocean
                                     // Assign the fracture properties
                                     using (ITransaction transactionAssignFractureProperties = DataManager.NewTransaction())
                                     {
-
                                         // Get handle to the appropriate fracture properties
-                                        // At present we will only write fracture aperture data - this could be expanded to include fracture permeability, connectivity and nucleation time
+                                        // At present we will only write fracture aperture, permeability and compressibility data - this could be expanded to include total length (not segment length), connectivity and nucleation time
                                         FracturePatchProperty fractureAperture = FracturePatchProperty.NullObject;
+                                        FracturePatchProperty fracturePermeability = FracturePatchProperty.NullObject;
+                                        //FracturePatchProperty fractureCompressibility = FracturePatchProperty.NullObject;
                                         FracturePatchPropertyType aperture = WellKnownFracturePatchPropertyTypes.Aperture;
+                                        FracturePatchPropertyType permeability = WellKnownFracturePatchPropertyTypes.Permeability;
+                                        //FracturePatchPropertyType compressibility = WellKnownFracturePatchPropertyTypes.Compressibility;
                                         if (fractureNetwork.HasWellKnownProperty(aperture))
                                         {
                                             fractureAperture = fractureNetwork.GetWellKnownProperty(aperture);
@@ -4400,6 +4615,30 @@ namespace DFMGenerator_Ocean
                                             transactionAssignFractureProperties.Lock(fractureNetwork);
                                             fractureAperture = fractureNetwork.CreateWellKnownProperty(aperture);
                                         }
+                                        if (fractureNetwork.HasWellKnownProperty(permeability))
+                                        {
+                                            fracturePermeability = fractureNetwork.GetWellKnownProperty(permeability);
+                                            // Lock the database
+                                            transactionAssignFractureProperties.Lock(fracturePermeability);
+                                        }
+                                        else
+                                        {
+                                            // Lock the database
+                                            transactionAssignFractureProperties.Lock(fractureNetwork);
+                                            fracturePermeability = fractureNetwork.CreateWellKnownProperty(permeability);
+                                        }
+                                        /*if (fractureNetwork.HasWellKnownProperty(compressibility))
+                                        {
+                                            fractureCompressibility = fractureNetwork.GetWellKnownProperty(compressibility);
+                                            // Lock the database
+                                            transactionAssignFractureProperties.Lock(fractureCompressibility);
+                                        }
+                                        else
+                                        {
+                                            // Lock the database
+                                            transactionAssignFractureProperties.Lock(fractureNetwork);
+                                            fractureCompressibility = fractureNetwork.CreateWellKnownProperty(compressibility);
+                                        }*/
 
                                         // Create a counter for the fracture patches
                                         int PatchNo = 0;
@@ -4415,8 +4654,10 @@ namespace DFMGenerator_Ocean
                                                 break;
                                             }
 
-                                            // Get the fracture aperture
+                                            // Get the fracture aperture, permeability and compressibility
                                             double uF_Aperture = uF.MeanAperture;
+                                            double uF_Permeability = Math.Pow(uF_Aperture, 2) / 12;
+                                            //double uF_Compressibility = uF.Compressibility;
 
                                             if (CreateTriangularFractureSegments)
                                             {
@@ -4429,12 +4670,19 @@ namespace DFMGenerator_Ocean
                                                     // Assign the appropriate fracture properties to the new patch object
                                                     try
                                                     {
-                                                        if (PatchNo < NoPatches) fractureAperture[PatchNo].Value = uF_Aperture;
+                                                        if (PatchNo < NoPatches)
+                                                        {
+                                                            fractureAperture[PatchNo].Value = uF_Aperture;
+                                                            fracturePermeability[PatchNo].Value = uF_Permeability;
+                                                            //if (!double.IsNaN(uF_Compressibility))
+                                                            //    fractureCompressibility[PatchNo].Value = uF_Compressibility;
+                                                        }
                                                     }
                                                     catch (Exception e)
                                                     {
                                                         string errorMessage = string.Format("Exception thrown when writing properties to microfracture patch {0}:", PatchNo);
-                                                        errorMessage = errorMessage + string.Format(" Aperture {0}", uF_Aperture);
+                                                        errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", uF_Aperture, uF_Permeability);
+                                                        //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", uF_Aperture, uF_Permeability, uF_Compressibility);
                                                         PetrelLogger.InfoOutputWindow(errorMessage);
                                                         PetrelLogger.InfoOutputWindow(e.Message);
                                                         PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -4448,12 +4696,19 @@ namespace DFMGenerator_Ocean
                                                 // Assign the appropriate fracture properties to the new patch object
                                                 try
                                                 {
-                                                    if (PatchNo < NoPatches) fractureAperture[PatchNo].Value = uF_Aperture;
+                                                    if (PatchNo < NoPatches)
+                                                    {
+                                                        fractureAperture[PatchNo].Value = uF_Aperture;
+                                                        fracturePermeability[PatchNo].Value = uF_Permeability;
+                                                        //if (!double.IsNaN(uF_Compressibility))
+                                                        //    fractureCompressibility[PatchNo].Value = uF_Compressibility;
+                                                    }
                                                 }
                                                 catch (Exception e)
                                                 {
                                                     string errorMessage = string.Format("Exception thrown when writing properties to microfracture patch {0}:", PatchNo);
-                                                    errorMessage = errorMessage + string.Format(" Aperture {0}", uF_Aperture);
+                                                    errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", uF_Aperture, uF_Permeability);
+                                                    //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", uF_Aperture, uF_Permeability, uF_Compressibility);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
                                                     PetrelLogger.InfoOutputWindow(e.Message);
                                                     PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -4485,21 +4740,38 @@ namespace DFMGenerator_Ocean
                                                     if (MF.ZeroLengthSegments[dir][segmentNo])
                                                         continue;
 
-                                                    // Get the aperture of the fracture segment
+                                                    // Get the aperture, permeability and compressibility of the fracture segment
                                                     double MF_Aperture = MF.SegmentMeanAperture[dir][segmentNo];
+                                                    double MF_Permeability = Math.Pow(MF_Aperture, 2) / 12;
+                                                    //double MF_Compressibility = MF.SegmentCompressibility[dir][segmentNo];
 
                                                     if (CreateTriangularFractureSegments)
                                                     {
                                                         // Assign the appropriate fracture properties to the two new patch objects
                                                         try
                                                         {
-                                                            if (PatchNo < NoPatches) fractureAperture[PatchNo].Value = MF_Aperture;
-                                                            if (PatchNo + 1 < NoPatches) fractureAperture[PatchNo + 1].Value = MF_Aperture;
+                                                            if (PatchNo < NoPatches)
+                                                            {
+                                                                fractureAperture[PatchNo].Value = MF_Aperture;
+                                                                fracturePermeability[PatchNo].Value = MF_Permeability;
+                                                                //if (!double.IsNaN(MF_Compressibility))
+                                                                //    fractureCompressibility[PatchNo].Value = MF_Compressibility;
+
+                                                            }
+                                                            if (PatchNo + 1 < NoPatches)
+                                                            {
+                                                                fractureAperture[PatchNo + 1].Value = MF_Aperture;
+                                                                fracturePermeability[PatchNo + 1].Value = MF_Permeability;
+                                                                //if (!double.IsNaN(MF_Compressibility))
+                                                                //    fractureCompressibility[PatchNo + 1].Value = MF_Compressibility;
+
+                                                            }
                                                         }
                                                         catch (Exception e)
                                                         {
                                                             string errorMessage = string.Format("Exception thrown when writing properties to macrofracture patch {0}:", PatchNo);
-                                                            errorMessage = errorMessage + string.Format(" Aperture {0}", MF_Aperture);
+                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", MF_Aperture, MF_Permeability);
+                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", MF_Aperture, MF_Permeability, MF_Compressibility);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
                                                             PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -4511,12 +4783,19 @@ namespace DFMGenerator_Ocean
                                                         // Assign the appropriate fracture properties to the new patch object
                                                         try
                                                         {
-                                                            if (PatchNo < NoPatches) fractureAperture[PatchNo].Value = MF_Aperture;
+                                                            if (PatchNo < NoPatches)
+                                                            {
+                                                                fractureAperture[PatchNo].Value = MF_Aperture;
+                                                                fracturePermeability[PatchNo].Value = MF_Permeability;
+                                                                //if (!double.IsNaN(MF_Compressibility))
+                                                                //    fractureCompressibility[PatchNo].Value = MF_Compressibility;
+                                                            }
                                                         }
                                                         catch (Exception e)
                                                         {
                                                             string errorMessage = string.Format("Exception thrown when writing properties to macrofracture patch {0}:", PatchNo);
-                                                            errorMessage = errorMessage + string.Format(" Aperture {0}", MF_Aperture);
+                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", MF_Aperture, MF_Permeability);
+                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", MF_Aperture, MF_Permeability, MF_Compressibility);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
                                                             PetrelLogger.InfoOutputWindow(e.StackTrace);

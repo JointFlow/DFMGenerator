@@ -1038,6 +1038,63 @@ namespace DFMGenerator_SharedCode
 
             return aperture;
         }
+        // Fracture compressibility is dependent on aperture control data
+        /// <summary>
+        /// Get the macrofracture compressibility, based on the aperture control data
+        /// </summary>
+        /// <returns>Elastic compressibility for Dynamic aperture, inverse of specified fracture normal stiffness for Barton-Bandis aperture, NaN for other apertures</returns>
+        public double getMacrofractureCompressibility()
+        {
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    // Fracture compressibility not defined for Uniform aperture
+                    return double.NaN;
+                case FractureApertureType.SizeDependent:
+                    // Fracture compressibility not defined for Size Dependent aperture
+                    return double.NaN;
+                case FractureApertureType.Dynamic:
+                    // Calculate compressibility based on elastic closure
+                    double geometricFactor = 2;
+                    double elasticMod = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
+                    double sizeFactor = gbc.CurrentThickness;
+                    return geometricFactor * elasticMod * sizeFactor;
+                case FractureApertureType.BartonBandis:
+                    // Use the inverse of the specified fracture normal stiffness
+                    return 1 / gbc.MechProps.FractureNormalStiffness;
+                default:
+                    // Return NaN
+                    return double.NaN;
+            }
+        }
+        /// <summary>
+        /// Get the microfracture compressibility, based on the aperture control data
+        /// </summary>
+        /// <returns>Elastic compressibility for Dynamic aperture, inverse of specified fracture normal stiffness for Barton-Bandis aperture, NaN for other apertures</returns>
+        public double getMicrofractureCompressibility(double radius)
+        {
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    // Fracture compressibility not defined for Uniform aperture
+                    return double.NaN;
+                case FractureApertureType.SizeDependent:
+                    // Fracture compressibility not defined for Size Dependent aperture
+                    return double.NaN;
+                case FractureApertureType.Dynamic:
+                    // Calculate compressibility based on elastic closure
+                    double geometricFactor = 8 / Math.PI;
+                    double elasticMod = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
+                    double sizeFactor = radius;
+                    return geometricFactor * elasticMod * sizeFactor;
+                case FractureApertureType.BartonBandis:
+                    // Use the inverse of the specified fracture normal stiffness
+                    return 1 / gbc.MechProps.FractureNormalStiffness;
+                default:
+                    // Return NaN
+                    return double.NaN;
+            }
+        }
 
         // Macrofracture growth rate data
         /// <summary>

@@ -126,6 +126,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double MeanAperture() { return fds.getMeanMicrofractureAperture(Radius); }
+        /// <summary>
+        /// Fracture compressibility, based on the aperture control data
+        /// </summary>
+        /// <returns></returns>
+        public double Compressibility() { return fds.getMicrofractureCompressibility(Radius); }
 
         // Microfracture dynamic data
         /// <summary>
@@ -268,7 +273,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Fracture aperture, averaged across the fracture surface
         /// </summary>
-        public double MeanAperture { get; set; }
+        public double MeanAperture { get; private set; }
+        /// <summary>
+        /// Fracture compressibility, based on the aperture control data
+        /// </summary>
+        public double Compressibility { get; private set; }
 
         // Microfracture dynamic data - this will be fixed since all propagation calculations are carried out on the local DFNs
         /// <summary>
@@ -299,6 +308,8 @@ namespace DFMGenerator_SharedCode
             // Fracture dip - this was set at object initialisation and will not have changed
             // Set the mean fracture aperture based on the current stress field
             MeanAperture = uF_local.MeanAperture();
+            // Set tracture compressibility based on the aperture control data
+            Compressibility = uF_local.Compressibility();
 
             // Microfracture dynamic data - this will be fixed since all propagation calculations are carried out on the local DFNs
             // Flag to determine if the fracture is still propagating
@@ -905,6 +916,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double MeanAperture() { return fds.getMeanMacrofractureAperture(); }
+        /// <summary>
+        /// Fracture compressibility, based on the aperture control data
+        /// </summary>
+        /// <returns></returns>
+        public double Compressibility() { return fds.getMacrofractureCompressibility(); }
 
         // Macrofracture segment dynamic data
         /// <summary>
@@ -1238,11 +1254,18 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// List of flags for zero length segments
         /// </summary>
-        public Dictionary<PropagationDirection, List<bool>> ZeroLengthSegments { get; set; }
+        public Dictionary<PropagationDirection, List<bool>> ZeroLengthSegments { get; private set; }
         /// <summary>
         /// List of mean apertures (in current stress field) of each segment
         /// </summary>
-        public Dictionary<PropagationDirection, List<double>> SegmentMeanAperture { get; set; }
+        public Dictionary<PropagationDirection, List<double>> SegmentMeanAperture { get; private set; }
+        /// <summary>
+        /// Compressibility of the specified fracture segment
+        /// </summary>
+        /// <param name="PropDir">Propagation direction of the required segment</param>
+        /// <param name="SegmentNo">Index number of the required segment</param>
+        /// <returns>Fracture compressibility, based on aperture control data</returns>
+        public Dictionary<PropagationDirection, List<double>> SegmentCompressibility { get; private set; }
 
         // Macrofracture dynamic data - this will be fixed since all propagation calculations are carried out on the local DFNs
         /// <summary>
@@ -1317,6 +1340,10 @@ namespace DFMGenerator_SharedCode
             // Clear the current list of segment mean aperture values
             SegmentMeanAperture[PropagationDirection.IPlus].Clear();
             SegmentMeanAperture[PropagationDirection.IMinus].Clear();
+
+            // Clear the current list of segment compressibility values
+            SegmentCompressibility[PropagationDirection.IPlus].Clear();
+            SegmentCompressibility[PropagationDirection.IMinus].Clear();
 
             // Create a new list of cornerpoints for each segment, used to recreate the fracture as a series of contiguous planar segments
             // Move along the IPlus and IMinus sides of the fracture in turn
@@ -1667,8 +1694,9 @@ namespace DFMGenerator_SharedCode
                     else
                         ZeroLengthSegments[dir].Add(false);
 
-                    // Finally update and add the segment aperture, in the current stress field
+                    // Finally update and add the segment aperture and compressibility, in the current stress field
                     SegmentMeanAperture[dir].Add(CurrentSegment.MeanAperture());
+                    SegmentCompressibility[dir].Add(CurrentSegment.Compressibility());
 
                 } // End move along the fracture adding cornerpoints
 
@@ -2299,15 +2327,18 @@ namespace DFMGenerator_SharedCode
                 SegmentCornerPoints.Add(propDir, segmentCornerPointList);
             }
 
-            // Create dictionaries for the zero length segment flags and the segment mean apertures, and add empty lists for each propagation direction
+            // Create dictionaries for the zero length segment flags, the segment mean apertures and the segment compressibilities, and add empty lists for each propagation direction
             ZeroLengthSegments = new Dictionary<PropagationDirection, List<bool>>();
             SegmentMeanAperture = new Dictionary<PropagationDirection, List<double>>();
+            SegmentCompressibility = new Dictionary<PropagationDirection, List<double>>();
             foreach (PropagationDirection propDir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
             {
                 List<bool> zeroLengthSegmentList = new List<bool>();
                 ZeroLengthSegments.Add(propDir, zeroLengthSegmentList);
                 List<double> segmentMeanApertureList = new List<double>();
                 SegmentMeanAperture.Add(propDir, segmentMeanApertureList);
+                List<double> segmentCompressibilityList = new List<double>();
+                SegmentCompressibility.Add(propDir, segmentCompressibilityList);
             }
 
             // Link both macrofracture segment objects to this new macrofracture object
@@ -2371,15 +2402,18 @@ namespace DFMGenerator_SharedCode
                 SegmentCornerPoints.Add(propDir, segmentCornerPointList);
             }
 
-            // Create dictionaries for the zero length segment flags and the segment mean apertures, and add empty lists for each propagation direction
+            // Create dictionaries for the zero length segment flags, the segment mean apertures and the segment compressibilities, and add empty lists for each propagation direction
             ZeroLengthSegments = new Dictionary<PropagationDirection, List<bool>>();
             SegmentMeanAperture = new Dictionary<PropagationDirection, List<double>>();
+            SegmentCompressibility = new Dictionary<PropagationDirection, List<double>>();
             foreach (PropagationDirection propDir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
             {
                 List<bool> zeroLengthSegmentList = new List<bool>();
                 ZeroLengthSegments.Add(propDir, zeroLengthSegmentList);
                 List<double> segmentMeanApertureList = new List<double>();
                 SegmentMeanAperture.Add(propDir, segmentMeanApertureList);
+                List<double> segmentCompressibilityList = new List<double>();
+                SegmentCompressibility.Add(propDir, segmentCompressibilityList);
             }
 
             // Fracture set index number - this is set at object initialisation and will not change afterwards

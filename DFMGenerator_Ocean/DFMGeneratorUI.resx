@@ -192,41 +192,37 @@
   <data name="toolTipItem40.Text" xml:space="preserve">
     <value>Generate output files showing the evolution of the implicit fracture density data through time. Output files are written to $home\DFNFolder or to the project folder. NB this will generate one file per cell stack so may generate a large number of files for a large grid.</value>
   </data>
-  <data name="toolTipItem41.Text" xml:space="preserve">
-    <value>Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer.
-</value>
-  </data>
-  <data name="toolTipItem54.Text" xml:space="preserve">
+  <data name="toolTipItem58.Text" xml:space="preserve">
     <value>Maximum increase in volumetric macrofracture ratio (MFP33) allowed in each timestep. This controls the optimal timestep duration. If it is increased, there will be fewer but longer timesteps; the calculation will run faster but with greater discretisation error.</value>
   </data>
-  <data name="toolTipItem56.Text" xml:space="preserve">
+  <data name="toolTipItem60.Text" xml:space="preserve">
     <value>Total microfracture area (uFP32) and porosity must be calculated by numerical integration. The number of bins controls the accuracy of the numerical integration - increase this to increase the accuracy of the calculated uFP32 and porosity at expense of runtime.</value>
   </data>
-  <data name="toolTipItem57.Text" xml:space="preserve">
+  <data name="toolTipItem61.Text" xml:space="preserve">
     <value>Minimum radius for microfractures to be included in implicit fracture density and porosity calculations. If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density (uFP30) as this will be infinite. If blank, the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population).</value>
   </data>
-  <data name="toolTipItem58.Text" xml:space="preserve">
+  <data name="toolTipItem62.Text" xml:space="preserve">
     <value>Use this control to amalgamate Petrel grid cells laterally as well as vertically, and thus reduce the number of cell stacks. In addition to reducing model runtime, this will reduce the height:width ratio of the cell stacks; for optimal results this should be less than 1/2. However faults will not be honoured in horizontally upscaled grids (i.e. fractures may cut across faults). </value>
   </data>
-  <data name="toolTipItem64.Text" xml:space="preserve">
+  <data name="toolTipItem68.Text" xml:space="preserve">
     <value>By default, checking for stress shadow interaction is only carried out against other macrofractures in the same cell stack. Some stress shadow interactions may therefore be missed for fractures parallel to and close to the cell stack boundaries. Use this control to search adjacent cell stacks for stress shadow interaction; this will increase runtime. If set to automatic, the requirement to search adjacent cell stacks will be determined independently for each cell stack based on its geometry.</value>
   </data>
-  <data name="toolTipItem66.Text" xml:space="preserve">
+  <data name="toolTipItem70.Text" xml:space="preserve">
     <value>This controls the order in which fractures are propagated within each timestep: if checked, fractures will be propagated in order of nucleation time regardless of fracture set; if unchecked they will be propagated in order of fracture set. Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time.</value>
   </data>
-  <data name="toolTipItem67.Text" xml:space="preserve">
+  <data name="toolTipItem71.Text" xml:space="preserve">
     <value>By default, fractures nucleate deterministically at regular intervals determined by the microfracture density and growth rate. However if the cell stacks are small relative to the fracture spacing, so the average number of fractures per cell stack is less than 1, no fractures will nucleate. This control allows the timing of fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value. This will allow some fractures to nucleate even when cell stacks are small.</value>
   </data>
-  <data name="toolTipItem70.Text" xml:space="preserve">
+  <data name="toolTipItem74.Text" xml:space="preserve">
     <value>NB If probabilistic fracture nucleation is required to generate fractures, it is often because the height:width ratio of the cell stacks is too high. Try using horizontal upscaling to reduce this instead.</value>
   </data>
-  <data name="toolTipItem71.Text" xml:space="preserve">
+  <data name="toolTipItem75.Text" xml:space="preserve">
     <value>The explicit DFN will not be generated in cell stacks thinner than this cutoff. Set this to prevent the generation of excessive numbers of fractures in very thin cell stacks, e.g. where there is pinch-out of the brittle layer.</value>
   </data>
-  <data name="toolTipItem72.Text" xml:space="preserve">
+  <data name="toolTipItem76.Text" xml:space="preserve">
     <value>This represents the maximum variation in fracture propagation azimuth allowed across gridblock boundary. If the orientation of the fracture set varies across the gridblock boundary by more than this angle, the algorithm will seek a better matching set.</value>
   </data>
-  <data name="toolTipItem77.Text" xml:space="preserve">
+  <data name="toolTipItem81.Text" xml:space="preserve">
     <value>Increase these cutoffs to reduce the sensitivity and stop the calculation earlier. Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime. Any criteria left blank will not be used.</value>
   </data>
 </root>
