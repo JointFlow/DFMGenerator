@@ -311,11 +311,15 @@ namespace DFMGenerator_Ocean
         {
             updateArgsFromUI();
             this.FindForm().Close();
+            // Remove the event handler
+            context.ArgumentPackageChanged -= new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
 
         private void btn_DE_Cancel_Click(object sender, EventArgs e)
         {
             this.FindForm().Close();
+            // Remove the event handler
+            context.ArgumentPackageChanged -= new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
 
         private void dropTarget_DE_EhminAzi_DragDrop(object sender, DragEventArgs e)

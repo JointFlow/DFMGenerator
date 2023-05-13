@@ -3160,7 +3160,7 @@ namespace DFMGenerator_Ocean
 
                                 // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
                                 double local_Depth;
-                                if (local_DepthAtDeformation > 0)
+                                if (local_DepthAtDeformation >= 0)
                                 {
                                     // If the initial depth  has been specified, use this 
                                     local_Depth = local_DepthAtDeformation;
@@ -6305,7 +6305,7 @@ namespace DFMGenerator_Ocean
                         {
                             return this.argument_DeformationEpisode_extras[episodeIndex - 5];
                         }
-                        catch (System.ArgumentOutOfRangeException)
+                        catch (System.ArgumentOutOfRangeException e)
                         {
                             PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_DeformationEpisode_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
                             return "";
