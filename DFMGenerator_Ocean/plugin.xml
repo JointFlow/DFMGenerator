@@ -3,14 +3,14 @@
   <Plugin>
     <Name>DFM Generator</Name>
     <Description>Dynamic Fracture Model Generator: Petrel version</Description>
-    <Contact>mwelch@dtu.dk or mikael@dtu.dk</Contact>
+    <Contact>mwelch@dtu.dk</Contact>
     <PluginTypeName>DFMGenerator_Ocean.DFMGeneratorPlugin, DFMGenerator_Ocean, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
     <PluginUri>https://offshore.dtu.dk/english</PluginUri>
     <PluginId>://DFMGenerator_Ocean.DFMGeneratorPlugin/2.2.0.0</PluginId>
     <Trust PublicKeyToken="">Default</Trust>
-    <ReleaseDate>2023-05-13</ReleaseDate>
+    <ReleaseDate>2023-05-14</ReleaseDate>
     <Author>Michael Welch and Mikael Lüthje</Author>
-    <AppVersion>2020.0</AppVersion>
+    <AppVersion>2022.0</AppVersion>
     <Modules>
       <Module TypeName="DFMGenerator_Ocean.DFMGeneratorModule, DFMGenerator_Ocean, Version=2.2.0.0, Culture=neutral, PublicKeyToken=null" />
     </Modules>

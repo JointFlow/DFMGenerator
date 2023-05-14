@@ -42,13 +42,13 @@ namespace DFMGenerator_Ocean
             this.workstep = workstep;
             this.args = args;
             this.context = context;
+            updateUIFromArgs();
 
             this.btnOK.Image = PetrelImages.OK;
             this.btnCancel.Image = PetrelImages.Cancel;
             this.btnApply.Image = PetrelImages.Apply;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
-
         }
 
         #region UI_update
@@ -75,6 +75,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_BottomLayerK, textBox_BottomLayerK);
             // Populate the list of deformation episodes
             int noDeformationEpisodes = args.Argument_NoDeformationEpisodes;
+            int currentSelectedIndex = listBox_DeformationEpisodes.SelectedIndex;
             listBox_DeformationEpisodes.BeginUpdate();
             listBox_DeformationEpisodes.Items.Clear();
             for (int deformationEpisodeIndex = 0; deformationEpisodeIndex < noDeformationEpisodes; deformationEpisodeIndex++)
@@ -85,6 +86,15 @@ namespace DFMGenerator_Ocean
             }
             listBox_DeformationEpisodes.EndUpdate();
             listBox_DeformationEpisodes.SelectionMode = SelectionMode.One;
+            if (listBox_DeformationEpisodes.Items.Count == 1)
+                listBox_DeformationEpisodes.SelectedIndex = 0;
+            else if (currentSelectedIndex < listBox_DeformationEpisodes.Items.Count)
+                listBox_DeformationEpisodes.SelectedIndex = currentSelectedIndex;
+            else if (listBox_DeformationEpisodes.Items.Count > 0)
+                listBox_DeformationEpisodes.SelectedIndex = listBox_DeformationEpisodes.Items.Count - 1;
+            else
+                listBox_DeformationEpisodes.SelectedIndex = -1;
+
             UpdateCheckBox(args.Argument_GenerateExplicitDFN, checkBox_GenerateExplicitDFN);
             UpdateNumericBox(args.Argument_NoIntermediateOutputs, numericUpDown_NoIntermediateOutputs);
             UpdateCheckBox(args.Argument_IncludeObliqueFracs, checkBox_IncludeObliqueFracs);
@@ -966,13 +976,27 @@ namespace DFMGenerator_Ocean
             updateUIFromArgs();
         }
 
+        /// <summary>
+        /// Open a separate dialog box to input data for a specific deformation episode
+        /// </summary>
+        /// <param name="deformationEpisodeIndex">Index of the deformation episode for the new dialog box</param>
+        private void OpenDeformationEpisodeUI(int deformationEpisodeIndex)
+        {
+            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, this, deformationEpisodeIndex, context);
+            PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
+            updateUIFromArgs();
+        }
+
+        /// <summary>
+        /// Event handler to be triggered when a deformation episode is removed
+        /// </summary>
+        public event EventHandler<RemoveDeformationEpisodeEventArgs> DeformationEpisodeRemoved;
+
         private void btnAddDeformationEpisode_Click(object sender, EventArgs e)
         {
             updateArgsFromUI();
             int deformationEpisodeIndex = args.AddDeformationEpisode();
-            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, deformationEpisodeIndex, context);
-            PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
-            updateUIFromArgs();
+            OpenDeformationEpisodeUI(deformationEpisodeIndex);
             listBox_DeformationEpisodes.SelectedIndex = deformationEpisodeIndex;
         }
 
@@ -982,9 +1006,7 @@ namespace DFMGenerator_Ocean
             int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
             if (deformationEpisodeIndex < 0)
                 return;
-            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, deformationEpisodeIndex, context);
-            PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
-            updateUIFromArgs();
+            OpenDeformationEpisodeUI(deformationEpisodeIndex);
         }
 
         private void btnRemoveDeformationEpisode_Click(object sender, EventArgs e)
@@ -993,10 +1015,26 @@ namespace DFMGenerator_Ocean
             int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
             if (deformationEpisodeIndex < 0)
                 return;
+            // Raise an event to close any dialog boxes related to the removed episode
+            if (DeformationEpisodeRemoved != null)
+                DeformationEpisodeRemoved(this, new RemoveDeformationEpisodeEventArgs(deformationEpisodeIndex));
             args.RemoveDeformationEpisode(deformationEpisodeIndex);
-            listBox_DeformationEpisodes.SelectedIndex = -1;
+            //listBox_DeformationEpisodes.SelectedIndex = -1;
             updateUIFromArgs();
         }
         #endregion
+    }
+    /// <summary>
+    /// Event arguments class for passing on event information when a deformation episode is removed from the DFM Generator UI
+    /// This is necessary to close any open dialog boxes related to that episode
+    /// </summary>
+    public class RemoveDeformationEpisodeEventArgs : EventArgs
+    {
+        public int RemovedEpisodeIndex;
+
+        public RemoveDeformationEpisodeEventArgs(int episodeIndex)
+        {
+            RemovedEpisodeIndex = episodeIndex;
+        }
     }
 }

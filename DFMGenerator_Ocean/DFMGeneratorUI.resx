@@ -192,16 +192,16 @@
   <data name="toolTipItem40.Text" xml:space="preserve">
     <value>Generate output files showing the evolution of the implicit fracture density data through time. Output files are written to $home\DFNFolder or to the project folder. NB this will generate one file per cell stack so may generate a large number of files for a large grid.</value>
   </data>
-  <data name="toolTipItem58.Text" xml:space="preserve">
+  <data name="toolTipItem53.Text" xml:space="preserve">
     <value>Maximum increase in volumetric macrofracture ratio (MFP33) allowed in each timestep. This controls the optimal timestep duration. If it is increased, there will be fewer but longer timesteps; the calculation will run faster but with greater discretisation error.</value>
   </data>
-  <data name="toolTipItem60.Text" xml:space="preserve">
+  <data name="toolTipItem55.Text" xml:space="preserve">
     <value>Total microfracture area (uFP32) and porosity must be calculated by numerical integration. The number of bins controls the accuracy of the numerical integration - increase this to increase the accuracy of the calculated uFP32 and porosity at expense of runtime.</value>
   </data>
-  <data name="toolTipItem61.Text" xml:space="preserve">
+  <data name="toolTipItem56.Text" xml:space="preserve">
     <value>Minimum radius for microfractures to be included in implicit fracture density and porosity calculations. If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density (uFP30) as this will be infinite. If blank, the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population).</value>
   </data>
-  <data name="toolTipItem62.Text" xml:space="preserve">
+  <data name="toolTipItem57.Text" xml:space="preserve">
     <value>Use this control to amalgamate Petrel grid cells laterally as well as vertically, and thus reduce the number of cell stacks. In addition to reducing model runtime, this will reduce the height:width ratio of the cell stacks; for optimal results this should be less than 1/2. However faults will not be honoured in horizontally upscaled grids (i.e. fractures may cut across faults). </value>
   </data>
   <data name="toolTipItem68.Text" xml:space="preserve">

@@ -33,26 +33,33 @@ namespace DFMGenerator_Ocean
         /// Index number of the deformation episode to edit
         /// </summary>
         private int deformationEpisodeIndex;
+        /// <summary>
+        /// Reference to the DFM Generator dialog box that called this dialog
+        /// </summary>
+        private DFMGeneratorUI callingDialog;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DeformationEpisodeUI"/> class.
         /// </summary>
         /// <param name="args">the arguments</param>
+        /// <param name="callingDialog">Reference to the dialog box that called this</param>
         /// <param name="deformationEpisodeIndex">Index number of the deformation episode to edit</param>
         /// <param name="context">the underlying context in which this UI is being used</param>
-        internal DeformationEpisodeUI(DFMGeneratorWorkstep.Arguments args, int deformationEpisodeIndex, WorkflowContext context)
+        internal DeformationEpisodeUI(DFMGeneratorWorkstep.Arguments args, DFMGeneratorUI callingDialog,  int deformationEpisodeIndex, WorkflowContext context)
         {
             InitializeComponent();
 
             this.args = args;
             this.deformationEpisodeIndex = deformationEpisodeIndex;
             this.context = context;
+            this.callingDialog = callingDialog;
             updateUIFromArgs();
 
             this.btn_DE_OK.Image = PetrelImages.OK;
             this.btn_DE_Cancel.Image = PetrelImages.Cancel;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
+            callingDialog.DeformationEpisodeRemoved += new EventHandler<RemoveDeformationEpisodeEventArgs>(dfmGeneratorUI_DeformationEpisodeRemoved);
         }
 
         #region UI_update
@@ -61,6 +68,17 @@ namespace DFMGenerator_Ocean
         {
             if (sender != this)
                 updateUIFromArgs();
+        }
+
+        void dfmGeneratorUI_DeformationEpisodeRemoved(object sender, RemoveDeformationEpisodeEventArgs e)
+        {
+            int episodeRemoved = e.RemovedEpisodeIndex;
+            // If this deformation episode has been removed, close this form immediately without saving changes
+            if (episodeRemoved == deformationEpisodeIndex)
+                this.FindForm().Close();
+            // If the deformation episode removed has a lower index than this one, modify the index of this episode accordingly
+            else if (episodeRemoved < deformationEpisodeIndex)
+                deformationEpisodeIndex--;
         }
 
         /// <summary>
@@ -311,15 +329,11 @@ namespace DFMGenerator_Ocean
         {
             updateArgsFromUI();
             this.FindForm().Close();
-            // Remove the event handler
-            context.ArgumentPackageChanged -= new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
 
         private void btn_DE_Cancel_Click(object sender, EventArgs e)
         {
             this.FindForm().Close();
-            // Remove the event handler
-            context.ArgumentPackageChanged -= new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
 
         private void dropTarget_DE_EhminAzi_DragDrop(object sender, DragEventArgs e)
@@ -538,5 +552,12 @@ namespace DFMGenerator_Ocean
             SetLoadRateUnits();
         }
         #endregion
+
+        private void DeformationEpisodeUI_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            // Remove the event handlers when the form is closed
+            context.ArgumentPackageChanged -= context_ArgumentPackageChanged;
+            callingDialog.DeformationEpisodeRemoved -= dfmGeneratorUI_DeformationEpisodeRemoved;
+        }
     }
 }

@@ -6305,7 +6305,7 @@ namespace DFMGenerator_Ocean
                         {
                             return this.argument_DeformationEpisode_extras[episodeIndex - 5];
                         }
-                        catch (System.ArgumentOutOfRangeException e)
+                        catch (System.ArgumentOutOfRangeException)
                         {
                             PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_DeformationEpisode_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
                             return "";
@@ -7572,19 +7572,19 @@ namespace DFMGenerator_Ocean
                         this.argument_DeformationEpisode4 = "";
                         this.argument_DeformationEpisodeDuration4 = double.NaN;
                         this.argument_DeformationEpisodeTimeUnits4 = 2;
-                        this.argument_EhminAzi_default4 = double.NaN;
+                        this.argument_EhminAzi_default4 = 0;
                         this.argument_EhminAzi4 = null;
-                        this.argument_EhminRate_default4 = double.NaN;
+                        this.argument_EhminRate_default4 = 0;
                         this.argument_EhminRate4 = null;
-                        this.argument_EhmaxRate_default4 = double.NaN;
+                        this.argument_EhmaxRate_default4 = 0;
                         this.argument_EhmaxRate4 = null;
-                        this.argument_AppliedOverpressureRate_default4 = double.NaN;
+                        this.argument_AppliedOverpressureRate_default4 = 0;
                         this.argument_AppliedOverpressureRate4 = null;
-                        this.argument_AppliedTemperatureChange_default4 = double.NaN;
+                        this.argument_AppliedTemperatureChange_default4 = 0;
                         this.argument_AppliedTemperatureChange4 = null;
-                        this.argument_AppliedUpliftRate_default4 = double.NaN;
+                        this.argument_AppliedUpliftRate_default4 = 0;
                         this.argument_AppliedUpliftRate4 = null;
-                        this.argument_StressArchingFactor4 = double.NaN;
+                        this.argument_StressArchingFactor4 = 0;
                         this.argument_SimulationCase4 = null;
                         this.argument_AbsoluteStressXXTimeSeries4 = null;
                         this.argument_AbsoluteStressYYTimeSeries4 = null;

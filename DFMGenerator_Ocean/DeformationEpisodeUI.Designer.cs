@@ -198,8 +198,8 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DE_StressArchingFactor.Name = "toolTipHotspot_DE_StressArchingFactor";
             this.toolTipHotspot_DE_StressArchingFactor.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DE_StressArchingFactor.TabIndex = 152;
-            toolTipItem2.Text = "he Stress Arching Factor controls the proportion of vertical stress change due to" +
-    " fluid pressure and thermal loads that is accommodated by stress arching:";
+            toolTipItem2.Text = "The Stress Arching Factor controls the proportion of vertical stress change due t" +
+    "o fluid pressure and thermal loads that is accommodated by stress arching:";
             toolTipItem3.ShowBullet = true;
             toolTipItem3.Text = "Set to 0 for no stress arching (no change in vertical stress)";
             toolTipItem4.ShowBullet = true;
@@ -344,7 +344,7 @@ namespace DFMGenerator_Ocean
             this.tabControl1.AllowDrop = true;
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 1;
+            this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(746, 275);
             this.tabControl1.TabIndex = 107;
             this.tabControl1.TabPages.AddRange(new Slb.Ocean.Petrel.UI.Controls.TabPage[] {
@@ -434,9 +434,9 @@ namespace DFMGenerator_Ocean
             this.label_DE_StressArchingFactor.AutoSize = true;
             this.label_DE_StressArchingFactor.Location = new System.Drawing.Point(12, 210);
             this.label_DE_StressArchingFactor.Name = "label_DE_StressArchingFactor";
-            this.label_DE_StressArchingFactor.Size = new System.Drawing.Size(111, 13);
+            this.label_DE_StressArchingFactor.Size = new System.Drawing.Size(107, 13);
             this.label_DE_StressArchingFactor.TabIndex = 144;
-            this.label_DE_StressArchingFactor.Text = "Stress Arching Factor:";
+            this.label_DE_StressArchingFactor.Text = "Stress arching factor:";
             // 
             // unitTextBox_DE_UpliftRate_default
             // 
@@ -1011,6 +1011,7 @@ namespace DFMGenerator_Ocean
             this.Controls.Add(this.btn_DE_Cancel);
             this.Controls.Add(this.btn_DE_OK);
             this.Name = "DeformationEpisodeUI";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.DeformationEpisodeUI_FormClosed);
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).EndInit();
             this.tabControl1.ResumeLayout(false);
             this.tabStatic.ResumeLayout(false);

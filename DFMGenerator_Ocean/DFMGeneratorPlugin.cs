@@ -9,7 +9,7 @@ namespace DFMGenerator_Ocean
     {
         public override string AppVersion
         {
-            get { return "2020.0"; }
+            get { return "2022.0"; }
         }
 
         public override string Author
@@ -19,7 +19,7 @@ namespace DFMGenerator_Ocean
 
         public override string Contact
         {
-            get { return "mwelch@dtu.dk or mikael@dtu.dk"; }
+            get { return "mwelch@dtu.dk"; }
         }
 
         public override IEnumerable<PluginIdentifier> Dependencies
