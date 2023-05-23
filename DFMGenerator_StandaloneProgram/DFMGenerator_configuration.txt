@@ -17,6 +17,9 @@ OriginXOffset 0
 OriginYOffset 0
 % Current depth of burial in metres, positive downwards
 Depth 2000
+% Set time units to ma, year or second
+ModelTimeUnits ma
+% Deformation load
 % Minimum strain orientatation (i.e. direction of maximum extension) in radians, clockwise from North
 EhminAzi 0
 % Set VariableStrainOrientation false to have the same minimum strain orientatation in all cells
@@ -35,8 +38,29 @@ EhmaxRate 0
 % Set VariableStrainMagnitude to add random variation to the input strain rates
 % Strain rates for each gridblock will vary randomly from 0 to 2x specified values
 VariableStrainMagnitude false
-% Set time units to ma, year or second
-ModelTimeUnits ma
+% Fluid pressure, thermal and uplift loads
+% Rate of increase of fluid overpressure (Pa/ModelTimeUnit)
+AppliedOverpressureRate 0
+% Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTimeUnit)
+AppliedTemperatureChange 0
+% Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTimeUnit)
+AppliedUpliftRate 0
+% Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)
+StressArchingFactor 0
+% Duration of the deformation episode; set to -1 to continue until fracture saturation is reached
+% Units are determined by ModelTimeUnits setting
+DeformationEpisodeDuration -1
+% To add additional deformation episodes, list multiple values after the deformation load keywords
+% For example, to model a 1ma episode of NE-oriented extensional strain, followed by uplift and erosion of 2000m over 20ma, 
+% followed by an episode of overpressure and cooling (e.g. due to injection of cold fluid for 10 years), use the following
+%   EhminAzi 0 0.7853 0
+%   EhminRate -0.01 0 0
+%   EhmaxRate 0 0 0
+%   AppliedOverpressureRate 0 0 1E+12
+%   AppliedTemperatureChange 0 0 -5E+6
+%   AppliedUpliftRate 0 100 0
+%   StressArchingFactor 0 0 1
+%   DeformationEpisodeDuration 1 20 1E-5
 
 % Mechanical properties
 % Young's Modulus in Pa
@@ -44,14 +68,17 @@ YoungsMod 1E+10
 % Set VariableYoungsMod true to have laterally variable Young's Modulus
 VariableYoungsMod false
 PoissonsRatio 0.25
+Porosity 0.2
 BiotCoefficient 1
-FrictionCoefficient 0.5
-% Set VariableFriction true to have laterally variable friction coefficient
-VariableFriction false
+% Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
+ThermalExpansionCoefficient 4E-5
 % Crack surface energy in J/m2
 CrackSurfaceEnergy 1000
 % Set VariableCSE true to have laterally variable crack surface energy
 VariableCSE false
+FrictionCoefficient 0.5
+% Set VariableFriction true to have laterally variable friction coefficient
+VariableFriction false
 % Strain relaxation time constants
 % Units are determined by ModelTimeUnits setting
 % Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
@@ -72,15 +99,17 @@ CriticalPropagationRate 2000
 % Options are EvenlyDistributedStress or StressShadow
 % Do not use DuctileBoundary as this is not yet implemented
 StressDistributionScenario StressShadow
-% Depth at the time of deformation (in metres, positive downwards) - this will control stress state
-% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth
-% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtDeformation will not be used
+% Depth at the start of deformation (in metres, positive downwards) - this will control stress state
+% If DepthAtDeformation is specified, this will be used to calculate the initial vertical stress
+% If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
 DepthAtDeformation -1
 % Mean density of overlying sediments and fluid in kg/m3
 MeanOverlyingSedimentDensity 2250
 FluidDensity 1000
 % Fluid overpressure in Pa
 InitialOverpressure 0
+% Geothermal gradient (degK/m)
+GeothermalGradient 0.03
 % InitialStressRelaxation controls the initial horizontal stress, prior to the application of horizontal strain
 % Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
 % Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
@@ -92,12 +121,17 @@ InitialStressRelaxation 0.5
 % These must be set to true for stand-alone version or no output will be generated
 WriteImplicitDataFiles true
 WriteDFNFiles true
-% Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)
+% Output file type for explicit DFN data:
+%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)
+%      - FAB (FAB files can be loaded directly into Petrel)
 OutputDFNFileType ASCII
 % Output DFM at intermediate stages of fracture growth
 NoIntermediateOutputs 0
-% Flag to control interval between output of intermediate stage DFMs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area
-OutputAtEqualTimeIntervals false
+% Flag to control interval between output of intermediate stage DFMs:
+%      - EqualArea (output at at approximately regular intervals of total fracture area)
+%      - EqualTime (output at equal intervals of time)
+%      - SpecifiedTime (output at the end of each specified deformation episode)
+IntermediateOutputIntervalControl EqualArea
 % Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
 OutputCentrepoints false
 % Flag to output the bulk rock compliance and stiffness tensors
@@ -159,6 +193,8 @@ NoFractureSets 2
 % Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
 Mode1Only false
 Mode2Only false
+% Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer
+FractureNucleationPosition -1
 % Flag to check microfractures against stress shadows of all macrofractures, regardless of set: can be set to None, All or Automatic
 % Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry
 % If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures
@@ -189,16 +225,14 @@ No_r_bins 10
 %      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
 % Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
 % Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
-% To stop calculation while fractures are still growing reduce the DeformationStageDuration_in or maxTimesteps_in limits
+% To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
 % Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control
 Current_HistoricMFP33TerminationRatio -1
 % Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
 Active_TotalMFP30TerminationRatio -1
 % Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
 MinimumClearZoneVolume 0.01
-% Use the deformation episode duration and maximum timestep limits to stop the calculation before fractures have finished growing
-% Set DeformationEpisodeDuration to -1 to continue until fracture saturation is reached
-DeformationEpisodeDuration -1
+% Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
 MaxTimesteps 1000
 % DFN geometry controls
 % Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
@@ -230,7 +264,7 @@ MinExplicitMicrofractureRadius 0
 Number_uF_Points 8
 
 % Add property and geometry overrides for individual gridblocks here
-% Overrides for individual gridblocks should be nested between a Gridblock Col Row statement and an End Gridblock statement, e.g.:
+% Overrides for individual gridblocks should be nested between a Gridblock Col Row statement and an End Gridblock statement
 % E.g. to override the properties in the gridblock in column 1 row 2, use:
 % Gridblock 1 2
 %   PropertyA ValueA
@@ -238,9 +272,10 @@ Number_uF_Points 8
 %   CornerpointA Xcoord Ycoord Zcoord
 %   CornerpointB Xcoord Ycoord Zcoord
 % End Gridblock
-% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate,
-% YoungsMod, PoissonsRatio, BiotCoefficient, CrackSurfaceEnergy, FrictionCoefficient,
+% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, DepthAtDeformation, 
+% YoungsMod, PoissonsRatio, Porosity, BiotCoefficient, GeothermalGradient, FrictionCoefficient, CrackSurfaceEnergy,
 % SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution
+% Additional deformation episodes can be overwritten by listing multiple values after the deformation load keywords
 % Cornerpoints that can be overridden are SETopCorner, SEBottomCorner, NETopCorner, NEBottomCorner,
 % NWTopCorner, NWBottomCorner, SWTopCorner, SWBottomCorner
 % Z coordinates should be specified positive downwards
@@ -262,6 +297,8 @@ Number_uF_Points 8
 % Each new property must start on a new line, but within each property block, the values can be separated by either spaces or line returns; the layout of the data is not significant
 % However the values must be given in order shown above, looping first through rows and then through columns
 % Use NA instead of a specifying a value to revert to the default value for a specific gridblock (as has been done for PropertyB in Gridblock 3,2 in the example above)
+% To override additional deformation episodes, add an index number in square brackets after the deformation load property name, but before the values, e.g.:
+% #AppliedUpliftRate [2] Gridblock_1_1_value Gridblock_1_2_value Gridblock_1_3_value
 % 
 % Overrides for geometry can be also done using Include files
 % However in this case the Include file format is slightly different:

@@ -2675,8 +2675,12 @@ namespace DFMGenerator_SharedCode
 
                 // The driving stress will also become positive if the normal stress on the fracture becomes tensile, so the fracture becomes dilatant 
                 // If this happens before the driving stress for Mode 2 shear displacement reaches zero, we will set this as the optimal timestep duration 
-                if ((sneff_var < 0) && (-(sneff_cst / sneff_var) < optdur))
-                    optdur = -(sneff_cst / sneff_var);
+                if (sneff_var < 0)
+                {
+                    double timeToSneffZero = -(sneff_cst / sneff_var);
+                    if (timeToSneffZero < optdur)
+                        optdur = timeToSneffZero;
+                }
 
                 // NB if both V < 0 and sneff_var > 0 then we cannot calculate an optimal duration and will return the default value infinity (no optimal duration calculated)
 

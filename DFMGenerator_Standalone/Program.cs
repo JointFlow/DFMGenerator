@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRACS
@@ -84,18 +84,18 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("StressArchingFactor 0");
                 input_file.WriteLine("% Duration of the deformation episode; set to -1 to continue until fracture saturation is reached");
                 input_file.WriteLine("% Units are determined by ModelTimeUnits setting");
-                input_file.WriteLine("DeformationEpisodeeDuration -1");
+                input_file.WriteLine("DeformationEpisodeDuration -1");
                 input_file.WriteLine("% To add additional deformation episodes, list multiple values after the deformation load keywords");
-                input_file.WriteLine("% For example, to add an uplift episode (e.g. uplift by 2000m over 20ma), ");
+                input_file.WriteLine("% For example, to model a 1ma episode of NE-oriented extensional strain, followed by uplift and erosion of 2000m over 20ma, ");
                 input_file.WriteLine("% followed by an episode of overpressure and cooling (e.g. due to injection of cold fluid for 10 years), use the following");
-                input_file.WriteLine("%   EhminAzi 0 0 0");
+                input_file.WriteLine("%   EhminAzi 0 0.7853 0");
                 input_file.WriteLine("%   EhminRate -0.01 0 0");
                 input_file.WriteLine("%   EhmaxRate 0 0 0");
                 input_file.WriteLine("%   AppliedOverpressureRate 0 0 1E+12");
                 input_file.WriteLine("%   AppliedTemperatureChange 0 0 -5E+6");
                 input_file.WriteLine("%   AppliedUpliftRate 0 100 0");
                 input_file.WriteLine("%   StressArchingFactor 0 0 1");
-                input_file.WriteLine("%   DeformationEpisodeeDuration 1 20 1E-5");
+                input_file.WriteLine("%   DeformationEpisodeDuration 1 20 1E-5");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Mechanical properties");
@@ -421,8 +421,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 2;// 3;
-            int NoCols = 2;// 3;
+            int NoRows = 3;
+            int NoCols = 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 20;
             double Length_NS = 20;
@@ -457,9 +457,9 @@ namespace DFMGenerator_Standalone
             // With no strain relaxation, strain rate will control rate of horizontal stress increase
             // With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
             // Ehmin is most tensile (i.e. most negative) horizontal strain rate
-            double EhminRate = -0.01;//0;
+            double EhminRate = 0;
             // Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-            double EhmaxRate = -0.008;//0;
+            double EhmaxRate = 0;
             // Set VariableStrainMagnitude to add random variation to the input strain rates
             // Strain rates for each gridblock will vary randomly from 0 to 2x specified values
             bool VariableStrainMagnitude = false;
@@ -507,7 +507,7 @@ namespace DFMGenerator_Standalone
             List<double> InitialFluidPressure_list = new List<double>();
             List<Tensor2S> InitialAbsoluteStress_list = new List<Tensor2S>();
 #if !READINPUTFROMFILE
-            // Add an initial episode with a stress load
+            /*// Add a deformation episode with default values
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
@@ -516,33 +516,20 @@ namespace DFMGenerator_Standalone
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.ma;
-            DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);
-            /*EhminRate_list.Add(EhminRate);
-            EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(0.074004377);
-            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-            AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(StressArchingFactor);
-            ModelTimeUnits = TimeUnits.second;
-            DeformationEpisodeDuration_list.Add(31622400);// (DeformationEpisodeDuration);
-            AbsoluteStressRate_list.Add(new Tensor2S(0.023741777980166, 0.0319753086419753, -0.0819844161100992, -0.00390703662593605, -0.40058724195507, 0.25769731266444));
+            DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
+            // Add a deformation episode with uniaxial extension of -0.01/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            BiazimuthalConjugate = false;
-            InitialFluidPressure_list.Add(11889183);
-            InitialAbsoluteStress_list.Add(new Tensor2S(45567500, 45855080, 63135844, -521898.5, 35443365, -26631047.5));*/
-            /*// Add an initial episode with uniaxial extension of -0.01/ma over 1ma
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.0001);
+            EhminRate_list.Add(-0.01);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(6.71);// (DeformationEpisodeDuration);
+            DeformationEpisodeDuration_list.Add(1);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);
-            // Add an additional uplift episode, with uplift of 1800m over 18ma
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
+            /*// Add an uplift episode, with uplift of 1800m over 18ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
@@ -553,8 +540,8 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(18);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);
-            // Add an additional overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
+            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
+            /*// Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
@@ -565,12 +552,12 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(1E-5);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);
-            // Add a deformation episode with a defined stress load
+            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
+            /*// Add a deformation episode with a defined stress load
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(0.05;
+            AppliedOverpressureRate_list.Add(0.05);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
@@ -614,7 +601,7 @@ namespace DFMGenerator_Standalone
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
             // Do not use DuctileBoundary as this is not yet implemented
-            StressDistribution StressDistributionScenario = StressDistribution.EvenlyDistributedStress;// StressDistribution.StressShadow;
+            StressDistribution StressDistributionScenario = StressDistribution.StressShadow;
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
             // If DepthAtDeformation is specified, this will be used to calculate vertical stress
             // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
@@ -713,7 +700,7 @@ namespace DFMGenerator_Standalone
             AutomaticFlag CheckAlluFStressShadows = AutomaticFlag.Automatic;
             // Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes
             // For now we will set this to 1 (always use isotropic method) as this seems to give more reliable results
-            double AnisotropyCutoff = 1;// 0.5;
+            double AnisotropyCutoff = 1;
             // Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
             bool AllowReverseFractures = false;
             // Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
@@ -1673,69 +1660,6 @@ namespace DFMGenerator_Standalone
                     PillarBottoms[RowNo, ColNo] = PillarBottom;
                 }
 
-            /*PillarTops[0, 0] = new PointXYZ(579529.003522498, 6242567.11599888, -2790.31392421875);
-            PillarBottoms[0, 0] = new PointXYZ(579528.798121165, 6242567.34900155, -2796.40992421875);
-            PillarTops[1, 0] = new PointXYZ(579490.302865076, 6242639.98364086, -2785.532671875);
-            PillarBottoms[1, 0] = new PointXYZ(579490.068952623, 6242640.26077959, -2791.05092109375);
-            PillarTops[1, 1] = new PointXYZ(579522.919630286, 6242684.47650283, -2778.765159375);
-            PillarBottoms[1, 1] = new PointXYZ(579522.589252403, 6242684.8296086, -2784.69417421875);
-            PillarTops[0, 1] = new PointXYZ(579566.190333579, 6242607.66491038, -2782.85823046875);
-            PillarBottoms[0, 1] = new PointXYZ(579565.949917245, 6242607.91995218, -2788.7741484375);
-            PillarTops[2, 0] = new PointXYZ(579462.115837969, 6242714.03325091, -2774.1520828125);
-            PillarBottoms[2, 0] = new PointXYZ(579461.755961482, 6242714.37031465, -2781.5899171875);
-            //PillarTops[2, 1]= new PointXYZ(579474.819795827, 6242778.69355795, -2768.86243359375);
-            // PillarBottoms[2, 1]= new PointXYZ(579474.27157384, 6242779.15065535, -2776.7232375);
-            PillarTops[2, 1] = new PointXYZ(579475, 6242768, -2768.86243359375);
-            PillarBottoms[2, 1] = new PointXYZ(579475, 6242768, -2776.7232375);
-            PillarTops[3, 0] = new PointXYZ(579437.179513681, 6242732.92471259, -2765.122978125);
-            PillarBottoms[3, 0] = new PointXYZ(579436.743308121, 6242733.42119845, -2774.2794796875);
-            PillarTops[3, 1] = new PointXYZ(579470.48291385, 6242776.2781815, -2763.03432421875);
-            PillarBottoms[3, 1] = new PointXYZ(579469.923218037, 6242776.86345756, -2772.24321328125);
-            PillarTops[1, 2] = new PointXYZ(579570.138400909, 6242708.64158499, -2774.224115625);
-            PillarBottoms[1, 2] = new PointXYZ(579569.805431011, 6242708.98093494, -2780.43173671875);
-            PillarTops[0, 2] = new PointXYZ(579608.199123414, 6242641.54737876, -2776.94022890625);
-            PillarBottoms[0, 2] = new PointXYZ(579607.949035609, 6242641.79618406, -2782.7114859375);
-            PillarTops[2, 2] = new PointXYZ(579536.907507678, 6242764.82239216, -2768.39987578125);
-            PillarBottoms[2, 2] = new PointXYZ(579536.455810804, 6242765.2836305, -2775.7082296875);
-            PillarTops[3, 2] = new PointXYZ(579516.117092782, 6242801.52963449, -2762.44675078125);
-            PillarBottoms[3, 2] = new PointXYZ(579515.615370112, 6242802.03647429, -2771.218978125);
-            PillarTops[1, 3] = new PointXYZ(579625.338702895, 6242717.71231128, -2771.1255140625);
-            PillarBottoms[1, 3] = new PointXYZ(579625.054227459, 6242718.00046211, -2777.741221875);
-            PillarTops[0, 3] = new PointXYZ(579657.310078067, 6242659.13924268, -2773.67553515625);
-            PillarBottoms[0, 3] = new PointXYZ(579657.088697323, 6242659.35966229, -2779.44232734375);
-            PillarTops[2, 3] = new PointXYZ(579595.943416998, 6242768.18831933, -2767.60513359375);
-            PillarBottoms[2, 3] = new PointXYZ(579595.631762305, 6242768.50407731, -2774.63934609375);
-            PillarTops[3, 3] = new PointXYZ(579568.995445128, 6242811.64909635, -2762.73666796875);
-            PillarBottoms[3, 3] = new PointXYZ(579568.639964587, 6242812.00636323, -2770.77517265625);*/
-
-            /*PillarTops[0, 0] = new PointXYZ(579490.302865076, 6242639.98364086, -2785.532671875);
-            PillarBottoms[0, 0] = new PointXYZ(579490.068952623, 6242640.26077959, -2791.05092109375);
-            PillarTops[0, 1] = new PointXYZ(579522.919630286, 6242684.47650283, -2778.765159375);
-            PillarBottoms[0, 1] = new PointXYZ(579522.589252403, 6242684.8296086, -2784.69417421875);
-            PillarTops[1, 0] = new PointXYZ(579462.115837969, 6242714.03325091, -2774.1520828125);
-            PillarBottoms[1, 0] = new PointXYZ(579461.755961482, 6242714.37031465, -2781.5899171875);
-            PillarTops[1, 1]= new PointXYZ(579474.819795827, 6242778.69355795, -2768.86243359375);
-            PillarBottoms[1, 1]= new PointXYZ(579474.27157384, 6242779.15065535, -2776.7232375);
-            PillarTops[2, 0] = new PointXYZ(579437.179513681, 6242732.92471259, -2765.122978125);
-            PillarBottoms[2, 0] = new PointXYZ(579436.743308121, 6242733.42119845, -2774.2794796875);
-            PillarTops[2, 1] = new PointXYZ(579470.48291385, 6242776.2781815, -2763.03432421875);
-            PillarBottoms[2, 1] = new PointXYZ(579469.923218037, 6242776.86345756, -2772.24321328125);
-            PillarTops[0, 2] = new PointXYZ(579570.138400909, 6242708.64158499, -2774.224115625);
-            PillarBottoms[0, 2] = new PointXYZ(579569.805431011, 6242708.98093494, -2780.43173671875);
-            PillarTops[1, 2] = new PointXYZ(579536.907507678, 6242764.82239216, -2768.39987578125);
-            PillarBottoms[1, 2] = new PointXYZ(579536.455810804, 6242765.2836305, -2775.7082296875);
-            PillarTops[2, 2] = new PointXYZ(579516.117092782, 6242801.52963449, -2762.44675078125);
-            PillarBottoms[2, 2] = new PointXYZ(579515.615370112, 6242802.03647429, -2771.218978125);*/
-
-            /*PillarTops[0, 0]= new PointXYZ(579474.819795827, 6242778.69355795, -2768.86243359375);
-            PillarBottoms[0, 0]= new PointXYZ(579474.27157384, 6242779.15065535, -2776.7232375);
-            PillarTops[0, 1] = new PointXYZ(579536.907507678, 6242764.82239216, -2768.39987578125);
-            PillarBottoms[0, 1] = new PointXYZ(579536.455810804, 6242765.2836305, -2775.7082296875);
-            PillarTops[1, 1] = new PointXYZ(579516.117092782, 6242801.52963449, -2762.44675078125);
-            PillarBottoms[1, 1] = new PointXYZ(579515.615370112, 6242802.03647429, -2771.218978125);
-            PillarTops[1, 0] = new PointXYZ(579470.48291385, 6242776.2781815, -2763.03432421875);
-            PillarBottoms[1, 0] = new PointXYZ(579469.923218037, 6242776.86345756, -2772.24321328125);*/
-
 #if READINPUTFROMFILE
             // Read include files and set property and geometry overrides
             foreach (string includefile_name in IncludeFiles)
@@ -1848,7 +1772,10 @@ namespace DFMGenerator_Standalone
 
                                 try
                                 {
-                                    deformationEpisodeIndex = Convert.ToInt32(deformationEpisodeIndexString);
+                                    // Convert the deformation episode number to a zero-based index
+                                    deformationEpisodeIndex = Convert.ToInt32(deformationEpisodeIndexString) - 1;
+                                    if (deformationEpisodeIndex < 0)
+                                        deformationEpisodeIndex = 0;
                                 }
                                 catch (System.FormatException)
                                 {

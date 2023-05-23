@@ -8340,7 +8340,7 @@ namespace DFMGenerator_Ocean
                 internal get { return this.argument_SimulationCase4; }
                 set { this.argument_SimulationCase4 = (value == null ? null : value); }
             }
-            // Abaolute (total) stress can also be specified as a time series from a simulation case - this must be specified in the form of the 6 components from a total stress tensor (as separate time series)
+            // Absolute (total) stress can also be specified as a time series from a simulation case - this must be specified in the form of the 6 components from a total stress tensor (as separate time series)
             // This will overwrite the EhminRate, EhmaxRate and EhminAzi and UpliftRate properties to define horizontal applied strain in the model
             // At a minimum the ZZ component must be supplied to overwrite the static load; other components will be assumed to be zero if not supplied
             [OptionalInWorkflow]
