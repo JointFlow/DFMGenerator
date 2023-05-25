@@ -183,6 +183,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="Resources\DFMGenerator.ico" />
     <Content Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide.htm" />
   </ItemGroup>
   <Import Project="..\DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems" Label="Shared" />

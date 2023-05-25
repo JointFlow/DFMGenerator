@@ -1010,6 +1010,7 @@ namespace DFMGenerator_Ocean
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.btn_DE_Cancel);
             this.Controls.Add(this.btn_DE_OK);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "DeformationEpisodeUI";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.DeformationEpisodeUI_FormClosed);
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).EndInit();

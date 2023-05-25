@@ -7681,8 +7681,8 @@ namespace DFMGenerator_Ocean
                     Property ehminAzi = EhminAzi(deformationEpisodeIndex);
                     double ehminRate_default = EhminRate_default(deformationEpisodeIndex);
                     Property ehminRate = EhminRate(deformationEpisodeIndex);
-                    //double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
-                    //Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
+                    double ehmaxRate_default = EhmaxRate_default(deformationEpisodeIndex);
+                    Property ehmaxRate = EhmaxRate(deformationEpisodeIndex);
                     double OPRate_default = AppliedOverpressureRate_default(deformationEpisodeIndex);
                     Property OPRate = AppliedOverpressureRate(deformationEpisodeIndex);
                     double tempChange_default = AppliedTemperatureChange_default(deformationEpisodeIndex);
@@ -7697,6 +7697,10 @@ namespace DFMGenerator_Ocean
                     if (ehminRate != null)
                     {
                         deformationEpisodeName += string.Format(" Strain {0}", ehminRate.Name);
+                        if (ehmaxRate != null)
+                            deformationEpisodeName += string.Format(", {0}", ehmaxRate.Name);
+                        else if (ehmaxRate_default != 0)
+                            deformationEpisodeName += string.Format(", {0}/{1}", ehmaxRate_default, timeUnitText);
                         if (ehminAzi != null)
                             deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
                         else
@@ -7705,6 +7709,10 @@ namespace DFMGenerator_Ocean
                     else if (ehminRate_default != 0)
                     {
                         deformationEpisodeName += string.Format(" Strain {0}/{1}", ehminRate_default, timeUnitText);
+                        if (ehmaxRate != null)
+                            deformationEpisodeName += string.Format(", {0}", ehmaxRate.Name);
+                        else if (ehmaxRate_default != 0)
+                            deformationEpisodeName += string.Format(", {0}/{1}", ehmaxRate_default, timeUnitText);
                         if (ehminAzi != null)
                             deformationEpisodeName += string.Format(" azimuth {0}", ehminAzi.Name);
                         else

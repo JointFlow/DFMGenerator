@@ -81,6 +81,16 @@ namespace DFMGenerator_Ocean.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon DFMGenerator {
+            get {
+                object obj = ResourceManager.GetObject("DFMGenerator", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
         ///&lt;Configuration Type=&quot;Configuration.ConfigurationState&quot; Version=&quot;1.0.0.12&quot; Caption=&quot;DFMGeneratorConfig&quot;&gt;
         ///  &lt;Extensions Type=&quot;Extensibility.ExtensionCollection&quot;&gt;
