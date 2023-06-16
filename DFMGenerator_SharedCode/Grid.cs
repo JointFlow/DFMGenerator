@@ -131,7 +131,7 @@ namespace DFMGenerator_SharedCode
             {
                 HitTimestepLimit = true;
                 // Give a message saying in how many gridblocks the timestep limit was exceeded
-                string timestepLimitMessage = string.Format("The calculation stopped before completion in {0} gridblocks as the timestep limit was exceeded. To prevent this, adjust the calculation termination criteria on the Control Parameters tab.", HitTimestepLimitCounter);
+                string timestepLimitMessage = string.Format("Full fracture saturation was not achieved in {0} gridblocks before reaching the timestep limit.", HitTimestepLimitCounter);
                 progressReporter.OutputMessage(timestepLimitMessage);
             }
             else
@@ -188,7 +188,7 @@ namespace DFMGenerator_SharedCode
             {
                 DFNThicknessCutoffActivated = true;
                 // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
-                string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the {0} gridblocks due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", noGridblocksBelowThicknessCutoff);
+                string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the {0} gridblocks due to the layer thickness cutoff. To prevent this, reduce the cutoff value in the Control Parameters.", noGridblocksBelowThicknessCutoff);
                 progressReporter.OutputMessage(thicknessLimitMessage);
             }
             else

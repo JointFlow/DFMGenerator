@@ -43,8 +43,8 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("NoRows 3");
                 input_file.WriteLine("NoCols 3");
                 input_file.WriteLine("% Gridblock size; all lengths in metres");
-                input_file.WriteLine("Width_EW 20");
-                input_file.WriteLine("Length_NS 20");
+                input_file.WriteLine("Width_EW 50");
+                input_file.WriteLine("Length_NS 50");
                 input_file.WriteLine("LayerThickness 1");
                 input_file.WriteLine("% Model location");
                 input_file.WriteLine("% Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock");
@@ -249,7 +249,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("MaxTimestepDuration -1");
                 input_file.WriteLine("% Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration");
                 input_file.WriteLine("% Increase this to run calculation faster, with fewer but longer timesteps");
-                input_file.WriteLine("MaxTimestepMFP33Increase 0.002");
+                input_file.WriteLine("MaxTimestepMFP33Increase 0.005");
                 input_file.WriteLine("% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)");
                 input_file.WriteLine("% If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite");
                 input_file.WriteLine("% If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)");
@@ -424,8 +424,8 @@ namespace DFMGenerator_Standalone
             int NoRows = 3;
             int NoCols = 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 20;
-            double Length_NS = 20;
+            double Width_EW = 50;
+            double Length_NS = 50;
             double LayerThickness = 1;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
@@ -529,48 +529,48 @@ namespace DFMGenerator_Standalone
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
             InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
-            /*// Add an uplift episode, with uplift of 1800m over 18ma
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(EhminRate);
-            EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
-            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-            AppliedUpliftRate_list.Add(100);
-            StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(18);
-            AbsoluteStressRate_list.Add(AbsoluteStressRate);
-            InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
-            /*// Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(EhminRate);
-            EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(1E+12);
-            AppliedTemperatureChange_list.Add(-5E+6);
-            AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(1);
-            DeformationEpisodeDuration_list.Add(1E-5);
-            AbsoluteStressRate_list.Add(AbsoluteStressRate);
-            InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
-            /*// Add a deformation episode with a defined stress load
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(EhminRate);
-            EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(0.05);
-            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-            AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(StressArchingFactor);
-            ModelTimeUnits = TimeUnits.second;
-            DeformationEpisodeDuration_list.Add(31622400); // One year in seconds
-            AbsoluteStressRate_list.Add(new Tensor2S(0.02, -0.02, -0.3, 0.02, -0.04, 0.04));
-            InitialFluidPressure_list.Add(15000000);
-            InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
-            BiazimuthalConjugate = false;*/
+             /*// Add an uplift episode, with uplift of 1800m over 18ma
+             EhminAzi_list.Add(EhminAzi);
+             EhminRate_list.Add(EhminRate);
+             EhmaxRate_list.Add(EhmaxRate);
+             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
+             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+             AppliedUpliftRate_list.Add(100);
+             StressArchingFactor_list.Add(StressArchingFactor);
+             DeformationEpisodeDuration_list.Add(18);
+             AbsoluteStressRate_list.Add(AbsoluteStressRate);
+             InitialFluidPressure_list.Add(InitialFluidPressure);
+             InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
+             /*// Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
+             EhminAzi_list.Add(EhminAzi);
+             EhminRate_list.Add(EhminRate);
+             EhmaxRate_list.Add(EhmaxRate);
+             AppliedOverpressureRate_list.Add(1E+12);
+             AppliedTemperatureChange_list.Add(-5E+6);
+             AppliedUpliftRate_list.Add(AppliedUpliftRate);
+             StressArchingFactor_list.Add(1);
+             DeformationEpisodeDuration_list.Add(1E-5);
+             AbsoluteStressRate_list.Add(AbsoluteStressRate);
+             InitialFluidPressure_list.Add(InitialFluidPressure);
+             InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
+             /*// Add a deformation episode with a defined stress load
+             EhminAzi_list.Add(EhminAzi);
+             EhminRate_list.Add(EhminRate);
+             EhmaxRate_list.Add(EhmaxRate);
+             AppliedOverpressureRate_list.Add(0.05);
+             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+             AppliedUpliftRate_list.Add(AppliedUpliftRate);
+             StressArchingFactor_list.Add(StressArchingFactor);
+             ModelTimeUnits = TimeUnits.second;
+             DeformationEpisodeDuration_list.Add(31622400); // One year in seconds
+             AbsoluteStressRate_list.Add(new Tensor2S(0.02, -0.02, -0.3, 0.02, -0.04, 0.04));
+             InitialFluidPressure_list.Add(15000000);
+             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
+             BiazimuthalConjugate = false;*/
 #endif
 
-            // Mechanical properties
-            double YoungsMod = 1E+10;
+             // Mechanical properties
+             double YoungsMod = 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
             bool VariableYoungsMod = false;
             double VariableYoungsModSmoothingFactor = 2;
@@ -707,7 +707,7 @@ namespace DFMGenerator_Standalone
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepMFP33Increase = 0.002;
+            double MaxTimestepMFP33Increase = 0.005;
             // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
             // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
             // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)

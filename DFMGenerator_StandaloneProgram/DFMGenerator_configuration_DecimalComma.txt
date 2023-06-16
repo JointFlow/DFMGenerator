@@ -8,8 +8,8 @@
 NoRows 3
 NoCols 3
 % Gridblock size; all lengths in metres
-Width_EW 20
-Length_NS 20
+Width_EW 50
+Length_NS 50
 LayerThickness 1
 % Model location
 % Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
@@ -209,7 +209,7 @@ AllowReverseFractures false
 MaxTimestepDuration -1
 % Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
 % Increase this to run calculation faster, with fewer but longer timesteps
-MaxTimestepMFP33Increase 0,002
+MaxTimestepMFP33Increase 0,005
 % Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)
 % If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
 % If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)

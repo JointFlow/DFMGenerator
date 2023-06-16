@@ -5487,7 +5487,7 @@ namespace DFMGenerator_Ocean
             private int argument_HorizontalUpscalingFactor = 1;
             // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
             private double argument_MaxTSDuration = double.NaN;
-            private double argument_Max_TS_MFP33_increase = 0.002;
+            private double argument_Max_TS_MFP33_increase = 0.005;
             private double argument_MinimumImplicitMicrofractureRadius = 0.05;
             private int argument_No_r_bins = 10;
             // Calculation termination controls
@@ -9306,7 +9306,7 @@ namespace DFMGenerator_Ocean
                 argument_HorizontalUpscalingFactor = 1;
                 // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
                 argument_MaxTSDuration = double.NaN;
-                argument_Max_TS_MFP33_increase = 0.002;
+                argument_Max_TS_MFP33_increase = 0.005;
                 argument_MinimumImplicitMicrofractureRadius = 0.05;
                 argument_No_r_bins = 10;
                 // Calculation termination controls

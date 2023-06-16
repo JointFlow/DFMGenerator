@@ -1,3 +1,5 @@
+//#define PRE2021
+
 namespace DFMGenerator_Ocean
 {
     partial class DFMGeneratorUI
@@ -1865,7 +1867,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_StressDistribution
             // 
+#if !PRE2021
             this.comboBox_StressDistribution.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_StressDistribution.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem1.Text = "Evenly distributed stress";
             comboBoxItem2.Text = "Stress shadow";
@@ -2325,7 +2329,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_FractureApertureControl
             // 
+#if !PRE2021
             this.comboBox_FractureApertureControl.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_FractureApertureControl.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem3.Text = "Uniform";
             comboBoxItem4.Text = "Size dependent";
@@ -2372,7 +2378,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_IntermediateOutputInterval
             // 
+#if !PRE2021
             this.comboBox_IntermediateOutputInterval.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_IntermediateOutputInterval.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem7.Text = "Deformation Episodes";
             comboBoxItem8.Text = "Equal Time";
@@ -2523,7 +2531,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_DFNFileType
             // 
+#if !PRE2021
             this.comboBox_DFNFileType.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_DFNFileType.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem10.Text = "ASCII";
             comboBoxItem11.Text = "FAB";
@@ -2805,7 +2815,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_FractureMode
             // 
+#if !PRE2021
             this.comboBox_FractureMode.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_FractureMode.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem12.Text = "Optimal mode";
             comboBoxItem13.Text = "Mode 1";
@@ -2993,7 +3005,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_SearchAdjacentGridblocks
             // 
+#if !PRE2021
             this.comboBox_SearchAdjacentGridblocks.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_SearchAdjacentGridblocks.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem15.Text = "None";
             comboBoxItem16.Text = "All";
@@ -3518,7 +3532,7 @@ namespace DFMGenerator_Ocean
 
         }
 
-        #endregion
+#endregion
 
         private System.Windows.Forms.Button btnApply;
         private System.Windows.Forms.Button btnOK;

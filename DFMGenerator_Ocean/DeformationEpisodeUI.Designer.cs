@@ -1,4 +1,6 @@
 ﻿
+//#define PRE2021
+
 namespace DFMGenerator_Ocean
 {
     partial class DeformationEpisodeUI
@@ -407,7 +409,9 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_DE_TimeUnits
             // 
+#if !PRE2021
             this.comboBox_DE_TimeUnits.DisableMouseWheelScrolling = false;
+#endif
             this.comboBox_DE_TimeUnits.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem1.Text = "seconds";
             comboBoxItem2.Text = "years";

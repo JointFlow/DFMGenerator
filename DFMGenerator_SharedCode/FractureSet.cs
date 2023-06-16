@@ -4066,7 +4066,7 @@ namespace DFMGenerator_SharedCode
                     deactivateFractureSet = true;
             }
 
-            bool OneDipSetDeactivated = deactivateFractureSet;
+            bool OneDipSetDeactivated = false;
             bool OneDipSetStillActive = false;
             // If the fracture deactivation flag is true, deactivate all the dipsets
             foreach (FractureDipSet fds in FractureDipSets)
@@ -4095,11 +4095,14 @@ namespace DFMGenerator_SharedCode
                     OneDipSetDeactivated = true;
                 }
 
+                // Check if the fracture dipset is currently active
                 if ((fds.getEvolutionStage() == FractureEvolutionStage.Growing) || (fds.getEvolutionStage() == FractureEvolutionStage.ResidualActivity)) 
                     OneDipSetStillActive = true;
             }
+            if (OneDipSetDeactivated && !OneDipSetStillActive)
+                deactivateFractureSet = true;
 
-            return OneDipSetDeactivated && !OneDipSetStillActive;
+            return deactivateFractureSet;
         }
 
         // DFN fracture interaction functions: used to check if fractures interact with other fractures during DFN generation

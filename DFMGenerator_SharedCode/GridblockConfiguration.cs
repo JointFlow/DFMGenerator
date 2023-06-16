@@ -2454,7 +2454,7 @@ namespace DFMGenerator_SharedCode
                                     }
 
                                     // If necessary we will reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
-                                    if (!StaticStrain && (TimestepDuration > tr))
+                                    if (!StaticStrain && (TimestepDuration > tr) && !AllSetsDeactivated)
                                         TimestepDuration = tr;
                                 }
                                 break;
@@ -2512,7 +2512,7 @@ namespace DFMGenerator_SharedCode
 
                                             // If necessary, reduce the maximum timestep duration to avoid overshooting the equilibrium elastic strain
                                             // NB if the calculated time to equilibrium is zero or negative, we can ignore it
-                                            if ((timeToEquilibrium > 0) && (TimestepDuration > timeToEquilibrium))
+                                            if ((timeToEquilibrium > 0) && (TimestepDuration > timeToEquilibrium) && !AllSetsDeactivated)
                                                 TimestepDuration = timeToEquilibrium;
                                         }
                                     }

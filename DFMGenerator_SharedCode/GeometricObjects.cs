@@ -795,7 +795,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="angle">Angle to calculate sine of</param>
         /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple</returns>
-        private static double Sin_trim(double angle)
+        public static double Sin_trim(double angle)
         {
             double output = Math.Sin(angle);
             if (Math.Abs(output) < roundToZero)
@@ -808,7 +808,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="angle">Angle to calculate cosine of</param>
         /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple</returns>
-        private static double Cos_trim(double angle)
+        public static double Cos_trim(double angle)
         {
             double output = Math.Cos(angle);
             if (Math.Abs(output) < roundToZero)
@@ -1526,29 +1526,12 @@ namespace DFMGenerator_SharedCode
         public double GetMinimumHorizontalAzimuth()
         {
             double numerator = 2 * components[Tensor2SComponents.XY];
-            double denominator = components[Tensor2SComponents.XX] - components[Tensor2SComponents.YY];
-            if (denominator < 0)
-            {
-                return (Math.PI - Math.Atan(numerator / denominator)) / 2;
-            }
-            else if (denominator > 0)
-            {
-                if (numerator > 0)
-                    return Math.PI - (Math.Atan(numerator / denominator) / 2);
-                else if (numerator < 0)
-                    return -(Math.Atan(numerator / denominator) / 2);
-                else
-                    return 0;
-            }
+            double denominator = components[Tensor2SComponents.YY] - components[Tensor2SComponents.XX];
+
+            if ((numerator == 0) && (denominator == 0))
+                return 0;
             else
-            {
-                if (numerator > 0)
-                    return Math.PI / 4;
-                else if (numerator < 0)
-                    return (3 * Math.PI) / 4;
-                else
-                    return 0;
-            }
+                return (Math.PI + Math.Atan2(numerator, denominator)) / 2;
         }
         /// <summary>
         /// Get the minimum and maximum horizontal values of the tensor (if one of the eigenvectors is vertical, these will represent the other two eigenvalues)
@@ -1574,8 +1557,8 @@ namespace DFMGenerator_SharedCode
             MinimumHorizontalAzimuth = GetMinimumHorizontalAzimuth();
 
             // Calculate helper variables
-            double sin_double_azi = Math.Sin(2 * MinimumHorizontalAzimuth);
-            double cos_double_azi = Math.Cos(2 * MinimumHorizontalAzimuth);
+            double sin_double_azi = VectorXYZ.Sin_trim(2 * MinimumHorizontalAzimuth);
+            double cos_double_azi = VectorXYZ.Cos_trim(2 * MinimumHorizontalAzimuth);
             double xx_plus_yy_component = (components[Tensor2SComponents.XX] + components[Tensor2SComponents.YY]) / 2;
             double xx_minus_yy_component;
             if (Math.Abs(cos_double_azi) > Math.Abs(sin_double_azi))
@@ -1605,11 +1588,17 @@ namespace DFMGenerator_SharedCode
                 return null;
 
             // Calculate the horizontal components of the horizontal strain tensor; vertical components will be zero as there is no applied vertical strain
-            double sinazi = Math.Sin(Epsilon_hmin_azimuth);
-            double cosazi = Math.Cos(Epsilon_hmin_azimuth);
+            double sinazi = VectorXYZ.Sin_trim(Epsilon_hmin_azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Epsilon_hmin_azimuth);
             double epsilon_dashed_xx = (Epsilon_hmin * Math.Pow(sinazi, 2)) + (Epsilon_hmax * Math.Pow(cosazi, 2));
             double epsilon_dashed_yy = (Epsilon_hmin * Math.Pow(cosazi, 2)) + (Epsilon_hmax * Math.Pow(sinazi, 2));
             double epsilon_dashed_xy = (Epsilon_hmin - Epsilon_hmax) * sinazi * cosazi;
+
+            // Trim to remove nonzero components caused by rounding error
+            double sum = Math.Abs(epsilon_dashed_xx) + Math.Abs(epsilon_dashed_yy) + Math.Abs(epsilon_dashed_xy);
+            if ((float)(epsilon_dashed_xx + sum) == (float)sum) epsilon_dashed_xx = 0;
+            if ((float)(epsilon_dashed_yy + sum) == (float)sum) epsilon_dashed_yy = 0;
+            if ((float)(epsilon_dashed_xy + sum) == (float)sum) epsilon_dashed_xy = 0;
 
             // Create a new tensor horizontal strain tensor and return it
             return new Tensor2S(epsilon_dashed_xx, epsilon_dashed_yy, 0, epsilon_dashed_xy, 0, 0);
