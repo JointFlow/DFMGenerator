@@ -61,7 +61,7 @@ FractureRelaxation 0
 % Density of initial microfractures
 InitialMicrofractureDensity 0.001
 % Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
-InitialMicrofractureSizeDistribution 3
+InitialMicrofractureSizeDistribution 2
 % Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
 SubcriticalPropIndex 10
 % Critical fracture propagation rate in m/s

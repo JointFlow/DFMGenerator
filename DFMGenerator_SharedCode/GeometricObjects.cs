@@ -1522,14 +1522,14 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Get the azimuth of the minimum horizontal value of the tensor
         /// </summary>
-        /// <returns>Azimuth of the minimum horizontal value of the tensor (radians, clockwise from N)</returns>
+        /// <returns>Azimuth of the minimum horizontal value of the tensor (radians, clockwise from N); NaN if the tensor is isotropic</returns>
         public double GetMinimumHorizontalAzimuth()
         {
             double numerator = 2 * components[Tensor2SComponents.XY];
             double denominator = components[Tensor2SComponents.YY] - components[Tensor2SComponents.XX];
 
             if ((numerator == 0) && (denominator == 0))
-                return 0;
+                return double.NaN;
             else
                 return (Math.PI + Math.Atan2(numerator, denominator)) / 2;
         }
@@ -1555,6 +1555,9 @@ namespace DFMGenerator_SharedCode
 
             // Get the minimum horizontal azimuth
             MinimumHorizontalAzimuth = GetMinimumHorizontalAzimuth();
+            // If the tensor is isotropic this will return NaN; in this case take the minimum azimuth as zero
+            if (double.IsNaN(MinimumHorizontalAzimuth))
+                MinimumHorizontalAzimuth = 0;
 
             // Calculate helper variables
             double sin_double_azi = VectorXYZ.Sin_trim(2 * MinimumHorizontalAzimuth);

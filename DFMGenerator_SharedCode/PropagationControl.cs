@@ -1218,10 +1218,15 @@ namespace DFMGenerator_SharedCode
         {
             get
             {
-                if (TotalNoDeformationEpisodes > 0)
-                    return deformationEpisodes[0].Applied_Epsilon_hmin_azimuth;
-                else
-                    return 0;
+                // Look at each deformation episode in turn for a valid ehmin azimuth (i.e. an anisotropic stress or strain load)
+                foreach(DeformationEpisodeLoadControl deformationEpisode in deformationEpisodes)
+                {
+                    double episode_hmin_azimuth = deformationEpisode.Applied_Epsilon_hmin_azimuth;
+                    if (!double.IsNaN(episode_hmin_azimuth))
+                        return episode_hmin_azimuth;
+                }
+                // If there are no deformation episodes with anisotropic stress or strain loads, return 0
+                return 0;
             }
         }
 
