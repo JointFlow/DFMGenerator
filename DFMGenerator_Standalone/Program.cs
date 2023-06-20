@@ -808,7 +808,10 @@ namespace DFMGenerator_Standalone
                 }
                 else
                 {
-                    Console.WriteLine(line_split[0] + " " + line_split[1]);
+                    string line_echo = line_split[0] + " " + line_split[1];
+                    for (int line_component = 2; line_component < line_split.Length; line_component++)
+                        line_echo += " " + line_split[line_component];
+                    Console.WriteLine(line_echo);
                 }
 
                 // Check if this is an include statement and if so add to the list - we will deal with this later

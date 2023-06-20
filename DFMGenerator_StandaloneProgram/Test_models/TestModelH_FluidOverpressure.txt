@@ -178,8 +178,8 @@ CalculatePopulationDistribution true
 No_l_indexPoints 20
 % MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
 % Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
-MaxHMinLength 1
-MaxHMaxLength 1
+MaxHMinLength 4
+MaxHMaxLength 4
 % Calculation termination controls
 % The calculation is set to stop automatically when fractures stop growing
 % This can be defined in one of three ways:

@@ -16,27 +16,19 @@ LayerThickness 1
 OriginXOffset 0
 OriginYOffset 0
 % Current depth of burial in metres, positive downwards
-Depth 2000
-% Minimum strain orientatation (i.e. direction of maximum extension) in radians, clockwise from North
-EhminAzi -0.785398163397448
-% Set VariableStrainOrientation false to have the same minimum strain orientatation in all cells
-% Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
-% EhminCurvature is the difference in strain orientation between adjacent blocks in radians
-VariableStrainOrientation false
-EhminCurvature 0.1963495
-% Strain rates; units determined by ModelTimeUnits (i.e. strain/s, strain/year or strain/ma)
-% Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
-% With no strain relaxation, strain rate will control rate of horizontal stress increase
-% With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
-% EhminRate is most tensile (i.e. most negative) horizontal strain rate
-EhminRate -0.01
-% Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
-EhmaxRate 0.01
-% Set VariableStrainMagnitude to add random variation to the input strain rates
-% Strain rates for each gridblock will vary randomly from 0 to 2x specified values
-VariableStrainMagnitude false
+Depth 1000
 % Set time units to ma, year or second
 ModelTimeUnits ma
+% Deformation load
+% To add additional deformation episodes, list multiple values after the deformation load keywords
+EhminAzi 0.7853
+EhminRate -0.002 0 0 0
+EhmaxRate 0.001 0 0 0
+AppliedOverpressureRate 0 250000 0 0
+AppliedTemperatureChange 0 0 -15E+5 0
+AppliedUpliftRate 0 0 0 500
+StressArchingFactor 0 0 1 0
+DeformationEpisodeDuration 1 4 1E-5 2
 
 % Mechanical properties
 % Young's Modulus in Pa
@@ -44,7 +36,8 @@ YoungsMod 1E+10
 % Set VariableYoungsMod true to have laterally variable Young's Modulus
 VariableYoungsMod false
 PoissonsRatio 0.25
-BiotCoefficient 1
+BiotCoefficient 0.7
+Porosity 0.2
 FrictionCoefficient 0.5
 % Set VariableFriction true to have laterally variable friction coefficient
 VariableFriction false
@@ -55,7 +48,7 @@ VariableCSE false
 % Strain relaxation time constants
 % Units are determined by ModelTimeUnits setting
 % Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
-RockStrainRelaxation 0.2
+RockStrainRelaxation 0
 % Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
 FractureRelaxation 0
 % Density of initial microfractures
@@ -97,7 +90,7 @@ OutputDFNFileType ASCII
 % Output DFN at intermediate stages of fracture growth
 NoIntermediateOutputs 0
 % Flag to control interval between output of intermediate stage DFNs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area
-OutputAtEqualTimeIntervals false
+IntermediateOutputIntervalControl SpecifiedTime
 % Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
 OutputCentrepoints false
 % Flag to output the bulk rock compliance tensor
@@ -178,7 +171,7 @@ CalculatePopulationDistribution true
 No_l_indexPoints 20
 % MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
 % Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
-maxHMinLength 20
+maxHMinLength 50
 maxHMaxLength 2
 % Calculation termination controls
 % The calculation is set to stop automatically when fractures stop growing
@@ -195,9 +188,7 @@ Current_HistoricMFP33TerminationRatio -1
 Active_TotalMFP30TerminationRatio -1
 % Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
 MinimumClearZoneVolume 0.01
-% Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing
-% Set DeformationStageDuration to -1 to continue until fracture saturation is reached
-DeformationStageDuration -1
+% Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
 MaxTimesteps 1000
 % DFN geometry controls
 % Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated

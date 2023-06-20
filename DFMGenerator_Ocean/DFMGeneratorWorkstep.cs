@@ -5904,6 +5904,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_GeothermalGradient = value; }
             }*/
 
+            [OptionalInWorkflow]
             [Description("Initial stress relaxation", "Initial stress relaxation")]
             public double Argument_InitialStressRelaxation
             {

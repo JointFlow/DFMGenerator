@@ -69,6 +69,7 @@ YoungsMod 1E+10
 VariableYoungsMod false
 PoissonsRatio 0.25
 BiotCoefficient 0.7
+Porosity 0.2
 FrictionCoefficient 0.5
 % Set VariableFriction true to have laterally variable friction coefficient
 VariableFriction false
