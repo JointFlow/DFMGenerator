@@ -1038,6 +1038,63 @@ namespace DFMGenerator_SharedCode
 
             return aperture;
         }
+        // Fracture compressibility is dependent on aperture control data
+        /// <summary>
+        /// Get the macrofracture compressibility, based on the aperture control data
+        /// </summary>
+        /// <returns>Elastic compressibility for Dynamic aperture, inverse of specified fracture normal stiffness for Barton-Bandis aperture, NaN for other apertures</returns>
+        public double getMacrofractureCompressibility()
+        {
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    // Fracture compressibility not defined for Uniform aperture
+                    return double.NaN;
+                case FractureApertureType.SizeDependent:
+                    // Fracture compressibility not defined for Size Dependent aperture
+                    return double.NaN;
+                case FractureApertureType.Dynamic:
+                    // Calculate compressibility based on elastic closure
+                    double geometricFactor = 2;
+                    double elasticMod = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
+                    double sizeFactor = gbc.CurrentThickness;
+                    return geometricFactor * elasticMod * sizeFactor;
+                case FractureApertureType.BartonBandis:
+                    // Use the inverse of the specified fracture normal stiffness
+                    return 1 / gbc.MechProps.FractureNormalStiffness;
+                default:
+                    // Return NaN
+                    return double.NaN;
+            }
+        }
+        /// <summary>
+        /// Get the microfracture compressibility, based on the aperture control data
+        /// </summary>
+        /// <returns>Elastic compressibility for Dynamic aperture, inverse of specified fracture normal stiffness for Barton-Bandis aperture, NaN for other apertures</returns>
+        public double getMicrofractureCompressibility(double radius)
+        {
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    // Fracture compressibility not defined for Uniform aperture
+                    return double.NaN;
+                case FractureApertureType.SizeDependent:
+                    // Fracture compressibility not defined for Size Dependent aperture
+                    return double.NaN;
+                case FractureApertureType.Dynamic:
+                    // Calculate compressibility based on elastic closure
+                    double geometricFactor = 8 / Math.PI;
+                    double elasticMod = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
+                    double sizeFactor = radius;
+                    return geometricFactor * elasticMod * sizeFactor;
+                case FractureApertureType.BartonBandis:
+                    // Use the inverse of the specified fracture normal stiffness
+                    return 1 / gbc.MechProps.FractureNormalStiffness;
+                default:
+                    // Return NaN
+                    return double.NaN;
+            }
+        }
 
         // Macrofracture growth rate data
         /// <summary>
@@ -1260,6 +1317,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double s_MFP33(int index) { return (Math.PI / 4) * gbc.ThicknessAtDeformation * s_MFP32(index); }
 
+        // Dynamic and geomechanical data
         /// <summary>
         /// Unit vector for the direction of shear stress on the fracture surface
         /// </summary>
@@ -1431,22 +1489,36 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase.DoubleShearColumnComponents();
 
                             // Recalculate fracture mode factors
-                            double sindip = Math.Sin(Dip);
-                            double cosdip = Math.Cos(Dip);
-                            Maa = sindip;
-                            Mas = 0;
-                            Mss = sindip / 2;
-                            Mav = 0;
-                            Mva = 0;
-                            Mvv = Math.Pow(cosdip, 2) / sindip;
-                            Mhh = (fs.eaa2d_eh2d * Maa) + (fs.eaaasd_eh2d * Mas) + (fs.eas2d_eh2d * Mss);
+                            if (BiazimuthalConjugate)
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double Maa = sindip;
+                                double Mas = 0;
+                                double Mss = sindip / 2;
+                                Maa_eaa2d_eh2d = fs.eaa2d_eh2d * Maa;
+                                Mas_eaaasd_eh2d = fs.eaaasd_eh2d * Mas;
+                                Mss_eas2d_eh2d = fs.eas2d_eh2d * Mss;
+                            }
+                            else
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
+                                double Mff = Math.Pow(oneMinusNur, 2) / oneMinus2Nur;
+                                double Mfw = 0;
+                                double Mww = oneMinusNur / 2;
+                                double Mfs = 0;
+                                double Mss = 1 / 2;
+                                Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
+                                Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
+                                Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
+                            }
+
                             // Remove rounding errors
                             {
-                                double Mtot = Maa + Mas + Mss;
-                                if ((float)(Mtot + Maa) == (float)Mtot) Maa = 0;
-                                if ((float)(Mtot + Mss) == (float)Mtot) Mss = 0;
-                                if ((float)(Mtot + Mhh) == (float)Mtot) Mhh = 0;
-                                if ((float)(Mtot + Mvv) == (float)Mtot) Mvv = 0;
+                                double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
+                                if ((float)(Mtot + Maa_eaa2d_eh2d) == (float)Mtot) Maa_eaa2d_eh2d = 0;
+                                if ((float)(Mtot + Mas_eaaasd_eh2d) == (float)Mtot) Mas_eaaasd_eh2d = 0;
+                                if ((float)(Mtot + Mss_eas2d_eh2d) == (float)Mtot) Mss_eas2d_eh2d = 0;
                             }
                         }
                         break;
@@ -1470,8 +1542,6 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase.DoubleShearColumnComponents();
 
                             // Recalculate fracture mode factors
-                            double sindip = Math.Sin(Dip);
-                            double cosdip = Math.Cos(Dip);
                             double sinpitch, cospitch;
                             if (double.IsNaN(ShearStressPitch))
                             {
@@ -1483,21 +1553,37 @@ namespace DFMGenerator_SharedCode
                                 sinpitch = Math.Sin(ShearStressPitch);
                                 cospitch = Math.Cos(ShearStressPitch);
                             }
-                            Maa = cosdip * ((sindip * cosdip) - (mufr * sinpitch * Math.Pow(sindip, 2)));
-                            Mas = -(mufr / oneMinusNur / 2) * cospitch * Math.Pow(sindip, 2);
-                            Mss = sindip / 2;
-                            Mav = -Maa;
-                            Mvv = cosdip * ((sindip * cosdip) + (mufr * sinpitch * Math.Pow(cosdip, 2)));
-                            Mva = -Mvv;
-                            Mhh = (fs.eaa2d_eh2d * Maa) + (fs.eaaasd_eh2d * Mas) + (fs.eas2d_eh2d * Mss);
+                            if (BiazimuthalConjugate)
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double cosdip = Math.Cos(Dip);
+                                double sincosdip = sindip * cosdip;
+                                double Maa = cosdip * (sincosdip - (mufr * sinpitch * Math.Pow(sindip, 2)));
+                                double Mas = -(mufr / oneMinusNur / 2) * cospitch * Math.Pow(sindip, 2);
+                                double Mss = sindip / 2;
+                                Maa_eaa2d_eh2d = fs.eaa2d_eh2d * Maa;
+                                Mas_eaaasd_eh2d = fs.eaaasd_eh2d * Mas;
+                                Mss_eas2d_eh2d = fs.eas2d_eh2d * Mss;
+                            }
+                            else
+                            {
+                                double sindip = Math.Sin(Dip);
+                                double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
+                                double Mff = 0;
+                                double Mfw = -(Math.Pow(oneMinusNur, 2) / (2 * oneMinus2Nur)) * mufr * sinpitch;
+                                double Mww = oneMinusNur / 2;
+                                double Mfs = -(oneMinusNur / (2 * oneMinus2Nur)) * mufr * cospitch;
+                                double Mss = 1 / 2;
+                                Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
+                                Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
+                                Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
+                            }
                             // Remove rounding errors
                             {
-                                double Mtot = Maa + Mas + Mss;
-                                if ((float)(Mtot + Maa) == (float)Mtot) { Maa = 0; Mav = 0; }
-                                if ((float)(Mtot + Mas) == (float)Mtot) Mas = 0;
-                                if ((float)(Mtot + Mss) == (float)Mtot) Mss = 0;
-                                if ((float)(Mtot + Mhh) == (float)Mtot) Mhh = 0;
-                                if ((float)(Mtot + Mvv) == (float)Mtot) { Mvv = 0; Mva = 0; }
+                                double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
+                                if ((float)(Mtot + Maa_eaa2d_eh2d) == (float)Mtot) Maa_eaa2d_eh2d = 0;
+                                if ((float)(Mtot + Mas_eaaasd_eh2d) == (float)Mtot) Mas_eaaasd_eh2d = 0;
+                                if ((float)(Mtot + Mss_eas2d_eh2d) == (float)Mtot) Mss_eas2d_eh2d = 0;
                             }
                         }
                         break;
@@ -1508,13 +1594,9 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase = new Tensor4_2Sx2S();
 
                             // Set all mode factors to zero
-                            Maa = 0;
-                            Mas = 0;
-                            Mss = 0;
-                            Mav = 0;
-                            Mva = 0;
-                            Mvv = 0;
-                            Mhh = 0;
+                            Maa_eaa2d_eh2d = 0;
+                            Mas_eaaasd_eh2d = 0;
+                            Mss_eas2d_eh2d = 0;
                         }
                         break;
                 }
@@ -1524,15 +1606,13 @@ namespace DFMGenerator_SharedCode
                 {
                     foreach (Tensor2SComponents ij in Enum.GetValues(typeof(Tensor2SComponents)).Cast<Tensor2SComponents>())
                     {
-                        if (ij != Tensor2SComponents.YZ)
+                        if ((ij != Tensor2SComponents.YZ) && (ij != Tensor2SComponents.ZX))
                         {
                             uF_ComplianceTensorBase.Component(ij, Tensor2SComponents.YZ, 0);
                             uF_ComplianceTensorBase.Component(Tensor2SComponents.YZ, ij, 0);
                             MF_ComplianceTensorBase.Component(ij, Tensor2SComponents.YZ, 0);
                             MF_ComplianceTensorBase.Component(Tensor2SComponents.YZ, ij, 0);
-                        }
-                        if (ij != Tensor2SComponents.ZX)
-                        {
+
                             uF_ComplianceTensorBase.Component(ij, Tensor2SComponents.ZX, 0);
                             uF_ComplianceTensorBase.Component(Tensor2SComponents.ZX, ij, 0);
                             MF_ComplianceTensorBase.Component(ij, Tensor2SComponents.ZX, 0);
@@ -1549,13 +1629,9 @@ namespace DFMGenerator_SharedCode
                 MF_ComplianceTensorBase = new Tensor4_2Sx2S();
 
                 // Set all mode factors to zero
-                Maa = 0;
-                Mas = 0;
-                Mss = 0;
-                Mav = 0;
-                Mva = 0;
-                Mvv = 0;
-                Mhh = 0;
+                Maa_eaa2d_eh2d = 0;
+                Mas_eaaasd_eh2d = 0;
+                Mss_eas2d_eh2d = 0;
             }
         }
         /// <summary>
@@ -1899,38 +1975,85 @@ namespace DFMGenerator_SharedCode
             return Total_uF_Porosity(ApertureControl) + Total_MF_Porosity(ApertureControl);
         }
 
+        // Applied strain components
+        // NB for biazimuthal conjugate fracture sets, these are defined in terms of fracture azimuth and strike and are thus contained within the fracture set
+        /// <summary>
+        /// Ratio of incremental normal strain to total incremental normal strain on the fracture, given by eff^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double eff2d_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental normal strain x downdip shear strain to total incremental normal strain on the fracture, given by eff*efw / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efffwd_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental downdip shear strain to total incremental normal strain on the fracture, given by efw^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efw2d_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental normal strain x alongstrike shear strain to total incremental normal strain on the fracture, given by eff*efs / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efffsd_e2d{ get; set; }
+        /// <summary>
+        /// Ratio of incremental alongstrike shear strain to total incremental normal strain on the fracture, given by efs^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efs2d_e2d { get { return 1 - eff2d_e2d - efw2d_e2d; } } 
+        /// <summary>
+        /// Recalculate the applied strain components acting on the fractures, for a specified strain or strain rate tensor
+        /// </summary>
+        /// <param name="AppliedStrainTensor">Current strain or strain rate tensor</param>
+        public void RecalculateStrainRatios(Tensor2S AppliedStrainTensor)
+        {
+            VectorXYZ strikeVector = fs.StrikeVector;
+            VectorXYZ normalStrainOnFracture = AppliedStrainTensor * normalVector;
+            VectorXYZ downDipStrainOnFracture = AppliedStrainTensor * dipVector;
+            VectorXYZ alongStrikeStrainOnFracture = AppliedStrainTensor * strikeVector;
+            double effd = normalVector & normalStrainOnFracture;
+            double efwd = dipVector & normalStrainOnFracture;
+            double ewwd = dipVector & downDipStrainOnFracture;
+            double efsd = strikeVector & normalStrainOnFracture;
+            double essd = strikeVector & alongStrikeStrainOnFracture;
+
+            // Set the strain ratios to zero if they are small - this will avoid rounding errors
+            double emax = effd + efwd + ewwd + efsd + essd;
+            if ((float)(emax + effd) == (float)emax)
+                effd= 0;
+            if ((float)(emax + efwd) == (float)emax)
+                efwd = 0;
+            if ((float)(emax + ewwd) == (float)emax)
+                ewwd = 0;
+            if ((float)(emax + efsd) == (float)emax)
+                efsd = 0;
+            if ((float)(emax + essd) == (float)emax)
+                essd = 0;
+            double eff_squared = Math.Pow(effd, 2);
+            double efw_squared = Math.Pow(efwd, 2);
+            double efs_squared = Math.Pow(efsd, 2);
+            double e_squared = eff_squared + efw_squared + efs_squared;
+            eff2d_e2d = (e_squared > 0 ? eff_squared / e_squared : 1);
+            efw2d_e2d = (e_squared > 0 ? efw_squared / e_squared : 0);
+            efffwd_e2d = (e_squared > 0 ? (effd * efwd) / e_squared : 0);
+            efffsd_e2d = (e_squared > 0 ? (effd * efsd) / e_squared : 0);
+        }
+
         // Fracture mode factors - these form the basis for the stress shadow width
         // They represent the ratio of far-field displacement (i.e. applied strain) to displacement on a fracture, normalised to remove the effects of fracture size and geometry
+        // For convenience, these are combined with the respective strain components when they are calculated, so they need only be multiplied by geometric factors to determine stress shadow widths
         /// <summary>
         /// Fracture Mode Factor Maa: azimuthal strain => azimuthal displacement
         /// </summary>
-        private double Maa;
+        private double Maa_eaa2d_eh2d { get; set; }
         /// <summary>
         /// Fracture Mode Factor Mas: strike-parallel shear strain => azimuthal displacement
         /// </summary>
-        private double Mas;
+        private double Mas_eaaasd_eh2d { get; set; }
         /// <summary>
         /// Fracture Mode Factor Mss: strike-parallel shear strain => strike-slip displacement
         /// </summary>
-        private double Mss;
-        /// <summary>
-        /// Fracture Mode Factor Mva: vertical strain => azimuthal displacement
-        /// </summary>
-        private double Mva;
-        /// <summary>
-        /// Fracture Mode Factor Mav: azimuthal strain => vertical displacement
-        /// </summary>
-        private double Mav;
-        /// <summary>
-        /// Fracture Mode Factor Mvv: vertical strain => vertical displacement
-        /// </summary>
-        private double Mvv;
-        // NB mode factors Mas, Mvs, Msa and Msv will all be zero at all times
-        // Azimuthal or vertical strain will not generate strike-slip displacement, and horizontal shear strain will not generate azimuthal or vertical displacement
+        private double Mss_eas2d_eh2d { get; set; }
         /// <summary>
         /// Fracture Mode Factor Mhh: maximum horizontal strain => horizontal displacement
         /// </summary>
-        private double Mhh;
+        private double Mhh_eh2d { get { return Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d; } }
 
         // Stress shadow width
         /// <summary>
@@ -1939,7 +2062,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Max_uF_StressShadowWidth_r
         {
-            get { return Mhh * (8 / Math.PI); }
+            get { return Mhh_eh2d * (8 / Math.PI); }
         }
         /// <summary>
         /// Ratio of mean stress shadow width to microfracture radius - returns a value regardless of the FractureDistribution case
@@ -1947,7 +2070,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_uF_StressShadowWidth_r
         {
-            get { return Mhh * (16 / (3 * Math.PI)); }
+            get { return Mhh_eh2d * (16 / (3 * Math.PI)); }
         }
         /// <summary>
         /// Maximum half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1955,7 +2078,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Max_MF_StressShadowWidth
         {
-            get { return Mhh * 2 * gbc.ThicknessAtDeformation; }
+            get { return Mhh_eh2d * 2 * gbc.ThicknessAtDeformation; }
         }
         /// <summary>
         /// Mean half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1963,7 +2086,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_MF_StressShadowWidth
         {
-            get { return Mhh * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
+            get { return Mhh_eh2d * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
         }
         /// <summary>
         /// Azimuthal component of mean half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1971,7 +2094,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_Azimuthal_MF_StressShadowWidth
         {
-            get { return (fs.eaa2d_eh2d * Maa) * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
+            get { return Maa_eaa2d_eh2d * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
         }
         /// <summary>
         /// Strike-slip shear component of mean half-macrofracture stress shadow width - returns a value regardless of the FractureDistribution case
@@ -1979,7 +2102,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_Shear_MF_StressShadowWidth
         {
-            get { return ((fs.eaaasd_eh2d * Mas) + (fs.eas2d_eh2d * Mss)) * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
+            get { return (Mas_eaaasd_eh2d + Mss_eas2d_eh2d) * (Math.PI / 2) * gbc.ThicknessAtDeformation; }
         }
 
         // Stress shadow volume functions
@@ -2291,18 +2414,18 @@ namespace DFMGenerator_SharedCode
                 uF_radii.Clear();
 
             // Cache useful variables locally
-            double half_h = gbc.ThicknessAtDeformation / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
 
             // Add new values to the array for all bin sizes
             // We will not add a value for zero as this is given by the total microfracture density properties
             // Add a value for all intermediate bin sizes
             for (int r_bin = 1; r_bin < no_r_bins; r_bin++)
             {
-                double rb_maxRad = ((double)r_bin / (double)no_r_bins) * half_h;
+                double rb_maxRad = ((double)r_bin / (double)no_r_bins) * max_uF_radius;
                 uF_radii.Add(rb_maxRad);
             }
             // Add a final value for the maximum size
-            uF_radii.Add(half_h);
+            uF_radii.Add(max_uF_radius);
         }
         /// <summary>
         /// Populate the macrofracture halflength index array based on the current halflengths of macrofractures that nucleated at timestep boundaries
@@ -2552,8 +2675,12 @@ namespace DFMGenerator_SharedCode
 
                 // The driving stress will also become positive if the normal stress on the fracture becomes tensile, so the fracture becomes dilatant 
                 // If this happens before the driving stress for Mode 2 shear displacement reaches zero, we will set this as the optimal timestep duration 
-                if ((sneff_var < 0) && (-(sneff_cst / sneff_var) < optdur))
-                    optdur = -(sneff_cst / sneff_var);
+                if (sneff_var < 0)
+                {
+                    double timeToSneffZero = -(sneff_cst / sneff_var);
+                    if (timeToSneffZero < optdur)
+                        optdur = timeToSneffZero;
+                }
 
                 // NB if both V < 0 and sneff_var > 0 then we cannot calculate an optimal duration and will return the default value infinity (no optimal duration calculated)
 
@@ -2593,9 +2720,10 @@ namespace DFMGenerator_SharedCode
                 double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
                 double alpha_uF_b_factor = Math.Pow(CapA, -1 / (b + 1)) * Math.Pow(sqrtpi_Kc_factor, -b / (b + 1));
                 // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-                double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
-                // h_factor is a component related to layer thickness to include in Cum_hGamma: ln(h/2) for b=2; (h/2)^(1/beta) for b!=2
-                double h_factor = gbc.h_factor();
+                // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+                double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2)); 
+                // initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
+                double initial_uF_factor = gbc.Initial_uF_factor;
 
                 // Calculate local helper variables
                 // betac_factor is -beta*c if b<>2, -c if b=2
@@ -2605,7 +2733,7 @@ namespace DFMGenerator_SharedCode
                 // beta_betac1_factor is -beta / (1 - (beta c)) if b!=2, 1 / c if b=2
                 double beta_betac1_factor = (bis2 ? 1 / c_coefficient : -2 / (2 - b - (2 * c_coefficient)));
                 // Cache the cumulative Gamma factor from the previous timestep locally
-                double ts_CumhGamma_Nminus1 = CurrentFractureData.Cum_Gamma_Mminus1 + h_factor;
+                double ts_CumhGamma_Nminus1 = CurrentFractureData.Cum_Gamma_Mminus1 + initial_uF_factor;
                 // Calculate helper variables related to the cumulative Gamma factor
                 double ts_CumhGammaNminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGamma_Nminus1) : Math.Pow(ts_CumhGamma_Nminus1, betac_factor));
                 double ts_CumhGammaNminus1_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGamma_Nminus1) : Math.Pow(ts_CumhGamma_Nminus1, betac1_factor));
@@ -2646,13 +2774,13 @@ namespace DFMGenerator_SharedCode
 
                 // If the ratio of active to maximum potential half macrofractures is close to zero, the specified d_MFP33 will never be reached
                 // If (V_factor + U_factor1) <= 0 then driving stress is decreasing and will never be sufficient to reach the specified d_MFP33
-                // In these cases we cannot calculate an optimal duration, so will deactivate the fracture set and return the default value infinity (no optimal duration calculated)
+                // In these cases we cannot calculate an optimal duration, so will return the default value infinity (no optimal duration calculated)
                 if (((float)ts_ahalfMF_uF_ratio > 0f) && ((float)(V_factor + U_factor1) > 0f))
                 {
                     double UV_factor = alpha_uF_b_factor * Math.Pow(V_factor + U_factor2, 1 / (b + 1));
 
                     // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
-                    if (UV_factor > U)
+                    if ((float)UV_factor > (float)U)
                     {
                         // Use the formula for increasing stress to calculate optimal duration
                         optdur = (UV_factor - U) / V;
@@ -2666,7 +2794,7 @@ namespace DFMGenerator_SharedCode
                 }
                 else
                 {
-                    CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
+                    //CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
                 }
 
                 // Finally, if the normal stress on the fracture will reach zero (from either a positive or negative value) before the calculated optimal duration, we will set this as the optimal timestep duration
@@ -2710,9 +2838,10 @@ namespace DFMGenerator_SharedCode
             bool bis2 = (b_type == bType.Equals2);
             double Kc = MechProps.Kc;
             double SqrtPi = Math.Sqrt(Math.PI);
-            double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+            //double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
             double sqrtpi_Kc_h_factor = Math.Sqrt(2 * h) / (SqrtPi * Kc);
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
             double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
             // Flag to show that the fracture set has not been deactivated
             bool FracturesActive = !(CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated);
@@ -2848,7 +2977,7 @@ namespace DFMGenerator_SharedCode
         {
             // Cache constants locally
             double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
@@ -2889,9 +3018,11 @@ namespace DFMGenerator_SharedCode
             // beta2_betac1betac2_factor is beta^2 / (1 - (beta c)(2 - (beta c)) if b!=2, 1 / c^2 if b=2
             double beta2_betac1betac2_factor = (bis2 ? 1 / Math.Pow(c_coefficient, 2) : Math.Pow(beta, 2) / (betac1_factor * betac2_factor));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb1_factor = (bis2 ? h / 2 : Math.Pow(h / 2, b / 2));
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
-            double hb2_factor = (bis2 ? Math.Pow(half_h, 2) : Math.Pow(half_h, b));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb2_factor = (bis2 ? Math.Pow(h / 2, 2) : Math.Pow(h / 2, b));
 
             // Create local variables to calculate summation
             double tsK_a_MFP30_value = 0;
@@ -2938,7 +3069,7 @@ namespace DFMGenerator_SharedCode
                                 double ts_IPlus_Phi_K_M = PreviousFractureData.getCumulativePhi(tsK, tsM);
 
                                 // Calculate terms for a_MFP32_values
-                                double tsM_a_MFP32_increment = ts_IPlus_Phi_K_M * h * Math.Pow(half_h, -c_coefficient) * ts_halfLength_K_M;
+                                double tsM_a_MFP32_increment = ts_IPlus_Phi_K_M * h * Math.Pow(max_uF_radius, -c_coefficient) * ts_halfLength_K_M;
                                 tsK_a_MFP32_value += tsM_a_MFP32_increment;
                             }
 
@@ -2997,7 +3128,7 @@ namespace DFMGenerator_SharedCode
                                 double tsM_s_MFP32_factor1 = 0;
                                 if ((float)MeanMFPropagationRate_K > 0f) // If the propagation rate is zero there will be no fracture deactivation
                                 {
-                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (half_h) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
+                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (h / 2) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
                                     tsM_s_MFP32_factor1 = (ts_PhiTheta_Kminus1_Mminus1 * beta_betac1_factor * h * hb1_factor * tsK_Duration);
                                 }
                                 double tsM_s_MFP32_increment = (tsM_s_MFP32_factor0 * (Math.Pow(ts_halfLength_K_M, 2) - Math.Pow(ts_halfLength_Kminus1_M, 2)))
@@ -3279,8 +3410,8 @@ namespace DFMGenerator_SharedCode
         public void calculateTotalMicrofracturePopulation(int no_r_bins)
         {
             // Cache constants locally
-            double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            //double h = gbc.ThicknessAtDeformation;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bType b_type = gbc.MechProps.GetbType();
@@ -3294,15 +3425,15 @@ namespace DFMGenerator_SharedCode
             // betac1 factor is (1 - (beta c)) if b!=2, -c if b=2
             double betac1_factor = (b == 2 ? -c_coefficient : 1 - ((2 * c_coefficient) / (2 - b)));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
+            //double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
-            double hb2_factor = (bis2 ? Math.Pow(half_h, 2) : Math.Pow(half_h, b));
+            //double hb2_factor = (bis2 ? Math.Pow(half_h, 2) : Math.Pow(half_h, b));
             // hc_factor is (h/2)^-c
-            double hc_factor = Math.Pow(half_h, -c_coefficient);
+            //double hc_factor = Math.Pow(half_h, -c_coefficient);
             // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
-            double h2c_factor = (c_coefficient == 2 ? Math.Log(half_h) : Math.Pow(half_h, 2 - c_coefficient));
+            double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
             // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
-            double h3c_factor = (c_coefficient == 3 ? Math.Log(half_h) : Math.Pow(half_h, 3 - c_coefficient));
+            double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
             double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
@@ -3341,7 +3472,7 @@ namespace DFMGenerator_SharedCode
             double s_uFP33_increment = 0;
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
-            if (rmin_cutoff < half_h)
+            if (rmin_cutoff < max_uF_radius)
             {
                 // Equations are different for b<2, b=2 and b>2
                 switch (b_type)
@@ -3380,7 +3511,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // Calculate range of radii sizes in the current r-bin
                                 rb_minRad = rb_maxRad;
-                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * half_h;
+                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * max_uF_radius;
 
                                 // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
                                 if (rb_maxRad < rmin_cutoff) continue;
@@ -3528,7 +3659,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // Calculate range of radii sizes in the current r-bin
                                 rb_minRad = rb_maxRad;
-                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * half_h;
+                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * max_uF_radius;
 
                                 // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
                                 if (rb_maxRad < rmin_cutoff) continue;
@@ -3587,8 +3718,8 @@ namespace DFMGenerator_SharedCode
                 if (ts_CumhGammaN < double.PositiveInfinity)
                     transition_deactivation_term = (ts_theta_Nminus1 - ts_theta_dashed_Nminus1) * (ts_CumhGammaN_betac_factor - ts_CumhGammaNminus1_betac_factor);
                 s_uFP30_increment += transition_deactivation_term;
-                s_uFP32_increment += (transition_deactivation_term * Math.Pow(half_h, 2));
-                s_uFP33_increment += (transition_deactivation_term * Math.Pow(half_h, 3));
+                s_uFP32_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 2));
+                s_uFP33_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 3));
 
                 // Area of static microfractures cannot decrease 
                 // Therefore the static microfracture increments s_uFP30, s_uFP32 and s_uFP33 can never be negative; if they are set them to zero
@@ -3624,7 +3755,7 @@ namespace DFMGenerator_SharedCode
         {
             // Cache constants locally
             double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
@@ -3649,9 +3780,11 @@ namespace DFMGenerator_SharedCode
             // beta2_betac1betac2_factor is beta^2 / (1 - (beta c)(2 - (beta c)) if b!=2, 1 / c^2 if b=2
             double beta2_betac1betac2_factor = (bis2 ? 1 / Math.Pow(c_coefficient, 2) : Math.Pow(beta, 2) / (betac1_factor * betac2_factor));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (bis2 ? (half_h) : Math.Pow(half_h, b / 2));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb1_factor = (bis2 ? (h / 2) : Math.Pow(h / 2, b / 2));
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
-            double hb2_factor = (bis2 ? Math.Pow((half_h), 2) : Math.Pow(half_h, b));
+            // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
+            double hb2_factor = (bis2 ? Math.Pow((h / 2), 2) : Math.Pow(h / 2, b));
 
             // Resort index array
             MF_halflengths.Sort();
@@ -3751,7 +3884,7 @@ namespace DFMGenerator_SharedCode
                                     double ts_Phi_K_M = PreviousFractureData.getCumulativePhi(tsK, tsM);
 
                                     // Calculate terms for a_MFP32_values
-                                    double tsM_a_MFP32_M_increment = ts_Phi_K_M * h * Math.Pow(half_h, -c_coefficient) * ts_halfLength_K_M;
+                                    double tsM_a_MFP32_M_increment = ts_Phi_K_M * h * Math.Pow(max_uF_radius, -c_coefficient) * ts_halfLength_K_M;
 
                                     for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
                                     {
@@ -3814,7 +3947,7 @@ namespace DFMGenerator_SharedCode
                                 double tsM_s_MFP32_factor2 = 0;
                                 if ((float)MeanMFPropagationRate_K > 0f) // If the propagation rate is zero there will be no fracture deactivation
                                 {
-                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (half_h) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
+                                    tsM_s_MFP32_factor0 = (ts_dPhiTheta_Kminus1_dM * (h / 2) * ts_CumhGammaM_betac_factor) / MeanMFPropagationRate_K;
                                     tsM_s_MFP32_factor1 = (ts_PhiTheta_Kminus1_Mminus1 * beta_betac1_factor * h * hb1_factor * tsK_Duration);
                                     tsM_s_MFP32_factor2 = (ts_PhiTheta_Kminus1_Mminus1 * beta2_betac1betac2_factor * hb2_factor * h) / MeanMFPropagationRate_K;
                                 }
@@ -4161,8 +4294,8 @@ namespace DFMGenerator_SharedCode
         public void calculateCumulativeMicrofracturePopulationArrays()
         {
             // Cache constants locally
-            double h = gbc.ThicknessAtDeformation;
-            double half_h = h / 2;
+            //double h = gbc.ThicknessAtDeformation;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bType b_type = gbc.MechProps.GetbType();
@@ -4176,11 +4309,11 @@ namespace DFMGenerator_SharedCode
             // betac1 factor is (1 - (beta c)) if b!=2, -c if b=2
             double betac1_factor = (b == 2 ? -c_coefficient : 1 - ((2 * c_coefficient) / (2 - b)));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
+            //double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
             // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
-            double h2c_factor = (c_coefficient == 2 ? Math.Log(half_h) : Math.Pow(half_h, 2 - c_coefficient));
+            double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
             // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
-            double h3c_factor = (c_coefficient == 3 ? Math.Log(half_h) : Math.Pow(half_h, 3 - c_coefficient));
+            double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
             double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
@@ -4190,14 +4323,14 @@ namespace DFMGenerator_SharedCode
             // Resort index array and ensure the maximum value is h/2
             uF_radii.Sort();
             int no_r_bins = uF_radii.Count();
-            while (uF_radii[no_r_bins - 1] > half_h)
+            while (uF_radii[no_r_bins - 1] > max_uF_radius)
             {
                 uF_radii.RemoveAt(no_r_bins - 1);
                 no_r_bins--;
             }
-            if (uF_radii[no_r_bins - 1] < half_h)
+            if (uF_radii[no_r_bins - 1] < max_uF_radius)
             {
-                uF_radii.Add(half_h);
+                uF_radii.Add(max_uF_radius);
                 no_r_bins++;
             }
 
@@ -4233,7 +4366,7 @@ namespace DFMGenerator_SharedCode
             double st_uFP30_component = 0;
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
-            if (rmin_cutoff < half_h)
+            if (rmin_cutoff < max_uF_radius)
             {
                 // Loop through the previous timesteps M to calculate the static data increments
                 // For the current timestep N also calculate the active data values
@@ -4500,10 +4633,10 @@ namespace DFMGenerator_SharedCode
 
                         // Apply multipliers and add terms for transition deactivation microfractures to s_uFP32 and s_uFP33
                         s_uFP32_values[r_bin - 1] /= b2_uFP32_factor;
-                        s_uFP32_values[r_bin - 1] += (st_uFP30_component * Math.Pow(half_h, 2));
+                        s_uFP32_values[r_bin - 1] += (st_uFP30_component * Math.Pow(max_uF_radius, 2));
                         s_uFP32_values[r_bin - 1] *= uFP32_multiplier;
                         s_uFP33_values[r_bin - 1] /= b2_uFP33_factor;
-                        s_uFP33_values[r_bin - 1] += (st_uFP30_component * Math.Pow(half_h, 3));
+                        s_uFP33_values[r_bin - 1] += (st_uFP30_component * Math.Pow(max_uF_radius, 3));
                         s_uFP33_values[r_bin - 1] *= uFP33_multiplier;
                     }
                 }
@@ -4517,8 +4650,8 @@ namespace DFMGenerator_SharedCode
                     a_uFP32_values[r_bin - 1] = 0;
                     a_uFP33_values[r_bin - 1] = 0;
                     s_uFP30_values[r_bin - 1] = CapB * st_uFP30_component;
-                    s_uFP32_values[r_bin - 1] = uFP32_multiplier * Math.Pow(half_h, 2) * st_uFP30_component;
-                    s_uFP33_values[r_bin - 1] = uFP33_multiplier * Math.Pow(half_h, 3) * st_uFP30_component;
+                    s_uFP32_values[r_bin - 1] = uFP32_multiplier * Math.Pow(max_uF_radius, 2) * st_uFP30_component;
+                    s_uFP33_values[r_bin - 1] = uFP33_multiplier * Math.Pow(max_uF_radius, 3) * st_uFP30_component;
 
                     // Loop through the local value arrays
                     for (r_bin--; r_bin > 0; r_bin--)
@@ -4606,20 +4739,20 @@ namespace DFMGenerator_SharedCode
             IMinus_halfMacroFractures = new MacrofractureData(gbc, this, MF_halflengths);
 
             // Set initial microfracture densities according to specified density and distribution coefficients
-            double half_h = gbc.ThicknessAtDeformation / 2;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double rmin_cutoff = gbc.PropControl.minImplicitMicrofractureRadius;
             // NB Since we do not know the number of calculation bins for r at this stage, we can only calculate uFP32 and uFP33 if rmin_cutoff > 0
-            if ((rmin_cutoff > 0) && (rmin_cutoff < half_h))
+            if ((rmin_cutoff > 0) && (rmin_cutoff < max_uF_radius))
             {
                 MicroFractures.a_P30_total = CapB * (Math.Pow(rmin_cutoff, -c_coefficient) - Math.Pow(rmin_cutoff, -c_coefficient));
                 if (c_coefficient == 2)
-                    MicroFractures.a_P32_total = 2 * Math.PI * CapB * (Math.Log(half_h) - Math.Log(rmin_cutoff));
+                    MicroFractures.a_P32_total = 2 * Math.PI * CapB * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
-                    MicroFractures.a_P32_total = Math.PI * CapB * (c_coefficient / (2 - c_coefficient)) * (Math.Pow(half_h, 2 - c_coefficient) - Math.Pow(rmin_cutoff, 2 - c_coefficient));
+                    MicroFractures.a_P32_total = Math.PI * CapB * (c_coefficient / (2 - c_coefficient)) * (Math.Pow(max_uF_radius, 2 - c_coefficient) - Math.Pow(rmin_cutoff, 2 - c_coefficient));
                 if (c_coefficient == 3)
-                    MicroFractures.a_P33_total = 4 * Math.PI * CapB * (Math.Log(half_h) - Math.Log(rmin_cutoff));
+                    MicroFractures.a_P33_total = 4 * Math.PI * CapB * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
-                    MicroFractures.a_P33_total = (4 / 3) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(half_h, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
+                    MicroFractures.a_P33_total = (4 / 3) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(max_uF_radius, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
             }
 
             // Macrofracture growth rate data - set all growth rates to zero
@@ -4633,8 +4766,8 @@ namespace DFMGenerator_SharedCode
             CurrentFractureData = new FractureCalculationData();
 
             // Create an new list for previous fracture calculation data objects and use the CurrentFractureData object for timestep 0 
-            double h_component = gbc.h_factor();
-            PreviousFractureData = new FCD_List(h_component, CurrentFractureData, true);
+            // Initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
+            PreviousFractureData = new FCD_List(gbc.Initial_uF_factor, CurrentFractureData, true);
         }
 
         // Constructors
@@ -4644,7 +4777,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
         public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in)
-                : this(gbc_in, fs_in, FractureMode.Mode1, true, false, Math.PI / 2, 1d, 2d)
+                : this(gbc_in, fs_in, FractureMode.Mode1, true, false, Math.PI / 2, 0.001, 3d)
         {
             // Defaults:
 
@@ -4652,7 +4785,7 @@ namespace DFMGenerator_SharedCode
             // Bimodal conjugate flag: set to true
             // Include reverse fractures: set to false
 
-            // Initial microfracture distribution - set to power law, B=1, c=2
+            // Initial microfracture distribution - set to power law, B=0.001, c=3
         }
         /// <summary>
         /// Constructor: input fracture mode, dip and initial fracture distribution parameters
@@ -4660,13 +4793,13 @@ namespace DFMGenerator_SharedCode
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
         /// <param name="Mode_in">Fracture mode</param>
-        /// <param name="BimodalConjugate_in">Flag for a bimodal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BimodalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in)
-            : this(gbc_in, fs_in, Mode_in, BimodalConjugate_in, IncludeReverseFractures_in, Dip_in, B_in, c_in, 0.0005, 1E-5)
+        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in)
+            : this(gbc_in, fs_in, Mode_in, BiazimuthalConjugate_in, IncludeReverseFractures_in, Dip_in, B_in, c_in, 0.0005, 1E-5)
         {
             // Defaults for fracture aperture control data for uniform and size-dependent aperture:
 
@@ -4679,14 +4812,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
         /// <param name="Mode_in">Fracture mode</param>
-        /// <param name="BimodalConjugate_in">Flag for a bimodal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, the dipset contains equal numbers of fractures dipping in opposite directions; if false, the dipset contains only fractures dipping in the specified azimuth direction</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
         /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BimodalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
+        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
         {
             // Reference to grandparent GridblockConfiguration object
             gbc = gbc_in;
@@ -4695,11 +4828,17 @@ namespace DFMGenerator_SharedCode
 
             // Set the fracture Mode, biazimuthal conjugate and include reverse fractures flags
             Mode = Mode_in;
-            BiazimuthalConjugate = BimodalConjugate_in;
+            BiazimuthalConjugate = BiazimuthalConjugate_in;
             IncludeReverseFractures = IncludeReverseFractures_in;
 
             // Set fracture dip
             Dip = Dip_in;
+
+            // Set the applied strain components to default values
+            eff2d_e2d = 1;
+            efw2d_e2d = 0;
+            efffwd_e2d = 0;
+            efffsd_e2d = 0;
 
             // Set the initial shear stress pitch to NaN and the initial shear stress vector to (0,0,0)
             // This represents no shear stress on the fracture

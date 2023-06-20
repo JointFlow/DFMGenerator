@@ -70,6 +70,14 @@ namespace DFMGenerator_Standalone
             }
         }
         /// <summary>
+        /// Output a message (e.g. an error message) to Console
+        /// </summary>
+        /// <param name="message">Message to output</param>
+        public void OutputMessage(string message)
+        {
+            Console.WriteLine(message);
+        }
+        /// <summary>
         /// Flag to abort calculation; always returns false (this implementation of the IProgressReporterWrapper interface does not allow calculation to be aborted)
         /// </summary>
         /// <returns>Always returns false</returns>

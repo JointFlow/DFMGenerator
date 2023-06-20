@@ -3,9 +3,7 @@
   <ManualTestCases>
     <ManualTestCase Id="1.1">Pending</ManualTestCase>
     <ManualTestCase Id="1.4">Pending</ManualTestCase>
-    <ManualTestCase Id="1.8">Pending</ManualTestCase>
     <ManualTestCase Id="2.1">Pending</ManualTestCase>
-    <ManualTestCase Id="2.2">Pending</ManualTestCase>
     <ManualTestCase Id="3.1">Pending</ManualTestCase>
     <ManualTestCase Id="3.2">Pending</ManualTestCase>
     <ManualTestCase Id="3.3">Pending</ManualTestCase>
@@ -15,6 +13,8 @@
     <ManualTestCase Id="5.1">Pending</ManualTestCase>
     <ManualTestCase Id="5.2">Pending</ManualTestCase>
     <ManualTestCase Id="5.3">Pending</ManualTestCase>
+    <ManualTestCase Id="5.4">Pending</ManualTestCase>
+    <ManualTestCase Id="5.5">Pending</ManualTestCase>
     <ManualTestCase Id="5.6">Pending</ManualTestCase>
     <ManualTestCase Id="5.7">Pending</ManualTestCase>
     <ManualTestCase Id="6.1">Pending</ManualTestCase>

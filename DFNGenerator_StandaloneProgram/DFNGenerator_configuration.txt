@@ -1,0 +1,286 @@
+% Model DFNGenerator_configuration.txt
+
+% Replace defaults with required values
+% Use % for comment lines
+
+% Main properties
+% Grid size; all lengths in metres
+NoRows 3
+NoCols 3
+% Gridblock size
+Width_EW 20
+Length_NS 20
+LayerThickness 1
+% Model location
+% Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
+OriginXOffset 0
+OriginYOffset 0
+% Current depth of burial in metres, positive downwards
+Depth 2000
+% Minimum strain orientatation (i.e. direction of maximum extension) in radians, clockwise from North
+EhminAzi 0
+% Set VariableStrainOrientation false to have the same minimum strain orientatation in all cells
+% Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
+% EhminCurvature is the difference in strain orientation between adjacent blocks in radians
+VariableStrainOrientation false
+EhminCurvature 0.1963495
+% Strain rates; units determined by ModelTimeUnits (i.e. strain/s, strain/year or strain/ma)
+% Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
+% With no strain relaxation, strain rate will control rate of horizontal stress increase
+% With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
+% EhminRate is most tensile (i.e. most negative) horizontal strain rate
+EhminRate -0.01
+% Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
+EhmaxRate 0
+% Set VariableStrainMagnitude to add random variation to the input strain rates
+% Strain rates for each gridblock will vary randomly from 0 to 2x specified values
+VariableStrainMagnitude false
+% Set time units to ma, year or second
+ModelTimeUnits ma
+
+% Mechanical properties
+% Young's Modulus in Pa
+YoungsMod 1E+10
+% Set VariableYoungsMod true to have laterally variable Young's Modulus
+VariableYoungsMod false
+PoissonsRatio 0.25
+BiotCoefficient 1
+FrictionCoefficient 0.5
+% Set VariableFriction true to have laterally variable friction coefficient
+VariableFriction false
+% Crack surface energy in J/m2
+CrackSurfaceEnergy 1000
+% Set VariableCSE true to have laterally variable crack surface energy
+VariableCSE false
+% Strain relaxation time constants
+% Units are determined by ModelTimeUnits setting
+% Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
+RockStrainRelaxation 0
+% Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
+FractureRelaxation 0
+% Density of initial microfractures
+InitialMicrofractureDensity 0.001
+% Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
+InitialMicrofractureSizeDistribution 2
+% Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
+SubcriticalPropIndex 10
+% Critical fracture propagation rate in m/s
+CriticalPropagationRate 2000
+
+% Stress state
+% Stress distribution scenario - use to turn on or off stress shadow effect
+% Options are EvenlyDistributedStress or StressShadow
+% Do not use DuctileBoundary as this is not yet implemented
+StressDistributionScenario StressShadow
+% Depth at the time of deformation (in metres, positive downwards) - this will control stress state
+% If DepthAtDeformation is specified, this will be used to calculate effective vertical stress instead of the current depth
+% If DepthAtDeformation is <=0 or NaN, OverwriteDepth will be set to false and DepthAtFracture will not be used
+DepthAtDeformation -1
+% Mean density of overlying sediments and fluid in kg/m3
+MeanOverlyingSedimentDensity 2250
+FluidDensity 1000
+% Fluid overpressure in Pa
+InitialOverpressure 0
+% InitialStressRelaxation controls the initial horizontal stress, prior to the application of horizontal strain
+% Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
+% Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
+% Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
+InitialStressRelaxation 1
+
+% Outputs
+% Output to file
+% These must be set to true for stand-alone version or no output will be generated
+WriteImplicitDataFiles true
+WriteDFNFiles true
+% Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)
+OutputDFNFileType ASCII
+% Output DFN at intermediate stages of fracture growth
+NoIntermediateOutputs 0
+% Flag to control interval between output of intermediate stage DFNs; if true, they will be output at equal intervals of time, if false they will be output at approximately regular intervals of total fracture area
+OutputAtEqualTimeIntervals false
+% Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
+OutputCentrepoints false
+% Flag to output the bulk rock compliance tensor
+OutputComplianceTensor false
+% Fracture porosity control parameters
+% Flag to calculate and output fracture porosity
+CalculateFracturePorosity true
+% Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
+% Set to Uniform, SizeDependent, Dynamic, or BartonBandis
+FractureApertureControl Uniform
+% Fracture aperture control parameters: Uniform fracture aperture
+% Fixed aperture for Mode 1 fractures striking perpendicular to hmin in the uniform aperture case (m)
+Mode1HMin_UniformAperture 0.0005
+% Fixed aperture for Mode 2 fractures striking perpendicular to hmin in the uniform aperture case (m)
+Mode2HMin_UniformAperture 0.0005
+% Fixed aperture for Mode 1 fractures striking perpendicular to hmax in the uniform aperture case (m)
+Mode1HMax_UniformAperture 0.0005
+% Fixed aperture for Mode 2 fractures striking perpendicular to hmax in the uniform aperture case (m)
+Mode2HMax_UniformAperture 0.0005
+% Fracture aperture control parameters: SizeDependent fracture aperture
+% Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode1HMin_SizeDependentApertureMultiplier 1E-5
+% Size-dependent aperture multiplier for Mode 2 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode2HMin_SizeDependentApertureMultiplier 1E-5
+% Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmax - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode1HMax_SizeDependentApertureMultiplier 1E-5
+% Size-dependent aperture multiplier for Mode 2 fractures striking perpendicular to hmax - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode2HMax_SizeDependentApertureMultiplier 1E-5
+% Fracture aperture control parameters: Dynamic fracture aperture
+% Multiplier for dynamic aperture
+DynamicApertureMultiplier 1
+% Fracture aperture control parameters: Barton-Bandis model for fracture aperture
+% Joint Roughness Coefficient
+JRC 10
+% Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock
+UCSRatio 2
+% Initial normal strength on fracture
+InitialNormalStress 2E+5
+% Stiffness normal to the fracture, at initial normal stress
+FractureNormalStiffness 2.5E+9
+% Maximum fracture closure (m)
+MaximumClosure 0.0005
+
+% Calculation control parameters
+% Number of fracture sets
+% Set to 1 to generate a single fracture set, perpendicular to ehmin
+% Set to 2 to generate two orthogonal fracture sets, perpendicular to the minimum and maximum horizontal strain directions; this is typical of a single stage of tectonic deformation in intact rock
+% Set to 6 to model polygonal or strike-slip fractures, or multiple deformation episodes where there are pre-existing fractures oblique to the principal horizontal stresses
+NoFractureSets 2
+% Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
+Mode1Only false
+Mode2Only false
+% Flag to check microfractures against stress shadows of all macrofractures, regardless of set: can be set to None, All or Automatic
+% Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry
+% If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures
+% If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor
+% If Automatic, microfractures in the stress shadow zone of oblique or perpendicular macrofractures will be deactivated only if there are more than two fracture sets
+CheckAlluFStressShadows Automatic
+% Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes
+AnisotropyCutoff 1
+% Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
+AllowReverseFractures false
+% Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
+MaxTimestepDuration -1
+% Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
+% Increase this to run calculation faster, with fewer but longer timesteps
+MaxTimestepMFP33Increase 0.002
+% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)
+% If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
+% If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
+MinImplicitMicrofractureRadius -1
+% Number of bins used in numerical integration of uFP32
+% This controls accuracy of numerical calculation of microfracture populations - increase this to increase accuracy of the numerical integration at expense of runtime
+No_r_bins 10
+% Flag to calculate implicit fracture population distribution functions
+CalculatePopulationDistribution true
+% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
+No_l_indexPoints 20
+% MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
+% Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
+MaxHMinLength 0
+MaxHMaxLength 0
+% Calculation termination controls
+% The calculation is set to stop automatically when fractures stop growing
+% This can be defined in one of three ways:
+%      - When the total volumetric ratio of active (propagating) half-macrofractures (a_MFP33) drops below a specified proportion of the peak historic value
+%      - When the total volumetric density of active (propagating) half-macrofractures (a_MFP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (MFP30)
+%      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
+% Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
+% Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
+% To stop calculation while fractures are still growing reduce the DeformationStageDuration_in or maxTimesteps_in limits
+% Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control
+Current_HistoricMFP33TerminationRatio -1
+% Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
+Active_TotalMFP30TerminationRatio -1
+% Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
+MinimumClearZoneVolume 0.01
+% Use the deformation stage duration and maximum timestep limits to stop the calculation before fractures have finished growing
+% Set DeformationStageDuration to -1 to continue until fracture saturation is reached
+DeformationStageDuration -1
+MaxTimesteps 1000
+% DFN geometry controls
+% Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
+GenerateExplicitDFN true
+% Set false to allow fractures to propagate outside of the outer grid boundary
+CropAtBoundary true
+% Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
+LinkStressShadows false
+% Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set
+% Set to Pi/4 radians (45 degrees) by default
+MaxConsistencyAngle 0.78539816
+% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value
+% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
+MinimumLayerThickness 0
+% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
+% Set to 0 to disable probabilistic fracture nucleation
+% Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
+ProbabilisticFractureNucleationLimit -1
+% Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set
+% Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time
+PropagateFracturesInNucleationOrder true
+% Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry
+SearchNeighbouringGridblocks Automatic
+% Minimum radius for microfractures to be included in explicit DFN (in metres)
+% Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN
+MinExplicitMicrofractureRadius 0
+% Number of cornerpoints defining the microfracture polygons in the explicit DFN
+% Set to zero to output microfractures as just a centrepoint and radius; set to 3 or greater to output microfractures as polygons defined by a list of cornerpoints
+Number_uF_Points 8
+
+% Add property and geometry overrides for individual gridblocks here
+% Overrides for individual gridblocks should be nested between a Gridblock Col Row statement and an End Gridblock statement, e.g.:
+% E.g. to override the properties in the gridblock in column 1 row 2, use:
+% Gridblock 1 2
+%   PropertyA ValueA
+%   PropertyB ValueB
+%   CornerpointA Xcoord Ycoord Zcoord
+%   CornerpointB Xcoord Ycoord Zcoord
+% End Gridblock
+% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate,
+% YoungsMod, PoissonsRatio, BiotCoefficient, CrackSurfaceEnergy, FrictionCoefficient,
+% SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution
+% Cornerpoints that can be overridden are SETopCorner, SEBottomCorner, NETopCorner, NEBottomCorner,
+% NWTopCorner, NWBottomCorner, SWTopCorner, SWBottomCorner
+% Z coordinates should be specified positive downwards
+% NB the cornerpoints of adjacent gridblocks will automatically be adjusted when a gridblock cornerpoint is overridden,
+% but there is no sanity check to ensure the resulting grid geometry is consistent (e.g. checking for negative gridblock volumes, etc.); this must be done beforehand
+
+% Overrides for individual properties can be done by specifying Include files, using the statement:
+% Include Filename
+% The Include file should follow the format
+% #PropertyA
+% Gridblock_1_1_value Gridblock_2_1_value Gridblock_3_1_value
+% Gridblock_1_2_value Gridblock_2_2_value Gridblock_3_2_value
+% Gridblock_1_3_value Gridblock_2_3_value Gridblock_3_3_value
+% #PropertyB
+% Gridblock_1_1_value Gridblock_1_2_value Gridblock_1_3_value
+% Gridblock_1_2_value Gridblock_2_2_value Gridblock_3_2_value
+% Gridblock_1_3_value NA Gridblock_3_3_value
+% Include files can include values for multiple properties, in separate blocks; any property in the list above can be overridden
+% Each new property must start on a new line, but within each property block, the values can be separated by either spaces or line returns; the layout of the data is not significant
+% However the values must be given in order shown above, looping first through rows and then through columns
+% Use NA instead of a specifying a value to revert to the default value for a specific gridblock (as has been done for PropertyB in Gridblock 3,2 in the example above)
+% 
+% Overrides for geometry can be also done using Include files
+% However in this case the Include file format is slightly different:
+% #Geometry
+% Gridblock_1_1_SWTopCornerpoint_X Gridblock_1_1_SWTopCornerpoint_Y Gridblock_1_1_SWTopCornerpoint_Z Gridblock_1_1_SWBottomCornerpoint_X Gridblock_1_1_SWBottomCornerpoint_Y Gridblock_1_1_SWBottomCornerpoint_Z
+% Gridblock_2_1_SWTopCornerpoint_X Gridblock_2_1_SWTopCornerpoint_Y Gridblock_2_1_SWTopCornerpoint_Z Gridblock_2_1_SWBottomCornerpoint_X Gridblock_2_1_SWBottomCornerpoint_Y Gridblock_2_1_SWBottomCornerpoint_Z
+% Gridblock_3_1_SWTopCornerpoint_X Gridblock_3_1_SWTopCornerpoint_Y Gridblock_3_1_SWTopCornerpoint_Z Gridblock_3_1_SWBottomCornerpoint_X Gridblock_3_1_SWBottomCornerpoint_Y Gridblock_3_1_SWBottomCornerpoint_Z
+% Gridblock_3_1_SETopCornerpoint_X Gridblock_3_1_SETopCornerpoint_Y Gridblock_3_1_SETopCornerpoint_Z Gridblock_3_1_SEBottomCornerpoint_X Gridblock_3_1_SEBottomCornerpoint_Y Gridblock_3_1_SEBottomCornerpoint_Z
+% Gridblock_1_2_SWTopCornerpoint_X Gridblock_1_2_SWTopCornerpoint_Y Gridblock_1_2_SWTopCornerpoint_Z Gridblock_1_2_SWBottomCornerpoint_X Gridblock_1_2_SWBottomCornerpoint_Y Gridblock_1_2_SWBottomCornerpoint_Z
+% Gridblock_2_2_SWTopCornerpoint_X Gridblock_2_2_SWTopCornerpoint_Y Gridblock_2_2_SWTopCornerpoint_Z Gridblock_2_2_SWBottomCornerpoint_X Gridblock_2_2_SWBottomCornerpoint_Y Gridblock_2_2_SWBottomCornerpoint_Z
+% Gridblock_3_2_SWTopCornerpoint_X Gridblock_3_2_SWTopCornerpoint_Y Gridblock_3_2_SWTopCornerpoint_Z Gridblock_3_2_SWBottomCornerpoint_X Gridblock_3_2_SWBottomCornerpoint_Y Gridblock_3_2_SWBottomCornerpoint_Z
+% Gridblock_3_2_SETopCornerpoint_X Gridblock_3_2_SETopCornerpoint_Y Gridblock_3_2_SETopCornerpoint_Z Gridblock_3_2_SEBottomCornerpoint_X Gridblock_3_2_SEBottomCornerpoint_Y Gridblock_3_2_SEBottomCornerpoint_Z
+% Gridblock_1_3_SWTopCornerpoint_X Gridblock_1_3_SWTopCornerpoint_Y Gridblock_1_3_SWTopCornerpoint_Z Gridblock_1_3_SWBottomCornerpoint_X Gridblock_1_3_SWBottomCornerpoint_Y Gridblock_1_3_SWBottomCornerpoint_Z
+% Gridblock_2_3_SWTopCornerpoint_X Gridblock_2_3_SWTopCornerpoint_Y Gridblock_2_3_SWTopCornerpoint_Z Gridblock_2_3_SWBottomCornerpoint_X Gridblock_2_3_SWBottomCornerpoint_Y Gridblock_2_3_SWBottomCornerpoint_Z
+% Gridblock_3_3_SWTopCornerpoint_X Gridblock_3_3_SWTopCornerpoint_Y Gridblock_3_3_SWTopCornerpoint_Z Gridblock_3_3_SWBottomCornerpoint_X Gridblock_3_3_SWBottomCornerpoint_Y Gridblock_3_3_SWBottomCornerpoint_Z
+% Gridblock_3_3_SETopCornerpoint_X Gridblock_3_3_SETopCornerpoint_Y Gridblock_3_3_SETopCornerpoint_Z Gridblock_3_3_SEBottomCornerpoint_X Gridblock_3_3_SEBottomCornerpoint_Y Gridblock_3_3_SEBottomCornerpoint_Z
+% Gridblock_1_3_NWTopCornerpoint_X Gridblock_1_3_NWTopCornerpoint_Y Gridblock_1_3_NWTopCornerpoint_Z Gridblock_1_3_NWBottomCornerpoint_X Gridblock_1_3_NWBottomCornerpoint_Y Gridblock_1_3_NWBottomCornerpoint_Z
+% Gridblock_2_3_NWTopCornerpoint_X Gridblock_2_3_NWTopCornerpoint_Y Gridblock_2_3_NWTopCornerpoint_Z Gridblock_2_3_NWBottomCornerpoint_X Gridblock_2_3_NWBottomCornerpoint_Y Gridblock_2_3_NWBottomCornerpoint_Z
+% Gridblock_3_3_NWTopCornerpoint_X Gridblock_3_3_NWTopCornerpoint_Y Gridblock_3_3_NWTopCornerpoint_Z Gridblock_3_3_NWBottomCornerpoint_X Gridblock_3_3_NWBottomCornerpoint_Y Gridblock_3_3_NWBottomCornerpoint_Z
+% Gridblock_3_3_NETopCornerpoint_X Gridblock_3_3_NETopCornerpoint_Y Gridblock_3_3_NETopCornerpoint_Z Gridblock_3_3_NEBottomCornerpoint_X Gridblock_3_3_NEBottomCornerpoint_Y Gridblock_3_3_NEBottomCornerpoint_Z
+% The values can be separated by either spaces or line returns; the layout of the data is not significant
+% However the values must be given in order shown above, i.e. looping through each pillar in the grid, first in order of row and then in order of column
+% NB there is no sanity check to ensure the resulting grid geometry is consistent (e.g. checking for negative gridblock volumes, etc.); this must be done beforehand

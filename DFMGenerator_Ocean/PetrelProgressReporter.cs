@@ -49,6 +49,14 @@ namespace DFMGenerator_Ocean
             }
         }
         /// <summary>
+        /// Output a message (e.g. an error message) to the message log window
+        /// </summary>
+        /// <param name="message">Message to output</param>
+        public void OutputMessage(string message)
+        {
+            Slb.Ocean.Petrel.PetrelLogger.InfoOutputWindow(message);
+        }
+        /// <summary>
         /// Flag to abort calculation; returns value of the Petrel progress bar IsCanceled property
         /// </summary>
         /// <returns>True if calculation should be aborted</returns>

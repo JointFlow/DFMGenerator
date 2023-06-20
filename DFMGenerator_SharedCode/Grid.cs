@@ -15,7 +15,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFMGenerator v2.1.1"; } }
+        public static string VersionNumber { get { return "DFMGenerator v2.2.1"; } }
 
         // Grid data
         /// <summary>
@@ -50,11 +50,16 @@ namespace DFMGenerator_SharedCode
         /// Flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer thickness cutoff
         /// </summary>
         public bool DFNThicknessCutoffActivated { get; private set; }
+        /// <summary>
+        /// Flag to indicate if the implicit calculation ran to completion before hitting the timestep limit in every gridblock
+        /// </summary>
+        public bool HitTimestepLimit { get; private set; }
 
         // Functions to calculate fracture population data and generate the DFN
         /// <summary>
         /// Calculate fracture data for each cell in the gridblock based on existing GridblockConfiguration.PropagationControl objects, without updating progress
         /// </summary>
+        /// <returns>True if the calculation runs to completion before hitting the timestep limit in all gridblocks; false if the timestep limit is hit in any gridblock</returns>
         public void CalculateAllFractureData()
         {
             CalculateAllFractureData(null);
@@ -65,6 +70,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="progressReporter">Reference to a progress reporter - can be any object implementing the IProgressReporterWrapper interface</param>
         public void CalculateAllFractureData(IProgressReporterWrapper progressReporter)
         {
+            // Create a counter for the number of gridblocks in which the timestep limit is hit
+            int HitTimestepLimitCounter = 0;
+
             // Create variable to loop through the grid rows and columns
             int NoRows, RowNo, NoCols, ColNo;
 
@@ -89,11 +97,11 @@ namespace DFMGenerator_SharedCode
             // Loop through every gridblock in every row in the grid
             int NoGridblocksCalculated = 0;
             NoRows = Gridblocks.Count();
-            for(RowNo = 0; RowNo < NoRows; RowNo++)
+            for (RowNo = 0; RowNo < NoRows; RowNo++)
             {
                 List<GridblockConfiguration> GridRow = Gridblocks[RowNo];
                 NoCols = GridRow.Count();
-                for(ColNo = 0; ColNo < NoCols; ColNo++)
+                for (ColNo = 0; ColNo < NoCols; ColNo++)
                 {
                     // Check if calculation has been aborted
                     if (progressReporter.abortCalculation())
@@ -109,13 +117,26 @@ namespace DFMGenerator_SharedCode
                     if (Gridblock != null)
                     {
                         // Run the calculation function for the specified gridblock
-                        Gridblock.CalculateFractureData();
-
+                        if (!Gridblock.CalculateFractureData())
+                            HitTimestepLimitCounter++;
                     }
 
                     // Update progress
                     progressReporter.UpdateProgress(++NoGridblocksCalculated);
                 }
+            }
+
+            // Set the flag to indicate if the implicit calculation hit the timestep limit in any gridblock
+            if (HitTimestepLimitCounter > 0)
+            {
+                HitTimestepLimit = true;
+                // Give a message saying in how many gridblocks the timestep limit was exceeded
+                string timestepLimitMessage = string.Format("Full fracture saturation was not achieved in {0} gridblocks before reaching the timestep limit.", HitTimestepLimitCounter);
+                progressReporter.OutputMessage(timestepLimitMessage);
+            }
+            else
+            {
+                HitTimestepLimit = false;
             }
         }
         /// <summary>
@@ -145,18 +166,15 @@ namespace DFMGenerator_SharedCode
             // Number of intermediate DFNs to output and flag to control their separation
             int noIntermediateDFNs = DFNControl.NumberOfIntermediateOutputs;
             if (noIntermediateDFNs < 0) noIntermediateDFNs = 0;
-            bool separateIntermediatesByTime = DFNControl.SeparateIntermediateOutputsByTime;
+            IntermediateOutputInterval separateIntermediatesBy = DFNControl.SeparateIntermediateOutputsBy;
 
             // Calculate unit conversion modifier for output time data if not in SI units
             TimeUnits timeUnits = DFNControl.timeUnits;
             double timeUnits_Modifier = DFNControl.getTimeUnitsModifier();
 
-            // Initialise flags to indicate that the explicit DFN was not generated in some or any gridblocks, due to the layer thickness cutoff
-            DFNThicknessCutoffActivated = false;
-
             // Generate a list of timestep end times for all timesteps in every gridblock in the grid
-            int totalNoCalculationElements;
-            List<GridblockTimestepControl> timestepList = GetTimestepList(out totalNoCalculationElements);
+            int totalNoCalculationElements, noGridblocksBelowThicknessCutoff;
+            List<GridblockTimestepControl> timestepList = GetTimestepList(out totalNoCalculationElements, out noGridblocksBelowThicknessCutoff);
 
             // If the supplied progress reporter is null, create a new DefaultProgressReporter object (this will not actually report any progress)
             // Otherwise set the total number of calculation elements in the progress reporter
@@ -164,6 +182,19 @@ namespace DFMGenerator_SharedCode
                 progressReporter = new DefaultProgressReporter();
             else
                 progressReporter.SetNumberOfElements(totalNoCalculationElements);
+
+            // Set the flag to indicate that the explicit DFN was not generated in some or any gridblocks, due to the layer thickness cutoff
+            if (noGridblocksBelowThicknessCutoff > 0)
+            {
+                DFNThicknessCutoffActivated = true;
+                // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
+                string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the {0} gridblocks due to the layer thickness cutoff. To prevent this, reduce the cutoff value in the Control Parameters.", noGridblocksBelowThicknessCutoff);
+                progressReporter.OutputMessage(thicknessLimitMessage);
+            }
+            else
+            {
+                DFNThicknessCutoffActivated = false;
+            }
 
             // Create counters for the current calculation element and the next output stage, and a flag for completion of the calculation
             int currentCalculationElement = 0;
@@ -177,7 +208,13 @@ namespace DFMGenerator_SharedCode
             while (!calculationCompleted)
             {
                 // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
-                if (separateIntermediatesByTime)
+                if (separateIntermediatesBy == IntermediateOutputInterval.SpecifiedTime)
+                {
+                    double nextListValue = DFNControl.GetIntermediateOutputTime(nextStage - 1); // List of intermediate outputs is zero-based
+                    double nextIntermediateEndTime = (!double.IsNaN(nextListValue) ? nextListValue : endTime); // If the next list value is NaN (i.e. we have reached the end of the list), used the end time instead
+                    calculationCompleted = PropagateLocalDFNs(ref currentCalculationElement, nextIntermediateEndTime, timestepList, progressReporter);
+                }
+                else if (separateIntermediatesBy == IntermediateOutputInterval.EqualTime)
                 {
                     double nextIntermediateEndTime = (nextStage * endTime) / (noIntermediateDFNs + 1);
                     calculationCompleted = PropagateLocalDFNs(ref currentCalculationElement, nextIntermediateEndTime, timestepList, progressReporter);
@@ -274,9 +311,6 @@ namespace DFMGenerator_SharedCode
                                     int No_uFracs = latestDFN.GlobalDFNMicrofractures.Count();
                                     int No_Nodes = No_uFracs * nouFCornerPoints;
 
-                                    double permability = DFNControl.DefaultFracturePermeability;
-                                    double compressibility = DFNControl.DefaultFractureCompressibility;
-
                                     // Write general fracture FAB header data to logfile
                                     string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
                                     uF_outputFile.WriteLine(FAB_header_1);
@@ -298,15 +332,20 @@ namespace DFMGenerator_SharedCode
                                     for (int uFracNo = 0; uFracNo < No_uFracs; uFracNo++)
                                     {
                                         MicrofractureXYZ frac = latestDFN.GlobalDFNMicrofractures[uFracNo];
+                                        double aperture = frac.MeanAperture;
+                                        double permeability = Math.Pow(aperture, 2) / 12;
+                                        double compressibility = frac.Compressibility;
+                                        if (double.IsNaN(compressibility))
+                                            compressibility = DFNControl.DefaultFractureCompressibility;
 
-                                        string data = string.Format("{0} {1} {2} {3} {4} {5}", uFracNo + 1, nouFCornerPoints, 1, permability, compressibility, frac.MeanAperture);
+                                        string data = string.Format("{0} {1} {2} {3} {4} {5}", uFracNo + 1, nouFCornerPoints, 1, permeability, compressibility, aperture);
                                         uF_outputFile.WriteLine(data);
 
                                         // Get a list of cornerpoints using the GetFractureCornerpointsInXYZ function
                                         List<PointXYZ> cornerPoints = frac.GetFractureCornerpointsInXYZ(nouFCornerPoints);
                                         // Loop through each point and write the coordinates to file
                                         int pointNo = 1;
-                                        foreach(PointXYZ cornerPoint in cornerPoints)
+                                        foreach (PointXYZ cornerPoint in cornerPoints)
                                         {
                                             string pointCoords = string.Format("{0} {1} {2} {3}", pointNo++, cornerPoint.X, cornerPoint.Y, cornerPoint.Z);
                                             uF_outputFile.WriteLine(pointCoords);
@@ -377,7 +416,7 @@ namespace DFMGenerator_SharedCode
 
                                     // Loop through each macrofracture and count the total number of segments and cornerpoints, excluding zero length segments
                                     foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
-                                    { 
+                                    {
                                         foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
                                         {
                                             int nonZeroLengthSegments = 0;
@@ -388,9 +427,6 @@ namespace DFMGenerator_SharedCode
                                             No_Cornerpoints += nonZeroLengthSegments * 4;
                                         }
                                     }
-
-                                    double permability = DFNControl.DefaultFracturePermeability;
-                                    double compressibility = DFNControl.DefaultFractureCompressibility;
 
                                     // Write general fracture FAB header data to logfile
                                     string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
@@ -433,8 +469,12 @@ namespace DFMGenerator_SharedCode
 
                                                 // Set the fracture aperture
                                                 double aperture = MF.SegmentMeanAperture[dir][MF_segmentNo];
+                                                double permeability = Math.Pow(aperture, 2) / 12;
+                                                double compressibility = MF.SegmentCompressibility[dir][MF_segmentNo];
+                                                if (double.IsNaN(compressibility))
+                                                    compressibility = DFNControl.DefaultFractureCompressibility;
 
-                                                string data = string.Format("{0} {1} {2} {3} {4} {5}", global_segmentNo, noNodes, 1, permability, compressibility, aperture);
+                                                string data = string.Format("{0} {1} {2} {3} {4} {5}", global_segmentNo, noNodes, 1, permeability, compressibility, aperture);
                                                 MF_outputFile.WriteLine(data);
 
                                                 int nodeCounter = 1;
@@ -557,12 +597,17 @@ namespace DFMGenerator_SharedCode
         /// Generate a list of GridblockTimestepControl objects for all timesteps in every gridblock in the grid
         /// </summary>
         /// <param name="totalNoCalculationElements">Reference parameter for the total number of calculation elements (i.e. the total number of timesteps in all gridblocks)</param>
+        /// <param name="noGridblocksBelowThicknessCutoff">Reference parameter for the total number of gridblocks below the minimum thickness cutoff</param>
         /// <returns>New list of GridblockTimestepControl objects representing all timesteps in every gridblock in the grid</returns>
-        private List<GridblockTimestepControl> GetTimestepList (out int totalNoCalculationElements)
+        private List<GridblockTimestepControl> GetTimestepList(out int totalNoCalculationElements, out int noGridblocksBelowThicknessCutoff)
         {
             // Create a new list of GridblockTimestepControl objects and set the total number of calculation elements (i.e. the number of GridblockTimestepControl objects) to 0
             totalNoCalculationElements = 0;
             List<GridblockTimestepControl> timestepList = new List<GridblockTimestepControl>();
+
+            // Set the counter for the number of gridblocks below the minimum thickness cutoff, and get the specified cutoff
+            noGridblocksBelowThicknessCutoff = 0;
+            double gridblockThicknessCutoff = DFNControl.MinimumLayerThickness;
 
             // Loop through every gridblock in every row in the grid
             int NoRows = Gridblocks.Count();
@@ -578,6 +623,11 @@ namespace DFMGenerator_SharedCode
                     // Check if it is null
                     if (Gridblock != null)
                     {
+                        // Check if the gridblock is below the minimum thickness cutoff, and if so update the counter
+                        // NB gridblocks below the thickness cutoff will still be added to the list, but will be filtered out later
+                        if (Gridblock.ThicknessAtDeformation < gridblockThicknessCutoff)
+                            noGridblocksBelowThicknessCutoff++;
+
                         // Loop through every timestep and add it to the list
                         int NoTimesteps = Gridblock.TimestepEndTimes.Count() - 1;
                         totalNoCalculationElements += NoTimesteps;
@@ -637,10 +687,27 @@ namespace DFMGenerator_SharedCode
                 currentTime = nextTimestep.EndTimestepTime;
 
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
-                if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
-                    nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
-                else
-                    DFNThicknessCutoffActivated = true;
+                try
+                {
+                    if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
+                    {
+                        nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                    }
+                    else
+                    {
+                        // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
+                        // NB to avoid excessive messaging, this message should be deactivated unless debugging
+                        //string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the cell at {0},{1} due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y);
+                        //progressReporter.OutputMessage(thicknessLimitMessage);
+                    }
+                }
+                catch (Exception e)
+                {
+                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in cell at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
+                    progressReporter.OutputMessage(string.Format("Error {0}:", e.Message));
+                    //progressReporter.OutputMessage(e.StackTrace);
+                }
+
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -693,10 +760,26 @@ namespace DFMGenerator_SharedCode
                     currentTime = nextTimestep.EndTimestepTime;
 
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
-                if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
-                    nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
-                else
-                    DFNThicknessCutoffActivated = true;
+                try
+                {
+                    if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
+                    {
+                        nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                    }
+                    else
+                    {
+                        // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
+                        // NB to avoid excessive messaging, this message should be deactivated unless debugging
+                        //string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the cell at {0},{1} due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y);
+                        //progressReporter.OutputMessage(thicknessLimitMessage);
+                    }
+                }
+                catch (Exception e)
+                {
+                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in the cell at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
+                    progressReporter.OutputMessage(string.Format("Error {0}:", e.Message));
+                    //progressReporter.OutputMessage(e.StackTrace);
+                }
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -954,8 +1037,11 @@ namespace DFMGenerator_SharedCode
             // Initialise random number generator for placing fractures
             RandomNumberGenerator = new Random();
 
-            // Initialise flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer tthickness cutoff
+            // Initialise the flag to indicate that the explicit DFN was not generated in some gridblocks, due to the layer thickness cutoff
             DFNThicknessCutoffActivated = false;
+
+            // Initialise the flag to indicate if the implicit calculation ran to completion before hitting the timestep limit in every gridblock
+            HitTimestepLimit = false;
+        }
     }
-}
 }

@@ -22,6 +22,11 @@ namespace DFMGenerator_SharedCode
         /// <param name="noCalculationElementsCompleted">Number of calculation elements completed so far</param>
         void UpdateProgress(int noCalculationElementsCompleted);
         /// <summary>
+        /// Output a message (e.g. an error message), using whatever method is specified by the implementing class
+        /// </summary>
+        /// <param name="message">Message to output</param>
+        void OutputMessage(string message);
+        /// <summary>
         /// Flag to abort calculation; return true if calculation should be aborted
         /// </summary>
         /// <returns>True if calculation should be aborted</returns>
@@ -49,6 +54,14 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="noCalculationElementsCompleted">Number of calculation elements completed so far</param>
         public void UpdateProgress(int noCalculationElementsCompleted)
+        {
+            // Do nothing
+        }
+        /// <summary>
+        /// Output a message (e.g. an error message)
+        /// </summary>
+        /// <param name="message">Message to output</param>
+        public void OutputMessage(string message)
         {
             // Do nothing
         }

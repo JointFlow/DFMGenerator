@@ -9,6 +9,7 @@ using Slb.Ocean.Petrel.UI;
 using Slb.Ocean.Petrel.DomainObject.PillarGrid;
 using Slb.Ocean.Petrel.UI.Controls;
 using Slb.Ocean.Petrel.DomainObject;
+using Slb.Ocean.Petrel.DomainObject.Simulation;
 
 namespace DFMGenerator_Ocean
 {
@@ -41,13 +42,13 @@ namespace DFMGenerator_Ocean
             this.workstep = workstep;
             this.args = args;
             this.context = context;
+            updateUIFromArgs();
 
             this.btnOK.Image = PetrelImages.OK;
             this.btnCancel.Image = PetrelImages.Cancel;
             this.btnApply.Image = PetrelImages.Apply;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
-
         }
 
         #region UI_update
@@ -72,16 +73,28 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_NoRowsJ, textBox_NoRowsJ);
             UpdateTextBox(args.Argument_TopLayerK, textBox_TopLayerK);
             UpdateTextBox(args.Argument_BottomLayerK, textBox_BottomLayerK);
-            UpdatePropertyPresentationBox(args.Argument_EhminAzi, presentationBox_EhminAzi);
-            // Unit conversion and labelling for the strain rate properties EhminRate and EhmaxRate must be carried out manually, as there are no inbuilt Petrel units for strain rate 
-            // Because geological time units are very different from SI time units, this conversion is carried out when downloading data from the dialog box or when reading the grid property values
-            // Until that point, all data will be kept in project units
-            UpdatePropertyPresentationBox(args.Argument_EhminRate, presentationBox_EhminRate);
-            UpdatePropertyPresentationBox(args.Argument_EhmaxRate, presentationBox_EhmaxRate);
-            SetStrainRateUnits();
-            UpdateTextBox(args.Argument_EhminAzi_default, unitTextBox_EhminAzi_default, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_EhminAzi_Units);
-            UpdateTextBox(args.Argument_EhminRate_default, unitTextBox_EhminRate_default);
-            UpdateTextBox(args.Argument_EhmaxRate_default, unitTextBox_EhmaxRate_default);
+            // Populate the list of deformation episodes
+            int noDeformationEpisodes = args.Argument_NoDeformationEpisodes;
+            int currentSelectedIndex = listBox_DeformationEpisodes.SelectedIndex;
+            listBox_DeformationEpisodes.BeginUpdate();
+            listBox_DeformationEpisodes.Items.Clear();
+            for (int deformationEpisodeIndex = 0; deformationEpisodeIndex < noDeformationEpisodes; deformationEpisodeIndex++)
+            {
+                ListBoxItem nextItem = new ListBoxItem();
+                nextItem.Text = args.DeformationEpisode(deformationEpisodeIndex);
+                listBox_DeformationEpisodes.Items.Add(args.DeformationEpisode(deformationEpisodeIndex));
+            }
+            listBox_DeformationEpisodes.EndUpdate();
+            listBox_DeformationEpisodes.SelectionMode = SelectionMode.One;
+            if (listBox_DeformationEpisodes.Items.Count == 1)
+                listBox_DeformationEpisodes.SelectedIndex = 0;
+            else if (currentSelectedIndex < listBox_DeformationEpisodes.Items.Count)
+                listBox_DeformationEpisodes.SelectedIndex = currentSelectedIndex;
+            else if (listBox_DeformationEpisodes.Items.Count > 0)
+                listBox_DeformationEpisodes.SelectedIndex = listBox_DeformationEpisodes.Items.Count - 1;
+            else
+                listBox_DeformationEpisodes.SelectedIndex = -1;
+
             UpdateCheckBox(args.Argument_GenerateExplicitDFN, checkBox_GenerateExplicitDFN);
             UpdateNumericBox(args.Argument_NoIntermediateOutputs, numericUpDown_NoIntermediateOutputs);
             UpdateCheckBox(args.Argument_IncludeObliqueFracs, checkBox_IncludeObliqueFracs);
@@ -90,15 +103,41 @@ namespace DFMGenerator_Ocean
             EnableNoFractureSets();
 
             // Mechanical properties
-            UpdatePropertyPresentationBox(args.Argument_YoungsMod, presentationBox_YoungsMod);
+            // NB either standard grid properties or simulation case results can be input for the standard elastic and plastic parameters
+            if (args.Argument_YoungsMod_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_YoungsMod_GR, presentationBox_YoungsMod);
+            else
+                UpdatePropertyPresentationBox(args.Argument_YoungsMod, presentationBox_YoungsMod);
             UpdateTextBox(args.Argument_YoungsMod_default, unitTextBox_YoungsMod_default, PetrelProject.WellKnownTemplates.GeomechanicGroup.YoungsModulus, label_YoungsMod_Units);
-            UpdatePropertyPresentationBox(args.Argument_PoissonsRatio, presentationBox_PoissonsRatio);
+            if (args.Argument_PoissonsRatio_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_PoissonsRatio_GR, presentationBox_PoissonsRatio);
+            else
+                UpdatePropertyPresentationBox(args.Argument_PoissonsRatio, presentationBox_PoissonsRatio);
             UpdateTextBox(args.Argument_PoissonsRatio_default, unitTextBox_PoissonsRatio_default, PetrelProject.WellKnownTemplates.GeophysicalGroup.PoissonRatio);
-            UpdatePropertyPresentationBox(args.Argument_BiotCoefficient, presentationBox_BiotCoefficient);
+            if (args.Argument_Porosity_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_Porosity_GR, presentationBox_Porosity);
+            else
+                UpdatePropertyPresentationBox(args.Argument_Porosity, presentationBox_Porosity);
+            UpdateTextBox(args.Argument_Porosity_default, unitTextBox_Porosity_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity);
+            if (args.Argument_BiotCoefficient_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_BiotCoefficient_GR, presentationBox_BiotCoefficient);
+            else
+                UpdatePropertyPresentationBox(args.Argument_BiotCoefficient, presentationBox_BiotCoefficient);
             UpdateTextBox(args.Argument_BiotCoefficient_default, unitTextBox_BiotCoefficient_default, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdatePropertyPresentationBox(args.Argument_FrictionCoefficient, presentationBox_FrictionCoefficient);
+            if (args.Argument_ThermalExpansionCoefficient_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_ThermalExpansionCoefficient_GR, presentationBox_ThermalExpansionCoefficient);
+            else
+                UpdatePropertyPresentationBox(args.Argument_ThermalExpansionCoefficient, presentationBox_ThermalExpansionCoefficient);
+            UpdateTextBox(args.Argument_ThermalExpansionCoefficient_default, unitTextBox_ThermalExpansionCoefficient_default, PetrelProject.WellKnownTemplates.GeophysicalGroup.InverseTemperature);
+            if (args.Argument_FrictionCoefficient_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_FrictionCoefficient_GR, presentationBox_FrictionCoefficient);
+            else
+                UpdatePropertyPresentationBox(args.Argument_FrictionCoefficient, presentationBox_FrictionCoefficient);
             UpdateTextBox(args.Argument_FrictionCoefficient_default, unitTextBox_FrictionCoefficient_default, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdatePropertyPresentationBox(args.Argument_CrackSurfaceEnergy, presentationBox_CrackSurfaceEnergy);
+            if (args.Argument_CrackSurfaceEnergy_GR != null)
+                UpdateGridResultPresentationBox(args.Argument_CrackSurfaceEnergy_GR, presentationBox_CrackSurfaceEnergy);
+            else
+                UpdatePropertyPresentationBox(args.Argument_CrackSurfaceEnergy, presentationBox_CrackSurfaceEnergy);
             UpdateTextBox(args.Argument_CrackSurfaceEnergy_default, unitTextBox_CrackSurfaceEnergy_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.SurfaceTension, label_CrackSurfaceEnergy_Units);
             UpdatePropertyPresentationBox(args.Argument_RockStrainRelaxation, presentationBox_RockStrainRelaxation);
             UpdateTextBox(args.Argument_RockStrainRelaxation_default, unitTextBox_RockStrainRelaxation_default, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_RockStrainRelaxation_Units);
@@ -120,10 +159,12 @@ namespace DFMGenerator_Ocean
 
             // Stress state
             UpdateComboBox(args.Argument_StressDistribution, comboBox_StressDistribution);
-            UpdateTextBox(args.Argument_DepthAtDeformation, unitTextBox_DepthAtDeformation, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_DepthAtDeformation_Units);
+            UpdatePropertyPresentationBox(args.Argument_DepthAtDeformation, presentationBox_DepthAtDeformation);
+            UpdateTextBox(args.Argument_DepthAtDeformation_default, unitTextBox_DepthAtDeformation, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth, label_DepthAtDeformation_Units);
             UpdateTextBox(args.Argument_MeanOverlyingSedimentDensity, unitTextBox_MeanOverlyingSedimentDensity, PetrelProject.WellKnownTemplates.GeophysicalGroup.RockDensity, label_MeanOverlyingSedimentDensity_Units);
             UpdateTextBox(args.Argument_FluidDensity, unitTextBox_FluidDensity, PetrelProject.WellKnownTemplates.GeophysicalGroup.LiquidDensity, label_FluidDensity_Units);
             UpdateTextBox(args.Argument_InitialOverpressure, unitTextBox_InitialOverpressure, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure, label_InitialOverpressure_Units);
+            UpdateTextBox(args.Argument_GeothermalGradient, unitTextBox_GeothermalGradient, PetrelProject.WellKnownTemplates.PetroleumGroup.ThermalGradient, label_InitialOverpressure_Units);
             UpdateTextBox(args.Argument_InitialStressRelaxation, unitTextBox_InitialStressRelaxation, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_AverageStressStrainData, checkBox_AverageStressStrainData);
 
@@ -132,7 +173,7 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_WriteDFNFiles, checkBox_WriteDFNFiles);
             UpdateCheckBox(args.Argument_WriteToProjectFolder, checkBox_WriteToProjectFolder);
             UpdateComboBox(args.Argument_DFNFileType, comboBox_DFNFileType);
-            UpdateCheckBox(args.Argument_OutputAtEqualTimeIntervals, checkBox_OutputIntermediatesByTime);
+            UpdateComboBox(args.Argument_IntermediateOutputIntervalControl, comboBox_IntermediateOutputInterval);
             UpdateCheckBox(args.Argument_OutputCentrepoints, checkBox_OutputCentrepoints);
             // Fracture connectivity and anisotropy index control parameters
             UpdateCheckBox(args.Argument_CalculateFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
@@ -160,6 +201,7 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_CheckAlluFStressShadows, checkBox_CheckAlluFStressShadows);
             UpdateTextBox(args.Argument_AnisotropyCutoff, unitTextBox_AnisotropyCutoff, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_AllowReverseFractures, checkBox_AllowReverseFractures);
+            UpdateTextBox(args.Argument_FractureNucleationPosition, unitTextBox_FractureNucleationPosition, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateNumericBox(args.Argument_HorizontalUpscalingFactor, numericUpDown_HorizontalUpscalingFactor);
             UpdateTextBox(args.Argument_MaxTSDuration, unitTextBox_MaxTSDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_MaxTSDuration_Units);
             UpdateTextBox(args.Argument_Max_TS_MFP33_increase, unitTextBox_Max_TS_MFP33_increase, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -168,7 +210,6 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_MinimumImplicitMicrofractureRadius, unitTextBox_MinimumImplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumImplicitMicrofractureRadius_Units);
             UpdateTextBox(args.Argument_No_r_bins, textBox_No_r_bins);
             // Calculation termination controls
-            UpdateTextBox(args.Argument_DeformationDuration, unitTextBox_DeformationDuration, PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale, label_DeformationDuration_Units);
             UpdateTextBox(args.Argument_MaxNoTimesteps, textBox_MaxNoTimesteps);
             UpdateTextBox(args.Argument_Historic_MFP33_TerminationRatio, unitTextBox_Historic_MFP33_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Active_MFP30_TerminationRatio, unitTextBox_Active_MFP30_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -197,27 +238,63 @@ namespace DFMGenerator_Ocean
             args.Argument_NoRowsJ = GetIntFromTextBox(textBox_NoRowsJ);
             args.Argument_TopLayerK = GetIntFromTextBox(textBox_TopLayerK);
             args.Argument_BottomLayerK = GetIntFromTextBox(textBox_BottomLayerK);
-            args.Argument_EhminAzi = presentationBox_EhminAzi.Tag as Property;
-            args.Argument_EhminRate = presentationBox_EhminRate.Tag as Property;
-            args.Argument_EhmaxRate = presentationBox_EhmaxRate.Tag as Property;
-            args.Argument_EhminAzi_default = GetDoubleFromTextBox(unitTextBox_EhminAzi_default);
-            args.Argument_EhminRate_default = GetDoubleFromTextBox(unitTextBox_EhminRate_default);
-            args.Argument_EhmaxRate_default = GetDoubleFromTextBox(unitTextBox_EhmaxRate_default);
             args.Argument_GenerateExplicitDFN = checkBox_GenerateExplicitDFN.Checked;
             args.Argument_NoIntermediateOutputs = GetIntFromNumericBox(numericUpDown_NoIntermediateOutputs);
             args.Argument_IncludeObliqueFracs = checkBox_IncludeObliqueFracs.Checked;
 
             // Mechanical properties
-            args.Argument_YoungsMod = presentationBox_YoungsMod.Tag as Property;
-            args.Argument_YoungsMod_default = GetDoubleFromTextBox(unitTextBox_YoungsMod_default);
-            args.Argument_PoissonsRatio = presentationBox_PoissonsRatio.Tag as Property;
-            args.Argument_PoissonsRatio_default = GetDoubleFromTextBox(unitTextBox_PoissonsRatio_default);
-            args.Argument_BiotCoefficient = presentationBox_BiotCoefficient.Tag as Property;
-            args.Argument_BiotCoefficient_default = GetDoubleFromTextBox(unitTextBox_BiotCoefficient_default);
-            args.Argument_FrictionCoefficient = presentationBox_FrictionCoefficient.Tag as Property;
-            args.Argument_FrictionCoefficient_default = GetDoubleFromTextBox(unitTextBox_FrictionCoefficient_default);
-            args.Argument_CrackSurfaceEnergy = presentationBox_CrackSurfaceEnergy.Tag as Property;
-            args.Argument_CrackSurfaceEnergy_default = GetDoubleFromTextBox(unitTextBox_CrackSurfaceEnergy_default);
+            // NB either standard grid properties or simulation case results can be input for the standard elastic and plastic parameters
+            try
+            {
+                args.Argument_YoungsMod_GR = presentationBox_YoungsMod.Tag as GridResult;
+                if (args.Argument_YoungsMod_GR != GridResult.NullObject)
+                    args.Argument_YoungsMod = Property.NullObject;
+                else
+                    args.Argument_YoungsMod = presentationBox_YoungsMod.Tag as Property;
+                args.Argument_YoungsMod_default = GetDoubleFromTextBox(unitTextBox_YoungsMod_default);
+                args.Argument_PoissonsRatio_GR = presentationBox_PoissonsRatio.Tag as GridResult;
+                if (args.Argument_PoissonsRatio_GR != GridResult.NullObject)
+                    args.Argument_PoissonsRatio = Property.NullObject;
+                else
+                    args.Argument_PoissonsRatio = presentationBox_PoissonsRatio.Tag as Property;
+                args.Argument_PoissonsRatio_default = GetDoubleFromTextBox(unitTextBox_PoissonsRatio_default);
+                args.Argument_Porosity_GR = presentationBox_Porosity.Tag as GridResult;
+                if (args.Argument_Porosity_GR != GridResult.NullObject)
+                    args.Argument_Porosity = Property.NullObject;
+                else
+                    args.Argument_Porosity = presentationBox_Porosity.Tag as Property;
+                args.Argument_Porosity_default = GetDoubleFromTextBox(unitTextBox_Porosity_default);
+                args.Argument_BiotCoefficient_GR = presentationBox_BiotCoefficient.Tag as GridResult;
+                if (args.Argument_BiotCoefficient_GR != GridResult.NullObject)
+                    args.Argument_BiotCoefficient = Property.NullObject;
+                else
+                    args.Argument_BiotCoefficient = presentationBox_BiotCoefficient.Tag as Property;
+                args.Argument_BiotCoefficient_default = GetDoubleFromTextBox(unitTextBox_BiotCoefficient_default);
+                args.Argument_ThermalExpansionCoefficient_GR = presentationBox_ThermalExpansionCoefficient.Tag as GridResult;
+                if (args.Argument_ThermalExpansionCoefficient_GR != GridResult.NullObject)
+                    args.Argument_ThermalExpansionCoefficient = Property.NullObject;
+                else
+                    args.Argument_ThermalExpansionCoefficient = presentationBox_ThermalExpansionCoefficient.Tag as Property;
+                args.Argument_ThermalExpansionCoefficient_default = GetDoubleFromTextBox(unitTextBox_ThermalExpansionCoefficient_default);
+                args.Argument_FrictionCoefficient_GR = presentationBox_FrictionCoefficient.Tag as GridResult;
+                if (args.Argument_FrictionCoefficient_GR != GridResult.NullObject)
+                    args.Argument_FrictionCoefficient = Property.NullObject;
+                else
+                    args.Argument_FrictionCoefficient = presentationBox_FrictionCoefficient.Tag as Property;
+                args.Argument_FrictionCoefficient_default = GetDoubleFromTextBox(unitTextBox_FrictionCoefficient_default);
+                args.Argument_CrackSurfaceEnergy_GR = presentationBox_CrackSurfaceEnergy.Tag as GridResult;
+                if (args.Argument_CrackSurfaceEnergy_GR != GridResult.NullObject)
+                    args.Argument_CrackSurfaceEnergy = Property.NullObject;
+                else
+                    args.Argument_CrackSurfaceEnergy = presentationBox_CrackSurfaceEnergy.Tag as Property;
+                args.Argument_CrackSurfaceEnergy_default = GetDoubleFromTextBox(unitTextBox_CrackSurfaceEnergy_default);
+            }
+            catch (Exception e)
+            {
+                PetrelLogger.InfoOutputWindow(e.Message);
+                PetrelLogger.InfoOutputWindow(e.StackTrace);
+            }
+
             args.Argument_RockStrainRelaxation = presentationBox_RockStrainRelaxation.Tag as Property;
             args.Argument_RockStrainRelaxation_default = GetDoubleFromTextBox(unitTextBox_RockStrainRelaxation_default);
             args.Argument_FractureStrainRelaxation = presentationBox_FractureStrainRelaxation.Tag as Property;
@@ -233,10 +310,12 @@ namespace DFMGenerator_Ocean
 
             // Stress state
             args.Argument_StressDistribution = comboBox_StressDistribution.SelectedIndex;
-            args.Argument_DepthAtDeformation = GetDoubleFromTextBox(unitTextBox_DepthAtDeformation);
+            args.Argument_DepthAtDeformation = presentationBox_DepthAtDeformation.Tag as Property;
+            args.Argument_DepthAtDeformation_default = GetDoubleFromTextBox(unitTextBox_DepthAtDeformation);
             args.Argument_MeanOverlyingSedimentDensity = GetDoubleFromTextBox(unitTextBox_MeanOverlyingSedimentDensity);
             args.Argument_FluidDensity = GetDoubleFromTextBox(unitTextBox_FluidDensity);
             args.Argument_InitialOverpressure = GetDoubleFromTextBox(unitTextBox_InitialOverpressure);
+            args.Argument_GeothermalGradient = GetDoubleFromTextBox(unitTextBox_GeothermalGradient);
             args.Argument_InitialStressRelaxation = GetDoubleFromTextBox(unitTextBox_InitialStressRelaxation);
             args.Argument_AverageStressStrainData = checkBox_AverageStressStrainData.Checked;
 
@@ -245,7 +324,7 @@ namespace DFMGenerator_Ocean
             args.Argument_WriteDFNFiles = checkBox_WriteDFNFiles.Checked;
             args.Argument_WriteToProjectFolder = checkBox_WriteToProjectFolder.Checked;
             args.Argument_DFNFileType = comboBox_DFNFileType.SelectedIndex;
-            args.Argument_OutputAtEqualTimeIntervals = checkBox_OutputIntermediatesByTime.Checked;
+            args.Argument_IntermediateOutputIntervalControl = comboBox_IntermediateOutputInterval.SelectedIndex;
             args.Argument_OutputCentrepoints = checkBox_OutputCentrepoints.Checked;
             // Fracture connectivity and anisotropy index control parameters
             args.Argument_CalculateFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
@@ -270,6 +349,7 @@ namespace DFMGenerator_Ocean
             args.Argument_FractureMode = comboBox_FractureMode.SelectedIndex;
             args.Argument_CheckAlluFStressShadows = checkBox_CheckAlluFStressShadows.Checked;
             args.Argument_AnisotropyCutoff = GetDoubleFromTextBox(unitTextBox_AnisotropyCutoff);
+            args.Argument_FractureNucleationPosition = GetDoubleFromTextBox(unitTextBox_FractureNucleationPosition);
             args.Argument_AllowReverseFractures = checkBox_AllowReverseFractures.Checked;
             args.Argument_HorizontalUpscalingFactor = GetIntFromNumericBox(numericUpDown_HorizontalUpscalingFactor);
             args.Argument_MaxTSDuration = GetDoubleFromTextBox(unitTextBox_MaxTSDuration);
@@ -277,7 +357,6 @@ namespace DFMGenerator_Ocean
             args.Argument_MinimumImplicitMicrofractureRadius = GetDoubleFromTextBox(unitTextBox_MinimumImplicitMicrofractureRadius);
             args.Argument_No_r_bins = GetIntFromTextBox(textBox_No_r_bins);
             // Calculation termination controls
-            args.Argument_DeformationDuration = GetDoubleFromTextBox(unitTextBox_DeformationDuration);
             args.Argument_MaxNoTimesteps = GetIntFromTextBox(textBox_MaxNoTimesteps);
             args.Argument_Historic_MFP33_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Historic_MFP33_TerminationRatio);
             args.Argument_Active_MFP30_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Active_MFP30_TerminationRatio);
@@ -358,6 +437,38 @@ namespace DFMGenerator_Ocean
                 pBox.Image = null;
             }
             pBox.Tag = gprop;
+        }
+        private void UpdateGridResultPresentationBox(GridResult gres, PresentationBox pBox)
+        {
+            if (gres != GridResult.NullObject)
+            {
+                INameInfoFactory gresNIF = CoreSystem.GetService<INameInfoFactory>(gres);
+                if (gresNIF != null)
+                {
+                    NameInfo gresName = gresNIF.GetNameInfo(gres);
+                    pBox.Text = gresName.Name;
+                }
+                else
+                {
+                    pBox.Text = gres.Name;
+                }
+                IImageInfoFactory gresImgIF = CoreSystem.GetService<IImageInfoFactory>(gres);
+                if (gresImgIF != null)
+                {
+                    ImageInfo gresImage = gresImgIF.GetImageInfo(gres);
+                    pBox.Image = gresImage.GetDisplayImage(new ImageInfoContext());
+                }
+                else
+                {
+                    pBox.Image = PetrelImages.Property;
+                }
+            }
+            else
+            {
+                pBox.Text = "";
+                pBox.Image = null;
+            }
+            pBox.Tag = gres;
         }
         private void UpdateTextBox(string text, System.Windows.Forms.TextBox tBox)
         {
@@ -572,12 +683,6 @@ namespace DFMGenerator_Ocean
                 AUnit = "fracs";
             label_InitialMicrofractureDensity_Units.Text = AUnit;
         }
-        private void SetStrainRateUnits()
-        {
-            string StrainRateUnits = string.Format("/{0}", PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale).Symbol);
-            label_EhminRate_Units.Text = StrainRateUnits;
-            label_EhmaxRate_Units.Text = StrainRateUnits;
-        }
         #endregion
 
         #region EventHandlers
@@ -610,52 +715,67 @@ namespace DFMGenerator_Ocean
             UpdateGridPresentationBox(droppedGrid);
         }
 
-        private void dropTarget_EhminAzi_DragDrop(object sender, DragEventArgs e)
-        {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_EhminAzi);
-        }
-
-        private void dropTarget_EhminRate_DragDrop(object sender, DragEventArgs e)
-        {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_EhminRate);
-        }
-
-        private void dropTarget_EhmaxAzi_DragDrop(object sender, DragEventArgs e)
-        {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_EhmaxRate);
-        }
-
         private void dropTarget_YoungsMod_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_YoungsMod);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_YoungsMod);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_YoungsMod);
         }
 
         private void dropTarget_PoissonsRatio_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_PoissonsRatio);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_PoissonsRatio);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_PoissonsRatio);
+        }
+
+        private void dropTarget_Porosity_DragDrop(object sender, DragEventArgs e)
+        {
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_Porosity);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_Porosity);
         }
 
         private void dropTarget_BiotCoefficient_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_BiotCoefficient);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_BiotCoefficient);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_BiotCoefficient);
+        }
+
+        private void dropTarget_ThermalExpansionCoefficient_DragDrop(object sender, DragEventArgs e)
+        {
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_ThermalExpansionCoefficient);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_ThermalExpansionCoefficient);
         }
 
         private void dropTarget_FrictionCoefficient_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_FrictionCoefficient);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_FrictionCoefficient);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_FrictionCoefficient);
         }
 
         private void dropTarget_CrackSurfaceEnergy_DragDrop(object sender, DragEventArgs e)
         {
-            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
-            UpdatePropertyPresentationBox(droppedProperty, presentationBox_CrackSurfaceEnergy);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_CrackSurfaceEnergy);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_CrackSurfaceEnergy);
         }
 
         private void dropTarget_RockStrainRelaxation_DragDrop(object sender, DragEventArgs e)
@@ -688,38 +808,18 @@ namespace DFMGenerator_Ocean
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_SubcriticalPropagationIndex);
         }
 
+        private void dropTarget_DepthAtDeformation_DragDrop(object sender, DragEventArgs e)
+        {
+            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
+            UpdatePropertyPresentationBox(droppedProperty, presentationBox_DepthAtDeformation);
+
+        }
+
         private void presentationBox_Grid_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
                 UpdateGridPresentationBox(Grid.NullObject);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_EhminAzi_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_EhminAzi);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_EhminRate_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_EhminRate);
-                e.Handled = true;
-            }
-        }
-
-        private void presentationBox_EhmaxRate_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Delete)
-            {
-                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_EhmaxRate);
                 e.Handled = true;
             }
         }
@@ -742,11 +842,29 @@ namespace DFMGenerator_Ocean
             }
         }
 
+        private void presentationBox_Porosity_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_Porosity);
+                e.Handled = true;
+            }
+        }
+
         private void presentationBox_BiotCoefficient_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
             {
                 UpdatePropertyPresentationBox(Property.NullObject, presentationBox_BiotCoefficient);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_ThermalExpansionCoefficient_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_ThermalExpansionCoefficient);
                 e.Handled = true;
             }
         }
@@ -814,6 +932,15 @@ namespace DFMGenerator_Ocean
             }
         }
 
+        private void presentationBox_DepthAtDeformation_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_DepthAtDeformation);
+                e.Handled = true;
+            }
+        }
+
         private void numericUpDown_NoFractureSets_ValueChanged(object sender, EventArgs e)
         {
             // When the number of fracture sets is changed, adjust the flag to check microfractures against stress shadows of all macrofractures regardless of set accordingly
@@ -848,6 +975,66 @@ namespace DFMGenerator_Ocean
             args.ResetDefaults();
             updateUIFromArgs();
         }
+
+        /// <summary>
+        /// Open a separate dialog box to input data for a specific deformation episode
+        /// </summary>
+        /// <param name="deformationEpisodeIndex">Index of the deformation episode for the new dialog box</param>
+        private void OpenDeformationEpisodeUI(int deformationEpisodeIndex)
+        {
+            DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, this, deformationEpisodeIndex, context);
+            PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
+            updateUIFromArgs();
+        }
+
+        /// <summary>
+        /// Event handler to be triggered when a deformation episode is removed
+        /// </summary>
+        public event EventHandler<RemoveDeformationEpisodeEventArgs> DeformationEpisodeRemoved;
+
+        private void btnAddDeformationEpisode_Click(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            int deformationEpisodeIndex = args.AddDeformationEpisode();
+            OpenDeformationEpisodeUI(deformationEpisodeIndex);
+            listBox_DeformationEpisodes.SelectedIndex = deformationEpisodeIndex;
+        }
+
+        private void btnEditDeformationEpisode_Click(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
+            if (deformationEpisodeIndex < 0)
+                return;
+            OpenDeformationEpisodeUI(deformationEpisodeIndex);
+        }
+
+        private void btnRemoveDeformationEpisode_Click(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            int deformationEpisodeIndex = listBox_DeformationEpisodes.SelectedIndex;
+            if (deformationEpisodeIndex < 0)
+                return;
+            // Raise an event to close any dialog boxes related to the removed episode
+            if (DeformationEpisodeRemoved != null)
+                DeformationEpisodeRemoved(this, new RemoveDeformationEpisodeEventArgs(deformationEpisodeIndex));
+            args.RemoveDeformationEpisode(deformationEpisodeIndex);
+            //listBox_DeformationEpisodes.SelectedIndex = -1;
+            updateUIFromArgs();
+        }
         #endregion
+    }
+    /// <summary>
+    /// Event arguments class for passing on event information when a deformation episode is removed from the DFM Generator UI
+    /// This is necessary to close any open dialog boxes related to that episode
+    /// </summary>
+    public class RemoveDeformationEpisodeEventArgs : EventArgs
+    {
+        public int RemovedEpisodeIndex;
+
+        public RemoveDeformationEpisodeEventArgs(int episodeIndex)
+        {
+            RemovedEpisodeIndex = episodeIndex;
+        }
     }
 }

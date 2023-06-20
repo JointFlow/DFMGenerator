@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<InstalledPlugins xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Plugin>
+    <Name>DFM Generator</Name>
+    <Description>Dynamic Fracture Model Generator: Petrel version</Description>
+    <Contact>mwelch@dtu.dk</Contact>
+    <PluginTypeName>DFMGenerator_Ocean.DFMGeneratorPlugin, DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
+    <PluginUri>https://offshore.dtu.dk/english</PluginUri>
+    <PluginId>://DFMGenerator_Ocean.DFMGeneratorPlugin/2.2.1.0</PluginId>
+    <Trust PublicKeyToken="">Default</Trust>
+    <ReleaseDate>2023-06-20</ReleaseDate>
+    <Author>Michael Welch and Mikael Lüthje</Author>
+    <AppVersion>2022.0</AppVersion>
+    <Modules>
+      <Module TypeName="DFMGenerator_Ocean.DFMGeneratorModule, DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null" />
+    </Modules>
+    <Assemblies>
+      <Assembly Name="DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null" />
+    </Assemblies>
+    <assemblyBinding />
+    <StartMode>Startup</StartMode>
+    <StartupAction>None</StartupAction>
+  </Plugin>
+</InstalledPlugins>

@@ -58,6 +58,22 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public PointIJK SEMidPoint { get; private set; }
         /// <summary>
+        /// Minimum I coordinate of all cornerpoints
+        /// </summary>
+        private double MinI { get; set; }
+        /// <summary>
+        /// Maximum I coordinate of all cornerpoints
+        /// </summary>
+        private double MaxI { get; set; }
+        /// <summary>
+        /// Minimum J coordinate of all cornerpoints
+        /// </summary>
+        private double MinJ { get; set; }
+        /// <summary>
+        /// Maximum J coordinate of all cornerpoints
+        /// </summary>
+        private double MaxJ { get; set; }
+        /// <summary>
         /// Set the values of the local copies centrepoints of corner pillars in fracture set (IJK) coordinates
         /// </summary>
         public void setCornerPoints()
@@ -69,6 +85,19 @@ namespace DFMGenerator_SharedCode
                 NWMidPoint = convertXYZtoIJK(gbc.getNWMidPoint());
                 NEMidPoint = convertXYZtoIJK(gbc.getNEMidPoint());
                 SEMidPoint = convertXYZtoIJK(gbc.getSEMidPoint());
+
+                // Find the minimum and maximum I values
+                MinI = SWMidPoint.I;
+                MaxI = SWMidPoint.I;
+                MinJ = SWMidPoint.J;
+                MaxJ = SWMidPoint.J;
+                foreach (PointIJK cornerPoint in new PointIJK[3] { NWMidPoint, NEMidPoint, SEMidPoint })
+                {
+                    if (MinI > cornerPoint.I) MinI = cornerPoint.I;
+                    if (MaxI < cornerPoint.I) MaxI = cornerPoint.I;
+                    if (MinJ > cornerPoint.J) MinJ = cornerPoint.J;
+                    if (MaxJ < cornerPoint.J) MaxJ = cornerPoint.J;
+                }
             }
         }
 
@@ -123,8 +152,6 @@ namespace DFMGenerator_SharedCode
         /// StressDistribution object describing the spatial distribution of the fractures: EvenlyDistributedStress gives a random fracture distribution, StressShadow and DuctileBoundary gives a regular spacing
         /// </summary>
         public StressDistribution FractureDistribution { get; set; }
-
-
         /// <summary>
         /// Calculate the I coordinate (relative to fracture strike) of a point in grid (XYZ) coordinates
         /// </summary>
@@ -191,7 +218,7 @@ namespace DFMGenerator_SharedCode
         /// Get the true vertical thickness of the layer at a specified point in grid (XYZ) coordinates
         /// </summary>
         /// <param name="point_in">Input point in XYZ coordinates</param>
-        /// <returns>point_t of the gridblock (m)</returns>
+        /// <returns>True vertical thickness of the gridblock (m)</returns>
         public double getTVTAtPoint(PointXYZ point_in)
         {
             // Return point_t of gridblock at point x,y
@@ -282,6 +309,128 @@ namespace DFMGenerator_SharedCode
             gbc.getBoundaryCornerpoints(boundary, out UpperLeftCorner, out UpperRightCorner, out LowerLeftCorner, out LowerRightCorner);
         }
         /// <summary>
+        /// Get the I coordinate of the intersection between a fracture with a specified J coordinate, and a specified boundary segment
+        /// Note that the fracture is considered infinite in either direction but it must intersect the boundary segment between the gridblock cornerpoints, otherwise the function will return NaN
+        /// </summary>
+        /// <param name="intersection_j">J coordinate of the fracture</param>
+        /// <param name="boundary">Boundary with which to calculate the intersection</param>
+        /// <param name="propDir">Direction of propagation, used to determine whether whether the fracture crosses out from or into the gridblock</param>
+        /// <param name="crossesOutward">Output flag to determine whether the fracture crosses out from the gridblock (true) or into the gridblock (false)</param>
+        /// <returns>The I coordinate of the intersection point; NaN if the fracture does not intersect the specified boundary segment when extended to infinity</returns>
+        private double getBoundaryIntersection(double intersection_j, GridDirection boundary, PropagationDirection propDir, out bool crossesOutward)
+        {
+            // By default set crossesOutward flag to false
+            crossesOutward = false;
+
+            // Get the coordinates for the fracture and boundary cornerpoints relative to the direction of the fracture (i)
+            double leftCorner_i, leftCorner_j, rightCorner_i, rightCorner_j;
+            getBoundaryEndPoints(boundary, out leftCorner_i, out leftCorner_j, out rightCorner_i, out rightCorner_j);
+
+            // Determine whether the fracture intersects the boundary between the cornerpoints; if so, determine which direction it is crossing, if not return NaN
+            // Also return NaN if the boundary is parallel to the fracture (i.e. leftCorner_j == rightCorner_j)
+            if (leftCorner_j == rightCorner_j) // If leftCorner_j == rightCorner_j the line is parallel to the line
+                return double.NaN;
+            else if ((leftCorner_j <= intersection_j) && (intersection_j <= rightCorner_j)) // If leftCorner_j < rightCorner_j the fracture is crossing outwards
+                crossesOutward = true;
+            else if ((leftCorner_j >= intersection_j) && (intersection_j >= rightCorner_j)) // If leftCorner_j > rightCorner_j the fracture is crossing inwards
+                crossesOutward = false;
+            else // If intersection_j does not lie between leftCorner_j and rightCorner_j the fracture does not intersect the boundary segment between the cornerpoints 
+                return double.NaN;
+            // If the fracture is propagating in the IMinus direction, reverse the flag for whether the fracture crosses out from or into the gridblock
+            if (propDir == PropagationDirection.IMinus)
+                crossesOutward = !crossesOutward;
+
+            // Calculate the position of the intersection and return it
+            // This is valid whether rightCorner_j > leftCorner_j or leftCorner_j > rightCorner_j
+            double relativeIntersectionPoint = (intersection_j - leftCorner_j) / (rightCorner_j - leftCorner_j);
+            return (leftCorner_i * (1 - relativeIntersectionPoint)) + (rightCorner_i * relativeIntersectionPoint);
+        }
+        /// <summary>
+        /// Create a random fracture nucleation position within the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public PointIJK getRandomNucleationPoint()
+        {
+            return getRandomNucleationPoint(-1);
+        }
+        /// <summary>
+        /// Create a random fracture nucleation position within the gridblock - the depth can either be random or specified relative to the gridblock
+        /// </summary>
+        /// <param name="FractureNucleationPosition_w">Specified depth of nucleation relative to the gridblock: set to 0 for the base of the layer, 0.5 for the centre of the layer, 1 for the top of the layer, and -1 for a random depth within the layer</param>
+        /// <returns>A random point within the layer in IJK coordinates</returns>
+        public PointIJK getRandomNucleationPoint(double FractureNucleationPosition_w)
+        {
+            // Get reference to the random number generator
+            Random randGen = gbc.RandGen;
+
+            // Get range of allowable I and J values
+            double IRange = MaxI - MinI;
+            double JRange = MaxJ - MinJ;
+
+            // Set the default location to the SW cornerpoint
+            double nucleationPointI = SWMidPoint.I;
+            double nucleationPointJ = SWMidPoint.J;
+
+            // Find a random pair of I and J coordinates that lie within the gridblock
+            // If this cannot be done within 1000 attempts, it will revert to the default - this way the function will always return a point
+            for (int MaxTries = 0; MaxTries < 1000; MaxTries++)
+            {
+                // Select random I and J coordinates within the range of allowable values, and see if they lie within the gridblock
+                double pointI = MinI + (IRange * randGen.NextDouble());
+                double pointJ = MinJ + (JRange * randGen.NextDouble());
+
+                // Check whether the point lies within the gridblock, and whether an infinite extension of the fracture will cross at least one gridblock boundary outwards in each direction
+                int IPlusBoundaryIntersections = 0;
+                int IMinusBoundaryIntersections = 0;
+                foreach (GridDirection boundary in new GridDirection[4] { GridDirection.N, GridDirection.E, GridDirection.S, GridDirection.W })
+                {
+                    bool crossesOutwards;
+                    double boundaryIntersection = getBoundaryIntersection(pointJ, boundary, PropagationDirection.IPlus, out crossesOutwards);
+                    if (boundaryIntersection >= pointI)
+                    {
+                        if (crossesOutwards)
+                            IPlusBoundaryIntersections++;
+                        else
+                            IPlusBoundaryIntersections--;
+                    }
+                    if (boundaryIntersection < pointI)
+                    {
+                        // For boundary intersections in the IMinus direction, we must reverse the outwards direction
+                        if (!crossesOutwards)
+                            IMinusBoundaryIntersections++;
+                        else
+                            IMinusBoundaryIntersections--;
+                    }
+                }
+
+                if ((IPlusBoundaryIntersections == 1) && (IMinusBoundaryIntersections == 1))
+                {
+                    nucleationPointI = pointI;
+                    nucleationPointJ = pointJ;
+                    break;
+                }
+            }
+
+            // Create a PointIJK object at the specificied I and J coordinates with K=0
+            PointIJK nucleationPoint = new PointIJK(nucleationPointI, nucleationPointJ, 0);
+
+            // If the relative nucleation depth is 0.5, then K=0 and there is no need for further calculation
+            // Otherwise we will need to calculate the K coordinate
+            if (FractureNucleationPosition_w != 0.5)
+            {
+                // If the specified relative nucleation depth is negative or no relative nucleation depth is specified, generate a random value
+                if (!(FractureNucleationPosition_w >= 0))
+                    FractureNucleationPosition_w = randGen.NextDouble();
+                double TVT = getTVTAtPoint(nucleationPoint);
+                nucleationPoint.K = TVT * (FractureNucleationPosition_w - 0.5);
+            }
+
+            // Return the new point
+            return nucleationPoint;
+        }
+
+        // Incremental strain acting on the fractures 
+        /// <summary>
         /// Incremental azimuthal strain acting on the fractures (i.e. component of strain rate tensor on the fracture plane parallel to fracture azimuth)
         /// </summary>
         private double eaad;
@@ -346,11 +495,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Recalculate the azimuthal and horizontal shear strains acting on the fractures, for a specified strain or strain rate tensor
         /// </summary>
-        /// <param name="HorizontalStrainTensor">Current strain or strain rate tensor</param>
-        public void RecalculateHorizontalStrainRatios(Tensor2S HorizontalStrainTensor)
+        /// <param name="AppliedStrainTensor">Current strain or strain rate tensor</param>
+        public void RecalculateHorizontalStrainRatios(Tensor2S AppliedStrainTensor)
         {
-            VectorXYZ horizontalStrainOnFracture = HorizontalStrainTensor * azimuthVector;
-            VectorXYZ horizontalStrainAlongStrike = HorizontalStrainTensor * strikeVector;
+            VectorXYZ horizontalStrainOnFracture = AppliedStrainTensor * azimuthVector;
+            VectorXYZ horizontalStrainAlongStrike = AppliedStrainTensor * strikeVector;
             eaad = azimuthVector & horizontalStrainOnFracture;
             easd = strikeVector & horizontalStrainOnFracture;
             essd = strikeVector & horizontalStrainAlongStrike;
@@ -367,6 +516,11 @@ namespace DFMGenerator_SharedCode
             double ea_squared = eaa_squared + eas_squared;
             eaa2d_eh2d = (ea_squared > 0 ? eaa_squared / ea_squared : 1);
             eaaasd_eh2d = (ea_squared > 0 ? (eaad * easd) / ea_squared : 0);
+
+            // Recalculate the strain ratios for non-biazimuthal dipsets individually
+            foreach (FractureDipSet fds in FractureDipSets)
+                if (!fds.BiazimuthalConjugate)
+                    fds.RecalculateStrainRatios(AppliedStrainTensor);
         }
 
         // Fracture data
@@ -3912,7 +4066,7 @@ namespace DFMGenerator_SharedCode
                     deactivateFractureSet = true;
             }
 
-            bool OneDipSetDeactivated = deactivateFractureSet;
+            bool OneDipSetDeactivated = false;
             bool OneDipSetStillActive = false;
             // If the fracture deactivation flag is true, deactivate all the dipsets
             foreach (FractureDipSet fds in FractureDipSets)
@@ -3941,11 +4095,14 @@ namespace DFMGenerator_SharedCode
                     OneDipSetDeactivated = true;
                 }
 
+                // Check if the fracture dipset is currently active
                 if ((fds.getEvolutionStage() == FractureEvolutionStage.Growing) || (fds.getEvolutionStage() == FractureEvolutionStage.ResidualActivity)) 
                     OneDipSetStillActive = true;
             }
+            if (OneDipSetDeactivated && !OneDipSetStillActive)
+                deactivateFractureSet = true;
 
-            return OneDipSetDeactivated && !OneDipSetStillActive;
+            return deactivateFractureSet;
         }
 
         // DFN fracture interaction functions: used to check if fractures interact with other fractures during DFN generation
@@ -4866,107 +5023,227 @@ namespace DFMGenerator_SharedCode
             double propNode_J = propagatingSegment.PropNode.J;
             PropagationDirection propNode_dir = propagatingSegment.LocalPropDir;
 
-            // Loop through each boundary in turn and check if propagating segment intersects it
-            foreach (GridDirection boundary in Enum.GetValues(typeof(GridDirection)).Cast<GridDirection>())
+            // Create a list of outward boundary intersections along the line of the fracture, extended infinitely in each direction
+            List<double> outwardBoundaryIntersections = new List<double>();
+            List<GridDirection> outwardBoundaries = new List<GridDirection>();
+            foreach (GridDirection boundary in new GridDirection[4] { GridDirection.N, GridDirection.E, GridDirection.S, GridDirection.W })
             {
                 // Get the boundary segment endpoints
                 double boundaryleftI, boundaryleftJ, boundaryrightI, boundaryrightJ;
                 getBoundaryEndPoints(boundary, out boundaryleftI, out boundaryleftJ, out boundaryrightI, out boundaryrightJ);
 
-                // The intersection criteria are slightly different for fractures propagating in the IPlus and IMinus directions so we must code these separately
+                // Get the intersection point between the fracture and the boundary segment
+                bool crossesOutwards;
+                double intersectionI = getBoundaryIntersection(propNode_J, boundary, propNode_dir, out crossesOutwards);
+
+                // If there is an intersection point crossing outwards, add it to the list, then move on to the next boundary
+                if (!double.IsNaN(intersectionI) && crossesOutwards)
+                {
+                    outwardBoundaryIntersections.Add(intersectionI);
+                    outwardBoundaries.Add(boundary);
+                }
+            } // End loop through boundaries
+            int noBoundariesCrossed = outwardBoundaryIntersections.Count;
+
+            // If there are no boundary intersections in the extended line of the fracture, something has gone wrong
+            // In this case we set the propagation length to zero but do not deactivate the fracture
+            if (noBoundariesCrossed < 1)
+            {
+                propagationLength = 0;
+                //throw (new Exception(string.Format("Fracture in cell at {0},{1} azimuth {2}, propagating node at I={3},J={4} has no boundary intersections", gbc.SWtop.X, gbc.SWtop.Y, Azimuth, propNode_I, propNode_J)));
+            }
+            // If there is only one outward boundary intersection, we only need to check if the boundary lies behind the projected tip of the fracture
+            // This will record a boundary crossing even if the current fracture tip is already outside the gridblock - this is necessary for inverted gridblocks
+            else if (noBoundariesCrossed == 1)
+            {
+                // Get the intersection point and boundary intersected
+                double intersectionI = outwardBoundaryIntersections[0];
+                GridDirection boundary = outwardBoundaries[0];
+
+                // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
+                // This calculation is slightly different for fractures propagating in the IPlus and IMinus directions
                 if (propNode_dir == PropagationDirection.IPlus) // Propagating fracture is propagating in the IPlus direction
                 {
-                    // Check the boundary is not parallel to or behind the propagating segment
-                    if (boundaryleftJ < boundaryrightJ)
+                    // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I + propagationLength)
+                    // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
+                    if (intersectionI < propNode_I + propagationLength)
                     {
-                        // Get intersection point between boundary segment and the line of the fracture
-                        double relativeJ = (propNode_J - boundaryleftJ) / (boundaryrightJ - boundaryleftJ);
-                        double intersectionI = (boundaryleftI * (1 - relativeJ)) + (boundaryrightI * relativeJ);
+                        // Set the return value to true
+                        crossesBoundary = true;
 
-                        // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
-                        // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I + propagationLength)
-                        // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
-                        // Also we do not check if the current fracture tip lies within the boundary - this should always be the case, but not checking allows it always indentify instances where the tip lies on the boundary, allowing for rounding errors
-                        if (intersectionI < propNode_I + propagationLength)
+                        // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                        boundaryCrossed = boundary;
+                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                        // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                        if (!NoNeighbour || terminateIfNoNeighbour)
+                            propagationLength = intersectionI - propNode_I;
+
+                        // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                        // The exact status and flags will depend on the boundary type and input settings
+                        if (terminateIfIntersects)
                         {
-                            // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
-                            boundaryCrossed = boundary;
-                            bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
-
-                            // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
-                            if (!NoNeighbour || terminateIfNoNeighbour)
-                                propagationLength = intersectionI - propNode_I;
-
-                            // Set the propagating macrofracture segment status and flags, if we have specified to do so
-                            // The exact status and flags will depend on the boundary type and input settings
-                            if (terminateIfIntersects)
+                            if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
                             {
-                                if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                                propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
                             }
-
-                            // Set the return value to true
-                            crossesBoundary = true;
-                        } // End check if the boundary intersection point lies within the projection line of the fracture
-                    } // End check the boundary is not parallel to or behind the propagating segment
+                            else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                            }
+                            // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                        } // End set the propagating macrofracture segment status and flags
+                    } // End check if the boundary intersection point lies behind the projected fracture tip
                 } // End Propagating fracture is propagating in the IPlus direction
                 else // Propagating fracture is propagating in the IMinus direction
                 {
-                    // Check the boundary is not parallel to or behind the propagating segment
-                    if (boundaryleftJ > boundaryrightJ)
+                    // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I - propagationLength)
+                    // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
+                    if (intersectionI > propNode_I - propagationLength)
                     {
-                        // Get intersection point between boundary segment and the line of the fracture
-                        double relativeJ = (boundaryleftJ - propNode_J) / (boundaryleftJ - boundaryrightJ);
-                        double intersectionI = (boundaryleftI * (1 - relativeJ)) + (boundaryrightI * relativeJ);
+                        // Set the return value to true
+                        crossesBoundary = true;
 
-                        // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
+                        // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                        boundaryCrossed = boundary;
+                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                        // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                        if (!NoNeighbour || terminateIfNoNeighbour)
+                            propagationLength = propNode_I - intersectionI;
+
+                        // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                        // The exact status and flags will depend on the boundary type and input settings
+                        if (terminateIfIntersects)
+                        {
+                            if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                            }
+                            else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                            }
+                            // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                        } // End set the propagating macrofracture segment status and flags
+                    } // End check if the boundary intersection point lies behind the projected fracture tip
+                } // End Propagating fracture is propagating in the IMinus direction
+            } // End if there is only one outward boundary intersection
+            // If there is more than one outward boundary intersection, the cell must be concave
+            // In this case we need to check if the boundary lies in front of the current tip of the fracture as well as behind the projected tip of the fracture
+            // This will only record a boundary crossing if the current fracture tip is inside the gridblock and behind the boundary - this is necessary to prevent intersections with concave boundary segments being recorded
+            // However we must also check that there is at least one boundary ahead of the propagating fracture
+            // If there is not, we set the propagation length to zero but do not deactivate the fracture - this can occasionally happen where an inverted cell bounds a concave cell so a fracture nucleates on the wrong side of the boundary segment 
+            else
+            {
+                bool boundaryAhead = false;
+
+                // We will need to check each boundary intersection
+                for (int boundaryNo = 0; boundaryNo < noBoundariesCrossed; boundaryNo++)
+                {
+                    // Get the intersection point and boundary intersected
+                    double intersectionI = outwardBoundaryIntersections[boundaryNo];
+                    GridDirection boundary = outwardBoundaries[boundaryNo];
+
+                    // Check if the boundary intersection point lies within the projection line of the fracture (i.e. will the fracture cross the boundary within the propagation specified distance)
+                    // This calculation is slightly different for fractures propagating in the IPlus and IMinus directions
+                    if (propNode_dir == PropagationDirection.IPlus) // Propagating fracture is propagating in the IPlus direction
+                    {
+                        // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I + propagationLength)
+                        // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
+                        // An intersection will be recorded if the fracture tip lies on the intersecting segment, within rounding error
+                        if ((float)intersectionI >= (float)propNode_I)
+                        {
+                            boundaryAhead = true;
+
+                            if (intersectionI < propNode_I + propagationLength)
+                            {
+                                // Set the return value to true
+                                crossesBoundary = true;
+
+                                // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                                boundaryCrossed = boundary;
+                                bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                                // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                                if (!NoNeighbour || terminateIfNoNeighbour)
+                                    propagationLength = intersectionI - propNode_I;
+
+                                // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                                // The exact status and flags will depend on the boundary type and input settings
+                                if (terminateIfIntersects)
+                                {
+                                    if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                                } // End set the propagating macrofracture segment status and flags
+                            } // End check if the boundary intersection point lies behind the projected fracture tip
+                        } // End check if the boundary intersection point lies ahead of the current fracture tip
+                    } // End Propagating fracture is propagating in the IPlus direction
+                    else // Propagating fracture is propagating in the IMinus direction
+                    {
                         // NB we do not record an interaction if the tip of the projection line lies on the intersecting segment (i.e. intersectionI = propNode_I - propagationLength)
                         // This is so that there will be no intersection whenever the function returns a propagation length equal to the input length
-                        // Also we do not check if the current fracture tip lies within the boundary - this should always be the case, but not checking allows it always indentify instances where the tip lies on the boundary, allowing for rounding errors
-                        if (intersectionI > propNode_I - propagationLength)
+                        // An intersection will be recorded if the fracture tip lies on the intersecting segment
+                        if ((float)intersectionI <= (float)propNode_I)
                         {
-                            // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
-                            boundaryCrossed = boundary;
-                            bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+                            boundaryAhead = true;
 
-                            // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
-                            if (!NoNeighbour || terminateIfNoNeighbour)
-                                propagationLength = propNode_I - intersectionI;
-
-                            // Set the propagating macrofracture segment status and flags, if we have specified to do so
-                            // The exact status and flags will depend on the boundary type and input settings
-                            if (terminateIfIntersects)
+                            if (intersectionI > propNode_I - propagationLength)
                             {
-                                if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
-                                {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
-                                    propagatingSegment.PropNodeBoundary = boundaryCrossed;
-                                }
-                                // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
-                            }
+                                // Set the return value to true
+                                crossesBoundary = true;
 
-                            // Set the return value to true
-                            crossesBoundary = true;
-                        } // End check if the boundary intersection point lies within the projection line of the fracture
-                    } // End check the boundary is not parallel to or behind the propagating segment
-                } // End Propagating fracture is propagating in the IMinus direction
-            } // End loop through boundaries
+                                // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                                boundaryCrossed = boundary;
+                                bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
 
-            // We have not intersected any boundaries
+                                // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                                if (!NoNeighbour || terminateIfNoNeighbour)
+                                    propagationLength = propNode_I - intersectionI;
+
+                                // Set the propagating macrofracture segment status and flags, if we have specified to do so
+                                // The exact status and flags will depend on the boundary type and input settings
+                                if (terminateIfIntersects)
+                                {
+                                    if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                        propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                    }
+                                    // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
+                                }
+                            } // End set the propagating macrofracture segment status and flags
+                        } // End check if the boundary intersection point lies behind the projected fracture tip
+                    } // End check if the boundary intersection point lies ahead of the current fracture tip
+                } // End loop through each boundary intersection
+
+                // If there are no boundary intersections ahead of the fracture tip, we set the propagation length to zero but do not deactivate the fracture
+                if (!boundaryAhead)
+                {
+                    propagationLength = 0;
+                    //throw (new Exception(string.Format("Fracture in cell at {0},{1} azimuth {2}, propagating node at I={3},J={4} has no boundary intersections", gbc.SWtop.X, gbc.SWtop.Y, Azimuth, propNode_I, propNode_J)));
+                }
+            } // End if there is more than one outward boundary intersection
+
+            // Return true if the fracture will intersect a boundary, otherwise false
             return crossesBoundary;
         }
         /// <summary>
@@ -5246,6 +5523,133 @@ namespace DFMGenerator_SharedCode
             }
         }
 
+        // Functions to return default numbers of and labels for dipsets
+        /// <summary>
+        /// Get the default number of fracture dipsets that will be created for the given parameters
+        /// </summary>
+        /// <param name="Mode1Only">Flag to generate Mode 1 vertical fractures only</param>
+        /// <param name="Mode2Only">Flag to generate Mode 2 inclined fractures only</param>
+        /// <param name="BiazimuthalConjugate">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <returns>Default number of fracture dipsets</returns>
+        public static int DefaultDipSets(bool Mode1Only, bool Mode2Only, bool BiazimuthalConjugate, bool IncludeReverseFractures)
+        {
+            if (Mode1Only)
+                return 1;
+            else if (Mode2Only)
+                return 1;
+            else
+            {
+                if (BiazimuthalConjugate)
+                {
+                    if (IncludeReverseFractures)
+                        return 3;
+                    else
+                        return 2;
+                }
+                else
+                {
+                    if (IncludeReverseFractures)
+                        return 5;
+                    else
+                        return 3;
+                }
+            }
+        }
+        /// <summary>
+        /// Get a list of default labels for the fracture dipsets that will be created for the given parameters
+        /// </summary>
+        /// <param name="Mode1Only">Flag to generate Mode 1 vertical fractures only</param>
+        /// <param name="Mode2Only">Flag to generate Mode 2 inclined fractures only</param>
+        /// <param name="BiazimuthalConjugate">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <returns>List of strings representing default labels for each of the fracture dipsets, in order of index number</returns>
+        public static List<string> DefaultDipSetLabels(bool Mode1Only, bool Mode2Only, bool BiazimuthalConjugate, bool IncludeReverseFractures)
+        {
+            List<string> output = new List<string>();
+            if (Mode1Only)
+            {
+                output.Add("Vertical");
+            }
+            else if (Mode2Only)
+            {
+                output.Add("InclinedNormal");
+            }
+            else
+            {
+                output.Add("Vertical");
+                if (BiazimuthalConjugate)
+                {
+                    output.Add("InclinedSteep");
+                }
+                else
+                {
+                    output.Add("InclinedSteep_R");
+                    output.Add("InclinedSteep_L");
+                }
+                if (IncludeReverseFractures)
+                {
+                    if (BiazimuthalConjugate)
+                    {
+                        output.Add("InclinedShallow");
+                    }
+                    else
+                    {
+                        output.Add("InclinedShallow_R");
+                        output.Add("InclinedShallow_L");
+                    }
+                }
+
+            }
+            return output;
+        }
+        /// <summary>
+        /// Get a list of labels for the fracture dipsets in this fracture set
+        /// </summary>
+        /// <returns>List of strings representing labels for each of the fracture dipsets, in order of index number</returns>
+        public List<string> DipSetLabels()
+        {
+            List<string> output = new List<string>();
+            foreach (FractureDipSet fds in FractureDipSets)
+            {
+                if ((float)fds.Dip <= 0f)
+                {
+                    output.Add("Horizontal");
+                }
+                else if ((float)fds.Dip < (float)(Math.PI / 4))
+                {
+                    if (fds.BiazimuthalConjugate)
+                        output.Add("InclinedShallow");
+                    else
+                        output.Add("InclinedShallow_R");
+                }
+                else if ((float)fds.Dip < (float)(Math.PI / 2))
+                {
+                    if (fds.BiazimuthalConjugate)
+                        output.Add("InclinedSteep");
+                    else
+                        output.Add("InclinedSteep_R");
+                }
+                else if ((float)fds.Dip == (float)(Math.PI / 2))
+                {
+                    output.Add("Vertical");
+                }
+                else if ((float)fds.Dip <= (float)(Math.PI * 3 / 4))
+                {
+                    output.Add("InclinedSteep_L");
+                }
+                else if ((float)fds.Dip < (float)(Math.PI))
+                {
+                    output.Add("InclinedShallow_L");
+                }
+                else
+                {
+                    output.Add("Horizontal");
+                }
+            }
+            return output;
+        }
+
         // Constructors
         /// <summary>
         /// Default constructor: Create an empty fracture set
@@ -5287,27 +5691,64 @@ namespace DFMGenerator_SharedCode
             max_historic_a_MFP33 = 0;
         }
         /// <summary>
-        /// Constructor: Create fracture set with two bimodal conjugate dip sets: vertical Mode 1 and optimally oriented Mode 2
+        /// Constructor: Create fracture set with multiple dip sets in optimal orientations for dilatant, normal and (if required) reverse shear displacement  
         /// </summary>
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="Strike_in">Fracture strike (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool IncludeReverseFractures_in) : this(gbc_in)
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in) : this(gbc_in)
         {
             // Fracture strike
             Strike = Strike_in;
 
             // Create vertical Mode 1 dip set and add it to the list
             double opt_dip = Math.PI / 2;
-            FractureDipSet DipSet1 = new FractureDipSet(gbc, this, FractureMode.Mode1, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+            FractureDipSet DipSet1 = new FractureDipSet(gbc, this, FractureMode.Mode1, BiazimuthalConjugate_in, IncludeReverseFractures_in, opt_dip, B_in, c_in);
             FractureDipSets.Add(DipSet1);
 
-            // Create optimally oriented Mode 2 dip set and add it to the list
+            // If the set is a biazimuthal conjugate set, only one inclined dip set will be created, containing fractures dipping in both directions
+            // // Otherwise two inclined dip sets will be created dipping in opposite directions, each containing half the initial microfracture population
             opt_dip = ((Math.PI / 2) + Math.Atan(gbc.MechProps.MuFr)) / 2;
-            FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
-            FractureDipSets.Add(DipSet2);
+            if (BiazimuthalConjugate_in)
+            {
+                // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
+                FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+                FractureDipSets.Add(DipSet2);
+            }
+            else
+            {
+                // Create two optimally oriented Mode 2 dip sets and add them to the list
+                FractureDipSet DipSet2 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
+                FractureDipSets.Add(DipSet2);
+
+                FractureDipSet DipSet3 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, Math.PI - opt_dip, B_in / 2, c_in);
+                FractureDipSets.Add(DipSet3);
+            }
+
+            // If reverse fractures are allowed, create one or two additional low angle shear dip sets optimally oriented for reverse displacement
+            // NB If the friction coefficient is 0, optimally oriented reverse fractures will have the same orientation as optimally oriented normal fractures, so there is no need to create an extra set
+            if (IncludeReverseFractures_in && (gbc.MechProps.MuFr > 0))
+            {
+                opt_dip = ((Math.PI / 2) - Math.Atan(gbc.MechProps.MuFr)) / 2;
+                if (BiazimuthalConjugate_in)
+                {
+                    // Create one optimally oriented biazimuthal conjugate Mode 2 dip set and add it to the list
+                    FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, true, IncludeReverseFractures_in, opt_dip, B_in, c_in);
+                    FractureDipSets.Add(DipSet4);
+                }
+                else
+                {
+                    // Create two optimally oriented Mode 2 dip sets and add them to the list
+                    FractureDipSet DipSet4 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, opt_dip, B_in / 2, c_in);
+                    FractureDipSets.Add(DipSet4);
+
+                    FractureDipSet DipSet5 = new FractureDipSet(gbc, this, FractureMode.Mode2, false, IncludeReverseFractures_in, Math.PI - opt_dip, B_in / 2, c_in);
+                    FractureDipSets.Add(DipSet5);
+                }
+            }
 
             // Create the FractureDipSets_SortedByW list as a copy of the FractureDipSets list, and sort it by stress shadow width
             FractureDipSets_SortedByW = new List<FractureDipSet>(FractureDipSets);
@@ -5322,7 +5763,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in) : this(gbc_in)
         {
             // Fracture strike
@@ -5343,13 +5784,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="Strike_in">Fracture strike (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="Mode1_UniformAperture_in">Fixed aperture for Mode 1 fractures in the uniform aperture case (m)</param>
         /// <param name="Mode2_UniformAperture_in">Fixed aperture for Mode 2 fractures in the uniform aperture case (m)</param>
         /// <param name="Mode1_SizeDependentApertureMultiplier_in">Multiplier for Mode 1 fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
         /// <param name="Mode2_SizeDependentApertureMultiplier_in">Multiplier for Mode 2 fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool IncludeReverseFractures_in, double Mode1_UniformAperture_in, double Mode2_UniformAperture_in, double Mode1_SizeDependentApertureMultiplier_in, double Mode2_SizeDependentApertureMultiplier_in)
-            : this(gbc_in, Strike_in, B_in, c_in, IncludeReverseFractures_in)
+        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Mode1_UniformAperture_in, double Mode2_UniformAperture_in, double Mode1_SizeDependentApertureMultiplier_in, double Mode2_SizeDependentApertureMultiplier_in)
+            : this(gbc_in, Strike_in, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in)
         {
             // Set the fracture aperture control data for uniform and size-dependent aperture
             SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
@@ -5363,7 +5805,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
         /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
         public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)

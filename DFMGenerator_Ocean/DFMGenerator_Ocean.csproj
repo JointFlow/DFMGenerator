@@ -71,7 +71,7 @@
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Data.Persistence, Version=20.1.0.0, Culture=neutral, PublicKeyToken=14ef4a483ef6a64b, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Data.Persistence.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Data.Persistence.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.DomainObject.FrameworkModeling">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.DomainObject.FrameworkModeling.dll</HintPath>
@@ -87,6 +87,10 @@
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Modeling">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Modeling.dll</HintPath>
+    </Reference>
+    <Reference Include="Slb.Ocean.Petrel.ReservoirEngineering, Version=20.1.0.0, Culture=neutral, PublicKeyToken=14ef4a483ef6a64b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.ReservoirEngineering.dll</HintPath>
     </Reference>
     <Reference Include="Slb.Ocean.Petrel.Seismic">
       <HintPath>..\..\..\..\..\..\..\Program Files\Schlumberger\Petrel 2020\Public\Slb.Ocean.Petrel.Seismic.dll</HintPath>
@@ -108,11 +112,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DFMGeneratorDataSourceFactory.cs" />
+    <Compile Include="DeformationEpisodeUI.cs" />
+    <Compile Include="DeformationEpisodeUI.Designer.cs">
+      <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
+    </Compile>
     <Compile Include="LaunchDFMGenerator.cs" />
     <Compile Include="DFMGeneratorWorkstep.cs" />
-    <Compile Include="DFMGeneratorUI.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
+    <Compile Include="DFMGeneratorUI.cs" />
     <Compile Include="DFMGeneratorUI.designer.cs">
       <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </Compile>
@@ -147,6 +153,9 @@
     <EmbeddedResource Include="DFMGeneratorUI.resx">
       <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="DeformationEpisodeUI.resx">
+      <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -170,6 +179,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="Resources\DFMGenerator.ico" />
     <Content Include="Resources\HelpFiles\DFM_Generator_Petrel_UserGuide.htm" />
   </ItemGroup>
   <Import Project="..\DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems" Label="Shared" />

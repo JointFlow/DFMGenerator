@@ -164,7 +164,7 @@ AllowReverseFractures false
 MaxTimestepDuration -1
 % Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
 % Increase this to run calculation faster, with fewer but longer timesteps
-MaxTimestepMFP33Increase 0.002
+MaxTimestepMFP33Increase 0.005
 % Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)
 % If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
 % If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -178,8 +178,8 @@ CalculatePopulationDistribution true
 No_l_indexPoints 20
 % MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
 % Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
-MaxHMinLength 100
-MaxHMaxLength 100
+MaxHMinLength 20
+MaxHMaxLength 20
 % Calculation termination controls
 % The calculation is set to stop automatically when fractures stop growing
 % This can be defined in one of three ways:

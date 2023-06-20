@@ -410,7 +410,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if both points have identical X, Y and Z coordinates within rounding error, otherwise false</returns>
         public static bool comparePoints(PointXYZ Point1, PointXYZ Point2)
         {
-            if ((Point1 == null) || (Point2 == null))
+            if ((Point1 is null) || (Point2 is null))
                 return false;
             else if ((float)Point1.X != (float)Point2.X)
                 return false;
@@ -795,7 +795,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="angle">Angle to calculate sine of</param>
         /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple</returns>
-        private static double Sin_trim(double angle)
+        public static double Sin_trim(double angle)
         {
             double output = Math.Sin(angle);
             if (Math.Abs(output) < roundToZero)
@@ -808,7 +808,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="angle">Angle to calculate cosine of</param>
         /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple</returns>
-        private static double Cos_trim(double angle)
+        public static double Cos_trim(double angle)
         {
             double output = Math.Cos(angle);
             if (Math.Abs(output) < roundToZero)
@@ -1473,67 +1473,37 @@ namespace DFMGenerator_SharedCode
                 // This is especially important if the eigenvector is close to one of the X, Y and Z axes
                 // The optimal permutation is to calculate the indices in ascending order of the absolute values of the three diagonal components in the characteristic equation
 
-                // Calculate the absolute values of the three diagonal components in the characteristic equation
-                double xx_diagonal_abs = Math.Abs(components[Tensor2SComponents.XX] - eigenvalue);
-                double yy_diagonal_abs = Math.Abs(components[Tensor2SComponents.YY] - eigenvalue);
-                double zz_diagonal_abs = Math.Abs(components[Tensor2SComponents.ZZ] - eigenvalue);
-
-                // Put them in a list and sort them in ascending order
-                List<double> diagonals = new List<double>();
-                diagonals.Add(xx_diagonal_abs);
-                diagonals.Add(yy_diagonal_abs);
-                diagonals.Add(zz_diagonal_abs);
-                diagonals.Sort();
+                // Calculate the values of the three diagonal components in the characteristic equation
+                Dictionary<VectorComponents, double> diagonals = new Dictionary<VectorComponents, double>();
+                diagonals[VectorComponents.X] = components[Tensor2SComponents.XX] - eigenvalue;
+                diagonals[VectorComponents.Y] = components[Tensor2SComponents.YY] - eigenvalue;
+                diagonals[VectorComponents.Z] = components[Tensor2SComponents.ZZ] - eigenvalue;
 
                 // Create three indices i, j and k and assign them in ascending order of the absolute values of the three diagonal components in the characteristic equation
                 VectorComponents i, j, k;
-                if (xx_diagonal_abs == diagonals[0])
+                if ((Math.Abs(diagonals[VectorComponents.Z]) < Math.Abs(diagonals[VectorComponents.X])) && (Math.Abs(diagonals[VectorComponents.Z]) < Math.Abs(diagonals[VectorComponents.Y])))
                 {
                     i = VectorComponents.X;
-                    if (zz_diagonal_abs == diagonals[2])
-                    {
-                        j = VectorComponents.Y;
-                        k = VectorComponents.Z;
-                    }
-                    else
-                    {
-                        j = VectorComponents.Z;
-                        k = VectorComponents.Y;
-                    }
+                    j = VectorComponents.Y;
+                    k = VectorComponents.Z;
                 }
-                else if (yy_diagonal_abs == diagonals[0])
+                else if ((Math.Abs(diagonals[VectorComponents.Y]) < Math.Abs(diagonals[VectorComponents.X])) && (Math.Abs(diagonals[VectorComponents.Y]) < Math.Abs(diagonals[VectorComponents.Z])))
                 {
-                    i = VectorComponents.Y;
-                    if (zz_diagonal_abs == diagonals[2])
-                    {
-                        j = VectorComponents.X;
-                        k = VectorComponents.Z;
-                    }
-                    else
-                    {
-                        j = VectorComponents.Z;
-                        k = VectorComponents.X;
-                    }
+                    i = VectorComponents.Z;
+                    j = VectorComponents.X;
+                    k = VectorComponents.Y;
                 }
                 else
                 {
-                    i = VectorComponents.Z;
-                    if (yy_diagonal_abs == diagonals[2])
-                    {
-                        j = VectorComponents.X;
-                        k = VectorComponents.Y;
-                    }
-                    else
-                    {
-                        j = VectorComponents.Y;
-                        k = VectorComponents.X;
-                    }
+                    i = VectorComponents.Y;
+                    j = VectorComponents.Z;
+                    k = VectorComponents.X;
                 }
 
                 // Calculate the three components of the eigenvector
-                double ei = diagonals[1] - (Math.Pow(Component(j, k), 2) / diagonals[2]);
-                double ej = ((Component(i, k) * Component(j, k)) / diagonals[2]) - Component(i, j);
-                double ek = ((Component(i, j) * Component(j, k)) - (Component(i, k) * diagonals[1])) / diagonals[2];
+                double ei = (Component(i, j) * Component(j, k)) - (Component(i, k) * diagonals[j]);
+                double ej = (Component(i, k) * Component(i, j)) - (Component(j, k) * diagonals[i]);
+                double ek = (diagonals[i] * diagonals[j]) - Math.Pow(Component(i, j), 2);
 
                 // Combine them to form a vector
                 VectorXYZ eigenvector = new VectorXYZ(0, 0, 0);
@@ -1552,33 +1522,16 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Get the azimuth of the minimum horizontal value of the tensor
         /// </summary>
-        /// <returns>Azimuth of the minimum horizontal value of the tensor (radians, clockwise from N)</returns>
+        /// <returns>Azimuth of the minimum horizontal value of the tensor (radians, clockwise from N); NaN if the tensor is isotropic</returns>
         public double GetMinimumHorizontalAzimuth()
         {
             double numerator = 2 * components[Tensor2SComponents.XY];
-            double denominator = components[Tensor2SComponents.XX] - components[Tensor2SComponents.YY];
-            if (denominator < 0)
-            {
-                return (Math.PI - Math.Atan(numerator / denominator)) / 2;
-            }
-            else if (denominator > 0)
-            {
-                if (numerator > 0)
-                    return Math.PI - (Math.Atan(numerator / denominator) / 2);
-                else if (numerator < 0)
-                    return -(Math.Atan(numerator / denominator) / 2);
-                else
-                    return 0;
-            }
+            double denominator = components[Tensor2SComponents.YY] - components[Tensor2SComponents.XX];
+
+            if ((numerator == 0) && (denominator == 0))
+                return double.NaN;
             else
-            {
-                if (numerator > 0)
-                    return Math.PI / 4;
-                else if (numerator < 0)
-                    return (3 * Math.PI) / 4;
-                else
-                    return 0;
-            }
+                return (Math.PI + Math.Atan2(numerator, denominator)) / 2;
         }
         /// <summary>
         /// Get the minimum and maximum horizontal values of the tensor (if one of the eigenvectors is vertical, these will represent the other two eigenvalues)
@@ -1602,10 +1555,13 @@ namespace DFMGenerator_SharedCode
 
             // Get the minimum horizontal azimuth
             MinimumHorizontalAzimuth = GetMinimumHorizontalAzimuth();
+            // If the tensor is isotropic this will return NaN; in this case take the minimum azimuth as zero
+            if (double.IsNaN(MinimumHorizontalAzimuth))
+                MinimumHorizontalAzimuth = 0;
 
             // Calculate helper variables
-            double sin_double_azi = Math.Sin(2 * MinimumHorizontalAzimuth);
-            double cos_double_azi = Math.Cos(2 * MinimumHorizontalAzimuth);
+            double sin_double_azi = VectorXYZ.Sin_trim(2 * MinimumHorizontalAzimuth);
+            double cos_double_azi = VectorXYZ.Cos_trim(2 * MinimumHorizontalAzimuth);
             double xx_plus_yy_component = (components[Tensor2SComponents.XX] + components[Tensor2SComponents.YY]) / 2;
             double xx_minus_yy_component;
             if (Math.Abs(cos_double_azi) > Math.Abs(sin_double_azi))
@@ -1619,6 +1575,36 @@ namespace DFMGenerator_SharedCode
 
             // Return the list of values
             return horizontalValues;
+        }
+
+        // Functions to generate specific elastic tensors
+        /// <summary>
+        /// Create a tensor for the horizontal applied strain from minimum and maximum horizontal strain magnitudes, and azimuth of minimum horizontal strain; Z components will be zero
+        /// </summary>
+        /// <param name="Epsilon_hmin">Minimum horizontal strain (Pa, negative for extensional)</param>
+        /// <param name="Epsilon_hmax">Maximum horizontal strain (Pa, negative for extensional)</param>
+        /// <param name="Epsilon_hmin_azimuth">Azimuth of minimum horizontal strain (rad)<</param>
+        /// <returns>Tensor2D object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
+        public static Tensor2S HorizontalStrainTensor(double Epsilon_hmin, double Epsilon_hmax, double Epsilon_hmin_azimuth)
+        {
+            if (double.IsNaN(Epsilon_hmin_azimuth) || double.IsNaN(Epsilon_hmax) || double.IsNaN(Epsilon_hmin_azimuth))
+                return null;
+
+            // Calculate the horizontal components of the horizontal strain tensor; vertical components will be zero as there is no applied vertical strain
+            double sinazi = VectorXYZ.Sin_trim(Epsilon_hmin_azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Epsilon_hmin_azimuth);
+            double epsilon_dashed_xx = (Epsilon_hmin * Math.Pow(sinazi, 2)) + (Epsilon_hmax * Math.Pow(cosazi, 2));
+            double epsilon_dashed_yy = (Epsilon_hmin * Math.Pow(cosazi, 2)) + (Epsilon_hmax * Math.Pow(sinazi, 2));
+            double epsilon_dashed_xy = (Epsilon_hmin - Epsilon_hmax) * sinazi * cosazi;
+
+            // Trim to remove nonzero components caused by rounding error
+            double sum = Math.Abs(epsilon_dashed_xx) + Math.Abs(epsilon_dashed_yy) + Math.Abs(epsilon_dashed_xy);
+            if ((float)(epsilon_dashed_xx + sum) == (float)sum) epsilon_dashed_xx = 0;
+            if ((float)(epsilon_dashed_yy + sum) == (float)sum) epsilon_dashed_yy = 0;
+            if ((float)(epsilon_dashed_xy + sum) == (float)sum) epsilon_dashed_xy = 0;
+
+            // Create a new tensor horizontal strain tensor and return it
+            return new Tensor2S(epsilon_dashed_xx, epsilon_dashed_yy, 0, epsilon_dashed_xy, 0, 0);
         }
 
         // Constructors
@@ -2157,6 +2143,7 @@ namespace DFMGenerator_SharedCode
 
                 // Create a list of row components for the smaller submatrices, comprising all the rows in the current submatrix except the first
                 List<Tensor2SComponents> submatrixRows = new List<Tensor2SComponents>(RowComponents);
+                Tensor2SComponents toprow = submatrixRows[0];
                 submatrixRows.RemoveAt(0);
 
                 // We can now generate a series of smaller submatrices by removing each column in turn from the current submatrix
@@ -2171,7 +2158,8 @@ namespace DFMGenerator_SharedCode
                     submatrixCols.Remove(column);
 
                     // Calculate the increment to the overall determinant and add it to the current value
-                    determinant += polarity * components[Tensor2SComponents.XX][column] * SubmatrixDeterminant(submatrixRows, submatrixCols);
+                    double increment = polarity * components[toprow][column] * SubmatrixDeterminant(submatrixRows, submatrixCols);
+                    determinant += increment;
 
                     // The next smaller submatrix will have the opposite polarity to this one
                     polarity = -polarity;
