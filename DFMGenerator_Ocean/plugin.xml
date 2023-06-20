@@ -10,7 +10,7 @@
     <Trust PublicKeyToken="">Default</Trust>
     <ReleaseDate>2023-06-20</ReleaseDate>
     <Author>Michael Welch and Mikael Lüthje</Author>
-    <AppVersion>2020.0</AppVersion>
+    <AppVersion>2022.0</AppVersion>
     <Modules>
       <Module TypeName="DFMGenerator_Ocean.DFMGeneratorModule, DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null" />
     </Modules>

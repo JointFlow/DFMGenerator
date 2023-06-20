@@ -112,17 +112,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DFMGeneratorDataSourceFactory.cs" />
-    <Compile Include="DeformationEpisodeUI.cs">
-      <SubType>Form</SubType>
-    </Compile>
+    <Compile Include="DeformationEpisodeUI.cs" />
     <Compile Include="DeformationEpisodeUI.Designer.cs">
       <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
     </Compile>
     <Compile Include="LaunchDFMGenerator.cs" />
     <Compile Include="DFMGeneratorWorkstep.cs" />
-    <Compile Include="DFMGeneratorUI.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
+    <Compile Include="DFMGeneratorUI.cs" />
     <Compile Include="DFMGeneratorUI.designer.cs">
       <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </Compile>
