@@ -4,18 +4,18 @@
     <Name>DFM Generator</Name>
     <Description>Dynamic Fracture Model Generator: Petrel version</Description>
     <Contact>mwelch@dtu.dk</Contact>
-    <PluginTypeName>DFMGenerator_Ocean.DFMGeneratorPlugin, DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
+    <PluginTypeName>DFMGenerator_Ocean.DFMGeneratorPlugin, DFMGenerator_Ocean, Version=2.2.2.0, Culture=neutral, PublicKeyToken=null</PluginTypeName>
     <PluginUri>https://offshore.dtu.dk/english</PluginUri>
-    <PluginId>://DFMGenerator_Ocean.DFMGeneratorPlugin/2.2.1.0</PluginId>
+    <PluginId>://DFMGenerator_Ocean.DFMGeneratorPlugin/2.2.2.0</PluginId>
     <Trust PublicKeyToken="">Default</Trust>
-    <ReleaseDate>2023-07-03</ReleaseDate>
+    <ReleaseDate>2023-07-24</ReleaseDate>
     <Author>Michael Welch and Mikael Lüthje</Author>
     <AppVersion>2022.0</AppVersion>
     <Modules>
-      <Module TypeName="DFMGenerator_Ocean.DFMGeneratorModule, DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null" />
+      <Module TypeName="DFMGenerator_Ocean.DFMGeneratorModule, DFMGenerator_Ocean, Version=2.2.2.0, Culture=neutral, PublicKeyToken=null" />
     </Modules>
     <Assemblies>
-      <Assembly Name="DFMGenerator_Ocean, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null" />
+      <Assembly Name="DFMGenerator_Ocean, Version=2.2.2.0, Culture=neutral, PublicKeyToken=null" />
     </Assemblies>
     <assemblyBinding />
     <StartMode>Startup</StartMode>
