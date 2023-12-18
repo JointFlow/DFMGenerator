@@ -3023,7 +3023,7 @@ namespace DFMGenerator_Ocean
                                             }
 
                                             // Add the data for this sub episode to the deformation episode lists
-                                            local_EhRate_list.Add(local_AbsoluteStressRate);
+                                            local_EhRate_list.Add(local_EhRate);
                                             local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
                                             local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
                                             local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);

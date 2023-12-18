@@ -1611,7 +1611,7 @@ namespace DFMGenerator_Standalone
                                 neighbourYoungsMod = YoungsMod;
                             }
                             YoungsMod_array[RowNo, ColNo] = ((neighbourYoungsMod * VariableYoungsModSmoothingFactor) + local_YoungsMod) / (VariableYoungsModSmoothingFactor + 1);
-                            Console.WriteLine(string.Format("Cell {0},{1} ehmin rate {2} Youngs Mod {3}", RowNo, ColNo, EhminRate_array[0][RowNo, ColNo], YoungsMod_array[RowNo, ColNo]));
+                            //Console.WriteLine(string.Format("Cell {0},{1}: ehmin rate {2}, ehmax rate {3}, Youngs Mod {4}", RowNo, ColNo, EhminRate_array[0][RowNo, ColNo], EhmaxRate_array[0][RowNo, ColNo], YoungsMod_array[RowNo, ColNo]));
                         }
                         else
                         {

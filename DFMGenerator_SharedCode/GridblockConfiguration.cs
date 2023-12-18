@@ -2238,6 +2238,12 @@ namespace DFMGenerator_SharedCode
                 // Loads will only be defined in terms of stress is at a minimum the ZZ, XX, YY and XY components of the absolute stress rate tensor are defined
                 bool stressLoad = currentDeformationEpisode.StressLoadDefined;
 
+                // Usually the calculation will start from the stress and strain state at the end of the previous deformation episode, or the initial lithostatic load state if this is the first episode
+                // However if coupling with output from geomechanical modelling, it may be necessary to adjust the fluid pressure, stress and strain state to match the state in the geomechanical model output
+                // This is done by passing the  object from the current DeformationEpisodeLoadControl to the StressStrainState.SetStressStrainState function
+                if (currentDeformationEpisode.InitialStressStateDefined)
+                    StressStrain.SetStressState(currentDeformationEpisode.InitialStressState);
+
                 // Create local copies of the applied strain rate and compactional strain rate tensors
                 Tensor2S appliedStrainRate = currentDeformationEpisode.Applied_Epsilon_dashed;
                 Tensor2S compactionalStrainRate = new Tensor2S();
@@ -2260,7 +2266,7 @@ namespace DFMGenerator_SharedCode
                 {
                     // If the load is defined in terms of stress, we simply need to set the Terzaghi effective stress rate tensor in the StressStrain object
                     // Since the stress load is defined in terms the absolute stress, we will need to subtract the fluid pressure rate from the XX, YY and ZZ components
-                    Tensor2S appliedEffectiveStressRate = currentDeformationEpisode.Absolute_Stress_dashed - new Tensor2S(-fluidPressureRate, -fluidPressureRate, -fluidPressureRate, 0, 0, 0);
+                    Tensor2S appliedEffectiveStressRate = currentDeformationEpisode.Absolute_Stress_dashed - new Tensor2S(fluidPressureRate, fluidPressureRate, fluidPressureRate, 0, 0, 0);
                     StressStrain.Sigma_eff_dashed = appliedEffectiveStressRate;
 
                     // Recalculate the tensors for current elastic strain and rate of change of elastic strain
@@ -2319,16 +2325,19 @@ namespace DFMGenerator_SharedCode
                     StressStrain.Sigma_eff_dashed.Component(Tensor2SComponents.ZZ, verticalEffectiveStressRate_SubsidenceSupported + verticalEffectiveStressRate_StressArchSupported);
                 }
 
-                // Usually the calculation will start from the stress and strain state at the end of the previous deformation episode, or the initial lithostatic load state if this is the first episode
-                // However if coupling with output from geomechanical modelling, it may be necessary to adjust the stress and strain state to match the state in the geomechanical model output
-                // This is done by passing the  object from the current DeformationEpisodeLoadControl to the StressStrainState.SetStressStrainState function
-                if (currentDeformationEpisode.InitialStressStateDefined)
-                    StressStrain.SetStressState(currentDeformationEpisode.InitialStressState);
-
-                // We will also recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
-                foreach (Gridblock_FractureSet fs in FractureSets)
+                // Recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
+                // For the first deformation episode, use the applied strain rate, since the initial elastic (noncompactional) horizontal strain will be zero
+                // For subsequent deformation episodes, use the actual elastic (noncompactional) strain at the start of the episode
+                if (currentDeformationEpisodeIndex == 1)
                 {
-                    fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                        fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
+                }
+                else
+                {
+                    Tensor2S el_epsilon_noncomp = new Tensor2S(StressStrain.el_Epsilon_noncompactional);
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                        fs.RecalculateHorizontalStrainRatios(el_epsilon_noncomp);
                 }
 
                 // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays

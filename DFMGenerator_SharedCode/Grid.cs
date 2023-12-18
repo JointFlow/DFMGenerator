@@ -15,7 +15,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFMGenerator v2.2.1"; } }
+        public static string VersionNumber { get { return "DFMGenerator v2.2.2"; } }
 
         // Grid data
         /// <summary>
@@ -188,7 +188,7 @@ namespace DFMGenerator_SharedCode
             {
                 DFNThicknessCutoffActivated = true;
                 // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
-                string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the {0} gridblocks due to the layer thickness cutoff. To prevent this, reduce the cutoff value in the Control Parameters.", noGridblocksBelowThicknessCutoff);
+                string thicknessLimitMessage = string.Format("The explicit DFN will not be generated in {0} gridblocks due to the layer thickness cutoff. To prevent this, reduce the cutoff value in the Control Parameters.", noGridblocksBelowThicknessCutoff);
                 progressReporter.OutputMessage(thicknessLimitMessage);
             }
             else

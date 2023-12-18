@@ -1512,7 +1512,6 @@ namespace DFMGenerator_SharedCode
                                 Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
                                 Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
                             }
-
                             // Remove rounding errors
                             {
                                 double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
@@ -1577,6 +1576,12 @@ namespace DFMGenerator_SharedCode
                                 Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
                                 Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
                                 Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
+                            }
+                            // Set negative values to zero - these may occur in the case of stress tensor loads if the increase in frictional traction exceeds the increase in shear stress
+                            {
+                                if (Maa_eaa2d_eh2d < 0) Maa_eaa2d_eh2d = 0;
+                                if (Mas_eaaasd_eh2d < 0) Mas_eaaasd_eh2d = 0;
+                                if (Mss_eas2d_eh2d < 0) Mss_eas2d_eh2d = 0;
                             }
                             // Remove rounding errors
                             {
@@ -3033,6 +3038,9 @@ namespace DFMGenerator_SharedCode
             double tsK_s_MFP32_increment = 0;
             double tsK_a_MFP30_residual = 0;
 
+            // Create a flag for reverting to a previous FractureEvolutionStage - this is required to prevent infinite looping between the Growing and ResidualActive stages
+            bool revertFractureEvolutionStage = false;
+
             switch (CurrentFractureData.EvolutionStage)
             {
                 case FractureEvolutionStage.NotActivated:
@@ -3215,7 +3223,8 @@ namespace DFMGenerator_SharedCode
 
                         // Compare a_MFP30 for a residual active macrofracture population with a_MFP30 calculated for a growing fracture population
                         // If the residual active macrofracture population is greater, we will reset the fracture evolution stage to ResidualActivity and update cumulative fracture population data using equations for residual fracture sets
-                        if (tsK_a_MFP30_residual > tsK_a_MFP30_value)
+                        // (as long as we have not already reverted to the Growing stage within this timestep)
+                        if ((tsK_a_MFP30_residual > tsK_a_MFP30_value) && !revertFractureEvolutionStage)
                         {
                             // Set the fracture evolutionary stage to ResidualActivity
                             CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.ResidualActivity);
@@ -3237,6 +3246,8 @@ namespace DFMGenerator_SharedCode
                             double tsK_Duration = PreviousFractureData.getDuration(tsK);
                             // Mean macrofracture propagation rate (=alpha_MF * current driving stress to the power of b)
                             double MeanMFPropagationRate_K = PreviousFractureData.getMeanMFPropagationRate(tsK);
+                            // Maximum macrofracture propagation distance in timestep K, ignoring interaction
+                            double MaxMFLength_K = PreviousFractureData.getHalfLength(tsK);
                             // Clear zone volume
                             double theta_dashed_Kminus1 = PreviousFractureData.getCumulativeThetaDashed_AllFS_M(tsK - 1);
                             // Microfracture propagation rate coefficient (gamma ^ 1/beta) 
@@ -3252,8 +3263,9 @@ namespace DFMGenerator_SharedCode
                             double inst_FIJ_K = PreviousFractureData.getInstantaneousFIJ(tsK);
 
                             // If the instantaneous macrofracture deactivation probability is infinite, all macrofractures will be deactivated instantly
-                            // In this case we can reset the fracture evolution stage to Deactivated and go to the FractureEvolutionStage.Deactivated case
-                            if (double.IsInfinity(inst_F_K))
+                            // If gamma_InvBeta_K is not positive then the fracture is not propagating
+                            // In either case we can reset the fracture evolution stage to Deactivated and go to the FractureEvolutionStage.Deactivated case
+                            if (double.IsInfinity(inst_F_K) || !(gamma_InvBeta_K > 0))
                             {
                                 // Set the fracture evolutionary stage to Deactivated
                                 CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
@@ -3268,6 +3280,19 @@ namespace DFMGenerator_SharedCode
                             // In this case we must use an approximate formula that takes the weighted mean stress shadow width of all dip sets - this should give a good approximation if most fractures are in one dip set
                             bool useQuickFormula = (gbc.PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress);
                             double ts_MeanMFLength = fs.Calculate_MeanPropagationDistance(this, tsK, new List<double>() { 0 }, useQuickFormula)[0];
+                            // If the mean residual length is greater than the maximum propagation distance in this timestep (e.g. if the instantaneous probabilities of macrofracture deactivation have reduced due to changes in stress shadow widths) then
+                            // we will revert the fracture evolution stage to Growing and go to the FractureEvolutionStage.Growing
+                            if (ts_MeanMFLength > MaxMFLength_K)
+                            {
+                                // Set the fracture evolutionary stage to Deactivated
+                                CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Growing);
+
+                                // Set the flag for reverting to a previous FractureEvolutionStage to true
+                                revertFractureEvolutionStage = true;
+
+                                // Go to the FractureEvolutionStage.Deactivated case - there will be no change to the cumulative fracture population data
+                                goto case FractureEvolutionStage.Growing;
+                            }
 
                             // Calculate useful components
                             double ts_CumhGammaM = PreviousFractureData.getCum_hGamma_M(tsK);
@@ -3284,8 +3309,6 @@ namespace DFMGenerator_SharedCode
                                 break;
 
                             // Calculate a_MFP30 value for Timestep K
-                            // If the fracture is not propagating then both gamma_InvBeta_K and inst_F_K will be zero, giving a NaN when calculating the residual a_MFP30 value
-                            // In this case we will set tsK_a_MFP30_value to 0
                             tsK_a_MFP30_value = (inst_F_K > 0 ? ((Math.Abs(betac_factor) * gamma_InvBeta_K) / inst_F_K) * theta_dashed_Kminus1 * ts_CumhGammaM_betacminus1_factor * ts_StressShadowDecreaseFactor : 0);
 
                             // Calculate s_MFP30 increments for Timestep K
