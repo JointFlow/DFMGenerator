@@ -1,5 +1,5 @@
 ---
-title: 'DFM Generator v2.1: a new method for simulating the growth of natural fracture networks'
+title: 'DFM Generator v2.2: a new method for simulating the growth of natural fracture networks'
 tags:
   - geology
   - fracture mechanics
