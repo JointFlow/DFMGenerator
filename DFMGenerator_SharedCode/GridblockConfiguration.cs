@@ -2266,7 +2266,7 @@ namespace DFMGenerator_SharedCode
                 {
                     // If the load is defined in terms of stress, we simply need to set the Terzaghi effective stress rate tensor in the StressStrain object
                     // Since the stress load is defined in terms the absolute stress, we will need to subtract the fluid pressure rate from the XX, YY and ZZ components
-                    Tensor2S appliedEffectiveStressRate = currentDeformationEpisode.Absolute_Stress_dashed - new Tensor2S(-fluidPressureRate, -fluidPressureRate, -fluidPressureRate, 0, 0, 0);
+                    Tensor2S appliedEffectiveStressRate = currentDeformationEpisode.Absolute_Stress_dashed - new Tensor2S(fluidPressureRate, fluidPressureRate, fluidPressureRate, 0, 0, 0);
                     StressStrain.Sigma_eff_dashed = appliedEffectiveStressRate;
 
                     // Recalculate the tensors for current elastic strain and rate of change of elastic strain
