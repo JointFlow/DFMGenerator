@@ -112,13 +112,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DFMGeneratorDataSourceFactory.cs" />
-    <Compile Include="DeformationEpisodeUI.cs" />
+    <Compile Include="DeformationEpisodeUI.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="DeformationEpisodeUI.Designer.cs">
       <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
     </Compile>
     <Compile Include="LaunchDFMGenerator.cs" />
     <Compile Include="DFMGeneratorWorkstep.cs" />
-    <Compile Include="DFMGeneratorUI.cs" />
+    <Compile Include="DFMGeneratorUI.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="DFMGeneratorUI.designer.cs">
       <DependentUpon>DFMGeneratorUI.cs</DependentUpon>
     </Compile>
@@ -186,8 +190,8 @@
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>del "$(ProjectDir)plugin.xml"
-"%25Ocean2020Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe"
-"%25Ocean2020Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2020HOME_x64%25\petrel.exe" "$(TargetDir)"
+"%25Ocean2023Home%25\PluginPackager.exe" /g "$(TargetPath)" "$(ProjectDir)plugin.xml" "%25OCEAN2023HOME_x64%25\petrel.exe"
+"%25Ocean2023Home%25\PluginPackager.exe" /m "$(ProjectDir)plugin.xml" "%25OCEAN2023HOME_x64%25\petrel.exe" "$(TargetDir)"
 xcopy "$(ProjectDir)Resources\HelpFiles" /s /i /y "$(TargetDir)HelpFiles"
 </PostBuildEvent>
   </PropertyGroup>
