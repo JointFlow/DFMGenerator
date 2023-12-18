@@ -62,7 +62,7 @@ The code is provided with two interfaces:
 
  - A plug-in interface for the Petrel geomodelling package from Schlumberger, for running more complex models of real geological structures.
 
-Both source and compiled code is available to download, along with documentation and user manuals, at https://github.com/JointFlow/DFMGenerator. The current release is v2.1.1.
+Both source and compiled code is available to download, along with documentation and user manuals, at https://github.com/JointFlow/DFMGenerator. The current release is v2.2.2.
 
 # Acknowledgements
 
