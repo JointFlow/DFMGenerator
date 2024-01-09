@@ -164,7 +164,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_MeanOverlyingSedimentDensity, unitTextBox_MeanOverlyingSedimentDensity, PetrelProject.WellKnownTemplates.GeophysicalGroup.RockDensity, label_MeanOverlyingSedimentDensity_Units);
             UpdateTextBox(args.Argument_FluidDensity, unitTextBox_FluidDensity, PetrelProject.WellKnownTemplates.GeophysicalGroup.LiquidDensity, label_FluidDensity_Units);
             UpdateTextBox(args.Argument_InitialOverpressure, unitTextBox_InitialOverpressure, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Pressure, label_InitialOverpressure_Units);
-            UpdateTextBox(args.Argument_GeothermalGradient, unitTextBox_GeothermalGradient, PetrelProject.WellKnownTemplates.PetroleumGroup.ThermalGradient, label_InitialOverpressure_Units);
+            UpdateTextBox(args.Argument_GeothermalGradient, unitTextBox_GeothermalGradient, PetrelProject.WellKnownTemplates.PetroleumGroup.ThermalGradient, label_GeothermalGradient_units);
             UpdateTextBox(args.Argument_InitialStressRelaxation, unitTextBox_InitialStressRelaxation, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_AverageStressStrainData, checkBox_AverageStressStrainData);
 

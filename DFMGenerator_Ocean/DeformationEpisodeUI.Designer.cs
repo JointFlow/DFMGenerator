@@ -1,5 +1,4 @@
-﻿
-//#define PRE2021
+﻿//#define PRE2021
 
 namespace DFMGenerator_Ocean
 {
