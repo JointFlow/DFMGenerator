@@ -1425,16 +1425,30 @@ namespace DFMGenerator_SharedCode
 
             // Solve the cubic equation giving the eigenvalues in terms of the invariants (E^3-I1xE^2+I2xE-I3=0)
             // Using Cardano method
+            double z1, z2, z3;
             double alpha = I1 / 3;
-            double c = I2 - (2 * I1 * alpha) + (3 * Math.Pow(alpha, 2));
-            double d = -I3 + (I2 * alpha) - (I1 * Math.Pow(alpha, 2)) + Math.Pow(alpha, 3);
-            double gamma = Math.Sqrt(-(4 / 3) * c);
-            double theta1 = (Math.Acos(-(4 * d) / Math.Pow(gamma, 3))) / 3;
-            double theta2 = (Math.Acos(-(4 * d) / Math.Pow(gamma, 3)) + (2 * Math.PI)) / 3;
-            double theta3 = (Math.Acos(-(4 * d) / Math.Pow(gamma, 3)) - (2 * Math.PI)) / 3;
-            double z1 = gamma * Math.Cos(theta1);
-            double z2 = gamma * Math.Cos(theta2);
-            double z3 = gamma * Math.Cos(theta3);
+            double c = I2 - (2 * I1 * alpha) + (3 * alpha * alpha);
+            double d = -I3 + (I2 * alpha) - (I1 * alpha * alpha) + (alpha * alpha * alpha);
+            // If c=0 then the tensor is isotropic so all eigenvalues are equal 
+            if (c == 0)
+            {
+                z3 = z2 = z1 = Math.Sign(d) * Math.Pow(Math.Abs(d), 1 / 3);
+            }
+            else
+            {
+                double gamma = Math.Sqrt(-(4 / 3) * c);
+                double cos3theta = -(4 * d) / (gamma * gamma * gamma);
+                // If two of the eigenvalues are equal then 4c^3=-27d^2 and |cos3theta|=1
+                // Sometimes we get |cos3theta|>1 which has a complex solution
+                // Although general cubic equations can have complex roots, the eigenvalues of a symmetric tensor should always be real so |cos3theta| should always be <=1
+                // We will therefore assume that this is due to rounding errors and we will reduce |cos3theta| to 1
+                if (cos3theta < -1) cos3theta = -1;
+                if (cos3theta > 1) cos3theta = 1;
+                double theta1 = Math.Acos(cos3theta) / 3;
+                z1 = gamma * Math.Cos(theta1);
+                z2 = gamma * Math.Cos(theta1 + ((2 / 3) * Math.PI));
+                z3 = gamma * Math.Cos(theta1 - ((2 / 3) * Math.PI));
+            }
             eigenvalues.Add(z1 + alpha);
             eigenvalues.Add(z2 + alpha);
             eigenvalues.Add(z3 + alpha);

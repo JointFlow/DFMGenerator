@@ -1403,7 +1403,7 @@ namespace DFMGenerator_SharedCode
             bool sigmad_positive = false;
             if (normalStressMagnitude <= PreviousFractureData.MaxDrivingStressRoundingError)
                 sigmad_positive = true;
-            else if (shearStressMagnitude - (gbc.MechProps.MuFr * normalStressMagnitude) >= -PreviousFractureData.MaxDrivingStressRoundingError)
+            else if ((float)shearStressMagnitude - (float)(gbc.MechProps.MuFr * normalStressMagnitude) >= -PreviousFractureData.MaxDrivingStressRoundingError)
                 sigmad_positive = true;
             bool sigmad_changed = (sigmad_positive != previous_sigmad_positive);
 
@@ -3289,6 +3289,13 @@ namespace DFMGenerator_SharedCode
 
                                 // Set the flag for reverting to a previous FractureEvolutionStage to true
                                 revertFractureEvolutionStage = true;
+
+                                // Reset local variables to calculate summation
+                                tsK_a_MFP30_value = 0;
+                                tsK_s_MFP30_increment = 0;
+                                tsK_a_MFP32_value = 0;
+                                tsK_s_MFP32_increment = 0;
+                                tsK_a_MFP30_residual = 0;
 
                                 // Go to the FractureEvolutionStage.Deactivated case - there will be no change to the cumulative fracture population data
                                 goto case FractureEvolutionStage.Growing;
