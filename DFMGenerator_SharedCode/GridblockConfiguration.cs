@@ -2328,6 +2328,9 @@ namespace DFMGenerator_SharedCode
                 // Recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
                 // For the first deformation episode, use the applied strain rate, since the initial elastic (noncompactional) horizontal strain will be zero
                 // For subsequent deformation episodes, use the actual elastic (noncompactional) strain at the start of the episode
+                // Also we will create a flag to determine whether we need to recalculate the horizontal stress ratios in every timestep
+                // This is only required in subsequent timesteps if the incremental strain azimuth does not match the current strain azimuth
+                bool recalculateHorizontalStrainRatios = false;
                 if (currentDeformationEpisodeIndex == 1)
                 {
                     foreach (Gridblock_FractureSet fs in FractureSets)
@@ -2335,9 +2338,10 @@ namespace DFMGenerator_SharedCode
                 }
                 else
                 {
-                    Tensor2S el_epsilon_noncomp = new Tensor2S(StressStrain.el_Epsilon_noncompactional);
                     foreach (Gridblock_FractureSet fs in FractureSets)
-                        fs.RecalculateHorizontalStrainRatios(el_epsilon_noncomp);
+                        fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
+                    if (!((float)StressStrain.el_Epsilon_noncompactional.GetMinimumHorizontalAzimuth()).Equals((float)appliedStrainRate.GetMinimumHorizontalAzimuth()))
+                        recalculateHorizontalStrainRatios = true;
                 }
 
                 // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays
@@ -2551,6 +2555,13 @@ namespace DFMGenerator_SharedCode
                             default:
                                 break;
                         }
+                    }
+
+                    // If necessary, recalculate the horizontal strain ratios
+                    if (recalculateHorizontalStrainRatios)
+                    {
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
                     }
 
                     // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep

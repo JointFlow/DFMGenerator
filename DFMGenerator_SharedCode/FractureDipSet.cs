@@ -2633,81 +2633,90 @@ namespace DFMGenerator_SharedCode
 
             // Now we can calculate the optimal timestep duration for this fracture set
 
-            // If the fracture set has been deactivated, do not calculate an optimal duration
-            // Instead we return the default value infinity (no optimal duration calculated)
-            if (CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated)
-            {
-                // No calculation required
-            }
-            // If the initial driving stress is negative, the optimal timestep duration should be the time until it becomes positive
+            // First we will calculate the time taken for the driving stress to reach zero (from either a positive or negative value) based on the rate of change of driving stress
+            // This will act as an upper bound to the timestep length
+            // If the driving stress is less than zero it will represent the time until the fracture set becomes active
+            // If the driving stress is greater than zero it will represent the time until the fracture set stops propagating
+            // This can only be calculated if the initial driving stress U is not zero and the rate of change of driving stress V is in the opposite direction to U
             // In fact we compare the initial driving stress to the maximum rounding error, not zero, to determine if this is the case.
             // This is because calculating the time required for driving stress to reach zero, multiplying it by horizontal strain rate to increment horizontal strain, and using new horizontal strain to calculate driving stress does not always give a driving stress = 0 (as it should).
             // Sometimes due to rounding errors in the calculation, it generates a slightly negative driving stress. This can cause the calculation to get stuck in a loop, with no strain increments and no fracture growth, until the maximum number of timesteps is reached.
-            else if (U < -PreviousFractureData.MaxDrivingStressRoundingError)
+            if ((Math.Abs(U) > PreviousFractureData.MaxDrivingStressRoundingError) && (Math.Sign(U) != Math.Sign(V)) && ((float)Math.Abs(V) > 0f))
             {
-                // First we can calculate the time taken for the driving stress to reach zero based on the rate of change of driving stress
-                // Note that we must be dealing with Mode 2 shear fractures at this point, because if the fractures were dilatant then U must already be positive or zero
-                // Therefore this represents the time until Mode 2 shear displacement will occur   
-                // If the driving stress is static or decreasing then it will never reach zero, so we cannot calculate an optimal duration in this way
-                if (V > 0)
-                {
-                    // However calculating the time taken for the driving stress to reach zero for a Mode 2 fracture is more complicated than simply dividing the negative initial driving stress -U by the rate of change of driving stress V
-                    // As we have noted previously, the rate of change of driving stress may itself change through time, as the shear displacement vector and in situ stress change
-                    // We must therefore use a quadratic expression comprising the three orthogonal components of the stress acting on the fault: normal, shear in the direction of strike, and shear in the downdip direction
-                    // The rates of change of these components do not change through time
+                // Calculating the time taken for the driving stress to reach zero for a fracture with shear displacement is more complicated than simply dividing the negative initial driving stress -U by the rate of change of driving stress V
+                // As we have noted previously, the rate of change of driving stress may itself change through time, as the shear displacement vector and in situ stress change
+                // We must therefore use a quadratic expression comprising the three orthogonal components of the stress acting on the fault: normal, shear in the direction of strike, and shear in the downdip direction
+                // The rates of change of these components do not change through time
 
-                    // Calculate the multiplier for the normal stress component
-                    double mufr_squared = Math.Pow(gbc.MechProps.MuFr, 2);
+                // Calculate the multiplier for the normal stress component
+                double mufr_squared = Math.Pow(gbc.MechProps.MuFr, 2);
 
-                    // Calculate the three quadratic terms
-                    double a = Math.Pow(taustrike_var, 2) + Math.Pow(taudip_var, 2) - (mufr_squared * Math.Pow(sneff_var, 2));
-                    double b = 2 * ((taustrike_cst * taustrike_var) + (taudip_cst * taudip_var) - (mufr_squared * sneff_cst * sneff_var));
-                    double c = Math.Pow(taustrike_cst, 2) + Math.Pow(taudip_cst, 2) - (mufr_squared * Math.Pow(sneff_cst, 2));
-                    double rootterm = Math.Sqrt(Math.Pow(b, 2) - (4 * a * c));
+                // Calculate the three quadratic terms
+                double a_term = Math.Pow(taustrike_var, 2) + Math.Pow(taudip_var, 2) - (mufr_squared * Math.Pow(sneff_var, 2));
+                double b_term = 2 * ((taustrike_cst * taustrike_var) + (taudip_cst * taudip_var) - (mufr_squared * sneff_cst * sneff_var));
+                double c_term = Math.Pow(taustrike_cst, 2) + Math.Pow(taudip_cst, 2) - (mufr_squared * Math.Pow(sneff_cst, 2));
+                double rootterm = Math.Sqrt(Math.Pow(b_term, 2) - (4 * a_term * c_term));
 
-                    // Take the lowest positive root as the optimal timestep duration
-                    // If U is negative and V is positive (i.e. the initial driving stress is negative but increasing) then at least one root should be positive
-                    // However in case neither are, or the quadratic does not have real roots (i.e. rootterm is NaN) then we can approximate the optimal timestep duration by dividing the negative initial driving stress -U by the rate of change of driving stress V
-                    double negativeroot = (-b - rootterm) / (2 * a);
-                    double positiveroot = (-b + rootterm) / (2 * a);
-                    if ((negativeroot > PreviousFractureData.MaxDrivingStressRoundingError) && (negativeroot < positiveroot))
-                        optdur = negativeroot;
-                    else if (positiveroot > PreviousFractureData.MaxDrivingStressRoundingError)
-                        optdur = positiveroot;
-                    else
-                        optdur = -U / V;
-                }
+                // Take the lowest positive root as the optimal timestep duration
+                // If U is negative and V is positive (i.e. the initial driving stress is negative but increasing) then at least one root should be positive
+                // However in case neither are, or the quadratic does not have real roots (i.e. rootterm is NaN) then we can approximate the optimal timestep duration by dividing the negative initial driving stress -U by the rate of change of driving stress V
+                double negativeroot = (-b_term - rootterm) / (2 * a_term);
+                double positiveroot = (-b_term + rootterm) / (2 * a_term);
+                if ((negativeroot > PreviousFractureData.MaxDrivingStressRoundingError) && (negativeroot < positiveroot))
+                    optdur = negativeroot;
+                else if (positiveroot > PreviousFractureData.MaxDrivingStressRoundingError)
+                    optdur = positiveroot;
+                else
+                    optdur = -U / V;
+            }
 
-                // The driving stress will also become positive if the normal stress on the fracture becomes tensile, so the fracture becomes dilatant 
-                // If this happens before the driving stress for Mode 2 shear displacement reaches zero, we will set this as the optimal timestep duration 
-                if (sneff_var < 0)
-                {
-                    double timeToSneffZero = -(sneff_cst / sneff_var);
-                    if (timeToSneffZero < optdur)
-                        optdur = timeToSneffZero;
-                }
+            // Next, we will calculate the time taken for the normal stress on the fracture to reach zero (from either a positive or negative value)
+            // This will act as an upper bound to the timestep length if it is less than the time taken for the driving stress to reach zero
+            // This represents the point at which the fracture will switch mode, from Mode 1 to Mode 2 or 3, or vice versa
+            // This can only happen if it is moving in the right direction, and is not already zero
+            if ((Math.Sign(sneff_cst) == -Math.Sign(sneff_var)) && ((float)sneff_cst != 0f) && ((float)sneff_var != 0f))
+            {
+                double timeToSneffZero = -(sneff_cst / sneff_var);
+                if (timeToSneffZero < optdur)
+                    optdur = timeToSneffZero;
+            }
 
-                // NB if both V < 0 and sneff_var > 0 then we cannot calculate an optimal duration and will return the default value infinity (no optimal duration calculated)
-
+            // Finally, we will calculate a maximum timestep duration based on the rate of fracture growth, and the time taken for the fracture set to grow by the specified limit dMFP33
+            // This is only required if the fracture set is growing
+            // Otherwise we will return the upper bound to the duration (the time until fracture driving stress or normal stress reaches zero), or if this is not calculated, the default value infinity (no optimal duration calculated)
+            // If the initial driving stress is negative, there will be no fracture growth in this timestep so we cannot calculate an optimal duration
+            if (U < -PreviousFractureData.MaxDrivingStressRoundingError)
+            {
                 // Update the maximum driving stress rounding error
                 PreviousFractureData.UpdateMaxDrivingStressRoundingError(U);
 
-                // Since the initial driving stress is less than zero, there will be no fracture growth in this timestep
-                // We will therefore now set U and V to zero
+                // Since the initial driving stress is negative or zero throughout this timestep, we can set U and V to zero
                 U = 0;
                 V = 0;
             }
-            // If we are not allowing reverse fractures and the new displacement vector gives a reverse sense of displacement, there will be no fracture growth in this timestep
-            // We can therefore set U and V to zero
-            // In this case we cannot calculate an optimal duration and will return the default value infinity (no optimal duration calculated)
+            // If the initial driving stress is zero and not increasing (i.e. U=0, V<=0), there will be no fracture growth in this timestep so we cannot calculate an optimal duration
+            else if ((U < PreviousFractureData.MaxDrivingStressRoundingError) && ((float)V <= 0f))
+            {
+                // If U is not quite zero due to rounding error, we must round it up to zero
+                // We can also set V to zero
+                U = 0;
+                V = 0;
+            }
+            // If we are not allowing reverse fractures and the new displacement vector gives a reverse sense of displacement, there will be no fracture growth in this timestep so we cannot calculate an optimal duration
             else if (!IncludeReverseFractures && DisplacementSense == FractureDisplacementSense.Reverse)
             {
+                // Since the driving stress for allowed dilatant, normal or strike-slip fractures is zero or negative, we can set U and V to zero
                 U = 0;
                 V = 0;
             }
-            // If the initial driving stress is positive or zero, the optimal timestep duration will be the estimated minimum time taken for the fracture set to grow by a specified amount
+            // If the fracture set has been deactivated, there will be no fracture growth in this timestep so we cannot calculate an optimal duration
+            // Driving stress may still be positive however
+            else if (CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated)
+            {
+                // No calculation required
+            }
+            // If the initial driving stress is positive or zero, there will be no fracture growth in this timestep so the optimal timestep duration will be the estimated minimum time taken for the fracture set to grow by the specified limit dMFP33
             // This can be calculated from the appropriate equations
-            // NB If the initial driving stress U is zero and the rate of change of driving stress V is negative, the fracture set will not grow, so we cannot calculate an optimal duration and will return the default value -1
             else
             {
                 // If U is less than zero due to rounding error, we must round it up to zero
@@ -2726,7 +2735,7 @@ namespace DFMGenerator_SharedCode
                 double alpha_uF_b_factor = Math.Pow(CapA, -1 / (b + 1)) * Math.Pow(sqrtpi_Kc_factor, -b / (b + 1));
                 // hb1_factor is (h/2)^(b/2), = h/2 if b=2
                 // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
-                double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2)); 
+                double hb1_factor = (bis2 ? half_h : Math.Pow(half_h, b / 2));
                 // initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
                 double initial_uF_factor = gbc.Initial_uF_factor;
 
@@ -2779,7 +2788,8 @@ namespace DFMGenerator_SharedCode
 
                 // If the ratio of active to maximum potential half macrofractures is close to zero, the specified d_MFP33 will never be reached
                 // If (V_factor + U_factor1) <= 0 then driving stress is decreasing and will never be sufficient to reach the specified d_MFP33
-                // In these cases we cannot calculate an optimal duration, so will return the default value infinity (no optimal duration calculated)
+                // In these cases we cannot calculate an optimal duration
+                // Otherwise we will set the optimal duration as the time taken to reach the specified d_MFP33
                 if (((float)ts_ahalfMF_uF_ratio > 0f) && ((float)(V_factor + U_factor1) > 0f))
                 {
                     double UV_factor = alpha_uF_b_factor * Math.Pow(V_factor + U_factor2, 1 / (b + 1));
@@ -2796,20 +2806,6 @@ namespace DFMGenerator_SharedCode
                         optdur = d_MFP33_CumhGammaM_betac1_factor2 / (U_factor1 / beta);
                         V = 0;
                     }
-                }
-                else
-                {
-                    //CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
-                }
-
-                // Finally, if the normal stress on the fracture will reach zero (from either a positive or negative value) before the calculated optimal duration, we will set this as the optimal timestep duration
-                // This can only happen if it is moving in the right direction
-                // NB we will also set this to be the optimal timestep duration if we have not yet calculated an optimal duration (i.e. if optdur = -1)
-                if ((Math.Sign(sneff_cst) == -Math.Sign(sneff_var)) && (sneff_var != 0))
-                {
-                    double timeToSneffZero = -(sneff_cst / sneff_var);
-                    if (timeToSneffZero < optdur)
-                        optdur = timeToSneffZero;
                 }
             }
 

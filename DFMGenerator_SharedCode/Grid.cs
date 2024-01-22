@@ -15,7 +15,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFMGenerator v2.2.2"; } }
+        public static string VersionNumber { get { return "DFMGenerator v2.2.3"; } }
 
         // Grid data
         /// <summary>
@@ -131,7 +131,7 @@ namespace DFMGenerator_SharedCode
             {
                 HitTimestepLimit = true;
                 // Give a message saying in how many gridblocks the timestep limit was exceeded
-                string timestepLimitMessage = string.Format("Full fracture saturation was not achieved in {0} gridblocks before reaching the timestep limit.", HitTimestepLimitCounter);
+                string timestepLimitMessage = string.Format("Timestep limit was reached in {0} out of {1} gridblocks.", HitTimestepLimitCounter, NoGridblocksCalculated);
                 progressReporter.OutputMessage(timestepLimitMessage);
             }
             else
