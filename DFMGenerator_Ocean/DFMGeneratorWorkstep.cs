@@ -67,6 +67,7 @@ namespace DFMGenerator_Ocean
             {
                 //return "32231407-0f99-4178-a00b-8de946429384";
                 // Change workstep UniqueID to a namespace-based ID
+                // Note that changing this would break any workflows in any projects that contained DFM Generator modules
                 return "JointFlow.DFMGenerator_Code.DFMGenerator_Ocean.DFMGenerator";
             }
         }
@@ -105,6 +106,7 @@ namespace DFMGenerator_Ocean
                     if (PetrelGrid == null)
                     {
                         PetrelLogger.WarnBox("Please provide valid grid object");
+                        arguments.RunAborted = true;
                         return;
                     }
 
@@ -113,6 +115,7 @@ namespace DFMGenerator_Ocean
                     if (psFactory == null)
                     {
                         PetrelLogger.InfoOutputWindow("The object does not have any parent or not known by Ocean.");
+                        arguments.RunAborted = true;
                         return;
                     }
                     IParentSource parentSource = psFactory.GetParentSource(PetrelGrid);
@@ -123,6 +126,7 @@ namespace DFMGenerator_Ocean
                     if (nFactory == null)
                     {
                         PetrelLogger.InfoOutputWindow("Cannot find name info factory for parent");
+                        arguments.RunAborted = true;
                         return;
                     }
 
@@ -1185,6 +1189,9 @@ namespace DFMGenerator_Ocean
                     double MinimumLayerThickness = 0;
                     if (!double.IsNaN(arguments.Argument_MinimumLayerThickness))
                         MinimumLayerThickness = arguments.Argument_MinimumLayerThickness;
+                    // Maximum number of new fractures that can be generated per gridblock per timestep: set automatically to 100,000
+                    // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
+                    int MaximumNewFracturesPerTimestep = 100000;
                     // Flag to create triangular instead of quadrilateral macrofracture segments; will increase the total number of segments but generation algorithm may run faster
                     // If set to true, microfractures will comprise a series of coplanar triangles with vertices at the centre, rather than a single polygon
                     bool CreateTriangularFractureSegments = arguments.Argument_CreateTriangularFractureSegments;
@@ -3405,11 +3412,11 @@ namespace DFMGenerator_Ocean
                         } // End loop through all columns in the Fracture Grid
 
                         // Set the DFN generation data
-                        DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
+                        DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
 
 #if DEBUG_FRACS
                         PetrelLogger.InfoOutputWindow("");
-                        PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, DFNFileType.{12}, {13}, {14}, {15}, {16}, TimeUnits.{17});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
+                        PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, DFNFileType.{13}, {14}, {15}, {16}, {18}, TimeUnits.{18});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
 #endif
 
                         // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
@@ -5228,6 +5235,9 @@ namespace DFMGenerator_Ocean
             [Archived(IsOptional = true)]
             private int argument_NoMicrofractureCornerpoints = 8;
 #else
+            // Flag to indicate whether the Executor function aborted before successfully completing
+            public bool RunAborted = false;
+
             // Main settings
             private string argument_ModelName = "New DFM";
             private Droid argument_Grid;

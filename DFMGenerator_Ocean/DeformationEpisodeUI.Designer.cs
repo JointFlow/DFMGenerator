@@ -1014,6 +1014,7 @@ namespace DFMGenerator_Ocean
             this.Controls.Add(this.btn_DE_Cancel);
             this.Controls.Add(this.btn_DE_OK);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MinimumSize = new System.Drawing.Size(786, 370);
             this.Name = "DeformationEpisodeUI";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.DeformationEpisodeUI_FormClosed);
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).EndInit();
@@ -1026,7 +1027,7 @@ namespace DFMGenerator_Ocean
 
         }
 
-        #endregion
+#endregion
         private System.Windows.Forms.Button btn_DE_Cancel;
         private System.Windows.Forms.Button btn_DE_OK;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipManager toolTipManager_DeformationEpisode;

@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 using Slb.Ocean.Petrel.Workflow;
 using Slb.Ocean.Core;
@@ -48,6 +49,8 @@ namespace DFMGenerator_Ocean
             this.btnCancel.Image = PetrelImages.Cancel;
             this.btnApply.Image = PetrelImages.Apply;
 
+            deformationEpisodeUIs = new List<DeformationEpisodeUI>();
+
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
 
@@ -58,6 +61,49 @@ namespace DFMGenerator_Ocean
             if (sender != this)
                 updateUIFromArgs();
         }
+
+        /// <summary>
+        /// List of all currently opened Deformation Episode UIs
+        /// This is required to ensure that any open Deformation Episode UIs can be closed when the DFM Generator dialog is closed
+        /// </summary>
+        private List<DeformationEpisodeUI> deformationEpisodeUIs;
+        /// <summary>
+        /// Remove a Deformation Episode UI from the list of currently opened Deformation Episode UIs - should be called by the Deformation Episode UI when it is closed
+        /// </summary>
+        /// <param name="deformationEpisodeUItoRemove">Reference to the Deformation Episode UI to remove</param>
+        public void RemoveDeformationEpisodeUI(DeformationEpisodeUI deformationEpisodeUItoRemove)
+        {
+            deformationEpisodeUIs.Remove(deformationEpisodeUItoRemove);
+        }
+        /// <summary>
+        /// Close all currently open deformation episode UIs
+        /// </summary>
+        private void CloseAllDeformationEpisodeUIs()
+        {
+            while (deformationEpisodeUIs.Count > 0)
+            {
+                DeformationEpisodeUI deformationEpisodeUI = deformationEpisodeUIs[0];
+                if (!deformationEpisodeUI.IsDisposed)
+                    deformationEpisodeUI.FindForm().Close();
+            }
+        }
+        /*/// <summary>
+        /// Save and close all currently open deformation episode UIs
+        /// Not currently working - it does not retain the deformation episode data
+        /// </summary>
+        private void SaveAndCloseAllDeformationEpisodeUIs()
+        {
+            while (deformationEpisodeUIs.Count > 0)
+            {
+                DeformationEpisodeUI deformationEpisodeUI = deformationEpisodeUIs[0];
+                if (!deformationEpisodeUI.IsDisposed)
+                {
+                    deformationEpisodeUI.updateArgsFromUI();
+                    deformationEpisodeUI.FindForm().Close();
+                }
+            }
+            updateUIFromArgs();
+        }*/
 
         /// <summary>
         /// Updates the data displayed on the UI.
@@ -690,6 +736,26 @@ namespace DFMGenerator_Ocean
         private void btnApply_Click(object sender, EventArgs e)
         {
             updateArgsFromUI();
+            args.RunAborted = false;
+            if (deformationEpisodeUIs.Count > 0)
+            {
+                PetrelLogger.WarnBox("One or more Deformation Episode dialog boxes are still open. Please close these before proceeding");
+                args.RunAborted = true;
+                return;
+                /*switch (MessageBox.Show("One or more Deformation Episode dialog boxes are still open. Do you want to save the data in these?", "Close Deformation Episodes", MessageBoxButtons.YesNoCancel))
+                {
+                    case DialogResult.Yes:
+                        SaveAndCloseAllDeformationEpisodeUIs();
+                        break;
+                    case DialogResult.No:
+                        CloseAllDeformationEpisodeUIs();
+                        break;
+                    case DialogResult.Cancel:
+                    default:
+                        return;
+                }*/
+            }
+
             if (context is WorkstepProcessWrapper.Context)
             {
                 Executor executor = (workstep as IExecutorSource).GetExecutor(args, null);
@@ -701,11 +767,16 @@ namespace DFMGenerator_Ocean
         private void btnOK_Click(object sender, EventArgs e)
         {
             btnApply_Click(sender, e);
-            this.FindForm().Close();
+            if (!args.RunAborted)
+            {
+                CloseAllDeformationEpisodeUIs();
+                this.FindForm().Close();
+            }
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
+            CloseAllDeformationEpisodeUIs();
             this.FindForm().Close();
         }
 
@@ -983,6 +1054,7 @@ namespace DFMGenerator_Ocean
         private void OpenDeformationEpisodeUI(int deformationEpisodeIndex)
         {
             DeformationEpisodeUI dlg_EditDeformationEpisode = new DeformationEpisodeUI(args, this, deformationEpisodeIndex, context);
+            deformationEpisodeUIs.Add(dlg_EditDeformationEpisode);
             PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
             updateUIFromArgs();
         }

@@ -116,9 +116,19 @@ namespace DFMGenerator_SharedCode
                     // Check if it is null
                     if (Gridblock != null)
                     {
-                        // Run the calculation function for the specified gridblock
-                        if (!Gridblock.CalculateFractureData())
-                            HitTimestepLimitCounter++;
+                        try
+                        {
+                            // Run the calculation function for the specified gridblock and get the return code
+                            CalculateFractureDataReturnCode calculateDataReturnCode = Gridblock.CalculateFractureData();
+                            if (calculateDataReturnCode == CalculateFractureDataReturnCode.TimestepLimitExceeded)
+                                HitTimestepLimitCounter++;
+                        }
+                        catch (Exception e)
+                        {
+                            progressReporter.OutputMessage(string.Format("Error in creating implicit fracture model in the gridblock {0},{1}", ColNo, RowNo));
+                            progressReporter.OutputMessage(string.Format("Error: {0}", e.Message));
+                            //progressReporter.OutputMessage(e.StackTrace);
+                        }
                     }
 
                     // Update progress
@@ -235,7 +245,7 @@ namespace DFMGenerator_SharedCode
                 // NB Since we have already made a copy of the CurrentDFN object, these fractures can still be activated in subsequent propagation stages
                 double minRadius = 0;
                 double minLength = 0;
-                latestDFN.removeShortestFractures(minRadius, minLength, DFNControl.maxNoFractures);
+                latestDFN.removeShortestFractures(minRadius, minLength, DFNControl.MaxNoFractures);
 
                 // Check if calculation has been aborted
                 if (progressReporter.abortCalculation())
@@ -660,6 +670,12 @@ namespace DFMGenerator_SharedCode
             if (progressReporter == null)
                 progressReporter = new DefaultProgressReporter();
 
+            // Create counters for the number of layer thickness, geometric, stress and fracture nucleation limit errors
+            int layerThicknessErrors = 0;
+            int geometricErrors = 0;
+            int stressErrors = 0;
+            int fractureLimitErrors = 0;
+
             // Get mininum layer thickness cutoff
             double minLayerThickness = DFNControl.MinimumLayerThickness;
 
@@ -691,23 +707,35 @@ namespace DFMGenerator_SharedCode
                 {
                     if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     {
-                        nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                        PropagateDFNReturnCode DFNReturnCode = nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                        switch (DFNReturnCode)
+                        {
+                            case PropagateDFNReturnCode.Completed:
+                                break;
+                            case PropagateDFNReturnCode.GridblockGeometryError:
+                                geometricErrors++;
+                                break;
+                            case PropagateDFNReturnCode.DrivingStressError:
+                                stressErrors++;
+                                break;
+                            case PropagateDFNReturnCode.NewFractureLimitExceeded:
+                                fractureLimitErrors++;
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     else
                     {
-                        // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
-                        // NB to avoid excessive messaging, this message should be deactivated unless debugging
-                        //string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the cell at {0},{1} due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y);
-                        //progressReporter.OutputMessage(thicknessLimitMessage);
+                        layerThicknessErrors++;
                     }
                 }
                 catch (Exception e)
                 {
-                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in cell at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
-                    progressReporter.OutputMessage(string.Format("Error {0}:", e.Message));
+                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in gridblock at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
+                    progressReporter.OutputMessage(string.Format("Error: {0}", e.Message));
                     //progressReporter.OutputMessage(e.StackTrace);
                 }
-
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -716,6 +744,15 @@ namespace DFMGenerator_SharedCode
             // If we have run any calculations, regenerate the fractures in the global DFN
             if (currentTime >= 0)
                 CurrentDFN.updateDFN(currentTime);
+
+            // Output error messages if there were geometric or driving stress errors or the fracture nucleation limit was reached
+            // To avoid excessive messages, we will not output a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff, since this is a not an error
+            if (geometricErrors > 0)
+                progressReporter.OutputMessage(string.Format("There were errors in determining the geometry of one or more gridblock; no fractures were generated in those gridblocks"));
+            if (stressErrors > 0)
+                progressReporter.OutputMessage(string.Format("There were errors in determining the fracture driving stress in one or more gridblock"));
+            if (fractureLimitErrors > 0)
+                progressReporter.OutputMessage(string.Format("The fracture nucleation limit was exceeded in one or more gridblock"));
 
             // Return true if we have reached the end of the GridblockTimestepControl list, otherwise return false
             return (currentCalculationElement > lastCalculationElement);
@@ -733,6 +770,12 @@ namespace DFMGenerator_SharedCode
             // If the supplied progress reporter is null, create a new DefaultProgressReporter object (this will not actually report any progress)
             if (progressReporter == null)
                 progressReporter = new DefaultProgressReporter();
+
+            // Create counters for the number of layer thickness, geometric, stress and fracture nucleation limit errors
+            int layerThicknessErrors = 0;
+            int geometricErrors = 0;
+            int stressErrors = 0;
+            int fractureLimitErrors = 0;
 
             // Get mininum layer thickness cutoff
             double minLayerThickness = DFNControl.MinimumLayerThickness;
@@ -764,20 +807,33 @@ namespace DFMGenerator_SharedCode
                 {
                     if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     {
-                        nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                        PropagateDFNReturnCode DFNReturnCode = nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
+                        switch (DFNReturnCode)
+                        {
+                            case PropagateDFNReturnCode.Completed:
+                                break;
+                            case PropagateDFNReturnCode.GridblockGeometryError:
+                                geometricErrors++;
+                                break;
+                            case PropagateDFNReturnCode.DrivingStressError:
+                                stressErrors++;
+                                break;
+                            case PropagateDFNReturnCode.NewFractureLimitExceeded:
+                                fractureLimitErrors++;
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     else
                     {
-                        // Give a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff
-                        // NB to avoid excessive messaging, this message should be deactivated unless debugging
-                        //string thicknessLimitMessage = string.Format("The explicit DFN was not generated in the cell at {0},{1} due to the layer thickness cutoff. To prevent this, reduce the cutoff value on the Control Parameters tab.", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y);
-                        //progressReporter.OutputMessage(thicknessLimitMessage);
+                        layerThicknessErrors++;
                     }
                 }
                 catch (Exception e)
                 {
-                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in the cell at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
-                    progressReporter.OutputMessage(string.Format("Error {0}:", e.Message));
+                    progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in the gridblock at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
+                    progressReporter.OutputMessage(string.Format("Error: {0}", e.Message));
                     //progressReporter.OutputMessage(e.StackTrace);
                 }
 
@@ -788,6 +844,15 @@ namespace DFMGenerator_SharedCode
             // If we have run any calculations, regenerate the fractures in the global DFN
             if (currentTime >= 0)
                 CurrentDFN.updateDFN(endTime);
+
+            // Output error messages if there were geometric or driving stress errors or the fracture nucleation limit was reached
+            // To avoid excessive messages, we will not output a message saying that the DFN was not generated due to the layer thickness being less than the minimum cutoff, since this is a not an error
+            if (geometricErrors > 0)
+                progressReporter.OutputMessage(string.Format("There were errors in determining the geometry of one or more gridblock; no fractures were generated in those gridblocks"));
+            if (stressErrors > 0)
+                progressReporter.OutputMessage(string.Format("There were errors in determining the fracture driving stress in one or more gridblock"));
+            if (fractureLimitErrors > 0)
+                progressReporter.OutputMessage(string.Format("The fracture nucleation limit was exceeded in one or more gridblock"));
 
             // Return true if we have reached the end of the GridblockTimestepControl list, otherwise return false
             return (currentCalculationElement > lastCalculationElement);

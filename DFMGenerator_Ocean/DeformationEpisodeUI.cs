@@ -551,13 +551,16 @@ namespace DFMGenerator_Ocean
             // The load rate units will have changed; update the display
             SetLoadRateUnits();
         }
-        #endregion
 
         private void DeformationEpisodeUI_FormClosed(object sender, FormClosedEventArgs e)
         {
             // Remove the event handlers when the form is closed
             context.ArgumentPackageChanged -= context_ArgumentPackageChanged;
             callingDialog.DeformationEpisodeRemoved -= dfmGeneratorUI_DeformationEpisodeRemoved;
+
+            // Remove the Deformation Episode UI from the list in the calling dialog
+            callingDialog.RemoveDeformationEpisodeUI(this);
         }
+        #endregion
     }
 }

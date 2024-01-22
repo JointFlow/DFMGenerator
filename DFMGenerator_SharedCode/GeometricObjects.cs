@@ -791,28 +791,32 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private static double roundToZero = 1E-10;
         /// <summary>
-        /// Modified sin function that will return exactly zero for sin(pi) and multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// Modified sin function that will return exactly zero for sin(pi) or multiples and exactly 1 for sin(pi/2) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
         /// </summary>
         /// <param name="angle">Angle to calculate sine of</param>
-        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple</returns>
+        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple and 1d for angle=Math.Pi/2 or a multiple</returns>
         public static double Sin_trim(double angle)
         {
             double output = Math.Sin(angle);
             if (Math.Abs(output) < roundToZero)
                 return 0;
+            else if (Math.Abs(1 - output) < roundToZero)
+                return 1;
             else
                 return output;
         }
         /// <summary>
-        /// Modified cos function that will return exactly zero for cos(pi/2) and multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// Modified cos function that will return exactly zero for cos(pi/2) or multiples and exactly 1 for cos(pi) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
         /// </summary>
         /// <param name="angle">Angle to calculate cosine of</param>
-        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple</returns>
+        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple and 1d for angle=Math.Pi or a multiple</returns>
         public static double Cos_trim(double angle)
         {
             double output = Math.Cos(angle);
             if (Math.Abs(output) < roundToZero)
                 return 0;
+            else if (Math.Abs(1 - output) < roundToZero)
+                return 1;
             else
                 return output;
         }

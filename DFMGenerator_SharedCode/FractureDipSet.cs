@@ -76,6 +76,14 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double dip;
         /// <summary>
+        /// Variable for sine of fracture dip
+        /// </summary>
+        private double sindip;
+        /// <summary>
+        /// Variable for cosine of fracture dip
+        /// </summary>
+        private double cosdip;
+        /// <summary>
         /// Unit vector on the fracture plane in direction of maximum dip (in the case of bimodal conjugate dipsets, dipping in J+ direction)
         /// </summary>
         private VectorXYZ dipVector;
@@ -97,6 +105,10 @@ namespace DFMGenerator_SharedCode
             {
                 // Set the fracture dip
                 dip = value;
+
+                // Set the sine and cosine of fracture dip
+                sindip = VectorXYZ.Sin_trim(Dip);
+                cosdip = VectorXYZ.Cos_trim(Dip);
 
                 // Create a new normal vector
                 normalVector = VectorXYZ.GetNormalToPlane(fs.Strike + (Math.PI / 2), value);
@@ -1329,7 +1341,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Pitch of the shear stress vector on the surface of the fractures relative to fracture strike (radians, positive downwards; will return NaN if shear stress is zero)
         /// </summary>
-        public double ShearStressPitch{ get; private set; }
+        public double ShearStressPitch { get; private set; }
         /// <summary>
         /// Pitch of the shear displacement vector on the surface of the fractures relative to fracture strike (radians, positive downwards; will return NaN if shear displacement is zero)
         /// </summary>
@@ -1491,33 +1503,18 @@ namespace DFMGenerator_SharedCode
                             // Recalculate fracture mode factors
                             if (BiazimuthalConjugate)
                             {
-                                double sindip = Math.Sin(Dip);
-                                double Maa = sindip;
-                                double Mas = 0;
-                                double Mss = sindip / 2;
-                                Maa_eaa2d_eh2d = fs.eaa2d_eh2d * Maa;
-                                Mas_eaaasd_eh2d = fs.eaaasd_eh2d * Mas;
-                                Mss_eas2d_eh2d = fs.eas2d_eh2d * Mss;
+                                Maa = sindip;
+                                Mas = 0;
+                                Mss = sindip / 2;
                             }
                             else
                             {
-                                double sindip = Math.Sin(Dip);
                                 double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
-                                double Mff = Math.Pow(oneMinusNur, 2) / oneMinus2Nur;
-                                double Mfw = 0;
-                                double Mww = oneMinusNur / 2;
-                                double Mfs = 0;
-                                double Mss = 1 / 2;
-                                Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
-                                Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
-                                Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
-                            }
-                            // Remove rounding errors
-                            {
-                                double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
-                                if ((float)(Mtot + Maa_eaa2d_eh2d) == (float)Mtot) Maa_eaa2d_eh2d = 0;
-                                if ((float)(Mtot + Mas_eaaasd_eh2d) == (float)Mtot) Mas_eaaasd_eh2d = 0;
-                                if ((float)(Mtot + Mss_eas2d_eh2d) == (float)Mtot) Mss_eas2d_eh2d = 0;
+                                Mff = Math.Pow(oneMinusNur, 2) / oneMinus2Nur;
+                                Mfw = 0;
+                                Mww = oneMinusNur / 2;
+                                Mfs = 0;
+                                Mss = 1 / 2;
                             }
                         }
                         break;
@@ -1549,46 +1546,23 @@ namespace DFMGenerator_SharedCode
                             }
                             else
                             {
-                                sinpitch = Math.Sin(ShearStressPitch);
-                                cospitch = Math.Cos(ShearStressPitch);
+                                sinpitch = VectorXYZ.Sin_trim(ShearStressPitch);
+                                cospitch = VectorXYZ.Cos_trim(ShearStressPitch);
                             }
                             if (BiazimuthalConjugate)
                             {
-                                double sindip = Math.Sin(Dip);
-                                double cosdip = Math.Cos(Dip);
-                                double sincosdip = sindip * cosdip;
-                                double Maa = cosdip * (sincosdip - (mufr * sinpitch * Math.Pow(sindip, 2)));
-                                double Mas = -(mufr / oneMinusNur / 2) * cospitch * Math.Pow(sindip, 2);
-                                double Mss = sindip / 2;
-                                Maa_eaa2d_eh2d = fs.eaa2d_eh2d * Maa;
-                                Mas_eaaasd_eh2d = fs.eaaasd_eh2d * Mas;
-                                Mss_eas2d_eh2d = fs.eas2d_eh2d * Mss;
+                                Maa = cosdip * (sindip * cosdip - (mufr * sinpitch * Math.Pow(sindip, 2)));
+                                Mas = -(mufr / oneMinusNur / 2) * cospitch * Math.Pow(sindip, 2);
+                                Mss = sindip / 2;
                             }
                             else
                             {
-                                double sindip = Math.Sin(Dip);
                                 double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
-                                double Mff = 0;
-                                double Mfw = -(Math.Pow(oneMinusNur, 2) / (2 * oneMinus2Nur)) * mufr * sinpitch;
-                                double Mww = oneMinusNur / 2;
-                                double Mfs = -(oneMinusNur / (2 * oneMinus2Nur)) * mufr * cospitch;
-                                double Mss = 1 / 2;
-                                Maa_eaa2d_eh2d = ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip;
-                                Mas_eaaasd_eh2d = (efffsd_e2d * Mfs) / sindip;
-                                Mss_eas2d_eh2d = (efs2d_e2d * Mss) / sindip;
-                            }
-                            // Set negative values to zero - these may occur in the case of stress tensor loads if the increase in frictional traction exceeds the increase in shear stress
-                            {
-                                if (Maa_eaa2d_eh2d < 0) Maa_eaa2d_eh2d = 0;
-                                if (Mas_eaaasd_eh2d < 0) Mas_eaaasd_eh2d = 0;
-                                if (Mss_eas2d_eh2d < 0) Mss_eas2d_eh2d = 0;
-                            }
-                            // Remove rounding errors
-                            {
-                                double Mtot = Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d;
-                                if ((float)(Mtot + Maa_eaa2d_eh2d) == (float)Mtot) Maa_eaa2d_eh2d = 0;
-                                if ((float)(Mtot + Mas_eaaasd_eh2d) == (float)Mtot) Mas_eaaasd_eh2d = 0;
-                                if ((float)(Mtot + Mss_eas2d_eh2d) == (float)Mtot) Mss_eas2d_eh2d = 0;
+                                Mff = 0;
+                                Mfw = -(Math.Pow(oneMinusNur, 2) / (2 * oneMinus2Nur)) * mufr * sinpitch;
+                                Mww = oneMinusNur / 2;
+                                Mfs = -(oneMinusNur / (2 * oneMinus2Nur)) * mufr * cospitch;
+                                Mss = 1 / 2;
                             }
                         }
                         break;
@@ -1599,9 +1573,20 @@ namespace DFMGenerator_SharedCode
                             MF_ComplianceTensorBase = new Tensor4_2Sx2S();
 
                             // Set all mode factors to zero
-                            Maa_eaa2d_eh2d = 0;
-                            Mas_eaaasd_eh2d = 0;
-                            Mss_eas2d_eh2d = 0;
+                            if (BiazimuthalConjugate)
+                            {
+                                Maa = 0;
+                                Mas = 0;
+                                Mss = 0;
+                            }
+                            else
+                            {
+                                Mff = 0;
+                                Mfw = 0;
+                                Mww = 0;
+                                Mfs = 0;
+                                Mss = 0;
+                            }
                         }
                         break;
                 }
@@ -1634,9 +1619,21 @@ namespace DFMGenerator_SharedCode
                 MF_ComplianceTensorBase = new Tensor4_2Sx2S();
 
                 // Set all mode factors to zero
-                Maa_eaa2d_eh2d = 0;
-                Mas_eaaasd_eh2d = 0;
-                Mss_eas2d_eh2d = 0;
+                // Set all mode factors to zero
+                if (BiazimuthalConjugate)
+                {
+                    Maa = 0;
+                    Mas = 0;
+                    Mss = 0;
+                }
+                else
+                {
+                    Mff = 0;
+                    Mfw = 0;
+                    Mww = 0;
+                    Mfs = 0;
+                    Mss = 0;
+                }
             }
         }
         /// <summary>
@@ -1657,7 +1654,6 @@ namespace DFMGenerator_SharedCode
                 double elasticityMultiplier = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
                 double uF_fractureDensityMultiplier = (4 / Math.PI) * (a_uFP33_total() + s_uFP33_total());
                 double MF_fractureDensityMultiplier = (Math.PI) / 2 * gbc.ThicknessAtDeformation * (a_MFP32_total() + s_MFP32_total());
-                double sindip = Math.Sin(Dip);
                 if (sindip > 0)
                 {
                     uF_fractureDensityMultiplier /= sindip;
@@ -1754,7 +1750,7 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureMode.Mode2:
                 case FractureMode.Mode3:
-                    output *= P33_total * Math.Cos(Dip);
+                    output *= P33_total * cosdip;
                     if (!double.IsNaN(ShearStressPitch))
                         output *= Math.Abs(Math.Sin(ShearStressPitch));
                     break;
@@ -1781,7 +1777,7 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureMode.Mode2:
                 case FractureMode.Mode3:
-                    output *= P33 * Math.Cos(Dip);
+                    output *= P33 * cosdip;
                     if (!double.IsNaN(ShearStressPitch))
                         output *= Math.Abs(Math.Sin(ShearStressPitch));
                     break;
@@ -1807,7 +1803,7 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureMode.Mode2:
                 case FractureMode.Mode3:
-                    output *= P32_total * Math.Cos(Dip);
+                    output *= P32_total * cosdip;
                     if (!double.IsNaN(DisplacementPitch))
                         output *= Math.Abs(Math.Sin(DisplacementPitch));
                     break;
@@ -1834,7 +1830,7 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureMode.Mode2:
                 case FractureMode.Mode3:
-                    output *= P32 * Math.Cos(Dip);
+                    output *= P32 * cosdip;
                     if (!double.IsNaN(DisplacementPitch))
                         output *= Math.Abs(Math.Sin(DisplacementPitch));
                     break;
@@ -1997,11 +1993,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Ratio of incremental normal strain x alongstrike shear strain to total incremental normal strain on the fracture, given by eff*efs / (eff^2 + efw^2 + efs^2)
         /// </summary>
-        private double efffsd_e2d{ get; set; }
+        private double efffsd_e2d { get; set; }
         /// <summary>
         /// Ratio of incremental alongstrike shear strain to total incremental normal strain on the fracture, given by efs^2 / (eff^2 + efw^2 + efs^2)
         /// </summary>
-        private double efs2d_e2d { get { return 1 - eff2d_e2d - efw2d_e2d; } } 
+        private double efs2d_e2d { get { return 1 - eff2d_e2d - efw2d_e2d; } }
         /// <summary>
         /// Recalculate the applied strain components acting on the fractures, for a specified strain or strain rate tensor
         /// </summary>
@@ -2021,7 +2017,7 @@ namespace DFMGenerator_SharedCode
             // Set the strain ratios to zero if they are small - this will avoid rounding errors
             double emax = effd + efwd + ewwd + efsd + essd;
             if ((float)(emax + effd) == (float)emax)
-                effd= 0;
+                effd = 0;
             if ((float)(emax + efwd) == (float)emax)
                 efwd = 0;
             if ((float)(emax + ewwd) == (float)emax)
@@ -2044,21 +2040,50 @@ namespace DFMGenerator_SharedCode
         // They represent the ratio of far-field displacement (i.e. applied strain) to displacement on a fracture, normalised to remove the effects of fracture size and geometry
         // For convenience, these are combined with the respective strain components when they are calculated, so they need only be multiplied by geometric factors to determine stress shadow widths
         /// <summary>
-        /// Fracture Mode Factor Maa: azimuthal strain => azimuthal displacement
+        /// Fracture Mode Factor: azimuthal strain => azimuthal displacement
         /// </summary>
-        private double Maa_eaa2d_eh2d { get; set; }
+        private double Maa_eaa2d_eh2d { get { return Math.Max(BiazimuthalConjugate ? fs.eaa2d_eh2d * Maa : ((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)) / sindip, 0); } }
         /// <summary>
-        /// Fracture Mode Factor Mas: strike-parallel shear strain => azimuthal displacement
+        /// Fracture Mode Factor: strike-parallel shear strain => azimuthal displacement
         /// </summary>
-        private double Mas_eaaasd_eh2d { get; set; }
+        private double Mas_eaaasd_eh2d { get { return Math.Max(BiazimuthalConjugate ? fs.eaaasd_eh2d * Mas : (efffsd_e2d * Mfs) / sindip, 0); } }
         /// <summary>
-        /// Fracture Mode Factor Mss: strike-parallel shear strain => strike-slip displacement
+        /// Fracture Mode Factor: strike-parallel shear strain => strike-slip displacement
         /// </summary>
-        private double Mss_eas2d_eh2d { get; set; }
+        private double Mss_eas2d_eh2d { get { return Math.Max(BiazimuthalConjugate ? fs.eas2d_eh2d * Mss : (efs2d_e2d * Mss) / sindip, 0); } }
         /// <summary>
-        /// Fracture Mode Factor Mhh: maximum horizontal strain => horizontal displacement
+        /// Fracture Mode Factor: maximum horizontal strain => horizontal displacement
         /// </summary>
         private double Mhh_eh2d { get { return Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d; } }
+        // Geometric variables for calculating mode factors
+        /// <summary>
+        /// Geometric factor: azimuthal strain => azimuthal displacement
+        /// </summary>
+        private double Maa { get; set; }
+        /// <summary>
+        /// Geometric factor: azimuthal strain => along-strike displacement
+        /// </summary>
+        private double Mas { get; set; }
+        /// <summary>
+        /// Geometric factor: along-strike strain => along-strike displacement
+        /// </summary>
+        private double Mss { get; set; }
+        /// <summary>
+        /// Geometric factor: normal strain => normal displacement
+        /// </summary>
+        private double Mff { get; set; }
+        /// <summary>
+        /// Geometric factor: normal strain => down-dip displacement
+        /// </summary>
+        private double Mfw { get; set; }
+        /// <summary>
+        /// Geometric factor: normal strain => along-strike displacement
+        /// </summary>
+        private double Mfs { get; set; }
+        /// <summary>
+        /// Geometric factor: down-dip strain => down-dip displacement
+        /// </summary>
+        private double Mww { get; set; }
 
         // Stress shadow width
         /// <summary>
@@ -2302,7 +2327,7 @@ namespace DFMGenerator_SharedCode
                 else // If V is not zero (i.e. NoStrainRelaxation strain relaxation case) the driving stress will vary through the timestep, so we must calculate a weighted mean
                 {
                     double UV_factor1 = tsU + (tsV * time);
-                    if (UV_factor1 >= 0) 
+                    if (UV_factor1 >= 0)
                     {
                         double UV_factor2 = Math.Pow(hPiKc_factor * UV_factor1, b) * UV_factor1;
                         double U_factor2 = Math.Pow(hPiKc_factor * tsU, b) * tsU;
@@ -2526,17 +2551,26 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if the stress shadow widths have changed, false if they have not changed</returns>
         public bool checkStressShadowWidthChange()
         {
+            bool stressShadowWidthChanged;
             switch (fs.FractureDistribution)
             {
                 case StressDistribution.EvenlyDistributedStress:
                     // No stress shadows, so stress shadow width can never change
-                    return false;
+                    stressShadowWidthChanged = false;
+                    break;
                 case StressDistribution.StressShadow:
                 case StressDistribution.DuctileBoundary:
                 default:
                     // Check if either the total or the azimuth stress shadow width calculated from the mode factors is different to that in the FractureCalculationData object
-                    return (Mean_MF_StressShadowWidth != CurrentFractureData.Mean_StressShadowWidth_M) || (Mean_Azimuthal_MF_StressShadowWidth != CurrentFractureData.Mean_AzimuthalStressShadowWidth_M);
+                    stressShadowWidthChanged = (Mean_MF_StressShadowWidth != CurrentFractureData.Mean_StressShadowWidth_M) || (Mean_Azimuthal_MF_StressShadowWidth != CurrentFractureData.Mean_AzimuthalStressShadowWidth_M);
+                    break;
             }
+            // If the stress shadow widths have changed, revert any residual active sets to growing, since the deactivation probabilities may have significantly reduced
+            // If the deactivation probabilities have not significantly reduced, the fracture dipsets will revert to Residual Active when the calculateTotalMacrofracturePopulation() function is called
+            if (stressShadowWidthChanged)
+                if (getEvolutionStage() == FractureEvolutionStage.ResidualActivity)
+                    CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Growing);
+            return stressShadowWidthChanged;
         }
         /// <summary>
         /// Calculate the constant and variable components of the driving stress (U and V) for the upcoming timestep, and estimate the optimal timestep duration based on a specified maximum increase in fracture density (MFP33)
@@ -2662,12 +2696,15 @@ namespace DFMGenerator_SharedCode
                 // However in case neither are, or the quadratic does not have real roots (i.e. rootterm is NaN) then we can approximate the optimal timestep duration by dividing the negative initial driving stress -U by the rate of change of driving stress V
                 double negativeroot = (-b_term - rootterm) / (2 * a_term);
                 double positiveroot = (-b_term + rootterm) / (2 * a_term);
+                double timeToSdZero;
                 if ((negativeroot > PreviousFractureData.MaxDrivingStressRoundingError) && (negativeroot < positiveroot))
-                    optdur = negativeroot;
+                    timeToSdZero = negativeroot;
                 else if (positiveroot > PreviousFractureData.MaxDrivingStressRoundingError)
-                    optdur = positiveroot;
+                    timeToSdZero = positiveroot;
                 else
-                    optdur = -U / V;
+                    timeToSdZero = -U / V;
+                if (timeToSdZero < optdur)
+                    optdur = timeToSdZero;
             }
 
             // Next, we will calculate the time taken for the normal stress on the fracture to reach zero (from either a positive or negative value)
@@ -2793,19 +2830,23 @@ namespace DFMGenerator_SharedCode
                 if (((float)ts_ahalfMF_uF_ratio > 0f) && ((float)(V_factor + U_factor1) > 0f))
                 {
                     double UV_factor = alpha_uF_b_factor * Math.Pow(V_factor + U_factor2, 1 / (b + 1));
+                    double timeTodMFP33;
 
                     // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
                     if ((float)UV_factor > (float)U)
                     {
                         // Use the formula for increasing stress to calculate optimal duration
-                        optdur = (UV_factor - U) / V;
+                        timeTodMFP33 = (UV_factor - U) / V;
                     }
                     else // In this case we can approximate V=0 and use the constant driving stress formula
                     {
                         // Use the formula for constant stress to calculate optimal duration, and set V to zero
-                        optdur = d_MFP33_CumhGammaM_betac1_factor2 / (U_factor1 / beta);
+                        timeTodMFP33 = d_MFP33_CumhGammaM_betac1_factor2 / (U_factor1 / beta);
                         V = 0;
                     }
+
+                    if (timeTodMFP33 < optdur)
+                        optdur = timeTodMFP33;
                 }
             }
 
@@ -2982,9 +3023,9 @@ namespace DFMGenerator_SharedCode
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
-            double CapA = gbc.MechProps.CapA;
-            double Kc = gbc.MechProps.Kc;
-            double SqrtPi = Math.Sqrt(Math.PI);
+            //double CapA = gbc.MechProps.CapA;
+            //double Kc = gbc.MechProps.Kc;
+            //double SqrtPi = Math.Sqrt(Math.PI);
             int tsN = PreviousFractureData.NoTimesteps;
             double MeanW = 0;
             switch (fs.FractureDistribution)
@@ -3015,7 +3056,7 @@ namespace DFMGenerator_SharedCode
             // beta_betac1_factor is -beta / (1 - (beta c)) if b!=2, 1 / c if b=2
             double beta_betac1_factor = (bis2 ? 1 / c_coefficient : -2 / (2 - b - (2 * c_coefficient)));
             // beta_betac2_factor is -beta / (2 - (beta c)) if b!=2, 1 / c if b=2
-            double beta_betac2_factor = (bis2 ? 1 / c_coefficient : -2 / (4 - (2 * b) - (2 * c_coefficient)));
+            //double beta_betac2_factor = (bis2 ? 1 / c_coefficient : -2 / (4 - (2 * b) - (2 * c_coefficient)));
             // beta2_betac1betac2_factor is beta^2 / (1 - (beta c)(2 - (beta c)) if b!=2, 1 / c^2 if b=2
             double beta2_betac1betac2_factor = (bis2 ? 1 / Math.Pow(c_coefficient, 2) : Math.Pow(beta, 2) / (betac1_factor * betac2_factor));
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2
@@ -3035,12 +3076,13 @@ namespace DFMGenerator_SharedCode
             double tsK_a_MFP30_residual = 0;
 
             // Create a flag for reverting to a previous FractureEvolutionStage - this is required to prevent infinite looping between the Growing and ResidualActive stages
-            bool revertFractureEvolutionStage = false;
+            //bool revertFractureEvolutionStage = false;
 
             switch (CurrentFractureData.EvolutionStage)
             {
                 case FractureEvolutionStage.NotActivated:
-                    // No fracture growth in this timestep; however we will fall through to the "Growing" stage to maintain any initial zero-length macrofractures
+                    // If the fracture set is not activated, there will be no growth and so no calculation is required
+                    return;
                 case FractureEvolutionStage.Growing:
                     // Use equations for growing fracture sets to update cumulative fracture population data
                     {
@@ -3219,8 +3261,7 @@ namespace DFMGenerator_SharedCode
 
                         // Compare a_MFP30 for a residual active macrofracture population with a_MFP30 calculated for a growing fracture population
                         // If the residual active macrofracture population is greater, we will reset the fracture evolution stage to ResidualActivity and update cumulative fracture population data using equations for residual fracture sets
-                        // (as long as we have not already reverted to the Growing stage within this timestep)
-                        if ((tsK_a_MFP30_residual > tsK_a_MFP30_value) && !revertFractureEvolutionStage)
+                        if (tsK_a_MFP30_residual > tsK_a_MFP30_value) //((tsK_a_MFP30_residual > tsK_a_MFP30_value) && !revertFractureEvolutionStage) // (as long as we have not already reverted to the Growing stage within this timestep)
                         {
                             // Set the fracture evolutionary stage to ResidualActivity
                             CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.ResidualActivity);
@@ -3270,13 +3311,16 @@ namespace DFMGenerator_SharedCode
                                 goto case FractureEvolutionStage.Deactivated;
                             }
 
-                            // Calculate mean residual fracture length
+                            // Calculate mean residual fracture length and duration
                             // In the evenly distributed stress scenario, the fractures in the other sets are randomly distributed, and we can use a quick version of the formula that assumes a constant instantaneous deactivation probability
                             // If there are stress shadows, the fractures in the other sets have a semi-regular distribution
                             // In this case we must use an approximate formula that takes the weighted mean stress shadow width of all dip sets - this should give a good approximation if most fractures are in one dip set
                             bool useQuickFormula = (gbc.PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress);
                             double ts_MeanMFLength = fs.Calculate_MeanPropagationDistance(this, tsK, new List<double>() { 0 }, useQuickFormula)[0];
-                            // If the mean residual length is greater than the maximum propagation distance in this timestep (e.g. if the instantaneous probabilities of macrofracture deactivation have reduced due to changes in stress shadow widths) then
+                            // The mean duration of residual active macrofractures is the mean length divided by the propagation rate
+                            double ts_MeanMFDuration = ts_MeanMFLength / MeanMFPropagationRate_K;
+
+                            /* If the mean residual length is greater than the maximum propagation distance in this timestep (e.g. if the instantaneous probabilities of macrofracture deactivation have reduced due to changes in stress shadow widths) then
                             // we will revert the fracture evolution stage to Growing and go to the FractureEvolutionStage.Growing
                             if (ts_MeanMFLength > MaxMFLength_K)
                             {
@@ -3286,16 +3330,16 @@ namespace DFMGenerator_SharedCode
                                 // Set the flag for reverting to a previous FractureEvolutionStage to true
                                 revertFractureEvolutionStage = true;
 
-                                // Reset local variables to calculate summation
+                                // Reset the macrofracture density values and increments
                                 tsK_a_MFP30_value = 0;
                                 tsK_s_MFP30_increment = 0;
                                 tsK_a_MFP32_value = 0;
                                 tsK_s_MFP32_increment = 0;
                                 tsK_a_MFP30_residual = 0;
 
-                                // Go to the FractureEvolutionStage.Deactivated case - there will be no change to the cumulative fracture population data
+                                // Go to the FractureEvolutionStage.Growing case - there will be no change to the cumulative fracture population data
                                 goto case FractureEvolutionStage.Growing;
-                            }
+                            }*/
 
                             // Calculate useful components
                             double ts_CumhGammaM = PreviousFractureData.getCum_hGamma_M(tsK);
@@ -3304,23 +3348,22 @@ namespace DFMGenerator_SharedCode
                             double ts_CumhGammaMminus1 = PreviousFractureData.getCum_hGamma_M(tsK - 1);
                             double ts_CumhGammaMminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac_factor));
                             double ts_CumhGammaMminus1_betacminus1_factor = (bis2 ? Math.Exp(betacminus1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betacminus1_factor));
-                            double ts_StressShadowDecreaseFactor_denominator = inst_F_K * dChiMP_dChiTot_K;
-                            double ts_StressShadowDecreaseFactor = (ts_StressShadowDecreaseFactor_denominator > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * MeanMFPropagationRate_K * h * dChi_dMFP32_K * tsK_Duration / ts_StressShadowDecreaseFactor_denominator) : 0);
+                            double ts_StressShadowDecreaseFactor = (MeanMFPropagationRate_K > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * h * dChi_dMFP32_K * tsK_Duration * ts_MeanMFLength / dChiMP_dChiTot_K) : 0);
 
                             // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
                             if (double.IsInfinity(ts_CumhGammaM))
                                 break;
 
                             // Calculate a_MFP30 value for Timestep K
-                            tsK_a_MFP30_value = (inst_F_K > 0 ? ((Math.Abs(betac_factor) * gamma_InvBeta_K) / inst_F_K) * theta_dashed_Kminus1 * ts_CumhGammaM_betacminus1_factor * ts_StressShadowDecreaseFactor : 0);
+                            tsK_a_MFP30_value = (MeanMFPropagationRate_K > 0 ? Math.Abs(betac_factor) * gamma_InvBeta_K * theta_dashed_Kminus1 * ts_CumhGammaM_betacminus1_factor * ts_StressShadowDecreaseFactor * ts_MeanMFDuration : 0);
 
                             // Calculate s_MFP30 increments for Timestep K
                             // First we must determine whether fracture growth is limited by decrease in nucleation rate or stress shadow growth
                             // We will calculate the increments for both end members and take the smallest
                             double tsK_s_MFP30_increment_NucleationLimited = theta_dashed_Kminus1 * (ts_CumhGammaM_betac_factor - ts_CumhGammaMminus1_betac_factor);
                             // If there are no stress shadows (s_MFP30_increment_StressShadowLimited_denominator is zero) set the stress shadow limited s_MFP30 increment to be higher than the nucleation rate limited increment, so it will not be used 
-                            double s_MFP30_increment_StressShadowLimited_denominator = MeanMFPropagationRate_K * h * dChi_dMFP32_K;
-                            double tsK_s_MFP30_increment_StressShadowLimited = (s_MFP30_increment_StressShadowLimited_denominator == 0 ? tsK_s_MFP30_increment_NucleationLimited + 1 : (1 / (2 * CapB)) * ((theta_dashed_Kminus1 * inst_F_K * dChiMP_dChiTot_K) / s_MFP30_increment_StressShadowLimited_denominator) * (1 - ts_StressShadowDecreaseFactor));
+                            double s_MFP30_increment_StressShadowLimited_denominator = ts_MeanMFLength * h * dChi_dMFP32_K;
+                            double tsK_s_MFP30_increment_StressShadowLimited = ((float)s_MFP30_increment_StressShadowLimited_denominator != 0f ? (1 / (2 * CapB)) * ((theta_dashed_Kminus1 * dChiMP_dChiTot_K) / s_MFP30_increment_StressShadowLimited_denominator) * (1 - ts_StressShadowDecreaseFactor) : tsK_s_MFP30_increment_NucleationLimited + 1);
                             tsK_s_MFP30_increment = Math.Min(tsK_s_MFP30_increment_NucleationLimited, tsK_s_MFP30_increment_StressShadowLimited);
                             // NB If the fracture is not propagating then inst_FII_K, inst_FIJ_K and inst_F_K will all be zero, giving a NaN when calculating the sII_MFP30 and sIJ_MFP30 increments
                             // In this case we will set both tsK_sII_MFP30_increment and tsK_sIJ_MFP30_increment to 0
@@ -3371,6 +3414,14 @@ namespace DFMGenerator_SharedCode
                 IPlus_halfMacroFractures.a_P32_total = 0;
                 IMinus_halfMacroFractures.a_P30_total = 0;
                 IMinus_halfMacroFractures.a_P32_total = 0;
+
+                // Increment the static macrofracture P30 values in proportion to the ratio of new to available stress shadow volume
+                tsK_sII_MFP30_increment *= maxAvailableStressShadowVolume / newStressShadowVolume;
+                tsK_sIJ_MFP30_increment *= maxAvailableStressShadowVolume / newStressShadowVolume;
+                IPlus_halfMacroFractures.sII_P30_total += tsK_sII_MFP30_increment;
+                IPlus_halfMacroFractures.sIJ_P30_total += tsK_sIJ_MFP30_increment;
+                IMinus_halfMacroFractures.sII_P30_total += tsK_sII_MFP30_increment;
+                IMinus_halfMacroFractures.sIJ_P30_total += tsK_sIJ_MFP30_increment;
 
                 // Set static macrofracture P32 values so that total stress shadow volume will be 1
                 double s_MFP32_required = maxAvailableStressShadowVolume / MeanW;
@@ -4174,6 +4225,10 @@ namespace DFMGenerator_SharedCode
                             // In this case we must use an approximate formula that takes the weighted mean stress shadow width of all dip sets - this should give a good approximation if most fractures are in one dip set
                             bool useQuickFormula = (gbc.PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress);
                             List<double> fractureLengthGrowthMultipliers = fs.Calculate_MeanPropagationDistance(this, tsK, MF_halflengths, useQuickFormula);
+                            // Also get the mean length and duration of zero length macrofractures for calculating the base values
+                            double ts_MeanMFLength = fs.Calculate_MeanPropagationDistance(this, tsK, new List<double>() { 0 }, useQuickFormula)[0];
+                            // The mean duration of residual active macrofractures is the mean length divided by the propagation rate
+                            double ts_MeanMFDuration = ts_MeanMFLength / MeanMFPropagationRate_K;
 
                             // Calculate useful components
                             double ts_CumhGammaM = PreviousFractureData.getCum_hGamma_M(tsK);
@@ -4182,8 +4237,7 @@ namespace DFMGenerator_SharedCode
                             double ts_CumhGammaMminus1 = PreviousFractureData.getCum_hGamma_M(tsK - 1);
                             double ts_CumhGammaMminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac_factor));
                             double ts_CumhGammaMminus1_betacminus1_factor = (bis2 ? Math.Exp(betacminus1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betacminus1_factor));
-                            double ts_StressShadowDecreaseFactor_denominator = inst_F_K * dChiMP_dChiTot_K;
-                            double ts_StressShadowDecreaseFactor = (ts_StressShadowDecreaseFactor_denominator > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * MeanMFPropagationRate_K * h * dChi_dMFP32_K * tsK_Duration / ts_StressShadowDecreaseFactor_denominator) : 0);
+                            double ts_StressShadowDecreaseFactor = (dChiMP_dChiTot_K > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * h * dChi_dMFP32_K * tsK_Duration * ts_MeanMFLength / dChiMP_dChiTot_K) : 0);
 
                             // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
                             if (double.IsInfinity(ts_CumhGammaM))
@@ -4193,7 +4247,7 @@ namespace DFMGenerator_SharedCode
                             // The cumulative MFP30 and MFP32 datapoints can be calculated by multiplying these base values with probability multipliers calculated for the fracture lengths
                             // If the fracture is not propagating then both gamma_InvBeta_K and inst_F_K will be zero, giving a NaN when calculating the residual a_MFP30 value
                             // In this case we will set tsK_a_MFP30_value to 0
-                            double tsK_a_MFP30_value_base = (inst_F_K > 0 ? ((Math.Abs(betac_factor) * gamma_InvBeta_K) / inst_F_K) * theta_dashed_Kminus1 * ts_CumhGammaM_betacminus1_factor * ts_StressShadowDecreaseFactor : 0);
+                            double tsK_a_MFP30_value_base = (MeanMFPropagationRate_K > 0 ? Math.Abs(betac_factor) * gamma_InvBeta_K * ts_MeanMFDuration * theta_dashed_Kminus1 * ts_CumhGammaM_betacminus1_factor * ts_StressShadowDecreaseFactor : 0);
 
                             // Calculate the static MFP30 increments for all fractures of any length
                             // The cumulative MFP30 and MFP32 datapoints can be calculated by multiplying these base values with probability multipliers calculated for the fracture lengths
@@ -4201,8 +4255,8 @@ namespace DFMGenerator_SharedCode
                             // We will calculate the increments for both end members and take the smallest
                             double tsK_s_MFP30_increment_NucleationLimited = theta_dashed_Kminus1 * (ts_CumhGammaM_betac_factor - ts_CumhGammaMminus1_betac_factor);
                             // If there are no stress shadows (s_MFP30_increment_StressShadowLimited_denominator is zero) set the stress shadow limited s_MFP30 increment to be higher than the nucleation rate limited increment, so it will not be used 
-                            double s_MFP30_increment_StressShadowLimited_denominator = (MeanMFPropagationRate_K * h * dChi_dMFP32_K);
-                            double tsK_s_MFP30_increment_StressShadowLimited = (s_MFP30_increment_StressShadowLimited_denominator == 0 ? tsK_s_MFP30_increment_NucleationLimited + 1 : (1 / (2 * CapB)) * ((theta_dashed_Kminus1 * inst_F_K * dChiMP_dChiTot_K) / s_MFP30_increment_StressShadowLimited_denominator) * (1 - ts_StressShadowDecreaseFactor));
+                            double s_MFP30_increment_StressShadowLimited_denominator = (ts_MeanMFLength * h * dChi_dMFP32_K);
+                            double tsK_s_MFP30_increment_StressShadowLimited = ((float)s_MFP30_increment_StressShadowLimited_denominator != 0f ? (1 / (2 * CapB)) * ((theta_dashed_Kminus1 * dChiMP_dChiTot_K) / s_MFP30_increment_StressShadowLimited_denominator) * (1 - ts_StressShadowDecreaseFactor) : tsK_s_MFP30_increment_NucleationLimited + 1);
                             double tsK_s_MFP30_increment_base = Math.Min(tsK_s_MFP30_increment_NucleationLimited, tsK_s_MFP30_increment_StressShadowLimited);
 #if DBLOG
                             logFile.WriteLine(string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}", tsK, theta_dashed_Kminus1, tsK_s_MFP30_increment_NucleationLimited, tsK_s_MFP30_increment_StressShadowLimited, inst_F_K, ts_StressShadowDecreaseFactor, ts_CumhGammaM, ts_CumhGammaM_betac_factor, ts_CumhGammaM_betacminus1_factor, ts_CumhGammaMminus1, ts_CumhGammaMminus1_betac_factor, ts_CumhGammaMminus1_betacminus1_factor));
@@ -4626,7 +4680,7 @@ namespace DFMGenerator_SharedCode
                                         s_uFP33_components[r_bin - 1] += s_uFP32_component_increment;
                                     }
                                 } // End loop through all r_bins
-                            } 
+                            }
                             break;
                         default:
                             break;

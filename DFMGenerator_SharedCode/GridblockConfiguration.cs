@@ -23,6 +23,14 @@ namespace DFMGenerator_SharedCode
     /// Enumerator for global grid directions (N = Y+, E = X+, S = Y-, W = X-)
     /// </summary>
     public enum GridDirection { N, E, S, W, None }
+    /// <summary>
+    /// Enumerator for return codes for the CalculateFractureData function: 0 if the calculation runs to completion without errors; 1 if the timestep limit is hit
+    /// </summary>
+    public enum CalculateFractureDataReturnCode { Completed, TimestepLimitExceeded }
+    /// <summary>
+    /// Enumerator for return codes for the PropagateDFN function: 0 if the calculation runs to completion without errors; 1 if the gridblock geometry is not correctly defined; 2 if there is an error in the driving stress or propagation distance; 3 if fracture limit is hit
+    /// </summary>
+    public enum PropagateDFNReturnCode { Completed, GridblockGeometryError, DrivingStressError, NewFractureLimitExceeded }
 
     /// <summary>
     /// Class representing an entire gridblock
@@ -2063,8 +2071,8 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Calculate the implicit fracture model based on the parameters specified in the existing GridblockConfiguration.PropagationControl object
         /// </summary>
-        /// <returns>True if the calculation runs to completion before hitting the timestep limit; false if the timestep limit is hit</returns>
-        public bool CalculateFractureData()
+        /// <returns>CalculateFractureDataReturnCode object indicating if the calculation ran to completion or errors were encountered</returns>
+        public CalculateFractureDataReturnCode CalculateFractureData()
         {
             // Declare local variables
             bool CalculationCompleted = false;
@@ -2145,10 +2153,12 @@ namespace DFMGenerator_SharedCode
                 string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tClear zone volume\t";
 #if LOGDFNPOP
                 headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\t{1}\t{2}\t{3}\t{4}\t", timeUnits, "Sigma_eff.XX", "Sigma_eff.YY", "Sigma_eff.XY", "Sigma_eff.ZZ");
-                FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
-                    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
-                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getPhi", "getInstantaneousF", "getMeanMFPropagationRate", "getConstantDrivingStressU", "getVariableDrivingStressV", 
-                //    "a_MFP30_total", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolume");
+                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
+                //    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
+                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "U", "V", "MF Propagation Rate", "MF Propagation Distance", "MF Maximum Propagation Distance", 
+                //    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
+                FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getPhi", "getInstantaneousFII", "getInstantaneousFIJ", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", 
+                    "a_MFP30_total", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolume");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getAA", "getBB", "getCCStep", "getMeanStressShadowWidth", "getMeanShearStressShadowWidth",
                 //    "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", "getClearZoneVolume", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
 #endif
@@ -2340,6 +2350,7 @@ namespace DFMGenerator_SharedCode
                 {
                     foreach (Gridblock_FractureSet fs in FractureSets)
                         fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
+                    // NB We use ! Equals to compare rather than != or ! == so if both azimuths are NaN (e.g. strain is isotropic strain) the overall expression will return false
                     if (!((float)StressStrain.el_Epsilon_noncompactional.GetMinimumHorizontalAzimuth()).Equals((float)appliedStrainRate.GetMinimumHorizontalAzimuth()))
                         recalculateHorizontalStrainRatios = true;
                 }
@@ -2754,10 +2765,13 @@ namespace DFMGenerator_SharedCode
                                 fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
                                     fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #if LOGDFNPOP
-                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
-                                    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
-                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getPhi(), fds.getInstantaneousF(), fds.getMeanMFPropagationRate(), fds.getConstantDrivingStressU(), fds.getVariableDrivingStressV(), 
-                                //    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolume());
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
+                                //    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                                //double ts_MeanMFLength = fs.Calculate_MeanPropagationDistance(fds, CurrentImplicitTimestep, new List<double>() { 0 }, PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress)[0];
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getConstantDrivingStressU(), fds.getVariableDrivingStressV(), fds.getMeanMFPropagationRate(), fds.getMFPropagationDistance(), ts_MeanMFLength,
+                                //    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getPhi(), fds.getInstantaneousFII(), fds.getInstantaneousFIJ(), fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), 
+                                    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolume());
                                 //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
                                 //    fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolume(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #endif
@@ -3049,14 +3063,16 @@ namespace DFMGenerator_SharedCode
             if (writeImplicitDataToFile)
                 outputFile.Close();
 
-            return WithinTimestepLimit;
+            // Determine the return code and return it
+            CalculateFractureDataReturnCode returnCode = (WithinTimestepLimit ? CalculateFractureDataReturnCode.Completed : CalculateFractureDataReturnCode.TimestepLimitExceeded);
+            return returnCode;
         }
         /// <summary>
         /// Calculate fracture data based on user-specified PropagationControl object, building on existing fracture populations 
         /// </summary>
         /// <param name="pc_in">PropagationControl object containing propagation control data</param>
-        /// <returns>True if the calculation runs to completion before hitting the timestep limit; false if the timestep limit is hit</returns>
-        public bool CalculateFractureData(PropagationControl pc_in)
+        /// <returns>CalculateFractureDataReturnCode object indicating if the calculation ran to completion or errors were encountered</returns>
+        public CalculateFractureDataReturnCode CalculateFractureData(PropagationControl pc_in)
         {
             PropControl = pc_in;
             return CalculateFractureData();
@@ -3066,10 +3082,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="global_DFN">Reference to GlobalDFN object containing the global DFN</param>
         /// <param name="DFNControl">Reference to DFNControl object containing control data for DFN generation</param>
-        public void PropagateDFN(GlobalDFN global_DFN, DFNGenerationControl DFNControl)
+        /// <returns>PropagateDFNReturnCode object indicating if the calculation ran to completion or errors were encountered</returns>
+        public PropagateDFNReturnCode PropagateDFN(GlobalDFN global_DFN, DFNGenerationControl DFNControl)
         {
             // Check gridblock geometry is defined, if not abort
-            if (!checkCornerpointsDefined()) return;
+            if (!checkCornerpointsDefined()) return PropagateDFNReturnCode.GridblockGeometryError;
 
             // Update the current timestep counter
             CurrentExplicitTimestep++;
@@ -3105,6 +3122,8 @@ namespace DFMGenerator_SharedCode
             double probabilisticFractureNucleationLimit = DFNControl.probabilisticFractureNucleationLimit;
             bool allowProbabilisticFractureNucleation = (probabilisticFractureNucleationLimit > 0);
             bool searchNeighbouringGridblocks = SearchNeighbouringGridblocks();
+            int maxNewFractures = DFNControl.MaxNewFracturesPerTimestep;
+            bool limitNewFractures = (maxNewFractures > 0);
             // If probabilisticFractureNucleationLimit is set to -1 then it should be set to automatic
             // In automatic mode, probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active 
             if (probabilisticFractureNucleationLimit < 0)
@@ -3272,7 +3291,7 @@ namespace DFMGenerator_SharedCode
                     // This should be implemented in the production code as it will prevent the whole model hanging due to the implicit calculation failing in just one gridblock
                     // However it can also mask other bugs in the implicit calculation; it is therefore useful to switch off this check in development code
                     if (halfLength_M > 1E+50)
-                        return;
+                        return PropagateDFNReturnCode.DrivingStressError;
 
                     // Calculate local helper variables
                     double CapB = fds.CapB;
@@ -3359,6 +3378,10 @@ namespace DFMGenerator_SharedCode
 
                                 // Update the number of microfractures that we need to add - if there are no more to add we can break out of the loop
                                 no_uF_toAdd--;
+
+                                // Update the number of new fractures that can be added this timestep; if this drops below zero, break out of the loop
+                                if (limitNewFractures && (maxNewFractures-- < 0))
+                                    break;
                             }
                         }
 
@@ -3474,6 +3497,10 @@ namespace DFMGenerator_SharedCode
                             nVB_factor = (double)uF_No / CapBV;
                             nVB_invbetac1_factor = (bis2 ? Math.Log(nVB_factor) / betac_factor : Math.Pow(nVB_factor, 1 / betac_factor));
                             NucleationLTime = hb1_factor * beta * (ts_CumrminGammaMminus1 - nVB_invbetac1_factor);
+
+                            // Update the number of new fractures that can be added this timestep; if this drops below zero, break out of the loop
+                            if (limitNewFractures && (maxNewFractures-- < 0))
+                                break;
                         }
                     } // End add microfractures
 
@@ -3575,6 +3602,10 @@ namespace DFMGenerator_SharedCode
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(new_local_MF, fs_index));
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(mirrorSegment, fs_index));
                                 }
+
+                                // Update the number of new fractures that can be added this timestep; if this drops below zero, break out of the loop
+                                if (limitNewFractures && (maxNewFractures-- < 0))
+                                    break;
                             }
                         }
 
@@ -3707,6 +3738,10 @@ namespace DFMGenerator_SharedCode
                             nVB_factor = (double)MF_No / CapBV;
                             nVB_invbetac1_factor = (bis2 ? Math.Log(nVB_factor) / betac_factor : Math.Pow(nVB_factor, 1 / betac_factor));
                             NucleationLTime = (hb1_factor * beta * (ts_CumhGammaMminus1 - nVB_invbetac1_factor)) + L_factor;
+
+                            // Update the number of new fractures that can be added this timestep; if this drops below zero, break out of the loop
+                            if (limitNewFractures && (maxNewFractures-- < 0))
+                                break;
                         }
                     } // End add macrofractures
                 } // End loop through fracture dip sets
@@ -4065,6 +4100,14 @@ namespace DFMGenerator_SharedCode
                 DFNPopLogFile.Close();
             }
 #endif
+
+            // Determine the return code and return it
+            PropagateDFNReturnCode returnCode;
+            if (limitNewFractures && (maxNewFractures-- < 0))
+                returnCode = PropagateDFNReturnCode.NewFractureLimitExceeded;
+            else
+                returnCode = PropagateDFNReturnCode.Completed;
+            return returnCode;
         }
         /// <summary>
         /// Propagate an explicit macrofracture into this gridblock from a neighbouring gridblock
