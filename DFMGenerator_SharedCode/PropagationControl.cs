@@ -608,7 +608,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Maximum number of fractures allowed in the DFN: if negative no limit will be applied. Culling is post DFN-generation; if the limit is exceeded the algorithm will remove the smallest fractures from the DFN until the limit is reached
         /// </summary>
-        public int maxNoFractures { get; set; }
+        public int MaxNoFractures { get; set; }
+        /// <summary>
+        /// Maximum number of new fractures that can be generated per gridblock per timestep: if negative no limit will be applied
+        /// </summary>
+        public int MaxNewFracturesPerTimestep { get; set; }
         /// <summary>
         /// Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value; set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
         /// </summary>
@@ -756,7 +760,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="GenerateExplicitDFN_in">Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated</param>
         /// <param name="MicrofractureDFNMinimumSizeIndex_in">Index of minimum microfracture radius to be included in DFN: if zero or negative, DFN will contain no microfractures; if positive, MacrofractureDFNMinimumLength will be zero (include all macrofractures)</param>
         /// <param name="MacrofractureDFNMinimumSizeIndex_in">Minimum macrofracture half-length to be included in DFN: if zero, DFN will include all macrofractures; if negative, no DFN will be generated</param>
-        /// <param name="maxNoFractures_in">Maximum number of fractures allowed in the DFN. Culling is post DFN-generation; if the limit is exceeded the algorithm will remove the smallest fractures from the DFN until the limit is reached</param>
+        /// <param name="MaxNoFractures_in">Maximum number of fractures allowed in the DFN. Culling is post DFN-generation; if the limit is exceeded the algorithm will remove the smallest fractures from the DFN until the limit is reached</param>
+        /// <param name="MaxNewFracturesPerTimestep_in">Maximum number of new fractures that can be generated per gridblock per timestep: if negative no limit will be applied</param>
         /// <param name="MinimumLayerThickness_in">Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value; set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers</param>
         /// <param name="MaxConsistencyAngle_in">Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set</param>
         /// <param name="CropToGrid_in">Flag to crop fractures at the boundary of the grid: true to crop fractures at grid boundary, false to propagate fractures indefinitely beyond the grid</param>
@@ -771,7 +776,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="SearchNeighbouringGridlocks_in">Flag to control whether to search adjacent gridblocks for stress shadow interaction; if set to automatic, this will be determined independently for each gridblock based on the gridblock geometry</param>
         /// <param name="propagateFracturesInNucleationOrder_in">Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set</param>
         /// <param name="timeUnits_in">Time units for output data</param>
-        public void setDFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, int maxNoFractures_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchNeighbouringGridlocks_in, bool propagateFracturesInNucleationOrder_in, TimeUnits timeUnits_in)
+        public void setDFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, int MaxNoFractures_in, int MaxNewFracturesPerTimestep_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchNeighbouringGridlocks_in, bool propagateFracturesInNucleationOrder_in, TimeUnits timeUnits_in)
         {
             // Minimum microfracture radius to be included in DFN: if zero or negative, DFN will contain no microfractures; if positive, MacrofractureDFNMinimumLength will be zero (include all macrofractures)
             MicrofractureDFNMinimumRadius = MicrofractureDFNMinimumSizeIndex_in;
@@ -779,7 +784,9 @@ namespace DFMGenerator_SharedCode
             // If flag to generate explicit DFN is set to false, set minimum macrofracture half-length to -1
             MacrofractureDFNMinimumLength = (GenerateExplicitDFN_in ? MacrofractureDFNMinimumSizeIndex_in : -1);
             // Maximum number of fractures allowed in the DFN. Culling is post DFN-generation; if the limit is exceeded the algorithm will remove the smallest fractures from the DFN until the limit is reached
-            maxNoFractures = maxNoFractures_in;
+            MaxNoFractures = MaxNoFractures_in;
+            // Maximum number of new fractures that can be generated per gridblock per timestep: if negative no limit will be applied
+            MaxNewFracturesPerTimestep = MaxNewFracturesPerTimestep_in;
             // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value; set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
             MinimumLayerThickness = MinimumLayerThickness_in;
             // Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set 
@@ -816,7 +823,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public DFNGenerationControl()
-                    : this(true, 0d, 0d, -1, 1, Math.PI / 4, false, false, 4, 0, IntermediateOutputInterval.EqualArea, true, DFNFileType.ASCII, false, 0, AutomaticFlag.Automatic, true, TimeUnits.second)
+                    : this(true, 0d, 0d, -1, -1, 1, Math.PI / 4, false, false, 4, 0, IntermediateOutputInterval.EqualArea, true, DFNFileType.ASCII, false, 0, AutomaticFlag.Automatic, true, TimeUnits.second)
         {
             // Defaults:
 
@@ -824,6 +831,7 @@ namespace DFMGenerator_SharedCode
             // Index of minimum microfracture radius to be included in DFN: 0 (DFN will contain no microfractures)
             // Index of minimum macrofracture half-length to be included in DFN: 0 (DFN will include all macrofractures)
             // Maximum number of fractures allowed in the DFN: -1 (no limit)
+            // Maximum number of new fractures that can be generated per gridblock per timestep: -1 (no limit)
             // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than 1m
             // Maximum variation in fracture propagation azimuth allowed across gridblock boundary: Pi/4 rad (45 degrees) 
             // Flag to extend fractures outside grid area: false (crop at grid boundary)
@@ -844,7 +852,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="GenerateExplicitDFN_in">Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated</param>
         /// <param name="MicrofractureDFNMinimumSizeIndex_in">Index of minimum microfracture radius to be included in DFN: if zero or negative, DFN will contain no microfractures; if positive, MacrofractureDFNMinimumLength will be zero (include all macrofractures)</param>
         /// <param name="MacrofractureDFNMinimumSizeIndex_in">Minimum macrofracture half-length to be included in DFN: if zero, DFN will include all macrofractures; if negative, no DFN will be generated</param>
-        /// <param name="maxNoFractures_in">Maximum number of fractures allowed in the DFN. Culling is post DFN-generation; if the limit is exceeded the algorithm will remove the smallest fractures from the DFN until the limit is reached</param>
+        /// <param name="MaxNoFractures_in">Maximum number of fractures allowed in the DFN. Culling is post DFN-generation; if the limit is exceeded the algorithm will remove the smallest fractures from the DFN until the limit is reached</param>
+        /// <param name="MaxNewFracturesPerTimestep_in">Maximum number of new fractures that can be generated per gridblock per timestep: if negative no limit will be applied</param>
         /// <param name="MinimumLayerThickness_in">Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value; set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers</param>
         /// <param name="MaxConsistencyAngle_in">Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set</param>
         /// <param name="CropToGrid_in">Flag to crop fractures at the boundary of the grid: true to crop fractures at grid boundary, false to propagate fractures indefinitely beyond the grid</param>
@@ -859,14 +868,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="SearchAdjacentGridlocks_in">Flag to control whether to search adjacent gridblocks for stress shadow interaction; if set to automatic, this will be determined independently for each gridblock based on the gridblock geometry</param>
         /// <param name="propagateFracturesInNucleationOrder_in">Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set</param>
         /// <param name="timeUnits_in">Time units for output data</param>
-        public DFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, int maxNoFractures_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchAdjacentGridlocks_in, bool propagateFracturesInNucleationOrder_in, TimeUnits timeUnits_in)
+        public DFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, int MaxNoFractures_in, int MaxNewFracturesPerTimestep_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchAdjacentGridlocks_in, bool propagateFracturesInNucleationOrder_in, TimeUnits timeUnits_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new (empty) list specifying times for intermediate outputs
             IntermediateOutputTimes = new List<double>();
             // Set all other data
-            setDFNGenerationControl(GenerateExplicitDFN_in, MicrofractureDFNMinimumSizeIndex_in, MacrofractureDFNMinimumSizeIndex_in, maxNoFractures_in, MinimumLayerThickness_in, MaxConsistencyAngle_in, CropToGrid_in, LinkFracturesInStressShadow_in, NumberOfuFPoints_in, NumberOfIntermediateOutputs_in, SeparateIntermediateOutputsBy_in, WriteDFNFiles_in, OutputFileType_in, outputCentrepoints_in, probabilisticFractureNucleationLimit_in, SearchAdjacentGridlocks_in, propagateFracturesInNucleationOrder_in, timeUnits_in);
+            setDFNGenerationControl(GenerateExplicitDFN_in, MicrofractureDFNMinimumSizeIndex_in, MacrofractureDFNMinimumSizeIndex_in, MaxNoFractures_in, MaxNewFracturesPerTimestep_in, MinimumLayerThickness_in, MaxConsistencyAngle_in, CropToGrid_in, LinkFracturesInStressShadow_in, NumberOfuFPoints_in, NumberOfIntermediateOutputs_in, SeparateIntermediateOutputsBy_in, WriteDFNFiles_in, OutputFileType_in, outputCentrepoints_in, probabilisticFractureNucleationLimit_in, SearchAdjacentGridlocks_in, propagateFracturesInNucleationOrder_in, timeUnits_in);
         }
     }
 

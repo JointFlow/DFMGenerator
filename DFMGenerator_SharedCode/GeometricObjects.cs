@@ -791,28 +791,32 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private static double roundToZero = 1E-10;
         /// <summary>
-        /// Modified sin function that will return exactly zero for sin(pi) and multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// Modified sin function that will return exactly zero for sin(pi) or multiples and exactly 1 for sin(pi/2) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
         /// </summary>
         /// <param name="angle">Angle to calculate sine of</param>
-        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple</returns>
+        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple and 1d for angle=Math.Pi/2 or a multiple</returns>
         public static double Sin_trim(double angle)
         {
             double output = Math.Sin(angle);
             if (Math.Abs(output) < roundToZero)
                 return 0;
+            else if (Math.Abs(1 - output) < roundToZero)
+                return 1;
             else
                 return output;
         }
         /// <summary>
-        /// Modified cos function that will return exactly zero for cos(pi/2) and multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// Modified cos function that will return exactly zero for cos(pi/2) or multiples and exactly 1 for cos(pi) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
         /// </summary>
         /// <param name="angle">Angle to calculate cosine of</param>
-        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple</returns>
+        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple and 1d for angle=Math.Pi or a multiple</returns>
         public static double Cos_trim(double angle)
         {
             double output = Math.Cos(angle);
             if (Math.Abs(output) < roundToZero)
                 return 0;
+            else if (Math.Abs(1 - output) < roundToZero)
+                return 1;
             else
                 return output;
         }
@@ -1425,16 +1429,30 @@ namespace DFMGenerator_SharedCode
 
             // Solve the cubic equation giving the eigenvalues in terms of the invariants (E^3-I1xE^2+I2xE-I3=0)
             // Using Cardano method
+            double z1, z2, z3;
             double alpha = I1 / 3;
-            double c = I2 - (2 * I1 * alpha) + (3 * Math.Pow(alpha, 2));
-            double d = -I3 + (I2 * alpha) - (I1 * Math.Pow(alpha, 2)) + Math.Pow(alpha, 3);
-            double gamma = Math.Sqrt(-(4 / 3) * c);
-            double theta1 = (Math.Acos(-(4 * d) / Math.Pow(gamma, 3))) / 3;
-            double theta2 = (Math.Acos(-(4 * d) / Math.Pow(gamma, 3)) + (2 * Math.PI)) / 3;
-            double theta3 = (Math.Acos(-(4 * d) / Math.Pow(gamma, 3)) - (2 * Math.PI)) / 3;
-            double z1 = gamma * Math.Cos(theta1);
-            double z2 = gamma * Math.Cos(theta2);
-            double z3 = gamma * Math.Cos(theta3);
+            double c = I2 - (2 * I1 * alpha) + (3 * alpha * alpha);
+            double d = -I3 + (I2 * alpha) - (I1 * alpha * alpha) + (alpha * alpha * alpha);
+            // If c=0 then the tensor is isotropic so all eigenvalues are equal 
+            if (c == 0)
+            {
+                z3 = z2 = z1 = Math.Sign(d) * Math.Pow(Math.Abs(d), 1 / 3);
+            }
+            else
+            {
+                double gamma = Math.Sqrt(-(4 / 3) * c);
+                double cos3theta = -(4 * d) / (gamma * gamma * gamma);
+                // If two of the eigenvalues are equal then 4c^3=-27d^2 and |cos3theta|=1
+                // Sometimes we get |cos3theta|>1 which has a complex solution
+                // Although general cubic equations can have complex roots, the eigenvalues of a symmetric tensor should always be real so |cos3theta| should always be <=1
+                // We will therefore assume that this is due to rounding errors and we will reduce |cos3theta| to 1
+                if (cos3theta < -1) cos3theta = -1;
+                if (cos3theta > 1) cos3theta = 1;
+                double theta1 = Math.Acos(cos3theta) / 3;
+                z1 = gamma * Math.Cos(theta1);
+                z2 = gamma * Math.Cos(theta1 + ((2 / 3) * Math.PI));
+                z3 = gamma * Math.Cos(theta1 - ((2 / 3) * Math.PI));
+            }
             eigenvalues.Add(z1 + alpha);
             eigenvalues.Add(z2 + alpha);
             eigenvalues.Add(z3 + alpha);
