@@ -28,7 +28,7 @@ namespace DFMGenerator_SharedCode
     /// </summary>
     public enum CalculateFractureDataReturnCode { Completed, TimestepLimitExceeded }
     /// <summary>
-    /// Enumerator for return codes for the PropagateDFN function: 0 if the calculation runs to completion without errors; 1 if the gridblock geometry is not correctly defined; 2 if there is an error in the driving stress or propagation distance; 3 if fracture limit is hit
+    /// Enumerator for return codes for the PropagateDFN function: 0 if the calculation runs to completion without errors; 1 if the gridblock geometry is not correctly defined; 2 if there is an error in the driving stress or propagation distance; 3 if fracture nucleation limit is hit
     /// </summary>
     public enum PropagateDFNReturnCode { Completed, GridblockGeometryError, DrivingStressError, NewFractureLimitExceeded }
 
