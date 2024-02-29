@@ -1441,7 +1441,7 @@ namespace DFMGenerator_SharedCode
             // We will use the one with a positive shear stress magnitude
             // If the shear stress magnitude is zero then the shear displacement pitch will be set to NaN
             double newShearStressPitch = Math.Atan2(DipShearStressMagnitude, StrikeShearStressMagnitude);
-            ShearStressMagnitude = (DipShearStressMagnitude * Math.Sin(newShearStressPitch)) + (StrikeShearStressMagnitude * (Math.Cos(newShearStressPitch)));
+            ShearStressMagnitude = (DipShearStressMagnitude * VectorXYZ.Sin_trim(newShearStressPitch)) + (StrikeShearStressMagnitude * (VectorXYZ.Cos_trim(newShearStressPitch)));
             if (ShearStressMagnitude == 0)
                 newShearStressPitch = double.NaN;
 
@@ -1464,11 +1464,11 @@ namespace DFMGenerator_SharedCode
             else
             {
                 double nu_r = gbc.MechProps.Nu_r;
-                shearStressVector = (Math.Sin(newShearStressPitch) * dipVector) + (Math.Cos(newShearStressPitch) * fs.StrikeVector);
+                shearStressVector = (VectorXYZ.Sin_trim(newShearStressPitch) * dipVector) + (VectorXYZ.Cos_trim(newShearStressPitch) * fs.StrikeVector);
                 DisplacementPitch = Math.Atan2(DipShearStressMagnitude, (StrikeShearStressMagnitude / (1 - nu_r)));
                 // NB The displacement vector will not be a unit length vector
                 // This is necessary to get the correct results when calculating frictional traction and compliance for strike-slip fractures
-                displacementVector = (Math.Sin(newShearStressPitch) * dipVector) + ((Math.Cos(newShearStressPitch) / (1 - nu_r)) * fs.StrikeVector);
+                displacementVector = (VectorXYZ.Sin_trim(newShearStressPitch) * dipVector) + ((VectorXYZ.Cos_trim(newShearStressPitch) / (1 - nu_r)) * fs.StrikeVector);
             }
 
             // The shear displacement vector has changed so return true
@@ -1752,7 +1752,7 @@ namespace DFMGenerator_SharedCode
                 case FractureMode.Mode3:
                     output *= P33_total * cosdip;
                     if (!double.IsNaN(ShearStressPitch))
-                        output *= Math.Abs(Math.Sin(ShearStressPitch));
+                        output *= Math.Abs(VectorXYZ.Sin_trim(ShearStressPitch));
                     break;
                 default:
                     break;
@@ -1779,7 +1779,7 @@ namespace DFMGenerator_SharedCode
                 case FractureMode.Mode3:
                     output *= P33 * cosdip;
                     if (!double.IsNaN(ShearStressPitch))
-                        output *= Math.Abs(Math.Sin(ShearStressPitch));
+                        output *= Math.Abs(VectorXYZ.Sin_trim(ShearStressPitch));
                     break;
                 default:
                     break;
@@ -1805,7 +1805,7 @@ namespace DFMGenerator_SharedCode
                 case FractureMode.Mode3:
                     output *= P32_total * cosdip;
                     if (!double.IsNaN(DisplacementPitch))
-                        output *= Math.Abs(Math.Sin(DisplacementPitch));
+                        output *= Math.Abs(VectorXYZ.Sin_trim(DisplacementPitch));
                     break;
                 default:
                     break;
@@ -1832,7 +1832,7 @@ namespace DFMGenerator_SharedCode
                 case FractureMode.Mode3:
                     output *= P32 * cosdip;
                     if (!double.IsNaN(DisplacementPitch))
-                        output *= Math.Abs(Math.Sin(DisplacementPitch));
+                        output *= Math.Abs(VectorXYZ.Sin_trim(DisplacementPitch));
                     break;
                 default:
                     break;
@@ -2970,7 +2970,7 @@ namespace DFMGenerator_SharedCode
             foreach (Gridblock_FractureSet other_fs in gbc.FractureSets)
                 if (other_fs != fs)
                 {
-                    double intersectionAngleSin = Math.Abs(Math.Sin(fs.Strike - other_fs.Strike));
+                    double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(fs.Strike - other_fs.Strike));
                     double setP32 = 0;
                     foreach (FractureDipSet fds in other_fs.FractureDipSets)
                         setP32 += fds.getTotalMFP32();
