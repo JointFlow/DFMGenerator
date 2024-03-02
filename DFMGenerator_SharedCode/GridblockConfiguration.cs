@@ -4428,9 +4428,10 @@ namespace DFMGenerator_SharedCode
                     relaySegment.PropNodeType = SegmentNodeType.Relay;
                     relaySegment.TerminatingSegment = interacting_MFSegment;
 
-                    // We will not add the relay segment to the local fracture segment list for this gridblock as it is inactive and perpendicular to the other segments in this set
+                    // We will not add the relay segment to the MacrofractureSegmentHolder list for this gridblock as it is inactive and perpendicular to the other segments in this set
                     // Also, doing so would throw an exception as we would be adding to the collection of local segments while looping through them
-                    // However we will add the linking segment to the same global DFN as the initiator segment
+                    // However we will add the linking segment to the list of local macrofracture segments for the fracture set, and to the same global DFN as the initiator segment
+                    fs.LocalDFNMacrofractureSegments[MFSegment.LocalPropDir].Add(relaySegment);
                     relaySegment.linktoGlobalMacrofracture(MFSegment);
 
                     // If the interacting fracture is still active combine the other fracture with this one, so they will form a single MacrofractureXYZ object

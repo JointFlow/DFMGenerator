@@ -4413,7 +4413,7 @@ namespace DFMGenerator_SharedCode
             PointXYZ fractureTip2XYZ = Tip2Set.convertIJKtoXYZ(FractureTip2);
 
             // Loop through every other fracture set in this gridblock, apart from this one and the tip 2 set
-            foreach (Gridblock_FractureSet intersecting_fs in gbc.FractureSets)
+            foreach (Gridblock_FractureSet intersecting_fs in this.gbc.FractureSets)
             {
                 if ((intersecting_fs == this) || (intersecting_fs == Tip2Set))
                     continue;
@@ -4424,16 +4424,16 @@ namespace DFMGenerator_SharedCode
                     {
                         // Convert the two tips of the third segment to XYZ coordinates
                         PointXYZ intersectingSegmentTip1XYZ = intersectingSegment.getNonPropNodeinXYZ();
-                        PointXYZ intersectingSegmentTip2XYS = intersectingSegment.getPropNodeinXYZ();
+                        PointXYZ intersectingSegmentTip2XYZ = intersectingSegment.getPropNodeinXYZ();
 
                         // If the third segment intersects the line between the two specified fracture tips, return true
-                        if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYS))
+                        if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYZ))
                             return true;
                     }
             }
 
             // If fracture tip 2 lies in another gridblock, check against other fracture sets in that gridblock as well
-            if (Tip2Set.gbc != gbc)
+            if (Tip2Set.gbc != this.gbc)
                 foreach (Gridblock_FractureSet intersecting_fs in Tip2Set.gbc.FractureSets)
                 {
                     if ((intersecting_fs == this) || (intersecting_fs == Tip2Set))
@@ -4445,10 +4445,10 @@ namespace DFMGenerator_SharedCode
                         {
                             // Convert the two tips of the third segment to XYZ coordinates
                             PointXYZ intersectingSegmentTip1XYZ = intersectingSegment.getNonPropNodeinXYZ();
-                            PointXYZ intersectingSegmentTip2XYS = intersectingSegment.getPropNodeinXYZ();
+                            PointXYZ intersectingSegmentTip2XYZ = intersectingSegment.getPropNodeinXYZ();
 
                             // If the third segment intersects the line between the two specified fracture tips, return true
-                            if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYS))
+                            if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYZ))
                                 return true;
                         }
                 }
@@ -5149,17 +5149,20 @@ namespace DFMGenerator_SharedCode
 
                         // Set the propagating macrofracture segment status and flags, if we have specified to do so
                         // The exact status and flags will depend on the boundary type and input settings
+                        // NB there is no terminating fracture segment so we set this reference to null
                         if (terminateIfIntersects)
                         {
                             if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
                             {
                                 propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
                                 propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                propagatingSegment.TerminatingSegment = null;
                             }
                             else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
                             {
                                 propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
                                 propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                propagatingSegment.TerminatingSegment = null;
                             }
                             // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
                         } // End set the propagating macrofracture segment status and flags
@@ -5184,17 +5187,20 @@ namespace DFMGenerator_SharedCode
 
                         // Set the propagating macrofracture segment status and flags, if we have specified to do so
                         // The exact status and flags will depend on the boundary type and input settings
+                        // NB there is no terminating fracture segment so we set this reference to null
                         if (terminateIfIntersects)
                         {
                             if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
                             {
                                 propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
                                 propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                propagatingSegment.TerminatingSegment = null;
                             }
                             else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
                             {
                                 propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
                                 propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                propagatingSegment.TerminatingSegment = null;
                             }
                             // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
                         } // End set the propagating macrofracture segment status and flags
@@ -5243,17 +5249,20 @@ namespace DFMGenerator_SharedCode
 
                                 // Set the propagating macrofracture segment status and flags, if we have specified to do so
                                 // The exact status and flags will depend on the boundary type and input settings
+                                // NB there is no terminating fracture segment so we set this reference to null
                                 if (terminateIfIntersects)
                                 {
                                     if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
                                     {
                                         propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
                                         propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                        propagatingSegment.TerminatingSegment = null;
                                     }
                                     else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
                                     {
                                         propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
                                         propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                        propagatingSegment.TerminatingSegment = null;
                                     }
                                     // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
                                 } // End set the propagating macrofracture segment status and flags
@@ -5284,17 +5293,20 @@ namespace DFMGenerator_SharedCode
 
                                 // Set the propagating macrofracture segment status and flags, if we have specified to do so
                                 // The exact status and flags will depend on the boundary type and input settings
+                                // NB there is no terminating fracture segment so we set this reference to null
                                 if (terminateIfIntersects)
                                 {
                                     if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
                                     {
                                         propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
                                         propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                        propagatingSegment.TerminatingSegment = null;
                                     }
                                     else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the fracture anyway, set NodeType to NonconnectedGridblockBound
                                     {
                                         propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
                                         propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                        propagatingSegment.TerminatingSegment = null;
                                     }
                                     // If we have specified not to terminate the fracture when the neighbour is null, leave fracture as active and NodeType as Propagating
                                 }
