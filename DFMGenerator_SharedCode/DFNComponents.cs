@@ -364,14 +364,14 @@ namespace DFMGenerator_SharedCode
             {
                 // Get the sine and cosine of the cornerpoint relative to the fracture
                 double pointAngle = 2 * Math.PI * ((double)pointNo / (double)nouFCornerPoints);
-                double pointSin = Math.Sin(pointAngle);
-                double pointCos = Math.Cos(pointAngle);
+                double pointSin = VectorXYZ.Sin_trim(pointAngle);
+                double pointCos = VectorXYZ.Cos_trim(pointAngle);
 
                 // Calculate useful local variables
-                double sinAzi = Math.Sin(Azimuth);
-                double cosAzi = Math.Cos(Azimuth);
-                double sinDip = Math.Sin(Dip);
-                double cosDip = Math.Cos(Dip);
+                double sinAzi = VectorXYZ.Sin_trim(Azimuth);
+                double cosAzi = VectorXYZ.Cos_trim(Azimuth);
+                double sinDip = VectorXYZ.Sin_trim(Dip);
+                double cosDip = VectorXYZ.Cos_trim(Dip);
 
                 // Calculate cornerpoint coordinates
                 double point_I = pointSin * Radius;
@@ -716,8 +716,8 @@ namespace DFMGenerator_SharedCode
             double Dip = getDip();
             double Azimuth = getAzimuth();
             double tandip = Math.Tan(Dip);
-            double sinazi = Math.Sin(Azimuth);
-            double cosazi = Math.Cos(Azimuth);
+            double sinazi = VectorXYZ.Sin_trim(Azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Azimuth);
 
             // Calculate x, y and z coordinates of lowermost non-propagating corner of the fracture segment
             double X_out = NodeXYZ.X + (0.5 * layerThickness * (sinazi / tandip));
@@ -747,8 +747,8 @@ namespace DFMGenerator_SharedCode
             double Dip = getDip();
             double Azimuth = getAzimuth();
             double tandip = Math.Tan(Dip);
-            double sinazi = Math.Sin(Azimuth);
-            double cosazi = Math.Cos(Azimuth);
+            double sinazi = VectorXYZ.Sin_trim(Azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Azimuth);
 
             // Calculate x, y and z coordinates of uppermost non-propagating corner of the fracture segment
             double X_out = NodeXYZ.X - (0.5 * layerThickness * (sinazi / tandip));
@@ -778,8 +778,8 @@ namespace DFMGenerator_SharedCode
             double Dip = getDip();
             double Azimuth = getAzimuth();
             double tandip = Math.Tan(Dip);
-            double sinazi = Math.Sin(Azimuth);
-            double cosazi = Math.Cos(Azimuth);
+            double sinazi = VectorXYZ.Sin_trim(Azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Azimuth);
 
             // Calculate x, y and z coordinates of lowermost propagating corner of the fracture segment
             double X_out = NodeXYZ.X + (0.5 * layerThickness * (sinazi / tandip));
@@ -809,8 +809,8 @@ namespace DFMGenerator_SharedCode
             double Dip = getDip();
             double Azimuth = getAzimuth();
             double tandip = Math.Tan(Dip);
-            double sinazi = Math.Sin(Azimuth);
-            double cosazi = Math.Cos(Azimuth);
+            double sinazi = VectorXYZ.Sin_trim(Azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Azimuth);
 
             // Calculate x, y and z coordinates of uppermost propagating corner of the fracture segment
             double X_out = NodeXYZ.X - (0.5 * layerThickness * (sinazi / tandip));
@@ -1321,10 +1321,6 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public void PopulateData()
         {
-            // Set a value for minimum strike difference between two adjacent segments for which we will calculate bevelled cornerpoints
-            // This is neccessary because if we try to calculate bevelled cornerpoints for two near parallel segments we can get unrealistic geometries
-            const double minBevellingAngle = 1 * (Math.PI / 180);
-
             // Clear the current lists of segment cornerpoints, and reset the total and along-strike fracture lengths
             SegmentCornerPoints[PropagationDirection.IPlus].Clear();
             SegmentCornerPoints[PropagationDirection.IMinus].Clear();
@@ -1415,66 +1411,80 @@ namespace DFMGenerator_SharedCode
                         NextSegment_LowerInnerSegmentCornerPoint = segments[segmentNo + 1].getLowerInnerCornerinXYZ();
                         NextSegment_LowerOuterSegmentCornerPoint = segments[segmentNo + 1].getLowerOuterCornerinXYZ();
 
+                        // If there is a significant bend at the cornerpoint, the original cornerpoints of the two adjacent segments may not be coincident
+                        // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
+
                         // Calculate bevelled cornerpoint of the upper segment boundaries
-                        // First we must determine the difference in azimuth between the upper boundaries of the two segments (the "bend" at the cornerpoint) 
-                        double ThisSegmentUpperBoundary_Azimuth = Math.Atan((ThisSegment_UpperOuterSegmentCornerPoint.X - ThisSegment_UpperInnerSegmentCornerPoint.X) / (ThisSegment_UpperOuterSegmentCornerPoint.Y - ThisSegment_UpperInnerSegmentCornerPoint.Y));
-                        double NextSegmentUpperBoundary_Azimuth = Math.Atan((NextSegment_UpperOuterSegmentCornerPoint.X - NextSegment_UpperInnerSegmentCornerPoint.X) / (NextSegment_UpperOuterSegmentCornerPoint.Y - NextSegment_UpperInnerSegmentCornerPoint.Y));
-                        // If one (or both) of the two segments has zero length, the Math.Atan function will return a NaN value
-                        if ((double.IsNaN(ThisSegmentUpperBoundary_Azimuth) || double.IsNaN(NextSegmentUpperBoundary_Azimuth)))
+                        // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
+                        PointXYZ UpperCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Extend);
+                        // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
+                        if (UpperCrossoverPoint is null)
                         {
                             // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
                             // Also we do not need to adjust this cornerpoint later; if one of the two segments has zero length, the cornerpoint between them will always lie on one of the adjacent cornerpoints, so can never lie outside them
                             ThisSegment_UpperOuterBevelledCornerPoint = new PointXYZ(ThisSegment_UpperOuterSegmentCornerPoint);
                             adjustUpperOuterCornerPoints.Add(false);
                         }
-                        // If the cornerpoint bend is less than the threshold value, then the two segment boundaries are near parallel
-                        else if (PointXYZ.getStrikeDifference(ThisSegmentUpperBoundary_Azimuth, NextSegmentUpperBoundary_Azimuth) < minBevellingAngle)
+                        else 
                         {
-                            // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
-                            // However we need to adjust this cornerpoint later, since it may lie outside the adjacent cornerpoints after they are bevelled
-                            ThisSegment_UpperOuterBevelledCornerPoint = new PointXYZ(ThisSegment_UpperOuterSegmentCornerPoint);
-                            adjustUpperOuterCornerPoints.Add(true);
-                        }
-                        // If there is a significant bend at the cornerpoint, the original cornerpoints of the two adjacent segments may not be coincident
-                        else
-                        {
-                            // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
-                            // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
-                            PointXYZ UpperCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Extend);
-                            ThisSegment_UpperOuterBevelledCornerPoint = (UpperCrossoverPoint != null ? UpperCrossoverPoint : new PointXYZ(ThisSegment_UpperOuterSegmentCornerPoint));
-                            adjustUpperOuterCornerPoints.Add(false);
+                            // If the two segment boundaries are nearly parallel and slightly offset, then the calculated crossover point may be erroneously located a long way from the actual segments
+                            // This will lead to "spiking" - an elongated fracture that may extend beyond the bounds of the grid
+                            // We will therefore check whether the calculated crossover point lies between the two original segment cornerpoints 
+                            // Get the I coordinates of the crossover point and the original cornerpoints of the two segments, in the reference frame of the first segment
+                            float firstSegmentCornerI = (float) CurrentSegment.getICoordinate(ThisSegment_UpperOuterSegmentCornerPoint);
+                            float secondSegmentCornerI = (float) CurrentSegment.getICoordinate(NextSegment_UpperInnerSegmentCornerPoint);
+                            float crossoverPointCornerI = (float) CurrentSegment.getICoordinate(UpperCrossoverPoint);
+                            // If the I coordinate of the crossover point does not lie between the I coordinates of the original cornerpoints of the two segments, we will assume there is an error
+                            if (((crossoverPointCornerI < firstSegmentCornerI) && (crossoverPointCornerI < secondSegmentCornerI)) || ((crossoverPointCornerI > firstSegmentCornerI) && (crossoverPointCornerI > secondSegmentCornerI)))
+                            {
+                                // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
+                                // However we need to adjust this cornerpoint later, since it may lie outside the adjacent cornerpoints after they are bevelled
+                                ThisSegment_UpperOuterBevelledCornerPoint = new PointXYZ(ThisSegment_UpperOuterSegmentCornerPoint);
+                                adjustUpperOuterCornerPoints.Add(true);
+                            }
+                            else
+                            {
+                                // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
+                                ThisSegment_UpperOuterBevelledCornerPoint = UpperCrossoverPoint;
+                                adjustUpperOuterCornerPoints.Add(false);
+                            }
                         }
 
                         // Calculate bevelled cornerpoint of the lower segment boundaries
-                        // First we must determine the difference in azimuth between the lower boundaries of the two segments (the "bend" at the cornerpoint) 
-                        double ThisSegmentLowerBoundary_Azimuth = Math.Atan((ThisSegment_LowerOuterSegmentCornerPoint.X - ThisSegment_LowerInnerSegmentCornerPoint.X) / (ThisSegment_LowerOuterSegmentCornerPoint.Y - ThisSegment_LowerInnerSegmentCornerPoint.Y));
-                        double NextSegmentLowerBoundary_Azimuth = Math.Atan((NextSegment_LowerOuterSegmentCornerPoint.X - NextSegment_LowerInnerSegmentCornerPoint.X) / (NextSegment_LowerOuterSegmentCornerPoint.Y - NextSegment_LowerInnerSegmentCornerPoint.Y));
-                        // If one (or both) of the two segments has zero length, the Math.Atan function will return a NaN value
-                        if ((double.IsNaN(ThisSegmentLowerBoundary_Azimuth) || double.IsNaN(NextSegmentLowerBoundary_Azimuth)))
+                        // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
+                        PointXYZ LowerCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Extend);
+                        // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
+                        if (LowerCrossoverPoint is null)
                         {
                             // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
                             // Also we do not need to adjust this cornerpoint later; if one of the two segments has zero length, the cornerpoint between them will always lie on one of the adjacent cornerpoints, so can never lie outside them
                             ThisSegment_LowerOuterBevelledCornerPoint = new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint);
                             adjustLowerOuterCornerPoints.Add(false);
                         }
-                        // If the cornerpoint bend is less than the threshold value, then the two segment boundaries are near parallel
-                        else if (PointXYZ.getStrikeDifference(ThisSegmentLowerBoundary_Azimuth, NextSegmentLowerBoundary_Azimuth) < minBevellingAngle)
-                        {
-                            // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
-                            // However we need to adjust this cornerpoint later, since it may lie outside the adjacent cornerpoints after they are bevelled
-                            ThisSegment_LowerOuterBevelledCornerPoint = new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint);
-                            adjustLowerOuterCornerPoints.Add(true);
-                        }
-                        // If there is a significant bend at the cornerpoint, the original cornerpoints of the two adjacent segments may not be coincident
                         else
                         {
-                            // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
-                            // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
-                            PointXYZ LowerCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Extend);
-                            ThisSegment_LowerOuterBevelledCornerPoint = (LowerCrossoverPoint != null ? LowerCrossoverPoint : new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint));
-                            adjustLowerOuterCornerPoints.Add(false);
+                            // If the two segment boundaries are nearly parallel and slightly offset, then the calculated crossover point may be erroneously located a long way from the actual segments
+                            // This will lead to "spiking" - an elongated fracture that may extend beyond the bounds of the grid
+                            // We will therefore check whether the calculated crossover point lies between the two original segment cornerpoints 
+                            // Get the I coordinates of the crossover point and the original cornerpoints of the two segments, in the reference frame of the first segment
+                            float firstSegmentCornerI = (float)CurrentSegment.getICoordinate(ThisSegment_LowerOuterSegmentCornerPoint);
+                            float secondSegmentCornerI = (float)CurrentSegment.getICoordinate(NextSegment_LowerInnerSegmentCornerPoint);
+                            float crossoverPointCornerI = (float)CurrentSegment.getICoordinate(LowerCrossoverPoint);
+                            // If the I coordinate of the crossover point does not lie between the I coordinates of the original cornerpoints of the two segments, we will assume there is an error
+                            if (((crossoverPointCornerI < firstSegmentCornerI) && (crossoverPointCornerI < secondSegmentCornerI)) || ((crossoverPointCornerI > firstSegmentCornerI) && (crossoverPointCornerI > secondSegmentCornerI)))
+                            {
+                                // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
+                                // However we need to adjust this cornerpoint later, since it may lie outside the adjacent cornerpoints after they are bevelled
+                                ThisSegment_LowerOuterBevelledCornerPoint = new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint);
+                                adjustLowerOuterCornerPoints.Add(true);
+                            }
+                            else
+                            {
+                                // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
+                                ThisSegment_LowerOuterBevelledCornerPoint = LowerCrossoverPoint;
+                                adjustLowerOuterCornerPoints.Add(false);
+                            }
                         }
-
                     }
                     else
                     {

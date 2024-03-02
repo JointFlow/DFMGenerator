@@ -159,7 +159,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>I coordinate of input point</returns>
         public double getICoordinate(PointXYZ point_in)
         {
-            return (Math.Sin(strike) * point_in.X) + (Math.Cos(strike) * point_in.Y);
+            return (VectorXYZ.Sin_trim(strike) * point_in.X) + (VectorXYZ.Cos_trim(strike) * point_in.Y);
         }
         /// <summary>
         /// Calculate the J coordinate (relative to fracture dip direction) of a point in grid (XYZ) coordinates
@@ -168,7 +168,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>J coordinate of input point</returns>
         public double getJCoordinate(PointXYZ point_in)
         {
-            return (Math.Cos(strike) * point_in.X) - (Math.Sin(strike) * point_in.Y);
+            return (VectorXYZ.Cos_trim(strike) * point_in.X) - (VectorXYZ.Sin_trim(strike) * point_in.Y);
         }
         /// <summary>
         /// Convert a point in grid (XYZ) coordinates to a point in fracture set (IJK) coordinates
@@ -178,8 +178,8 @@ namespace DFMGenerator_SharedCode
         public PointIJK convertXYZtoIJK(PointXYZ point_in)
         {
             // Get sin and cosine of fracture strike (i.e. I+ axis)
-            double sinstrike = Math.Sin(strike);
-            double cosstrike = Math.Cos(strike);
+            double sinstrike = VectorXYZ.Sin_trim(strike);
+            double cosstrike = VectorXYZ.Cos_trim(strike);
 
             // Convert X and Y coordinates
             double I = (sinstrike * point_in.X) + (cosstrike * point_in.Y);
@@ -200,8 +200,8 @@ namespace DFMGenerator_SharedCode
         public PointXYZ convertIJKtoXYZ(PointIJK point_in)
         {
             // Get sin and cosine of fracture strike (i.e. I+ axis)
-            double sinstrike = Math.Sin(strike);
-            double cosstrike = Math.Cos(strike);
+            double sinstrike = VectorXYZ.Sin_trim(strike);
+            double cosstrike = VectorXYZ.Cos_trim(strike);
 
             // Convert X and Y coordinates
             double X = (sinstrike * point_in.I) + (cosstrike * point_in.J);
@@ -232,8 +232,8 @@ namespace DFMGenerator_SharedCode
         public double getTVTAtPoint(PointIJK point_in)
         {
             // Get sin and cosine of fracture strike (i.e. I+ axis)
-            double sinstrike = Math.Sin(strike);
-            double cosstrike = Math.Cos(strike);
+            double sinstrike = VectorXYZ.Sin_trim(strike);
+            double cosstrike = VectorXYZ.Cos_trim(strike);
 
             // Convert X and Y coordinates
             double X = (sinstrike * point_in.I) + (cosstrike * point_in.J);
@@ -462,8 +462,8 @@ namespace DFMGenerator_SharedCode
         public double getFaaIJ(Gridblock_FractureSet J)
         {
             double angle_IJ = Azimuth - J.Azimuth;
-            double cos2IJ = Math.Pow(Math.Cos(angle_IJ), 2);
-            double sincosIJ = Math.Sin(angle_IJ) * Math.Cos(angle_IJ);
+            double cos2IJ = Math.Pow(VectorXYZ.Cos_trim(angle_IJ), 2);
+            double sincosIJ = VectorXYZ.Sin_trim(angle_IJ) * VectorXYZ.Cos_trim(angle_IJ);
             double ehh2I = Math.Pow(eaad, 2) + Math.Pow(easd, 2);
             double ehh2J = Math.Pow(J.eaad, 2) + Math.Pow(J.easd, 2);
             double ehh_factor = (ehh2J > 0 ? ehh2I / ehh2J : 0);
@@ -481,7 +481,7 @@ namespace DFMGenerator_SharedCode
         public double getFasIJ(Gridblock_FractureSet J)
         {
             double angle_IJ = Azimuth - J.Azimuth;
-            double sincosIJ = Math.Sin(angle_IJ) * Math.Cos(angle_IJ);
+            double sincosIJ = VectorXYZ.Sin_trim(angle_IJ) * VectorXYZ.Cos_trim(angle_IJ);
             double ehh2I = Math.Pow(eaad, 2) + Math.Pow(easd, 2);
             double ehh2J = Math.Pow(J.eaad, 2) + Math.Pow(J.easd, 2);
             double ehh_factor = (ehh2J > 0 ? ehh2I / ehh2J : 0);
@@ -2538,7 +2538,7 @@ namespace DFMGenerator_SharedCode
             foreach (Gridblock_FractureSet fb_fs in gbc.FractureSets)
                 if (fb_fs != this)
                 {
-                    double intersectionAngleSin = Math.Abs(Math.Sin(Strike - fb_fs.Strike));
+                    double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - fb_fs.Strike));
                     fb_MFP30 += fb_fs.combined_T_MFP30_total();
                     app_fb_MFP32 += (intersectionAngleSin * fb_fs.combined_T_MFP32_total());
                 }
@@ -2634,7 +2634,7 @@ namespace DFMGenerator_SharedCode
                 if (fb_fs != this)
                 {
                     // Get the positive sine of the angle of intersection between the two fracture sets
-                    double intersectionAngleSin = Math.Abs(Math.Sin(Strike - fb_fs.Strike));
+                    double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - fb_fs.Strike));
 
                     // Calculate the propagation distance perpendicular to this fracture set
                     double relativePropagationDistance = propagationDistance * intersectionAngleSin;
@@ -2761,7 +2761,7 @@ namespace DFMGenerator_SharedCode
                 if (fb_fs != this)
                 {
                     // Get the positive sine of the angle of intersection between the two fracture sets
-                    double intersectionAngleSin = Math.Abs(Math.Sin(Strike - fb_fs.Strike));
+                    double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - fb_fs.Strike));
 
                     // Create a new list of the propagation distance perpendicular to this fracture set
                     List<double> relativePropagationDistances = new List<double>();
@@ -2903,7 +2903,7 @@ namespace DFMGenerator_SharedCode
                     foreach (Gridblock_FractureSet fs in gbc.FractureSets)
                         if ((fs != this) && (fs != fb_fs))
                         {
-                            double intersectionAngleSin = Math.Abs(Math.Sin(Strike - fs.Strike));
+                            double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - fs.Strike));
                             double fsP32 = 0;
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 fsP32 += (UseCurrentData ? fds.getTotalMFP32() : fds.getTotalMFP32(Timestep_Mminus1));
@@ -2977,7 +2977,7 @@ namespace DFMGenerator_SharedCode
             // We will perform the calculation by projecting the propagating fracture onto a line perpendicular to the set it is propagating towards
             // At the end of the calculation, we can convert it back to a distance parallel to the propagating fracture
             // NB If the intersection angle is 0, the propagating fracture will never intersect a fracture from the other set so we can return a value based on FII_dashed
-            double sinIntersectionAngle = Math.Abs(Math.Sin(IntersectionAngle));
+            double sinIntersectionAngle = Math.Abs(VectorXYZ.Sin_trim(IntersectionAngle));
             if (sinIntersectionAngle == 0)
             {
                 // Calculate mean propagation distance based on FII only for each of the specified length cutoffs
@@ -3038,7 +3038,7 @@ namespace DFMGenerator_SharedCode
             // At the end of the calculation, we can convert it back to a distance parallel to the propagating fracture
             // NB If the intersection angle is 0, the propagating fracture will never intersect a fracture from the other set so we can return a value based on FII_dashed
             // This will also be independent of the minimum distance from the nearest set J fracture
-            double sinIntersectionAngle = Math.Abs(Math.Sin(IntersectionAngle));
+            double sinIntersectionAngle = Math.Abs(VectorXYZ.Sin_trim(IntersectionAngle));
             if (sinIntersectionAngle == 0)
             {
                 // Calculate mean propagation distance based on FII only for each of the specified length cutoffs
@@ -3815,7 +3815,7 @@ namespace DFMGenerator_SharedCode
             for (int otherFSIndex = 0; otherFSIndex < noOtherFS; otherFSIndex++)
             {
                 Gridblock_FractureSet otherFS = otherFractureSets[otherFSIndex];
-                double intersectionAngleSin = Math.Abs(Math.Sin(Strike - otherFS.Strike));
+                double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - otherFS.Strike));
                 intersectionAngleSins[otherFSIndex] = intersectionAngleSin;
                 // trueEZWidth represents the mean exclusion zone width for fractures from otherFS as seen by fractures from dipset mp_fds (in this fracture set), measured perpendicular to the strike of otherFS
                 double trueEZWidth = gbc.getCrossFSExclusionZoneWidth(otherFS, this, mp_fds, Timestep_M) / 2;
@@ -4223,11 +4223,12 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="propagatingSegment">Reference to a MacrofractureSegmentIJK object representing the propagating fracture segment</param>
         /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment interacts with another macrofracture stress shadow (m)</param>
+        /// <param name="checkRelayCrossing">If true, do not record a stress shadow interaction if the relay zone between the two fracture tips is cut by a third fracture</param>
         /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
-        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, ref double propagationLength, bool terminateIfInteracts)
+        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, ref double propagationLength, bool checkRelayCrossing, bool terminateIfInteracts)
         {
-            return checkStressShadowInteraction(propagatingSegment, this, ref propagationLength, terminateIfInteracts);
+            return checkStressShadowInteraction(propagatingSegment, this, ref propagationLength, checkRelayCrossing, terminateIfInteracts);
         }
         /// <summary>
         /// Check whether a propagating macrofracture segment from this fracture set will terminate due to stress shadow interaction with of any of the other macrofracture segments in the explicit DFN associated with a fracture set in another gridblock
@@ -4235,9 +4236,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="propagatingSegment">Reference to a MacrofractureSegmentIJK object representing the propagating fracture segment</param>
         /// <param name="interacting_fs">Reference to a Gridblock_FractureSet object representing the fracture set which the propagating fracture segment will interact with</param>
         /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment interacts with another macrofracture stress shadow (m)</param>
+        /// <param name="checkRelayCrossing">If true, do not record a stress shadow interaction if the relay zone between the two fracture tips is cut by a third fracture</param>
         /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
-        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet interacting_fs, ref double propagationLength, bool terminateIfInteracts)
+        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet interacting_fs, ref double propagationLength, bool checkRelayCrossing, bool terminateIfInteracts)
         {
             // Set return value to false initially
             bool interacts = false;
@@ -4261,7 +4263,7 @@ namespace DFMGenerator_SharedCode
             // If the propagating and interacting fractures are not from the same set, we will need to adjust the apparent width of the stress shadows in the interacting set, to account for the difference in strike between them
             double interactingStressShadowWidthMultiplier = 1;
             if (!sameSet)
-                interactingStressShadowWidthMultiplier = Math.Cos(PointXYZ.getStrikeDifference(Strike, interacting_fs.Strike));
+                interactingStressShadowWidthMultiplier = VectorXYZ.Cos_trim(PointXYZ.getStrikeDifference(Strike, interacting_fs.Strike));
             double propagatingSegment_stresshadowwidth = FractureDipSets[propagatingSegment.FractureDipSetIndex].getMeanStressShadowWidth(-1);
             List<double> stressshadowhalfwidths = new List<double>();
             foreach (FractureDipSet fds in interacting_fs.FractureDipSets)
@@ -4307,6 +4309,10 @@ namespace DFMGenerator_SharedCode
                         if ((segmentnode_J >= stressshadowintbox_Jmin) && (segmentnode_J <= stressshadowintbox_Jmax))
                             if (propagatingSegment.NonPropNode != interacting_MF_segment.NonPropNode)
                             {
+                                // If required, check if the relay zone between the two fracture tips is cut by a third fracture, and if so, move on to the next segment 
+                                if (checkRelayCrossing && checkCrossingFractures(new PointIJK(segmentnode_I, propNode_J, 0), interacting_MF_segment.PropNode, interacting_fs))
+                                    continue;
+
                                 // Set the return value to true
                                 interacts = true;
 
@@ -4364,6 +4370,10 @@ namespace DFMGenerator_SharedCode
                         if ((segmentnode_J >= stressshadowintbox_Jmin) && (segmentnode_J <= stressshadowintbox_Jmax))
                             if (propagatingSegment.NonPropNode != interacting_MF_segment.NonPropNode)
                             {
+                                // If required, check if the relay zone between the two fracture tips is cut by a third fracture, and if so, move on to the next segment 
+                                if (checkRelayCrossing && checkCrossingFractures(new PointIJK(segmentnode_I, propNode_J, 0), interacting_MF_segment.PropNode, interacting_fs))
+                                    continue;
+
                                 // Set the return value to true
                                 interacts = true;
 
@@ -4389,12 +4399,70 @@ namespace DFMGenerator_SharedCode
             return interacts;
         }
         /// <summary>
-                 /// Check whether a boundary tracking macrofracture segment from this fracture set will converge with another boundary tracking macrofracture segment
-                 /// </summary>
-                 /// <param name="propagatingSegment">Reference to a MacrofractureSegmentIJK object representing the propagating fracture segment</param>
-                 /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment interacts with another macrofracture stress shadow (m)</param>
-                 /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
-                 /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
+        /// Check whether any other fracture segments intersect a line between two specified fracture tips
+        /// THis is useful to check if a potential relay zone would be intersected by another fracture
+        /// </summary>
+        /// <param name="FractureTip1">First fracture tip; must belong to a fracture in this fracture set</param>
+        /// <param name="FractureTip2">Second fracture tip; may belong to a fracture in another fracture set</param>
+        /// <param name="Tip2Set">Fracture set that the second fracture tip belongs to</param>
+        /// <returns>True if any other fracture segment intersects the line between the two specified fracture tips, otherwise false</returns>
+        private bool checkCrossingFractures(PointIJK FractureTip1, PointIJK FractureTip2, Gridblock_FractureSet Tip2Set)
+        {
+            // Convert the two specified fracture tips to XYZ coordinates
+            PointXYZ fractureTip1XYZ = convertIJKtoXYZ(FractureTip1);
+            PointXYZ fractureTip2XYZ = Tip2Set.convertIJKtoXYZ(FractureTip2);
+
+            // Loop through every other fracture set in this gridblock, apart from this one and the tip 2 set
+            foreach (Gridblock_FractureSet intersecting_fs in gbc.FractureSets)
+            {
+                if ((intersecting_fs == this) || (intersecting_fs == Tip2Set))
+                    continue;
+
+                // Loop through each segment in the fracture set
+                foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+                    foreach (MacrofractureSegmentIJK intersectingSegment in intersecting_fs.LocalDFNMacrofractureSegments[dir])
+                    {
+                        // Convert the two tips of the third segment to XYZ coordinates
+                        PointXYZ intersectingSegmentTip1XYZ = intersectingSegment.getNonPropNodeinXYZ();
+                        PointXYZ intersectingSegmentTip2XYS = intersectingSegment.getPropNodeinXYZ();
+
+                        // If the third segment intersects the line between the two specified fracture tips, return true
+                        if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYS))
+                            return true;
+                    }
+            }
+
+            // If fracture tip 2 lies in another gridblock, check against other fracture sets in that gridblock as well
+            if (Tip2Set.gbc != gbc)
+                foreach (Gridblock_FractureSet intersecting_fs in Tip2Set.gbc.FractureSets)
+                {
+                    if ((intersecting_fs == this) || (intersecting_fs == Tip2Set))
+                        continue;
+
+                    // Loop through each segment in the fracture set
+                    foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+                        foreach (MacrofractureSegmentIJK intersectingSegment in intersecting_fs.LocalDFNMacrofractureSegments[dir])
+                        {
+                            // Convert the two tips of the third segment to XYZ coordinates
+                            PointXYZ intersectingSegmentTip1XYZ = intersectingSegment.getNonPropNodeinXYZ();
+                            PointXYZ intersectingSegmentTip2XYS = intersectingSegment.getPropNodeinXYZ();
+
+                            // If the third segment intersects the line between the two specified fracture tips, return true
+                            if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYS))
+                                return true;
+                        }
+                }
+
+            // If no other fracture segments intersect the line between the two specified fracture tips, return false
+            return false;
+        }
+        /// <summary>
+        /// Check whether a boundary tracking macrofracture segment from this fracture set will converge with another boundary tracking macrofracture segment
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to a MacrofractureSegmentIJK object representing the propagating fracture segment</param>
+        /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment interacts with another macrofracture stress shadow (m)</param>
+        /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
+        /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
         public bool checkFractureConvergence(MacrofractureSegmentIJK propagatingSegment, ref double propagationLength, bool terminateIfInteracts)
         {
             // Get the tracking boundary
@@ -4514,8 +4582,8 @@ namespace DFMGenerator_SharedCode
             bool intersects = false;
 
             // Calculate sin and cosine of intersection angle
-            double sin_intersectionAngle = Math.Sin(intersectionAngle);
-            double cos_intersectionAngle = Math.Cos(intersectionAngle);
+            double sin_intersectionAngle = VectorXYZ.Sin_trim(intersectionAngle);
+            double cos_intersectionAngle = VectorXYZ.Cos_trim(intersectionAngle);
 
             // Cache coordinates and direction of propagating segment locally
             double propNode_I = propagatingSegment.PropNode.I;
@@ -4723,8 +4791,8 @@ namespace DFMGenerator_SharedCode
             bool intersects = false;
 
             // Calculate sin and cosine of intersection angle
-            double sin_intersectionAngle = Math.Sin(intersectionAngle);
-            double cos_intersectionAngle = Math.Cos(intersectionAngle);
+            double sin_intersectionAngle = VectorXYZ.Sin_trim(intersectionAngle);
+            double cos_intersectionAngle = VectorXYZ.Cos_trim(intersectionAngle);
 
             // Cache coordinates and direction of propagating segment locally
             // Note that we do not need to check if the propagating segment lies within the width range of the intersecting segment, since they will both lie on the boundary
@@ -4887,8 +4955,8 @@ namespace DFMGenerator_SharedCode
             bool intersects = false;
 
             // Calculate sin and cosine of intersection angle
-            double sin_intersectionAngle = Math.Sin(intersectionAngle);
-            double cos_intersectionAngle = Math.Cos(intersectionAngle);
+            double sin_intersectionAngle = VectorXYZ.Sin_trim(intersectionAngle);
+            double cos_intersectionAngle = VectorXYZ.Cos_trim(intersectionAngle);
 
             // Cache coordinates and direction of propagating segment locally
             // Note that we do not need to check if the propagating segment lies within the projection line of the intersecting segment, since any intersection will occur on the boundary

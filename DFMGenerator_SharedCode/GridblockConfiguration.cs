@@ -374,8 +374,8 @@ namespace DFMGenerator_SharedCode
                 Angle_NEcorner = Math.Acos(NEcorner_cosine);
 
                 // Calculate area
-                double AreaSWTriangle = (Length_SSide * Length_WSide * Math.Sin(Angle_SWcorner)) / 2;
-                double AreaNETriangle = (Length_ESide * Length_NSide * Math.Sin(Angle_NEcorner)) / 2;
+                double AreaSWTriangle = (Length_SSide * Length_WSide * VectorXYZ.Sin_trim(Angle_SWcorner)) / 2;
+                double AreaNETriangle = (Length_ESide * Length_NSide * VectorXYZ.Sin_trim(Angle_NEcorner)) / 2;
                 Area = AreaSWTriangle + AreaNETriangle;
 
                 // Reset maximum and minimum X, Y and Z coordinates
@@ -1277,7 +1277,7 @@ namespace DFMGenerator_SharedCode
                     Gridblock_FractureSet fsJ = FractureSets[fsJ_Index];
 
                     // Orientation multiplier to project the length of the terminating set J fracture perpendicular to the propagating set I fracture
-                    double sinIJ = Math.Abs(Math.Sin(fsI.Strike - fsJ.Strike));
+                    double sinIJ = Math.Abs(VectorXYZ.Sin_trim(fsI.Strike - fsJ.Strike));
 
                     // Loop through each dip set in J
                     int noDipSetsJ = fsJ.FractureDipSets.Count;
@@ -1392,7 +1392,7 @@ namespace DFMGenerator_SharedCode
                     inverseStressShadowVolumeK *= (1 - psiI);
 
                     // Orientation multiplier to project the width of a stress shadow around around a set I fracture onto the azimuth of a set K fracture
-                    double cosIK = Math.Abs(Math.Cos(fsI.Strike - fsK.Strike));
+                    double cosIK = Math.Abs(VectorXYZ.Cos_trim(fsI.Strike - fsK.Strike));
 
                     // Loop through each dipset in fracture set K
                     for (int dipSetIndexKn = 0; dipSetIndexKn < noDipSetsK; dipSetIndexKn++)
@@ -1457,7 +1457,7 @@ namespace DFMGenerator_SharedCode
                     tipOverlaps[fsI_Index, fsJ_Index] = new double[noDipSetsJ];
 
                     // Orientation multiplier to project the width of a stress shadow around around a set J fracture onto the strike of a set I fracture
-                    double sinIJ = Math.Abs(Math.Sin(fsI.Strike - fsJ.Strike));
+                    double sinIJ = Math.Abs(VectorXYZ.Sin_trim(fsI.Strike - fsJ.Strike));
                     double sinIJ_IMFP32 = sinIJ * IMFP32;
 
                     // Loop through each dip set in J
@@ -1546,7 +1546,7 @@ namespace DFMGenerator_SharedCode
                     stressShadowVolumeIK[fsI_Index] = psiI;
 
                     // Orientation multiplier to project the width of a stress shadow around around a set I fracture onto the azimuth of a set K fracture
-                    double cosIK = Math.Abs(Math.Cos(fsI.Strike - fsK.Strike));
+                    double cosIK = Math.Abs(VectorXYZ.Cos_trim(fsI.Strike - fsK.Strike));
 
                     // Loop through each dipset in fracture set K
                     for (int dipSetIndexKn = 0; dipSetIndexKn < noDipSetsK; dipSetIndexKn++)
@@ -1712,7 +1712,7 @@ namespace DFMGenerator_SharedCode
             double MeanWIJ = (P32totalI > 0 ? stressShadowVolumeIJ / P32totalI : 0);
 
             // Orientation multiplier to project the width of a stress shadow around around a set J fracture onto the azimuth of a set I fracture
-            double cosIJ = Math.Abs(Math.Cos(fsI.Strike - fsJ.Strike));
+            double cosIJ = Math.Abs(VectorXYZ.Cos_trim(fsI.Strike - fsJ.Strike));
 
             // Calculate the stress shadow width of a fracture from this dipset of J seen by a set I fracture
             // Get the azimuthal and strike-slip shear components of the mean stress shadow width for this set J dip set
@@ -2896,8 +2896,8 @@ namespace DFMGenerator_SharedCode
                     else
                     {
                         double relativeAngle = Math.PI * ((double)fs_index / (double)NoFractureSets);
-                        double HMinComponent = Math.Pow(Math.Cos(relativeAngle), 2);
-                        double HMaxComponent = Math.Pow(Math.Sin(relativeAngle), 2);
+                        double HMinComponent = Math.Pow(VectorXYZ.Cos_trim(relativeAngle), 2);
+                        double HMaxComponent = Math.Pow(VectorXYZ.Sin_trim(relativeAngle), 2);
                         maxIndexLength = (maxHMinLength * HMinComponent) + (maxHMaxLength * HMaxComponent);
                     }
 
@@ -4324,8 +4324,12 @@ namespace DFMGenerator_SharedCode
             // Check if the segment will interact with another macrofracture stress shadow
             if (checkStressShadow)
             {
+                // Set the flag to ignore stress shadow interactions if the two fracture tips are separated by a third fracture
+                // We will do this if the flag for checking microfractures against stress shadows of all fracture sets is set
+                bool checkRelayCrossing = PropControl.checkAlluFStressShadows;
+
                 // First check other macrofractures from this gridblock
-                if (fs.checkStressShadowInteraction(MFSegment, ref maxPropLength, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
+                if (fs.checkStressShadowInteraction(MFSegment, ref maxPropLength, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
 
                 // Then, if required, check macrofractures from adjacent gridblocks
                 if (SearchNeighbouringGridblocks())
@@ -4340,7 +4344,7 @@ namespace DFMGenerator_SharedCode
                         Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fsIndex, fs.Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                        if (fs.checkStressShadowInteraction(MFSegment, neighbourGB_fs, ref maxPropLength, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
+                        if (fs.checkStressShadowInteraction(MFSegment, neighbourGB_fs, ref maxPropLength, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
 
                     } // End loop through each gridblock in the list of neighbouring gridblocks
 
@@ -4805,7 +4809,7 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Orientation multiplier to project the width of a stress shadow around around a set J fracture onto the azimuth of a set I fracture
-                double cosIJ = Math.Abs(Math.Cos(FSI.Strike - FSJ.Strike));
+                double cosIJ = Math.Abs(VectorXYZ.Cos_trim(FSI.Strike - FSJ.Strike));
 
                 // Create a new list of exclusion zone widths for each fracture set I, as seen by this fracture
                 List<double> ExclusionZoneHalfWidthsIJ = new List<double>();
