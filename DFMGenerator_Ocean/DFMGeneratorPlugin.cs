@@ -9,7 +9,7 @@ namespace DFMGenerator_Ocean
     {
         public override string AppVersion
         {
-            get { return "2022.1"; }
+            get { return "2020.1"; }
         }
 
         public override string Author

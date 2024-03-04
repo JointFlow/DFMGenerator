@@ -1657,8 +1657,8 @@ namespace DFMGenerator_Standalone
                     PointXYZ PillarTop, PillarBottom;
                     if (TestComplexGeometry)
                     {
-                        PillarTop = new PointXYZ(((double)ColNo * Width_EW) - ((RowNo) % 2 == 1 ? 2 : -2) + OriginXOffset, ((double)RowNo * Length_NS) - ((ColNo) % 2 == 1 ? 2 : -2) + OriginYOffset, -(Depth + ((RowNo) % 2 == 1 ? 0.1 : -0.1)));
-                        PillarBottom = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, -(Depth + LayerThickness + ((ColNo) % 2 == 1 ? 0.1 : -0.1)));
+                        PillarTop = new PointXYZ(((double)ColNo * Width_EW) - ((RowNo) % 2 == 1 ? 2 : -2) + OriginXOffset, ((double)RowNo * Length_NS) - ((ColNo) % 2 == 1 ? 2 : -2) + OriginYOffset, -(Depth + (LayerThickness * ((RowNo) % 2 == 1 ? 0.1 : -0.1))));
+                        PillarBottom = new PointXYZ(((double)ColNo * Width_EW) + OriginXOffset, ((double)RowNo * Length_NS) + OriginYOffset, -(Depth + (LayerThickness * (1 + ((ColNo) % 2 == 1 ? 0.1 : -0.1)))));
                     }
                     else
                     {

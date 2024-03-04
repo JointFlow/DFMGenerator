@@ -8,9 +8,9 @@
     <PluginUri>https://offshore.dtu.dk/english</PluginUri>
     <PluginId>://DFMGenerator_Ocean.DFMGeneratorPlugin/2.2.3.0</PluginId>
     <Trust PublicKeyToken="">Default</Trust>
-    <ReleaseDate>2024-02-14</ReleaseDate>
+    <ReleaseDate>2024-03-04</ReleaseDate>
     <Author>Michael Welch and Mikael Lüthje</Author>
-    <AppVersion>2023.1</AppVersion>
+    <AppVersion>2020.1</AppVersion>
     <Modules>
       <Module TypeName="DFMGenerator_Ocean.DFMGeneratorModule, DFMGenerator_Ocean, Version=2.2.3.0, Culture=neutral, PublicKeyToken=null" />
     </Modules>

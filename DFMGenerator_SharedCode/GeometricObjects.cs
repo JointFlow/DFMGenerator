@@ -268,6 +268,20 @@ namespace DFMGenerator_SharedCode
         /// <returns>Lateral crossover point, projected vertically onto the first line, as PointXYZ object</returns>
         public static PointXYZ getCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType)
         {
+            return getCrossoverPoint(Line1Point1, Line1Point2, Line2Point1, Line2Point2, XOType, 0);
+        }
+        /// <summary>
+        /// Find the lateral crossover point of two lines, projected vertically onto the first line
+        /// </summary>
+        /// <param name="Line1Point1">Point lying on the first line</param>
+        /// <param name="Line1Point2">Point lying on the first line</param>
+        /// <param name="Line2Point1">Point lying on the second line</param>
+        /// <param name="Line2Point2">Point lying on the second line</param>
+        /// <param name="XOType">Controls calculation: Extend will return the location of crossover wherever it occurs; Trim will only return crossover point if it lies between the two specified points on the first line plus the specified tolerance, otherwise it will return the nearest of these two points; Restrict will only return crossover point if it lies between the two specified points on the first line plus the specified tolerance, otherwise it will return null</param>
+        /// <param name="Tolerance">The maximum proportional distance of the crossover point outside the specified points on the first line, if the Trim or Restrict options are specified</param>
+        /// <returns>Lateral crossover point, projected vertically onto the first line, as PointXYZ object</returns>
+        public static PointXYZ getCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType, double Tolerance)
+        {
             // Get x, y and z coordinates of base points and vectors of both lines
             double x1 = Line1Point1.X;
             double y1 = Line1Point1.Y;
@@ -288,14 +302,6 @@ namespace DFMGenerator_SharedCode
             else
                 p = ((dx2 * (y2 - y1)) - ((x2 - x1) * dy2)) / denominator;
 
-            // Get x, y and z coordinates of vertical projection of crossover point
-            double x_crossover = x1 + (p * dx1);
-            double y_crossover = y1 + (p * dy1);
-            double z_crossover = z1 + (p * dz1);
-
-            // Create a PointXYZ object representing the vertical projection of crossover point
-            PointXYZ returnPoint = new PointXYZ(x_crossover, y_crossover, z_crossover);
-
             // Check whether the crossover point lies between the two specified points on the first line, and if not adjust it according to the specified crossover type
             switch (XOType)
             {
@@ -303,22 +309,30 @@ namespace DFMGenerator_SharedCode
                     // Return the calculated point wherever it lies, so no adjustment needed
                     break;
                 case CrossoverType.Trim:
-                    // If the crossover point does not lie between the two specified points on the first line, adjust it to the nearest of these two points
-                    if (p < 0)
-                        returnPoint = new PointXYZ(Line1Point1);
-                    else if (p > 1)
-                        returnPoint = new PointXYZ(Line1Point2);
+                    // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, adjust it to the nearest of these two points
+                    if (p < -Tolerance)
+                        p = -Tolerance;
+                    else if (p > 1 + Tolerance)
+                        p = 1 + Tolerance;
                     break;
                 case CrossoverType.Restrict:
-                    // If the crossover point does not lie between the two specified points on the first line, return null
-                    if (p < 0)
-                        returnPoint = null;
-                    else if (p > 1)
-                        returnPoint = null;
+                    // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, return null
+                    if (p < -Tolerance)
+                        return null;
+                    else if (p > 1 + Tolerance)
+                        return null;
                     break;
                 default:
                     break;
             }
+
+            // Get x, y and z coordinates of vertical projection of crossover point
+            double x_crossover = x1 + (p * dx1);
+            double y_crossover = y1 + (p * dy1);
+            double z_crossover = z1 + (p * dz1);
+
+            // Create a PointXYZ object representing the vertical projection of crossover point
+            PointXYZ returnPoint = new PointXYZ(x_crossover, y_crossover, z_crossover);
 
             // Return the calculated point
             return returnPoint;
@@ -333,6 +347,19 @@ namespace DFMGenerator_SharedCode
         /// <param name="XOType">Controls calculation: Extend will return the location of crossover wherever it occurs; Trim will only return crossover point if it lies between the two specified points on the first line, otherwise it will return the nearest of these two points; Restrict will only return crossover point if it lies between the two specified points on the first line, otherwise it will return null</param>
         /// <returns>Crossover point, or nearest point to the crossover projected along one of the axes if the lines do not cross, as PointXYZ object</returns>
         public static PointXYZ get3DCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType)
+        {
+            return get3DCrossoverPoint(Line1Point1, Line1Point2, Line2Point1, Line2Point2, XOType, 0);
+        }
+        /// <summary>
+        /// Find the crossover point of two lines in 3D
+        /// </summary>
+        /// <param name="Line1Point1">Point lying on the first line</param>
+        /// <param name="Line1Point2">Point lying on the first line</param>
+        /// <param name="Line2Point1">Point lying on the second line</param>
+        /// <param name="Line2Point2">Point lying on the second line</param>
+        /// <param name="XOType">Controls calculation: Extend will return the location of crossover wherever it occurs; Trim will only return crossover point if it lies between the two specified points on the first line, otherwise it will return the nearest of these two points; Restrict will only return crossover point if it lies between the two specified points on the first line, otherwise it will return null</param>
+        /// <returns>Crossover point, or nearest point to the crossover projected along one of the axes if the lines do not cross, as PointXYZ object</returns>
+        public static PointXYZ get3DCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType, double Tolerance)
         {
             // Get x, y and z coordinates of base points and vectors of both lines
             double x1 = Line1Point1.X;
@@ -367,14 +394,6 @@ namespace DFMGenerator_SharedCode
                     p = ((dz2 * (x2 - x1)) - ((z2 - z1) * dx2)) / zxdenominator;
             }
 
-            // Get x, y and z coordinates of vertical projection of crossover point
-            double x_crossover = x1 + (p * dx1);
-            double y_crossover = y1 + (p * dy1);
-            double z_crossover = z1 + (p * dz1);
-
-            // Create a PointXYZ object representing the vertical projection of crossover point
-            PointXYZ returnPoint = new PointXYZ(x_crossover, y_crossover, z_crossover);
-
             // Check whether the crossover point lies between the two specified points on the first line, and if not adjust it according to the specified crossover type
             switch (XOType)
             {
@@ -382,22 +401,30 @@ namespace DFMGenerator_SharedCode
                     // Return the calculated point wherever it lies, so no adjustment needed
                     break;
                 case CrossoverType.Trim:
-                    // If the crossover point does not lie between the two specified points on the first line, adjust it to the nearest of these two points
-                    if (p < 0)
-                        returnPoint = new PointXYZ(Line1Point1);
-                    else if (p > 1)
-                        returnPoint = new PointXYZ(Line1Point2);
+                    // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, adjust it to the nearest of these two points
+                    if (p < -Tolerance)
+                        p = -Tolerance;
+                    else if (p > 1 + Tolerance)
+                        p = 1 + Tolerance;
                     break;
                 case CrossoverType.Restrict:
-                    // If the crossover point does not lie between the two specified points on the first line, return null
-                    if (p < 0)
-                        returnPoint = null;
-                    else if (p > 1)
-                        returnPoint = null;
+                    // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, return null
+                    if (p < -Tolerance)
+                        return null;
+                    else if (p > 1 + Tolerance)
+                        return null;
                     break;
                 default:
                     break;
             }
+
+            // Get x, y and z coordinates of vertical projection of crossover point
+            double x_crossover = x1 + (p * dx1);
+            double y_crossover = y1 + (p * dy1);
+            double z_crossover = z1 + (p * dz1);
+
+            // Create a PointXYZ object representing the vertical projection of crossover point
+            PointXYZ returnPoint = new PointXYZ(x_crossover, y_crossover, z_crossover);
 
             // Return the calculated point
             return returnPoint;

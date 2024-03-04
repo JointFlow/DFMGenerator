@@ -570,7 +570,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public GridDirection TrackingBoundary { get { return trackingboundary; } set { if (NonPropNodeBoundary == value) { trackingboundary = value; propnodeboundary = value; } } }
         /// <summary>
-        /// Direction of fracture propagation in local IJK coordinate frame - this will not change after fracture segment is initiated
+        /// Direction of the outer node relative to the inner node in the local IJK coordinate frame
+        /// </summary>
+        public PropagationDirection LocalOrientation { get { if (!reverseNodes) return LocalPropDir; else if (LocalPropDir == PropagationDirection.IPlus) return PropagationDirection.IMinus; else return PropagationDirection.IPlus; } }
+        /// <summary>
+        /// Direction of fracture propagation in the local IJK coordinate frame - this will not change after fracture segment is initiated
         /// </summary>
         public PropagationDirection LocalPropDir { get; private set; }
         /// <summary>
@@ -1134,7 +1138,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Links to contiguous macrofracture segments in the local (gridblock) DFN propagating in the IPlus and IMinus directions
         /// </summary>
-        private Dictionary<PropagationDirection, List<MacrofractureSegmentIJK>> MF_segments;
+        public Dictionary<PropagationDirection, List<MacrofractureSegmentIJK>> MF_segments;
         /// <summary>
         /// Add a local macrofracture segment to this fracture
         /// </summary>
@@ -1341,6 +1345,11 @@ namespace DFMGenerator_SharedCode
             SegmentCompressibility[PropagationDirection.IPlus].Clear();
             SegmentCompressibility[PropagationDirection.IMinus].Clear();
 
+            // Create two arrays of flags for whether the upper and lower segment cornerpoints will need later adjustment
+            // Segment cornerpoints will need adjusting they lie outside the cornerpoints of the adjacent segments, due to bevelling
+            Dictionary<PropagationDirection, List<bool>> adjustUpperInnerCornerPoints = new Dictionary<PropagationDirection, List<bool>>();
+            Dictionary<PropagationDirection, List<bool>> adjustLowerInnerCornerPoints = new Dictionary<PropagationDirection, List<bool>>();
+
             // Create a new list of cornerpoints for each segment, used to recreate the fracture as a series of contiguous planar segments
             // Move along the IPlus and IMinus sides of the fracture in turn
             foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
@@ -1362,11 +1371,11 @@ namespace DFMGenerator_SharedCode
                 PointXYZ ThisSegment_UpperOuterBevelledCornerPoint = null;
                 PointXYZ ThisSegment_LowerOuterBevelledCornerPoint = null;
 
-                // Create two arrays of flags for whether the upper and lower segment cornerpoints will need later adjustment
-                // Segment cornerpoints will need adjusting if we cannot bevel them because the adjacent upper or lower boundaries are near parallel (as determined by the minimum bevelling angle)
-                // In this case it is possible they may lie outside the cornerpoints of the adjacent segments, so we will adjust them to lie between the cornerpoints of the adjacent segments
-                List<bool> adjustUpperOuterCornerPoints = new List<bool>();
-                List<bool> adjustLowerOuterCornerPoints = new List<bool>();
+                // Create arrays of flags for whether the upper and lower segment cornerpoints will need later adjustment, and add them to the appropriate dictionaries
+                List<bool> adjustUpperInnerCornerPointsCurrentSide = new List<bool>();
+                List<bool> adjustLowerInnerCornerPointsCurrentSide = new List<bool>();
+                adjustUpperInnerCornerPoints.Add(dir, adjustUpperInnerCornerPointsCurrentSide);
+                adjustLowerInnerCornerPoints.Add(dir, adjustLowerInnerCornerPointsCurrentSide);
 
                 // Create an array of flags for inverted segments
                 // Inverted segments are segments where the upper segment boundary vector is in opposite direction to the lower segment boundary vector, so the segment sides cross
@@ -1416,75 +1425,35 @@ namespace DFMGenerator_SharedCode
 
                         // Calculate bevelled cornerpoint of the upper segment boundaries
                         // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
-                        PointXYZ UpperCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Extend);
+                        PointXYZ UpperCrossoverPoint;
+                        if (CurrentSegment.OuterNodeType == SegmentNodeType.Relay)
+                            UpperCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+                        else
+                            UpperCrossoverPoint = PointXYZ.getCrossoverPoint(ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+
                         // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
+                        // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
                         if (UpperCrossoverPoint is null)
-                        {
-                            // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
-                            // Also we do not need to adjust this cornerpoint later; if one of the two segments has zero length, the cornerpoint between them will always lie on one of the adjacent cornerpoints, so can never lie outside them
                             ThisSegment_UpperOuterBevelledCornerPoint = new PointXYZ(ThisSegment_UpperOuterSegmentCornerPoint);
-                            adjustUpperOuterCornerPoints.Add(false);
-                        }
-                        else 
-                        {
-                            // If the two segment boundaries are nearly parallel and slightly offset, then the calculated crossover point may be erroneously located a long way from the actual segments
-                            // This will lead to "spiking" - an elongated fracture that may extend beyond the bounds of the grid
-                            // We will therefore check whether the calculated crossover point lies between the two original segment cornerpoints 
-                            // Get the I coordinates of the crossover point and the original cornerpoints of the two segments, in the reference frame of the first segment
-                            float firstSegmentCornerI = (float) CurrentSegment.getICoordinate(ThisSegment_UpperOuterSegmentCornerPoint);
-                            float secondSegmentCornerI = (float) CurrentSegment.getICoordinate(NextSegment_UpperInnerSegmentCornerPoint);
-                            float crossoverPointCornerI = (float) CurrentSegment.getICoordinate(UpperCrossoverPoint);
-                            // If the I coordinate of the crossover point does not lie between the I coordinates of the original cornerpoints of the two segments, we will assume there is an error
-                            if (((crossoverPointCornerI < firstSegmentCornerI) && (crossoverPointCornerI < secondSegmentCornerI)) || ((crossoverPointCornerI > firstSegmentCornerI) && (crossoverPointCornerI > secondSegmentCornerI)))
-                            {
-                                // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
-                                // However we need to adjust this cornerpoint later, since it may lie outside the adjacent cornerpoints after they are bevelled
-                                ThisSegment_UpperOuterBevelledCornerPoint = new PointXYZ(ThisSegment_UpperOuterSegmentCornerPoint);
-                                adjustUpperOuterCornerPoints.Add(true);
-                            }
-                            else
-                            {
-                                // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
-                                ThisSegment_UpperOuterBevelledCornerPoint = UpperCrossoverPoint;
-                                adjustUpperOuterCornerPoints.Add(false);
-                            }
-                        }
+                        // Otherwise we will set the bevelled cornerpoint to the crossover point of the segment boundaries
+                        else
+                            ThisSegment_UpperOuterBevelledCornerPoint = UpperCrossoverPoint;
 
                         // Calculate bevelled cornerpoint of the lower segment boundaries
                         // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
-                        PointXYZ LowerCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Extend);
-                        // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
-                        if (LowerCrossoverPoint is null)
-                        {
-                            // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
-                            // Also we do not need to adjust this cornerpoint later; if one of the two segments has zero length, the cornerpoint between them will always lie on one of the adjacent cornerpoints, so can never lie outside them
-                            ThisSegment_LowerOuterBevelledCornerPoint = new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint);
-                            adjustLowerOuterCornerPoints.Add(false);
-                        }
+                        PointXYZ LowerCrossoverPoint;
+                        if (CurrentSegment.OuterNodeType == SegmentNodeType.Relay)
+                            LowerCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim, 1);
                         else
-                        {
-                            // If the two segment boundaries are nearly parallel and slightly offset, then the calculated crossover point may be erroneously located a long way from the actual segments
-                            // This will lead to "spiking" - an elongated fracture that may extend beyond the bounds of the grid
-                            // We will therefore check whether the calculated crossover point lies between the two original segment cornerpoints 
-                            // Get the I coordinates of the crossover point and the original cornerpoints of the two segments, in the reference frame of the first segment
-                            float firstSegmentCornerI = (float)CurrentSegment.getICoordinate(ThisSegment_LowerOuterSegmentCornerPoint);
-                            float secondSegmentCornerI = (float)CurrentSegment.getICoordinate(NextSegment_LowerInnerSegmentCornerPoint);
-                            float crossoverPointCornerI = (float)CurrentSegment.getICoordinate(LowerCrossoverPoint);
-                            // If the I coordinate of the crossover point does not lie between the I coordinates of the original cornerpoints of the two segments, we will assume there is an error
-                            if (((crossoverPointCornerI < firstSegmentCornerI) && (crossoverPointCornerI < secondSegmentCornerI)) || ((crossoverPointCornerI > firstSegmentCornerI) && (crossoverPointCornerI > secondSegmentCornerI)))
-                            {
-                                // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
-                                // However we need to adjust this cornerpoint later, since it may lie outside the adjacent cornerpoints after they are bevelled
-                                ThisSegment_LowerOuterBevelledCornerPoint = new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint);
-                                adjustLowerOuterCornerPoints.Add(true);
-                            }
-                            else
-                            {
-                                // In this case we will set the bevelled cornerpoint to the crossover point of the segment boundaries
-                                ThisSegment_LowerOuterBevelledCornerPoint = LowerCrossoverPoint;
-                                adjustLowerOuterCornerPoints.Add(false);
-                            }
-                        }
+                            LowerCrossoverPoint = PointXYZ.getCrossoverPoint(ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+
+                        // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
+                        // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
+                        if (LowerCrossoverPoint is null)
+                            ThisSegment_LowerOuterBevelledCornerPoint = new PointXYZ(ThisSegment_LowerOuterSegmentCornerPoint);
+                        // Otherwise we will set the bevelled cornerpoint to the crossover point of the segment boundaries
+                        else
+                            ThisSegment_LowerOuterBevelledCornerPoint = LowerCrossoverPoint;
                     }
                     else
                     {
@@ -1497,9 +1466,8 @@ namespace DFMGenerator_SharedCode
                         // Get the node type of the outer node of the last segment
                         SegmentNodeType LastSegment_OuterNodeType = CurrentSegment.OuterNodeType;
 
-                        // Check if the node type is Intersection - if so we must bevel the cornerpoints against the intersecting fracture
-                        //if ((LastSegment_OuterNodeType == SegmentNodeType.Intersection) || (LastSegment_OuterNodeType == SegmentNodeType.Convergence))
-                        if (LastSegment_OuterNodeType == SegmentNodeType.Intersection)
+                        // Check if the fracture terminates against another fracture (node type Intersection, Convergence or Relay) - if so we must bevel the cornerpoints against the intersecting fracture
+                        if ((LastSegment_OuterNodeType == SegmentNodeType.Intersection) || (LastSegment_OuterNodeType == SegmentNodeType.Convergence) || (LastSegment_OuterNodeType == SegmentNodeType.Relay))
                         {
                             // Get the cornerpoints of the terminating segment
                             PointXYZ TerminatingSegment_UpperInnerSegmentCornerPoint = CurrentSegment.TerminatingSegment.getUpperInnerCornerinXYZ();
@@ -1509,12 +1477,12 @@ namespace DFMGenerator_SharedCode
 
                             // Calculate crossover point of the upper segment boundaries using the getCrossoverPoint function
                             // If we cannot calculate a crossover point from the available data, use the segment cornerpoint as the bevelled cornerpoint
-                            PointXYZ UpperCrossoverPoint = PointXYZ.getCrossoverPoint(TerminatingSegment_UpperInnerSegmentCornerPoint, TerminatingSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Extend);
+                            PointXYZ UpperCrossoverPoint = PointXYZ.getCrossoverPoint(TerminatingSegment_UpperInnerSegmentCornerPoint, TerminatingSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim);
                             if (UpperCrossoverPoint != null) ThisSegment_UpperOuterBevelledCornerPoint = UpperCrossoverPoint;
 
                             // Calculate crossover point of the lower segment boundaries using the getCrossoverPoint function
                             // If we cannot calculate a crossover point from the available data, use the segment cornerpoint as the bevelled cornerpoint
-                            PointXYZ LowerCrossoverPoint = PointXYZ.getCrossoverPoint(TerminatingSegment_LowerInnerSegmentCornerPoint, TerminatingSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Extend);
+                            PointXYZ LowerCrossoverPoint = PointXYZ.getCrossoverPoint(TerminatingSegment_LowerInnerSegmentCornerPoint, TerminatingSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim);
                             if (LowerCrossoverPoint != null) ThisSegment_LowerOuterBevelledCornerPoint = LowerCrossoverPoint;
                         }
                         else if (LastSegment_OuterNodeType == SegmentNodeType.NonconnectedGridblockBound)
@@ -1570,37 +1538,6 @@ namespace DFMGenerator_SharedCode
                                 if (LowerCrossoverPoint != null) ThisSegment_LowerOuterBevelledCornerPoint = LowerCrossoverPoint;
                             }
                         }
-
-                        // We do not need to adjust the outer cornerpoints of the last segment
-                        adjustUpperOuterCornerPoints.Add(false);
-                        adjustLowerOuterCornerPoints.Add(false);
-                        // However if the outermost segment has become inverted, we will need to adjust the outer cornerpoints of the previous segment
-                        // This can only happen if it has been bevelled (i.e. it is an intersection or a non-connected boundary)
-                        // We can only adjust the previous segment if this is not the first segment
-                        if ((LastSegment_OuterNodeType == SegmentNodeType.Intersection) || (LastSegment_OuterNodeType == SegmentNodeType.NonconnectedGridblockBound))
-                            if (segmentNo > 0)
-                            {
-                                double UpperInnerBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_UpperInnerBevelledCornerPoint);
-                                double UpperOuterBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_UpperOuterBevelledCornerPoint);
-                                double LowerInnerBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_LowerInnerBevelledCornerPoint);
-                                double LowerOuterBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_LowerOuterBevelledCornerPoint);
-
-                                bool UpperBoundaryInverted = false;
-                                if (CurrentSegment.LocalPropDir == PropagationDirection.IPlus)
-                                    UpperBoundaryInverted = (UpperOuterBevelledCornerPoint_I <= UpperInnerBevelledCornerPoint_I);
-                                else
-                                    UpperBoundaryInverted = (UpperOuterBevelledCornerPoint_I >= UpperInnerBevelledCornerPoint_I);
-                                if (UpperBoundaryInverted)
-                                    adjustUpperOuterCornerPoints[segmentNo - 1] = true;
-
-                                bool LowerBoundaryInverted = false;
-                                if (CurrentSegment.LocalPropDir == PropagationDirection.IPlus)
-                                    LowerBoundaryInverted = (LowerOuterBevelledCornerPoint_I <= LowerInnerBevelledCornerPoint_I);
-                                else
-                                    LowerBoundaryInverted = (LowerOuterBevelledCornerPoint_I >= LowerInnerBevelledCornerPoint_I);
-                                if (LowerBoundaryInverted)
-                                    adjustLowerOuterCornerPoints[segmentNo - 1] = true;
-                            }
 
                         switch (LastSegment_OuterNodeType)
                         {
@@ -1667,9 +1604,33 @@ namespace DFMGenerator_SharedCode
                         active[dir] = CurrentSegment.Active;
                     }
 
+                    // If the inner bevelled cornerpoints lie outside the outer bevelled cornerpoints for this segment, we will need to adjust them later
+                    bool UpperBoundaryInverted = false;
+                    bool LowerBoundaryInverted = false;
+                    // Unless this is a relay segment, in which case they should not be adjusted
+                    if (CurrentSegment.OuterNodeType != SegmentNodeType.Relay)
+                    {
+                        double UpperInnerBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_UpperInnerBevelledCornerPoint);
+                        double UpperOuterBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_UpperOuterBevelledCornerPoint);
+                        double LowerInnerBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_LowerInnerBevelledCornerPoint);
+                        double LowerOuterBevelledCornerPoint_I = CurrentSegment.getICoordinate(ThisSegment_LowerOuterBevelledCornerPoint);
+
+                        if (CurrentSegment.LocalOrientation == PropagationDirection.IPlus)
+                            UpperBoundaryInverted = (UpperOuterBevelledCornerPoint_I <= UpperInnerBevelledCornerPoint_I);
+                        else
+                            UpperBoundaryInverted = (UpperOuterBevelledCornerPoint_I >= UpperInnerBevelledCornerPoint_I);
+
+                        if (CurrentSegment.LocalOrientation == PropagationDirection.IPlus)
+                            LowerBoundaryInverted = (LowerOuterBevelledCornerPoint_I <= LowerInnerBevelledCornerPoint_I);
+                        else
+                            LowerBoundaryInverted = (LowerOuterBevelledCornerPoint_I >= LowerInnerBevelledCornerPoint_I);
+                    }
+                    adjustUpperInnerCornerPointsCurrentSide.Add(UpperBoundaryInverted);
+                    adjustLowerInnerCornerPointsCurrentSide.Add(LowerBoundaryInverted);
+
                     // Set the flag for inverted segments (i.e. segments whose upper segment boundary vector is in opposite direction to their lower segment boundary vector, so the segment sides cross)
                     // Most segments will not be inverted (set the inverted segment flag to false)
-                    invertedSegment.Add(false);
+                    bool SegmentInverted = false;
                     // Mode 2 relay segments can be inverted if the two adjacent fracture segments dip in opposite directions
                     // If so set the inverted segment flag to true
                     if (CurrentSegment.OuterNodeType == SegmentNodeType.Relay)
@@ -1680,8 +1641,9 @@ namespace DFMGenerator_SharedCode
                         double LowerOuterBevelledCornerPoint_J = CurrentSegment.getJCoordinate(ThisSegment_LowerOuterBevelledCornerPoint);
 
                         if (Math.Sign(UpperOuterBevelledCornerPoint_J - UpperInnerBevelledCornerPoint_J) == -Math.Sign(LowerOuterBevelledCornerPoint_J - LowerInnerBevelledCornerPoint_J))
-                            invertedSegment[segmentNo] = true;
+                            SegmentInverted = true;
                     }
+                    invertedSegment.Add(SegmentInverted);
 
                     // Create a new segment cornerpoint list and add the bevelled cornerpoints to it
                     // NB we cannot swap the cornerpoints for inverted segments yet, as this would cause problems when calculating the cornerpoints for the next segment
@@ -1711,21 +1673,21 @@ namespace DFMGenerator_SharedCode
                 } // End move along the fracture adding cornerpoints
 
                 // Move along the fracture, adjusting the outer cornerpoints of each segment if required
-                for (int segmentNo = 0; segmentNo < noSegments - 1; segmentNo++)
+                for (int segmentNo = 1; segmentNo < noSegments; segmentNo++)
                 {
-                    // Check if we need to adjust the upper outer cornerpoint for the segment
-                    if (adjustUpperOuterCornerPoints[segmentNo])
+                    // Check if we need to adjust the upper inner cornerpoint for the segment
+                    if (adjustUpperInnerCornerPointsCurrentSide[segmentNo])
                     {
                         // Calculate the length of each of the two segments as a proportion of the total length of both of the two segments
-                        double firstSegmentLength = segments[segmentNo].TotalLength;
-                        double secondSegmentLength = segments[segmentNo + 1].TotalLength;
+                        double firstSegmentLength = segments[segmentNo - 1].TotalLength;
+                        double secondSegmentLength = segments[segmentNo].TotalLength;
                         double combinedSegmentLength = firstSegmentLength + secondSegmentLength;
                         double firstSegmentLengthRatio = (combinedSegmentLength > 0 ? firstSegmentLength / combinedSegmentLength : 0);
                         double secondSegmentLengthRatio = 1 - firstSegmentLengthRatio;
 
                         // Get the inner cornerpoint of the first segment and the outer cornerpoint of the second segment - the cornerpoint between the two segments will be calculated by interpolating between these two points
-                        PointXYZ firstSegmentUpperInnerCornerpoint = SegmentCornerPoints[dir][segmentNo][0];
-                        PointXYZ secondSegmentUpperOuterCornerpoint = SegmentCornerPoints[dir][segmentNo + 1][1];
+                        PointXYZ firstSegmentUpperInnerCornerpoint = SegmentCornerPoints[dir][segmentNo - 1][0];
+                        PointXYZ secondSegmentUpperOuterCornerpoint = SegmentCornerPoints[dir][segmentNo][1];
 
                         // Calculate the new X, Y and Z coordinates of the cornerpoint between the two segments, by interpolation, based on the relative length of the two segments
                         double newCornerpointX = (firstSegmentUpperInnerCornerpoint.X * secondSegmentLengthRatio) + (secondSegmentUpperOuterCornerpoint.X * firstSegmentLengthRatio);
@@ -1733,24 +1695,24 @@ namespace DFMGenerator_SharedCode
                         double newCornerpointZ = (firstSegmentUpperInnerCornerpoint.Z * secondSegmentLengthRatio) + (secondSegmentUpperOuterCornerpoint.Z * firstSegmentLengthRatio);
 
                         // Adjust the position of the outer cornerpoint of the first segment accordingly
-                        // NB we do not need to adjust the position of the inner cornerpoint of the second segment, as this will be a reference to the same object as the outer cornerpoint of the first segment
-                        PointXYZ firstSegmentUpperOuterCornerpoint = SegmentCornerPoints[dir][segmentNo][1];
+                        // NB the position of the inner cornerpoint of the second segment will be adjusted automatically, as this is a reference to the same object as the outer cornerpoint of the first segment
+                        PointXYZ firstSegmentUpperOuterCornerpoint = SegmentCornerPoints[dir][segmentNo - 1][1];
                         firstSegmentUpperOuterCornerpoint.SetCoordinates(newCornerpointX, newCornerpointY, newCornerpointZ);
                     }
 
                     // Check if we need to adjust the lower outer cornerpoint for the segment
-                    if (adjustLowerOuterCornerPoints[segmentNo])
+                    if (adjustLowerInnerCornerPointsCurrentSide[segmentNo])
                     {
                         // Calculate the length of each of the two segments as a proportion of the total length of both of the two segments
-                        double firstSegmentLength = segments[segmentNo].TotalLength;
-                        double secondSegmentLength = segments[segmentNo + 1].TotalLength;
+                        double firstSegmentLength = segments[segmentNo - 1].TotalLength;
+                        double secondSegmentLength = segments[segmentNo].TotalLength;
                         double combinedSegmentLength = firstSegmentLength + secondSegmentLength;
                         double firstSegmentLengthRatio = (combinedSegmentLength > 0 ? firstSegmentLength / combinedSegmentLength : 0);
                         double secondSegmentLengthRatio = 1 - firstSegmentLengthRatio;
 
                         // Get the inner cornerpoint of the first segment and the outer cornerpoint of the second segment - the cornerpoint between the two segments will be calculated by interpolating between these two points
-                        PointXYZ firstSegmentLowerInnerCornerpoint = SegmentCornerPoints[dir][segmentNo][3];
-                        PointXYZ secondSegmentLowerOuterCornerpoint = SegmentCornerPoints[dir][segmentNo + 1][2];
+                        PointXYZ firstSegmentLowerInnerCornerpoint = SegmentCornerPoints[dir][segmentNo - 1][3];
+                        PointXYZ secondSegmentLowerOuterCornerpoint = SegmentCornerPoints[dir][segmentNo][2];
 
                         // Calculate the new X, Y and Z coordinates of the cornerpoint between the two segments, by interpolation, based on the relative length of the two segments
                         double newCornerpointX = (firstSegmentLowerInnerCornerpoint.X * secondSegmentLengthRatio) + (secondSegmentLowerOuterCornerpoint.X * firstSegmentLengthRatio);
@@ -1758,8 +1720,8 @@ namespace DFMGenerator_SharedCode
                         double newCornerpointZ = (firstSegmentLowerInnerCornerpoint.Z * secondSegmentLengthRatio) + (secondSegmentLowerOuterCornerpoint.Z * firstSegmentLengthRatio);
 
                         // Adjust the position of the outer cornerpoint of the first segment accordingly
-                        // NB we do not need to adjust the position of the inner cornerpoint of the second segment, as this will be a reference to the same object as the outer cornerpoint of the first segment
-                        PointXYZ firstSegmentLowerOuterCornerpoint = SegmentCornerPoints[dir][segmentNo][2];
+                        // NB the position of the inner cornerpoint of the second segment will be adjusted automatically, as this is a reference to the same object as the outer cornerpoint of the first segment
+                        PointXYZ firstSegmentLowerOuterCornerpoint = SegmentCornerPoints[dir][segmentNo - 1][2];
                         firstSegmentLowerOuterCornerpoint.SetCoordinates(newCornerpointX, newCornerpointY, newCornerpointZ);
                     }
 
@@ -1779,8 +1741,8 @@ namespace DFMGenerator_SharedCode
 
             } // End move along the IPlus and IMinus sides of the fracture in turn
 
-            // Adjust the position of the nucleation points (i.e. the inner cornerpoints of the first segments in each direction)
-            // This is necessary because it is possible they may lie outside the outer cornerpoints of the two segments, so we will adjust them to lie between the outer cornerpoints of the two segments
+            // If necessary, adjust the position of the nucleation points (i.e. the inner cornerpoints of the first segments in each direction)
+            // This is necessary if they lie outside the outer cornerpoints of the first two segments
             // However we can only do this if there is at least one segment in each direction
             if ((MF_segments[PropagationDirection.IPlus].Count > 0) && (MF_segments[PropagationDirection.IMinus].Count > 0))
             {
@@ -1847,23 +1809,35 @@ namespace DFMGenerator_SharedCode
                     firstIMinusSegmentCornerPoints[2] = IMinusSegmentLowerOuterCornerpoint;
                 }
 
-                // Calculate the new X, Y and Z coordinates of the cornerpoints between the two segments, by interpolation, based on the relative length of the two segments
-                double newUpperCornerpointX = (IPlusSegmentUpperOuterCornerpoint.X * IMinusSegmentLengthRatio) + (IMinusSegmentUpperOuterCornerpoint.X * IPlusSegmentLengthRatio);
-                double newUpperCornerpointY = (IPlusSegmentUpperOuterCornerpoint.Y * IMinusSegmentLengthRatio) + (IMinusSegmentUpperOuterCornerpoint.Y * IPlusSegmentLengthRatio);
-                double newUpperCornerpointZ = (IPlusSegmentUpperOuterCornerpoint.Z * IMinusSegmentLengthRatio) + (IMinusSegmentUpperOuterCornerpoint.Z * IPlusSegmentLengthRatio);
-                double newLowerCornerpointX = (IPlusSegmentLowerOuterCornerpoint.X * IMinusSegmentLengthRatio) + (IMinusSegmentLowerOuterCornerpoint.X * IPlusSegmentLengthRatio);
-                double newLowerCornerpointY = (IPlusSegmentLowerOuterCornerpoint.Y * IMinusSegmentLengthRatio) + (IMinusSegmentLowerOuterCornerpoint.Y * IPlusSegmentLengthRatio);
-                double newLowerCornerpointZ = (IPlusSegmentLowerOuterCornerpoint.Z * IMinusSegmentLengthRatio) + (IMinusSegmentLowerOuterCornerpoint.Z * IPlusSegmentLengthRatio);
+                // Check if the upper nucleation point needs to be adjusted
+                if (adjustUpperInnerCornerPoints[PropagationDirection.IPlus][0] || adjustUpperInnerCornerPoints[PropagationDirection.IMinus][0])
+                {
+                    // Calculate the new X, Y and Z coordinates of the cornerpoint between the two segments, by interpolation, based on the relative length of the two segments
+                    double newUpperCornerpointX = (IPlusSegmentUpperOuterCornerpoint.X * IMinusSegmentLengthRatio) + (IMinusSegmentUpperOuterCornerpoint.X * IPlusSegmentLengthRatio);
+                    double newUpperCornerpointY = (IPlusSegmentUpperOuterCornerpoint.Y * IMinusSegmentLengthRatio) + (IMinusSegmentUpperOuterCornerpoint.Y * IPlusSegmentLengthRatio);
+                    double newUpperCornerpointZ = (IPlusSegmentUpperOuterCornerpoint.Z * IMinusSegmentLengthRatio) + (IMinusSegmentUpperOuterCornerpoint.Z * IPlusSegmentLengthRatio);
 
-                // Create new upper and lower cornerpoints and insert them into the respective cornerpoint lists
-                // NB we will only create one new point for the upper cornerpoints and one new point for the lower cornerpoints, but add references to these objects to both the IPlus and IMinus cornerpoint lists
-                PointXYZ newUpperInnerCornerpoint = new PointXYZ(newUpperCornerpointX, newUpperCornerpointY, newUpperCornerpointZ);
-                firstIPlusSegmentCornerPoints[0] = newUpperInnerCornerpoint;
-                firstIMinusSegmentCornerPoints[0] = newUpperInnerCornerpoint;
-                PointXYZ newLowerInnerCornerpoint = new PointXYZ(newLowerCornerpointX, newLowerCornerpointY, newLowerCornerpointZ);
-                firstIPlusSegmentCornerPoints[3] = newLowerInnerCornerpoint;
-                firstIMinusSegmentCornerPoints[3] = newLowerInnerCornerpoint;
+                    // Create the new upper cornerpoint and insert it into the respective cornerpoint lists
+                    // NB we will only create one new point for the upper cornerpoints, but add references to this object to both the IPlus and IMinus cornerpoint lists
+                    PointXYZ newUpperInnerCornerpoint = new PointXYZ(newUpperCornerpointX, newUpperCornerpointY, newUpperCornerpointZ);
+                    firstIPlusSegmentCornerPoints[0] = newUpperInnerCornerpoint;
+                    firstIMinusSegmentCornerPoints[0] = newUpperInnerCornerpoint;
+                }
 
+                // Check if the lower nucleation point needs to be adjusted
+                if (adjustLowerInnerCornerPoints[PropagationDirection.IPlus][0] || adjustLowerInnerCornerPoints[PropagationDirection.IMinus][0])
+                {
+                    // Calculate the new X, Y and Z coordinates of the cornerpoint between the two segments, by interpolation, based on the relative length of the two segments
+                    double newLowerCornerpointX = (IPlusSegmentLowerOuterCornerpoint.X * IMinusSegmentLengthRatio) + (IMinusSegmentLowerOuterCornerpoint.X * IPlusSegmentLengthRatio);
+                    double newLowerCornerpointY = (IPlusSegmentLowerOuterCornerpoint.Y * IMinusSegmentLengthRatio) + (IMinusSegmentLowerOuterCornerpoint.Y * IPlusSegmentLengthRatio);
+                    double newLowerCornerpointZ = (IPlusSegmentLowerOuterCornerpoint.Z * IMinusSegmentLengthRatio) + (IMinusSegmentLowerOuterCornerpoint.Z * IPlusSegmentLengthRatio);
+
+                    // Create the new lower cornerpoints and insert it into the respective cornerpoint lists
+                    // NB we will only create one new point for the lower cornerpoints, but add references to this object to both the IPlus and IMinus cornerpoint lists
+                    PointXYZ newLowerInnerCornerpoint = new PointXYZ(newLowerCornerpointX, newLowerCornerpointY, newLowerCornerpointZ);
+                    firstIPlusSegmentCornerPoints[3] = newLowerInnerCornerpoint;
+                    firstIMinusSegmentCornerPoints[3] = newLowerInnerCornerpoint;
+                }
             } // End adjust the position of the nucleation points (i.e. the inner cornerpoints of the first segments in each direction)
         }
         /// <summary>
