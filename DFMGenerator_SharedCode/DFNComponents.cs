@@ -1207,9 +1207,11 @@ namespace DFMGenerator_SharedCode
 
         // Macrofracture geometry data - this will be fixed since all propagation calculations are carried out on the local DFNs
         /// <summary>
-        /// List of cornerpoints, in clockwise sequence around the entire fracture from the top nucleation point
+        /// List of segment centrepoints - i.e. the nodes at the end of each segment along the horizontal centreline of the fracture - starting at the IMinus tip and moving towards the IPlus tip
+        /// This can be used to recreate the fracture centreline as a polyline
+        /// It is populated by PopulateFractureData() and stored independently of the MacrofractureSegmentIJK objects so it will not be affected by subsequent growth of the segments
         /// </summary>
-        //public List<PointXYZ> CornerPoints { get; private set; }
+        public List<PointXYZ> SegmentCentrePoints { get; private set; }
         /// <summary>
         /// List of cornerpoints of each segment
         /// </summary>
@@ -1839,6 +1841,77 @@ namespace DFMGenerator_SharedCode
                     firstIMinusSegmentCornerPoints[3] = newLowerInnerCornerpoint;
                 }
             } // End adjust the position of the nucleation points (i.e. the inner cornerpoints of the first segments in each direction)
+
+            // Repopulate the segment centrepoint list
+            PopulateCentrepoints();
+        }
+        /// <summary>
+        /// Create a single list of all fracture centrepoints, starting at the IMinus tip and moving towards the IPlus tip
+        /// This can be used to recreate the fracture centreline as a polyline
+        /// </summary>
+        /// <returns></returns>
+        private void PopulateCentrepoints()
+        {
+            // Clear the current list of segment centrepoints
+            SegmentCentrePoints.Clear();
+
+            // Keep a record of the previous point in the list; this is necessary to remove duplicates
+            PointXYZ lastPoint = null;
+
+            // First move along the IMinus side of the fracture
+            {
+                PropagationDirection dir = PropagationDirection.IMinus;
+
+                // Get the number of segments on this side of the fracture
+                int noSegments = MF_segments[dir].Count;
+
+                // Now move along the fracture in the IPlus direction adding points to the centrepoint list
+                for (int segmentNo = noSegments - 1; segmentNo >= 0; segmentNo--)
+                {
+                    // Get a reference to the appropriate segment
+                    MacrofractureSegmentIJK ThisSegment = MF_segments[dir][segmentNo];
+
+                    // Add the outer centrepoint to the list
+                    // First check if it is a duplicate of the previous point
+                    PointXYZ nextPoint = ThisSegment.getOuterCentrepointinXYZ();
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        SegmentCentrePoints.Add(nextPoint);
+                    lastPoint = nextPoint;
+                }
+
+            } // End move along the IMinus side of the fracture
+
+            // Next move along the IPlus side of the fracture
+            {
+                PropagationDirection dir = PropagationDirection.IPlus;
+
+                // Get the number of segments on this side of the fracture
+                int noSegments = MF_segments[dir].Count;
+
+                // Add the inner centrepoint of the first segment to the list - this will be the nucleation point
+                // First check if it is a duplicate of the previous point
+                if (noSegments > 0)
+                {
+                    PointXYZ nextPoint = MF_segments[dir][0].getInnerCentrepointinXYZ();
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        SegmentCentrePoints.Add(nextPoint);
+                    lastPoint = nextPoint;
+                }
+
+                // Move along the fracture in the IPlus direction adding points to the centrepoint list
+                for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
+                {
+                    // Get a reference to the appropriate segment
+                    MacrofractureSegmentIJK ThisSegment = MF_segments[dir][segmentNo];
+
+                    // For all segments, add the outer centrepoint to the list
+                    PointXYZ nextPoint = ThisSegment.getOuterCentrepointinXYZ();
+                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
+                        SegmentCentrePoints.Add(nextPoint);
+                    lastPoint = nextPoint;
+                }
+
+            } // End move along the IPlus side of the fracture
         }
         /// <summary>
         /// Remove all MacrofractureSegmentIJK objects from the relevant Gridblock.FractureSet lists
@@ -2177,77 +2250,6 @@ namespace DFMGenerator_SharedCode
             return CornerPoints;
         }
         /// <summary>
-        /// Create a single list of all fracture centrepoints, starting at the IMinus tip and moving towards the IPlus tip
-        /// This can be used to recreate the fracture centreline as a polyline
-        /// </summary>
-        /// <returns></returns>
-        public List<PointXYZ> GetCentrepoints()
-        {
-            // Create a new cornerpoint list object
-            List<PointXYZ> CentrePoints = new List<PointXYZ>();
-
-            // Keep a record of the previous point in the list; this is necessary to remove duplicates
-            PointXYZ lastPoint = null;
-
-            // First move along the IMinus side of the fracture
-            {
-                PropagationDirection dir = PropagationDirection.IMinus;
-
-                // Get the number of segments on this side of the fracture
-                int noSegments = MF_segments[dir].Count;
-
-                // Now move along the fracture in the IPlus direction adding points to the centrepoint list
-                for (int segmentNo = noSegments - 1; segmentNo >= 0; segmentNo--)
-                {
-                    // Get a reference to the appropriate segment
-                    MacrofractureSegmentIJK ThisSegment = MF_segments[dir][segmentNo];
-
-                    // Add the outer centrepoint to the list
-                    // First check if it is a duplicate of the previous point
-                    PointXYZ nextPoint = ThisSegment.getOuterCentrepointinXYZ();
-                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
-                        CentrePoints.Add(nextPoint);
-                    lastPoint = nextPoint;
-                }
-
-            } // End move along the IMinus side of the fracture
-
-            // Next move along the IPlus side of the fracture
-            {
-                PropagationDirection dir = PropagationDirection.IPlus;
-
-                // Get the number of segments on this side of the fracture
-                int noSegments = MF_segments[dir].Count;
-
-                // Add the inner centrepoint of the first segment to the list - this will be the nucleation point
-                // First check if it is a duplicate of the previous point
-                if (noSegments > 0)
-                {
-                    PointXYZ nextPoint = MF_segments[dir][0].getInnerCentrepointinXYZ();
-                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
-                        CentrePoints.Add(nextPoint);
-                    lastPoint = nextPoint;
-                }
-
-                // Move along the fracture in the IPlus direction adding points to the centrepoint list
-                for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
-                {
-                    // Get a reference to the appropriate segment
-                    MacrofractureSegmentIJK ThisSegment = MF_segments[dir][segmentNo];
-
-                    // For all segments, add the outer centrepoint to the list
-                    PointXYZ nextPoint = ThisSegment.getOuterCentrepointinXYZ();
-                    if (!PointXYZ.comparePoints(lastPoint, nextPoint))
-                        CentrePoints.Add(nextPoint);
-                    lastPoint = nextPoint;
-                }
-
-            } // End move along the IPlus side of the fracture
-
-            // Return the centrepoint list
-            return CentrePoints;
-        }
-        /// <summary>
         /// Create a list of the normal vectors for each fracture segment
         /// </summary>
         /// <returns>Dictionary containing lists of the normal vectors of each macrofracture segment, as VectorXYZ objects</returns>
@@ -2310,6 +2312,9 @@ namespace DFMGenerator_SharedCode
                 List<List<PointXYZ>> segmentCornerPointList = new List<List<PointXYZ>>();
                 SegmentCornerPoints.Add(propDir, segmentCornerPointList);
             }
+
+            // Create a list object for segment centrepoints
+            SegmentCentrePoints = new List<PointXYZ>();
 
             // Create dictionaries for the zero length segment flags, the segment mean apertures and the segment compressibilities, and add empty lists for each propagation direction
             ZeroLengthSegments = new Dictionary<PropagationDirection, List<bool>>();
@@ -2385,6 +2390,9 @@ namespace DFMGenerator_SharedCode
                 List<List<PointXYZ>> segmentCornerPointList = new List<List<PointXYZ>>();
                 SegmentCornerPoints.Add(propDir, segmentCornerPointList);
             }
+
+            // Create a list object for segment centrepoints
+            SegmentCentrePoints = new List<PointXYZ>();
 
             // Create dictionaries for the zero length segment flags, the segment mean apertures and the segment compressibilities, and add empty lists for each propagation direction
             ZeroLengthSegments = new Dictionary<PropagationDirection, List<bool>>();

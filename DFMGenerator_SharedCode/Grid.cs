@@ -573,7 +573,7 @@ namespace DFMGenerator_SharedCode
                                     foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
                                     {
                                         // Generate a list of fracture cornerpoints
-                                        List<PointXYZ> CentrePoints = frac.GetCentrepoints();
+                                        List<PointXYZ> CentrePoints = frac.SegmentCentrePoints;
                                         int NoPoints = CentrePoints.Count();
 
                                         // Write general fracture data to logfile

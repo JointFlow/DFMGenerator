@@ -4881,7 +4881,7 @@ namespace DFMGenerator_Ocean
                                                 }
 
                                                 // Get the fracture centreline
-                                                List<PointXYZ> grid_Centreline = MF.GetCentrepoints();
+                                                List<PointXYZ> grid_Centreline = MF.SegmentCentrePoints;
 
                                                 // Create a new Petrel polyline from the centreline and add it to the polyline list
                                                 try
