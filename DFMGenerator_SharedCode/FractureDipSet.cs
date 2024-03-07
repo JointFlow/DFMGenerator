@@ -2169,7 +2169,8 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_MF_HalfLength()
         {
-            return (a_MFP32_total() + s_MFP32_total()) / ((a_MFP30_total() + sII_MFP30_total() + sIJ_MFP30_total()) * gbc.ThicknessAtDeformation);
+            double T_MFP30_thickness = (a_MFP30_total() + sII_MFP30_total() + sIJ_MFP30_total()) * gbc.ThicknessAtDeformation;
+            return (T_MFP30_thickness > 0 ? (a_MFP32_total() + s_MFP32_total()) / T_MFP30_thickness : 0);
         }
 
         // Connectivity indices
