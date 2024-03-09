@@ -2953,8 +2953,8 @@ namespace DFMGenerator_SharedCode
             // Calculate the probability that an active half-macrofracture in this gridblock will not be deactivated due to intersecting another fracture during this timestep
             double propagationDistance = CurrentFractureData.halfLength_M;
             // Since probability of macrofracture intersection is length-dependent, we must take into account the existing mean length of active half-macrofractures
-            double a_MFP30 = a_MFP30_total();
-            double currentMeanActiveHalfMacrofractureLength = (a_MFP30 > 0 ? a_MFP32_total() / (gbc.ThicknessAtDeformation * a_MFP30_total()) : 0);
+            double a_MFP30_Thickness = a_MFP30_total() * gbc.ThicknessAtDeformation;
+            double currentMeanActiveHalfMacrofractureLength = (a_MFP30_Thickness > 0 ? a_MFP32_total() / a_MFP30_Thickness : 0);
             double PhiIJ_l0 = fs.Calculate_PhiIJ_ByDistance(this, currentMeanActiveHalfMacrofractureLength);
             double PhiIJ_l0plusDl = fs.Calculate_PhiIJ_ByDistance(this, currentMeanActiveHalfMacrofractureLength + propagationDistance);
             double PhiIJ_M = (PhiIJ_l0 > 0 ? PhiIJ_l0plusDl / PhiIJ_l0 : 0);
@@ -3082,8 +3082,8 @@ namespace DFMGenerator_SharedCode
             switch (CurrentFractureData.EvolutionStage)
             {
                 case FractureEvolutionStage.NotActivated:
-                    // If the fracture set is not activated, there will be no growth and so no calculation is required
-                    return;
+                    // If the fracture set is not activated, there will be no growth so we can leave the fracture density values and increments set at zero
+                    break;
                 case FractureEvolutionStage.Growing:
                     // Use equations for growing fracture sets to update cumulative fracture population data
                     {
@@ -3932,7 +3932,8 @@ namespace DFMGenerator_SharedCode
                 switch (PreviousFractureData.getEvolutionStage(tsK))
                 {
                     case FractureEvolutionStage.NotActivated:
-                    // No fracture growth in this timestep; however we will fall through to the "Growing" stage to maintain any initial zero-length macrofractures
+                        // If the fracture set is not activated, there will be no growth so we can leave the fracture density values and increments set at zero
+                        break;
                     case FractureEvolutionStage.Growing:
                         // Use equations for growing fracture sets to update cumulative fracture population arrays
                         {

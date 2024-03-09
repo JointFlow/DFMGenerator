@@ -2837,7 +2837,7 @@ namespace DFMGenerator_SharedCode
             // Get the mean propagation rate
             // NB if this is zero the mean propagation distances will all be zero so we can create an array of zero values and return this
             double propagationRate = (UseCurrentData ? mp_fds.getMeanMFPropagationRate() : mp_fds.getMeanMFPropagationRate(Timestep_M));
-            if (propagationRate <= 0)
+            if ((float)propagationRate <= 0f)
             {
                 foreach (double cutoff in cutoffLengths)
                     meanPropagationDistances.Add(0);
