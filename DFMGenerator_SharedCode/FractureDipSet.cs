@@ -3349,7 +3349,7 @@ namespace DFMGenerator_SharedCode
                             double ts_CumhGammaMminus1 = PreviousFractureData.getCum_hGamma_M(tsK - 1);
                             double ts_CumhGammaMminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac_factor));
                             double ts_CumhGammaMminus1_betacminus1_factor = (bis2 ? Math.Exp(betacminus1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betacminus1_factor));
-                            double ts_StressShadowDecreaseFactor = (MeanMFPropagationRate_K > 0 ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * h * dChi_dMFP32_K * tsK_Duration * ts_MeanMFLength / dChiMP_dChiTot_K) : 0);
+                            double ts_StressShadowDecreaseFactor = ((MeanMFPropagationRate_K > 0) && (dChiMP_dChiTot_K > 0) ? Math.Exp(-2 * CapB * Math.Abs(betac_factor) * gamma_InvBeta_K * ts_CumhGammaMminus1_betacminus1_factor * h * dChi_dMFP32_K * tsK_Duration * ts_MeanMFLength / dChiMP_dChiTot_K) : 0);
 
                             // If b is very large, (h/2)^(1/beta) will tend to infinity, so ts_CumhGammaM, ts_CumhGammaMminus1 and values derived from them will also be infinite; in this case no increments will be calculated
                             if (double.IsInfinity(ts_CumhGammaM))
