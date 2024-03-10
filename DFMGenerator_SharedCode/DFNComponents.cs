@@ -1323,6 +1323,15 @@ namespace DFMGenerator_SharedCode
 
         // Reset, data input, control and implementation functions
         /// <summary>
+        /// The maximum proportional distance of the crossover point outside the specified points on the first line, when bevelling the top and bottom edges of fracture segments using PointXYZ.getCrossoverPoint()
+        /// </summary>
+        private const double extensionRatio = 1;
+        /// <summary>
+        /// The tangent of the minimum permitted angle between the two lines, when bevelling the top and bottom edges of fracture segments using PointXYZ.getCrossoverPoint(); if the angle is smaller than this, they will be considered parallel
+        /// 0.02 corresponds to ang angle of slightly more than 1 degree
+        /// </summary>
+        private const double angularTolerance = 0.02;
+        /// <summary>
         /// Calculate the position of the segment cornerpoints and set the dynamic fracture data, based on the location of the segment nodes in local (IJK) coordinates, their dip and magnitude, and the top and bottom surfaces of the layer
         /// </summary>
         public void PopulateData()
@@ -1429,9 +1438,9 @@ namespace DFMGenerator_SharedCode
                         // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
                         PointXYZ UpperCrossoverPoint;
                         if (CurrentSegment.OuterNodeType == SegmentNodeType.Relay)
-                            UpperCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+                            UpperCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim, extensionRatio, angularTolerance);
                         else
-                            UpperCrossoverPoint = PointXYZ.getCrossoverPoint(ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+                            UpperCrossoverPoint = PointXYZ.getCrossoverPoint(ThisSegment_UpperInnerSegmentCornerPoint, ThisSegment_UpperOuterSegmentCornerPoint, NextSegment_UpperInnerSegmentCornerPoint, NextSegment_UpperOuterSegmentCornerPoint, CrossoverType.Trim, extensionRatio, angularTolerance);
 
                         // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
                         // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
@@ -1445,9 +1454,9 @@ namespace DFMGenerator_SharedCode
                         // We can calculate the crossover point of the segment boundaries using the getCrossoverPoint function
                         PointXYZ LowerCrossoverPoint;
                         if (CurrentSegment.OuterNodeType == SegmentNodeType.Relay)
-                            LowerCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+                            LowerCrossoverPoint = PointXYZ.getCrossoverPoint(NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim, extensionRatio, angularTolerance);
                         else
-                            LowerCrossoverPoint = PointXYZ.getCrossoverPoint(ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim, 1);
+                            LowerCrossoverPoint = PointXYZ.getCrossoverPoint(ThisSegment_LowerInnerSegmentCornerPoint, ThisSegment_LowerOuterSegmentCornerPoint, NextSegment_LowerInnerSegmentCornerPoint, NextSegment_LowerOuterSegmentCornerPoint, CrossoverType.Trim, extensionRatio, angularTolerance);
 
                         // If one (or both) of the two segments has zero length, or they are both parallel, the getCrossoverPoint function will return a null value
                         // In this case we cannot calculate the crossover point, so we will use the original segment cornerpoint as the bevelled cornerpoint
