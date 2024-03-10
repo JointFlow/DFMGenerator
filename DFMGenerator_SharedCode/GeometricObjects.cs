@@ -1577,7 +1577,7 @@ namespace DFMGenerator_SharedCode
             double numerator = 2 * components[Tensor2SComponents.XY];
             double denominator = components[Tensor2SComponents.YY] - components[Tensor2SComponents.XX];
 
-            if ((numerator == 0) && (denominator == 0))
+            if (((float)numerator == 0f) && ((float)denominator == 0f))
                 return double.NaN;
             else
                 return (Math.PI + Math.Atan2(numerator, denominator)) / 2;

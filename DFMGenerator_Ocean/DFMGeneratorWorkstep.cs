@@ -2381,6 +2381,9 @@ namespace DFMGenerator_Ocean
                                 List<Tensor2S> local_AbsoluteStressRate_list = new List<Tensor2S>();
                                 List<Tensor2S> local_InitialAbsoluteStress_list = new List<Tensor2S>();
                                 List<double> local_InitialFluidPressure_list = new List<double>();
+                                // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
+                                // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to zero
+                                double local_DefaultFractureAzimuth = 0;
                                 for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                                 {
                                     // Get the time converter for this episode
@@ -2707,6 +2710,10 @@ namespace DFMGenerator_Ocean
                                             }
                                         }
                                     }
+
+                                    // If this is the first deformation episode, set the default fracture azimuth for the gridblock
+                                    if (deformationEpisodeNo == 0)
+                                        local_DefaultFractureAzimuth = local_EhminAzi;
 
                                     // Check if the deformation episode is subdivided into sub episodes
                                     if (SubEpisodesDefined_list[deformationEpisodeNo])
@@ -3281,7 +3288,7 @@ namespace DFMGenerator_Ocean
 
                                 // Set the propagation control data for the gridblock
                                 gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl);
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, local_DefaultFractureAzimuth);
 
                                 // Set folder path for output files
                                 gc.PropControl.FolderPath = folderPath;
@@ -3295,9 +3302,9 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21});",
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22});",
                                     CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, local_DefaultFractureAzimuth));
 #endif
 
                                 // Add the deformation load data 

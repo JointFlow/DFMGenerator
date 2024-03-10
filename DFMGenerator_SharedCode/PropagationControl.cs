@@ -1221,6 +1221,10 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
+        /// Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes
+        /// </summary>
+        private double DefaultFractureAzimuth { get; set; }
+        /// <summary>
         /// Azimuth of minimum applied horizontal strain for the first deformation episode (radians) 
         /// </summary>
         public double Initial_Applied_Epsilon_hmin_azimuth
@@ -1228,14 +1232,14 @@ namespace DFMGenerator_SharedCode
             get
             {
                 // Look at each deformation episode in turn for a valid ehmin azimuth (i.e. an anisotropic stress or strain load)
-                foreach(DeformationEpisodeLoadControl deformationEpisode in deformationEpisodes)
+                foreach (DeformationEpisodeLoadControl deformationEpisode in deformationEpisodes)
                 {
                     double episode_hmin_azimuth = deformationEpisode.Applied_Epsilon_hmin_azimuth;
                     if (!double.IsNaN(episode_hmin_azimuth))
                         return episode_hmin_azimuth;
                 }
-                // If there are no deformation episodes with anisotropic stress or strain loads, return 0
-                return 0;
+                // If there are no deformation episodes with anisotropic stress or strain loads, return the specified default value, or zero if this is not specified
+                return DefaultFractureAzimuth;
             }
         }
 
@@ -1275,7 +1279,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="timeUnits_in">Time units for deformation rates</param>
         /// <param name="CalculateFracturePorosity_in">Flag to calculate and output fracture porosity</param>
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
-        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
+        /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
+        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, double DefaultFractureAzimuth_in)
         {
             // Set the time units and calculate unit conversion multiplier to adjust input rates if not in SI units
             timeUnits = timeUnits_in;
@@ -1318,11 +1323,13 @@ namespace DFMGenerator_SharedCode
             anisotropyCutoff = anisotropyCutoff_in;
             // Write implicit fracture data to file while running calculation
             WriteImplicitDataFiles = WriteImplicitDataFiles_in;
-
             // Flag to calculate and output fracture porosity
             CalculateFracturePorosity = CalculateFracturePorosity_in;
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
             FractureApertureControl = FractureApertureControl_in;
+            // Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes
+            // This should not be set to NaN 
+            DefaultFractureAzimuth = double.IsNaN(DefaultFractureAzimuth_in) ? 0 : DefaultFractureAzimuth_in;
         }
 
         // Constructors
@@ -1330,7 +1337,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public PropagationControl() 
-            : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform)
+            : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, 0)
         {
             // Defaults:
 
@@ -1356,6 +1363,7 @@ namespace DFMGenerator_SharedCode
             // Time units: seconds
             // Flag to calculate and output fracture porosity: false
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation: Uniform
+            // Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes: 0
         }
         /// <summary>
         /// Constructor: Set all calculation control data ecxcept applied external loads; set index points for cumulative fracture size distribution arrays independently for each fracture set
@@ -1382,14 +1390,15 @@ namespace DFMGenerator_SharedCode
         /// <param name="timeUnits_in">Time units for deformation rates</param>
         /// <param name="CalculateFracturePorosity_in">Flag to calculate and output fracture porosity</param>
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in)
+        /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, double DefaultFractureAzimuth_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeLoadControl>();
             // Set all other data
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, DefaultFractureAzimuth_in);
         }
         /// <summary>
         /// Constructor: Set all calculation control data, and create a single deformation episode with an applied strain load only; set index points for cumulative fracture size distribution arrays independently for each fracture set
@@ -1427,7 +1436,7 @@ namespace DFMGenerator_SharedCode
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeLoadControl>();
             // Set all other data
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, Applied_Epsilon_hmin_dashed_in);
             // Create the deformation episode
             AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, DeformationEpisodeDuration_in);
         }
