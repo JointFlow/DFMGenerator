@@ -4,12 +4,12 @@
     <PipPath />
     <Platform>Petrel</Platform>
     <AntivirusPath>C:\Program Files\Windows Defender\MpCmdRun.exe</AntivirusPath>
-    <LicenseServer>@Offshore-pLic03.win.dtu.dk</LicenseServer>
+    <LicenseServer>@localhost;</LicenseServer>
     <LicenseFeature>Petrel_FAPI</LicenseFeature>
     <WixPath>C:\Program Files (x86)\WiX Toolset v3.11\bin</WixPath>
     <BinScopePath>C:\Program Files\Microsoft BinScope 2014\BinScope.exe</BinScopePath>
     <WindowsSDKPath>C:\Program Files (x86)\Windows Kits\10</WindowsSDKPath>
-    <TempDirectory usecustom="false">C:\Users\MWelch\AppData\Local\Temp\</TempDirectory>
+    <TempDirectory usecustom="false">C:\Users\joint\AppData\Local\Temp\</TempDirectory>
     <LastTimeRun>
       <Timestamp>Test cases have not been run yet.</Timestamp>
       <SummaryResults>
@@ -22,7 +22,7 @@
   </AcceptanceCheckerParameters>
   <SanityRunnerParameters>
     <PetrelProjectPath>.pet</PetrelProjectPath>
-    <PetrelVersion>2022</PetrelVersion>
+    <PetrelVersion>2023</PetrelVersion>
     <LastTimeRun>
       <Timestamp>Test cases have not been run yet.</Timestamp>
       <SummaryResults>
