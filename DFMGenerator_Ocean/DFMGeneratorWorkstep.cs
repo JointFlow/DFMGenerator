@@ -9089,9 +9089,9 @@ namespace DFMGenerator_Ocean
                 argument_DeformationEpisode = "Deformation episode 1: default";
                 argument_DeformationEpisodeDuration = double.NaN;
                 argument_DeformationEpisodeTimeUnits = 2;
-                argument_EhminAzi_default = -0.01;
+                argument_EhminAzi_default = 0;
                 argument_EhminAzi = null;
-                argument_EhminRate_default = 0;
+                argument_EhminRate_default = -0.01;
                 argument_EhminRate = null;
                 argument_EhmaxRate_default = 0;
                 argument_EhmaxRate = null;
@@ -9102,6 +9102,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default = 0;
                 argument_AppliedUpliftRate = null;
                 argument_StressArchingFactor = 0;
+                argument_SimulationCase = null;
                 argument_AbsoluteStressXXTimeSeries = null;
                 argument_AbsoluteStressYYTimeSeries = null;
                 argument_AbsoluteStressXYTimeSeries = null;
@@ -9126,6 +9127,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default1 = 0;
                 argument_AppliedUpliftRate1 = null;
                 argument_StressArchingFactor1 = 0;
+                argument_SimulationCase1 = null;
                 argument_AbsoluteStressXXTimeSeries1 = null;
                 argument_AbsoluteStressYYTimeSeries1 = null;
                 argument_AbsoluteStressXYTimeSeries1 = null;
@@ -9150,6 +9152,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default2 = 0;
                 argument_AppliedUpliftRate2 = null;
                 argument_StressArchingFactor2 = 0;
+                argument_SimulationCase2 = null;
                 argument_AbsoluteStressXXTimeSeries2 = null;
                 argument_AbsoluteStressYYTimeSeries2 = null;
                 argument_AbsoluteStressXYTimeSeries2 = null;
@@ -9174,6 +9177,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default3 = 0;
                 argument_AppliedUpliftRate3 = null;
                 argument_StressArchingFactor3 = 0;
+                argument_SimulationCase3 = null;
                 argument_AbsoluteStressXXTimeSeries3 = null;
                 argument_AbsoluteStressYYTimeSeries3 = null;
                 argument_AbsoluteStressXYTimeSeries3 = null;
@@ -9198,6 +9202,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default4 = 0;
                 argument_AppliedUpliftRate4 = null;
                 argument_StressArchingFactor4 = 0;
+                argument_SimulationCase4 = null;
                 argument_AbsoluteStressXXTimeSeries4 = null;
                 argument_AbsoluteStressYYTimeSeries4 = null;
                 argument_AbsoluteStressXYTimeSeries4 = null;
@@ -9222,6 +9227,7 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_default_extras.Clear();
                 argument_AppliedUpliftRate_extras.Clear();
                 argument_StressArchingFactor_extras.Clear();
+                argument_SimulationCase_extras.Clear();
                 argument_AbsoluteStressXXTimeSeries_extras.Clear();
                 argument_AbsoluteStressYYTimeSeries_extras.Clear();
                 argument_AbsoluteStressXYTimeSeries_extras.Clear();
@@ -9242,12 +9248,12 @@ namespace DFMGenerator_Ocean
                 argument_Porosity = null;
                 argument_BiotCoefficient_default = 1;
                 argument_BiotCoefficient = null;
-                argument_ThermalExpansionCoefficient_default = 4E-5;
-                argument_ThermalExpansionCoefficient = null;
                 argument_FrictionCoefficient_default = 0.5;
                 argument_FrictionCoefficient = null;
                 argument_CrackSurfaceEnergy_default = 1000;
                 argument_CrackSurfaceEnergy = null;
+                argument_ThermalExpansionCoefficient_default = 4E-5;
+                argument_ThermalExpansionCoefficient = null;
                 // Arguments to allow simulation results to be input for the standard elastic and plastic parameters
                 argument_YoungsMod_GR = null;
                 argument_PoissonsRatio_GR = null;
@@ -9268,7 +9274,7 @@ namespace DFMGenerator_Ocean
                 argument_InitialMicrofractureDensity_SI = 0.001;
                 argument_InitialMicrofractureDensity_default = double.NaN;
                 argument_InitialMicrofractureDensity = null;
-                argument_InitialMicrofractureSizeDistribution_default = 2;
+                argument_InitialMicrofractureSizeDistribution_default = 3;
                 argument_InitialMicrofractureSizeDistribution = null;
                 argument_SubcriticalPropagationIndex_default = 10;
                 argument_SubcriticalPropagationIndex = null;
@@ -9283,7 +9289,7 @@ namespace DFMGenerator_Ocean
                 argument_FluidDensity = 1000;
                 argument_InitialOverpressure = 0;
                 argument_GeothermalGradient = 0.03;
-                argument_InitialStressRelaxation = 1;
+                argument_InitialStressRelaxation = 0.5;
                 argument_AverageStressStrainData = false;
 
                 // Outputs
