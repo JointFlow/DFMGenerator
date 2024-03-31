@@ -22,7 +22,11 @@
   </AcceptanceCheckerParameters>
   <SanityRunnerParameters>
     <PetrelProjectPath>.pet</PetrelProjectPath>
+<<<<<<< HEAD
     <PetrelVersion>2023</PetrelVersion>
+=======
+    <PetrelVersion>2024</PetrelVersion>
+>>>>>>> main
     <LastTimeRun>
       <Timestamp>Test cases have not been run yet.</Timestamp>
       <SummaryResults>
