@@ -61,6 +61,8 @@ Petrel 2022: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_P
 
 Petrel 2023: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2023.pip)
 
+Petrel 2024: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2024.pip)
+
 An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFMGenerator/tree/main/Documentation/DFM_Generator_TechNotes.pdf)
 This is not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
 
