@@ -3,7 +3,7 @@
 // The flag should be set to generate release versions of the standalone code
 #define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
-// Use for debugging only; will significantly increase runtime
+// Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
 
 using System;
