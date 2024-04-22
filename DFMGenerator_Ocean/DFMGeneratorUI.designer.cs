@@ -541,7 +541,8 @@ namespace DFMGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 2;
+            this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
             this.tabControl1.TabPages.AddRange(new Slb.Ocean.Petrel.UI.Controls.TabPage[] {

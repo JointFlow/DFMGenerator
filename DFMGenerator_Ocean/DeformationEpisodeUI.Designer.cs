@@ -346,6 +346,7 @@ namespace DFMGenerator_Ocean
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(746, 275);
             this.tabControl1.TabIndex = 107;
             this.tabControl1.TabPages.AddRange(new Slb.Ocean.Petrel.UI.Controls.TabPage[] {
