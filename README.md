@@ -76,7 +76,7 @@ This is not however intended as a complete description of derivation of the algo
 <!-- CONTRIBUTING -->
 ## Contributing
 
-We welcome any comments, feedback or suggestions for future enhancements. If you are planning to make modifications to the code and would like to discuss these, or need help, please feel free to contact us as mwelch@dtu.dk or mikael@dtu.dk.
+We welcome any comments, feedback or suggestions for future enhancements. If you are planning to make modifications to the code and would like to discuss these, or need help, please feel free to contact us as mwelch@dtu.dk or m.luthje@jointflow.eu.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b`)
