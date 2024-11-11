@@ -50,6 +50,7 @@ namespace DFMGenerator_Ocean
             this.btnApply.Image = PetrelImages.Apply;
 
             deformationEpisodeUIs = new List<DeformationEpisodeUI>();
+            definePresentDayStressUIOpen = false;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
@@ -104,6 +105,17 @@ namespace DFMGenerator_Ocean
             }
             updateUIFromArgs();
         }*/
+        /// <summary>
+        /// Flag to specify whether a Define Present Day Stress UI is already open
+        /// </summary>
+        private bool definePresentDayStressUIOpen;
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ClosePresentDayStressUI()
+        {
+            definePresentDayStressUIOpen = false;
+        }
 
         /// <summary>
         /// Updates the data displayed on the UI.
@@ -223,11 +235,13 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_OutputCentrepoints, checkBox_OutputCentrepoints);
             // Fracture connectivity and anisotropy index control parameters
             UpdateCheckBox(args.Argument_CalculateFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
-            UpdateCheckBox(args.Argument_CalculateFracturePorosity, checkBox_CalculateFracturePorosity);
+            UpdateCheckBox(args.Argument_CalculateFractureReactivationPotential, checkBox_CalculateFractureReactivationPotential);
             UpdateCheckBox(args.Argument_CalculateBulkRockElasticTensors, checkBox_CalculateBulkRockElasticTensors);
+            UpdateCheckBox(args.Argument_CalculateFracturePorosity, checkBox_CalculateFracturePorosity);
             UpdateCheckBox(args.Argument_CalculateFracturePermeabilityTensor, checkBox_CalculateFracturePermeabilityTensor);
             UpdateComboBox(args.Argument_PermeabilityAlgorithm, comboBox_PermeabilityAlgorithm);
             UpdateComboBox(args.Argument_FractureTypesInPermeabilityTensor, comboBox_FractureTypesInPermeabilityTensor);
+            UpdateCheckBox(args.Argument_UsePresentDayStress, checkBox_UsePresentDayStress);
 
             // Fracture aperture control parameters
             UpdateComboBox(args.Argument_FractureApertureControl, comboBox_FractureApertureControl);
@@ -377,11 +391,13 @@ namespace DFMGenerator_Ocean
             args.Argument_OutputCentrepoints = checkBox_OutputCentrepoints.Checked;
             // Fracture connectivity and anisotropy index control parameters
             args.Argument_CalculateFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
-            args.Argument_CalculateFracturePorosity = checkBox_CalculateFracturePorosity.Checked;
+            args.Argument_CalculateFractureReactivationPotential = checkBox_CalculateFractureReactivationPotential.Checked;
             args.Argument_CalculateBulkRockElasticTensors = checkBox_CalculateBulkRockElasticTensors.Checked;
             args.Argument_CalculateFracturePermeabilityTensor = checkBox_CalculateFracturePermeabilityTensor.Checked;
+            args.Argument_CalculateFracturePorosity = checkBox_CalculateFracturePorosity.Checked;
             args.Argument_PermeabilityAlgorithm = comboBox_PermeabilityAlgorithm.SelectedIndex;
             args.Argument_FractureTypesInPermeabilityTensor = comboBox_FractureTypesInPermeabilityTensor.SelectedIndex;
+            args.Argument_UsePresentDayStress = checkBox_UsePresentDayStress.Checked;
 
             // Fracture aperture control parameters
             args.Argument_FractureApertureControl = comboBox_FractureApertureControl.SelectedIndex;
@@ -705,7 +721,7 @@ namespace DFMGenerator_Ocean
 
         private void EnableNoFractureSets()
         {
-            // Disable the numeric box for selecting the number of fracture sets and the checkbox for checking all microfracture stress shadowson the Control parameters tab,
+            // Disable the numeric box for selecting the number of fracture sets and the checkbox for checking all microfracture stress shadows on the Control parameters tab,
             // if the Include oblique fractures checkbox on the Main tab is unchecked, and enable them if the Include oblique fractures checkbox is checked
             if (checkBox_IncludeObliqueFracs.Checked == false)
             { 
@@ -1064,6 +1080,20 @@ namespace DFMGenerator_Ocean
             PetrelSystem.ShowModeless(dlg_EditDeformationEpisode);
             updateUIFromArgs();
         }
+        /// <summary>
+        /// Open a separate dialog box to input data for the present day stress, if such a dialog box is not already open
+        /// </summary>
+        private void OpenPresentDayStressUI()
+        {
+            // Only open a Define Present Day Stress UI if there is not already one open
+            if (!definePresentDayStressUIOpen)
+            {
+                PresentDayStressUI dlg_DefinePresentDayStress = new PresentDayStressUI(args, this, context);
+                definePresentDayStressUIOpen = true;
+                PetrelSystem.ShowModeless(dlg_DefinePresentDayStress);
+                updateUIFromArgs();
+            }
+        }
 
         /// <summary>
         /// Event handler to be triggered when a deformation episode is removed
@@ -1099,6 +1129,12 @@ namespace DFMGenerator_Ocean
             args.RemoveDeformationEpisode(deformationEpisodeIndex);
             //listBox_DeformationEpisodes.SelectedIndex = -1;
             updateUIFromArgs();
+        }
+
+        private void button_DefinePresentDayStress_Click(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            OpenPresentDayStressUI();
         }
         #endregion
     }

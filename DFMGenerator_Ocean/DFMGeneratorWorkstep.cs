@@ -1840,8 +1840,8 @@ namespace DFMGenerator_Ocean
 
                     // Get the index numbers of the fracture sets perpendicular to hmin and hmax
                     // Note that if the number of fracture sets is odd, there will be no set directly perpendicular to hmax, so we will take the index number of the closest set
-                    int hmin_index = 0;
-                    int hmax_index = NoFractureSets / 2;
+                    //int hmin_index = 0;
+                    //int hmax_index = NoFractureSets / 2;
 
                     // Progress Bar
                     using (IProgress progressBar = PetrelLogger.NewProgress(0, 100, ProgressType.Cancelable, System.Windows.Forms.Cursors.WaitCursor))
@@ -3561,6 +3561,22 @@ namespace DFMGenerator_Ocean
 #if DEBUG_FRACS
                                     PetrelLogger.InfoOutputWindow(string.Format("gc.FractureSets[{0}].SetFractureApertureControlData(({1}, {2}, {3}, {4});", fs_index, Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in));
 #endif
+                                }
+
+                                // If required, define the present day stress
+                                if (UsePresentDayStress)
+                                {
+                                    switch (PresentDayStressInput)
+                                    {
+                                        case PresentDayStressFrom.Strain:
+                                            break;
+                                        case PresentDayStressFrom.EffectiveStress:
+                                            break;
+                                        case PresentDayStressFrom.AbsoluteStress:
+                                            break;
+                                        default:
+                                            break;
+                                    }
                                 }
 
                                 // Add the gridblock to the grid
@@ -9700,8 +9716,8 @@ namespace DFMGenerator_Ocean
             [Description("ZZ component of present day stress tensor", "ZZ component of present day stress tensor (effective or absolute stress depending on settings")]
             public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Szz_PresentDay
             {
-                internal get { return DataManager.Resolve(this.argument_Sxx_PresentDay) as Property; }
-                set { this.argument_Sxx_PresentDay = (value == null ? null : value.Droid); }
+                internal get { return DataManager.Resolve(this.argument_Szz_PresentDay) as Property; }
+                set { this.argument_Szz_PresentDay = (value == null ? null : value.Droid); }
             }
 
             [OptionalInWorkflow]

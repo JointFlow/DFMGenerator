@@ -346,6 +346,7 @@ namespace DFMGenerator_Ocean
             this.tabControl1.Location = new System.Drawing.Point(12, 12);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(746, 275);
             this.tabControl1.TabIndex = 107;
             this.tabControl1.TabPages.AddRange(new Slb.Ocean.Petrel.UI.Controls.TabPage[] {
@@ -408,9 +409,7 @@ namespace DFMGenerator_Ocean
             // 
             // comboBox_DE_TimeUnits
             // 
-#if !PRE2021
             this.comboBox_DE_TimeUnits.DisableMouseWheelScrolling = false;
-#endif
             this.comboBox_DE_TimeUnits.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem1.Text = "seconds";
             comboBoxItem2.Text = "years";

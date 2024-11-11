@@ -129,6 +129,12 @@
     <Compile Include="PetrelProgressReporter.cs" />
     <Compile Include="DFMGeneratorModule.cs" />
     <Compile Include="DFMGeneratorPlugin.cs" />
+    <Compile Include="PresentDayStressUI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PresentDayStressUI.Designer.cs">
+      <DependentUpon>PresentDayStressUI.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -159,6 +165,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="DeformationEpisodeUI.resx">
       <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PresentDayStressUI.resx">
+      <DependentUpon>PresentDayStressUI.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
