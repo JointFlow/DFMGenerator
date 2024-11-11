@@ -39,11 +39,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Hydrostatic fluid pressure: component of pore fluid pressure due to the weight of the overlying fluid column (Pa)
         /// </summary>
-        private double HydrostaticFluidPressure { get { return gbc.DepthAtDeformation * FluidDensity * Gravity; } }
+        public double HydrostaticFluidPressure { get { return gbc.DepthAtDeformation * FluidDensity * Gravity; } }
         /// <summary>
         /// Fluid overpressure: component of additional pore fluid pressure above hydrostatic gradient (Pa)
         /// </summary>
-        private double FluidOverpressure { get; set; }
+        public double FluidOverpressure { get; private set; }
         /// <summary>
         /// Pore fluid pressure (Pa)
         /// </summary>
@@ -331,6 +331,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="Nu_r">Bulk rock Poisson's ratio (isotropic)</param>
         public void RecalculateEffectiveStressState(double E_r, double Nu_r)
         {
+            // NB We use the Terzaghi effective stress rather than the Biot effective stress, because the differential compaction of the grains and the bulk rock is accounted for in the compactional strain
+            // As a result the el_Epsilon strain tensor is related to the Terzaghi effective stress tensor by Hooke's Law
+            // Similarly the el_Epsilon_noncompactional strain tensor is related to the Biot effective stress tensor by Hooke's Law
+
             // Calculate helper variables
             double Nur_OneMinusNur = Nu_r / (1 - Nu_r);
             double Er_OneMinusNur2 = E_r / (1 - Math.Pow(Nu_r, 2));
@@ -402,6 +406,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="Nu_r">Bulk rock Poisson's ratio (isotropic)</param>
         public void RecalculateStrain(double E_r, double Nu_r)
         {
+            // NB We use the Terzaghi effective stress rather than the Biot effective stress, because the differential compaction of the grains and the bulk rock is accounted for in the compactional strain
+            // As a result the el_Epsilon strain tensor is related to the Terzaghi effective stress tensor by Hooke's Law
+            // Similarly the el_Epsilon_noncompactional strain tensor is related to the Biot effective stress tensor by Hooke's Law
+
             // Calculate helper variables
             double Nur_Er = Nu_r / E_r;
             double OnePlusNur_Er = (1 + Nu_r) / E_r;
@@ -450,11 +458,21 @@ namespace DFMGenerator_SharedCode
             // Cache elastic constants for intact rock
             double E_r = gbc.MechProps.E_r;
             double Nu_r = gbc.MechProps.Nu_r;
+            double OneMinusBiot = 1 - gbc.MechProps.Biot;
 
             // Recalculate initial compactional strain
-            double horizontalCompactionalStrain = InitialStressRelaxation * (1 - (2 * Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
-            double verticalCompactionalStrain = -InitialStressRelaxation * ((2 * Nu_r * (1 - (2 * Nu_r))) / (1 - Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
-            el_epsilon_compactional = new Tensor2S(horizontalCompactionalStrain, horizontalCompactionalStrain, verticalCompactionalStrain, 0, 0, 0);
+            // NB The differential compaction of the grains and the bulk rock by fluid pressure is accounted for in the compactional strain
+            // As a result the el_Epsilon strain tensor (which includes compactional strain) is related to the Terzaghi effective stress tensor by Hooke's Law
+            // Similarly the el_Epsilon_noncompactional strain tensor is related to the Biot effective stress tensor by Hooke's Law
+            // Calculate the component of initial horizontal and vertical compressional strain due to the weight of the overburden (lithostatic stress)
+            double epsilon_h0_comp_lithstress = InitialStressRelaxation * (1 - (2 * Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
+            double epsilon_v0_comp_lithstress = -InitialStressRelaxation * ((2 * Nu_r * (1 - (2 * Nu_r))) / (1 - Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
+            // Calculate the component of initial horizontal and vertical compressional strain due to differential compaction of grains by fluid pressure
+            double epsilon_h0_comp_fluidpress = -((1 - (2 * Nu_r)) / E_r) * OneMinusBiot * P_f;
+            double epsilon_v0_comp_fluidpress = 0;
+            double epsilon_h0_comp = epsilon_h0_comp_lithstress + epsilon_h0_comp_fluidpress;
+            double epsilon_v0_comp = epsilon_v0_comp_lithstress + epsilon_v0_comp_fluidpress;
+            el_epsilon_compactional = new Tensor2S(epsilon_h0_comp, epsilon_h0_comp, epsilon_v0_comp, 0, 0, 0);
 
             // Reset the bulk rock elastic strain to the initial compactional strain plus the lithostatic strain
             double lithostaticStrain = ((1 + Nu_r) * (1 - (2 * Nu_r)) / (1 - Nu_r)) * (LithostaticStress_eff_Terzaghi / E_r);
@@ -469,10 +487,18 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private void Reset_Stress()
         {
-            // Reset the stress tensor to the initial stress with no applied horizontal strain (but including initial stress relaxation)
+            // Reset the Terzaghi effective stress tensor to the initial stress with no applied horizontal strain (but including initial stress relaxation)
+            // NB The differential compaction of the grains and the bulk rock by fluid pressure is accounted for in the compactional strain
+            // As a result the el_Epsilon strain tensor (which includes compactional strain) is related to the Terzaghi effective stress tensor by Hooke's Law
+            // Similarly the el_Epsilon_noncompactional strain tensor is related to the Biot effective stress tensor by Hooke's Law
             double Nu_r = gbc.MechProps.Nu_r;
-            double Sigma_h0_eff = (((InitialStressRelaxation * (1 - Nu_r)) + ((1 - InitialStressRelaxation) * Nu_r)) / (1 - Nu_r)) * LithostaticStress_eff_Terzaghi;
-            sigma_eff = new Tensor2S(Sigma_h0_eff, Sigma_h0_eff, LithostaticStress_eff_Terzaghi, 0, 0, 0);
+            double OneMinusBiot = 1 - gbc.MechProps.Biot;
+            // Calculate the component of initial horizontal effective stress due to the weight of the overburden (lithostatic stress)
+            double sigma_h0_eff_lithstress = (((InitialStressRelaxation * (1 - Nu_r)) + ((1 - InitialStressRelaxation) * Nu_r)) / (1 - Nu_r)) * LithostaticStress_eff_Terzaghi;
+            // Calculate the component of initial horizontal effective stress due to differential compaction of grains by fluid pressure
+            double sigma_h0_eff_fluidpress = -((1 - (2 * Nu_r)) / (1 - Nu_r)) * OneMinusBiot * P_f;
+            double sigma_h0_eff = sigma_h0_eff_lithstress + sigma_h0_eff_fluidpress;
+            sigma_eff = new Tensor2S(sigma_h0_eff, sigma_h0_eff, LithostaticStress_eff_Terzaghi, 0, 0, 0);
 
             // Reset the rate of change of stress tensor
             sigma_eff_dashed = new Tensor2S();

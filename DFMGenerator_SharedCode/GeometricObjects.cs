@@ -1376,7 +1376,7 @@ namespace DFMGenerator_SharedCode
                 double xy = components[Tensor2SComponents.XY];
                 double yz = components[Tensor2SComponents.YZ];
                 double zx = components[Tensor2SComponents.ZX];
-                return (xx * yy) + (yy * zz) + (zz * xx) - Math.Pow(xy, 2) - Math.Pow(yz, 2) - Math.Pow(zx, 2);
+                return (xx * yy) + (yy * zz) + (zz * xx) - (xy * xy) - (yz * yz) - (zx * zx);
             }
         }
         /// <summary>
@@ -1392,7 +1392,7 @@ namespace DFMGenerator_SharedCode
                 double xy = components[Tensor2SComponents.XY];
                 double yz = components[Tensor2SComponents.YZ];
                 double zx = components[Tensor2SComponents.ZX];
-                return (xx * yy * zz) + (2 * xy * yz * zx) - (xx * Math.Pow(yz, 2)) - (yy * Math.Pow(zx, 2)) - (zz * Math.Pow(xy, 2));
+                return (xx * yy * zz) + (2 * xy * yz * zx) - (xx * yz * yz) - (yy * zx * zx) - (zz * xy * xy);
             }
         }
         /// <summary>
@@ -1626,12 +1626,114 @@ namespace DFMGenerator_SharedCode
             return horizontalValues;
         }
 
-        // Functions to generate specific elastic tensors
+        // Functions to generate specific tensors
+
+        /// <summary>
+        /// Create a uniaxial second order tensor with a principal axis of arbitrary orientation and magnitude
+        /// For example a permeability tensor for flow along parallel tubes
+        /// </summary>
+        /// <param name="Azimuth">Azimuth of the principal axis</param>
+        /// <param name="Dip">Dip of the principal axis</param>
+        /// <param name="Magnitude">Magnitude of the quantity along the principal axis; magnitude of the quantity along other two axes is 0</param>
+        /// <returns>Tensor2D object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
+        public static Tensor2S UniaxialTensor(double Azimuth, double Dip, double Magnitude)
+        {
+            double sinazi = VectorXYZ.Sin_trim(Azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Azimuth);
+            double sindip = VectorXYZ.Sin_trim(Dip);
+            double cosdip = VectorXYZ.Cos_trim(Dip);
+
+            double x = sinazi * cosdip;
+            double y = cosazi * cosdip;
+            double z = -sindip;
+
+            double xx = Magnitude * x * x;
+            double yy = Magnitude * y * y;
+            double zz = Magnitude * z * z;
+            double xy = Magnitude * x * y;
+            double yz = Magnitude * y * z;
+            double zx = Magnitude * z * x;
+
+            return new Tensor2S(xx, yy, zz, xy, yz, zx);
+        }
+        /// <summary>
+        /// Create a uniaxial second order tensor with a principal axis of arbitrary orientation and magnitude
+        /// For example a permeability tensor for flow along parallel tubes
+        /// </summary>
+        /// <param name="Axis">VectorXYZ object representing the principal axis; NB if the supplied axis vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the axis vector</param>
+        /// <param name="Magnitude">Magnitude of the quantity along the principal axis; magnitude of the quantity along other two axes is 0</param>
+        /// <returns>Tensor2D object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
+        public static Tensor2S UniaxialTensor(VectorXYZ Axis, double Magnitude)
+        {
+            double x = Axis.Component(VectorComponents.X);
+            double y = Axis.Component(VectorComponents.Y);
+            double z = Axis.Component(VectorComponents.Z);
+
+            double xx = Magnitude * x * x;
+            double yy = Magnitude * y * y;
+            double zz = Magnitude * z * z;
+            double xy = Magnitude * x * y;
+            double yz = Magnitude * y * z;
+            double zx = Magnitude * z * x;
+
+            return new Tensor2S(xx, yy, zz, xy, yz, zx);
+        }
+        /// <summary>
+        /// Create a biaxial second order tensor with two principal axes of equal magnitude, both lying on a plane with arbitrary orientation
+        /// For example a permeability tensor for flow along parallel fractures
+        /// </summary>
+        /// <param name="Azimuth">Azimuth of the plane containing the two principal axes</param>
+        /// <param name="Dip">Dip of the plane containing the two principal axes</param>
+        /// <param name="Magnitude">Magnitude of the quantity along the two principal axes; magnitude of the quantity along the third axis is 0</param>
+        /// <returns>Tensor2D object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
+        public static Tensor2S BiaxialTensor(double Azimuth, double Dip, double Magnitude)
+        {
+            double sinazi = VectorXYZ.Sin_trim(Azimuth);
+            double cosazi = VectorXYZ.Cos_trim(Azimuth);
+            double sindip = VectorXYZ.Sin_trim(Dip);
+            double cosdip = VectorXYZ.Cos_trim(Dip);
+
+            double x = sinazi * sindip;
+            double y = cosazi * sindip;
+            double z = cosdip;
+
+            double xx = Magnitude * ((y * y) + (z * z));
+            double yy = Magnitude * ((x * x) + (z * z));
+            double zz = Magnitude * ((x * x) + (y * y));
+            double xy = Magnitude * -(x * y);
+            double yz = Magnitude * -(y * z);
+            double zx = Magnitude * -(z * x);
+
+            return new Tensor2S(xx, yy, zz, xy, yz, zx);
+        }
+        /// <summary>
+        /// Create a biaxial second order tensor with two principal axes of equal magnitude, both lying on a plane with arbitrary orientation
+        /// For example a permeability tensor for flow along parallel fractures
+        /// </summary>
+        /// <param name="Normal">VectorXYZ object representing the normal to the plane containing the two principal axes; NB if the supplied normal vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the normal vector</param>
+        /// <param name="Magnitude">Magnitude of the quantity along the two principal axes; magnitude of the quantity along the third axis is 0</param>
+        /// <returns>Tensor2D object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
+        public static Tensor2S BiaxialTensor(VectorXYZ Normal, double Magnitude)
+        {
+            double x = Normal.Component(VectorComponents.X);
+            double y = Normal.Component(VectorComponents.Y);
+            double z = Normal.Component(VectorComponents.Z);
+
+            double xx = Magnitude * ((y * y) + (z * z));
+            double yy = Magnitude * ((x * x) + (z * z));
+            double zz = Magnitude * ((x * x) + (y * y));
+            double xy = Magnitude * -(x * y);
+            double yz = Magnitude * -(y * z);
+            double zx = Magnitude * -(z * x);
+
+            return new Tensor2S(xx, yy, zz, xy, yz, zx);
+        }
         /// <summary>
         /// Create a tensor for the horizontal applied strain from minimum and maximum horizontal strain magnitudes, and azimuth of minimum horizontal strain; Z components will be zero
+        /// NB This can also be used to generate a tensor for any quantity confined to the horizontal plane, with ZZ, YZ and ZX components zero 
         /// </summary>
-        /// <param name="Epsilon_hmin">Minimum horizontal strain (Pa, negative for extensional)</param>
-        /// <param name="Epsilon_hmax">Maximum horizontal strain (Pa, negative for extensional)</param>
+        /// <param name="Epsilon_hmin">Minimum horizontal strain (negative for extensional)</param>
+        /// <param name="Epsilon_hmax">Maximum horizontal strain (negative for extensional)</param>
         /// <param name="Epsilon_hmin_azimuth">Azimuth of minimum horizontal strain (rad)<</param>
         /// <returns>Tensor2D object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
         public static Tensor2S HorizontalStrainTensor(double Epsilon_hmin, double Epsilon_hmax, double Epsilon_hmin_azimuth)

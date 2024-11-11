@@ -225,6 +225,9 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_CalculateFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
             UpdateCheckBox(args.Argument_CalculateFracturePorosity, checkBox_CalculateFracturePorosity);
             UpdateCheckBox(args.Argument_CalculateBulkRockElasticTensors, checkBox_CalculateBulkRockElasticTensors);
+            UpdateCheckBox(args.Argument_CalculateFracturePermeabilityTensor, checkBox_CalculateFracturePermeabilityTensor);
+            UpdateComboBox(args.Argument_PermeabilityAlgorithm, comboBox_PermeabilityAlgorithm);
+            UpdateComboBox(args.Argument_FractureTypesInPermeabilityTensor, comboBox_FractureTypesInPermeabilityTensor);
 
             // Fracture aperture control parameters
             UpdateComboBox(args.Argument_FractureApertureControl, comboBox_FractureApertureControl);
@@ -376,6 +379,9 @@ namespace DFMGenerator_Ocean
             args.Argument_CalculateFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
             args.Argument_CalculateFracturePorosity = checkBox_CalculateFracturePorosity.Checked;
             args.Argument_CalculateBulkRockElasticTensors = checkBox_CalculateBulkRockElasticTensors.Checked;
+            args.Argument_CalculateFracturePermeabilityTensor = checkBox_CalculateFracturePermeabilityTensor.Checked;
+            args.Argument_PermeabilityAlgorithm = comboBox_PermeabilityAlgorithm.SelectedIndex;
+            args.Argument_FractureTypesInPermeabilityTensor = comboBox_FractureTypesInPermeabilityTensor.SelectedIndex;
 
             // Fracture aperture control parameters
             args.Argument_FractureApertureControl = comboBox_FractureApertureControl.SelectedIndex;

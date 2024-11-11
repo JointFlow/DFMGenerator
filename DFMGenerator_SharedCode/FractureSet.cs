@@ -805,49 +805,39 @@ namespace DFMGenerator_SharedCode
             return output;
         }
 
-        // Porosity and volumetric heave functions
+        // Fracture porosity values
         /// <summary>
-        /// Combined dynamic microfracture porosity for all Mode 1 dip sets
+        /// Combined microfracture porosity for all dip sets
         /// </summary>
         /// <returns></returns>
         public double combined_uF_Porosity()
         {
             double output = 0;
             foreach (FractureDipSet DipSet in FractureDipSets)
-                if (DipSet.Mode == FractureMode.Mode1) output += DipSet.Total_uF_DynamicPorosityHeave();
+                output += DipSet.Total_uF_Porosity();
             return output;
         }
         /// <summary>
-        /// Combined dynamic microfracture volumetric heave for all Mode 2 dip sets
-        /// </summary>
-        /// <returns></returns>
-        public double combined_uF_VolumetricHeave()
-        {
-            double output = 0;
-            foreach (FractureDipSet DipSet in FractureDipSets)
-                if (DipSet.Mode != FractureMode.Mode1) output += DipSet.Total_uF_DynamicPorosityHeave();
-            return output;
-        }
-        /// <summary>
-        /// Combined dynamic half-macrofracture porosity for all Mode 1 dip sets
+        /// Combined half-macrofracture porosity for all dip sets
         /// </summary>
         /// <returns></returns>
         public double combined_MF_Porosity()
         {
             double output = 0;
             foreach (FractureDipSet DipSet in FractureDipSets)
-                if (DipSet.Mode == FractureMode.Mode1) output += (DipSet.Total_MF_DynamicPorosityHeave());
+                output += DipSet.Total_MF_Porosity();
             return output;
         }
         /// <summary>
-        /// Combined dynamic half-macrofracture volumetric heave for all Mode 2 dip sets
+        /// Total fracture porosity for all fractures in all dip sets
         /// </summary>
+        /// <param name="ApertureControl"></param>
         /// <returns></returns>
-        public double combined_MF_VolumetricHeave()
+        public double combined_Fracture_Porosity()
         {
             double output = 0;
             foreach (FractureDipSet DipSet in FractureDipSets)
-                if (DipSet.Mode != FractureMode.Mode1) output += (DipSet.Total_MF_DynamicPorosityHeave());
+                output += DipSet.Total_Fracture_Porosity();
             return output;
         }
         /// <summary>
@@ -885,6 +875,41 @@ namespace DFMGenerator_SharedCode
             foreach (FractureDipSet DipSet in FractureDipSets)
                 output += DipSet.Total_Fracture_Porosity(ApertureControl);
             return output;
+        }
+
+        // Fracture permeability tensors
+        /// <summary>
+        /// Combined microfracture permeability tensor for all microfractures in every dipset in this fracture set
+        /// </summary>
+        /// <returns>Tensor2S object representing microfracture permeability</returns>
+        Tensor2S combined_uF_Permeability()
+        {
+            Tensor2S permTensor = new Tensor2S();
+            foreach (FractureDipSet DipSet in FractureDipSets)
+                permTensor += DipSet.Total_uF_Permeability();
+            return permTensor;
+        }
+        /// <summary>
+        /// Combined half-macrofracture permeability tensor for all half-macrofractures in every dipset in this fracture set
+        /// </summary>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        Tensor2S combined_MF_Permeability()
+        {
+            Tensor2S permTensor = new Tensor2S();
+            foreach (FractureDipSet DipSet in FractureDipSets)
+                permTensor += DipSet.Total_MF_Permeability();
+            return permTensor;
+        }
+        /// <summary>
+        /// Combined fracture permeability tensor for all fractures in every dipset in this fracture set
+        /// </summary>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        Tensor2S combined_Fracture_Permeability()
+        {
+            Tensor2S permTensor = new Tensor2S();
+            foreach (FractureDipSet DipSet in FractureDipSets)
+                permTensor += DipSet.Total_Fracture_Permeability();
+            return permTensor;
         }
 
         // Macrofracture stress shadow, fracture spacing and exclusion zone volume

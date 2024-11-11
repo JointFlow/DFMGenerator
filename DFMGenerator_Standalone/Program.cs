@@ -166,7 +166,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Output DFM at intermediate stages of fracture growth");
                 input_file.WriteLine("NoIntermediateOutputs 0");
                 input_file.WriteLine("% Flag to control interval between output of intermediate stage DFMs:");
-                input_file.WriteLine("%      - EqualArea (output at at approximately euqal increments of total fracture area)");
+                input_file.WriteLine("%      - EqualArea (output at at approximately equal increments of total fracture area)");
                 input_file.WriteLine("%      - EqualTime (output at equal intervals of time)");
                 input_file.WriteLine("%      - SpecifiedTime (output at the end of each specified deformation episode)");
                 input_file.WriteLine("IntermediateOutputIntervalControl EqualArea");
@@ -176,6 +176,11 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("OutputBulkRockElasticTensors false");
                 input_file.WriteLine("% Flag to calculate and output fracture porosity");
                 input_file.WriteLine("CalculateFracturePorosity true");
+                input_file.WriteLine("% Flag to calculate and output fracture permeability tensors");
+                input_file.WriteLine("CalculateFracturePermeabilityTensor false");
+                input_file.WriteLine("% Algorithm to use for calculating fracture permeability");
+                input_file.WriteLine("%      - Oda1985 (The Oda 1985 model assumes fractures of infinite size and connectivity)");
+                input_file.WriteLine("PermeabilityAlgorithm Oda1985");
                 input_file.WriteLine("% Flag to calculate implicit fracture population distribution functions");
                 input_file.WriteLine("CalculatePopulationDistribution true");
                 input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
@@ -222,6 +227,19 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("FractureNormalStiffness 2.5E+9");
                 input_file.WriteLine("% Maximum fracture closure (m)");
                 input_file.WriteLine("MaximumClosure 0.0005");
+
+                input_file.WriteLine("% Present day effective stress parameters");
+                input_file.WriteLine("% Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability");
+                input_file.WriteLine("UsePresentDayStress false");
+                input_file.WriteLine("% Present Terzaghi effective day stress tensor components (Pa)");
+                input_file.WriteLine("% These will override the stress at the time of deformation when calculating fracture aperture and permeability");
+                input_file.WriteLine("% Any undefined components will be set to 0");
+                input_file.WriteLine("PresentDayEffectiveStress_XX 15000000");
+                input_file.WriteLine("PresentDayEffectiveStress_YY 15000000");
+                input_file.WriteLine("PresentDayEffectiveStress_ZZ 25000000");
+                input_file.WriteLine("PresentDayEffectiveStress_XY 0");
+                input_file.WriteLine("PresentDayEffectiveStress_YZ 0");
+                input_file.WriteLine("PresentDayEffectiveStress_ZX 0");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Calculation control parameters");
@@ -316,6 +334,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, DepthAtDeformation, ");
                 input_file.WriteLine("% YoungsMod, PoissonsRatio, Porosity, BiotCoefficient, GeothermalGradient, FrictionCoefficient, CrackSurfaceEnergy,");
                 input_file.WriteLine("% SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution");
+                input_file.WriteLine("% PresentDayEffectiveStress_XX, PresentDayEffectiveStress_YY, PresentDayEffectiveStress_ZZ, PresentDayEffectiveStress_XY, PresentDayEffectiveStress_YZ, PresentDayEffectiveStress_ZX");
                 input_file.WriteLine("% Additional deformation episodes can be overwritten by listing multiple values after the deformation load keywords");
                 input_file.WriteLine("% Cornerpoints that can be overridden are SETopCorner, SEBottomCorner, NETopCorner, NEBottomCorner,");
                 input_file.WriteLine("% NWTopCorner, NWBottomCorner, SWTopCorner, SWBottomCorner");
@@ -640,6 +659,10 @@ namespace DFMGenerator_Standalone
             bool OutputBulkRockElasticTensors = false;
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
+            // Flag to calculate and output fracture permeability tensors
+            bool CalculateFracturePermeabilityTensor = true;// false;
+            // Algorithm to use for calculating fracture permeability
+            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1985;
             // Flag to calculate implicit fracture population distribution functions
             bool CalculatePopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
@@ -684,6 +707,17 @@ namespace DFMGenerator_Standalone
             double FractureNormalStiffness = 2.5E+9;
             // Maximum fracture closure (m)
             double MaximumClosure = 0.0005;
+
+            // Present day effective stress parameters
+            // Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
+            bool UsePresentDayStress = true;// false;
+            // Present Terzaghi effective day stress tensor - define this to override stress at the time of deformation when calculating fracture aperture and permeability
+            double PresentDayEffectiveStress_XX = 15000000; //0;
+            double PresentDayEffectiveStress_YY = 15000000; //0;
+            double PresentDayEffectiveStress_ZZ = 25000000; //0;
+            double PresentDayEffectiveStress_XY = 0;
+            double PresentDayEffectiveStress_YZ = 0;
+            double PresentDayEffectiveStress_ZX = 0;
 
             // Calculation control parameters
             // Number of fracture sets
@@ -1137,6 +1171,17 @@ namespace DFMGenerator_Standalone
                         case "CalculateFracturePorosity_in": // For backwards compatibility
                             CalculateFracturePorosity = (line_split[1] == "true");
                             break;
+                        // Flag to calculate and output fracture permeability tensors
+                        case "CalculateFracturePermeabilityTensor":
+                            CalculateFracturePermeabilityTensor = (line_split[1] == "true");
+                            break;
+                        // Algorithm to use for calculating fracture permeability
+                        case "PermeabilityAlgorithm":
+                            if (line_split[1] == "Oda1985")
+                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1985;
+                            else
+                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1985;
+                            break;
                         // Flag to calculate implicit fracture population distribution functions
                         case "CalculatePopulationDistribution":
                         case "CalculatePopulationDistribution_in": // For backwards compatibility
@@ -1246,6 +1291,33 @@ namespace DFMGenerator_Standalone
                         case "MaximumClosure":
                         case "MaximumClosure_in": // For backwards compatibility
                             MaximumClosure = Convert.ToDouble(line_split[1]);
+                            break;
+
+                        // Present day effective stress parameters
+                        // Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
+                        case "UsePresentDayStress":
+                            UsePresentDayStress = (line_split[1] == "true");
+                            break;
+                        // Present Terzaghi effective day stress tensor components (Pa)
+                        // These will override the stress at the time of deformation when calculating fracture aperture and permeability
+                        // Any undefined components will be set to 0
+                        case "PresentDayEffectiveStress_XX":
+                            PresentDayEffectiveStress_XX = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "PresentDayEffectiveStress_YY":
+                            PresentDayEffectiveStress_YY = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "PresentDayEffectiveStress_ZZ":
+                            PresentDayEffectiveStress_ZZ = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "PresentDayEffectiveStress_XY":
+                            PresentDayEffectiveStress_XY = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "PresentDayEffectiveStress_YZ":
+                            PresentDayEffectiveStress_YZ = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "PresentDayEffectiveStress_ZX":
+                            PresentDayEffectiveStress_ZX = Convert.ToDouble(line_split[1]);
                             break;
 
                         // Calculation control parameters
@@ -1574,7 +1646,7 @@ namespace DFMGenerator_Standalone
                 InitialAbsoluteStress_array.Add(nextInitialAbsoluteStess_array);
             }
 
-            // Create arrays for variable mechanical property parameters and depth at start of deformation, and populate them with default values
+            // Create arrays for variable mechanical property parameters, depth at start of deformation and present day effective stress, and populate them with default values
             double[,] YoungsMod_array = new double[NoRows, NoCols];
             double[,] PoissonsRatio_array = new double[NoRows, NoCols];
             double[,] Porosity_array = new double[NoRows, NoCols];
@@ -1588,6 +1660,12 @@ namespace DFMGenerator_Standalone
             double[,] InitialMicrofractureDensity_array = new double[NoRows, NoCols];
             double[,] InitialMicrofractureSizeDistribution_array = new double[NoRows, NoCols];
             double[,] DepthAtDeformation_array = new double[NoRows, NoCols];
+            double[,] PresentDayEffectiveStress_XX_array = new double[NoRows, NoCols];
+            double[,] PresentDayEffectiveStress_YY_array = new double[NoRows, NoCols];
+            double[,] PresentDayEffectiveStress_ZZ_array = new double[NoRows, NoCols];
+            double[,] PresentDayEffectiveStress_XY_array = new double[NoRows, NoCols];
+            double[,] PresentDayEffectiveStress_YZ_array = new double[NoRows, NoCols];
+            double[,] PresentDayEffectiveStress_ZX_array = new double[NoRows, NoCols];
             for (int RowNo = 0; RowNo < NoRows; RowNo++)
                 for (int ColNo = 0; ColNo < NoCols; ColNo++)
                 {
@@ -1646,6 +1724,12 @@ namespace DFMGenerator_Standalone
                     InitialMicrofractureDensity_array[RowNo, ColNo] = InitialMicrofractureDensity;
                     InitialMicrofractureSizeDistribution_array[RowNo, ColNo] = InitialMicrofractureSizeDistribution;
                     DepthAtDeformation_array[RowNo, ColNo] = DepthAtDeformation;
+                    PresentDayEffectiveStress_XX_array[RowNo, ColNo] = PresentDayEffectiveStress_XX;
+                    PresentDayEffectiveStress_YY_array[RowNo, ColNo] = PresentDayEffectiveStress_YY;
+                    PresentDayEffectiveStress_ZZ_array[RowNo, ColNo] = PresentDayEffectiveStress_ZZ;
+                    PresentDayEffectiveStress_XY_array[RowNo, ColNo] = PresentDayEffectiveStress_XY;
+                    PresentDayEffectiveStress_YZ_array[RowNo, ColNo] = PresentDayEffectiveStress_YZ;
+                    PresentDayEffectiveStress_ZX_array[RowNo, ColNo] = PresentDayEffectiveStress_ZX;
                 }
 
             // Create arrays for the top and bottom of the pillars and populate them
@@ -1955,6 +2039,24 @@ namespace DFMGenerator_Standalone
                                 case "DepthAtFracture": // For backwards compatibility
                                     propertyArray = DepthAtDeformation_array;
                                     break;
+                                case "PresentDayEffectiveStress_XX":
+                                    propertyArray = PresentDayEffectiveStress_XX_array;
+                                    break;
+                                case "PresentDayEffectiveStress_YY":
+                                    propertyArray = PresentDayEffectiveStress_YY_array;
+                                    break;
+                                case "PresentDayEffectiveStress_ZZ":
+                                    propertyArray = PresentDayEffectiveStress_ZZ_array;
+                                    break;
+                                case "PresentDayEffectiveStress_XY":
+                                    propertyArray = PresentDayEffectiveStress_XY_array;
+                                    break;
+                                case "PresentDayEffectiveStress_YZ":
+                                    propertyArray = PresentDayEffectiveStress_YZ_array;
+                                    break;
+                                case "PresentDayEffectiveStress_ZX":
+                                    propertyArray = PresentDayEffectiveStress_ZX_array;
+                                    break;
 
                                 default:
                                     Console.WriteLine(string.Format("Warning! Property name {0} is not recognised", propertyName));
@@ -2209,6 +2311,24 @@ namespace DFMGenerator_Standalone
                             case "DepthAtFracture": // For backwards compatibility
                                 DepthAtDeformation_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
                                 break;
+                            case "PresentDayEffectiveStress_XX":
+                                PresentDayEffectiveStress_XX_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
+                            case "PresentDayEffectiveStress_YY":
+                                PresentDayEffectiveStress_YY_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
+                            case "PresentDayEffectiveStress_ZZ":
+                                PresentDayEffectiveStress_ZZ_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
+                            case "PresentDayEffectiveStress_XY":
+                                PresentDayEffectiveStress_XY_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
+                            case "PresentDayEffectiveStress_YZ":
+                                PresentDayEffectiveStress_YZ_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
+                            case "PresentDayEffectiveStress_ZX":
+                                PresentDayEffectiveStress_ZX_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
 
                             case "SWTopCorner":
                                 {
@@ -2400,7 +2520,7 @@ namespace DFMGenerator_Standalone
 
                     // Set the propagation control data for the gridblock
                     gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                         MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, local_DefaultFractureAzimuth);
+                         MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
 
                     // Set folder path for output files
                     gc.PropControl.FolderPath = folderPath;
@@ -2423,9 +2543,9 @@ namespace DFMGenerator_Standalone
                     Console.WriteLine(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                     Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                     Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}); ",
+                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22}, {23}, {24}); ",
                         CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                        MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl));
+                        MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 
                     // Add the deformation load data 
@@ -2515,6 +2635,14 @@ namespace DFMGenerator_Standalone
 #if DEBUG_FRACS
                         Console.WriteLine(string.Format("gc.FractureSets[{0}].SetFractureApertureControlData(({1}, {2}, {3}, {4});",fs_index, Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in));
 #endif
+                    }
+
+                    // Set the present day effective stress tensor, if required
+                    if (UsePresentDayStress)
+                    {
+                        Tensor2S local_PresentDayEffectiveStress = new Tensor2S(PresentDayEffectiveStress_XX_array[RowNo, ColNo], PresentDayEffectiveStress_YY_array[RowNo, ColNo], PresentDayEffectiveStress_ZZ_array[RowNo, ColNo],
+                            PresentDayEffectiveStress_XY_array[RowNo, ColNo], PresentDayEffectiveStress_YZ_array[RowNo, ColNo], PresentDayEffectiveStress_ZX_array[RowNo, ColNo]);
+                        gc.SetPresentDayStress(local_PresentDayEffectiveStress);
                     }
 
                     // Add the gridblock to the grid

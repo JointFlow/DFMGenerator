@@ -15,6 +15,10 @@ using System.IO;
 namespace DFMGenerator_SharedCode
 {
     /// <summary>
+    /// Enumerator to distinguish different fracture types within a fracture set
+    /// </summary>
+    public enum FractureType { Microfractures, LayerBoundFractures, AllFractures }
+    /// <summary>
     /// Enumerator for fracture mode: Mode1 = dilatant, Mode2 = dip-slip shear, Mode3 = strike-slip shear
     /// </summary>
     public enum FractureMode { Mode1, Mode2, Mode3 }
@@ -652,14 +656,33 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getMeanStressShadowWidth(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getMean_StressShadowWidth_M(Timestep_M); }
         /// <summary>
-        /// Return the total macrofracture stress shadow volume at the end of a specified previous timestep
+        /// Return the total porosity of all microfractures that were present at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getTotaluFPorosity(FractureApertureType ApertureControl, bool UseCurrentStress, int Timestep_M)
+        public double getTotaluFPorosity(int Timestep_M)
+        {
+            return getTotaluFPorosity(gbc.PropControl.FractureApertureControl, Timestep_M);
+        }
+        /// <summary>
+        /// Return the total porosity of all half-macrofractures that were present at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalMFPorosity(int Timestep_M)
+        {
+            return getTotalMFPorosity(gbc.PropControl.FractureApertureControl, Timestep_M);
+        }
+        /// <summary>
+        /// Return the total porosity of all microfractures that were present at the end of a specified previous timestep, based on specified method for determining fracture aperture
+        /// </summary>
+        /// <param name="ApertureControl">Method for determining fracture aperture</param>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotaluFPorosity(FractureApertureType ApertureControl, int Timestep_M)
         {
             if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep;
-            double output = 0;
+            double output;
 
             switch (ApertureControl)
             {
@@ -670,32 +693,32 @@ namespace DFMGenerator_SharedCode
                     output = PreviousFractureData.getTotal_uFP33_M(Timestep_M) * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = -(UseCurrentStress ? CurrentFractureData.SigmaNeff_Final_M : PreviousFractureData.getFinalNormalStress(Timestep_M));
-                    tensile_sigmaNeff = Math.Max(tensile_sigmaNeff, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = PreviousFractureData.getTotal_uFP33_M(Timestep_M) * gbc.MechProps.DynamicApertureMultiplier * (4 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = (UseCurrentStress ? CurrentFractureData.SigmaNeff_Final_M : PreviousFractureData.getFinalNormalStress(Timestep_M));
-                    compressive_sigmaNeff = Math.Max(compressive_sigmaNeff, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = PreviousFractureData.getTotal_uFP32_M(Timestep_M) * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
             return output;
         }
         /// <summary>
-        /// Return the total porosity of all half-macrofractures that were present at the end of a specified previous timestep
+        /// Return the total porosity of all half-macrofractures that were present at the end of a specified previous timestep, based on specified method for determining fracture aperture
         /// </summary>
         /// <param name="ApertureControl">Method for determining fracture aperture</param>
-        /// <param name="UseCurrentStress">If true, use the stress in the current explicit timestep to calculate the fracture aperture; if false, use the stress in the specified timestep to calculate the fracture aperture</param>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getTotalMFPorosity(FractureApertureType ApertureControl, bool UseCurrentStress, int Timestep_M)
+        public double getTotalMFPorosity(FractureApertureType ApertureControl, int Timestep_M)
         {
             if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep;
-            double output = 0;
+            double output;
 
             switch (ApertureControl)
             {
@@ -706,16 +729,17 @@ namespace DFMGenerator_SharedCode
                     output = (Math.PI / 4) * gbc.ThicknessAtDeformation * PreviousFractureData.getTotal_MFP32_M(Timestep_M) * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = -(UseCurrentStress ? CurrentFractureData.SigmaNeff_Final_M : PreviousFractureData.getFinalNormalStress(Timestep_M));
-                    tensile_sigmaNeff = Math.Max(tensile_sigmaNeff, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = (Math.PI / 4) * gbc.ThicknessAtDeformation * PreviousFractureData.getTotal_MFP32_M(Timestep_M) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = (UseCurrentStress ? CurrentFractureData.SigmaNeff_Final_M : PreviousFractureData.getFinalNormalStress(Timestep_M));
-                    compressive_sigmaNeff = Math.Max(compressive_sigmaNeff, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = PreviousFractureData.getTotal_MFP32_M(Timestep_M) * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -724,8 +748,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Get the time at which the fracture set becomes deactivated
         /// </summary>
-        /// <returns>Deactivation time of fracture set; will return zero if the fracture set was never active</returns>
-        public double getFinalActiveTime()
+        /// <param name="ReturnNanForUndefined">Determine return value if the fracture set was never active: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Deactivation time of fracture set; will return zero or NaN if the fracture set was never active</returns>
+        public double getFinalActiveTime(bool ReturnNanForUndefined)
         {
             // Get time units and unit conversion modifier for output time data if not in SI units
             double timeUnits_Modifier = gbc.PropControl.getTimeUnitsModifier();
@@ -739,8 +764,11 @@ namespace DFMGenerator_SharedCode
                     return PreviousFractureData.getEndTime(TimestepNo) / timeUnits_Modifier;
             }
 
-            // If the fracture set was never active, return 0
-            return 0;
+            // If the fracture set was never active, return 0 or NaN as appropriate
+            if (ReturnNanForUndefined)
+                return double.NaN;
+            else
+                return 0;
         }
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
@@ -760,7 +788,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Maximum fracture aperture (m)</returns>
         public double getMaximumMicrofractureAperture(double radius)
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -771,14 +799,17 @@ namespace DFMGenerator_SharedCode
                     output = 2 * radius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = radius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -791,7 +822,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Mean fracture aperture (m)</returns>
         public double getMeanMicrofractureAperture(double radius)
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -802,14 +833,17 @@ namespace DFMGenerator_SharedCode
                     output = (4 / 3) * radius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = radius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -821,7 +855,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Maximum fracture aperture (m)</returns>
         public double getMaximumMacrofractureAperture()
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -832,14 +866,17 @@ namespace DFMGenerator_SharedCode
                     output = gbc.ThicknessAtDeformation * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = gbc.MechProps.DynamicApertureMultiplier * (2 * gbc.ThicknessAtDeformation * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -851,7 +888,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Mean fracture aperture (m)</returns>
         public double getMeanMacrofractureAperture()
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -862,28 +899,31 @@ namespace DFMGenerator_SharedCode
                     output = (Math.PI / 4) * gbc.ThicknessAtDeformation * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = gbc.MechProps.DynamicApertureMultiplier * (Math.PI * gbc.ThicknessAtDeformation * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
             return output;
         }
         /// <summary>
-        /// Current maximum aperture of a microfracture of a specified radius
+        /// Maximum aperture of a microfracture of a specified radius at the end of a previous timestep
         /// </summary>
         /// <param name="radius">Microfracture radius (m)</param>
         /// <param name="timestep">Index for a previous timestep</param>
         /// <returns>Maximum fracture aperture (m)</returns>
         public double getMaximumMicrofractureAperture(double radius, int timestep)
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -895,14 +935,17 @@ namespace DFMGenerator_SharedCode
                     output = (4 / Math.PI) * radius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = radius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -916,7 +959,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Mean fracture aperture (m)</returns>
         public double getMeanMicrofractureAperture(double radius, int timestep)
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -928,27 +971,30 @@ namespace DFMGenerator_SharedCode
                     output = radius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = radius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
             return output;
         }
         /// <summary>
-        /// Current maximum half-macrofracture aperture
+        /// Maximum half-macrofracture aperture at the end of a previous timestep
         /// </summary>
         /// <param name="timestep">Index for a previous timestep</param>
         /// <returns>Maximum fracture aperture (m)</returns>
         public double getMaximumMacrofractureAperture(int timestep)
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -960,27 +1006,30 @@ namespace DFMGenerator_SharedCode
                     output = gbc.ThicknessAtDeformation * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = gbc.MechProps.DynamicApertureMultiplier * (2 * gbc.ThicknessAtDeformation * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
             return output;
         }
         /// <summary>
-        /// Current mean half-macrofracture aperture
+        /// Mean half-macrofracture aperture at the end of a previous timestep
         /// </summary>
         /// <param name="timestep">Index for a previous timestep</param>
         /// <returns>Mean fracture aperture (m)</returns>
         public double getMeanMacrofractureAperture(int timestep)
         {
-            double output = 0;
+            double output;
 
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -992,21 +1041,24 @@ namespace DFMGenerator_SharedCode
                     output = (Math.PI / 4) * gbc.ThicknessAtDeformation * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = gbc.MechProps.DynamicApertureMultiplier * (Math.PI * gbc.ThicknessAtDeformation * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(PreviousFractureData.getFinalNormalStress(timestep), 0);
+                    double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
             return output;
         }
         /// <summary>
-        /// Fracture aperture based on Barton-Bandis model at current stress state
+        /// Fracture aperture based on Barton-Bandis model for a specified effective normal stress
         /// </summary>
         /// <param name="SigmaNeff">Effective normal stress on the fracture (Pa)</param>
         /// <returns></returns>
@@ -1335,9 +1387,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private VectorXYZ shearStressVector;
         /// <summary>
-        /// Unit vector for the direction of shear displacement on the fracture surface
+        /// Vector for the direction of shear displacement on the fracture surface
+        /// NB The displacement vector will not be a unit length vector
+        /// This is necessary to get the correct results when calculating frictional traction and compliance for strike-slip fractures
         /// </summary>
-        private VectorXYZ displacementVector;
+        private VectorXYZ shearDisplacementVector;
         /// <summary>
         /// Pitch of the shear stress vector on the surface of the fractures relative to fracture strike (radians, positive downwards; will return NaN if shear stress is zero)
         /// </summary>
@@ -1351,9 +1405,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public VectorXYZ ShearStressVector { get { return new VectorXYZ(shearStressVector); } }
         /// <summary>
-        /// Unit vector for the direction of shear displacement on the fracture surface
+        /// Vector for the direction of shear displacement on the fracture surface
+        /// NB The displacement vector will not be a unit length vector
+        /// This is necessary to get the correct results when calculating frictional traction and compliance for strike-slip fractures
         /// </summary>
-        public VectorXYZ DisplacementVector { get { return new VectorXYZ(displacementVector); } }
+        public VectorXYZ ShearDisplacementVector { get { return new VectorXYZ(shearDisplacementVector); } }
         /// <summary>
         /// Predominant sense of fracture displacement
         /// </summary>
@@ -1376,6 +1432,22 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
+        /// Driving stress vector at the start of the timestep; this is equivalent to and has a magnitude equal to the scalar quantity U
+        /// </summary>
+        private VectorXYZ DrivingStressVector;
+        /// <summary>
+        /// Driving stress vector at the start of the timestep, adjusted for macrofracture displacement orientation
+        /// </summary>
+        private VectorXYZ MFDisplacementAdjustedDrivingStressVector;
+        /// <summary>
+        /// Mean displacement vector at the start of the timestep for a microfracture of unit radius
+        /// </summary>
+        public VectorXYZ uFDisplacementVector { get { return -(16 / (3 * Math.PI * gbc.MechProps.PlainStrainEffectiveE_r)) * DrivingStressVector; } }
+        /// <summary>
+        /// Mean displacement vector at the start of the timestep for a half-macrofracture
+        /// </summary>
+        public VectorXYZ MFDisplacementVector { get { return -((Math.PI * gbc.ThicknessAtDeformation) / (2 * gbc.MechProps.PlainStrainEffectiveE_r)) * MFDisplacementAdjustedDrivingStressVector; } }
+        /// <summary>
         /// Recalculate the shear displacement pitch and vector, the fracture mode and the compliance tensor base for the given effective stress tensor
         /// </summary>
         public void RecalculateElasticResponse(Tensor2S CurrentStress)
@@ -1383,14 +1455,14 @@ namespace DFMGenerator_SharedCode
             // Get stress vector acting on the fracture plane
             VectorXYZ stressOnFracture = CurrentStress * normalVector;
 
-            // Calculate the magnitude of normal stress on the fracture plane, and the shear stresses acting on the fracture plane in the along-strike and downdip directions respectively
+            // Calculate the magnitude of normal stress on the fracture plane, and the shear stresses acting on the fracture plane in the downdip and along-strike directions respectively
             double normalStressMagnitude = normalVector & stressOnFracture;
+            double dipShearStressMagnitude = dipVector & stressOnFracture;
             double strikeShearStressMagnitude = fs.StrikeVector & stressOnFracture;
-            double dipShearStessMagnitude = dipVector & stressOnFracture;
 
             // Recalculate the shear displacement pitch and vector, and flag if it has changed
             double shearStressMagnitude;
-            bool stressVectorChanged = RecalculateStressDisplacementVectors(dipShearStessMagnitude, strikeShearStressMagnitude, out shearStressMagnitude);
+            bool stressVectorChanged = RecalculateStressDisplacementVectors(dipShearStressMagnitude, strikeShearStressMagnitude, out shearStressMagnitude);
 
             // Determine the new fracture mode, and flag if it has changed. This will be:
             // - Mode 1 if the normal stress on the fracture is tensile or zero (i.e. the fracture is dilatant)
@@ -1400,7 +1472,7 @@ namespace DFMGenerator_SharedCode
             FractureMode newMode;
             if (normalStressMagnitude <= 0)
                 newMode = FractureMode.Mode1;
-            else if (Math.Abs(dipShearStessMagnitude) >= Math.Abs(strikeShearStressMagnitude))
+            else if (Math.Abs(dipShearStressMagnitude) >= Math.Abs(strikeShearStressMagnitude))
                 newMode = FractureMode.Mode2;
             else
                 newMode = FractureMode.Mode3;
@@ -1458,7 +1530,7 @@ namespace DFMGenerator_SharedCode
             if (double.IsNaN(newShearStressPitch))
             {
                 shearStressVector = new VectorXYZ(0, 0, 0);
-                displacementVector = new VectorXYZ(0, 0, 0);
+                shearDisplacementVector = new VectorXYZ(0, 0, 0);
                 DisplacementPitch = double.NaN;
             }
             else
@@ -1468,7 +1540,7 @@ namespace DFMGenerator_SharedCode
                 DisplacementPitch = Math.Atan2(DipShearStressMagnitude, (StrikeShearStressMagnitude / (1 - nu_r)));
                 // NB The displacement vector will not be a unit length vector
                 // This is necessary to get the correct results when calculating frictional traction and compliance for strike-slip fractures
-                displacementVector = (VectorXYZ.Sin_trim(newShearStressPitch) * dipVector) + ((VectorXYZ.Cos_trim(newShearStressPitch) / (1 - nu_r)) * fs.StrikeVector);
+                shearDisplacementVector = (VectorXYZ.Sin_trim(newShearStressPitch) * dipVector) + ((VectorXYZ.Cos_trim(newShearStressPitch) / (1 - nu_r)) * fs.StrikeVector);
             }
 
             // The shear displacement vector has changed so return true
@@ -1531,7 +1603,7 @@ namespace DFMGenerator_SharedCode
                             Tensor4_2Sx2S normal_OP_dip_OP_normal_OP_dip = normal_OP_dip ^ normal_OP_dip;
                             Tensor4_2Sx2S normal_OP_strike_OP_normal_OP_strike = normal_OP_strike ^ normal_OP_strike;
                             Tensor4_2Sx2S uF_frictional_traction = (normalVector ^ shearStressVector) ^ normal_OP_mu_normal;
-                            Tensor4_2Sx2S MF_frictional_traction = (normalVector ^ displacementVector) ^ normal_OP_mu_normal;
+                            Tensor4_2Sx2S MF_frictional_traction = (normalVector ^ shearDisplacementVector) ^ normal_OP_mu_normal;
                             uF_ComplianceTensorBase = normal_OP_dip_OP_normal_OP_dip + normal_OP_strike_OP_normal_OP_strike - uF_frictional_traction;
                             uF_ComplianceTensorBase.DoubleShearColumnComponents();
                             MF_ComplianceTensorBase = normal_OP_dip_OP_normal_OP_dip + (normal_OP_strike_OP_normal_OP_strike / oneMinusNur) - MF_frictional_traction;
@@ -1662,183 +1734,134 @@ namespace DFMGenerator_SharedCode
                 return elasticityMultiplier * ((uF_fractureDensityMultiplier * uF_ComplianceTensorBase) + (MF_fractureDensityMultiplier * MF_ComplianceTensorBase));
             }
         }
-
-        // Displacement functions
+        // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
+        // In this case we will use a supplied effective stress tensor to calculate the present day stress on the fracture
         /// <summary>
-        /// Current ratio of maximum microfracture displacement to radius: aperture for Mode 1 microfractures, shear offset for Mode 2 microfractures
+        /// Present day effective normal stress acting on the fracture
         /// </summary>
-        /// <returns></returns>
-        public double Max_uF_Displacement_r()
-        {
-            return (8 * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
-        }
+        private double PresentDaySigmaNeff { get; set; }
         /// <summary>
-        /// Current ratio of mean microfracture displacement to radius: aperture for Mode 1 microfractures, shear offset for Mode 2 microfractures
+        /// Present day fracture reactivition potential
+        /// This will return the driving stress if that is positive; however it will return a negative value representing the cohesionless distance to failure if the fracture is closed and not critically stressed
         /// </summary>
-        /// <returns></returns>
-        public double Mean_uF_Displacement_r()
-        {
-            return (16 * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
-        }
+        public double PresentDayReactivationPotential { get { return Math.Max(PresentDayDilatancyPotential, PresentDaySlipPotential); } }
         /// <summary>
-        /// Current maximum half-macrofracture displacement: aperture for Mode 1 half-macrofractures, shear offset for Mode 2 half-macrofractures
+        /// Present day fracture dilatancy potential
+        /// This will return the inverse of the normal effective stress on the fracture, representing the dilatant driving stress if positive, and the cohesionless distance to dilational failure if it is negative
         /// </summary>
-        /// <returns></returns>
-        public double Max_MF_Displacement()
-        {
-            return (2 * gbc.ThicknessAtDeformation * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
-        }
+        public double PresentDayDilatancyPotential { get; private set; }
         /// <summary>
-        /// Current mean half-macrofracture displacement: aperture for Mode 1 half-macrofractures, shear offset for Mode 2 half-macrofractures
+        /// Present day fracture slip potential
+        /// This represents the shear driving stress if that is positive, and the cohesionless distance to shear failure if it is negative
         /// </summary>
-        /// <returns></returns>
-        public double Mean_MF_Displacement()
-        {
-            return (Math.PI * gbc.ThicknessAtDeformation * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
-        }
+        public double PresentDaySlipPotential { get; private set; }
         /// <summary>
-        /// Ratio of maximum microfracture displacement to radius at the end of a previous timestep: aperture for Mode 1 microfractures, shear offset for Mode 2 microfractures
+        /// This represents the fracture mode closest to failure, or with the highest driving stress if the fracture is critical
         /// </summary>
-        /// <param name="timestep">Index for a previous timestep</param>
-        /// <returns></returns>
-        public double Max_uF_Displacement_r(int timestep)
-        {
-            return (8 * PreviousFractureData.getFinalDrivingStressSigmaD(timestep) * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
-        }
+        public FractureMode MostLikelyReactivationMode { get; private set; }
         /// <summary>
-        /// Ratio of mean microfracture displacement to radius at the end of a previous timestep: aperture for Mode 1 microfractures, shear offset for Mode 2 microfractures
+        /// Present day driving stress acting on the fracture
         /// </summary>
-        /// <param name="timestep">Index for a previous timestep</param>
-        /// <returns></returns>
-        public double Mean_uF_Displacement_r(int timestep)
-        {
-            return (16 * PreviousFractureData.getFinalDrivingStressSigmaD(timestep) * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
-        }
+        public double PresentDayDrivingStress { get { return (PresentDayReactivationPotential > 0 ? PresentDayReactivationPotential : 0); } }
         /// <summary>
-        /// Maximum half-macrofracture displacement at the end of a previous timestep: aperture for Mode 1 half-macrofractures, shear offset for Mode 2 half-macrofractures
+        /// Flag specifying whether to use present day stress or stress at the time of fracture development to calculate fracture aperture and reactivation risk
         /// </summary>
-        /// <param name="timestep">Index for a previous timestep</param>
-        /// <returns></returns>
-        public double Max_MF_Displacement(int timestep)
-        {
-            return (2 * gbc.ThicknessAtDeformation * PreviousFractureData.getFinalDrivingStressSigmaD(timestep) * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
-        }
+        private bool usePresentDayStress;
         /// <summary>
-        /// Mean half-macrofracture displacement at the end of a previous timestep: aperture for Mode 1 half-macrofractures, shear offset for Mode 2 half-macrofractures
+        /// Call this function to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development  
         /// </summary>
-        /// <param name="timestep">Index for a previous timestep</param>
-        /// <returns></returns>
-        public double Mean_MF_Displacement(int timestep)
+        /// <param name="PresentDayEffectiveStress">Tensor2S object to specify the present day effective stress; if null, the stress at the time of fracture development will be used to calculate fracture aperture and reactivation risk</param>
+        public void UsePresentDayStress(Tensor2S PresentDayEffectiveStress)
         {
-            return (Math.PI * gbc.ThicknessAtDeformation * PreviousFractureData.getFinalDrivingStressSigmaD(timestep) * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
-        }
-
-        // Porosity & volumetric heave functions
-        /// <summary>
-        /// Total dynamic fracture porosity for Mode 1 microfractures or volumetric heave for Mode 2 microfractures
-        /// </summary>
-        /// <returns></returns>
-        public double Total_uF_DynamicPorosityHeave()
-        {
-            double output = (4 * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
-            double P33_total = a_uFP33_total() + s_uFP33_total();
-
-            switch (Mode)
+            if (PresentDayEffectiveStress is null) // Set Present Day normal and driving stress to NaN
             {
-                case FractureMode.Mode1:
-                    output *= P33_total;
-                    break;
-                case FractureMode.Mode2:
-                case FractureMode.Mode3:
-                    output *= P33_total * cosdip;
-                    if (!double.IsNaN(ShearStressPitch))
-                        output *= Math.Abs(VectorXYZ.Sin_trim(ShearStressPitch));
-                    break;
-                default:
-                    break;
+                usePresentDayStress = false;
+                PresentDaySigmaNeff = double.NaN;
+                PresentDayDilatancyPotential = double.NaN;
+                PresentDaySlipPotential = double.NaN;
             }
+            else // Set Present Day normal and driving stress based on the supplied effective stress tensor
+            {
+                usePresentDayStress = true;
 
-            return output;
+                // Get stress vector acting on the fracture plane
+                VectorXYZ stressOnFracture = PresentDayEffectiveStress * normalVector;
+
+                // Calculate the magnitude of normal stress on the fracture plane, and the shear stresses acting on the fracture plane in the along-strike and downdip directions respectively
+                PresentDaySigmaNeff = normalVector & stressOnFracture;
+                double presentDayTauDip = dipVector & stressOnFracture;
+                double presentDayTauStrike = fs.StrikeVector & stressOnFracture;
+
+                // Calculate the slip potential of the fracture
+                    // We must therefore start by calculating the magnitude of the maximum shear stress, tau
+                    // tau can be calculated by taking the root of the squares of the orthogonal strike and downdip shear stress components
+                    double tau = Math.Sqrt(Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
+
+                // If the fractures are dilatant (i.e. the normal stress on them is tensile), we do not need to take into account friction
+                // Therefore the dilatancy protential is equal to the total stress on the fracture and slip potential is equal to the maximum shear stress
+                if (PresentDaySigmaNeff <= 0)
+                {
+                    // For vertical dilatant (Mode 1) fractures, the driving stress will equal the tensile normal stress on the fractures
+                    // For inclined dilatant fractures, the driving stress will equal the root of the square of the normal and shear stress components acting on the fractures
+                    PresentDayDilatancyPotential = Math.Sqrt(Math.Pow(PresentDaySigmaNeff, 2) + Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
+                    PresentDaySlipPotential = tau;
+                    MostLikelyReactivationMode = FractureMode.Mode1;
+                }
+                // If the fractures are closed, the shear driving stress and slip potential will equal the shear stress on the fractures minus the frictional traction
+                // The dilatancy potential will be the inverse of the (compressive) normal effective stress on the fracture
+                {
+                    PresentDayDilatancyPotential = -PresentDaySigmaNeff;
+                    // We also need to know the coefficient of friction on the fractures
+                    double MuFr = gbc.MechProps.MuFr;
+                    PresentDaySlipPotential = tau - (MuFr * PresentDaySigmaNeff);
+                    MostLikelyReactivationMode = (presentDayTauDip >= presentDayTauStrike ? FractureMode.Mode2 : FractureMode.Mode3);
+                }
+            }
+        }
+
+        // Fracture porosity values
+        /// <summary>
+        /// Total porosity of all microfractures
+        /// </summary>
+        /// <returns></returns>
+        public double Total_uF_Porosity()
+        {
+            return Total_uF_Porosity(gbc.PropControl.FractureApertureControl);
         }
         /// <summary>
-        /// Cumulative dynamic fracture porosity for Mode 1 microfractures or volumetric heave for Mode 2 microfractures, for all microfractures with radius greater than the specified radius array index
+        /// Cumulative porosity of all microfractures with radius greater than the specified radius array index
         /// </summary>
         /// <param name="index">Index for piecewise cumulative distribution function arrays</param>
-        /// <returns></returns>      
-        public double Cumulative_uF_DynamicPorosityHeave(int index)
+        /// <returns></returns>
+        public double Cumulative_uF_Porosity(int index)
         {
-            double output = (4 * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
-            double P33 = a_uFP33(index) + s_uFP33(index);
-
-            switch (Mode)
-            {
-                case FractureMode.Mode1:
-                    output *= P33;
-                    break;
-                case FractureMode.Mode2:
-                case FractureMode.Mode3:
-                    output *= P33 * cosdip;
-                    if (!double.IsNaN(ShearStressPitch))
-                        output *= Math.Abs(VectorXYZ.Sin_trim(ShearStressPitch));
-                    break;
-                default:
-                    break;
-            }
-
-            return output;
+            return Cumulative_uF_Porosity(index, gbc.PropControl.FractureApertureControl);
         }
         /// <summary>
-        /// Total dynamic fracture porosity for Mode 1 half-macrofractures or volumetric heave for Mode 2 half-macrofractures
+        /// Total porosity of all half-macrofractures
         /// </summary>
         /// <returns></returns>
-        public double Total_MF_DynamicPorosityHeave()
+        public double Total_MF_Porosity()
         {
-            double output = (Math.PI * gbc.ThicknessAtDeformation * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
-            double P32_total = a_MFP32_total() + s_MFP32_total();
-
-            switch (Mode)
-            {
-                case FractureMode.Mode1:
-                    output *= P32_total;
-                    break;
-                case FractureMode.Mode2:
-                case FractureMode.Mode3:
-                    output *= P32_total * cosdip;
-                    if (!double.IsNaN(DisplacementPitch))
-                        output *= Math.Abs(VectorXYZ.Sin_trim(DisplacementPitch));
-                    break;
-                default:
-                    break;
-            }
-
-            return output;
+            return Total_MF_Porosity(gbc.PropControl.FractureApertureControl);
         }
         /// <summary>
-        /// Cumulative dynamic fracture porosity for Mode 1 half-macrofractures or volumetric heave for Mode 2 half-macrofractures, for all half-macrofractures with half-length greater than the specified half-length array index
+        /// Cumulative porosity of all half-macrofractures with half-length greater than the specified half-length array index
         /// </summary>
         /// <param name="index">Index for piecewise cumulative distribution function arrays</param>
-        /// <returns></returns>      
-        public double Cumulative_MF_DynamicPorosityHeave(int index)
+        /// <returns></returns>
+        public double Cumulative_MF_Porosity(int index)
         {
-            double output = (Math.PI * gbc.ThicknessAtDeformation * CurrentFractureData.Final_SigmaD_M * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
-            double P32 = a_MFP32(index) + s_MFP32(index);
-
-            switch (Mode)
-            {
-                case FractureMode.Mode1:
-                    output *= P32;
-                    break;
-                case FractureMode.Mode2:
-                case FractureMode.Mode3:
-                    output *= P32 * cosdip;
-                    if (!double.IsNaN(DisplacementPitch))
-                        output *= Math.Abs(VectorXYZ.Sin_trim(DisplacementPitch));
-                    break;
-                default:
-                    break;
-            }
-
-            return output;
+            return Cumulative_MF_Porosity(index, gbc.PropControl.FractureApertureControl);
+        }
+        /// <summary>
+        /// Total porosity of the entire fracture dip set
+        /// </summary>
+        /// <param name="ApertureControl">Method for determining fracture aperture</param>
+        /// <returns></returns>
+        public double Total_Fracture_Porosity()
+        {
+            return Total_uF_Porosity() + Total_MF_Porosity();
         }
         /// <summary>
         /// Total porosity of all microfractures, based on specified method for determining fracture aperture
@@ -1847,7 +1870,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Total_uF_Porosity(FractureApertureType ApertureControl)
         {
-            double output = 0;
+            double output;
 
             switch (ApertureControl)
             {
@@ -1858,14 +1881,17 @@ namespace DFMGenerator_SharedCode
                     output = (a_uFP33_total() + s_uFP33_total()) * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = (a_uFP33_total() + s_uFP33_total()) * gbc.MechProps.DynamicApertureMultiplier * (4 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = (a_uFP32_total() + s_uFP32_total()) * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -1879,7 +1905,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Cumulative_uF_Porosity(int index, FractureApertureType ApertureControl)
         {
-            double output = 0;
+            double output;
 
             switch (ApertureControl)
             {
@@ -1890,14 +1916,17 @@ namespace DFMGenerator_SharedCode
                     output = (a_uFP33(index) + s_uFP33(index)) * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = (a_uFP33(index) + s_uFP33(index)) * gbc.MechProps.DynamicApertureMultiplier * (4 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = (a_uFP32(index) + s_uFP32(index)) * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -1910,7 +1939,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Total_MF_Porosity(FractureApertureType ApertureControl)
         {
-            double output = 0;
+            double output;
 
             switch (ApertureControl)
             {
@@ -1921,14 +1950,17 @@ namespace DFMGenerator_SharedCode
                     output = (a_MFP33_total() + s_MFP33_total()) * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = (a_MFP33_total() + s_MFP33_total()) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = (a_MFP32_total() + s_MFP32_total()) * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -1942,7 +1974,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Cumulative_MF_Porosity(int index, FractureApertureType ApertureControl)
         {
-            double output = 0;
+            double output;
 
             switch (ApertureControl)
             {
@@ -1953,14 +1985,17 @@ namespace DFMGenerator_SharedCode
                     output = (a_MFP33(index) + s_MFP33(index)) * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
-                    double tensile_sigmaNeff = Math.Max(-CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
                     output = (a_MFP33(index) + s_MFP33(index)) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = Math.Max(CurrentFractureData.SigmaNeff_Final_M, 0);
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = (a_MFP32(index) + s_MFP32(index)) * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
+                    output = 0;
                     break;
             }
 
@@ -1974,6 +2009,112 @@ namespace DFMGenerator_SharedCode
         public double Total_Fracture_Porosity(FractureApertureType ApertureControl)
         {
             return Total_uF_Porosity(ApertureControl) + Total_MF_Porosity(ApertureControl);
+        }
+
+        // Fracture permeability tensors
+        /// <summary>
+        /// Permeability tensor for all microfractures in this dipset
+        /// </summary>
+        /// <returns>Tensor2S object representing microfracture permeability</returns>
+        public Tensor2S Total_uF_Permeability()
+        {
+            double geometryMultiplier;
+            switch (gbc.PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1985 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
+                case PermeabilityCalculationAlgorithm.Oda1985:
+                    geometryMultiplier = 1 / 12;
+                    break;
+                default:
+                    geometryMultiplier = 0;
+                    break;
+            }
+            double apertureMultiplier;
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                // In the Uniform and Barton Bandis fracture aperture scenarios, aperture is uniform across the fracture
+                // The permeability will therefore be proportional to the cube of the mean aperture
+                case FractureApertureType.Uniform:
+                case FractureApertureType.BartonBandis:
+                    apertureMultiplier = Math.Pow(getMeanMacrofractureAperture(), 3);
+                    break;
+                // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
+                // The aperture multiplier must therefore be calculated by integrating the cube of the local aperture across every fracture
+                // For circular fractures of varying sizes, this will depend on the size distribution and can only be calculated numerically
+                // For now we will therefore ignore the microfractures in these scenarios and set the aperture multiplier to zero
+                // If fracture apertures are size dependent, the contribution of microfractures to fracture permeability is probably small in any case
+                case FractureApertureType.SizeDependent:
+                case FractureApertureType.Dynamic:
+                    apertureMultiplier = Math.Pow(getMaximumMacrofractureAperture(), 3) * (3 * Math.PI / 16);
+                    break;
+                // Aperture is not defined
+                default:
+                    apertureMultiplier = 0;
+                    break;
+            }
+            double densityMultiplier = (a_uFP32_total() + s_uFP32_total()) / sindip;
+
+            Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            return permTensor;
+        }
+        /// <summary>
+        /// Permeability tensor for all half-macrofractures in this dipset
+        /// </summary>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        public Tensor2S Total_MF_Permeability()
+        {
+            double geometryMultiplier;
+            switch (gbc.PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1985 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
+                case PermeabilityCalculationAlgorithm.Oda1985:
+                    geometryMultiplier = 1 / 12;
+                    break;
+                default:
+                    geometryMultiplier = 0;
+                    break;
+            }
+            double apertureMultiplier;
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                // In the Uniform and Barton Bandis fracture aperture scenarios, aperture is uniform across the fracture
+                // The permeability will therefore be proportional to the cube of the mean aperture
+                case FractureApertureType.Uniform:
+                case FractureApertureType.BartonBandis:
+                    apertureMultiplier = Math.Pow(getMeanMacrofractureAperture(), 3);
+                    break;
+                // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
+                // The aperture multiplier must therefore be calculated by integrating the cube of the local aperture across the fracture
+                case FractureApertureType.SizeDependent:
+                case FractureApertureType.Dynamic:
+                    apertureMultiplier = Math.Pow(getMaximumMacrofractureAperture(), 3) * (3 * Math.PI / 16);
+                    break;
+                // Aperture is not defined
+                default:
+                    apertureMultiplier = 0;
+                    break;
+            }
+            double densityMultiplier = (a_MFP32_total() + s_MFP32_total()) / sindip;
+
+            Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            return permTensor;
+        }
+        /// <summary>
+        /// Permeability tensor for all fractures in this dipset
+        /// </summary>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        public Tensor2S Total_Fracture_Permeability()
+        {
+            switch (gbc.PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1985 algorithm assumes infinite fracture size, with no connectivity or percolation threshold effect
+                // The tensor for all fractures can therefore be obtained by adding together the tensors for fracture subsets
+                // This may not be the case for all permeability calculation algorithms
+                case PermeabilityCalculationAlgorithm.Oda1985:
+                    return Total_uF_Permeability() + Total_MF_Permeability();
+                default:
+                    return Total_uF_Permeability() + Total_MF_Permeability();
+            }
         }
 
         // Applied strain components
@@ -2177,29 +2318,35 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Proportion of unconnected macrofracture tips - i.e. active macrofracture tips
         /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 1</param>
         /// <returns>Ratio of a_MFP30_total to T_MFP30_total</returns>
-        public double UnconnectedTipRatio()
+        public double UnconnectedTipRatio(bool ReturnNanForUndefined)
         {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 1;
             double T_MFP30 = a_MFP30_total() + sII_MFP30_total() + sIJ_MFP30_total();
-            return (T_MFP30 > 0 ? a_MFP30_total() / T_MFP30 : 1);
+            return (T_MFP30 > 0 ? a_MFP30_total() / T_MFP30 : undefinedReturn);
         }
         /// <summary>
         /// Proportion of macrofracture tips connected to relay zones - i.e. static macrofracture tips deactivated due to stress shadow interaction
         /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sII_MFP30_total to T_MFP30_total</returns>
-        public double RelayTipRatio()
+        public double RelayTipRatio(bool ReturnNanForUndefined)
         {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double T_MFP30 = a_MFP30_total() + sII_MFP30_total() + sIJ_MFP30_total();
-            return (T_MFP30 > 0 ? sII_MFP30_total() / T_MFP30 : 0);
+            return (T_MFP30 > 0 ? sII_MFP30_total() / T_MFP30 : undefinedReturn);
         }
         /// <summary>
         /// Proportion of connected macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
         /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sIJ_MFP30_total to T_MFP30_total</returns>
-        public double ConnectedTipRatio()
+        public double ConnectedTipRatio(bool ReturnNanForUndefined)
         {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double T_MFP30 = a_MFP30_total() + sII_MFP30_total() + sIJ_MFP30_total();
-            return (T_MFP30 > 0 ? sIJ_MFP30_total() / T_MFP30 : 0);
+            return (T_MFP30 > 0 ? sIJ_MFP30_total() / T_MFP30 : undefinedReturn);
         }
 
         // Weighted macrofracture tip density; used to calculate probability of stress shadow interaction
@@ -2854,6 +3001,29 @@ namespace DFMGenerator_SharedCode
             // Set the constant and variable components of driving stress in the current Fracture Calculation Data object
             CurrentFractureData.U_M = U;
             CurrentFractureData.V_M = V;
+
+            // Recalculate the fracture driving stress vectors
+            if (U <= 0)
+            {
+                DrivingStressVector = new VectorXYZ(0, 0, 0);
+                MFDisplacementAdjustedDrivingStressVector = new VectorXYZ(0, 0, 0);
+            }
+            else if (sneff_cst <= 0)
+            {
+                double oneMinusNur = 1 - gbc.MechProps.Nu_r;
+                DrivingStressVector = SigmaF_Const;
+                MFDisplacementAdjustedDrivingStressVector = (sneff_cst * normalVector) + (taudip_cst * dipVector) + ((taustrike_cst / oneMinusNur) * strikeVector);
+            }
+            else
+            {
+                double oneMinusNur = 1 - gbc.MechProps.Nu_r;
+                double MuFr = gbc.MechProps.MuFr;
+                double sinpitch = VectorXYZ.Sin_trim(ShearStressPitch);
+                double cospitch = VectorXYZ.Cos_trim(ShearStressPitch);
+
+                DrivingStressVector = ((taudip_cst - (sinpitch * MuFr * sneff_cst)) * dipVector) + ((taustrike_cst - (cospitch * MuFr * sneff_cst)) * strikeVector);
+                MFDisplacementAdjustedDrivingStressVector = ((taudip_cst - (sinpitch * MuFr * sneff_cst)) * dipVector) + (((taustrike_cst - (cospitch * MuFr * sneff_cst)) / oneMinusNur) * strikeVector);
+            }
 
             // Return the calculated maximum duration
             return optdur;
@@ -4930,7 +5100,11 @@ namespace DFMGenerator_SharedCode
             // Set the initial shear displacement pitch to NaN and the initial shear displacement vector to (0,0,0)
             // This represents no shear displacement
             DisplacementPitch = double.NaN;
-            displacementVector = new VectorXYZ(0, 0, 0);
+            shearDisplacementVector = new VectorXYZ(0, 0, 0);
+
+            // Set the initial driving stress vectors to (0,0,0)
+            DrivingStressVector = new VectorXYZ(0, 0, 0);
+            MFDisplacementAdjustedDrivingStressVector = new VectorXYZ(0, 0, 0);
 
             // Calculate the initial compliance tensor base; NB we assume initial driving stress is zero
             RecalculateComplianceTensorBase(false);

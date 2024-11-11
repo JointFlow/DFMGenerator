@@ -31,6 +31,14 @@ namespace DFMGenerator_SharedCode
     /// Enumerator for return codes for the PropagateDFN function: 0 if the calculation runs to completion without errors; 1 if the gridblock geometry is not correctly defined; 2 if there is an error in the driving stress or propagation distance; 3 if fracture limit is hit
     /// </summary>
     public enum PropagateDFNReturnCode { Completed, GridblockGeometryError, DrivingStressError, NewFractureLimitExceeded }
+    /// <summary>
+    /// Enumerator for algorithms to calculate fracture permeability
+    /// </summary>
+    public enum PermeabilityCalculationAlgorithm { Oda1985 }
+    /// <summary>
+    /// Enumerator for the data used to calculate present day effective stress
+    /// </summary>
+    public enum PresentDayStressFrom { Strain, EffectiveStress, AbsoluteStress }
 
     /// <summary>
     /// Class representing an entire gridblock
@@ -1188,6 +1196,153 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Hmin_azimuth { get { return PropControl.Initial_Applied_Epsilon_hmin_azimuth; } }
 
+        // Present day effective stress - to use for calculating fracture aperture and permeability
+        /// <summary>
+        /// Present day Terzaghi effective stress tensor - can be used to override the stress at the time of deformation, to calculate present day fracture aperture and permeability
+        /// </summary>
+        public Tensor2S PresentDayStress { get; private set; }
+        /// <summary>
+        /// Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
+        /// </summary>
+        public bool UsePresentDayStress { get { return !(PresentDayStress is null); } }
+        /// <summary>
+        /// Specify the present day Terzaghi effective stress, to be used when calculating fracture aperture and permeability
+        /// </summary>
+        /// <param name="EffectiveStress">Tensor2S object defining the present day Terzaghi effective stress</param>
+        public void SetPresentDayStress(Tensor2S EffectiveStress)
+        {
+            PresentDayStress = EffectiveStress;
+            UpdatePresentDayStressOnFractures();
+        }
+        /// <summary>
+        /// Specify the present day Terzaghi effective stress, to be used when calculating fracture aperture and permeability
+        /// </summary>
+        /// <param name="SigmaEffXX">XX component of Terzaghi effective stress tensor (Pa)</param>
+        /// <param name="SigmaEffYY">YY component of Terzaghi effective stress tensor (Pa)</param>
+        /// <param name="SigmaEffZZ">ZZ component of Terzaghi effective stress tensor (Pa)</param>
+        /// <param name="SigmaEffXY">XY component of Terzaghi effective stress tensor (Pa)</param>
+        /// <param name="SigmaEffYZ">YZ component of Terzaghi effective stress tensor (Pa)</param>
+        /// <param name="SigmaEffZX">ZX component of Terzaghi effective stress tensor (Pa)</param>
+        public void SetPresentDayStress(double SigmaEffXX, double SigmaEffYY, double SigmaEffZZ, double SigmaEffXY, double SigmaEffYZ, double SigmaEffZX)
+        {
+            SetPresentDayStress(new Tensor2S(SigmaEffXX, SigmaEffYY, SigmaEffZZ, SigmaEffXY, SigmaEffYZ, SigmaEffZX));
+        }
+        /// <summary>
+        /// Specify the present day absolute stress and fluid pressure, to calculate an effective stress tensor to be used when calculating fracture aperture and permeability
+        /// </summary>
+        /// <param name="SigmaXX">XX component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaYY">YY component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaZZ">ZZ component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaXY">XY component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaYZ">YZ component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaZX">ZX component of absolute stress tensor (Pa)</param>
+        /// <param name="FP">Fluid pressure</param>
+        public void SetPresentDayStress(double SigmaXX, double SigmaYY, double SigmaZZ, double SigmaXY, double SigmaYZ, double SigmaZX, double FP)
+        {
+            SetPresentDayStress(new Tensor2S(SigmaXX - FP, SigmaYY - FP, SigmaZZ - FP, SigmaXY, SigmaYZ, SigmaZX));
+        }
+        /// <summary>
+        /// Specify the present day strain and fluid overpressure, to calculate an effective stress tensor to be used when calculating fracture aperture and permeability
+        /// </summary>
+        /// <param name="Ehmin">Minimum (most tensile) principal applied horizontal strain</param>
+        /// <param name="Ehmax">Maximum (most compressive) principal applied horizontal strain</param>
+        /// <param name="EhminAzi">Azimuth of minimum principal applied horizontal strain, clockwise from N (radians)</param>
+        /// <param name="fluidOverpressure">Fluid overpressure (Pa)</param>
+        /// <param name="E_r">Present day Young's Modulus (Pa); if NaN, will use Young's Modulus defined in the MechProps object</param>
+        /// <param name="Nu_r">Present day Poisson's ratio; if NaN, will use Poisson's ratio defined in the MechProps object</param>
+        /// <param name="Biot">Present day Biot coefficient; if NaN, will use Biot coefficient defined in the MechProps object</param>
+        /// <param name="InitialStressRelaxation">Present day initial stress relaxation; if NaN, will use initial stress relaxation defined in the StressStrain object</param>
+        public void SetPresentDayStressFromStrain(double Ehmin, double Ehmax, double EhminAzi, double fluidOverpressure, double E_r, double Nu_r, double Biot, double InitialStressRelaxation)
+        {
+            // NB We use the Terzaghi effective stress rather than the Biot effective stress, because the differential compaction of the grains and the bulk rock is accounted for in the compactional strain
+            // As a result the el_Epsilon strain tensor is related to the Terzaghi effective stress tensor by Hooke's Law
+            // Similarly the el_Epsilon_noncompactional strain tensor is related to the Biot effective stress tensor by Hooke's Law
+
+            // If valid present day mechanical property, stress or strain data have not been supplied, use the values in the MechProps or StressStrain objects, or other already defined values
+            // These represent the values at the time of deformation
+            // Also set a flag for whether a valid Young's Modulus has been supplied - if so we will use this rather than the bulk rock stiffness tensor to calculate stress
+            bool E_supplied = (E_r > 0);
+            if (!E_supplied)
+                E_r = MechProps.E_r;
+            if (double.IsNaN(Nu_r))
+                Nu_r = MechProps.Nu_r;
+            double E_eff = E_r / (1 - Math.Pow(Nu_r, 2));
+            if (double.IsNaN(Biot))
+                Biot = MechProps.Biot;
+            double OneMinusBiot = 1 - Biot;
+            if (double.IsNaN(InitialStressRelaxation))
+                InitialStressRelaxation = StressStrain.InitialStressRelaxation;
+            if (double.IsNaN(fluidOverpressure))
+                fluidOverpressure = StressStrain.FluidOverpressure;
+            if (double.IsNaN(Ehmin))
+                Ehmin = 0;
+            if (double.IsNaN(Ehmax))
+                Ehmax = 0;
+            if (double.IsNaN(EhminAzi))
+                EhminAzi = 0;
+
+            // Get the current lithostatic effective stress
+            double fluidPressure = (CurrentDepth * StressStrain.FluidDensity * StressStrainState.Gravity) + fluidOverpressure;
+            double lithostaticStress_eff_Terzaghi = (CurrentDepth * StressStrain.MeanOverlyingBulkRockDensity * StressStrainState.Gravity) - fluidPressure;
+
+            // Calculate the present day Terzaghi effective stress tensor
+            Tensor2S effStress;
+            if ((PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress) && !E_supplied)
+            {
+                // Effective stress tensor will be calculated from the lithostatic stress and horizontal strain by partial inversion of the bulk rock compliance tensor
+                Tensor4_2Sx2S bulkRockCompliance = S_beff;
+
+                // Define tensors for the horizontal strain (including both compactional and applied strain) and the vertical stress
+                // Vertical strain and horizontal stress components will be filled in by partial inversion of the compliance tensor
+                double horizontalInitialStrain = InitialStressRelaxation * (1 - (2 * Nu_r)) * (lithostaticStress_eff_Terzaghi / E_r);
+                Tensor2S strain = new Tensor2S(horizontalInitialStrain, horizontalInitialStrain, 0, 0, 0, 0);
+                strain += Tensor2S.HorizontalStrainTensor(Ehmin, Ehmax, EhminAzi);
+                effStress = new Tensor2S(0, 0, lithostaticStress_eff_Terzaghi, 0, 0, 0);
+                bulkRockCompliance.PartialInversion(ref strain, ref effStress);
+            }
+            else
+            {
+                // Reset the Terzaghi effective stress tensor to the initial stress with no applied horizontal strain (but including initial stress relaxation)
+                // NB The differential compaction of the grains and the bulk rock by fluid pressure is accounted for in the compactional strain
+                // As a result the el_Epsilon strain tensor (which includes compactional strain) is related to the Terzaghi effective stress tensor by Hooke's Law
+                // Similarly the el_Epsilon_noncompactional strain tensor is related to the Biot effective stress tensor by Hooke's Law
+                // Calculate the component of initial horizontal effective stress due to the weight of the overburden (lithostatic stress)
+                double sigma_h0_eff_lithstress = (((InitialStressRelaxation * (1 - Nu_r)) + ((1 - InitialStressRelaxation) * Nu_r)) / (1 - Nu_r)) * lithostaticStress_eff_Terzaghi;
+                // Calculate the component of initial horizontal effective stress due to differential compaction of grains by fluid pressure
+                double sigma_h0_eff_fluidpress = -((1 - (2 * Nu_r)) / (1 - Nu_r)) * OneMinusBiot * fluidPressure;
+                double sigma_h0_eff = sigma_h0_eff_lithstress + sigma_h0_eff_fluidpress;
+                // Create the initial compactional effective stress tensor,with zero applied strain
+                effStress = new Tensor2S(sigma_h0_eff, sigma_h0_eff, lithostaticStress_eff_Terzaghi, 0, 0, 0);
+
+                // Calculate the horizontal effective stress required to balance the applied strain
+                double sigma_hmin_eff = E_eff * (Ehmin + (Nu_r * Ehmax));
+                double sigma_hmax_eff = E_eff * ((Nu_r * Ehmin) + Ehmax);
+                // Add the stress due to applied strain to the compactional effective stress tensor
+                // NB We can use the Tensor2S.HorizontalStrainTensor function to generate this, as it can be used for any tensor quantity
+                effStress += Tensor2S.HorizontalStrainTensor(sigma_hmin_eff, sigma_hmax_eff, EhminAzi);
+            }
+
+            // Set the present day Terzaghi effective stress tensor
+            PresentDayStress = effStress;
+        }
+        /// <summary>
+        /// Reset to use stress at the time of deformation, instead of present day effective stress tensor, to calculate fracture aperture and permeability
+        /// </summary>
+        public void UnsetPresentDayStress()
+        {
+            PresentDayStress = null;
+            UpdatePresentDayStressOnFractures();
+        }
+        /// <summary>
+        /// Recalculate present day effective stress acting on each fracture dip set
+        /// </summary>
+        private void UpdatePresentDayStressOnFractures()
+        {
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    fds.UsePresentDayStress(PresentDayStress);
+        }
+
         // List containing fracture sets
         /// <summary>
         /// Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax
@@ -1318,7 +1473,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="isotropicFractureNetwork">Flag to use algorithm for isotropic or anisotropic fracture networks; set to true if the fracture network is (near) isotropic, otherwise set to false</param>
         private void setCrossFSStressShadows()
         {
-            bool isotropicFractureNetwork = (P32AnisotropyIndex(true) <= PropControl.anisotropyCutoff);
+            bool isotropicFractureNetwork = (P32AnisotropyIndex(true, false) <= PropControl.anisotropyCutoff);
 
             if (isotropicFractureNetwork)
                 setCrossFSStressShadows_isotropic();
@@ -1817,8 +1972,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Get the time at which the final fracture set becomes deactivated
         /// </summary>
-        /// <returns>Deactivation time of final fracture set; will return zero if none of the fracture sets were ever active</returns>
-        public double getFinalActiveTime()
+        /// <param name="ReturnNanForUndefined">Determine return value if the fracture set was never active: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Deactivation time of final fracture set; will return zero or NaN if none of the fracture sets were ever active</returns>
+        public double getFinalActiveTime(bool ReturnNanForUndefined)
         {
             // Get time units and unit conversion modifier for output time data if not in SI units
             double timeUnits_Modifier = PropControl.getTimeUnitsModifier();
@@ -1839,8 +1995,11 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            // If none of the fracture sets were ever active, return 0
-            return 0;
+            // If none of the fracture sets were ever active, return 0 or NaN as appropriate
+            if (ReturnNanForUndefined)
+                return double.NaN;
+            else
+                return 0;
         }
         /// <summary>
         /// Get the index number of the timestep corresponding to a specified time
@@ -1881,22 +2040,171 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Initial_uF_factor { get { return (MechProps.GetbType() == bType.Equals2 ? Math.Log(MaximumMicrofractureRadius) : Math.Pow(MaximumMicrofractureRadius, 1 / MechProps.beta)); } }
 
+        // Functions to return fracture density and porosity
+        /// <summary>
+        /// Get the current P32 density of all microfractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double MicrofractureDensity_P32()
+        {
+            double uF_P32_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                uF_P32_value += fs.combined_T_uFP32_total();
+            return uF_P32_value;
+        }
+        /// <summary>
+        /// Get the current P32 density of all layer-bound fractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double LayerBoundFractureDensity_P32()
+        {
+            double MF_P32_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                MF_P32_value += fs.combined_T_MFP32_total();
+            return MF_P32_value;
+        }
+        /// <summary>
+        /// Get the current P32 density of all fractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double TotalFractureDensity_P32()
+        {
+            double P32_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                P32_value += (fs.combined_T_uFP32_total() + fs.combined_T_MFP32_total());
+            return P32_value;
+        }
+        /// <summary>
+        /// Get the current porosity of all microfractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double MicrofracturePorosity()
+        {
+            double uF_Porosity_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                uF_Porosity_value += fs.combined_uF_Porosity();
+            return uF_Porosity_value;
+        }
+        /// <summary>
+        /// Get the current porosity of all layer-bound fractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double LayerBoundFracturePorosity()
+        {
+            double MF_Porosity_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                MF_Porosity_value += fs.combined_MF_Porosity();
+            return MF_Porosity_value;
+        }
+        /// <summary>
+        /// Get the current porosity of all fractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double TotalFracturePorosity()
+        {
+            double Porosity_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                Porosity_value += (fs.combined_uF_Porosity() + fs.combined_MF_Porosity());
+            return Porosity_value;
+        }
+        /// <summary>
+        /// Get the P32 density of all microfractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double MicrofractureDensity_P32(int Timestep_M)
+        {
+            double uF_P32_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    uF_P32_value += fds.getTotaluFP32(Timestep_M);
+            return uF_P32_value;
+        }
+        /// <summary>
+        /// Get the P32 density of all layer-bound fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double LayerBoundFractureDensity_P32(int Timestep_M)
+        {
+            double MF_P32_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    MF_P32_value += fds.getTotalMFP32(Timestep_M);
+            return MF_P32_value;
+        }
+        /// <summary>
+        /// Get the P32 density of all fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double TotalFractureDensity_P32(int Timestep_M)
+        {
+            double P32_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    P32_value += (fds.getTotaluFP32(Timestep_M) + fds.getTotalMFP32(Timestep_M));
+            return P32_value;
+        }
+        /// <summary>
+        /// Get the porosity of all microfractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double MicrofracturePorosity(int Timestep_M)
+        {
+            double uF_Porosity_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    uF_Porosity_value += fds.getTotaluFPorosity(Timestep_M);
+            return uF_Porosity_value;
+        }
+        /// <summary>
+        /// Get the porosity of all layer-bound fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double LayerBoundFracturePorosity(int Timestep_M)
+        {
+            double MF_Porosity_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    MF_Porosity_value += fds.getTotalMFPorosity(Timestep_M);
+            return MF_Porosity_value;
+        }
+        /// <summary>
+        /// Get the porosity of all fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double TotalFracturePorosity(int Timestep_M)
+        {
+            double Porosity_value = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    Porosity_value += (fds.getTotaluFPorosity(Timestep_M) + fds.getTotalMFPorosity(Timestep_M));
+            return Porosity_value;
+        }
+
         // Functions to return fracture anisotropy and connectivity indices
         /// <summary>
         /// Fracture anisotropy index based on P32: (MaxP32 - MinP32) / (MaxP32 + MinP32)
         /// </summary>
         /// <param name="FindMinMaxSets">If true, will find the two sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>(MaxP32 - MinP32) / (MaxP32 + MinP32)</returns>
-        public double P32AnisotropyIndex(bool FindMinMaxSets)
+        public double P32AnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
             // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
             if (NoFractureSets < 2)
                 return 1;
 
-            // Otherwise we will compare the sets with the highest and lowest P32 values
+            // Otherwise we will need to calculate the ratio of P32 values of the two specified sets
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
             double Max_P32 = FractureSets[hmin_index].combined_T_MFP32_total() + FractureSets[hmin_index].combined_T_uFP32_total();
             double Min_P32 = Max_P32;
+            // If required we will find and compare the sets with the highest and lowest P32 values
             if (FindMinMaxSets)
                 for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
                 {
@@ -1906,6 +2214,7 @@ namespace DFMGenerator_SharedCode
                     if (fs_P32 < Min_P32)
                         Min_P32 = fs_P32;
                 }
+            // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
             else
             {
                 int hmax_index = NoFractureSets / 2;
@@ -1913,65 +2222,90 @@ namespace DFMGenerator_SharedCode
             }
 
             double Combined_P32 = Max_P32 + Min_P32;
-            return (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : 0);
+            return (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedReturn);
         }
         /// <summary>
         /// Fracture anisotropy index based on P33: (MaxP33 - MinP33) / (MaxP33 + MinP33)
         /// </summary>
         /// <param name="FindMinMaxSets">If true, will find the two sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>(MaxP33 - MinP33) / (MaxP33 + MinP33)</returns>
-        public double P33AnisotropyIndex(bool FindMinMaxSets)
+        public double P33AnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
             // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
             if (NoFractureSets < 2)
                 return 1;
 
-            // Otherwise we will compare the sets with the highest and lowest P32 values
+            // Otherwise we will need to calculate the ratio of P33 values of the two specified sets
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
             double Max_P33 = FractureSets[hmin_index].combined_T_MFP33_total() + FractureSets[hmin_index].combined_T_uFP33_total();
             double Min_P33 = Max_P33;
+            // If required we will find and compare the sets with the highest and lowest P33 values
             if (FindMinMaxSets)
                 for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
                 {
-                    double fs_P32 = FractureSets[fs_Index].combined_T_MFP33_total() + FractureSets[fs_Index].combined_T_uFP33_total();
-                    if (fs_P32 > Max_P33)
-                        Max_P33 = fs_P32;
-                    if (fs_P32 < Min_P33)
-                        Min_P33 = fs_P32;
+                    double fs_P33 = FractureSets[fs_Index].combined_T_MFP33_total() + FractureSets[fs_Index].combined_T_uFP33_total();
+                    if (fs_P33 > Max_P33)
+                        Max_P33 = fs_P33;
+                    if (fs_P33 < Min_P33)
+                        Min_P33 = fs_P33;
                 }
+            // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
             else
             {
                 int hmax_index = NoFractureSets / 2;
                 Min_P33 = FractureSets[hmax_index].combined_T_MFP33_total() + FractureSets[hmax_index].combined_T_uFP33_total();
             }
 
-            double Combined_P32 = Max_P33 + Min_P33;
-            return (Combined_P32 > 0 ? (Max_P33 - Min_P33) / Combined_P32 : 0);
+            double Combined_P33 = Max_P33 + Min_P33;
+            return (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedReturn);
         }
         /// <summary>
         /// Fracture anisotropy index based on fracture porosity: (HMinPorosity - HMaxPorosity) / (HMinPorosity + HMaxPorosity)
         /// </summary>
-        /// <param name="ApertureControl">Method for determining fracture aperture</param>
+        /// <param name="FindMinMaxSets">If true, will find the two sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>(HMinPorosity - HMaxPorosity) / (HMinPorosity + HMaxPorosity)</returns>
-        public double FracturePorosityAnisotropyIndex(FractureApertureType ApertureControl)
+        public double FracturePorosityAnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
             // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
             if (NoFractureSets < 2)
                 return 1;
 
+            // Otherwise we will need to calculate the ratio of porosity values of the two specified sets
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
-            int hmax_index = NoFractureSets / 2;
-            double HMin_Porosity = FractureSets[hmin_index].combined_MF_Porosity(ApertureControl) + FractureSets[hmin_index].combined_uF_Porosity(ApertureControl);
-            double HMax_Porosity = FractureSets[hmax_index].combined_MF_Porosity(ApertureControl) + FractureSets[hmax_index].combined_uF_Porosity(ApertureControl);
-            double Combined_Porosity = HMin_Porosity + HMax_Porosity;
-            return (Combined_Porosity > 0 ? (HMin_Porosity - HMax_Porosity) / Combined_Porosity : 0);
+            double Max_Porosity = FractureSets[hmin_index].combined_MF_Porosity() + FractureSets[hmin_index].combined_uF_Porosity();
+            double Min_Porosity = Max_Porosity;
+            // If required we will find and compare the sets with the highest and lowest porosity values
+            if (FindMinMaxSets)
+                for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
+                {
+                    double fs_Porosity = FractureSets[fs_Index].combined_MF_Porosity() + FractureSets[fs_Index].combined_uF_Porosity();
+                    if (fs_Porosity > Max_Porosity)
+                        Max_Porosity = fs_Porosity;
+                    if (fs_Porosity < Min_Porosity)
+                        Min_Porosity = fs_Porosity;
+                }
+            // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
+            else
+            {
+                int hmax_index = NoFractureSets / 2;
+                Min_Porosity = FractureSets[hmax_index].combined_MF_Porosity() + FractureSets[hmax_index].combined_uF_Porosity();
+            }
+
+            double Combined_Porosity = Max_Porosity + Min_Porosity;
+            return (Combined_Porosity > 0 ? (Max_Porosity - Min_Porosity) / Combined_Porosity : undefinedReturn);
         }
         /// <summary>
         /// Proportion of unconnected macrofracture tips - i.e. active macrofracture tips
         /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 1</param>
         /// <returns>Ratio of a_MFP30_total to T_MFP30_total</returns>
-        public double UnconnectedTipRatio()
+        public double UnconnectedTipRatio(bool ReturnNanForUndefined)
         {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 1;
             double TotalUnconnectedTips = 0;
             double TotalAllTips = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
@@ -1980,14 +2314,16 @@ namespace DFMGenerator_SharedCode
                 TotalAllTips += fs.combined_T_MFP30_total();
             }
 
-            return (TotalAllTips > 0 ? TotalUnconnectedTips / TotalAllTips : 1);
+            return (TotalAllTips > 0 ? TotalUnconnectedTips / TotalAllTips : undefinedReturn);
         }
         /// <summary>
         /// Proportion of macrofracture tips connected to relay zones - i.e. static macrofracture tips deactivated due to stress shadow interaction
         /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sII_MFP30_total to T_MFP30_total</returns>
-        public double RelayTipRatio()
+        public double RelayTipRatio(bool ReturnNanForUndefined)
         {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalRelayTips = 0;
             double TotalAllTips = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
@@ -1996,14 +2332,16 @@ namespace DFMGenerator_SharedCode
                 TotalAllTips += fs.combined_T_MFP30_total();
             }
 
-            return (TotalAllTips > 0 ? TotalRelayTips / TotalAllTips : 0);
+            return (TotalAllTips > 0 ? TotalRelayTips / TotalAllTips : undefinedReturn);
         }
         /// <summary>
         /// Proportion of connected macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
         /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sIJ_MFP30_total to T_MFP30_total</returns>
-        public double ConnectedTipRatio()
+        public double ConnectedTipRatio(bool ReturnNanForUndefined)
         {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalConnectedTips = 0;
             double TotalAllTips = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
@@ -2012,7 +2350,45 @@ namespace DFMGenerator_SharedCode
                 TotalAllTips += fs.combined_T_MFP30_total();
             }
 
-            return (TotalAllTips > 0 ? TotalConnectedTips / TotalAllTips : 0);
+            return (TotalAllTips > 0 ? TotalConnectedTips / TotalAllTips : undefinedReturn);
+        }
+
+        // Functions to return fracture permeability tensor
+        /// <summary>
+        /// Permeability tensor for all microfractures in the gridblock
+        /// </summary>
+        /// <returns>Tensor2S object representing microfracture permeability</returns>
+        public Tensor2S MicrofracturePermeability()
+        {
+            Tensor2S microfracturePermeability = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    microfracturePermeability += fds.Total_uF_Permeability();
+            return microfracturePermeability;
+        }
+        /// <summary>
+        /// Permeability tensor for all layer-bound macrofractures in the gridblock
+        /// </summary>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        public Tensor2S MacrofracturePermeability()
+        {
+            Tensor2S macrofracturePermeability = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    macrofracturePermeability += fds.Total_MF_Permeability();
+            return macrofracturePermeability;
+        }
+        /// <summary>
+        /// Permeability tensor for all fractures in the gridblock
+        /// </summary>
+        /// <returns>Tensor2S object representing total fracture permeability</returns>
+        public Tensor2S TotalFracturePermeability()
+        {
+            Tensor2S totalFracturePermeability = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    totalFracturePermeability += fds.Total_Fracture_Permeability();
+            return totalFracturePermeability;
         }
 
         // Bulk rock elastic properties
@@ -2125,6 +2501,8 @@ namespace DFMGenerator_SharedCode
             bool CalculatePopulationDistributionData = PropControl.CalculatePopulationDistributionData;
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = PropControl.CalculateFracturePorosity;
+            // Flag to calculate and output fracture permeability tensor
+            bool CalculateFracturePermeabilityTensor = PropControl.CalculateFracturePermeabilityTensor;
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
             FractureApertureType FractureApertureControl = PropControl.FractureApertureControl;
 
@@ -2180,6 +2558,31 @@ namespace DFMGenerator_SharedCode
                     headerLine1 += "uF Porosity: Uniform aperture\tMF Porosity: Uniform aperture\tuF Porosity: Size-dependent aperture\tMF Porosity: Size-dependent aperture\tuF Porosity: Dynamic aperture\tMF Porosity: Dynamic aperture\tuF Porosity: Barton-Bandis aperture\tMF Porosity: Barton-Bandis aperture\t";
                     headerLine2 += "\t\t\t\t\t\t\t\t";
                     TS0data += "0\t0\t0\t0\t0\t0\t0\t0\t";
+                }
+                if (CalculateFracturePermeabilityTensor)
+                {
+                    Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                    // Header for microfracture permeability tensor
+                    headerLine1 += "uF Permeability tensor\t\t\t\t\t\t";
+                    foreach (Tensor2SComponents ij in tensorComponents)
+                    {
+                        headerLine2 += ij + "\t";
+                        TS0data += string.Format("0\t");
+                    }
+                    // Header for macrofracture permeability tensor
+                    headerLine1 += "MF Permeability tensor\t\t\t\t\t\t";
+                    foreach (Tensor2SComponents ij in tensorComponents)
+                    {
+                        headerLine2 += ij + "\t";
+                        TS0data += string.Format("0\t");
+                    }
+                    // Header for total fracture permeability tensor
+                    headerLine1 += "Total fracture Permeability tensor\t\t\t\t\t\t";
+                    foreach (Tensor2SComponents ij in tensorComponents)
+                    {
+                        headerLine2 += ij + "\t";
+                        TS0data += string.Format("0\t");
+                    }
                 }
                 if (OutputBulkRockElasticTensors)
                 {
@@ -2807,6 +3210,27 @@ namespace DFMGenerator_SharedCode
                             string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis]);
                             timestepData += porosityData;
                         }
+                        if (CalculateFracturePermeabilityTensor)
+                        {
+                            string uFPermeabilityTensorComponents = "";
+                            string MFPermeabilityTensorComponents = "";
+                            string TFPermeabilityTensorComponents = "";
+                            Tensor2S uFPermeabilityTensor = MicrofracturePermeability();
+                            Tensor2S MFPermeabilityTensor = MacrofracturePermeability();
+                            Tensor2S TFPermeabilityTensor = TotalFracturePermeability();
+
+                            Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                            foreach (Tensor2SComponents ij in tensorComponents)
+                            {
+                                uFPermeabilityTensorComponents += string.Format("{0}\t", uFPermeabilityTensor.Component(ij));
+                                MFPermeabilityTensorComponents += string.Format("{0}\t", MFPermeabilityTensor.Component(ij));
+                                TFPermeabilityTensorComponents += string.Format("{0}\t", TFPermeabilityTensor.Component(ij));
+                            }
+
+                            timestepData += uFPermeabilityTensorComponents;
+                            timestepData += MFPermeabilityTensorComponents;
+                            timestepData += TFPermeabilityTensorComponents;
+                        }
                         if (OutputBulkRockElasticTensors)
                         {
                             // NB here we output the bulk rock compliance tensor rather than the effective bulk rock compliance tensor. This will include the effect of the fractures, even in the stress shadow scenario
@@ -3031,37 +3455,62 @@ namespace DFMGenerator_SharedCode
                 } // End loop through the fracture sets
             } // End calculate cumulative population distribution function arrays
 
-            // If we have more than 2 fracture sets, output a table of connectivity between fracture sets for the final fracture network
-            if (writeImplicitDataToFile && NoFractureSets > 2)
+            if (writeImplicitDataToFile)
             {
-                // Table header
-                outputFile.WriteLine();
-                outputFile.WriteLine("Fracture interconnectivity: volumetric density (P30) of macrofracture tips from fracture set I terminating against macrofractures from dipset Jm");
-                outputFile.WriteLine("Terminating fracture dipset (Jm):\tPropagating fracture set (I):");
-                string headerLine = "\t";
-                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
-                    headerLine += string.Format("FS {0}\t", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()));
-                outputFile.WriteLine(headerLine);
-
-                // Write table data
-                for (int fsJ_index = 0; fsJ_index < NoFractureSets; fsJ_index++)
+                // If we have more than 2 fracture sets, output a table of connectivity between fracture sets for the final fracture network
+                if (NoFractureSets > 2)
                 {
-                    Gridblock_FractureSet fsJ = FractureSets[fsJ_index];
-                    int noDipSetsJ = fsJ.FractureDipSets.Count;
-                    for (int dipSetIndexJ = 0; dipSetIndexJ < noDipSetsJ; dipSetIndexJ++)
+                    // Table header
+                    outputFile.WriteLine();
+                    outputFile.WriteLine("Fracture interconnectivity: volumetric density (P30) of macrofracture tips from fracture set I terminating against macrofractures from dipset Jm");
+                    outputFile.WriteLine("Terminating fracture dipset (Jm):\tPropagating fracture set (I):");
+                    string headerLine = "\t";
+                    for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                        headerLine += string.Format("FS {0}\t", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()));
+                    outputFile.WriteLine(headerLine);
+
+                    // Write table data
+                    for (int fsJ_index = 0; fsJ_index < NoFractureSets; fsJ_index++)
                     {
-                        FractureDipSet dipSetJ = fsJ.FractureDipSets[dipSetIndexJ];
-                        string tableRow = string.Format("FS {0} {1}\t", fsJ_index, dipSetJ.Mode);
-                        for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
-                            tableRow += string.Format("{0}\t", MFTerminations[fsI_index, fsJ_index][dipSetIndexJ]);
-                        outputFile.WriteLine(tableRow);
+                        Gridblock_FractureSet fsJ = FractureSets[fsJ_index];
+                        int noDipSetsJ = fsJ.FractureDipSets.Count;
+                        for (int dipSetIndexJ = 0; dipSetIndexJ < noDipSetsJ; dipSetIndexJ++)
+                        {
+                            FractureDipSet dipSetJ = fsJ.FractureDipSets[dipSetIndexJ];
+                            string tableRow = string.Format("FS {0} {1}\t", fsJ_index, dipSetJ.Mode);
+                            for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
+                                tableRow += string.Format("{0}\t", MFTerminations[fsI_index, fsJ_index][dipSetIndexJ]);
+                            outputFile.WriteLine(tableRow);
+                        }
                     }
                 }
-            }
 
-            // Close the log file
-            if (writeImplicitDataToFile)
+                // If specified, output the present day aperture and reactivation potential of each fracture dip set
+                if (UsePresentDayStress)
+                {
+                    // Table header
+                    outputFile.WriteLine();
+                    outputFile.WriteLine("Present day fracture aperture and reactivation potential");
+                    outputFile.WriteLine("Fracture set\tAperture (m)\tDilatancy potential (Pa)\tSlip potential (Pa)\tReactivation mode");
+
+                    // Write table data
+                    for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                    {
+                        Gridblock_FractureSet fs = FractureSets[fs_index];
+                        int noDipSets = fs.FractureDipSets.Count;
+                        for (int dipSetIndex = 0; dipSetIndex < noDipSets; dipSetIndex++)
+                        {
+                            FractureDipSet dipSet = fs.FractureDipSets[dipSetIndex];
+                            string dipsetName = string.Format("FS {0} {1}\t", fs_index, dipSet.Mode);
+                            string tableRow = string.Format("{0}\t{1}\t{2}\t{3}\t{4}", dipsetName, dipSet.getMeanMacrofractureAperture(), dipSet.PresentDayDilatancyPotential, dipSet.PresentDaySlipPotential, dipSet.MostLikelyReactivationMode);
+                            outputFile.WriteLine(tableRow);
+                        }
+                    }
+                }
+
+                // Close the log file
                 outputFile.Close();
+            }
 
             // Determine the return code and return it
             CalculateFractureDataReturnCode returnCode = (WithinTimestepLimit ? CalculateFractureDataReturnCode.Completed : CalculateFractureDataReturnCode.TimestepLimitExceeded);
@@ -5140,6 +5589,11 @@ namespace DFMGenerator_SharedCode
             MechProps = new MechanicalProperties(this);
             StressStrain = new StressStrainState(this);
             PropControl = new PropagationControl();
+
+            // Initially the present day stress tensor will be null (i.e. the stress state defined by the StressStrain object will be used to calculate fracture aperture and permeability)
+            // The present day stress tensor can be defined later by calling the SetPresentDayStress() function
+            // If the present day stress tensor is defined, it will override the StressStrain object when calculating fracture aperture and permeability
+            PresentDayStress = null;
 
             // Set the number of fracture sets (minimum 0)
             if (NoFractureSets_in < 0)

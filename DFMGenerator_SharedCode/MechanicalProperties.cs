@@ -43,6 +43,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Nu_r { get; private set; }
         /// <summary>
+        /// Effective horizontal stiffness, assuming plane strain (Pa); given by E / (1 - v^2)
+        /// </summary>
+        public double PlainStrainEffectiveE_r { get { return E_r / (1 - Math.Pow(Nu_r, 2)); } }
+        /// <summary>
         /// Bulk modulus of intact rock (Pa)
         /// </summary>
         public double Kb_r { get { return E_r / (2 * (1 + Nu_r)); } }
