@@ -1264,7 +1264,8 @@ namespace DFMGenerator_SharedCode
             bool E_supplied = (E_r > 0);
             if (!E_supplied)
                 E_r = MechProps.E_r;
-            if (double.IsNaN(Nu_r))
+            bool Nu_supplied = (Math.Abs(Nu_r) < 1) || (Math.Abs(Nu_r) > 1);
+            if (!Nu_supplied)
                 Nu_r = MechProps.Nu_r;
             double E_eff = E_r / (1 - Math.Pow(Nu_r, 2));
             if (double.IsNaN(Biot))
@@ -1323,7 +1324,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // Set the present day Terzaghi effective stress tensor
-            PresentDayStress = effStress;
+            SetPresentDayStress(effStress);
         }
         /// <summary>
         /// Reset to use stress at the time of deformation, instead of present day effective stress tensor, to calculate fracture aperture and permeability
@@ -2355,7 +2356,7 @@ namespace DFMGenerator_SharedCode
 
         // Functions to return fracture permeability tensor
         /// <summary>
-        /// Permeability tensor for all microfractures in the gridblock
+        /// Permeability tensor for all current microfractures in the gridblock
         /// </summary>
         /// <returns>Tensor2S object representing microfracture permeability</returns>
         public Tensor2S MicrofracturePermeability()
@@ -2367,7 +2368,7 @@ namespace DFMGenerator_SharedCode
             return microfracturePermeability;
         }
         /// <summary>
-        /// Permeability tensor for all layer-bound macrofractures in the gridblock
+        /// Permeability tensor for all current layer-bound macrofractures in the gridblock
         /// </summary>
         /// <returns>Tensor2S object representing macrofracture permeability</returns>
         public Tensor2S MacrofracturePermeability()
@@ -2379,7 +2380,7 @@ namespace DFMGenerator_SharedCode
             return macrofracturePermeability;
         }
         /// <summary>
-        /// Permeability tensor for all fractures in the gridblock
+        /// Permeability tensor for all current fractures in the gridblock
         /// </summary>
         /// <returns>Tensor2S object representing total fracture permeability</returns>
         public Tensor2S TotalFracturePermeability()
@@ -2390,6 +2391,46 @@ namespace DFMGenerator_SharedCode
                     totalFracturePermeability += fds.Total_Fracture_Permeability();
             return totalFracturePermeability;
         }
+        /// <summary>
+        /// Permeability tensor for all microfractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing microfracture permeability</returns>
+        public Tensor2S MicrofracturePermeability(int Timestep_M)
+        {
+            Tensor2S microfracturePermeability = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
+            return microfracturePermeability;
+        }
+        /// <summary>
+        /// Permeability tensor for all layer-bound macrofractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        public Tensor2S MacrofracturePermeability(int Timestep_M)
+        {
+            Tensor2S macrofracturePermeability = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
+            return macrofracturePermeability;
+        }
+        /// <summary>
+        /// Permeability tensor for all fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing total fracture permeability</returns>
+        public Tensor2S TotalFracturePermeability(int Timestep_M)
+        {
+            Tensor2S totalFracturePermeability = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                    totalFracturePermeability += fds.Total_Fracture_Permeability(Timestep_M);
+            return totalFracturePermeability;
+        }
+
 
         // Bulk rock elastic properties
         /// <summary>

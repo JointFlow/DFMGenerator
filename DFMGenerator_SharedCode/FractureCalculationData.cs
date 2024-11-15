@@ -248,6 +248,12 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Total_uFP33_M { get; private set; }
         /// <summary>
+        /// P35 value for all microfractures, static and dynamic, at the end of timestep M
+        /// This represents the combined integral of R^3 across the area of every microfracture, where R is the microfracture radius
+        /// It is used to calculate the microfracture permeability where microfracture aperture is size-dependent, and permeability is proportional to aperture cubed
+        /// </summary>
+        public double Total_uFP35_M { get; private set; }
+        /// <summary>
         /// Azimuthal component of mean macrofracture stress shadow width
         /// </summary>
         public double Mean_AzimuthalStressShadowWidth_M { get; private set; }
@@ -325,7 +331,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Total_MFP32_in">Total mean linear half-macrofracture density (MFP32) at end of timestep M</param>
         public void SetMacrofractureDensityData(double a_MFP30_in, double sII_MFP30_in, double sIJ_MFP30_in, double Total_MFP32_in)
         {
-            // Set the new values for active and static MFP30, total uFP32, total MFP32, and total uFP33 at the end of the timestep
+            // Set the new values for active and static MFP30 and total MFP32 at the end of the timestep
             // These are used in calculating fracture deactivation probabilities and mean propagation distances for intervals within the timestep
             a_MFP30_M = a_MFP30_in;
             sII_MFP30_M = sII_MFP30_in;
@@ -339,7 +345,21 @@ namespace DFMGenerator_SharedCode
         /// <param name="Total_uFP33_in">Total volumetric microfracture ratio (uFP33) at end of timestep M</param>
         public void SetMicrofractureDensityData(double Total_uFP32_in, double Total_uFP33_in)
         {
-            // Set the new values for active and static MFP30, total uFP32, total MFP32, and total uFP33 at the end of the timestep
+            // Set the new values for total uFP32 and uFP33 at the end of the timestep
+            // Total uFP35 will not be set
+            // These are stored for output at the end of the model run 
+            Total_uFP32_M = Total_uFP32_in;
+            Total_uFP33_M = Total_uFP33_in;
+        }
+        /// <summary>
+        /// Set values for the microfracture density indices uFP32, uFP33 and uFP35 at the end of the timestep
+        /// </summary>
+        /// <param name="Total_uFP32_in">Total mean linear microfracture density (uFP32) at end of timestep M</param>
+        /// <param name="Total_uFP33_in">Total volumetric microfracture ratio (uFP33) at end of timestep M</param>
+        /// <param name="Total_uFP33_in">Total volumetric microfracture ratio (uFP33) at end of timestep M</param>
+        public void SetMicrofractureDensityData(double Total_uFP32_in, double Total_uFP33_in, double Total_uFP35_in)
+        {
+            // Set the new values for total uFP32, uFP33 and uFP35 at the end of the timestep
             // These are stored for output at the end of the model run 
             Total_uFP32_M = Total_uFP32_in;
             Total_uFP33_M = Total_uFP33_in;
@@ -603,6 +623,8 @@ namespace DFMGenerator_SharedCode
             Total_MFP32_M = 0;
             // Volumetric ratio of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP33_M = 0;
+            // P35 of all microfractures, static and dynamic, at the end of timestep M
+            Total_uFP35_M = 0;
             // Azimuthal component of mean macrofracture stress shadow width
             Mean_AzimuthalStressShadowWidth_M = 0;
             // Mean macrofracture stress shadow width
@@ -698,6 +720,8 @@ namespace DFMGenerator_SharedCode
             Total_MFP32_M = fcd_in.Total_MFP32_M;
             // Volumetric ratio of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP33_M = fcd_in.Total_uFP33_M;
+            // P35 of all microfractures, static and dynamic, at the end of timestep M
+            Total_uFP35_M = fcd_in.Total_uFP35_M;
             // Azimuthal component of mean macrofracture stress shadow width
             Mean_AzimuthalStressShadowWidth_M = fcd_in.Mean_AzimuthalStressShadowWidth_M;
             // Mean macrofracture stress shadow width

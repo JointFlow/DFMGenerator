@@ -1494,11 +1494,23 @@ namespace DFMGenerator_Ocean
                         convertFromGeneral_AppliedTemperatureChange_list.Add(UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo] ? AppliedTemperatureChange_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
                         convertFromGeneral_AppliedUpliftRate_list.Add(UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo] ? AppliedUpliftRate_grid_list[deformationEpisodeNo].Template.Equals(GeneralTemplate) : false);
                     }
+                    // Present day stress
+                    IUnitConverter toSIStressUnits = PetrelUnitSystem.GetConverterFromUI(StressTemplate);
+                    bool convertFromGeneral_EhminAzi_PresentDay = (UseGridFor_EhminAzi_PresentDay ? EhminAzi_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_AppliedOverpressure_PresentDay = (UseGridFor_AppliedOverpressure_PresentDay ? AppliedOverpressure_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_Sxx_PresentDay = (UseGridFor_Sxx_PresentDay ? Sxx_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_Syy_PresentDay = (UseGridFor_Syy_PresentDay ? Syy_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_Szz_PresentDay = (UseGridFor_Szz_PresentDay ? Szz_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_Sxy_PresentDay = (UseGridFor_Sxy_PresentDay ? Sxy_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_Syz_PresentDay = (UseGridFor_Syz_PresentDay ? Syz_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_Szx_PresentDay = (UseGridFor_Szx_PresentDay ? Szx_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_FluidPressure_PresentDay = (UseGridFor_FluidPressure_PresentDay ? FluidPressure_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
                     // Depth at start of deformation
                     bool convertFromGeneral_DepthAtDeformation = (UseGridFor_DepthAtDeformation ? DepthAtDeformation_grid.Template.Equals(GeneralTemplate) : false);
                     // Young's Modulus
                     IUnitConverter toSIYoungsModUnits = PetrelUnitSystem.GetConverterFromUI(YoungsModTemplate);
                     bool convertFromGeneral_YoungsMod = (UseGridFor_YoungsMod ? YoungsMod_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_YoungsMod_PresentDay = (UseGridFor_YoungsMod_PresentDay ? YoungsMod_PresentDay_grid.Template.Equals(GeneralTemplate) : false);
                     // Porosity
                     IUnitConverter toSIPorosityUnits = PetrelUnitSystem.GetConverterFromUI(PorosityTemplate);
                     bool convertFromGeneral_Porosity = (UseGridFor_Porosity ? Porosity_grid.Template.Equals(GeneralTemplate) : false);
@@ -1578,12 +1590,12 @@ namespace DFMGenerator_Ocean
                     {
                         generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo) + "\n";
                         if (DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] >= 0)
-                            generalInputParams += string.Format("Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (SubEpisodesDefined_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
+                            generalInputParams += string.Format(" - Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
                         if (UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo])
                         {
-                            generalInputParams += string.Format("Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", Case_list[deformationEpisodeNo].Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format(" - Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", Case_list[deformationEpisodeNo].Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
                             if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
                                 generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", Syz_result_list[deformationEpisodeNo].Name, Szx_result_list[deformationEpisodeNo].Name);
                             else
@@ -1592,40 +1604,40 @@ namespace DFMGenerator_Ocean
                         else
                         {
                             if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
-                                generalInputParams += string.Format("Minimum strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
+                                generalInputParams += string.Format(" - Minimum horizontal strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
                             else
-                                generalInputParams += string.Format("Minimum strain orientation: {0}{1}\n", toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
+                                generalInputParams += string.Format(" - Minimum horizontal strain orientation: {0}{1}\n", toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
                             if (UseGridFor_EhminRate_list[deformationEpisodeNo])
-                                generalInputParams += string.Format("Minimum strain rate: {0}, default {1}/{2}\n", EhminRate_grid_list[deformationEpisodeNo].Name, EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                                generalInputParams += string.Format(" - Minimum horizontal strain rate: {0}, default {1}/{2}\n", EhminRate_grid_list[deformationEpisodeNo].Name, EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                             else
-                                generalInputParams += string.Format("Minimum strain rate: {0}/{1}\n", EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                                generalInputParams += string.Format(" - Minimum horizontal strain rate: {0}/{1}\n", EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                             if (UseGridFor_EhmaxRate_list[deformationEpisodeNo])
-                                generalInputParams += string.Format("Maximum strain rate: {0}, default {1}/{2}\n", EhmaxRate_grid_list[deformationEpisodeNo].Name, EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                                generalInputParams += string.Format(" - Maximum horizontal strain rate: {0}, default {1}/{2}\n", EhmaxRate_grid_list[deformationEpisodeNo].Name, EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                             else
-                                generalInputParams += string.Format("Maximum strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
+                                generalInputParams += string.Format(" - Maximum horizontal strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         }
                         if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
-                            generalInputParams += string.Format("Rate of fluid overpressure: {0}{1}/{2}\n", toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Rate of fluid overpressure: {0}{1}/{2}\n", toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Rate of temperature change: {0}, default {1}{2}/{3}\n", AppliedTemperatureChange_grid_list[deformationEpisodeNo].Name, toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Rate of temperature change: {0}, default {1}{2}/{3}\n", AppliedTemperatureChange_grid_list[deformationEpisodeNo].Name, toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
-                            generalInputParams += string.Format("Rate of temperature change: {0}{1}/{2}\n", toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Rate of temperature change: {0}{1}/{2}\n", toProjectTemperatureUnits.Convert(AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo]), TemperatureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (UseGridPropertyTimeSeriesFor_Szz_list[deformationEpisodeNo] && !UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Dynamic vertical stress data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format(" - Dynamic vertical stress data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo])
-                            generalInputParams += string.Format("Rate of uplift: {0}, default {1}{2}/{3}\n", AppliedUpliftRate_grid_list[deformationEpisodeNo].Name, toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Rate of uplift: {0}, default {1}{2}/{3}\n", AppliedUpliftRate_grid_list[deformationEpisodeNo].Name, toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
-                            generalInputParams += string.Format("Rate of uplift: {0}{1}/{2}\n", toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Rate of uplift: {0}{1}/{2}\n", toProjectDepthUnits.Convert(AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo]), DepthUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         if (StressArchingFactor_list[deformationEpisodeNo] == 1)
-                            generalInputParams += string.Format("Complete stress arching; no subsidence at surface\n");
+                            generalInputParams += string.Format(" - Complete stress arching; no subsidence at surface\n");
                         else if (StressArchingFactor_list[deformationEpisodeNo] == 1)
-                            generalInputParams += string.Format("No stress arching; subsidence at surface\n");
+                            generalInputParams += string.Format(" - No stress arching; subsidence at surface\n");
                         else
-                            generalInputParams += string.Format("Stress arching factor: {0}\n", StressArchingFactor_list[deformationEpisodeNo]);
+                            generalInputParams += string.Format(" - Stress arching factor: {0}\n", StressArchingFactor_list[deformationEpisodeNo]);
                     }
                     if (AverageStressStrainData)
                         generalInputParams += "Strain input parameters averaged across all cells\n";
@@ -1740,9 +1752,118 @@ namespace DFMGenerator_Ocean
                         generalInputParams += string.Format("Initial stress: Critical\n");
                     else
                         generalInputParams += string.Format("Initial stress relaxation factor: {0}\n", InitialStressRelaxation);
+                    if (UsePresentDayStress)
+                    {
+                        string presentDayStressLabel = "Use present day stress to calculate fracture aperture and reactivation potential, defined from ";
+                        switch (PresentDayStressInput)
+                        {
+                            case PresentDayStressFrom.Strain:
+                                presentDayStressLabel += string.Format("lithostatic stress and elastic strain:\n");
+                                if (UseGridFor_EhminAzi_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Minimum horizontal strain orientation: {0}, default {1}{2}\n", EhminAzi_PresentDay_grid.Name, toProjectAzimuthUnits.Convert(EhminAzi_PresentDay), AzimuthUnits);
+                                else
+                                    presentDayStressLabel += string.Format(" - Minimum horizontal strain orientation: {0}{1}\n", toProjectAzimuthUnits.Convert(EhminAzi_PresentDay), AzimuthUnits);
+                                if (UseGridFor_Ehmin_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Minimum horizontal strain: {0}, default {1}\n", Ehmin_PresentDay_grid.Name, Ehmin_PresentDay);
+                                else
+                                    presentDayStressLabel += string.Format(" - Minimum horizontal strain: {0}\n", Ehmin_PresentDay);
+                                if (UseGridFor_Ehmax_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}, default {1}\n", Ehmax_PresentDay_grid.Name, Ehmax_PresentDay);
+                                else
+                                    presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}Ehmin_PresentDay\n", Ehmax_PresentDay);
+                                if (UseGridFor_AppliedOverpressure_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Fluid overpressure: {0}, default {1}{2}\n", AppliedOverpressure_PresentDay_grid.Name, toProjectPressureUnits.Convert(AppliedOverpressure_PresentDay), PressureUnits);
+                                else if (AppliedOverpressure_PresentDay > 0)
+                                    presentDayStressLabel += string.Format(" - Fluid overpressure: {0}{1}\n", toProjectPressureUnits.Convert(AppliedOverpressure_PresentDay), PressureUnits);
+                                if (UseGridFor_YoungsMod_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Override Young's Modulus with: {0}", YoungsMod_PresentDay_grid.Name) + ((YoungsMod_PresentDay > 0) ? string.Format("default {0}{1}\n", toProjectYoungsModUnits.Convert(YoungsMod_PresentDay), YoungsModUnits) : "\n");
+                                else if (YoungsMod_PresentDay > 0)
+                                    presentDayStressLabel += string.Format(" - Override Young's Modulus with: {0}{1}\n", toProjectYoungsModUnits.Convert(YoungsMod_PresentDay), YoungsModUnits);
+                                if (UseGridFor_PoissonsRatio_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Override Poisson's ratio with: {0}", PoissonsRatio_PresentDay_grid.Name) + ((Math.Abs(PoissonsRatio_PresentDay) < 1) || (Math.Abs(PoissonsRatio_PresentDay) > 1) ? string.Format("default {0}\n", PoissonsRatio_PresentDay) : "\n");
+                                else if ((Math.Abs(PoissonsRatio_PresentDay) < 1) || (Math.Abs(PoissonsRatio_PresentDay) > 1))
+                                    presentDayStressLabel += string.Format(" - Override Poisson's ratio with: {0}\n", PoissonsRatio_PresentDay);
+                                if (UseGridFor_BiotCoefficient_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Override Biot's coefficient with: {0}", BiotCoefficient_PresentDay_grid.Name) + (!double.IsNaN(BiotCoefficient_PresentDay) ? string.Format("default {0}\n", BiotCoefficient_PresentDay) : "\n");
+                                else if (!double.IsNaN(BiotCoefficient_PresentDay))
+                                    presentDayStressLabel += string.Format(" - Override Biot's coefficient with: {0}\n", BiotCoefficient_PresentDay);
+                                if (!double.IsNaN(InitialStressRelaxation_PresentDay))
+                                    presentDayStressLabel += string.Format(" - Override stress relaxation factor with: {0}\n", InitialStressRelaxation_PresentDay);
+                                break;
+                            case PresentDayStressFrom.EffectiveStress:
+                                presentDayStressLabel += string.Format("effective stress tensor:\n");
+                                presentDayStressLabel += " - ";
+                                if (UseGridFor_Sxx_PresentDay)
+                                    presentDayStressLabel += string.Format(" XX stress from {0}", Sxx_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += " XX stress 0";
+                                if (UseGridFor_Syy_PresentDay)
+                                    presentDayStressLabel += string.Format(", YY stress from {0}", Syy_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", YY stress 0";
+                                if (UseGridFor_Szz_PresentDay)
+                                    presentDayStressLabel += string.Format(", ZZ stress from {0}", Szz_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", ZZ stress 0";
+                                if (UseGridFor_Sxy_PresentDay)
+                                    presentDayStressLabel += string.Format(", XY stress from {0}", Sxy_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", XY stress 0";
+                                if (UseGridFor_Syz_PresentDay)
+                                    presentDayStressLabel += string.Format(", YZ stress from {0}", Syz_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", YZ stress 0";
+                                if (UseGridFor_Szx_PresentDay)
+                                    presentDayStressLabel += string.Format(", ZX stress from {0}", Szx_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", ZX stress 0";
+                                presentDayStressLabel += "\n";
+                                if (UseGridFor_FluidPressure_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Fluid pressure from {0}\n", FluidPressure_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += " - Fluid pressure 0\n";
+                                break;
+                            case PresentDayStressFrom.AbsoluteStress:
+                                presentDayStressLabel += string.Format("absolute (total) stress tensor and fluid pressure:\n");
+                                presentDayStressLabel += " - ";
+                                if (UseGridFor_Sxx_PresentDay)
+                                    presentDayStressLabel += string.Format(" XX stress from {0}", Sxx_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += " XX stress 0";
+                                if (UseGridFor_Syy_PresentDay)
+                                    presentDayStressLabel += string.Format(", YY stress from {0}", Syy_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", YY stress 0";
+                                if (UseGridFor_Szz_PresentDay)
+                                    presentDayStressLabel += string.Format(", ZZ stress from {0}", Szz_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", ZZ stress 0";
+                                if (UseGridFor_Sxy_PresentDay)
+                                    presentDayStressLabel += string.Format(", XY stress from {0}", Sxy_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", XY stress 0";
+                                if (UseGridFor_Syz_PresentDay)
+                                    presentDayStressLabel += string.Format(", YZ stress from {0}", Syz_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", YZ stress 0";
+                                if (UseGridFor_Szx_PresentDay)
+                                    presentDayStressLabel += string.Format(", ZX stress from {0}", Szx_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += ", ZX stress 0";
+                                presentDayStressLabel += "\n";
+                                if (UseGridFor_FluidPressure_PresentDay)
+                                    presentDayStressLabel += string.Format(" - Fluid pressure from {0}\n", FluidPressure_PresentDay_grid.Name);
+                                else
+                                    presentDayStressLabel += " - Fluid pressure 0\n";
+                                break;
+                            default:
+                                break;
+                        }
+                        generalInputParams += presentDayStressLabel;
+                    }
 
                     // Fracture aperture
-                    if (CalculateFracturePorosity)
+                    if (CalculateFracturePorosity || CalculateFracturePermeabilityTensor || CalculateFractureReactivationPotential)
                     {
                         switch (FractureApertureControl)
                         {
@@ -1761,6 +1882,57 @@ namespace DFMGenerator_Ocean
                             default:
                                 break;
                         }
+                    }
+                    else if (GenerateExplicitDFN)
+                    {
+                        switch (FractureApertureControl)
+                        {
+                            case FractureApertureType.Uniform:
+                                explicitInputParams += string.Format("Uniform fracture aperture: HMin Mode 1 {0}{4}; HMin Mode 2 {1}{4}; HMax Mode 1 {2}{4}; HMax Mode 2 {3}{4}\n", toProjectFractureApertureUnits.Convert(Mode1HMin_UniformAperture), toProjectFractureApertureUnits.Convert(Mode2HMin_UniformAperture), toProjectFractureApertureUnits.Convert(Mode1HMax_UniformAperture), toProjectFractureApertureUnits.Convert(Mode2HMax_UniformAperture), FractureApertureUnits);
+                                break;
+                            case FractureApertureType.SizeDependent:
+                                explicitInputParams += string.Format("Size dependent aperture: HMin Mode 1 x{0}; HMin Mode 2 x{1}; HMax Mode 1 x{2}; HMax Mode 2 x{3}\n", Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
+                                break;
+                            case FractureApertureType.Dynamic:
+                                explicitInputParams += string.Format("Dynamic aperture: x{0}\n", DynamicApertureMultiplier);
+                                break;
+                            case FractureApertureType.BartonBandis:
+                                explicitInputParams += string.Format("Barton-Bandis aperture: JRC {0}; UCS ratio {1}; Initial normal stress {2}{5}; Initial stiffness {3}{6} Max closure {4}{7}\n", JRC, UCSRatio, toProjectStressUnits.Convert(InitialNormalStress), toProjectFractureStiffnessUnits.Convert(FractureNormalStiffness), toProjectFractureApertureUnits.Convert(MaximumClosure), StressUnits, FractureStiffnessUnits, FractureApertureUnits);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    // Fracture permeability
+                    if (CalculateFracturePermeabilityTensor)
+                    {
+                        string permeabilityLabel = "Calculate permeability tensor for ";
+                        switch (FractureTypesInPermeabilityTensor)
+                        {
+                            case FractureType.Microfractures:
+                                permeabilityLabel += "microfractures only";
+                                break;
+                            case FractureType.LayerBoundFractures:
+                                permeabilityLabel += "layer-bound fractures only";
+                                break;
+                            case FractureType.AllFractures:
+                                permeabilityLabel += "all fractures";
+                                break;
+                            default:
+                                break;
+                        }
+                        permeabilityLabel += " using the ";
+                        switch (PermeabilityAlgorithm)
+                        {
+                            case PermeabilityCalculationAlgorithm.Oda1985:
+                                permeabilityLabel += "Oda 1985";
+                                break;
+                            default:
+                                break;
+                        }
+                        permeabilityLabel += " algorithm\n";
+                        implicitInputParams += permeabilityLabel;
                     }
 
                     // Calculation control parameters
@@ -3569,10 +3741,951 @@ namespace DFMGenerator_Ocean
                                     switch (PresentDayStressInput)
                                     {
                                         case PresentDayStressFrom.Strain:
+                                            {
+                                                // Get the present day strain and fluid overpressure from the grid as required
+                                                // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
+                                                double local_Ehmin_PresentDay = Ehmax_PresentDay;
+                                                double local_Ehmax_PresentDay = Ehmax_PresentDay;
+                                                double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
+
+                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each property
+                                                    double EhminAzi_PresentDay_total = 0;
+                                                    int EhminAzi_PresentDay_novalues = 0;
+                                                    double Ehmin_PresentDay_total = 0;
+                                                    int Ehmin_PresentDay_novalues = 0;
+                                                    double Ehmax_PresentDay_total = 0;
+                                                    int Ehmax_PresentDay_novalues = 0;
+                                                    double AppliedOverpressure_total = 0;
+                                                    int AppliedOverpressure_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update minimum horizontal strain azimuth total if defined
+                                                                if (UseGridFor_EhminAzi_PresentDay)
+                                                                {
+                                                                    double cell_EhminAzi_PresentDay = (double)EhminAzi_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_EhminAzi_PresentDay)
+                                                                        cell_EhminAzi_PresentDay = toSIAzimuthUnits.Convert(cell_EhminAzi_PresentDay);
+                                                                    if (!double.IsNaN(cell_EhminAzi_PresentDay))
+                                                                    {
+                                                                        EhminAzi_PresentDay_total += cell_EhminAzi_PresentDay;
+                                                                        EhminAzi_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update minimum horizontal strain total if defined
+                                                                if (UseGridFor_Ehmin_PresentDay)
+                                                                {
+                                                                    double cell_Ehmin_PresentDay = (double)Ehmin_PresentDay_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_Ehmin_PresentDay))
+                                                                    {
+                                                                        Ehmin_PresentDay_total += cell_Ehmin_PresentDay;
+                                                                        Ehmin_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update maximum horizontal strain total if defined
+                                                                if (UseGridFor_Ehmax_PresentDay)
+                                                                {
+                                                                    double cell_Ehmax_PresentDay = (double)Ehmax_PresentDay_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_Ehmax_PresentDay))
+                                                                    {
+                                                                        Ehmax_PresentDay_total += cell_Ehmax_PresentDay;
+                                                                        Ehmax_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update fluid overpressure total if defined
+                                                                if (UseGridFor_AppliedOverpressure_PresentDay)
+                                                                {
+                                                                    double cell_AppliedOverpressure = (double)AppliedOverpressure_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_AppliedOverpressure_PresentDay)
+                                                                        cell_AppliedOverpressure = toSIPressureUnits.Convert(cell_AppliedOverpressure);
+                                                                    if (!double.IsNaN(cell_AppliedOverpressure))
+                                                                    {
+                                                                        AppliedOverpressure_total += cell_AppliedOverpressure;
+                                                                        AppliedOverpressure_novalues++;
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (EhminAzi_PresentDay_novalues > 0)
+                                                        local_EhminAzi_PresentDay = EhminAzi_PresentDay_total / (double)EhminAzi_PresentDay_novalues;
+                                                    if (Ehmin_PresentDay_novalues > 0)
+                                                        local_Ehmin_PresentDay = Ehmin_PresentDay_total / (double)Ehmin_PresentDay_novalues;
+                                                    if (Ehmax_PresentDay_novalues > 0)
+                                                        local_Ehmax_PresentDay = Ehmax_PresentDay_total / (double)Ehmax_PresentDay_novalues;
+                                                    if (AppliedOverpressure_novalues > 0)
+                                                        local_AppliedOverpressure_PresentDay = AppliedOverpressure_total / (double)AppliedOverpressure_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update minimum horizontal strain azimuth total if defined
+                                                    if (UseGridFor_EhminAzi_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_EhminAzi_PresentDay = (double)EhminAzi_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_EhminAzi_PresentDay)
+                                                                cell_EhminAzi_PresentDay = toSIAzimuthUnits.Convert(cell_EhminAzi_PresentDay);
+                                                            if (!double.IsNaN(cell_EhminAzi_PresentDay))
+                                                            {
+                                                                local_EhminAzi_PresentDay = cell_EhminAzi_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update minimum horizontal strain total if defined
+                                                    if (UseGridFor_Ehmin_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Ehmin_PresentDay = (double)Ehmin_PresentDay_grid[cellRef];
+                                                            if (!double.IsNaN(cell_Ehmin_PresentDay))
+                                                            {
+                                                                local_Ehmin_PresentDay = cell_Ehmin_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update maximum horizontal strain total if defined
+                                                    if (UseGridFor_Ehmax_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Ehmax_PresentDay = (double)Ehmax_PresentDay_grid[cellRef];
+                                                            if (!double.IsNaN(cell_Ehmax_PresentDay))
+                                                            {
+                                                                local_Ehmax_PresentDay = cell_Ehmax_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update fluid overpressure total if defined
+                                                    if (UseGridFor_AppliedOverpressure_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_AppliedOverpressure = (double)AppliedOverpressure_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_AppliedOverpressure_PresentDay)
+                                                                cell_AppliedOverpressure = toSIPressureUnits.Convert(cell_AppliedOverpressure);
+                                                            if (!double.IsNaN(cell_AppliedOverpressure))
+                                                            {
+                                                                local_AppliedOverpressure_PresentDay = cell_AppliedOverpressure;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                }
+                                                // End get the present day strain and fluid overpressure from the grid as required
+
+                                                // Get the present day mechanical properties from the grid as required
+                                                // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                double local_YoungsMod_PresentDay = YoungsMod_PresentDay;
+                                                double local_PoissonsRatio_PresentDay = PoissonsRatio_PresentDay;
+                                                double local_BiotCoefficient_PresentDay = BiotCoefficient_PresentDay;
+
+                                                if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each mechanical property
+                                                    double YoungsMod_PresentDay_total = 0;
+                                                    int YoungsMod_PresentDay_novalues = 0;
+                                                    double PoissonsRatio_PresentDay_total = 0;
+                                                    int PoissonsRatio_PresentDay_novalues = 0;
+                                                    double BiotCoeff_total = 0;
+                                                    int BiotCoeff_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update Young's Modulus total if defined
+                                                                if (UseGridFor_YoungsMod_PresentDay)
+                                                                {
+                                                                    double cell_YoungsMod_PresentDay = (double)YoungsMod_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_YoungsMod_PresentDay)
+                                                                        cell_YoungsMod_PresentDay = toSIYoungsModUnits.Convert(cell_YoungsMod_PresentDay);
+                                                                    if (!double.IsNaN(cell_YoungsMod_PresentDay))
+                                                                    {
+                                                                        YoungsMod_PresentDay_total += cell_YoungsMod_PresentDay;
+                                                                        YoungsMod_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update Poisson's ratio total if defined
+                                                                if (UseGridFor_PoissonsRatio_PresentDay)
+                                                                {
+                                                                    double cell_PoissonsRatio_PresentDay = (double)PoissonsRatio_PresentDay_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_PoissonsRatio_PresentDay))
+                                                                    {
+                                                                        PoissonsRatio_PresentDay_total += cell_PoissonsRatio_PresentDay;
+                                                                        PoissonsRatio_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update Biot coefficient total if defined
+                                                                if (UseGridFor_BiotCoefficient_PresentDay)
+                                                                {
+                                                                    double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_BiotCoeff))
+                                                                    {
+                                                                        BiotCoeff_total += cell_BiotCoeff;
+                                                                        BiotCoeff_novalues++;
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (YoungsMod_PresentDay_novalues > 0)
+                                                        local_YoungsMod_PresentDay = YoungsMod_PresentDay_total / (double)YoungsMod_PresentDay_novalues;
+                                                    if (PoissonsRatio_PresentDay_novalues > 0)
+                                                        local_PoissonsRatio_PresentDay = PoissonsRatio_PresentDay_total / (double)PoissonsRatio_PresentDay_novalues;
+                                                    if (BiotCoeff_novalues > 0)
+                                                        local_BiotCoefficient_PresentDay = BiotCoeff_total / (double)BiotCoeff_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update Young's Modulus total if defined
+                                                    if (UseGridFor_YoungsMod_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_YoungsMod_PresentDay = (double)YoungsMod_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_YoungsMod_PresentDay)
+                                                                cell_YoungsMod_PresentDay = toSIYoungsModUnits.Convert(cell_YoungsMod_PresentDay);
+                                                            if (!double.IsNaN(cell_YoungsMod_PresentDay))
+                                                            {
+                                                                local_YoungsMod_PresentDay = cell_YoungsMod_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update Poisson's ratio total if defined
+                                                    if (UseGridFor_PoissonsRatio_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_PoissonsRatio_PresentDay = (double)PoissonsRatio_PresentDay_grid[cellRef];
+                                                            if (!double.IsNaN(cell_PoissonsRatio_PresentDay))
+                                                            {
+                                                                local_PoissonsRatio_PresentDay = cell_PoissonsRatio_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update Biot coefficient total if defined
+                                                    if (UseGridFor_BiotCoefficient_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
+                                                            if (!double.IsNaN(cell_BiotCoeff))
+                                                            {
+                                                                local_BiotCoefficient_PresentDay = cell_BiotCoeff;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                }
+                                                // Check the elastic properties for physically unrealistic values, and if so warn the user
+                                                // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+                                                // and these values will automatically be corrected by the MechanicalProperties object
+                                                if (local_YoungsMod_PresentDay <= 0)
+                                                {
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for present day Young's Modulus ({0}Pa) in cell {1},{2}. This will create errors in the calculation.", local_YoungsMod_PresentDay, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
+                                                }
+                                                if ((local_PoissonsRatio_PresentDay < 0) || (local_PoissonsRatio_PresentDay > 0.5))
+                                                {
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for present day Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio_PresentDay, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
+                                                }
+                                                // End get the present day mechanical properties from the grid as required
+
+                                                // If the present day mechanical properties are not defined, use the mechanical properties at the time of deformation
+                                                // This is not required as the SetPresentDayStressFromStrain will automatically substitute mechanical properties at the time of deformation if NaNs are supplied
+                                                /*if (double.IsNaN(local_YoungsMod_PresentDay))
+                                                    local_YoungsMod_PresentDay = local_YoungsMod;
+                                                if (double.IsNaN(local_PoissonsRatio_PresentDay))
+                                                    local_PoissonsRatio_PresentDay = local_PoissonsRatio;
+                                                if (double.IsNaN(local_BiotCoefficient_PresentDay))
+                                                    local_BiotCoefficient_PresentDay = local_BiotCoefficient;*/
+
+
+                                                // Get the present day stress relaxation factor
+                                                // This is a uniform constant across the grid
+                                                double local_InitialStressRelaxation_PresentDay = InitialStressRelaxation_PresentDay;
+                                                // If it is not defined, use the initial stress relaxation at the time of deformation
+                                                // This is not required as the SetPresentDayStressFromStrain will automatically substitute initial stress relaxation at the time of deformation if NaNs are supplied
+                                                /*if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
+                                                    local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;*/
+
+                                                // Now we can set the present day stress
+                                                gc.SetPresentDayStressFromStrain(local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay);
+#if DEBUG_FRACS
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
+#endif
+                                            }
                                             break;
                                         case PresentDayStressFrom.EffectiveStress:
+                                            {
+                                                // Get the present day effective stress from the grid as required
+                                                // This will depend on whether we are averaging the stress properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                // First we will create local variables for the property values in this gridblock
+                                                // By default these will be set to zero, since default values are not specified by the user 
+                                                double local_Sxx_PresentDay = 0;
+                                                double local_Syy_PresentDay = 0;
+                                                double local_Szz_PresentDay = 0;
+                                                double local_Sxy_PresentDay = 0;
+                                                double local_Syz_PresentDay = 0;
+                                                double local_Szx_PresentDay = 0;
+
+                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each property
+                                                    double Sxx_PresentDay_total = 0;
+                                                    int Sxx_PresentDay_novalues = 0;
+                                                    double Syy_PresentDay_total = 0;
+                                                    int Syy_PresentDay_novalues = 0;
+                                                    double Szz_PresentDay_total = 0;
+                                                    int Szz_PresentDay_novalues = 0;
+                                                    double Sxy_PresentDay_total = 0;
+                                                    int Sxy_PresentDay_novalues = 0;
+                                                    double Syz_PresentDay_total = 0;
+                                                    int Syz_PresentDay_novalues = 0;
+                                                    double Szx_PresentDay_total = 0;
+                                                    int Szx_PresentDay_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update XX stress component total if defined
+                                                                if (UseGridFor_Sxx_PresentDay)
+                                                                {
+                                                                    double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Sxx_PresentDay)
+                                                                        cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
+                                                                    if (!double.IsNaN(cell_Sxx_PresentDay))
+                                                                    {
+                                                                        Sxx_PresentDay_total += cell_Sxx_PresentDay;
+                                                                        Sxx_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update YY stress component total if defined
+                                                                if (UseGridFor_Syy_PresentDay)
+                                                                {
+                                                                    double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Syy_PresentDay)
+                                                                        cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
+                                                                    if (!double.IsNaN(cell_Syy_PresentDay))
+                                                                    {
+                                                                        Syy_PresentDay_total += cell_Syy_PresentDay;
+                                                                        Syy_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update ZZ stress component total if defined
+                                                                if (UseGridFor_Szz_PresentDay)
+                                                                {
+                                                                    double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Szz_PresentDay)
+                                                                        cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
+                                                                    if (!double.IsNaN(cell_Szz_PresentDay))
+                                                                    {
+                                                                        Szz_PresentDay_total += cell_Szz_PresentDay;
+                                                                        Szz_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update XY stress component total if defined
+                                                                if (UseGridFor_Sxy_PresentDay)
+                                                                {
+                                                                    double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Sxy_PresentDay)
+                                                                        cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
+                                                                    if (!double.IsNaN(cell_Sxy_PresentDay))
+                                                                    {
+                                                                        Sxy_PresentDay_total += cell_Sxy_PresentDay;
+                                                                        Sxy_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update YZ stress component total if defined
+                                                                if (UseGridFor_Syz_PresentDay)
+                                                                {
+                                                                    double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Syz_PresentDay)
+                                                                        cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
+                                                                    if (!double.IsNaN(cell_Syz_PresentDay))
+                                                                    {
+                                                                        Syz_PresentDay_total += cell_Syz_PresentDay;
+                                                                        Syz_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update ZX stress component total if defined
+                                                                if (UseGridFor_Szx_PresentDay)
+                                                                {
+                                                                    double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Szx_PresentDay)
+                                                                        cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
+                                                                    if (!double.IsNaN(cell_Szx_PresentDay))
+                                                                    {
+                                                                        Szx_PresentDay_total += cell_Szx_PresentDay;
+                                                                        Szx_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (Sxx_PresentDay_novalues > 0)
+                                                        local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
+                                                    if (Syy_PresentDay_novalues > 0)
+                                                        local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
+                                                    if (Szz_PresentDay_novalues > 0)
+                                                        local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
+                                                    if (Sxy_PresentDay_novalues > 0)
+                                                        local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
+                                                    if (Syz_PresentDay_novalues > 0)
+                                                        local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
+                                                    if (Szx_PresentDay_novalues > 0)
+                                                        local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update XX stress component total if defined
+                                                    if (UseGridFor_Sxx_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Sxx_PresentDay)
+                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
+                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
+                                                            {
+                                                                local_Sxx_PresentDay = cell_Sxx_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update YY stress component total if defined
+                                                    if (UseGridFor_Syy_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Syy_PresentDay)
+                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
+                                                            if (!double.IsNaN(cell_Syy_PresentDay))
+                                                            {
+                                                                local_Syy_PresentDay = cell_Syy_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update ZZ stress component total if defined
+                                                    if (UseGridFor_Szz_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Szz_PresentDay)
+                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
+                                                            if (!double.IsNaN(cell_Szz_PresentDay))
+                                                            {
+                                                                local_Szz_PresentDay = cell_Szz_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update XY stress component total if defined
+                                                    if (UseGridFor_Sxy_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Sxy_PresentDay)
+                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
+                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
+                                                            {
+                                                                local_Sxy_PresentDay = cell_Sxy_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update YZ stress component total if defined
+                                                    if (UseGridFor_Syz_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Syz_PresentDay)
+                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
+                                                            if (!double.IsNaN(cell_Syz_PresentDay))
+                                                            {
+                                                                local_Syz_PresentDay = cell_Syz_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update ZX stress component total if defined
+                                                    if (UseGridFor_Szx_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Szx_PresentDay)
+                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
+                                                            if (!double.IsNaN(cell_Szx_PresentDay))
+                                                            {
+                                                                local_Szx_PresentDay = cell_Szx_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // End get the present day effective stress from the grid as required
+
+                                                // Now we can set the present day stress
+                                                gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
+#if DEBUG_FRACS
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
+#endif
+                                            }
                                             break;
                                         case PresentDayStressFrom.AbsoluteStress:
+                                            {
+                                                // Get the present day absolute stress and fluid pressure from the grid as required
+                                                // This will depend on whether we are averaging the stress and fluid pressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                // First we will create local variables for the property values in this gridblock
+                                                // By default these will be set to zero, since default values are not specified by the user 
+                                                double local_Sxx_PresentDay = 0;
+                                                double local_Syy_PresentDay = 0;
+                                                double local_Szz_PresentDay = 0;
+                                                double local_Sxy_PresentDay = 0;
+                                                double local_Syz_PresentDay = 0;
+                                                double local_Szx_PresentDay = 0;
+                                                double local_FluidPressure_PresentDay = 0;
+
+                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each property
+                                                    double Sxx_PresentDay_total = 0;
+                                                    int Sxx_PresentDay_novalues = 0;
+                                                    double Syy_PresentDay_total = 0;
+                                                    int Syy_PresentDay_novalues = 0;
+                                                    double Szz_PresentDay_total = 0;
+                                                    int Szz_PresentDay_novalues = 0;
+                                                    double Sxy_PresentDay_total = 0;
+                                                    int Sxy_PresentDay_novalues = 0;
+                                                    double Syz_PresentDay_total = 0;
+                                                    int Syz_PresentDay_novalues = 0;
+                                                    double Szx_PresentDay_total = 0;
+                                                    int Szx_PresentDay_novalues = 0;
+                                                    double FluidPressure_total = 0;
+                                                    int FluidPressure_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update XX stress component total if defined
+                                                                if (UseGridFor_Sxx_PresentDay)
+                                                                {
+                                                                    double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Sxx_PresentDay)
+                                                                        cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
+                                                                    if (!double.IsNaN(cell_Sxx_PresentDay))
+                                                                    {
+                                                                        Sxx_PresentDay_total += cell_Sxx_PresentDay;
+                                                                        Sxx_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update YY stress component total if defined
+                                                                if (UseGridFor_Syy_PresentDay)
+                                                                {
+                                                                    double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Syy_PresentDay)
+                                                                        cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
+                                                                    if (!double.IsNaN(cell_Syy_PresentDay))
+                                                                    {
+                                                                        Syy_PresentDay_total += cell_Syy_PresentDay;
+                                                                        Syy_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update ZZ stress component total if defined
+                                                                if (UseGridFor_Szz_PresentDay)
+                                                                {
+                                                                    double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Szz_PresentDay)
+                                                                        cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
+                                                                    if (!double.IsNaN(cell_Szz_PresentDay))
+                                                                    {
+                                                                        Szz_PresentDay_total += cell_Szz_PresentDay;
+                                                                        Szz_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update XY stress component total if defined
+                                                                if (UseGridFor_Sxy_PresentDay)
+                                                                {
+                                                                    double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Sxy_PresentDay)
+                                                                        cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
+                                                                    if (!double.IsNaN(cell_Sxy_PresentDay))
+                                                                    {
+                                                                        Sxy_PresentDay_total += cell_Sxy_PresentDay;
+                                                                        Sxy_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update YZ stress component total if defined
+                                                                if (UseGridFor_Syz_PresentDay)
+                                                                {
+                                                                    double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Syz_PresentDay)
+                                                                        cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
+                                                                    if (!double.IsNaN(cell_Syz_PresentDay))
+                                                                    {
+                                                                        Syz_PresentDay_total += cell_Syz_PresentDay;
+                                                                        Syz_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update ZX stress component total if defined
+                                                                if (UseGridFor_Szx_PresentDay)
+                                                                {
+                                                                    double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Szx_PresentDay)
+                                                                        cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
+                                                                    if (!double.IsNaN(cell_Szx_PresentDay))
+                                                                    {
+                                                                        Szx_PresentDay_total += cell_Szx_PresentDay;
+                                                                        Szx_PresentDay_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update fluid pressure total if defined
+                                                                if (UseGridFor_FluidPressure_PresentDay)
+                                                                {
+                                                                    double cell_FluidPressure = (double)FluidPressure_PresentDay_grid[cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_FluidPressure_PresentDay)
+                                                                        cell_FluidPressure = toSIPressureUnits.Convert(cell_FluidPressure);
+                                                                    if (!double.IsNaN(cell_FluidPressure))
+                                                                    {
+                                                                        FluidPressure_total += cell_FluidPressure;
+                                                                        FluidPressure_novalues++;
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (Sxx_PresentDay_novalues > 0)
+                                                        local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
+                                                    if (Syy_PresentDay_novalues > 0)
+                                                        local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
+                                                    if (Szz_PresentDay_novalues > 0)
+                                                        local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
+                                                    if (Sxy_PresentDay_novalues > 0)
+                                                        local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
+                                                    if (Syz_PresentDay_novalues > 0)
+                                                        local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
+                                                    if (Szx_PresentDay_novalues > 0)
+                                                        local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
+                                                    if (FluidPressure_novalues > 0)
+                                                        local_FluidPressure_PresentDay = FluidPressure_total / (double)FluidPressure_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update XX stress component total if defined
+                                                    if (UseGridFor_Sxx_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Sxx_PresentDay)
+                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
+                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
+                                                            {
+                                                                local_Sxx_PresentDay = cell_Sxx_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update YY stress component total if defined
+                                                    if (UseGridFor_Syy_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Syy_PresentDay)
+                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
+                                                            if (!double.IsNaN(cell_Syy_PresentDay))
+                                                            {
+                                                                local_Syy_PresentDay = cell_Syy_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update ZZ stress component total if defined
+                                                    if (UseGridFor_Szz_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Szz_PresentDay)
+                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
+                                                            if (!double.IsNaN(cell_Szz_PresentDay))
+                                                            {
+                                                                local_Szz_PresentDay = cell_Szz_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update XY stress component total if defined
+                                                    if (UseGridFor_Sxy_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Sxy_PresentDay)
+                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
+                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
+                                                            {
+                                                                local_Sxy_PresentDay = cell_Sxy_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update YZ stress component total if defined
+                                                    if (UseGridFor_Syz_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Syz_PresentDay)
+                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
+                                                            if (!double.IsNaN(cell_Syz_PresentDay))
+                                                            {
+                                                                local_Syz_PresentDay = cell_Syz_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update ZX stress component total if defined
+                                                    if (UseGridFor_Szx_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Szx_PresentDay)
+                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
+                                                            if (!double.IsNaN(cell_Szx_PresentDay))
+                                                            {
+                                                                local_Szx_PresentDay = cell_Szx_PresentDay;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update fluid pressure total if defined
+                                                    if (UseGridFor_FluidPressure_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_FluidPressure = (double)FluidPressure_PresentDay_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_FluidPressure_PresentDay)
+                                                                cell_FluidPressure = toSIPressureUnits.Convert(cell_FluidPressure);
+                                                            if (!double.IsNaN(cell_FluidPressure))
+                                                            {
+                                                                local_FluidPressure_PresentDay = cell_FluidPressure;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // End get the present day absolute stress and fluid pressure from the grid as required
+
+                                                // Now we can set the present day stress
+                                                gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
+#if DEBUG_FRACS
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
+#endif
+                                            }
                                             break;
                                         default:
                                             break;
@@ -4012,14 +5125,10 @@ namespace DFMGenerator_Ocean
                                                                         Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
 
                                                                         // Write data to Petrel grid
-                                                                        //if (!double.IsNaN(UnconnectedTipRatio))
-                                                                            MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
-                                                                        //if (!double.IsNaN(RelayTipRatio))
-                                                                            MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
-                                                                        //if (!double.IsNaN(ConnectedTipRatio))
-                                                                            MF_ConnectedTipRatio[index_cell] = (float)ConnectedTipRatio;
-                                                                        //if (!double.IsNaN(EndTime))
-                                                                            EndDeformationTime[index_cell] = (float)EndTime;
+                                                                        MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
+                                                                        MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
+                                                                        MF_ConnectedTipRatio[index_cell] = (float)ConnectedTipRatio;
+                                                                        EndDeformationTime[index_cell] = (float)EndTime;
                                                                     } // End loop through all the Petrel cells in the gridblock
                                                         }
                                                         catch (Exception e)
@@ -4229,7 +5338,7 @@ namespace DFMGenerator_Ocean
                                                     {
                                                         foreach (FractureDipSet fds in fractureGridCell.FractureSets[0].FractureDipSets)
                                                         {
-                                                            Max_P32 += fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo);
+                                                            Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
                                                             if (CalculateFracturePorosity)
                                                                 Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                             else
@@ -4244,7 +5353,7 @@ namespace DFMGenerator_Ocean
                                                             double fs_P33 = 0;
                                                             foreach (FractureDipSet fds in fractureGridCell.FractureSets[fs_Index].FractureDipSets)
                                                             {
-                                                                fs_P32 += fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo);
+                                                                fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
                                                                 if (CalculateFracturePorosity)
                                                                     fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                                 else
@@ -4565,20 +5674,42 @@ namespace DFMGenerator_Ocean
 
                                                 // Get the appropriate permeability tensor for this gridblock
                                                 Tensor2S gridblockPermeabilityTensor;
-                                                switch (FractureTypesInPermeabilityTensor)
+                                                if (finalStage)
                                                 {
-                                                    case FractureType.Microfractures:
-                                                        gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability();
-                                                        break;
-                                                    case FractureType.LayerBoundFractures:
-                                                        gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability();
-                                                        break;
-                                                    case FractureType.AllFractures:
-                                                        gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability();
-                                                        break;
-                                                    default:
-                                                        gridblockPermeabilityTensor = new Tensor2S();
-                                                        break;
+                                                    switch (FractureTypesInPermeabilityTensor)
+                                                    {
+                                                        case FractureType.Microfractures:
+                                                            gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability();
+                                                            break;
+                                                        case FractureType.LayerBoundFractures:
+                                                            gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability();
+                                                            break;
+                                                        case FractureType.AllFractures:
+                                                            gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability();
+                                                            break;
+                                                        default:
+                                                            gridblockPermeabilityTensor = new Tensor2S();
+                                                            break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                    switch (FractureTypesInPermeabilityTensor)
+                                                    {
+                                                        case FractureType.Microfractures:
+                                                            gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability(TSNo);
+                                                            break;
+                                                        case FractureType.LayerBoundFractures:
+                                                            gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability(TSNo);
+                                                            break;
+                                                        case FractureType.AllFractures:
+                                                            gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability(TSNo);
+                                                            break;
+                                                        default:
+                                                            gridblockPermeabilityTensor = new Tensor2S();
+                                                            break;
+                                                    }
                                                 }
 
 #if DEBUG_FRACS
@@ -9644,6 +10775,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_AppliedOverpressure_PresentDay = (value == null ? null : value.Droid); }
             }
 
+            [OptionalInWorkflow]
             [Description("Default present day Young's Modulus (Pa)", "Default value for present day Young's Modulus (Pa); if not specified, will use Young's Modulus at the time of deformation")]
             public double Argument_YoungsMod_PresentDay_default
             {
@@ -9659,6 +10791,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_YoungsMod_PresentDay = (value == null ? null : value.Droid); }
             }
 
+            [OptionalInWorkflow]
             [Description("Default present day Poisson's ratio", "Default value for present day Poisson's ratio; if not specified, will use Poisson's ratio at the time of deformation")]
             public double Argument_PoissonsRatio_PresentDay_default
             {
@@ -9674,6 +10807,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_PoissonsRatio_PresentDay = (value == null ? null : value.Droid); }
             }
 
+            [OptionalInWorkflow]
             [Description("Default present day Biot Coefficient", "Default value for present day Biot Coefficient; if not specified, will use Biot Coefficient at the time of deformation")]
             public double Argument_BiotCoefficient_PresentDay_default
             {
@@ -9689,6 +10823,7 @@ namespace DFMGenerator_Ocean
                 set { this.argument_BiotCoefficient_PresentDay = (value == null ? null : value.Droid); }
             }
 
+            [OptionalInWorkflow]
             [Description("Present day initial stress relaxation", "Present day initial stress relaxation; if not specified, will use initial stress relaxation at the time of deformation")]
             public double Argument_InitialStressRelaxation_PresentDay
             {

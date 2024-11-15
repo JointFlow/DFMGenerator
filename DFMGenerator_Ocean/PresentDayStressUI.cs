@@ -238,34 +238,105 @@ namespace DFMGenerator_Ocean
             this.FindForm().Close();
         }
 
+        private void switchTab(bool enableStrainTab, bool enableStressTab, bool enableFP)
+        {
+            // Strain tab
+            label_PDS_EhminAzi.Enabled = enableStrainTab;
+            dropTarget_PDS_EhminAzi.Enabled = enableStrainTab;
+            presentationBox_PDS_EhminAzi.Enabled = enableStrainTab;
+            label_PDS_EhminAzi_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_EhminAzi_default.Enabled = enableStrainTab;
+            label_PDS_EhminAzi_Units.Enabled = enableStrainTab;
+
+            label_PDS_Ehmin.Enabled = enableStrainTab;
+            dropTarget_PDS_Ehmin.Enabled = enableStrainTab;
+            presentationBox_PDS_Ehmin.Enabled = enableStrainTab;
+            label_PDS_Ehmin_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_Ehmin_default.Enabled = enableStrainTab;
+
+            label_PDS_Ehmax.Enabled = enableStrainTab;
+            dropTarget_PDS_Ehmax.Enabled = enableStrainTab;
+            presentationBox_PDS_Ehmax.Enabled = enableStrainTab;
+            label_PDS_Ehmax_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_Ehmax_default.Enabled = enableStrainTab;
+
+            label_PDS_OP.Enabled = enableStrainTab;
+            dropTarget_PDS_OP.Enabled = enableStrainTab;
+            presentationBox_PDS_OP.Enabled = enableStrainTab;
+            label_PDS_OP_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_OP_default.Enabled = enableStrainTab;
+            label_PDS_OP_Units.Enabled = enableStrainTab;
+
+            label_PDS_YoungsMod.Enabled = enableStrainTab;
+            dropTarget_PDS_YoungsMod.Enabled = enableStrainTab;
+            presentationBox_PDS_YoungsMod.Enabled = enableStrainTab;
+            label_PDS_YoungsMod_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_YoungsMod_default.Enabled = enableStrainTab;
+            label_PDS_YoungsMod_Units.Enabled = enableStrainTab;
+
+            label_PDS_PoissonsRatio.Enabled = enableStrainTab;
+            dropTarget_PDS_PoissonsRatio.Enabled = enableStrainTab;
+            presentationBox_PDS_PoissonsRatio.Enabled = enableStrainTab;
+            label_PDS_PoissonsRatio_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_PoissonsRatio_default.Enabled = enableStrainTab;
+
+            label_PDS_BiotCoefficient.Enabled = enableStrainTab;
+            dropTarget_PDS_BiotCoefficient.Enabled = enableStrainTab;
+            presentationBox_PDS_BiotCoefficient.Enabled = enableStrainTab;
+            label_PDS_BiotCoefficient_default.Enabled = enableStrainTab;
+            unitTextBox_PDS_BiotCoefficient_default.Enabled = enableStrainTab;
+
+            label_PDS_StressRelaxation.Enabled = enableStrainTab;
+            unitTextBox_PDS_StressRelaxation.Enabled = enableStrainTab;
+
+            // Stress tab
+            label_PDS_StressXX.Enabled = enableStressTab;
+            dropTarget_PDS_StressXX.Enabled = enableStressTab;
+            presentationBox_PDS_StressXX.Enabled = enableStressTab;
+
+            label_PDS_StressYY.Enabled = enableStressTab;
+            dropTarget_PDS_StressYY.Enabled = enableStressTab;
+            presentationBox_PDS_StressYY.Enabled = enableStressTab;
+
+            label_PDS_StressZZ.Enabled = enableStressTab;
+            dropTarget_PDS_StressZZ.Enabled = enableStressTab;
+            presentationBox_PDS_StressZZ.Enabled = enableStressTab;
+
+            label_PDS_StressXY.Enabled = enableStressTab;
+            dropTarget_PDS_StressXY.Enabled = enableStressTab;
+            presentationBox_PDS_StressXY.Enabled = enableStressTab;
+
+            label_PDS_StressYZ.Enabled = enableStressTab;
+            dropTarget_PDS_StressYZ.Enabled = enableStressTab;
+            presentationBox_PDS_StressYZ.Enabled = enableStressTab;
+
+            label_PDS_StressZX.Enabled = enableStressTab;
+            dropTarget_PDS_StressZX.Enabled = enableStressTab;
+            presentationBox_PDS_StressZX.Enabled = enableStressTab;
+
+            label_PDS_FP.Enabled = enableFP;
+            dropTarget_PDS_FP.Enabled = enableFP;
+            presentationBox_PDS_FP.Enabled = enableFP;
+        }
+
         private void comboBox_PDS_DefinedFrom_SelectedIndexChanged(object sender, EventArgs e)
         {
             switch (comboBox_PDS_DefinedFrom.SelectedIndex)
             {
                 case 0: // From lithostatic stress and horizontal strain
-                    tabStrain.Enabled = true;
-                    tabStress.Enabled = false;
+                    tabControl1.SelectedPage = tabStrain;
+                    switchTab(true, false, false);
                     break;
                 case 1: // From effective stress
-                    tabStrain.Enabled = false;
-                    tabStress.Enabled = true;
-                    label_PDS_FP.Enabled = false;
-                    dropTarget_PDS_FP.Enabled = false;
-                    presentationBox_PDS_FP.Enabled = false;
+                    tabControl1.SelectedPage = tabStress;
+                    switchTab(false, true, false);
                     break;
                 case 2: // From absolute (total) stress and fluid pressure
-                    tabStrain.Enabled = false;
-                    tabStress.Enabled = true;
-                    label_PDS_FP.Enabled = true;
-                    dropTarget_PDS_FP.Enabled = true;
-                    presentationBox_PDS_FP.Enabled = true;
+                    tabControl1.SelectedPage = tabStress;
+                    switchTab(false, true, true);
                     break;
                 default: // Enable everything
-                    tabStrain.Enabled = true;
-                    tabStress.Enabled = true;
-                    label_PDS_FP.Enabled = true;
-                    dropTarget_PDS_FP.Enabled = true;
-                    presentationBox_PDS_FP.Enabled = true;
+                    switchTab(true, true, true);
                     break;
             }
         }
@@ -486,7 +557,7 @@ namespace DFMGenerator_Ocean
             context.ArgumentPackageChanged -= context_ArgumentPackageChanged;
 
             // Remove the Deformation Episode UI from the list in the calling dialog
-            callingDialog.ClosePresentDayStressUI();
+            callingDialog.RemovePresentDayStressUI();
         }
 
         #endregion

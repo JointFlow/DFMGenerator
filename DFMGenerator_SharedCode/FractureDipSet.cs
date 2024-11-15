@@ -129,6 +129,14 @@ namespace DFMGenerator_SharedCode
         /// Unit vector on the fracture plane in direction of maximum dip (in the case of bimodal conjugate dipsets, dipping in J+ direction)
         /// </summary>
         public VectorXYZ DipVector { get { return new VectorXYZ(dipVector); } }
+        /// <summary>
+        /// For a biazimuthally conjugate fracture set, will return the normal vector for a fracture dipping in the J- direction (i.e. the NormalVector rotated 180deg around the Z axis); for a non-biazimuthally conjugate fracture set, will return the NormalVector
+        /// </summary>
+        public VectorXYZ ConjugateNormalVector { get { return BiazimuthalConjugate ? new VectorXYZ(-normalVector.Component(VectorComponents.X), -normalVector.Component(VectorComponents.Y), normalVector.Component(VectorComponents.Z)) : NormalVector; } }
+        /// <summary>
+        /// For a biazimuthally conjugate fracture set, will return the dip vector for a fracture dipping in the J- direction (i.e. the DipVector rotated 180deg around the Z axis); for a non-biazimuthally conjugate fracture set, will return the DipVector
+        /// </summary>
+        public VectorXYZ ConjugateDipVector { get { return BiazimuthalConjugate ? new VectorXYZ(-dipVector.Component(VectorComponents.X), -dipVector.Component(VectorComponents.Y), dipVector.Component(VectorComponents.Z)) : DipVector; } }
 
         // Fracture distribution control data
         /// <summary>
@@ -363,6 +371,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double getTotaluFP33() { return CurrentFractureData.Total_uFP33_M; }
+        /// <summary>
+        /// Return the P35 value for all microfractures, static and dynamic, during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTotaluFP35() { return CurrentFractureData.Total_uFP35_M; }
         /// <summary>
         /// Return the volumetric ratio of all half-macrofractures, static and dynamic, during the current timestep
         /// </summary>
@@ -631,6 +644,12 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getTotaluFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP33_M(Timestep_M); }
+        /// <summary>
+        /// Return the P35 value for all microfractures, static and dynamic, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotaluFP35(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP35_M(Timestep_M); }
         /// <summary>
         /// Return the volumetric ratio of all half-macrofractures, static and dynamic, at the end of a specified previous timestep
         /// </summary>
@@ -1223,6 +1242,16 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double s_uFP33_total() { return MicroFractures.s_P33_total; }
+        /// <summary>
+        /// Total P35 value for active microfractures
+        /// </summary>
+        /// <returns></returns>
+        public double a_uFP35_total() { return MicroFractures.a_P35_total; }
+        /// <summary>
+        /// Total P35 value for static microfractures
+        /// </summary>
+        /// <returns></returns>
+        public double s_uFP35_total() { return MicroFractures.s_P35_total; }
         /// <summary>
         /// Total volumetric density of active half-macrofractures
         /// </summary>
@@ -2013,62 +2042,95 @@ namespace DFMGenerator_SharedCode
 
         // Fracture permeability tensors
         /// <summary>
-        /// Permeability tensor for all microfractures in this dipset
+        /// Permeability tensor for all current microfractures in this dipset
         /// </summary>
         /// <returns>Tensor2S object representing microfracture permeability</returns>
         public Tensor2S Total_uF_Permeability()
         {
+            return Total_uF_Permeability(-1);
+        }
+        /// <summary>
+        /// Permeability tensor for all microfractures in this dipset, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing microfracture permeability</returns>
+        public Tensor2S Total_uF_Permeability(int Timestep_M)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+            bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
+
             double geometryMultiplier;
             switch (gbc.PropControl.PermeabilityAlgorithm)
             {
                 // The Oda 1985 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
                 case PermeabilityCalculationAlgorithm.Oda1985:
-                    geometryMultiplier = 1 / 12;
+                    geometryMultiplier = 1d / 12d;
                     break;
                 default:
                     geometryMultiplier = 0;
                     break;
             }
             double apertureMultiplier;
+            double densityMultiplier;
             switch (gbc.PropControl.FractureApertureControl)
             {
                 // In the Uniform and Barton Bandis fracture aperture scenarios, aperture is uniform across the fracture
                 // The permeability will therefore be proportional to the cube of the mean aperture
                 case FractureApertureType.Uniform:
                 case FractureApertureType.BartonBandis:
-                    apertureMultiplier = Math.Pow(getMeanMacrofractureAperture(), 3);
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
+                    densityMultiplier = useCurrentDensityData ? a_uFP32_total() + s_uFP32_total() : getTotaluFP32(Timestep_M);
                     break;
                 // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
-                // The aperture multiplier must therefore be calculated by integrating the cube of the local aperture across every fracture
-                // For circular fractures of varying sizes, this will depend on the size distribution and can only be calculated numerically
-                // For now we will therefore ignore the microfractures in these scenarios and set the aperture multiplier to zero
-                // If fracture apertures are size dependent, the contribution of microfractures to fracture permeability is probably small in any case
+                // The aperture multiplier is calculated by integrating the cube of the local aperture across every fracture
+                // This is therefore proportional to the 5th power of the fracture radii, so we must use the P35 value
+                // The P35 value also incorporates the fracture area, so will be included in the density multiplier
                 case FractureApertureType.SizeDependent:
                 case FractureApertureType.Dynamic:
-                    apertureMultiplier = Math.Pow(getMaximumMacrofractureAperture(), 3) * (3 * Math.PI / 16);
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumMicrofractureAperture(1) : getMaximumMicrofractureAperture(1, Timestep_M), 3);
+                    densityMultiplier = (useCurrentDensityData ? a_uFP35_total() + s_uFP35_total() : getTotaluFP35(Timestep_M)) / 8;
                     break;
                 // Aperture is not defined
                 default:
                     apertureMultiplier = 0;
+                    densityMultiplier = 0;
                     break;
             }
-            double densityMultiplier = (a_uFP32_total() + s_uFP32_total()) / sindip;
+            densityMultiplier /= sindip;
 
             Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
+            if (BiazimuthalConjugate)
+            {
+                permTensor.Component(Tensor2SComponents.YZ, 0);
+                permTensor.Component(Tensor2SComponents.ZX, 0);
+            }
             return permTensor;
         }
         /// <summary>
-        /// Permeability tensor for all half-macrofractures in this dipset
+        /// Permeability tensor for all current half-macrofractures in this dipset
         /// </summary>
         /// <returns>Tensor2S object representing macrofracture permeability</returns>
         public Tensor2S Total_MF_Permeability()
         {
+            return Total_MF_Permeability(-1);
+        }
+        /// <summary>
+        /// Permeability tensor for all half-macrofractures in this dipset, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        public Tensor2S Total_MF_Permeability(int Timestep_M)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+            bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
+
             double geometryMultiplier;
             switch (gbc.PropControl.PermeabilityAlgorithm)
             {
                 // The Oda 1985 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
                 case PermeabilityCalculationAlgorithm.Oda1985:
-                    geometryMultiplier = 1 / 12;
+                    geometryMultiplier = 1d / 12d;
                     break;
                 default:
                     geometryMultiplier = 0;
@@ -2081,26 +2143,33 @@ namespace DFMGenerator_SharedCode
                 // The permeability will therefore be proportional to the cube of the mean aperture
                 case FractureApertureType.Uniform:
                 case FractureApertureType.BartonBandis:
-                    apertureMultiplier = Math.Pow(getMeanMacrofractureAperture(), 3);
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMacrofractureAperture() : getMeanMacrofractureAperture(Timestep_M), 3);
                     break;
                 // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
                 // The aperture multiplier must therefore be calculated by integrating the cube of the local aperture across the fracture
                 case FractureApertureType.SizeDependent:
                 case FractureApertureType.Dynamic:
-                    apertureMultiplier = Math.Pow(getMaximumMacrofractureAperture(), 3) * (3 * Math.PI / 16);
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumMacrofractureAperture() : getMaximumMacrofractureAperture(Timestep_M), 3) * (3 * Math.PI / 16);
                     break;
                 // Aperture is not defined
                 default:
                     apertureMultiplier = 0;
                     break;
             }
-            double densityMultiplier = (a_MFP32_total() + s_MFP32_total()) / sindip;
+            double densityMultiplier = useCurrentDensityData ? a_MFP32_total() + s_MFP32_total() : getTotalMFP32(Timestep_M);
+            densityMultiplier /= sindip;
 
             Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
+            if (BiazimuthalConjugate)
+            {
+                permTensor.Component(Tensor2SComponents.YZ, 0);
+                permTensor.Component(Tensor2SComponents.ZX, 0);
+            }
             return permTensor;
         }
         /// <summary>
-        /// Permeability tensor for all fractures in this dipset
+        /// Permeability tensor for all current fractures in this dipset
         /// </summary>
         /// <returns>Tensor2S object representing macrofracture permeability</returns>
         public Tensor2S Total_Fracture_Permeability()
@@ -2113,7 +2182,25 @@ namespace DFMGenerator_SharedCode
                 case PermeabilityCalculationAlgorithm.Oda1985:
                     return Total_uF_Permeability() + Total_MF_Permeability();
                 default:
-                    return Total_uF_Permeability() + Total_MF_Permeability();
+                    return new Tensor2S();
+            }
+        }
+        /// <summary>
+        /// Permeability tensor for all fractures in this dipset, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        public Tensor2S Total_Fracture_Permeability(int Timestep_M)
+        {
+            switch (gbc.PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1985 algorithm assumes infinite fracture size, with no connectivity or percolation threshold effect
+                // The tensor for all fractures can therefore be obtained by adding together the tensors for fracture subsets
+                // This may not be the case for all permeability calculation algorithms
+                case PermeabilityCalculationAlgorithm.Oda1985:
+                    return Total_uF_Permeability(Timestep_M) + Total_MF_Permeability(Timestep_M);
+                default:
+                    return new Tensor2S();
             }
         }
 
@@ -2661,7 +2748,8 @@ namespace DFMGenerator_SharedCode
         {
             double uFP32 = a_uFP32_total() + s_uFP32_total();
             double uFP33 = a_uFP33_total() + s_uFP33_total();
-            CurrentFractureData.SetMicrofractureDensityData(uFP32, uFP33);
+            double uFP35 = a_uFP35_total() + s_uFP35_total();
+            CurrentFractureData.SetMicrofractureDensityData(uFP32, uFP33, uFP35);
         }
         /// <summary>
         /// Update the mean total and azimuthal stress shadow widths in the CurrentFractureData object
@@ -3682,11 +3770,15 @@ namespace DFMGenerator_SharedCode
             double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
             // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
             double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
+            // h5c_factor is (h/2)^(5c) when c!=5, ln(h/2) when c=5
+            double h5c_factor = (c_coefficient == 5 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 5 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
             double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
+            double uFP35_multiplier = CapB * (16 / 5) * Math.PI;
             double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
             double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
+            double b2_uFP35_factor = (c_coefficient == 5 ? 1 : (5 - c_coefficient));
 
             // Cache current timestep duration
             double tsN_Duration = PreviousFractureData.getDuration(tsN);
@@ -3718,6 +3810,8 @@ namespace DFMGenerator_SharedCode
             double s_uFP32_increment = 0;
             double a_uFP33_value = 0;
             double s_uFP33_increment = 0;
+            double a_uFP35_value = 0;
+            double s_uFP35_increment = 0;
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
             if (rmin_cutoff < max_uF_radius)
@@ -3796,6 +3890,13 @@ namespace DFMGenerator_SharedCode
                                     // Calculate term for s_uFP33_increment component
                                     s_uFP33_increment += Math.Pow(rb_minRad, 3) *
                                         (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
+
+                                    // Calculate term for a_uFP35_value component
+                                    a_uFP35_value += Math.Pow(rb_minRad, 5) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+
+                                    // Calculate term for s_uFP35_increment component
+                                    s_uFP35_increment += Math.Pow(rb_minRad, 5) *
+                                        (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
                                 }
                             }
 
@@ -3803,9 +3904,11 @@ namespace DFMGenerator_SharedCode
                             a_uFP30_value *= ts_theta_N;
                             a_uFP32_value *= ts_theta_N;
                             a_uFP33_value *= ts_theta_N;
+                            a_uFP35_value *= ts_theta_N;
                             s_uFP30_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                             s_uFP32_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                             s_uFP33_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
+                            s_uFP35_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                         }
                         break;
                     case bType.Equals2:
@@ -3861,15 +3964,31 @@ namespace DFMGenerator_SharedCode
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
                                     s_uFP33_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
                                 }
+
+                                // We cannot calculate the a_uFP35 and s_uFP35 terms if the rmin cutoff is zero and c>=5, as they will be infinite
+                                if ((rmin_cutoff > 0) || (c_coefficient < 5))
+                                {
+                                    // Calculate useful components
+                                    double rb_minRad_5c_factor = (c_coefficient == 5 ? Math.Log(rmin_cutoff) : Math.Pow(rmin_cutoff, 5 - c_coefficient));
+
+                                    // Calculate term for a_uFP33_value
+                                    a_uFP35_value = ts_CumGammaN_betac_factor * (h5c_factor - rb_minRad_5c_factor);
+
+                                    // Calculate term for s_uFP33_increment
+                                    // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
+                                    s_uFP35_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h5c_factor - rb_minRad_5c_factor);
+                                }
                             }
 
                             // Apply multipliers for microfracture deactivation rates for this timestep
                             a_uFP30_value *= ts_theta_N;
                             a_uFP32_value *= ts_theta_N * (c_coefficient / b2_uFP32_factor);
                             a_uFP33_value *= ts_theta_N * (c_coefficient / b2_uFP33_factor);
+                            a_uFP35_value *= ts_theta_N * (c_coefficient / b2_uFP35_factor);
                             s_uFP30_increment *= (ts_suF_deactivation_multiplier / c_coefficient);
                             s_uFP32_increment *= (ts_suF_deactivation_multiplier / b2_uFP32_factor);
                             s_uFP33_increment *= (ts_suF_deactivation_multiplier / b2_uFP33_factor);
+                            s_uFP35_increment *= (ts_suF_deactivation_multiplier / b2_uFP35_factor);
                         }
                         break;
                     case bType.GreaterThan2:
@@ -3945,6 +4064,13 @@ namespace DFMGenerator_SharedCode
                                     // Calculate term for s_uFP33_increment component
                                     s_uFP33_increment += Math.Pow(rb_minRad, 3) *
                                         (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+
+                                    // Calculate term for a_uFP35_value component
+                                    a_uFP35_value += Math.Pow(rb_minRad, 5) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+
+                                    // Calculate term for s_uFP35_increment component
+                                    s_uFP35_increment += Math.Pow(rb_minRad, 5) *
+                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
                                 }
                             }
 
@@ -3952,9 +4078,11 @@ namespace DFMGenerator_SharedCode
                             a_uFP30_value *= ts_theta_N;
                             a_uFP32_value *= ts_theta_N;
                             a_uFP33_value *= ts_theta_N;
+                            a_uFP35_value *= ts_theta_N;
                             s_uFP30_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                             s_uFP32_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                             s_uFP33_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
+                            s_uFP35_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                         }
                         break;
                     default:
@@ -3968,6 +4096,7 @@ namespace DFMGenerator_SharedCode
                 s_uFP30_increment += transition_deactivation_term;
                 s_uFP32_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 2));
                 s_uFP33_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 3));
+                s_uFP35_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 5));
 
                 // Area of static microfractures cannot decrease 
                 // Therefore the static microfracture increments s_uFP30, s_uFP32 and s_uFP33 can never be negative; if they are set them to zero
@@ -3977,14 +4106,18 @@ namespace DFMGenerator_SharedCode
                     s_uFP32_increment = 0;
                 if (s_uFP33_increment < 0)
                     s_uFP33_increment = 0;
+                if (s_uFP35_increment < 0)
+                    s_uFP35_increment = 0;
 
                 // Apply general multipliers to increment and value terms
                 a_uFP30_value *= CapB;
                 a_uFP32_value *= uFP32_multiplier;
                 a_uFP33_value *= uFP33_multiplier;
+                a_uFP35_value *= uFP35_multiplier;
                 s_uFP30_increment *= CapB;
                 s_uFP32_increment *= uFP32_multiplier;
                 s_uFP33_increment *= uFP33_multiplier;
+                s_uFP35_increment *= uFP35_multiplier;
 
             } // End if the rmin cutoff is greater than the maximum microfracture radius
 
@@ -3995,6 +4128,8 @@ namespace DFMGenerator_SharedCode
             MicroFractures.s_P32_total += s_uFP32_increment;
             MicroFractures.a_P33_total = a_uFP33_value;
             MicroFractures.s_P33_total += s_uFP33_increment;
+            MicroFractures.a_P35_total = a_uFP35_value;
+            MicroFractures.s_P35_total += s_uFP35_increment;
         }
         /// <summary>
         /// Calculate the cumulative active and static half-macrofracture density distribution functions a_MFP30(l), sII_MFP30(l), sIJ_MFP30(l), a_MFP32(l) and s_MFP32(l) at the current time, for a specified list of lengths l

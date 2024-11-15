@@ -323,6 +323,12 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotal_uFP33_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP33_M; }
         /// <summary>
+        /// P35 value for all microfractures, static and dynamic, at the end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double getTotal_uFP35_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP35_M; }
+        /// <summary>
         /// Azimuthal component of mean macrofracture stress shadow width
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>

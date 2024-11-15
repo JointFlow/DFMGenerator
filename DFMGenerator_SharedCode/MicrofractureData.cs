@@ -42,6 +42,14 @@ namespace DFMGenerator_SharedCode
         /// Total volumetric ratio of static microfractures
         /// </summary>
         public double s_P33_total { get; set; }
+        /// <summary>
+        /// Total P35 value for active microfractures
+        /// </summary>
+        public double a_P35_total { get; set; }
+        /// <summary>
+        /// Total P35 value for static microfractures
+        /// </summary>
+        public double s_P35_total { get; set; }
 
         // Arrays for piecewise cumulative population distribution functions
         /// <summary>
@@ -72,6 +80,15 @@ namespace DFMGenerator_SharedCode
         /// Cumulative volumetric ratio distribution for static microfractures 
         /// </summary>
         public List<double> s_P33;
+        // We will not include cumulative arrays for the P35 values at present
+        /// <summary>
+        /// Cumulative volumetric ratio distribution for active microfractures 
+        /// </summary>
+        //public List<double> a_P35;
+        /// <summary>
+        /// Cumulative volumetric ratio distribution for static microfractures 
+        /// </summary>
+        //public List<double> s_P35;
 
         // Displacement functions: These are included in the parent FractureDipSet object
         // Porosity / heave functions: These are included in the parent FractureDipSet object
@@ -85,6 +102,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="fds_in">Reference to parent FractureDipSet object</param>
         public MicrofractureData(GridblockConfiguration gbc_in, FractureDipSet fds_in) : this(gbc_in, fds_in, new List<double>())
         {
+            // Reference to an array of microfracture radii: Create a new empty array
         }
 
         /// <summary>
@@ -107,6 +125,8 @@ namespace DFMGenerator_SharedCode
             s_P32_total = 0;
             a_P33_total = 0;
             s_P33_total = 0;
+            a_P35_total = 0;
+            s_P35_total = 0;
 
             // Set the array of radii for the piecewise cumulative population distribution functions to point externally
             radii = radii_in;
@@ -119,6 +139,8 @@ namespace DFMGenerator_SharedCode
             s_P32 = new List<double>();
             a_P33 = new List<double>();
             s_P33 = new List<double>();
+            //a_P35 = new List<double>();
+            //s_P35 = new List<double>();
             for (int index = 0; index < NoValues; index++)
             {
                 a_P30.Add(0d);
@@ -127,6 +149,8 @@ namespace DFMGenerator_SharedCode
                 s_P32.Add(0d);
                 a_P33.Add(0d);
                 s_P33.Add(0d);
+                //a_P35.Add(0d);
+                //s_P35.Add(0d);
             }
         }
 

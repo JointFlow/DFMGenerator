@@ -120,29 +120,29 @@
   <metadata name="toolTipManager_PresentDayStress.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <data name="toolTipItem15.Text" xml:space="preserve">
-    <value>Present day stress relaxation, used to calculate the present day horizontal stress from lithostatic stress. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, initial stress relaxation at the time of deformation will be used.</value>
-  </data>
-  <data name="toolTipItem16.Text" xml:space="preserve">
-    <value>Present day Biot coefficient, used to calculate the present day stress from fluid pressure. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, the Biot coefficient at the time of deformation will be used.</value>
-  </data>
-  <data name="toolTipItem17.Text" xml:space="preserve">
-    <value>Present day Young's Modulus, used to calculate the effect of horizontal strain on present day stress. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, Young's Modulus at the time of deformation will be used. </value>
-  </data>
-  <data name="toolTipItem20.Text" xml:space="preserve">
-    <value>If absolute stress and fluid pressure are specified, the stress tensor properties should represent the components of the present day absolute (total) stress tensor. The specified fluid pressure property will be subtracted to obtain the effective stress tensor. </value>
-  </data>
-  <data name="toolTipItem21.Text" xml:space="preserve">
+  <data name="toolTipItem14.Text" xml:space="preserve">
     <value>Present day Poisson's ratio, used to calculate the present day horizontal stress from lithostatic stress. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, Poisson's ratio at the time of deformation will be used.</value>
   </data>
+  <data name="toolTipItem16.Text" xml:space="preserve">
+    <value>Present day stress relaxation, used to calculate the present day horizontal stress from lithostatic stress. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, initial stress relaxation at the time of deformation will be used.</value>
+  </data>
+  <data name="toolTipItem17.Text" xml:space="preserve">
+    <value>Present day Biot coefficient, used to calculate the present day stress from fluid pressure. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, the Biot coefficient at the time of deformation will be used.</value>
+  </data>
+  <data name="toolTipItem18.Text" xml:space="preserve">
+    <value>Present day Young's Modulus, used to calculate the effect of horizontal strain on present day stress. Set this to take account of changes in the mechanical properties between the time of deformation and the present day. If not defined, Young's Modulus at the time of deformation will be used. </value>
+  </data>
+  <data name="toolTipItem19.Text" xml:space="preserve">
+    <value>This represents the present day elastic horizontal strain, specified as a minimum and maximum horizontal strain and an orientation. If no horizontal strain values are specified, the present day stress will be calculated assuming compaction only (zero horizontal strain).</value>
+  </data>
   <data name="toolTipItem22.Text" xml:space="preserve">
-    <value>Define a present day stress field to calculate fracture aperture and to calculate fracture aperture and reactivation potential, instead of using the stress at the time of deformation. This will ensure that the calculated fracture porosity, permeability and reactivation risk will be valid for present day conditions. The present day stress field can be defined in three ways: </value>
+    <value>If absolute stress and fluid pressure are specified, the stress tensor properties should represent the components of the present day absolute (total) stress tensor. The specified fluid pressure property will be subtracted to obtain the effective stress tensor. </value>
   </data>
   <data name="toolTipItem23.Text" xml:space="preserve">
-    <value>By specifying the present day elastic horizontal strain (magnitude and orientation) and current fluid overpressure. The effective stress will then be calculated from lithostatic stress, taking into account stress relaxation and horizontal strain.</value>
+    <value>Define a present day stress field to calculate fracture aperture and to calculate fracture aperture and reactivation potential, instead of using the stress at the time of deformation. This will ensure that the calculated fracture porosity, permeability and reactivation risk will be valid for present day conditions. The present day stress field can be defined in three ways: </value>
   </data>
-  <data name="toolTipItem26.Text" xml:space="preserve">
-    <value>This represents the present day elastic horizontal strain, specified as a minimum and maximum horizontal strain and an orientation. If no horizontal strain values are specified, the present day stress will be calculated assuming compaction only (zero horizontal strain).</value>
+  <data name="toolTipItem24.Text" xml:space="preserve">
+    <value>By specifying the present day elastic horizontal strain (magnitude and orientation) and current fluid overpressure. The effective stress will then be calculated from lithostatic stress, taking into account stress relaxation and horizontal strain.</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">

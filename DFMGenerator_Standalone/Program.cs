@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -606,7 +606,7 @@ namespace DFMGenerator_Standalone
             bool VariableFriction = false;
             // Strain relaxation data
             // Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
-            double RockStrainRelaxation = 0;
+            double RockStrainRelaxation = 0.2;// 0;
             // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
             double FractureRelaxation = 0;
             // Density of initial microfractures
@@ -677,13 +677,13 @@ namespace DFMGenerator_Standalone
             FractureApertureType FractureApertureControl = FractureApertureType.Uniform;
             // Fracture aperture control parameters: Uniform fracture aperture
             // Fixed aperture for Mode 1 fractures striking perpendicular to hmin in the uniform aperture case (m)
-            double Mode1HMin_UniformAperture = 0.0005;
+            double Mode1HMin_UniformAperture = 0.01;// 0.0005;
             // Fixed aperture for Mode 2 fractures striking perpendicular to hmin in the uniform aperture case (m)
-            double Mode2HMin_UniformAperture = 0.0005;
+            double Mode2HMin_UniformAperture = 0.01;// 0.0005;
             // Fixed aperture for Mode 1 fractures striking perpendicular to hmax in the uniform aperture case (m)
-            double Mode1HMax_UniformAperture = 0.0005;
+            double Mode1HMax_UniformAperture = 0.01;// 0.0005;
             // Fixed aperture for Mode 2 fractures striking perpendicular to hmax in the uniform aperture case (m)
-            double Mode2HMax_UniformAperture = 0.0005;
+            double Mode2HMax_UniformAperture = 0.01;// 0.0005;
             // Fracture aperture control parameters: SizeDependent fracture aperture
             // Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
             double Mode1HMin_SizeDependentApertureMultiplier = 1E-5;
@@ -2642,7 +2642,8 @@ namespace DFMGenerator_Standalone
                     {
                         Tensor2S local_PresentDayEffectiveStress = new Tensor2S(PresentDayEffectiveStress_XX_array[RowNo, ColNo], PresentDayEffectiveStress_YY_array[RowNo, ColNo], PresentDayEffectiveStress_ZZ_array[RowNo, ColNo],
                             PresentDayEffectiveStress_XY_array[RowNo, ColNo], PresentDayEffectiveStress_YZ_array[RowNo, ColNo], PresentDayEffectiveStress_ZX_array[RowNo, ColNo]);
-                        gc.SetPresentDayStress(local_PresentDayEffectiveStress);
+                        //gc.SetPresentDayStress(local_PresentDayEffectiveStress);
+                        gc.SetPresentDayStressFromStrain(-0.001, 0, 45, 0, double.NaN, double.NaN, double.NaN, double.NaN);
                     }
 
                     // Add the gridblock to the grid

@@ -50,7 +50,7 @@ namespace DFMGenerator_Ocean
             this.btnApply.Image = PetrelImages.Apply;
 
             deformationEpisodeUIs = new List<DeformationEpisodeUI>();
-            definePresentDayStressUIOpen = false;
+            presentDayStressUI = null;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }
@@ -64,7 +64,7 @@ namespace DFMGenerator_Ocean
         }
 
         /// <summary>
-        /// List of all currently opened Deformation Episode UIs
+        /// List of all currently open Deformation Episode UIs
         /// This is required to ensure that any open Deformation Episode UIs can be closed when the DFM Generator dialog is closed
         /// </summary>
         private List<DeformationEpisodeUI> deformationEpisodeUIs;
@@ -106,15 +106,31 @@ namespace DFMGenerator_Ocean
             updateUIFromArgs();
         }*/
         /// <summary>
+        /// Reference to the currently open Present Day Stress UI - will be null if the Present Day Stress UI is not open
+        /// This is required to ensure that the Present Day Stress UI can be closed when the DFM Generator dialog is closed
+        /// </summary>
+        private PresentDayStressUI presentDayStressUI;
+        /// <summary>
         /// Flag to specify whether a Define Present Day Stress UI is already open
         /// </summary>
-        private bool definePresentDayStressUIOpen;
+        private bool definePresentDayStressUIOpen { get { return !(presentDayStressUI is null); } }
         /// <summary>
-        /// 
+        /// Remove reference to the currently open Present Day Stress UI in the DFM Generator UI - should be called by the Deformation Episode UI when it is closed
         /// </summary>
-        public void ClosePresentDayStressUI()
+        public void RemovePresentDayStressUI()
         {
-            definePresentDayStressUIOpen = false;
+            presentDayStressUI = null;
+        }
+        /// <summary>
+        /// Close the present day stress UI if it is currently open
+        /// </summary>
+        private void ClosePresentDayStressUI()
+        {
+            if (definePresentDayStressUIOpen)
+            {
+                if (!presentDayStressUI.IsDisposed)
+                    presentDayStressUI.FindForm().Close();
+            }
         }
 
         /// <summary>
@@ -225,6 +241,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_GeothermalGradient, unitTextBox_GeothermalGradient, PetrelProject.WellKnownTemplates.PetroleumGroup.ThermalGradient, label_GeothermalGradient_units);
             UpdateTextBox(args.Argument_InitialStressRelaxation, unitTextBox_InitialStressRelaxation, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_AverageStressStrainData, checkBox_AverageStressStrainData);
+            UpdateCheckBox(args.Argument_PopulateEmptyGridblocks, checkBox_PopulateEmptyGridblocks);
 
             // Outputs
             UpdateCheckBox(args.Argument_WriteImplicitDataFiles, checkBox_LogCalculation);
@@ -398,6 +415,7 @@ namespace DFMGenerator_Ocean
             args.Argument_PermeabilityAlgorithm = comboBox_PermeabilityAlgorithm.SelectedIndex;
             args.Argument_FractureTypesInPermeabilityTensor = comboBox_FractureTypesInPermeabilityTensor.SelectedIndex;
             args.Argument_UsePresentDayStress = checkBox_UsePresentDayStress.Checked;
+            args.Argument_PopulateEmptyGridblocks = checkBox_PopulateEmptyGridblocks.Checked;
 
             // Fracture aperture control parameters
             args.Argument_FractureApertureControl = comboBox_FractureApertureControl.SelectedIndex;
@@ -777,6 +795,12 @@ namespace DFMGenerator_Ocean
                         return;
                 }*/
             }
+            else if (definePresentDayStressUIOpen)
+            {
+                PetrelLogger.WarnBox("The Present Day Stress dialog box is still open. Please close this before proceeding");
+                args.RunAborted = true;
+                return;
+            }
 
             if (context is WorkstepProcessWrapper.Context)
             {
@@ -792,6 +816,7 @@ namespace DFMGenerator_Ocean
             if (!args.RunAborted)
             {
                 CloseAllDeformationEpisodeUIs();
+                ClosePresentDayStressUI();
                 this.FindForm().Close();
             }
         }
@@ -799,6 +824,7 @@ namespace DFMGenerator_Ocean
         private void btnCancel_Click(object sender, EventArgs e)
         {
             CloseAllDeformationEpisodeUIs();
+            ClosePresentDayStressUI();
             this.FindForm().Close();
         }
 
@@ -1089,7 +1115,7 @@ namespace DFMGenerator_Ocean
             if (!definePresentDayStressUIOpen)
             {
                 PresentDayStressUI dlg_DefinePresentDayStress = new PresentDayStressUI(args, this, context);
-                definePresentDayStressUIOpen = true;
+                presentDayStressUI = dlg_DefinePresentDayStress;
                 PetrelSystem.ShowModeless(dlg_DefinePresentDayStress);
                 updateUIFromArgs();
             }
