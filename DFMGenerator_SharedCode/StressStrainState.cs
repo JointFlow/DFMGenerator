@@ -545,6 +545,35 @@ namespace DFMGenerator_SharedCode
             // Reset the total cumulative strain tensors to zero, reset the elastic strain and stress tensors to initial compactional state, and reset the strain and stress rate tensors to zero
             ResetStressStrainState();
         }
+        /// <summary>
+        /// Set lithostatic stress, fluid pressure and proportion of initial compaction-induced differential stress relaxation assuming the rock is in a critical state (i.e. on the cohesionless Mohr-Coulomb failure envelope), and reset stress and strain tensors to initial conditions
+        /// </summary>
+        /// <param name="MeanOverlyingSedimentDensity_in">Mean bulk density of overlying rock (kg/m3)</param>
+        /// <param name="FluidDensity_in">Pore fluid density (kg/m3)</param>
+        /// <param name="FluidOverpressure_in">Fluid overpressure (i.e. pore pressure above hydrostatic gradient) (Pa)</param>
+        public void SetCriticalInitialStressStrainState(double MeanOverlyingSedimentDensity_in, double FluidDensity_in, double FluidOverpressure_in)
+        {
+            // Cache mechanical properties for intact rock
+            double Nu_r = gbc.MechProps.Nu_r;
+            double OneMinusBiot = 1 - gbc.MechProps.Biot;
+            double MuFr = gbc.MechProps.MuFr;
+
+            // Calculate the initial stress relaxation required for critical stress state
+            double friction_angle = Math.Atan(MuFr);
+            double sin_friction_angle = Math.Sin(friction_angle);
+            double sh0d_svd = (1 - sin_friction_angle) / (1 + sin_friction_angle);
+            double criticalInitialStressRelaxation = (((1 - Nu_r) * sh0d_svd) - Nu_r) / (1 - (2 * Nu_r));
+            // Add component to take account of differential grain compaction (Biot coefficient)
+            if (OneMinusBiot != 0)
+            {
+                double Pf = (gbc.DepthAtDeformation * FluidDensity_in * Gravity) + FluidOverpressure_in;
+                double svd = (gbc.DepthAtDeformation * MeanOverlyingSedimentDensity_in * Gravity) - Pf;
+                criticalInitialStressRelaxation += (OneMinusBiot * (Pf / svd));
+            }
+
+            // Set the initial stress and strain state using the calculated initial stress relaxation
+            SetInitialStressStrainState(MeanOverlyingSedimentDensity_in, FluidDensity_in, FluidOverpressure_in, criticalInitialStressRelaxation);
+        }
 
         // Constructors
         /// <summary>

@@ -537,7 +537,7 @@ namespace DFMGenerator_Standalone
             ModelTimeUnits = TimeUnits.ma;
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             // Add a deformation episode with uniaxial extension of -0.01/ma over 1ma
-            EhminAzi_list.Add(EhminAzi);
+            /*EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(-0.01);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
@@ -547,55 +547,56 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(1);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);*/
+            /*// Add an uplift episode, with uplift of 1800m over 18ma
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(100);
+            StressArchingFactor_list.Add(StressArchingFactor);
+            DeformationEpisodeDuration_list.Add(18);
+            AbsoluteStressRate_list.Add(AbsoluteStressRate);
+            InitialFluidPressure_list.Add(InitialFluidPressure);
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);*/
+            // Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(1E+12);
+            //AppliedTemperatureChange_list.Add(-5E+6);
+            AppliedTemperatureChange_list.Add(0);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(1);
+            DeformationEpisodeDuration_list.Add(1E-5);
+            AbsoluteStressRate_list.Add(AbsoluteStressRate);
+            InitialFluidPressure_list.Add(InitialFluidPressure);
             InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
-             /*// Add an uplift episode, with uplift of 1800m over 18ma
-             EhminAzi_list.Add(EhminAzi);
-             EhminRate_list.Add(EhminRate);
-             EhmaxRate_list.Add(EhmaxRate);
-             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
-             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-             AppliedUpliftRate_list.Add(100);
-             StressArchingFactor_list.Add(StressArchingFactor);
-             DeformationEpisodeDuration_list.Add(18);
-             AbsoluteStressRate_list.Add(AbsoluteStressRate);
-             InitialFluidPressure_list.Add(InitialFluidPressure);
-             InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
-             /*// Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
-             EhminAzi_list.Add(EhminAzi);
-             EhminRate_list.Add(EhminRate);
-             EhmaxRate_list.Add(EhmaxRate);
-             AppliedOverpressureRate_list.Add(1E+12);
-             AppliedTemperatureChange_list.Add(-5E+6);
-             AppliedUpliftRate_list.Add(AppliedUpliftRate);
-             StressArchingFactor_list.Add(1);
-             DeformationEpisodeDuration_list.Add(1E-5);
-             AbsoluteStressRate_list.Add(AbsoluteStressRate);
-             InitialFluidPressure_list.Add(InitialFluidPressure);
-             InitialAbsoluteStess_list.Add(InitialAbsoluteStress);*/
-             /*// Add a deformation episode with a defined stress load
-             EhminAzi_list.Add(EhminAzi);
-             EhminRate_list.Add(EhminRate);
-             EhmaxRate_list.Add(EhmaxRate);
-             AppliedOverpressureRate_list.Add(0.05);
-             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-             AppliedUpliftRate_list.Add(AppliedUpliftRate);
-             StressArchingFactor_list.Add(StressArchingFactor);
-             ModelTimeUnits = TimeUnits.second;
-             DeformationEpisodeDuration_list.Add(31622400); // One year in seconds
-             AbsoluteStressRate_list.Add(new Tensor2S(0.02, -0.02, -0.3, 0.02, -0.04, 0.04));
-             InitialFluidPressure_list.Add(15000000);
-             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
-             BiazimuthalConjugate = false;*/
+            /*// Add a deformation episode with a defined stress load
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(0.05);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(StressArchingFactor);
+            ModelTimeUnits = TimeUnits.second;
+            DeformationEpisodeDuration_list.Add(31622400); // One year in seconds
+            AbsoluteStressRate_list.Add(new Tensor2S(0.02, -0.02, -0.3, 0.02, -0.04, 0.04));
+            InitialFluidPressure_list.Add(15000000);
+            InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
+            BiazimuthalConjugate = false;*/
 #endif
 
-             // Mechanical properties
-             double YoungsMod = 1E+10;
+            // Mechanical properties
+            double YoungsMod = 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
             bool VariableYoungsMod = false;
             double VariableYoungsModSmoothingFactor = 2;
             double PoissonsRatio = 0.25;
             double Porosity = 0.2;
-            double BiotCoefficient = 1;
+            double BiotCoefficient = 0.8;// 1;
             // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
             double ThermalExpansionCoefficient = 4E-5;
             double CrackSurfaceEnergy = 1000;
@@ -637,7 +638,7 @@ namespace DFMGenerator_Standalone
             // Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
             // Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
             // Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
-            double InitialStressRelaxation = 0.5;
+            double InitialStressRelaxation = -1;// 0.5;
 
             // Outputs
             // Output to file
@@ -2482,13 +2483,9 @@ namespace DFMGenerator_Standalone
                     // If the initial stress relaxation value is negative, set it to the required value for a critical initial stress state
                     double local_InitialStressRelaxation = InitialStressRelaxation;
                     if (InitialStressRelaxation < 0)
-                    {
-                        double friction_angle = Math.Atan(local_FrictionCoefficient);
-                        double sin_friction_angle = Math.Sin(friction_angle);
-                        double sh0d_svd = (1 - sin_friction_angle) / (1 + sin_friction_angle);
-                        local_InitialStressRelaxation = (((1 - local_PoissonsRatio) * sh0d_svd) - local_PoissonsRatio) / (1 - (2 * local_PoissonsRatio));
-                    }
-                    gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
+                        gc.StressStrain.SetCriticalInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure);
+                    else
+                        gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
 
                     // Set the geothermal gradient
                     gc.StressStrain.GeothermalGradient = GeothermalGradient;

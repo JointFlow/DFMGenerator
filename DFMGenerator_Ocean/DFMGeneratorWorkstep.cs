@@ -3587,13 +3587,9 @@ namespace DFMGenerator_Ocean
                                 // If the initial stress relaxation value is negative, set it to the required value for a critical initial stress state
                                 double local_InitialStressRelaxation = InitialStressRelaxation;
                                 if (InitialStressRelaxation < 0)
-                                {
-                                    double friction_angle = Math.Atan(local_FrictionCoefficient);
-                                    double sin_friction_angle = Math.Sin(friction_angle);
-                                    double sh0d_svd = (1 - sin_friction_angle) / (1 + sin_friction_angle);
-                                    local_InitialStressRelaxation = (((1 - local_PoissonsRatio) * sh0d_svd) - local_PoissonsRatio) / (1 - (2 * local_PoissonsRatio));
-                                }
-                                gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
+                                    gc.StressStrain.SetCriticalInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure);
+                                else
+                                    gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
 
                                 // Set the geothermal gradient
                                 gc.StressStrain.GeothermalGradient = GeothermalGradient;
