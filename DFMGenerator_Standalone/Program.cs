@@ -661,9 +661,9 @@ namespace DFMGenerator_Standalone
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
             // Flag to calculate and output fracture permeability tensors
-            bool CalculateFracturePermeabilityTensor = true;// false;
+            bool CalculateFracturePermeabilityTensor = false;
             // Algorithm to use for calculating fracture permeability
-            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1985;
+            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1986;
             // Flag to calculate implicit fracture population distribution functions
             bool CalculatePopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
@@ -678,13 +678,13 @@ namespace DFMGenerator_Standalone
             FractureApertureType FractureApertureControl = FractureApertureType.Uniform;
             // Fracture aperture control parameters: Uniform fracture aperture
             // Fixed aperture for Mode 1 fractures striking perpendicular to hmin in the uniform aperture case (m)
-            double Mode1HMin_UniformAperture = 0.01;// 0.0005;
+            double Mode1HMin_UniformAperture = 0.0005;
             // Fixed aperture for Mode 2 fractures striking perpendicular to hmin in the uniform aperture case (m)
-            double Mode2HMin_UniformAperture = 0.01;// 0.0005;
+            double Mode2HMin_UniformAperture = 0.0005;
             // Fixed aperture for Mode 1 fractures striking perpendicular to hmax in the uniform aperture case (m)
-            double Mode1HMax_UniformAperture = 0.01;// 0.0005;
+            double Mode1HMax_UniformAperture = 0.0005;
             // Fixed aperture for Mode 2 fractures striking perpendicular to hmax in the uniform aperture case (m)
-            double Mode2HMax_UniformAperture = 0.01;// 0.0005;
+            double Mode2HMax_UniformAperture = 0.0005;
             // Fracture aperture control parameters: SizeDependent fracture aperture
             // Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
             double Mode1HMin_SizeDependentApertureMultiplier = 1E-5;
@@ -711,11 +711,11 @@ namespace DFMGenerator_Standalone
 
             // Present day effective stress parameters
             // Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
-            bool UsePresentDayStress = true;// false;
+            bool UsePresentDayStress = false;
             // Present Terzaghi effective day stress tensor - define this to override stress at the time of deformation when calculating fracture aperture and permeability
-            double PresentDayEffectiveStress_XX = 15000000; //0;
-            double PresentDayEffectiveStress_YY = 15000000; //0;
-            double PresentDayEffectiveStress_ZZ = 25000000; //0;
+            double PresentDayEffectiveStress_XX = 0;
+            double PresentDayEffectiveStress_YY = 0;
+            double PresentDayEffectiveStress_ZZ = 0;
             double PresentDayEffectiveStress_XY = 0;
             double PresentDayEffectiveStress_YZ = 0;
             double PresentDayEffectiveStress_ZX = 0;

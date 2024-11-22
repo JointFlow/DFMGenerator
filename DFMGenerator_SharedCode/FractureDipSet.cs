@@ -1770,6 +1770,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double PresentDaySigmaNeff { get; set; }
         /// <summary>
+        /// Present day shear stress acting on the fracture
+        /// </summary>
+        private double PresentDayTau { get; set; }
+        /// <summary>
         /// Present day fracture reactivition potential
         /// This will return the driving stress if that is positive; however it will return a negative value representing the cohesionless distance to failure if the fracture is closed and not critically stressed
         /// </summary>
@@ -1778,12 +1782,49 @@ namespace DFMGenerator_SharedCode
         /// Present day fracture dilatancy potential
         /// This will return the inverse of the normal effective stress on the fracture, representing the dilatant driving stress if positive, and the cohesionless distance to dilational failure if it is negative
         /// </summary>
-        public double PresentDayDilatancyPotential { get; private set; }
+        public double PresentDayDilatancyPotential
+        {
+            get
+            {
+                // If the fractures are dilatant (i.e. the normal stress on them is tensile), the dilatancy protential is positive and equal to the total stress (normal and shear) on the fracture
+                if (PresentDaySigmaNeff <= 0)
+                    return Math.Sqrt(Math.Pow(PresentDaySigmaNeff, 2) + Math.Pow(PresentDayTau, 2));
+                // If the fractures are closed, the dilatancy potential will be the inverse of the (compressive) normal effective stress on the fracture
+                else
+                    return -PresentDaySigmaNeff;
+            }
+        }
         /// <summary>
         /// Present day fracture slip potential
         /// This represents the shear driving stress if that is positive, and the cohesionless distance to shear failure if it is negative
         /// </summary>
-        public double PresentDaySlipPotential { get; private set; }
+        public double PresentDaySlipPotential
+        {
+            get
+            {
+                // If the fractures are dilatant (i.e. the normal stress on them is tensile), we do not need to take into account friction
+                // Therefore the slip potential is equal to the maximum shear stress
+                if (PresentDaySigmaNeff <= 0)
+                    return PresentDayTau;
+                // If the fractures are closed, the shear driving stress and slip potential will equal the shear stress on the fractures minus the frictional traction
+                return PresentDayTau - (gbc.MechProps.MuFr * PresentDaySigmaNeff);
+            }
+        }
+        /// <summary>
+        /// Present day fracture slip tendency
+        /// This represents the minimum frictional coefficient required to prevent slip on a cohesionless fracture, i.e. shear stress / normal stress
+        /// If the fractures are dilatant (i.e. the normal stress on them is tensile), the slip tendency is undefined and will return NaN 
+        /// </summary>
+        public double PresentDaySlipTendency
+        {
+            get
+            {
+                if (PresentDaySigmaNeff > 0)
+                    return PresentDayTau / PresentDaySigmaNeff;
+                else
+                    return double.NaN;
+            }
+        }
         /// <summary>
         /// This represents the fracture mode closest to failure, or with the highest driving stress if the fracture is critical
         /// </summary>
@@ -1806,8 +1847,7 @@ namespace DFMGenerator_SharedCode
             {
                 usePresentDayStress = false;
                 PresentDaySigmaNeff = double.NaN;
-                PresentDayDilatancyPotential = double.NaN;
-                PresentDaySlipPotential = double.NaN;
+                PresentDayTau = double.NaN;
             }
             else // Set Present Day normal and driving stress based on the supplied effective stress tensor
             {
@@ -1817,34 +1857,17 @@ namespace DFMGenerator_SharedCode
                 VectorXYZ stressOnFracture = PresentDayEffectiveStress * normalVector;
 
                 // Calculate the magnitude of normal stress on the fracture plane, and the shear stresses acting on the fracture plane in the along-strike and downdip directions respectively
+                // The maximum present day shear stress Tau can be calculated by taking the root of the squares of the orthogonal strike and downdip shear stress components
                 PresentDaySigmaNeff = normalVector & stressOnFracture;
                 double presentDayTauDip = dipVector & stressOnFracture;
                 double presentDayTauStrike = fs.StrikeVector & stressOnFracture;
+                PresentDayTau = Math.Sqrt(Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
 
-                // Calculate the slip potential of the fracture
-                    // We must therefore start by calculating the magnitude of the maximum shear stress, tau
-                    // tau can be calculated by taking the root of the squares of the orthogonal strike and downdip shear stress components
-                    double tau = Math.Sqrt(Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
-
-                // If the fractures are dilatant (i.e. the normal stress on them is tensile), we do not need to take into account friction
-                // Therefore the dilatancy protential is equal to the total stress on the fracture and slip potential is equal to the maximum shear stress
+                // Calculate the most likely reactivation mode
                 if (PresentDaySigmaNeff <= 0)
-                {
-                    // For vertical dilatant (Mode 1) fractures, the driving stress will equal the tensile normal stress on the fractures
-                    // For inclined dilatant fractures, the driving stress will equal the root of the square of the normal and shear stress components acting on the fractures
-                    PresentDayDilatancyPotential = Math.Sqrt(Math.Pow(PresentDaySigmaNeff, 2) + Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
-                    PresentDaySlipPotential = tau;
                     MostLikelyReactivationMode = FractureMode.Mode1;
-                }
-                // If the fractures are closed, the shear driving stress and slip potential will equal the shear stress on the fractures minus the frictional traction
-                // The dilatancy potential will be the inverse of the (compressive) normal effective stress on the fracture
-                {
-                    PresentDayDilatancyPotential = -PresentDaySigmaNeff;
-                    // We also need to know the coefficient of friction on the fractures
-                    double MuFr = gbc.MechProps.MuFr;
-                    PresentDaySlipPotential = tau - (MuFr * PresentDaySigmaNeff);
+                else 
                     MostLikelyReactivationMode = (presentDayTauDip >= presentDayTauStrike ? FractureMode.Mode2 : FractureMode.Mode3);
-                }
             }
         }
 
@@ -2062,8 +2085,12 @@ namespace DFMGenerator_SharedCode
             double geometryMultiplier;
             switch (gbc.PropControl.PermeabilityAlgorithm)
             {
-                // The Oda 1985 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
-                case PermeabilityCalculationAlgorithm.Oda1985:
+                // The Oda 1986 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
+                case PermeabilityCalculationAlgorithm.Oda1986:
+                    geometryMultiplier = 1d / 12d;
+                    break;
+                // The Oda corrected 1987 model makes a connectivity correction for the entire fracture network, so the individual sets have a base geometry multiplier 1/12
+                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     geometryMultiplier = 1d / 12d;
                     break;
                 default:
@@ -2128,8 +2155,12 @@ namespace DFMGenerator_SharedCode
             double geometryMultiplier;
             switch (gbc.PropControl.PermeabilityAlgorithm)
             {
-                // The Oda 1985 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
-                case PermeabilityCalculationAlgorithm.Oda1985:
+                // The Oda 1986 model assumes fractures of infinite size and connectivity, and gives a geometry multiplier 1/12
+                case PermeabilityCalculationAlgorithm.Oda1986:
+                    geometryMultiplier = 1d / 12d;
+                    break;
+                // The Oda corrected 1987 model makes a connectivity correction for the entire fracture network, so the individual sets have a base geometry multiplier 1/12
+                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     geometryMultiplier = 1d / 12d;
                     break;
                 default:
@@ -2179,7 +2210,7 @@ namespace DFMGenerator_SharedCode
                 // The Oda 1985 algorithm assumes infinite fracture size, with no connectivity or percolation threshold effect
                 // The tensor for all fractures can therefore be obtained by adding together the tensors for fracture subsets
                 // This may not be the case for all permeability calculation algorithms
-                case PermeabilityCalculationAlgorithm.Oda1985:
+                case PermeabilityCalculationAlgorithm.Oda1986:
                     return Total_uF_Permeability() + Total_MF_Permeability();
                 default:
                     return new Tensor2S();
@@ -2197,7 +2228,7 @@ namespace DFMGenerator_SharedCode
                 // The Oda 1985 algorithm assumes infinite fracture size, with no connectivity or percolation threshold effect
                 // The tensor for all fractures can therefore be obtained by adding together the tensors for fracture subsets
                 // This may not be the case for all permeability calculation algorithms
-                case PermeabilityCalculationAlgorithm.Oda1985:
+                case PermeabilityCalculationAlgorithm.Oda1986:
                     return Total_uF_Permeability(Timestep_M) + Total_MF_Permeability(Timestep_M);
                 default:
                     return new Tensor2S();

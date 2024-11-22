@@ -1925,8 +1925,11 @@ namespace DFMGenerator_Ocean
                         permeabilityLabel += " using the ";
                         switch (PermeabilityAlgorithm)
                         {
-                            case PermeabilityCalculationAlgorithm.Oda1985:
-                                permeabilityLabel += "Oda 1985";
+                            case PermeabilityCalculationAlgorithm.Oda1986:
+                                permeabilityLabel += "Oda (1986)";
+                                break;
+                            case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                                permeabilityLabel += "Oda corrected (1987)";
                                 break;
                             default:
                                 break;
@@ -4808,9 +4811,11 @@ namespace DFMGenerator_Ocean
                             Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
                             Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
                             Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
+                            Template ConnectionsPerFractureTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
                             Template AnisotropyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
                             Template FracturePorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
                             Template FractureReactivationPotentialTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.StressTotal;
+                            Template SlipTendencyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
                             Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
                             Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
                             Dictionary<Tensor2SComponents, Template> FracturePermeabilityTemplate = new Dictionary<Tensor2SComponents, Template>();
@@ -5149,12 +5154,16 @@ namespace DFMGenerator_Ocean
                                             if (CalculateFractureReactivationPotential)
                                             {
                                                 // Create properties and set templates for each property
-                                                Property MF_ReactivationPotential = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
-                                                MF_ReactivationPotential.Name = "Reactivation_Potential";
+                                                Property FDS_ReactivationPotential = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
+                                                Property FDS_SlipTendency = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
+                                                FDS_ReactivationPotential.Name = "Reactivation_Potential";
+                                                FDS_SlipTendency.Name = "Slip_Tendency";
 
                                                 // Add creation event to each property
-                                                IHistoryInfoEditor MF_ReactivationPotentialInfoEditor = HistoryService.GetHistoryInfoEditor(MF_ReactivationPotential);
-                                                MF_ReactivationPotentialInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                IHistoryInfoEditor FDS_ReactivationPotentialInfoEditor = HistoryService.GetHistoryInfoEditor(FDS_ReactivationPotential);
+                                                IHistoryInfoEditor FDS_SlipTendencyInfoEditor = HistoryService.GetHistoryInfoEditor(FDS_SlipTendency);
+                                                FDS_ReactivationPotentialInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                FDS_SlipTendencyInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                                 // Loop through all columns and rows in the Fracture Grid
                                                 // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
@@ -5189,6 +5198,7 @@ namespace DFMGenerator_Ocean
 
                                                         // Get data from GridblockConfiguration object
                                                         double ReactivationPotential = fds.PresentDayReactivationPotential;
+                                                        double SlipTendency = fds.PresentDaySlipTendency;
 
 #if DEBUG_FRACS
                                                         PetrelLogger.InfoOutputWindow("");
@@ -5211,13 +5221,15 @@ namespace DFMGenerator_Ocean
 
                                                                         // Write data to Petrel grid
                                                                         //if (!double.IsNaN(ReactivationPotential))
-                                                                        MF_ReactivationPotential[index_cell] = (float)ReactivationPotential;
+                                                                        FDS_ReactivationPotential[index_cell] = (float)ReactivationPotential;
+                                                                        FDS_SlipTendency[index_cell] = (float)SlipTendency;
                                                                     } // End loop through all the Petrel cells in the gridblock
                                                         }
                                                         catch (Exception e)
                                                         {
                                                             string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to column {2}, {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                             errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
+                                                            errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
                                                             PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -5253,6 +5265,8 @@ namespace DFMGenerator_Ocean
                                         MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
                                         Property MF_ConnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
                                         MF_ConnectedTipRatio.Name = "Connected_fracture_tip_ratio";
+                                        Property ConnectionsPerMF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
+                                        ConnectionsPerMF.Name = "Connections_per_fracture";
                                         Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
                                         EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
 
@@ -5262,12 +5276,14 @@ namespace DFMGenerator_Ocean
                                         IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
                                         IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
                                         IHistoryInfoEditor MF_ConnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_ConnectedTipRatio);
+                                        IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
                                         IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
                                         P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         MF_ConnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                         // Loop through all columns and rows in the Fracture Grid
@@ -5295,7 +5311,7 @@ namespace DFMGenerator_Ocean
 
                                                 // Calculate fracture anisotropy and connectivity for the entire fracture network
                                                 double P32_anisotropy, P33_anisotropy;
-                                                double UnconnectedTipRatio, RelayTipRatio, ConnectedTipRatio, EndTime;
+                                                double UnconnectedTipRatio, RelayTipRatio, ConnectedTipRatio, NodesPerMF, EndTime;
                                                 if (finalStage)
                                                 {
                                                     // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
@@ -5309,6 +5325,7 @@ namespace DFMGenerator_Ocean
                                                     UnconnectedTipRatio = fractureGridCell.UnconnectedTipRatio(!PopulateEmptyGridblocks);
                                                     RelayTipRatio = fractureGridCell.RelayTipRatio(!PopulateEmptyGridblocks);
                                                     ConnectedTipRatio = fractureGridCell.ConnectedTipRatio(!PopulateEmptyGridblocks);
+                                                    NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
 
                                                     // Calculate end deformation time using the function in the GridblockConfiguration object
                                                     // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
@@ -5385,6 +5402,8 @@ namespace DFMGenerator_Ocean
                                                     UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
                                                     RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
                                                     ConnectedTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                    double NoConnections = (LinkStressShadows ? 2 * RNodes : 0) + (2 * YNodes);
+                                                    NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
 
                                                     // Get the time at the end of this intermediate stage
                                                     EndTime = stageEndTime;
@@ -5420,6 +5439,8 @@ namespace DFMGenerator_Ocean
                                                                     MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
                                                                 if (!double.IsNaN(ConnectedTipRatio))
                                                                     MF_ConnectedTipRatio[index_cell] = (float)ConnectedTipRatio;
+                                                                if (!double.IsNaN(NodesPerMF))
+                                                                    ConnectionsPerMF[index_cell] = (float)NodesPerMF;
                                                                 if (!double.IsNaN(EndTime))
                                                                     EndDeformationTime[index_cell] = (float)EndTime;
                                                             } // End loop through all the Petrel cells in the gridblock
@@ -5431,6 +5452,7 @@ namespace DFMGenerator_Ocean
                                                     errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
                                                     errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                     errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                    errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
                                                     errorMessage = errorMessage + string.Format(" ConnectedTipRatio {0}", (float)ConnectedTipRatio);
                                                     errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
@@ -5614,8 +5636,11 @@ namespace DFMGenerator_Ocean
                                         }
                                         switch (PermeabilityAlgorithm)
                                         {
-                                            case PermeabilityCalculationAlgorithm.Oda1985:
-                                                FracturePermeabilityTensorCollectionName += ": Oda 1985";
+                                            case PermeabilityCalculationAlgorithm.Oda1986:
+                                                FracturePermeabilityTensorCollectionName += ": Oda (1985)";
+                                                break;
+                                            case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                                                FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
                                                 break;
                                             default:
                                                 break;

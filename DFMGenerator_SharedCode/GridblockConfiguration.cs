@@ -34,7 +34,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for algorithms to calculate fracture permeability
     /// </summary>
-    public enum PermeabilityCalculationAlgorithm { Oda1985 }
+    public enum PermeabilityCalculationAlgorithm { Oda1986, OdaCorrected1987 }
     /// <summary>
     /// Enumerator for the data used to calculate present day effective stress
     /// </summary>
@@ -2353,6 +2353,38 @@ namespace DFMGenerator_SharedCode
 
             return (TotalAllTips > 0 ? TotalConnectedTips / TotalAllTips : undefinedReturn);
         }
+        /// <summary>
+        /// Mean number of other macrofractures that each macrofracture is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of macrofractures
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Ratio of (4 * sII_MFP30_total * sIJ_MFP30_total) / T_MFP30_total</returns>
+        public double ConnectionsPerMacrofracture(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double TotalConnections = 0;
+            double TotalFractures = 0;
+            foreach (Gridblock_FractureSet fs in FractureSets)
+            {
+                // Only hard-linked relays will be counted. These count as two intersections, one for each fracture segment
+                if (gd.DFNControl.LinkFracturesInStressShadow)
+                    TotalConnections += (2 * fs.combined_sII_MFP30_total());
+                // Intersections create two fracture connections, one on the terminating fracture and one on the terminated fracture
+                TotalConnections += (2 * fs.combined_sIJ_MFP30_total());
+                TotalFractures += (fs.combined_T_MFP30_total() / 2);
+            }
+
+            return (TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn);
+        }
+        /// <summary>
+        /// Function to get the fracture network permeability 
+        /// </summary>
+        /// <param name="connectionsPerFracture"></param>
+        /// <returns></returns>
+        public static double GetNetworkPermeabilityMultiplierFromConnections(double connectionsPerFracture)
+        {
+            double alpha = 0.17;
+            return 1 - Math.Exp(-alpha * connectionsPerFracture);
+        }
 
         // Functions to return fracture permeability tensor
         /// <summary>
@@ -2361,11 +2393,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing microfracture permeability</returns>
         public Tensor2S MicrofracturePermeability()
         {
-            Tensor2S microfracturePermeability = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
-                foreach (FractureDipSet fds in fs.FractureDipSets)
-                    microfracturePermeability += fds.Total_uF_Permeability();
-            return microfracturePermeability;
+            return MicrofracturePermeability(-1);
         }
         /// <summary>
         /// Permeability tensor for all current layer-bound macrofractures in the gridblock
@@ -2373,11 +2401,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing macrofracture permeability</returns>
         public Tensor2S MacrofracturePermeability()
         {
-            Tensor2S macrofracturePermeability = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
-                foreach (FractureDipSet fds in fs.FractureDipSets)
-                    macrofracturePermeability += fds.Total_MF_Permeability();
-            return macrofracturePermeability;
+            return MacrofracturePermeability(-1);
         }
         /// <summary>
         /// Permeability tensor for all current fractures in the gridblock
@@ -2385,11 +2409,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing total fracture permeability</returns>
         public Tensor2S TotalFracturePermeability()
         {
-            Tensor2S totalFracturePermeability = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
-                foreach (FractureDipSet fds in fs.FractureDipSets)
-                    totalFracturePermeability += fds.Total_Fracture_Permeability();
-            return totalFracturePermeability;
+            return TotalFracturePermeability(-1);
         }
         /// <summary>
         /// Permeability tensor for all microfractures in the gridblock, at the end of a specified previous timestep
@@ -2398,10 +2418,32 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing microfracture permeability</returns>
         public Tensor2S MicrofracturePermeability(int Timestep_M)
         {
+            // The network connectivity multiplier reflects the connectivity of the entire fracture network
+            double networkConnectivityMultiplier;
+            switch (PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                case PermeabilityCalculationAlgorithm.Oda1986:
+                    networkConnectivityMultiplier = 1;
+                    break;
+                // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
+                // Not yet implemented for microfractures
+                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                    networkConnectivityMultiplier = 0;
+                    break;
+                default:
+                    networkConnectivityMultiplier = 0;
+                    break;
+            }
+
+            // Get the basic microfracture permeability tensor
             Tensor2S microfracturePermeability = new Tensor2S();
             foreach (Gridblock_FractureSet fs in FractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
+
+            // Multiply it by the network connectivity multiplier before returning it
+            microfracturePermeability = networkConnectivityMultiplier * microfracturePermeability;
             return microfracturePermeability;
         }
         /// <summary>
@@ -2411,10 +2453,31 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing macrofracture permeability</returns>
         public Tensor2S MacrofracturePermeability(int Timestep_M)
         {
+            // The network connectivity multiplier reflects the connectivity of the entire fracture network
+            double networkConnectivityMultiplier;
+            switch (PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                case PermeabilityCalculationAlgorithm.Oda1986:
+                    networkConnectivityMultiplier = 1;
+                    break;
+                // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
+                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                    networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
+                    break;
+                default:
+                    networkConnectivityMultiplier = 0;
+                    break;
+            }
+
+            // Get the basic microfracture permeability tensor
             Tensor2S macrofracturePermeability = new Tensor2S();
             foreach (Gridblock_FractureSet fs in FractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
+
+            // Multiply it by the network connectivity multiplier before returning it
+            macrofracturePermeability = networkConnectivityMultiplier * macrofracturePermeability;
             return macrofracturePermeability;
         }
         /// <summary>
@@ -3498,54 +3561,62 @@ namespace DFMGenerator_SharedCode
 
             if (writeImplicitDataToFile)
             {
+                // If using the present day stress to calculate fracture aperture, output the present day aperture and reactivation potential of each fracture dip set
+                bool outputApertureReactivationPotentialTable = UsePresentDayStress;
                 // If we have more than 2 fracture sets, output a table of connectivity between fracture sets for the final fracture network
-                if (NoFractureSets > 2)
-                {
-                    // Table header
-                    outputFile.WriteLine();
-                    outputFile.WriteLine("Fracture interconnectivity: volumetric density (P30) of macrofracture tips from fracture set I terminating against macrofractures from dipset Jm");
-                    outputFile.WriteLine("Terminating fracture dipset (Jm):\tPropagating fracture set (I):");
-                    string headerLine = "\t";
-                    for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
-                        headerLine += string.Format("FS {0}\t", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()));
-                    outputFile.WriteLine(headerLine);
+                bool outputConnectivityTable = (NoFractureSets > 2);
 
-                    // Write table data
-                    for (int fsJ_index = 0; fsJ_index < NoFractureSets; fsJ_index++)
+                string tableTitle = "";
+                string headerLine1 = "";
+                string headerLine2 = "";
+
+                // Write table header
+                if (outputApertureReactivationPotentialTable)
+                {
+                    tableTitle += "Present day fracture aperture and reactivation potential\t\t\t\t\t\t\t";
+                    headerLine1 += "\t\t\t\t\t\t\t";
+                    headerLine2 += "Fracture set\tAperture (m)\tDilatancy potential (Pa)\tSlip potential (Pa)\tReactivation mode\t\t\t";
+                }
+                if (outputConnectivityTable)
+                {
+                    tableTitle += "Fracture interconnectivity: volumetric density (P30) of macrofracture tips from fracture set I terminating against macrofractures from dipset Jm\t";
+                    headerLine1 += "Terminating fracture dipset(Jm):\tPropagating fracture set(I):";
+                    headerLine2 += "\t";
+                    for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
                     {
-                        Gridblock_FractureSet fsJ = FractureSets[fsJ_index];
-                        int noDipSetsJ = fsJ.FractureDipSets.Count;
-                        for (int dipSetIndexJ = 0; dipSetIndexJ < noDipSetsJ; dipSetIndexJ++)
-                        {
-                            FractureDipSet dipSetJ = fsJ.FractureDipSets[dipSetIndexJ];
-                            string tableRow = string.Format("FS {0} {1}\t", fsJ_index, dipSetJ.Mode);
-                            for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
-                                tableRow += string.Format("{0}\t", MFTerminations[fsI_index, fsJ_index][dipSetIndexJ]);
-                            outputFile.WriteLine(tableRow);
-                        }
+                        tableTitle += "\t";
+                        headerLine1 += "\t";
+                        headerLine2 += string.Format("FS {0}\t", (useSetNames ? getFractureSetName(fsI_index) : fsI_index.ToString()));
                     }
                 }
+                outputFile.WriteLine();
+                outputFile.WriteLine(tableTitle);
+                outputFile.WriteLine(headerLine1);
+                outputFile.WriteLine(headerLine2);
 
-                // If specified, output the present day aperture and reactivation potential of each fracture dip set
-                if (UsePresentDayStress)
+                // Write table data
+                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
                 {
-                    // Table header
-                    outputFile.WriteLine();
-                    outputFile.WriteLine("Present day fracture aperture and reactivation potential");
-                    outputFile.WriteLine("Fracture set\tAperture (m)\tDilatancy potential (Pa)\tSlip potential (Pa)\tReactivation mode");
-
-                    // Write table data
-                    for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                    Gridblock_FractureSet fs = FractureSets[fs_index];
+                    int noDipSets = fs.FractureDipSets.Count;
+                    for (int dipSetIndex = 0; dipSetIndex < noDipSets; dipSetIndex++)
                     {
-                        Gridblock_FractureSet fs = FractureSets[fs_index];
-                        int noDipSets = fs.FractureDipSets.Count;
-                        for (int dipSetIndex = 0; dipSetIndex < noDipSets; dipSetIndex++)
+                        FractureDipSet dipSet = fs.FractureDipSets[dipSetIndex];
+                        string tableRow = "";
+                        string dipsetName = string.Format("FS {0} {1}", fs_index, dipSet.Mode);
+
+                        if (outputApertureReactivationPotentialTable)
                         {
-                            FractureDipSet dipSet = fs.FractureDipSets[dipSetIndex];
-                            string dipsetName = string.Format("FS {0} {1}\t", fs_index, dipSet.Mode);
-                            string tableRow = string.Format("{0}\t{1}\t{2}\t{3}\t{4}", dipsetName, dipSet.getMeanMacrofractureAperture(), dipSet.PresentDayDilatancyPotential, dipSet.PresentDaySlipPotential, dipSet.MostLikelyReactivationMode);
-                            outputFile.WriteLine(tableRow);
+                            tableRow += string.Format("{0}\t{1}\t{2}\t{3}\t{4}", dipsetName, dipSet.getMeanMacrofractureAperture(), dipSet.PresentDayDilatancyPotential, dipSet.PresentDaySlipPotential, dipSet.MostLikelyReactivationMode);
                         }
+
+                        if (outputConnectivityTable)
+                        {
+                            tableRow += dipsetName + "\t";
+                            for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
+                                tableRow += string.Format("{0}\t", MFTerminations[fsI_index, fs_index][dipSetIndex]);
+                        }
+                        outputFile.WriteLine(tableRow);
                     }
                 }
 

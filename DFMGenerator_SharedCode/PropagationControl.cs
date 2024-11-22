@@ -1353,7 +1353,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public PropagationControl()
-                : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, false, PermeabilityCalculationAlgorithm.Oda1985, 0)
+                : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, false, PermeabilityCalculationAlgorithm.Oda1986, 0)
         {
             // Defaults:
 
@@ -1380,7 +1380,7 @@ namespace DFMGenerator_SharedCode
             // Flag to calculate and output fracture porosity: false
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation: Uniform
             // Flag to calculate and output fracture permeability tensor: false
-            // Algorithm to use for calculating fracture permeability: Oda1985
+            // Algorithm to use for calculating fracture permeability: Oda1986
             // Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes: 0
         }
         /// <summary>
