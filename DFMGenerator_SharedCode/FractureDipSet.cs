@@ -849,7 +849,7 @@ namespace DFMGenerator_SharedCode
                     output = UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = (4 / 3) * radius * SizeDependentApertureMultiplier;
+                    output = (4d / 3d) * radius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -2198,41 +2198,6 @@ namespace DFMGenerator_SharedCode
                 permTensor.Component(Tensor2SComponents.ZX, 0);
             }
             return permTensor;
-        }
-        /// <summary>
-        /// Permeability tensor for all current fractures in this dipset
-        /// </summary>
-        /// <returns>Tensor2S object representing macrofracture permeability</returns>
-        public Tensor2S Total_Fracture_Permeability()
-        {
-            switch (gbc.PropControl.PermeabilityAlgorithm)
-            {
-                // The Oda 1985 algorithm assumes infinite fracture size, with no connectivity or percolation threshold effect
-                // The tensor for all fractures can therefore be obtained by adding together the tensors for fracture subsets
-                // This may not be the case for all permeability calculation algorithms
-                case PermeabilityCalculationAlgorithm.Oda1986:
-                    return Total_uF_Permeability() + Total_MF_Permeability();
-                default:
-                    return new Tensor2S();
-            }
-        }
-        /// <summary>
-        /// Permeability tensor for all fractures in this dipset, at the end of a specified previous timestep
-        /// </summary>
-        /// <param name="Timestep_M">Index number of the specified timestep</param>
-        /// <returns>Tensor2S object representing macrofracture permeability</returns>
-        public Tensor2S Total_Fracture_Permeability(int Timestep_M)
-        {
-            switch (gbc.PropControl.PermeabilityAlgorithm)
-            {
-                // The Oda 1985 algorithm assumes infinite fracture size, with no connectivity or percolation threshold effect
-                // The tensor for all fractures can therefore be obtained by adding together the tensors for fracture subsets
-                // This may not be the case for all permeability calculation algorithms
-                case PermeabilityCalculationAlgorithm.Oda1986:
-                    return Total_uF_Permeability(Timestep_M) + Total_MF_Permeability(Timestep_M);
-                default:
-                    return new Tensor2S();
-            }
         }
 
         // Applied strain components
@@ -3805,8 +3770,8 @@ namespace DFMGenerator_SharedCode
             double h5c_factor = (c_coefficient == 5 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 5 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
-            double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
-            double uFP35_multiplier = CapB * (16 / 5) * Math.PI;
+            double uFP33_multiplier = CapB * (4d / 3d) * Math.PI;
+            double uFP35_multiplier = CapB * (16d / 5d) * Math.PI;
             double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
             double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
             double b2_uFP35_factor = (c_coefficient == 5 ? 1 : (5 - c_coefficient));
@@ -4734,7 +4699,7 @@ namespace DFMGenerator_SharedCode
             double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
             double uFP32_multiplier = CapB * Math.PI;
-            double uFP33_multiplier = CapB * (4 / 3) * Math.PI;
+            double uFP33_multiplier = CapB * (4d / 3d) * Math.PI;
             double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
             double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
 
@@ -5170,7 +5135,7 @@ namespace DFMGenerator_SharedCode
                 if (c_coefficient == 3)
                     MicroFractures.a_P33_total = 4 * Math.PI * CapB * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
-                    MicroFractures.a_P33_total = (4 / 3) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(max_uF_radius, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
+                    MicroFractures.a_P33_total = (4d / 3d) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(max_uF_radius, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
             }
 
             // Macrofracture growth rate data - set all growth rates to zero

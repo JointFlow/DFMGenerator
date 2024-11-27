@@ -908,7 +908,10 @@ namespace DFMGenerator_SharedCode
         {
             Tensor2S permTensor = new Tensor2S();
             foreach (FractureDipSet DipSet in FractureDipSets)
-                permTensor += DipSet.Total_Fracture_Permeability();
+            {
+                permTensor += DipSet.Total_uF_Permeability();
+                permTensor += DipSet.Total_MF_Permeability();
+            }
             return permTensor;
         }
 
@@ -5739,7 +5742,7 @@ namespace DFMGenerator_SharedCode
                 {
                     output.Add("Vertical");
                 }
-                else if ((float)fds.Dip <= (float)(Math.PI * 3 / 4))
+                else if ((float)fds.Dip <= (float)(Math.PI * 3d / 4d))
                 {
                     output.Add("InclinedSteep_L");
                 }

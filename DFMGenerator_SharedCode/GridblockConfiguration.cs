@@ -2376,14 +2376,74 @@ namespace DFMGenerator_SharedCode
             return (TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn);
         }
         /// <summary>
-        /// Function to get the fracture network permeability 
+        /// Get the current fracture fabric tensor F, as defined by Oda 1983
         /// </summary>
-        /// <param name="connectionsPerFracture"></param>
         /// <returns></returns>
+        public Tensor2S FractureFabricTensor(FractureType fracType)
+        {
+            return FractureFabricTensor(fracType, -1);
+        }
+        /// <summary>
+        /// Get the fracture fabric tensor F, as defined by Oda 1983, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public Tensor2S FractureFabricTensor(FractureType fracType, int Timestep_M)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+            Tensor2S FTensor = new Tensor2S();
+            foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                {
+                    Tensor2S orientationTensor = fds.NormalVector ^ fds.NormalVector;
+                    double densityFactor = 0;
+                    if ((fracType == FractureType.Microfractures) || (fracType == FractureType.AllFractures))
+                        densityFactor += (3d / 16d) * (useCurrentDensityData ? fds.a_uFP33_total() + fds.s_uFP33_total() : fds.getTotaluFP33(Timestep_M));
+                    if ((fracType == FractureType.Microfractures) || (fracType == FractureType.AllFractures))
+                        densityFactor += (3d / 16d) * (useCurrentDensityData ? fds.a_MFP33_total() + fds.s_MFP33_total() : fds.getTotalMFP33(Timestep_M));
+
+                    FTensor += (densityFactor * orientationTensor);
+                }
+
+            return FTensor;
+        }
+        /// <summary>
+        /// Get the trace and the anistropy of the fracture fabric tensor for all fractures, as defined by Oda (1986), at the end of a specified previous timestep. 
+        /// This is used to calculate the fracture network permeability mutliplier, as defined in Oda et al. (1987). 
+        /// NB The anisotropy here is calculated from the second invariant of the modified fracture fabric tensor, and is not the same as the anisotropy calculated from fracture density above
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set neagtive to get current values</param>
+        /// <param name="F0">Reference parameter for the trace of the fracture fabric tensor</param>
+        /// <param name="Anisotropy">Reference parameter for the anisotropy of the fracture fabric tensor</param>
+        private void GetF0andAnisotropy(int Timestep_M, out double F0, out double Anisotropy)
+        {
+            Tensor2S FTensor = FractureFabricTensor(FractureType.AllFractures, Timestep_M);
+            F0 = FTensor.Trace;
+            double F0over3 = F0 / 3;
+            Tensor2S Fdashed = FTensor - new Tensor2S(F0over3, F0over3, F0over3, 0, 0, 0);
+            Anisotropy = Math.Sqrt(6 * Math.Abs(Fdashed.SecondInvariant)) / F0;
+            return;
+        }
+        /// <summary>
+        /// Function to get the fracture network permeability based on the mean number of conenctions per fracture, defined using data from Oda et al. 1987
+        /// </summary>
+        /// <param name="connectionsPerFracture">Mean number of connections per fracture</param>
+        /// <returns>Fracture network permeability multiplier; does not include the fracture geometry multiplier (typically 1/12)</returns>
         public static double GetNetworkPermeabilityMultiplierFromConnections(double connectionsPerFracture)
         {
             double alpha = 0.17;
             return 1 - Math.Exp(-alpha * connectionsPerFracture);
+        }
+        /// <summary>
+        /// Function to get the fracture network permeability based on the F0 factor and fracture network anisotropy, defined using data from Oda et al. 1987
+        /// </summary>
+        /// <param name="F0">F0 (trace of fracture matrix F)</param>
+        /// <param name="Isotropic">Flag to indicate if network is isotropic (0.04 < AF < 0.16) or anistropic (0.48 < AF < 0.64)</param>
+        /// <returns>Fracture network permeability multiplier; does not include the fracture geometry multiplier (typically 1/12)</returns>
+        public static double GetNetworkPermeabilityMultiplierFromF0(double F0, bool Isotropic)
+        {
+            double alpha = Isotropic ? 0.07 : 0.055;
+            return 1 - Math.Exp(-alpha * F0);
         }
 
         // Functions to return fracture permeability tensor
@@ -2429,7 +2489,9 @@ namespace DFMGenerator_SharedCode
                 // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
                 // Not yet implemented for microfractures
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
-                    networkConnectivityMultiplier = 0;
+                    double f0, anistropy;
+                    GetF0andAnisotropy(Timestep_M, out f0, out anistropy);
+                    networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromF0(f0, anistropy < 0.32);
                     break;
                 default:
                     networkConnectivityMultiplier = 0;
@@ -2487,11 +2549,41 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing total fracture permeability</returns>
         public Tensor2S TotalFracturePermeability(int Timestep_M)
         {
+            // Return the sum of the microfracture and macrofracture permeability tensors
+            // In this way the network connectivity multiplier can be different for microfractures and macrofractures
+            return MicrofracturePermeability(Timestep_M) + MacrofracturePermeability(Timestep_M);
+
+            // Calculate the total fracture permeability tensor independently
+            // In this way the same network connectivity multiplier is used for both microfractures and macrofractures
+            /*// The network connectivity multiplier reflects the connectivity of the entire fracture network
+            double networkConnectivityMultiplier;
+            switch (PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                case PermeabilityCalculationAlgorithm.Oda1986:
+                    networkConnectivityMultiplier = 1;
+                    break;
+                // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
+                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                    networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
+                    break;
+                default:
+                    networkConnectivityMultiplier = 0;
+                    break;
+            }
+
+            // Get the basic microfracture permeability tensor
             Tensor2S totalFracturePermeability = new Tensor2S();
             foreach (Gridblock_FractureSet fs in FractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
-                    totalFracturePermeability += fds.Total_Fracture_Permeability(Timestep_M);
-            return totalFracturePermeability;
+                {
+                    totalFracturePermeability += fds.Total_uF_Permeability(Timestep_M);
+                    totalFracturePermeability += fds.Total_MF_Permeability(Timestep_M);
+                }
+
+            // Multiply it by the network connectivity multiplier before returning it
+            totalFracturePermeability = networkConnectivityMultiplier * totalFracturePermeability;
+            return totalFracturePermeability;*/
         }
 
 

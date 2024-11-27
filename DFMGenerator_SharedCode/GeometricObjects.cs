@@ -1471,7 +1471,7 @@ namespace DFMGenerator_SharedCode
             }
             else
             {
-                double gamma = Math.Sqrt(-(4 / 3) * c);
+                double gamma = Math.Sqrt(-(4d / 3d) * c);
                 double cos3theta = -(4 * d) / (gamma * gamma * gamma);
                 // If two of the eigenvalues are equal then 4c^3=-27d^2 and |cos3theta|=1
                 // Sometimes we get |cos3theta|>1 which has a complex solution

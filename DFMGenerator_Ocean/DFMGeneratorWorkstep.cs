@@ -5239,7 +5239,7 @@ namespace DFMGenerator_Ocean
                                                         progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
 
                                                     } // End loop through all columns and rows in the Fracture Grid
-                                            }
+                                            } // End write fracture reactivity data to Petrel grid
 
                                         } // End loop through fracture dip sets
                                     } // End loop through fracture sets

@@ -661,9 +661,9 @@ namespace DFMGenerator_Standalone
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
             // Flag to calculate and output fracture permeability tensors
-            bool CalculateFracturePermeabilityTensor = false;
+            bool CalculateFracturePermeabilityTensor = true;// false;
             // Algorithm to use for calculating fracture permeability
-            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1986;
+            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.OdaCorrected1987;// PermeabilityCalculationAlgorithm.Oda1986;
             // Flag to calculate implicit fracture population distribution functions
             bool CalculatePopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
