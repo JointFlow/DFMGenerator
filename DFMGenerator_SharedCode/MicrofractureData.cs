@@ -27,6 +27,14 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double s_P30_total { get; set; }
         /// <summary>
+        /// Total P31 value for active microfractures
+        /// </summary>
+        public double a_P31_total { get; set; }
+        /// <summary>
+        /// Total P31 value for static microfractures
+        /// </summary>
+        public double s_P31_total { get; set; }
+        /// <summary>
         /// Total linear density of active microfractures
         /// </summary>
         public double a_P32_total { get; set; }
@@ -42,6 +50,14 @@ namespace DFMGenerator_SharedCode
         /// Total volumetric ratio of static microfractures
         /// </summary>
         public double s_P33_total { get; set; }
+        /// <summary>
+        /// Total P34 value for active microfractures
+        /// </summary>
+        public double a_P34_total { get; set; }
+        /// <summary>
+        /// Total P34 value for static microfractures
+        /// </summary>
+        public double s_P34_total { get; set; }
         /// <summary>
         /// Total P35 value for active microfractures
         /// </summary>
@@ -80,7 +96,23 @@ namespace DFMGenerator_SharedCode
         /// Cumulative volumetric ratio distribution for static microfractures 
         /// </summary>
         public List<double> s_P33;
-        // We will not include cumulative arrays for the P35 values at present
+        // We will not include cumulative arrays for the P31, P34 or P35 values at present
+        /// <summary>
+        /// Cumulative volumetric ratio distribution for active microfractures 
+        /// </summary>
+        //public List<double> a_P31;
+        /// <summary>
+        /// Cumulative volumetric ratio distribution for static microfractures 
+        /// </summary>
+        //public List<double> s_P31;
+        /// <summary>
+        /// Cumulative volumetric ratio distribution for active microfractures 
+        /// </summary>
+        //public List<double> a_P34;
+        /// <summary>
+        /// Cumulative volumetric ratio distribution for static microfractures 
+        /// </summary>
+        //public List<double> s_P34;
         /// <summary>
         /// Cumulative volumetric ratio distribution for active microfractures 
         /// </summary>
@@ -118,13 +150,17 @@ namespace DFMGenerator_SharedCode
             // Reference to great-grandparent GridblockConfiguration object 
             gbc = gbc_in;
 
-            // Set total fracture population value to zero
+            // Set total fracture population values to zero
             a_P30_total = 0;
             s_P30_total = 0;
+            a_P31_total = 0;
+            s_P31_total = 0;
             a_P32_total = 0;
             s_P32_total = 0;
             a_P33_total = 0;
             s_P33_total = 0;
+            a_P34_total = 0;
+            s_P34_total = 0;
             a_P35_total = 0;
             s_P35_total = 0;
 
@@ -139,6 +175,10 @@ namespace DFMGenerator_SharedCode
             s_P32 = new List<double>();
             a_P33 = new List<double>();
             s_P33 = new List<double>();
+            //a_P31 = new List<double>();
+            //s_P31 = new List<double>();
+            //a_P34 = new List<double>();
+            //s_P34 = new List<double>();
             //a_P35 = new List<double>();
             //s_P35 = new List<double>();
             for (int index = 0; index < NoValues; index++)
@@ -149,6 +189,10 @@ namespace DFMGenerator_SharedCode
                 s_P32.Add(0d);
                 a_P33.Add(0d);
                 s_P33.Add(0d);
+                //a_P31.Add(0d);
+                //s_P31.Add(0d);
+                //a_P34.Add(0d);
+                //s_P34.Add(0d);
                 //a_P35.Add(0d);
                 //s_P35.Add(0d);
             }

@@ -231,6 +231,16 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double MaximumClosure { get; set; }
 
+        // Host rock permeability - used to calculate fracture permeability correcting for fracture length and connectivity
+        /// <summary>
+        /// Horizontal permeability of the host rock
+        /// </summary>
+        public double HostRock_kh { get; private set; }
+        /// <summary>
+        /// Vertical permeability of the host rock
+        /// </summary>
+        public double HostRock_kv { get; private set; }
+
         // Reset and data input functions
         /// <summary>
         /// Function to set strain relaxation time constants, automatically converting from input to SI units
@@ -323,6 +333,17 @@ namespace DFMGenerator_SharedCode
             // Maximum fracture closure (m)
             MaximumClosure = MaximumClosure_in;
         }
+        /// <summary>
+        /// Function to set host rock horizontal and vertical permeability
+        /// </summary>
+        /// <param name="kh_in">Horizontal permeability of the host rock</param>
+        /// <param name="kv_in">Vertical permeability of the host rock</param>
+        public void setHostRockPermeability(double kh_in, double kv_in)
+        {
+            // Host rock horizontal and vertical permeability
+            HostRock_kh = kh_in;
+            HostRock_kv = kv_in;
+        }
 
         // Constructors
         /// <summary>
@@ -357,7 +378,7 @@ namespace DFMGenerator_SharedCode
             // Subcritical fracture propagation index: default 3 (subcritical propagation)
         }
         /// <summary>
-        /// Constructor: input intact rock properties values but not fracture aperture control data
+        /// Constructor: input intact rock properties values but not fracture aperture control data or host rock permeability
         /// </summary>
         /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
         /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
@@ -373,13 +394,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="b_in">Subcritical fracture propagation index</param>
         /// <param name="timeUnits_in">Units for strain relaxation time constants</param>
         public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in, double ThermalExpansionCoefficient_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in)
+            : this (gbc_in, E_r_in, Nu_r_in, Porosity_in, Biot_in, ThermalExpansionCoefficient_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in, 1, 10, 2, 2E+5, 2.5E+9, 0.0005)
+
         {
-            // Reference to parent GridblockConfiguration object
-            gbc = gbc_in;
-
-            // Set mechanical properties
-            setMechanicalProperties(E_r_in, Nu_r_in, Porosity_in, Biot_in, ThermalExpansionCoefficient_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in);
-
             // Set fracture aperture control data to default values
             // Multiplier for dynamic aperture: 1
             // Joint Roughness Coefficient: 10
@@ -387,10 +404,9 @@ namespace DFMGenerator_SharedCode
             // Initial normal strength on fracture: 0.2MPa
             // Stiffness normal to the fracture, at initial normal stress: 2.5MPa/mm
             // Maximum fracture closure: 0.5mm
-            setFractureApertureControlData(1, 10, 2, 2E+5, 2.5E+9, 0.0005);
         }
         /// <summary>
-        /// Constructor: input intact rock properties values and fracture aperture control data
+        /// Constructor: input intact rock properties values and fracture aperture control data but not host rock permeability
         /// </summary>
         /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
         /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
@@ -413,6 +429,38 @@ namespace DFMGenerator_SharedCode
         /// <param name="FractureNormalStiffness_in">Stiffness normal to the fracture, at initial normal stress</param>
         /// <param name="MaximumClosure_in">Maximum fracture closure (m)</param>
         public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in, double ThermalExpansionCoefficient_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in, double DynamicApertureMultiplier_in, double JRC_in, double UCS_ratio_in, double InitialNormalStress_in, double FractureNormalStiffness_in, double MaximumClosure_in)
+            : this(gbc_in, E_r_in, Nu_r_in, Porosity_in, Biot_in, ThermalExpansionCoefficient_in, Gc_in, MuFr_in, tr_in, tf_in, A_in, b_in, timeUnits_in, DynamicApertureMultiplier_in, JRC_in, UCS_ratio_in, InitialNormalStress_in, FractureNormalStiffness_in, MaximumClosure_in, 0, 0)
+        {
+            // Default values for host rock permeability
+            // Host rock horizontal permeability: 0
+            // Host rock vertical permeability: 0
+        }
+        /// <summary>
+        /// Constructor: input intact rock properties values, fracture aperture control data and host rock permeability
+        /// </summary>
+        /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
+        /// <param name="E_r_in">Young's Modulus of intact rock (Pa)</param>
+        /// <param name="Nu_r_in">Poisson's ratio of intact rock</param>
+        /// <param name="Porosity_in">Porosity of intact rock</param>
+        /// <param name="Biot_in">Biot's coefficient of intact rock</param>
+        /// <param name="ThermalExpansionCoefficient_in">Thermal expansion coefficient of intact rock (/degK)</param>
+        /// <param name="Gc_in">Crack surface energy (J/m2)</param>
+        /// <param name="MuFr_in">Friction coefficient on fractures</param>
+        /// <param name="tr_in">Strain relaxation time constant for intact rock (s): set to zero for no uniform strain relaxation</param>
+        /// <param name="tf_in">Strain relaxation time constant for fracture tips (s): set to zero for no fracture strain relaxation</param>
+        /// <param name="A_in">Critical fracture propagation rate (m/s)</param>
+        /// <param name="b_in">Subcritical fracture propagation index</param>
+        /// <param name="timeUnits_in">Units for strain relaxation time constants</param>
+        /// <param name="DynamicApertureMultiplier_in">Multiplier for dynamic aperture</param>
+        /// <param name="JRC_in">Joint Roughness Coefficient</param>
+        /// <param name="UCS_ratio_in">Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock</param>
+        /// <param name="UCS_in">Unconfined Compressive Strength of intact rock</param>
+        /// <param name="InitialNormalStress_in">Initial normal strength on fracture</param>
+        /// <param name="FractureNormalStiffness_in">Stiffness normal to the fracture, at initial normal stress</param>
+        /// <param name="MaximumClosure_in">Maximum fracture closure (m)</param>
+        /// <param name="kh_in">Horizontal permeability of the host rock (m2)</param>
+        /// <param name="kv_in">Vertical permeability of the host rock (m2)</param>
+        public MechanicalProperties(GridblockConfiguration gbc_in, double E_r_in, double Nu_r_in, double Porosity_in, double Biot_in, double ThermalExpansionCoefficient_in, double Gc_in, double MuFr_in, double tr_in, double tf_in, double A_in, double b_in, TimeUnits timeUnits_in, double DynamicApertureMultiplier_in, double JRC_in, double UCS_ratio_in, double InitialNormalStress_in, double FractureNormalStiffness_in, double MaximumClosure_in, double kh_in, double kv_in)
         {
             // Reference to parent GridblockConfiguration object
             gbc = gbc_in;
@@ -422,6 +470,9 @@ namespace DFMGenerator_SharedCode
 
             // Set fracture aperture control data
             setFractureApertureControlData(DynamicApertureMultiplier_in, JRC_in, UCS_ratio_in, InitialNormalStress_in, FractureNormalStiffness_in, MaximumClosure_in);
+
+            // Set host rock horizontal and vertical permeability
+            setHostRockPermeability(kh_in, kv_in);
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -129,6 +129,10 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("SubcriticalPropIndex 10");
                 input_file.WriteLine("% Critical fracture propagation rate in m/s");
                 input_file.WriteLine("CriticalPropagationRate 2000");
+                input_file.WriteLine("% Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity");
+                input_file.WriteLine("% NB Permeability must be given in m^2; 1mD = 9.869233E-16m^2");
+                input_file.WriteLine("HostRock_kh 0");
+                input_file.WriteLine("HostRock_kv 0");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Stress state");
@@ -179,8 +183,10 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Flag to calculate and output fracture permeability tensors");
                 input_file.WriteLine("CalculateFracturePermeabilityTensor false");
                 input_file.WriteLine("% Algorithm to use for calculating fracture permeability");
-                input_file.WriteLine("%      - Oda1985 (The Oda 1985 model assumes fractures of infinite size and connectivity)");
-                input_file.WriteLine("PermeabilityAlgorithm Oda1985");
+                input_file.WriteLine("%      - Oda1986 (The Oda 1986 model assumes fractures of infinite size and connectivity)");
+                input_file.WriteLine("%      - OdaCorrected1987 (This algorithm adds a correction factor to account for fracture connectivity)");
+                input_file.WriteLine("%      - SizeConnectivityCorrected (This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock; for the latter, host rock permeability must be specified)");
+                input_file.WriteLine("PermeabilityAlgorithm Oda1986");
                 input_file.WriteLine("% Flag to calculate implicit fracture population distribution functions");
                 input_file.WriteLine("CalculatePopulationDistribution true");
                 input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
@@ -334,6 +340,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, DepthAtDeformation, ");
                 input_file.WriteLine("% YoungsMod, PoissonsRatio, Porosity, BiotCoefficient, GeothermalGradient, FrictionCoefficient, CrackSurfaceEnergy,");
                 input_file.WriteLine("% SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution");
+                input_file.WriteLine("% HostRock_kh, HostRock_kv");
                 input_file.WriteLine("% PresentDayEffectiveStress_XX, PresentDayEffectiveStress_YY, PresentDayEffectiveStress_ZZ, PresentDayEffectiveStress_XY, PresentDayEffectiveStress_YZ, PresentDayEffectiveStress_ZX");
                 input_file.WriteLine("% Additional deformation episodes can be overwritten by listing multiple values after the deformation load keywords");
                 input_file.WriteLine("% Cornerpoints that can be overridden are SETopCorner, SEBottomCorner, NETopCorner, NEBottomCorner,");
@@ -596,7 +603,7 @@ namespace DFMGenerator_Standalone
             double VariableYoungsModSmoothingFactor = 2;
             double PoissonsRatio = 0.25;
             double Porosity = 0.2;
-            double BiotCoefficient = 0.8;// 1;
+            double BiotCoefficient = 1;
             // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
             double ThermalExpansionCoefficient = 4E-5;
             double CrackSurfaceEnergy = 1000;
@@ -607,7 +614,7 @@ namespace DFMGenerator_Standalone
             bool VariableFriction = false;
             // Strain relaxation data
             // Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
-            double RockStrainRelaxation = 0.2;// 0;
+            double RockStrainRelaxation = 0;
             // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
             double FractureRelaxation = 0;
             // Density of initial microfractures
@@ -617,6 +624,9 @@ namespace DFMGenerator_Standalone
             // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
             double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
+            // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+            double HostRock_kh = 0;
+            double HostRock_kv = 0;
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -1067,6 +1077,13 @@ namespace DFMGenerator_Standalone
                         case "CriticalPropagationRate":
                             CriticalPropagationRate = Convert.ToDouble(line_split[1]);
                             break;
+                        // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+                        case "HostRock_kh":
+                            HostRock_kh = Convert.ToDouble(line_split[1]);
+                            break;
+                        case "HostRock_kv":
+                            HostRock_kv = Convert.ToDouble(line_split[1]);
+                            break;
 
                         // Stress state
                         // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -1178,10 +1195,12 @@ namespace DFMGenerator_Standalone
                             break;
                         // Algorithm to use for calculating fracture permeability
                         case "PermeabilityAlgorithm":
-                            if (line_split[1] == "Oda1985")
-                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1985;
+                            if (line_split[1] == "Oda1986")
+                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1986;
+                            else if (line_split[1] == "OdaCorrected1987")
+                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.OdaCorrected1987;
                             else
-                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1985;
+                                PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;
                             break;
                         // Flag to calculate implicit fracture population distribution functions
                         case "CalculatePopulationDistribution":
@@ -1660,6 +1679,8 @@ namespace DFMGenerator_Standalone
             double[,] FractureRelaxation_array = new double[NoRows, NoCols];
             double[,] InitialMicrofractureDensity_array = new double[NoRows, NoCols];
             double[,] InitialMicrofractureSizeDistribution_array = new double[NoRows, NoCols];
+            double[,] HostRock_kh_array = new double[NoRows, NoCols];
+            double[,] HostRock_kv_array = new double[NoRows, NoCols];
             double[,] DepthAtDeformation_array = new double[NoRows, NoCols];
             double[,] PresentDayEffectiveStress_XX_array = new double[NoRows, NoCols];
             double[,] PresentDayEffectiveStress_YY_array = new double[NoRows, NoCols];
@@ -1724,6 +1745,8 @@ namespace DFMGenerator_Standalone
                     FractureRelaxation_array[RowNo, ColNo] = FractureRelaxation;
                     InitialMicrofractureDensity_array[RowNo, ColNo] = InitialMicrofractureDensity;
                     InitialMicrofractureSizeDistribution_array[RowNo, ColNo] = InitialMicrofractureSizeDistribution;
+                    HostRock_kh_array[RowNo, ColNo] = HostRock_kh;
+                    HostRock_kv_array[RowNo, ColNo] = HostRock_kv;
                     DepthAtDeformation_array[RowNo, ColNo] = DepthAtDeformation;
                     PresentDayEffectiveStress_XX_array[RowNo, ColNo] = PresentDayEffectiveStress_XX;
                     PresentDayEffectiveStress_YY_array[RowNo, ColNo] = PresentDayEffectiveStress_YY;
@@ -2036,6 +2059,12 @@ namespace DFMGenerator_Standalone
                                 case "b": // For backwards compatibility
                                     propertyArray = SubcriticalPropIndex_array;
                                     break;
+                                case "HostRock_kh":
+                                    propertyArray = HostRock_kh_array;
+                                    break;
+                                case "HostRock_kv":
+                                    propertyArray = HostRock_kv_array;
+                                    break;
                                 case "DepthAtDeformation":
                                 case "DepthAtFracture": // For backwards compatibility
                                     propertyArray = DepthAtDeformation_array;
@@ -2308,6 +2337,12 @@ namespace DFMGenerator_Standalone
                             case "b": // For backwards compatibility
                                 SubcriticalPropIndex_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
                                 break;
+                            case "HostRock_kh":
+                                HostRock_kh_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
+                            case "HostRock_kv":
+                                HostRock_kv_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
+                                break;
                             case "DepthAtDeformation":
                             case "DepthAtFracture": // For backwards compatibility
                                 DepthAtDeformation_array[RowNo, ColNo] = Convert.ToDouble(line_split[1]);
@@ -2472,12 +2507,17 @@ namespace DFMGenerator_Standalone
                     double local_RockStrainRelaxation = RockStrainRelaxation_array[RowNo, ColNo];
                     double local_FractureRelaxation = FractureRelaxation_array[RowNo, ColNo];
                     double local_SubcriticalPropIndex = SubcriticalPropIndex_array[RowNo, ColNo];
+                    double local_HostRock_kh = HostRock_kh_array[RowNo, ColNo];
+                    double local_HostRock_kv = HostRock_kv_array[RowNo, ColNo];
 
                     // Set the mechanical properties for the gridblock
                     gc.MechProps.setMechanicalProperties(local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits);
 
                     // Set the fracture aperture control properties
                     gc.MechProps.setFractureApertureControlData(DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure);
+
+                    // Set the host rock permeability
+                    gc.MechProps.setHostRockPermeability(local_HostRock_kh, local_HostRock_kv);
 
                     // Set the initial stress and strain
                     // If the initial stress relaxation value is negative, set it to the required value for a critical initial stress state
@@ -2538,6 +2578,7 @@ namespace DFMGenerator_Standalone
                     Console.WriteLine(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Depth, NoFractureSets));
                     Console.WriteLine(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                     Console.WriteLine(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
+                    Console.WriteLine(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                     Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                     Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
                     Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22}, {23}, {24}); ",

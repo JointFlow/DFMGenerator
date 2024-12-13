@@ -34,7 +34,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for algorithms to calculate fracture permeability
     /// </summary>
-    public enum PermeabilityCalculationAlgorithm { Oda1986, OdaCorrected1987 }
+    public enum PermeabilityCalculationAlgorithm { Oda1986, OdaCorrected1987, SizeConnectivityCorrected }
     /// <summary>
     /// Enumerator for the data used to calculate present day effective stress
     /// </summary>
@@ -2475,44 +2475,85 @@ namespace DFMGenerator_SharedCode
         /// Permeability tensor for all microfractures in the gridblock, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
-        /// <returns>Tensor2S object representing microfracture permeability</returns>
+        /// <returns>Tensor2S object representing the microfracture permeability</returns>
         public Tensor2S MicrofracturePermeability(int Timestep_M)
         {
-            // The network connectivity multiplier reflects the connectivity of the entire fracture network
-            double networkConnectivityMultiplier;
+            // Create an empty microfracture permeability tensor
+            Tensor2S microfracturePermeability = new Tensor2S();
+
+            // The network connectivity correction reflects the connectivity and size distribution of the entire fracture network
             switch (PropControl.PermeabilityAlgorithm)
             {
                 // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                // There is therefore no network connectivity correction required, and we can just use the sum of the uncorrected microfracture permeability tensors
                 case PermeabilityCalculationAlgorithm.Oda1986:
-                    networkConnectivityMultiplier = 1;
+                    {
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            microfracturePermeability += fs.combined_uF_Permeability(Timestep_M);
+                    }
                     break;
-                // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
-                // Not yet implemented for microfractures
+                // The Oda corrected (1987) algorithm includes a simple multiplier to take account of the connectivity of individual fractures
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
-                    double f0, anistropy;
-                    GetF0andAnisotropy(Timestep_M, out f0, out anistropy);
-                    networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromF0(f0, anistropy < 0.32);
+                    {
+                        // First we must get the sum of the uncorrected microfracture permeability tensors
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            microfracturePermeability += fs.combined_uF_Permeability(Timestep_M);
+
+                        // Then we can apply a correction factor based on the trace and anisotropy of the fracture connectivity tensor
+                        double f0, anistropy;
+                        GetF0andAnisotropy(Timestep_M, out f0, out anistropy);
+                        microfracturePermeability = GetNetworkPermeabilityMultiplierFromF0(f0, anistropy < 0.32) * microfracturePermeability;
+                    }
                     break;
+                // The size and connectivity correction algorithm takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock
+                // The host rock permeability is required to calculate the latter
+                case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                    {
+                        // The permeability will be calculated on a set by set basis
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                            {
+                                // First we must get the uncorrected microfracture permeability tensor for this set, and extract the ii components that need to be corrected
+                                Tensor2S fds_uF_Permeability = fds.Total_uF_Permeability(Timestep_M);
+                                double uncorrected_kxx = fds_uF_Permeability.Component(Tensor2SComponents.XX);
+                                double uncorrected_kyy = fds_uF_Permeability.Component(Tensor2SComponents.YY);
+                                double uncorrected_kzz = fds_uF_Permeability.Component(Tensor2SComponents.ZZ);
+
+                                // Next, get the permeability of a single fracture times the total fracture length / unit volume (P31)
+                                double fds_kf_uFP31 = fds.Total_uF_PermeabilityLength(Timestep_M);
+
+                                // Now apply the correction factor to each of the microfracture permeability tensor components
+                                double sin_fx = VectorXYZ.Cos_trim(fs.Azimuth);
+                                double sin_fy = VectorXYZ.Sin_trim(fs.Azimuth);
+                                double sin_fz = VectorXYZ.Sin_trim(fds.Dip);
+                                double kh = MechProps.HostRock_kh;
+                                double kv = MechProps.HostRock_kv;
+                                double corrected_kxx = uncorrected_kxx / (1 + (fds_kf_uFP31 * sin_fx / kh) - uncorrected_kxx);
+                                double corrected_kyy = uncorrected_kyy / (1 + (fds_kf_uFP31 * sin_fy / kh) - uncorrected_kyy);
+                                double corrected_kzz = uncorrected_kzz / (1 + (fds_kf_uFP31 * sin_fz / kv) - uncorrected_kzz);
+
+                                // Reinsert the corrected tensor components back into the permeability tensor for this fracture set, and add it to the overall tensor
+                                fds_uF_Permeability.Component(Tensor2SComponents.XX, corrected_kxx);
+                                fds_uF_Permeability.Component(Tensor2SComponents.YY, corrected_kyy);
+                                fds_uF_Permeability.Component(Tensor2SComponents.ZZ, corrected_kzz);
+                                microfracturePermeability += fds_uF_Permeability;
+                            }
+                    }
+                    break;
+                // If no algorithm is specified, return a null tensor
                 default:
-                    networkConnectivityMultiplier = 0;
+                    microfracturePermeability = new Tensor2S();
                     break;
             }
 
-            // Get the basic microfracture permeability tensor
-            Tensor2S microfracturePermeability = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
-                foreach (FractureDipSet fds in fs.FractureDipSets)
-                    microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
-
-            // Multiply it by the network connectivity multiplier before returning it
-            microfracturePermeability = networkConnectivityMultiplier * microfracturePermeability;
+            // Return the modified fracture permeability tensor
             return microfracturePermeability;
         }
         /// <summary>
         /// Permeability tensor for all layer-bound macrofractures in the gridblock, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
-        /// <returns>Tensor2S object representing macrofracture permeability</returns>
+        /// <returns>Tensor2S object representing the macrofracture permeability</returns>
         public Tensor2S MacrofracturePermeability(int Timestep_M)
         {
             // The network connectivity multiplier reflects the connectivity of the entire fracture network
@@ -2546,7 +2587,7 @@ namespace DFMGenerator_SharedCode
         /// Permeability tensor for all fractures in the gridblock, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
-        /// <returns>Tensor2S object representing total fracture permeability</returns>
+        /// <returns>Tensor2S object representing the total fracture permeability</returns>
         public Tensor2S TotalFracturePermeability(int Timestep_M)
         {
             // Return the sum of the microfracture and macrofracture permeability tensors

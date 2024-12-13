@@ -942,6 +942,33 @@ namespace DFMGenerator_Ocean
                     double CriticalPropagationRate = 2000;
                     if (!double.IsNaN(arguments.Argument_CriticalPropagationRate))
                         CriticalPropagationRate = arguments.Argument_CriticalPropagationRate;
+                    // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+                    double HostRock_kh = 0;
+                    if (!double.IsNaN(arguments.Argument_kh_default))
+                        HostRock_kh = arguments.Argument_kh_default;
+                    Property HostRock_kh_grid = arguments.Argument_kh;
+                    if ((HostRock_kh_grid != null) && (HostRock_kh_grid.Grid != PetrelGrid))
+                    {
+                        HostRock_kh_grid = null;
+                        PetrelLogger.InfoOutputWindow("Host rock horizontal permeability property data is defined on a different grid; will use default value instead");
+                    }
+                    bool UseGridFor_HostRock_kh = (HostRock_kh_grid != null);
+                    // If the vertical permeability data is not defined, use the horizontal permeability data instead
+                    double HostRock_kv = 0;
+                    if (!double.IsNaN(arguments.Argument_kv_default))
+                        HostRock_kv = arguments.Argument_kv_default;
+                    else
+                        HostRock_kv = HostRock_kh;
+                    Property HostRock_kv_grid = arguments.Argument_kv;
+                    if ((HostRock_kv_grid != null) && (HostRock_kv_grid.Grid != PetrelGrid))
+                    {
+                        HostRock_kv_grid = null;
+                        PetrelLogger.InfoOutputWindow("Host rock horizontal permeability property data is defined on a different grid; will use default value instead");
+                    }
+                    if (HostRock_kv_grid is null)
+                        HostRock_kv_grid = HostRock_kh_grid;
+                    bool UseGridFor_HostRock_kv = (HostRock_kv_grid != null);
+
                     // Flags for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageMechanicalPropertyData = arguments.Argument_AverageMechanicalPropertyData;
 
@@ -1470,6 +1497,10 @@ namespace DFMGenerator_Ocean
                         AUnit = string.Format("frac.{0}^{1}", FractureRadiusUnits, InitialMicrofractureSizeDistribution - 3);
                     else
                         AUnit = "fracs";
+                    // Permeability
+                    Template PermeabilityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Permeability;
+                    IUnitConverter toProjectPermeabilityUnits = PetrelUnitSystem.GetConverterToUI(PermeabilityTemplate);
+                    string PermeabilityUnits = PetrelUnitSystem.GetDisplayUnit(PermeabilityTemplate).Symbol;
 
                     // NB if certain properties are supplied with a General template, we will carry out unit conversion as if they were supplied in project units
                     // Therefore we need to create Petrel unit converters from project to SI units, and flags to indicate if this conversion is required
@@ -1526,6 +1557,10 @@ namespace DFMGenerator_Ocean
                         convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_gridResult.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
                     if (UseGridFor_FrictionCoefficient)
                         convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
+                    // Host rock permeability
+                    IUnitConverter toSIPermeabilityUnits = PetrelUnitSystem.GetConverterFromUI(PermeabilityTemplate);
+                    bool convertFromGeneral_HostRock_kh = (UseGridFor_HostRock_kh ? HostRock_kh_grid.Template.Equals(GeneralTemplate) : false);
+                    bool convertFromGeneral_HostRock_kv = (UseGridFor_HostRock_kv ? HostRock_kv_grid.Template.Equals(GeneralTemplate) : false);
 
                     // Get path for output files
                     string folderPath = "";
@@ -1908,6 +1943,7 @@ namespace DFMGenerator_Ocean
                     if (CalculateFracturePermeabilityTensor)
                     {
                         string permeabilityLabel = "Calculate permeability tensor for ";
+                        string permeabilityLabel2 = "";
                         switch (FractureTypesInPermeabilityTensor)
                         {
                             case FractureType.Microfractures:
@@ -1930,6 +1966,17 @@ namespace DFMGenerator_Ocean
                                 break;
                             case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                                 permeabilityLabel += "Oda corrected (1987)";
+                                break;
+                            case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                                permeabilityLabel += "correction for size and connectivity";
+                                if (UseGridFor_HostRock_kh)
+                                    permeabilityLabel2 += string.Format("Host rock horizontal permeability: {0}, default {1}{2}\n", HostRock_kh_grid.Name, toProjectPermeabilityUnits.Convert(HostRock_kh), PermeabilityUnits);
+                                else
+                                    permeabilityLabel2 += string.Format("Host rock horizontal permeability: {0}{1}\n", toProjectPermeabilityUnits.Convert(HostRock_kh), PermeabilityUnits);
+                                if (UseGridFor_HostRock_kv)
+                                    permeabilityLabel2 += string.Format("Host rock vertical permeability: {0}, default {1}{2}\n", HostRock_kv_grid.Name, toProjectPermeabilityUnits.Convert(HostRock_kv), PermeabilityUnits);
+                                else
+                                    permeabilityLabel2 += string.Format("Host rock vertical permeability: {0}{1}\n", toProjectPermeabilityUnits.Convert(HostRock_kv), PermeabilityUnits);
                                 break;
                             default:
                                 break;
@@ -2231,6 +2278,8 @@ namespace DFMGenerator_Ocean
                                 double local_FrictionCoefficient = FrictionCoefficient;
                                 double local_RockStrainRelaxation = RockStrainRelaxation;
                                 double local_FractureRelaxation = FractureRelaxation;
+                                double local_HostRock_kh = HostRock_kh;
+                                double local_HostRock_kv = HostRock_kv;
 
                                 if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
                                 {
@@ -2259,6 +2308,10 @@ namespace DFMGenerator_Ocean
                                     int RockStrainRelaxation_novalues = 0;
                                     double FractureRelaxation_total = 0;
                                     int FractureRelaxation_novalues = 0;
+                                    double HostRock_kh_total = 0;
+                                    int HostRock_kh_novalues = 0;
+                                    double HostRock_kv_total = 0;
+                                    int HostRock_kv_novalues = 0;
 
                                     // Loop through all the Petrel cells in the gridblock
                                     for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
@@ -2425,6 +2478,34 @@ namespace DFMGenerator_Ocean
                                                         }
                                                     }
                                                 }
+
+                                                // Update host rock horizontal permeability total if defined
+                                                if (UseGridFor_HostRock_kh)
+                                                {
+                                                    double cell_HostRock_kh = (double)HostRock_kh_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_HostRock_kh)
+                                                        cell_HostRock_kh = toSIPermeabilityUnits.Convert(cell_HostRock_kh);
+                                                    if (!double.IsNaN(cell_HostRock_kh))
+                                                    {
+                                                        HostRock_kh_total += cell_HostRock_kh;
+                                                        HostRock_kh_novalues++;
+                                                    }
+                                                }
+
+                                                // Update host rock vertical permeability total if defined
+                                                if (UseGridFor_HostRock_kv)
+                                                {
+                                                    double cell_HostRock_kv = (double)HostRock_kv_grid[cellRef];
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    if (convertFromGeneral_HostRock_kv)
+                                                        cell_HostRock_kv = toSIPermeabilityUnits.Convert(cell_HostRock_kv);
+                                                    if (!double.IsNaN(cell_HostRock_kv))
+                                                    {
+                                                        HostRock_kv_total += cell_HostRock_kv;
+                                                        HostRock_kv_novalues++;
+                                                    }
+                                                }
                                             }
 
                                     // Update the gridblock values with the averages - if there is any data to calculate them from
@@ -2452,6 +2533,10 @@ namespace DFMGenerator_Ocean
                                         local_RockStrainRelaxation = RockStrainRelaxation_total / (double)RockStrainRelaxation_novalues;
                                     if (FractureRelaxation_novalues > 0)
                                         local_FractureRelaxation = FractureRelaxation_total / (double)FractureRelaxation_novalues;
+                                    if (HostRock_kh_novalues > 0)
+                                        local_HostRock_kh = HostRock_kh_total / (double)HostRock_kh_novalues;
+                                    if (HostRock_kv_novalues > 0)
+                                        local_HostRock_kv = HostRock_kv_total / (double)HostRock_kv_novalues;
                                 }
                                 else // We are taking data from a single cell
                                 {
@@ -2677,6 +2762,38 @@ namespace DFMGenerator_Ocean
                                             if (!double.IsNaN(cell_FractureRelaxation))
                                             {
                                                 local_FractureRelaxation = cell_FractureRelaxation;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Update host rock horizontal permeability total if defined
+                                    if (UseGridFor_HostRock_kh)
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        {
+                                            cellRef.K = PetrelGrid_DataCellK;
+                                            double cell_HostRock_kh = (double)HostRock_kh_grid[cellRef];
+                                            if (!double.IsNaN(cell_HostRock_kh))
+                                            {
+                                                local_HostRock_kh = cell_HostRock_kh;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Update host rock vertical permeability total if defined
+                                    if (UseGridFor_HostRock_kv)
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        {
+                                            cellRef.K = PetrelGrid_DataCellK;
+                                            double cell_HostRock_kv = (double)HostRock_kv_grid[cellRef];
+                                            if (!double.IsNaN(cell_HostRock_kv))
+                                            {
+                                                local_HostRock_kv = cell_HostRock_kv;
                                                 break;
                                             }
                                         }
@@ -3586,6 +3703,9 @@ namespace DFMGenerator_Ocean
                                 // Set the fracture aperture control properties
                                 gc.MechProps.setFractureApertureControlData(DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure);
 
+                                // Set the host rock permeability
+                                gc.MechProps.setHostRockPermeability(local_HostRock_kh, local_HostRock_kv);
+
                                 // Set the initial stress and strain
                                 // If the initial stress relaxation value is negative, set it to the required value for a critical initial stress state
                                 double local_InitialStressRelaxation = InitialStressRelaxation;
@@ -3632,6 +3752,7 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22}, {23}, {24});",
@@ -7040,6 +7161,11 @@ namespace DFMGenerator_Ocean
             private double argument_SubcriticalPropagationIndex_default = 10;
             private Droid argument_SubcriticalPropagationIndex;
             private double argument_CriticalPropagationRate = 2000;
+            // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+            private double argument_kh_default = 1;
+            private Droid argument_kh;
+            private double argument_kv_default = 1;
+            private Droid argument_kv;
             private bool argument_AverageMechanicalPropertyData = true;
 
             // Stress state
@@ -10908,6 +11034,37 @@ namespace DFMGenerator_Ocean
                 set { this.argument_FluidPressure_PresentDay = (value == null ? null : value.Droid); }
             }
 
+            // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+            [Description("Default host rock horizontal permeability", "Default value for host rock horizontal permeability")]
+            public double Argument_kh_default
+            {
+                internal get { return this.argument_kh_default; }
+                set { this.argument_kh_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Host rock horizontal permeability", "Host rock horizontal permeability")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_kh
+            {
+                internal get { return DataManager.Resolve(this.argument_kh) as Property; }
+                set { this.argument_kh = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default host rock vertical permeability", "Default value for host rock vertical permeability")]
+            public double Argument_kv_default
+            {
+                internal get { return this.argument_kv_default; }
+                set { this.argument_kv_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Host rock vertical permeability", "Host rock vertical permeability")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_kv
+            {
+                internal get { return DataManager.Resolve(this.argument_kv) as Property; }
+                set { this.argument_kv = (value == null ? null : value.Droid); }
+            }
 
             /// <summary>
             /// Reset all arguments to default values
@@ -11122,6 +11279,11 @@ namespace DFMGenerator_Ocean
                 argument_SubcriticalPropagationIndex_default = 10;
                 argument_SubcriticalPropagationIndex = null;
                 argument_CriticalPropagationRate = 2000;
+                // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+                argument_kh_default = 1;
+                argument_kh = null;
+                argument_kv_default = 1;
+                argument_kv = null;
                 argument_AverageMechanicalPropertyData = true;
 
                 // Stress state

@@ -229,6 +229,10 @@ namespace DFMGenerator_Ocean
             UpdatePropertyPresentationBox(args.Argument_SubcriticalPropagationIndex, presentationBox_SubcriticalPropagationIndex);
             UpdateTextBox(args.Argument_SubcriticalPropagationIndex_default, unitTextBox_SubcriticalPropagationIndex_default, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_CriticalPropagationRate, unitTextBox_CriticalPropagationRate, PetrelProject.WellKnownTemplates.GeophysicalGroup.Velocity, label_CriticalPropagationRate_Units);
+            UpdatePropertyPresentationBox(args.Argument_kh, presentationBox_kh);
+            UpdateTextBox(args.Argument_kh_default, unitTextBox_kh_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Permeability, label_kh_units);
+            UpdatePropertyPresentationBox(args.Argument_kv, presentationBox_kv);
+            UpdateTextBox(args.Argument_kv_default, unitTextBox_kv_default, PetrelProject.WellKnownTemplates.PetrophysicalGroup.Permeability, label_kv_units);
             UpdateCheckBox(args.Argument_AverageMechanicalPropertyData, checkBox_AverageMechanicalPropertyData);
 
             // Stress state
@@ -258,6 +262,8 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_CalculateFracturePermeabilityTensor, checkBox_CalculateFracturePermeabilityTensor);
             UpdateComboBox(args.Argument_PermeabilityAlgorithm, comboBox_PermeabilityAlgorithm);
             UpdateComboBox(args.Argument_FractureTypesInPermeabilityTensor, comboBox_FractureTypesInPermeabilityTensor);
+            // Enable the controls for horizontal and vertical host rock permeability if the selected fracture permeability algorithm requires these; otherwise disable them
+            EnableHostRockPermeability();
             UpdateCheckBox(args.Argument_UsePresentDayStress, checkBox_UsePresentDayStress);
 
             // Fracture aperture control parameters
@@ -386,6 +392,10 @@ namespace DFMGenerator_Ocean
             args.Argument_SubcriticalPropagationIndex = presentationBox_SubcriticalPropagationIndex.Tag as Property;
             args.Argument_SubcriticalPropagationIndex_default = GetDoubleFromTextBox(unitTextBox_SubcriticalPropagationIndex_default);
             args.Argument_CriticalPropagationRate = GetDoubleFromTextBox(unitTextBox_CriticalPropagationRate);
+            args.Argument_kh = presentationBox_kh.Tag as Property;
+            args.Argument_kh_default = GetDoubleFromTextBox(unitTextBox_kh_default);
+            args.Argument_kv = presentationBox_kv.Tag as Property;
+            args.Argument_kv_default = GetDoubleFromTextBox(unitTextBox_kv_default);
             args.Argument_AverageMechanicalPropertyData = checkBox_AverageMechanicalPropertyData.Checked;
 
             // Stress state
@@ -727,13 +737,48 @@ namespace DFMGenerator_Ocean
                     groupBox_BartonBandisApertureData.Enabled = true;
                     return;
 
-                default: // If no option is selected, disable all fracture aperture control GroupBoxeas
+                default: // If no option is selected, disable all fracture aperture control GroupBoxes
 
                     groupBox_UniformApertureData.Enabled = false;
                     groupBox_SizeDependentApertureData.Enabled = false;
                     groupBox_DynamicApertureData.Enabled = false;
                     groupBox_BartonBandisApertureData.Enabled = false;
                     return;
+            }
+        }
+
+        private void EnableHostRockPermeability()
+        {
+            // Enable the controls for horizontal and vertical host rock permeability if the selected fracture permeability algorithm requires these; otherwise disable them
+            if (comboBox_PermeabilityAlgorithm.SelectedIndex == 2)
+            {
+                label_kh.Enabled = true;
+                dropTarget_kh.Enabled = true;
+                presentationBox_kh.Enabled = true;
+                label_kh_default.Enabled = true;
+                unitTextBox_kh_default.Enabled = true;
+                label_kh_units.Enabled = true;
+                label_kv.Enabled = true;
+                dropTarget_kv.Enabled = true;
+                presentationBox_kv.Enabled = true;
+                label_kv_default.Enabled = true;
+                unitTextBox_kv_default.Enabled = true;
+                label_kv_units.Enabled = true;
+            }
+            else
+            {
+                label_kh.Enabled = false;
+                dropTarget_kh.Enabled = false;
+                presentationBox_kh.Enabled = false;
+                label_kh_default.Enabled = false;
+                unitTextBox_kh_default.Enabled = false;
+                label_kh_units.Enabled = false;
+                label_kv.Enabled = false;
+                dropTarget_kv.Enabled = false;
+                presentationBox_kv.Enabled = false;
+                label_kv_default.Enabled = false;
+                unitTextBox_kv_default.Enabled = false;
+                label_kv_units.Enabled = false;
             }
         }
 
@@ -927,6 +972,18 @@ namespace DFMGenerator_Ocean
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_SubcriticalPropagationIndex);
         }
 
+        private void dropTarget_kh_DragDrop(object sender, DragEventArgs e)
+        {
+            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
+            UpdatePropertyPresentationBox(droppedProperty, presentationBox_kh);
+        }
+
+        private void dropTarget_kv_DragDrop(object sender, DragEventArgs e)
+        {
+            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
+            UpdatePropertyPresentationBox(droppedProperty, presentationBox_kv);
+        }
+
         private void dropTarget_DepthAtDeformation_DragDrop(object sender, DragEventArgs e)
         {
             Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
@@ -1051,6 +1108,24 @@ namespace DFMGenerator_Ocean
             }
         }
 
+        private void presentationBox_kh_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_kh);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_kv_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_kv);
+                e.Handled = true;
+            }
+        }
+
         private void presentationBox_DepthAtDeformation_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
@@ -1073,6 +1148,12 @@ namespace DFMGenerator_Ocean
         {
             // Enable the GroupBox for the selected fracture aperture control method, and disable the others 
             EnableFractureApertureControlData();
+        }
+
+        private void comboBox_PermeabilityAlgorithm_SelectedValueChanged(object sender, EventArgs e)
+        {
+            // Enable the controls for horizontal and vertical host rock permeability if the selected fracture permeability algorithm requires these; otherwise disable them
+            EnableHostRockPermeability();
         }
 
         private void checkBox_IncludeObliqueFracs_CheckedChanged(object sender, EventArgs e)

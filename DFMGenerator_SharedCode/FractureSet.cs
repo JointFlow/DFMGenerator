@@ -878,40 +878,50 @@ namespace DFMGenerator_SharedCode
         }
 
         // Fracture permeability tensors
+        // NB These functions return the uncorrected fracture peremabilities, based on based on the Oda (1986) model, which assumes fractures of infinite size and connectivity
+        // Corrections for fracture length and connectivity must take into account other fracture sets and the host rock, so are made at the gridblock level
         /// <summary>
-        /// Combined microfracture permeability tensor for all microfractures in every dipset in this fracture set
+        /// Get the combined uncorrected microfracture permeability tensor for all current microfractures in every dipset in this fracture set
+        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
         /// </summary>
-        /// <returns>Tensor2S object representing microfracture permeability</returns>
-        Tensor2S combined_uF_Permeability()
+        /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
+        public Tensor2S combined_uF_Permeability()
+        {
+            return combined_uF_Permeability(-1);
+        }
+        /// <summary>
+        /// Get the combined uncorrected microfracture permeability tensor for all microfractures in every dipset in this fracture set, at the end of a specified previous timestep
+        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
+        public Tensor2S combined_uF_Permeability(int Timestep_M)
         {
             Tensor2S permTensor = new Tensor2S();
             foreach (FractureDipSet DipSet in FractureDipSets)
-                permTensor += DipSet.Total_uF_Permeability();
+                permTensor += DipSet.Total_uF_Permeability(Timestep_M);
             return permTensor;
         }
         /// <summary>
-        /// Combined half-macrofracture permeability tensor for all half-macrofractures in every dipset in this fracture set
+        /// Get the combined uncorrected half-macrofracture permeability tensor for all current half-macrofractures in every dipset in this fracture set
+        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
         /// </summary>
-        /// <returns>Tensor2S object representing macrofracture permeability</returns>
-        Tensor2S combined_MF_Permeability()
+        /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
+        public Tensor2S combined_MF_Permeability()
         {
-            Tensor2S permTensor = new Tensor2S();
-            foreach (FractureDipSet DipSet in FractureDipSets)
-                permTensor += DipSet.Total_MF_Permeability();
-            return permTensor;
+            return combined_MF_Permeability(-1);
         }
         /// <summary>
-        /// Combined fracture permeability tensor for all fractures in every dipset in this fracture set
+        /// Get the combined uncorrected half-macrofracture permeability tensor for all half-macrofractures in every dipset in this fracture set, at the end of a specified previous timestep
+        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
         /// </summary>
-        /// <returns>Tensor2S object representing macrofracture permeability</returns>
-        Tensor2S combined_Fracture_Permeability()
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
+        public Tensor2S combined_MF_Permeability(int Timestep_M)
         {
             Tensor2S permTensor = new Tensor2S();
             foreach (FractureDipSet DipSet in FractureDipSets)
-            {
-                permTensor += DipSet.Total_uF_Permeability();
-                permTensor += DipSet.Total_MF_Permeability();
-            }
+                permTensor += DipSet.Total_MF_Permeability(Timestep_M);
             return permTensor;
         }
 
