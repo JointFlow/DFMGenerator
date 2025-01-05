@@ -240,7 +240,7 @@ namespace DFMGenerator_SharedCode
         /// This represents the sum of the diameters of every microfracture
         /// It is used to calculate the microfracture permeability corrected for fracture size distribution
         /// </summary>
-        public double Total_uFP31_M { get; private set; }
+        //public double Total_uFP31_M { get; private set; }
         /// <summary>
         /// Mean linear density of all microfractures, static and dynamic, at the end of timestep M
         /// </summary>
@@ -258,13 +258,18 @@ namespace DFMGenerator_SharedCode
         /// This represents the combined integral of R^3 along the diameter of every microfracture, where R is the microfracture radius
         /// It is used to calculate the microfracture permeability correction factor where microfracture aperture is size-dependent, and permeability is proportional to aperture cubed
         /// </summary>
-        public double Total_uFP34_M { get; private set; }
+        //public double Total_uFP34_M { get; private set; }
         /// <summary>
         /// P35 value for all microfractures, static and dynamic, at the end of timestep M
         /// This represents the combined integral of R^3 across the area of every microfracture, where R is the microfracture radius
         /// It is used to calculate the microfracture permeability where microfracture aperture is size-dependent, and permeability is proportional to aperture cubed
         /// </summary>
         public double Total_uFP35_M { get; private set; }
+        /// <summary>
+        /// Piecewise population distribution function (not cumulative) for total microfracture volumetric density, at the end of timestep M
+        /// NB This list will only be instantiated if required to calculate microfracture permeability
+        /// </summary>
+        public double[] DuFP30_distribution_M { get; private set; }
         /// <summary>
         /// Azimuthal component of mean macrofracture stress shadow width
         /// </summary>
@@ -358,7 +363,6 @@ namespace DFMGenerator_SharedCode
         public void SetMicrofractureDensityData(double Total_uFP32_in, double Total_uFP33_in)
         {
             // Set the new values for total uFP32 and uFP33 at the end of the timestep
-            // Total uFP35 will not be set
             // These are stored for output at the end of the model run 
             Total_uFP32_M = Total_uFP32_in;
             Total_uFP33_M = Total_uFP33_in;
@@ -366,10 +370,24 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Set values for the microfracture density indices uFP32, uFP33 and uFP35 at the end of the timestep
         /// </summary>
+        /// <param name="Total_uFP32_in">Sum of the areas of every microfracture in a unit volume (the total mean linear microfracture density, uFP32) at end of timestep M</param>
+        /// <param name="Total_uFP33_in">Sum of the volumes of spheres surrounding every microfracture in a unit volume (the total volumetric microfracture ratio, uFP33) at end of timestep M</param>
+        /// <param name="Total_uFP35_in">Sum of the integral of R^3 across the area of every microfracture, where R is the microfracture radius, at end of timestep M</param>
+        public void SetMicrofractureDensityData(double Total_uFP32_in, double Total_uFP33_in, double Total_uFP35_in)
+        {
+            // Set the new values for total uFP31, uFP32, uFP33 and uFP35 at the end of the timestep
+            // These are stored for output at the end of the model run 
+            Total_uFP32_M = Total_uFP32_in;
+            Total_uFP33_M = Total_uFP33_in;
+            Total_uFP35_M = Total_uFP35_in;
+        }
+        /*/// <summary>
+        /// Set values for the microfracture density indices uFP31, uFP32, uFP33, uFP34 and uFP35 at the end of the timestep
+        /// </summary>
         /// <param name="Total_uFP31_in">Sum of the diameters of every microfracture in a unit volume at end of timestep M</param>
         /// <param name="Total_uFP32_in">Sum of the areas of every microfracture in a unit volume (the total mean linear microfracture density, uFP32) at end of timestep M</param>
         /// <param name="Total_uFP33_in">Sum of the volumes of spheres surrounding every microfracture in a unit volume (the total volumetric microfracture ratio, uFP33) at end of timestep M</param>
-        /// <param name="Total_uFP34_in">Sum of the integral of R^3 along the diameter of every microfracture, where R is the microfracture radius, at end of timestep M</param>
+        /// <param name="Total_uFP34_in">Sum of the integral of R^2 along the diameter of every microfracture, where R is the microfracture radius, at end of timestep M</param>
         /// <param name="Total_uFP35_in">Sum of the integral of R^3 across the area of every microfracture, where R is the microfracture radius, at end of timestep M</param>
         public void SetMicrofractureDensityData(double Total_uFP31_in, double Total_uFP32_in, double Total_uFP33_in, double Total_uFP34_in, double Total_uFP35_in)
         {
@@ -380,6 +398,21 @@ namespace DFMGenerator_SharedCode
             Total_uFP33_M = Total_uFP33_in;
             Total_uFP34_M = Total_uFP34_in;
             Total_uFP35_M = Total_uFP35_in;
+        }*/
+        /// <summary>
+        /// Set the piecewise population distribution function (not cumulative) for total microfracture volumetric density at the end of the timestep, based on active and static microfracture volumetric density arrays
+        /// </summary>
+        /// <param name="a_DuFP30_distribution_in">Array representing the active microfracture volumetric density distribution function at the end of timestep M</param>
+        /// <param name="s_DuFP30_distribution_in">Array representing the static microfracture volumetric density distribution function at the end of timestep M</param>
+        public void SetMicrofractureDistributionData(double[] a_DuFP30_distribution_in, double[] s_DuFP30_distribution_in)
+        {
+            // Get the size of the input arrays
+            int no_r_bins = Math.Min(a_DuFP30_distribution_in.Count(), s_DuFP30_distribution_in.Count());
+
+            // Copy the density data from the input active and static fracture density arrays into the total fracture density distribution array
+            DuFP30_distribution_M = new double[no_r_bins];
+            for (int r_bin = 0; r_bin < no_r_bins; r_bin++)
+                DuFP30_distribution_M[r_bin] = a_DuFP30_distribution_in[r_bin] + s_DuFP30_distribution_in[r_bin];
         }
         /// <summary>
         /// Set values for the mean total and azimuthal stress shadow width, at the end of the timestep
@@ -487,12 +520,27 @@ namespace DFMGenerator_SharedCode
                         gamma_InvBeta_M = 0;
                         // Set the cumulative half-macrofracture activation function at the end of the timestep Cum_Phi_M to 0 
                         // We will also set the half-macrofracture activation functions within the timestep (Phi_II_M and Phi_IJ_M) to 1 to avoid getting DIV0 errors when calculating Cum_Phi_Mminus1
+                        //Cum_Phi_M = 0;
                         Phi_II_M = 1;
                         Phi_IJ_M = 1;
                     }
                     break;
                 default:
                     break;
+            }
+        }
+        /// <summary>
+        /// Reduce the mean half-macrofracture propagation rate and microfracture propagation rate coefficient by a specified amount
+        /// This will reduce growth in the populations of implicit microfractures, and of explicit fractures in the DFN, in the case that the fracture dipset is deactivated within the timestep
+        /// NB this will not change the values for the driving stress, U and V
+        /// </summary>
+        /// <param name="reductionFactor"></param>
+        public void ReduceFractureGrowth(double reductionFactor)
+        {
+            if (reductionFactor > 0)
+            {
+                Mean_MF_PropagationRate_M *= reductionFactor;
+                gamma_InvBeta_M *= reductionFactor;
             }
         }
         /// <summary>
@@ -635,7 +683,7 @@ namespace DFMGenerator_SharedCode
             // Volumetric density of all static half-macrofractures terminated due to intersection, at the end of timestep M
             sIJ_MFP30_M = 0;
             // P31 of all microfractures, static and dynamic, at the end of timestep M
-            Total_uFP31_M = 0;
+            //Total_uFP31_M = 0;
             // Mean linear density of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP32_M = 0;
             // Mean linear density of all half-macrofractures, static and dynamic
@@ -643,9 +691,12 @@ namespace DFMGenerator_SharedCode
             // Volumetric ratio of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP33_M = 0;
             // P34 of all microfractures, static and dynamic, at the end of timestep M
-            Total_uFP34_M = 0;
+            //Total_uFP34_M = 0;
             // P35 of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP35_M = 0;
+            // Piecewise population distribution function (not cumulative) for total microfracture volumetric density, at the end of timestep M
+            // NB This list will only be instantiated if required to calculate microfracture permeability
+            DuFP30_distribution_M = null;
             // Azimuthal component of mean macrofracture stress shadow width
             Mean_AzimuthalStressShadowWidth_M = 0;
             // Mean macrofracture stress shadow width
@@ -736,7 +787,7 @@ namespace DFMGenerator_SharedCode
             // Volumetric density of all static half-macrofractures terminated due to intersection, at the end of timestep M
             sIJ_MFP30_M = fcd_in.sIJ_MFP30_M;
             // P31 of all microfractures, static and dynamic, at the end of timestep M
-            Total_uFP31_M = fcd_in.Total_uFP31_M;
+            //Total_uFP31_M = fcd_in.Total_uFP31_M;
             // Mean linear density of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP32_M = fcd_in.Total_uFP32_M;
             // Mean linear density of all half-macrofractures, static and dynamic, at the end of the timestep
@@ -744,9 +795,12 @@ namespace DFMGenerator_SharedCode
             // Volumetric ratio of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP33_M = fcd_in.Total_uFP33_M;
             // P34 of all microfractures, static and dynamic, at the end of timestep M
-            Total_uFP34_M = fcd_in.Total_uFP34_M;
+            //Total_uFP34_M = fcd_in.Total_uFP34_M;
             // P35 of all microfractures, static and dynamic, at the end of timestep M
             Total_uFP35_M = fcd_in.Total_uFP35_M;
+            // Piecewise population distribution function (not cumulative) for total microfracture volumetric density, at the end of timestep M
+            // NB This list will only be instantiated if required to calculate microfracture permeability
+            DuFP30_distribution_M = null;
             // Azimuthal component of mean macrofracture stress shadow width
             Mean_AzimuthalStressShadowWidth_M = fcd_in.Mean_AzimuthalStressShadowWidth_M;
             // Mean macrofracture stress shadow width

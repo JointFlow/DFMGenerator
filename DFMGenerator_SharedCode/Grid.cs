@@ -140,13 +140,16 @@ namespace DFMGenerator_SharedCode
                     // Check if it is null
                     if (Gridblock != null)
                     {
+#if !DEBUG
                         try
+#endif
                         {
                             // Run the calculation function for the specified gridblock and get the return code
                             CalculateFractureDataReturnCode calculateDataReturnCode = Gridblock.CalculateFractureData();
                             if (calculateDataReturnCode == CalculateFractureDataReturnCode.TimestepLimitExceeded)
                                 HitTimestepLimit++;
                         }
+#if !DEBUG
                         catch (Exception e)
                         {
                             progressReporter.OutputMessage(string.Format("Error in creating implicit fracture model in the gridblock {0},{1}", ColNo, RowNo));
@@ -154,6 +157,7 @@ namespace DFMGenerator_SharedCode
                             //progressReporter.OutputMessage(e.StackTrace);
                             ImplicitCalculationException++;
                         }
+#endif
                     }
 
                     // Update progress
@@ -727,7 +731,9 @@ namespace DFMGenerator_SharedCode
                 currentTime = nextTimestep.EndTimestepTime;
 
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
+#if !DEBUG
                 try
+#endif
                 {
                     if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     {
@@ -750,6 +756,7 @@ namespace DFMGenerator_SharedCode
                         }
                     }
                 }
+#if !DEBUG
                 catch (Exception e)
                 {
                     progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in gridblock at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
@@ -757,6 +764,7 @@ namespace DFMGenerator_SharedCode
                     //progressReporter.OutputMessage(e.StackTrace);
                     ExplicitCalculationException++;
                 }
+#endif
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);
@@ -809,7 +817,9 @@ namespace DFMGenerator_SharedCode
                     currentTime = nextTimestep.EndTimestepTime;
 
                 // Run calculation - if the gridblock thickness is greater than the minimum cutoff
+#if !DEBUG
                 try
+#endif
                 {
                     if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     {
@@ -832,6 +842,7 @@ namespace DFMGenerator_SharedCode
                         }
                     }
                 }
+#if !DEBUG
                 catch (Exception e)
                 {
                     progressReporter.OutputMessage(string.Format("Error in creating explicit DFN in the gridblock at {0},{1} TS {2}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo));
@@ -839,6 +850,7 @@ namespace DFMGenerator_SharedCode
                     //progressReporter.OutputMessage(e.StackTrace);
                     ExplicitCalculationException++;
                 }
+#endif
 
                 // Update progress
                 progressReporter.UpdateProgress(currentCalculationElement);

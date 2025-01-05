@@ -309,7 +309,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getTotal_uFP31_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP31_M; }
+        //public double getTotal_uFP31_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP31_M; }
         /// <summary>
         /// Mean linear density of all microfractures, static and dynamic, at the end of timestep M
         /// </summary>
@@ -333,13 +333,19 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getTotal_uFP34_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP34_M; }
+        //public double getTotal_uFP34_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP34_M; }
         /// <summary>
         /// P35 value for all microfractures, static and dynamic, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getTotal_uFP35_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP35_M; }
+        /// <summary>
+        /// Piecewise population distribution function (not cumulative) for total microfracture volumetric density, at the end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double[] getuFP30_distribution_M(int Timestep_M) { return dataList[Timestep_M].DuFP30_distribution_M; }
         /// <summary>
         /// Azimuthal component of mean macrofracture stress shadow width
         /// </summary>

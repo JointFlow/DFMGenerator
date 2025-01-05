@@ -48,31 +48,32 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double s_P33_total() { return (Math.PI/4) * gbc.ThicknessAtDeformation * s_P32_total; }
 
-        // Arrays for piecewise cumulative population distribution functions
+        // Arrays for population distribution functions
         /// <summary>
         /// Index half-lengths for cumulative population distribution function arrays
         /// </summary>
-        public List<double> halflengths;
+        public double[] halflengths { get; private set; }
+        // Arrays for piecewise cumulative population distribution functions
         /// <summary>
         /// Cumulative volumetric density distribution for active half-macrofractures 
         /// </summary>
-        public List<double> a_P30;
+        public double[] a_P30 { get; set; }
         /// <summary>
         /// Cumulative volumetric density distribution for static half-macrofractures terminated due to stress shadow interaction
         /// </summary>
-        public List<double> sII_P30;
+        public double[] sII_P30 { get; set; }
         /// <summary>
         /// Cumulative volumetric density distribution for static half-macrofractures terminated due to intersection with other fracture sets
         /// </summary>
-        public List<double> sIJ_P30;
+        public double[] sIJ_P30 { get; set; }
         /// <summary>
         /// Cumulative linear density distribution for active half-macrofractures 
         /// </summary>
-        public List<double> a_P32;
+        public double[] a_P32 { get; set; }
         /// <summary>
         /// Cumulative linear density distribution for static half-macrofractures 
         /// </summary>
-        public List<double> s_P32;
+        public double[] s_P32 { get; set; }
         /// <summary>
         /// Cumulative volumetric ratio distribution for active half-macrofractures
         /// </summary>
@@ -91,12 +92,40 @@ namespace DFMGenerator_SharedCode
         // Stress shadow width functions: These are included in the parent FractureDipSet object
         // Stress shadow volume functions: These are included in the parent FractureDipSet object
 
+        // Reset and data input functions
+        /// <summary>
+        /// Reset the arrays for the piecewise population distribution functions based on a supplied array of index halflengths
+        /// </summary>
+        /// <param name="halflengths_in">Array of macrofracture halflengths to use as index values for the piecewise population distribution functions</param>
+        public void ResetPopulationDistributionData(double[] halflengths_in)
+        {
+            // Set the array of radii for the piecewise population distribution functions
+            halflengths = halflengths_in;
+            int no_halflengths = halflengths_in.Count();
+
+            // Recreate arrays for the piecewise population distribution functions and fill then with zero values
+            a_P30 = new double[no_halflengths];
+            sII_P30 = new double[no_halflengths];
+            sIJ_P30 = new double[no_halflengths];
+            a_P32 = new double[no_halflengths];
+            s_P32 = new double[no_halflengths];
+            for (int halflength_no = 0; halflength_no < no_halflengths; halflength_no++)
+            {
+                a_P30[halflength_no] = 0;
+                sII_P30[halflength_no] = 0;
+                sIJ_P30[halflength_no] = 0;
+                a_P32[halflength_no] = 0;
+                s_P32[halflength_no] = 0;
+            }
+        }
+
+
         /// <summary>
         /// Default Constructor: initial state has no fractures and empty arrays for the piecewise cumulative population distribution functions
         /// </summary>
         /// <param name="gbc_in">Reference to great-grandparent GridblockConfiguration object</param>
         /// <param name="fds_in">Reference to parent FractureDipSet object</param>
-        public MacrofractureData(GridblockConfiguration gbc_in, FractureDipSet fds_in) : this (gbc_in, fds_in, new List<double>())
+        public MacrofractureData(GridblockConfiguration gbc_in, FractureDipSet fds_in) : this (gbc_in, fds_in, new double[0])
         {
         }
 
@@ -105,8 +134,8 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="gbc_in">Reference to great-grandparent GridblockConfiguration object</param>
         /// <param name="fds_in">Reference to parent FractureDipSet object</param>
-        /// <param name="halflengths_in">Reference to an array of macrofracture half-lengths</param>
-        public MacrofractureData(GridblockConfiguration gbc_in, FractureDipSet fds_in, List<double> halflengths_in)
+        /// <param name="halflengths_in">Array of macrofracture halflengths to use as index values for the piecewise population distribution functions</param>
+        public MacrofractureData(GridblockConfiguration gbc_in, FractureDipSet fds_in, double[] halflengths_in)
         {
             // Reference to parent FractureDipSet object
             fds = fds_in;
@@ -120,24 +149,8 @@ namespace DFMGenerator_SharedCode
             a_P32_total = 0;
             s_P32_total = 0;
 
-            // Set the array of halflengths for the piecewise cumulative population distribution functions to point externally
-            halflengths = halflengths_in;
-            int NoValues = halflengths_in.Count;
-
-            // Create arrays for piecewise cumulative population distribution functions and fill then with zero values
-            a_P30 = new List<double>();
-            sII_P30 = new List<double>();
-            sIJ_P30 = new List<double>();
-            a_P32 = new List<double>();
-            s_P32 = new List<double>();
-            for(int index = 0; index < NoValues; index++)
-            {
-                a_P30.Add(0d);
-                sII_P30.Add(0d);
-                sIJ_P30.Add(0d);
-                a_P32.Add(0d);
-                s_P32.Add(0d);
-            }
+            // Reset the arrays for the piecewise population distribution functions based on a supplied array of index halflengths
+            ResetPopulationDistributionData(halflengths_in);
         }
     }
 }

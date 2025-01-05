@@ -544,7 +544,7 @@ namespace DFMGenerator_Standalone
             ModelTimeUnits = TimeUnits.ma;
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             // Add a deformation episode with uniaxial extension of -0.01/ma over 1ma
-            /*EhminAzi_list.Add(EhminAzi);
+            EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(-0.01);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
@@ -554,7 +554,7 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(1);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);*/
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
             /*// Add an uplift episode, with uplift of 1800m over 18ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -567,19 +567,19 @@ namespace DFMGenerator_Standalone
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
             InitialAbsoluteStress_list.Add(InitialAbsoluteStress);*/
-            // Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
+            /*// Add an overpressure and cooling episode (e.g. injection of cold fluid) for 10 years, with stress arching
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(1E+12);
-            //AppliedTemperatureChange_list.Add(-5E+6);
+            AppliedTemperatureChange_list.Add(-5E+6);
             AppliedTemperatureChange_list.Add(0);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(1);
             DeformationEpisodeDuration_list.Add(1E-5);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);*/
             /*// Add a deformation episode with a defined stress load
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -648,7 +648,7 @@ namespace DFMGenerator_Standalone
             // Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
             // Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
             // Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
-            double InitialStressRelaxation = -1;// 0.5;
+            double InitialStressRelaxation = 0.5;
 
             // Outputs
             // Output to file

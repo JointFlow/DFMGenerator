@@ -154,11 +154,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Index radii for microfracture cumulative population distribution function arrays
         /// </summary>
-        public List<double> uF_radii;
+        public double[] uF_radii { get { return MicroFractures.radii; } }
         /// <summary>
         /// Index half-lengths for cumulative population distribution function arrays
         /// </summary>
-        public List<double> MF_halflengths;
+        public double[] MF_halflengths { get { return IPlus_halfMacroFractures.halflengths; } }
 
         // Current fracture data
         /// <summary>
@@ -183,6 +183,10 @@ namespace DFMGenerator_SharedCode
         /// Object containing a list of FractureCalculationData objects with dynamic propagation data for the previous timesteps
         /// </summary>
         private FCD_List PreviousFractureData;
+        /// <summary>
+        /// Flag to deactivate the fracture set at the start of the next timestep
+        /// </summary>
+        private bool DeactivateNextTimestep;
 
         // Functions to return data for the current timestep from the CurrentFractureData object
         /// <summary>
@@ -360,7 +364,7 @@ namespace DFMGenerator_SharedCode
         /// Return the P31 value for all microfractures, static and dynamic, during the current timestep
         /// </summary>
         /// <returns></returns>
-        public double getTotaluFP31() { return CurrentFractureData.Total_uFP31_M; }
+        //public double getTotaluFP31() { return CurrentFractureData.Total_uFP31_M; }
         /// <summary>
         /// Return the mean linear density of all microfractures, static and dynamic, during the current timestep
         /// </summary>
@@ -380,7 +384,7 @@ namespace DFMGenerator_SharedCode
         /// Return the P34 value for all microfractures, static and dynamic, during the current timestep
         /// </summary>
         /// <returns></returns>
-        public double getTotaluFP34() { return CurrentFractureData.Total_uFP34_M; }
+        //public double getTotaluFP34() { return CurrentFractureData.Total_uFP34_M; }
         /// <summary>
         /// Return the P35 value for all microfractures, static and dynamic, during the current timestep
         /// </summary>
@@ -641,7 +645,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getTotaluFP31(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP31_M(Timestep_M); }
+        //public double getTotaluFP31(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP31_M(Timestep_M); }
         /// <summary>
         /// Return the mean linear density of all microfractures, static and dynamic, at the end of a specified previous timestep
         /// </summary>
@@ -665,7 +669,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getTotaluFP34(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP34_M(Timestep_M); }
+        //public double getTotaluFP34(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP34_M(Timestep_M); }
         /// <summary>
         /// Return the P35 value for all microfractures, static and dynamic, at the end of a specified previous timestep
         /// </summary>
@@ -1248,12 +1252,12 @@ namespace DFMGenerator_SharedCode
         /// Total P31 value for active microfractures
         /// </summary>
         /// <returns></returns>
-        public double a_uFP31_total() { return MicroFractures.a_P31_total; }
+        //public double a_uFP31_total() { return MicroFractures.a_P31_total; }
         /// <summary>
         /// Total P31 value for static microfractures
         /// </summary>
         /// <returns></returns>
-        public double s_uFP31_total() { return MicroFractures.s_P31_total; }
+        //public double s_uFP31_total() { return MicroFractures.s_P31_total; }
         /// <summary>
         /// Total linear density of active microfractures
         /// </summary>
@@ -1278,12 +1282,12 @@ namespace DFMGenerator_SharedCode
         /// Total P34 value for active microfractures
         /// </summary>
         /// <returns></returns>
-        public double a_uFP34_total() { return MicroFractures.a_P34_total; }
+        //public double a_uFP34_total() { return MicroFractures.a_P34_total; }
         /// <summary>
         /// Total P34 value for static microfractures
         /// </summary>
         /// <returns></returns>
-        public double s_uFP34_total() { return MicroFractures.s_P34_total; }
+        //public double s_uFP34_total() { return MicroFractures.s_P34_total; }
         /// <summary>
         /// Total P35 value for active microfractures
         /// </summary>
@@ -1908,7 +1912,7 @@ namespace DFMGenerator_SharedCode
                 // Calculate the most likely reactivation mode
                 if (PresentDaySigmaNeff <= 0)
                     MostLikelyReactivationMode = FractureMode.Mode1;
-                else 
+                else
                     MostLikelyReactivationMode = (presentDayTauDip >= presentDayTauStrike ? FractureMode.Mode2 : FractureMode.Mode3);
             }
         }
@@ -2165,50 +2169,6 @@ namespace DFMGenerator_SharedCode
                 permTensor.Component(Tensor2SComponents.ZX, 0);
             }
             return permTensor;
-        }
-        /// <summary>
-        /// Get the permeability of a single fracture times the total fracture length / unit volume (P31), at the end of a specified previous timestep
-        /// This is used for the microfracture size and connectivity permeability correction
-        /// </summary>
-        /// <param name="Timestep_M">Index number of the specified timestep</param>
-        /// <returns>kf * uFP31</returns>
-        public double Total_uF_PermeabilityLength(int Timestep_M)
-        {
-            bool useCurrentDensityData = (Timestep_M < 0);
-            bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
-
-            double geometryMultiplier = 1d / 12d;
-            double apertureMultiplier;
-            double densityMultiplier;
-            switch (gbc.PropControl.FractureApertureControl)
-            {
-                // In the Uniform and Barton Bandis fracture aperture scenarios, aperture is uniform across the fracture
-                // The permeability will therefore be proportional to the cube of the mean aperture
-                case FractureApertureType.Uniform:
-                case FractureApertureType.BartonBandis:
-                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
-                    densityMultiplier = useCurrentDensityData ? a_uFP31_total() + s_uFP31_total() : getTotaluFP32(Timestep_M);
-                    break;
-                // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
-                // The aperture multiplier is calculated by integrating the cube of the local aperture along the diameter of every fracture
-                // This is therefore proportional to the 4th power of the fracture radii, so we must use the P34 value
-                // The P34 value also incorporates the fracture length, so will be included in the density multiplier
-                case FractureApertureType.SizeDependent:
-                case FractureApertureType.Dynamic:
-                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumMicrofractureAperture(1) : getMaximumMicrofractureAperture(1, Timestep_M), 3);
-                    densityMultiplier = (useCurrentDensityData ? a_uFP34_total() + s_uFP34_total() : getTotaluFP34(Timestep_M));
-                    break;
-                // Aperture is not defined
-                default:
-                    apertureMultiplier = 0;
-                    densityMultiplier = 0;
-                    break;
-            }
-            densityMultiplier /= sindip;
-
-            double permLengthIntegral = geometryMultiplier * apertureMultiplier * densityMultiplier;
-
-            return permLengthIntegral;
         }
         /// <summary>
         /// Get the uncorrected permeability tensor for all current half-macrofractures in this dipset
@@ -2730,38 +2690,38 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Populate the microfracture radius index array based on the microfracture calculation bin sizes
         /// </summary>
-        /// <param name="ClearExistingValues">Clear all existing values from the array first (if false, will retain all existing values in the array even if they are duplicates)</param>
         /// <param name="no_r_bins">Number of microfracture radius bins used to integrate uFP32 and uFP33 numerically</param>
-        public void reset_uF_radii_array(bool ClearExistingValues, int no_r_bins)
+        public void reset_uF_radii_array(int no_r_bins)
         {
-            // Clear existing values if this flag is specified
-            if (ClearExistingValues)
-                uF_radii.Clear();
+            // Create a local radius array
+            List<double> radii = new List<double>();
 
             // Cache useful variables locally
             double max_uF_radius = gbc.MaximumMicrofractureRadius;
 
             // Add new values to the array for all bin sizes
-            // We will not add a value for zero as this is given by the total microfracture density properties
+            // The first value is zero - this equates to the total microfracture density properties
+            radii.Add(0);
             // Add a value for all intermediate bin sizes
             for (int r_bin = 1; r_bin < no_r_bins; r_bin++)
             {
                 double rb_maxRad = ((double)r_bin / (double)no_r_bins) * max_uF_radius;
-                uF_radii.Add(rb_maxRad);
+                radii.Add(rb_maxRad);
             }
             // Add a final value for the maximum size
-            uF_radii.Add(max_uF_radius);
+            radii.Add(max_uF_radius);
+
+            // Pass the array to the Microfractures object
+            MicroFractures.ResetPopulationDistributionData(radii.ToArray());
         }
         /// <summary>
         /// Populate the macrofracture halflength index array based on the current halflengths of macrofractures that nucleated at timestep boundaries
         /// </summary>
-        /// <param name="ClearExistingValues">Clear all existing values from the array first (if false, will retain all existing values in the array even if they are duplicates)</param>
         /// <param name="cullValue">Only calculate a value for every nth timestep; set to zero to use all timesteps</param>
-        public void reset_MF_halflength_array(bool ClearExistingValues, int cullValue)
+        public void reset_MF_halflength_array(int cullValue)
         {
-            // Clear existing values if this flag is specified
-            if (ClearExistingValues)
-                MF_halflengths.Clear();
+            // Create a local halflength array
+            List<double> halflengths = new List<double>();
 
             // If cullValue is negative or zero set it to 1 (use all timesteps)
             if (cullValue <= 0) cullValue = 1;
@@ -2769,16 +2729,57 @@ namespace DFMGenerator_SharedCode
             // Get current timestep number
             int CurrentTimestep = PreviousFractureData.NoTimesteps;
 
-            // Loop backwards through every nth timestep
-            // We will not start with the current timestep as this will give a halflength zero, and we will not add a value for zero as this is given by the total halfmacrofracture density properties
+            // The first value is zero - this equates to the total halfmacrofracture density properties
+            halflengths.Add(0);
+
+            // Fill the rest of the array by looping backwards through every nth timestep
+            // NB the current timestep would give a halflength zero, which we have already added
             for (int tsM = CurrentTimestep - cullValue; tsM >= 0; tsM -= cullValue)
             {
                 // Calculate the current half length of a half-macrofracture that nucleated at the end of timestep M
                 double halfLength = PreviousFractureData.getCumulativeHalfLength(CurrentTimestep, tsM);
 
                 // Add this value to the array
-                MF_halflengths.Add(halfLength);
+                halflengths.Add(halfLength);
             }
+
+            // Pass the array to the Macrofractures objects
+            IPlus_halfMacroFractures.ResetPopulationDistributionData(halflengths.ToArray());
+            IMinus_halfMacroFractures.ResetPopulationDistributionData(halflengths.ToArray());
+        }
+        /// <summary>
+        /// Populate the macrofracture halflength index array geometrically, up to a defined maximum halflength
+        /// </summary>
+        /// <param name="NoHalflengths">Number of halflength index points (not including 0)</param>
+        /// <param name="MaxHalflengths">Maximum halflength</param>
+        public void reset_MF_halflength_array(int NoHalflengths, double MaxHalflength)
+        {
+            // Create a local halflength array
+            List<double> halflengths = new List<double>();
+
+            // Add the required number of intermediate index points on a logarithmic scale
+            double logMaxLength = Math.Log(MaxHalflength + 1d);
+
+            for (int halflength_no = 0; halflength_no < NoHalflengths; halflength_no++)
+            {
+                if (fs.FractureDistribution == StressDistribution.EvenlyDistributedStress)
+                {
+                    double logNewValue = ((double)(NoHalflengths - halflength_no) / (double)NoHalflengths) * logMaxLength;
+                    halflengths.Add(MaxHalflength + 1d - Math.Exp(logNewValue));
+                }
+                else
+                {
+                    double logNewValue = ((double)halflength_no / (double)NoHalflengths) * logMaxLength;
+                    halflengths.Add(Math.Exp(logNewValue) - 1);
+                }
+            }
+
+            // Add the final index point
+            halflengths.Add(MaxHalflength);
+
+            // Pass the array to the Macrofractures objects
+            IPlus_halfMacroFractures.ResetPopulationDistributionData(halflengths.ToArray());
+            IMinus_halfMacroFractures.ResetPopulationDistributionData(halflengths.ToArray());
         }
 
         // Functions to calculate fracture population data
@@ -2792,6 +2793,10 @@ namespace DFMGenerator_SharedCode
 
             // Now we can add the CurrentFractureData object to the list of previous FractureCalculationData objects in the PreviousFractureData object
             PreviousFractureData.AddTimestep(CurrentFractureData, true);
+
+            // If the flag is set to deactivate the fracture set at the start of the next timestep, do this now
+            if (DeactivateNextTimestep)
+                CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
         }
         /// <summary>
         /// Set the macrofracture density indices aMFP30, sIIMFP30, sIJMFP30 and MFP32 in the CurrentFractureData object
@@ -2802,15 +2807,21 @@ namespace DFMGenerator_SharedCode
             CurrentFractureData.SetMacrofractureDensityData(a_MFP30_total(), sII_MFP30_total(), sIJ_MFP30_total(), MFP32);
         }
         /// <summary>
-        /// Set the microfracture density indices uFP32 and uFP33 in the CurrentFractureData object
+        /// Set the microfracture density indices uFP32, uFP33 and uFP35 in the CurrentFractureData object
         /// </summary>
         public void setMicrofractureDensityData()
         {
-            double uFP31 = a_uFP31_total() + s_uFP31_total();
             double uFP32 = a_uFP32_total() + s_uFP32_total();
             double uFP33 = a_uFP33_total() + s_uFP33_total();
             double uFP35 = a_uFP35_total() + s_uFP35_total();
-            CurrentFractureData.SetMicrofractureDensityData(uFP31, uFP32, uFP33, uFP35);
+            CurrentFractureData.SetMicrofractureDensityData(uFP32, uFP33, uFP35);
+        }
+        /// <summary>
+        /// Set the microfracture density distribution array in the CurrentFractureData object
+        /// </summary>
+        public void setMicrofractureDistributionData()
+        {
+            CurrentFractureData.SetMicrofractureDistributionData(MicroFractures.a_DP30, MicroFractures.s_DP30);
         }
         /// <summary>
         /// Update the mean total and azimuthal stress shadow widths in the CurrentFractureData object
@@ -3736,8 +3747,9 @@ namespace DFMGenerator_SharedCode
                 IMinus_halfMacroFractures.a_P32_total = 0;
 
                 // Increment the static macrofracture P30 values in proportion to the ratio of new to available stress shadow volume
-                tsK_sII_MFP30_increment *= maxAvailableStressShadowVolume / newStressShadowVolume;
-                tsK_sIJ_MFP30_increment *= maxAvailableStressShadowVolume / newStressShadowVolume;
+                double fractureGrowthReductionFactor = maxAvailableStressShadowVolume / newStressShadowVolume;
+                tsK_sII_MFP30_increment *= fractureGrowthReductionFactor;
+                tsK_sIJ_MFP30_increment *= fractureGrowthReductionFactor;
                 IPlus_halfMacroFractures.sII_P30_total += tsK_sII_MFP30_increment;
                 IPlus_halfMacroFractures.sIJ_P30_total += tsK_sIJ_MFP30_increment;
                 IMinus_halfMacroFractures.sII_P30_total += tsK_sII_MFP30_increment;
@@ -3748,11 +3760,12 @@ namespace DFMGenerator_SharedCode
                 IPlus_halfMacroFractures.s_P32_total = s_MFP32_required / 2;
                 IMinus_halfMacroFractures.s_P32_total = s_MFP32_required / 2;
 
-                // Set the fracture evolutionary stage to Deactivated
-                // This will also set the propagation-related variables for microfractures and macrofractures to zero for this timestep
-                // This will prevent any growth in the populations of implicit microfractures (or macrofractures in future timesteps), and also prevent nucleation and growth of explicit fractures in the DFN
+                // Set the flag to set the fracture evolutionary stage to Deactivated at the start of the next timestep
+                // Then reduce the mean half-macrofracture propagation rate and microfracture propagation rate coefficient for this timestep proportionally
+                // This will reduce growth in the populations of implicit microfractures, and of explicit fractures in the DFN, in proportion with the implicit macrofracture growth
                 // This will also update the last item in the PreviousFractureData list, as it points to the same object
-                CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
+                DeactivateNextTimestep = true;
+                CurrentFractureData.ReduceFractureGrowth(fractureGrowthReductionFactor);
             }
             else // Otherwise update the fracture dip set data with calculated values and increments
             {
@@ -3803,18 +3816,18 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Calculate the increment in total active and static microfracture density (a_uFP30, s_uFP30, a_uFP32, s_uFP32, a_uFP33 and s_uFP33) during the current timestep, in response to the applied driving stress and taking into account fracture deactivation
         /// </summary>
-        /// <param name="no_r_bins">Number of microfracture radius bins used to integrate uFP32 and uFP33 numerically</param>
-        public void calculateTotalMicrofracturePopulation(int no_r_bins)
+        public void calculateTotalMicrofracturePopulation()
         {
             // Cache constants locally
             //double h = gbc.ThicknessAtDeformation;
-            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bType b_type = gbc.MechProps.GetbType();
             bool bis2 = (b_type == bType.Equals2);
             int tsN = PreviousFractureData.NoTimesteps;
+            int no_r_bins = uF_radii.Count() - 1;
             double rmin_cutoff = gbc.PropControl.minImplicitMicrofractureRadius;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
 
             // Calculate local helper variables
             // betac factor is -beta*c if b<>2, -c if b=2
@@ -3828,29 +3841,21 @@ namespace DFMGenerator_SharedCode
             // hc_factor is (h/2)^-c
             //double hc_factor = Math.Pow(half_h, -c_coefficient);
             // h1c_factor is (h/2)^(1-c) when c!=1, ln(h/2) when c=1
-            double h1c_factor = (c_coefficient == 1 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 1 - c_coefficient));
+            //double h1c_factor = (c_coefficient == 1 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 1 - c_coefficient));
             // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
             double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
             // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
             double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // h4c_factor is (h/2)^(4-c) when c!=4, ln(h/2) when c=4
-            double h4c_factor = (c_coefficient == 4 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 4 - c_coefficient));
+            //double h4c_factor = (c_coefficient == 4 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 4 - c_coefficient));
             // h5c_factor is (h/2)^(5-c) when c!=5, ln(h/2) when c=5
             double h5c_factor = (c_coefficient == 5 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 5 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
-            double uFP31_multiplier = CapB * 2;
-            double uFP32_multiplier = CapB * Math.PI;
-            double uFP33_multiplier = CapB * (4d / 3d) * Math.PI;
-            double uFP34_multiplier = CapB *  * Math.PI;
-            double uFP35_multiplier = CapB * (16d / 5d) * Math.PI;
-            double b2_uFP31_factor = (c_coefficient == 1 ? 1 : (1 - c_coefficient));
-            double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
-            double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
-            double b2_uFP34_factor = (c_coefficient == 4 ? 1 : (4 - c_coefficient));
-            double b2_uFP35_factor = (c_coefficient == 5 ? 1 : (5 - c_coefficient));
-
-            // Cache current timestep duration
-            double tsN_Duration = PreviousFractureData.getDuration(tsN);
+            //double uFP31_multiplier = Math.PI / 2;
+            double uFP32_multiplier = Math.PI;
+            double uFP33_multiplier = (4d / 3d) * Math.PI;
+            //double uFP34_multiplier = (8d / 4d) * Math.PI;
+            double uFP35_multiplier = (16d / 5d) * Math.PI;
 
             // Cache current mean probability of microfracture deactivation
             double mean_qiI_N = PreviousFractureData.getMean_qiI(tsN);
@@ -3875,16 +3880,26 @@ namespace DFMGenerator_SharedCode
             // Create local variables to calculate summation
             double a_uFP30_value = 0;
             double s_uFP30_increment = 0;
-            double a_uFP31_value = 0;
-            double s_uFP31_increment = 0;
+            //double a_uFP31_value = 0;
+            //double s_uFP31_increment = 0;
             double a_uFP32_value = 0;
             double s_uFP32_increment = 0;
             double a_uFP33_value = 0;
             double s_uFP33_increment = 0;
-            double a_uFP34_value = 0;
-            double s_uFP34_increment = 0;
+            //double a_uFP34_value = 0;
+            //double s_uFP34_increment = 0;
             double a_uFP35_value = 0;
             double s_uFP35_increment = 0;
+
+            // Also set up local arrays to store the microfracture density distribution values for each index value as they are calculated, and set the initial values to zero
+            double[] a_DuFP30_values = new double[no_r_bins + 1];
+            double[] s_DuFP30_increments = new double[no_r_bins + 1];
+            for (int r_bin = 0; r_bin < no_r_bins + 1; r_bin++)
+            {
+                // Add zero values to the local microfracture population data arrays
+                a_DuFP30_values[r_bin] = 0;
+                s_DuFP30_increments[r_bin] = 0;
+            }
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
             if (rmin_cutoff < max_uF_radius)
@@ -3894,8 +3909,8 @@ namespace DFMGenerator_SharedCode
                 {
                     case bType.LessThan2:
                         {
-                            // a_uF_P_30 and s_uF_P_30 terms can be calculated directly
-                            // However we cannot calculate a_uF_P_30 or s_uF_P_30 if the rmin cutoff is zero, as they will be infinite 
+                            // a_uFP30 and s_uFP30 terms can be calculated directly
+                            // However we cannot calculate a_uFP30 or s_uFP30 if the rmin cutoff is zero, as they will be infinite 
                             if (rmin_cutoff > 0)
                             {
                                 // Calculate useful components
@@ -3909,24 +3924,22 @@ namespace DFMGenerator_SharedCode
                                 if (ts_rminCumGammaN_factor > 0)
                                 {
                                     // Calculate a_uFP30 value for rmin_cutoff
-                                    a_uFP30_value = (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
+                                    a_uFP30_value = CapB * ts_theta_N * (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
 
                                     // Calculate s_uFP30 increment for rmin_cutoff
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP30_increment +=
+                                    s_uFP30_increment = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
                                         (ts_CumhGammaN_betac1_factor - ts_CumhGammaNminus1_betac1_factor - ts_rminCumGammaN_betac1_factor + ts_rminCumGammaNminus1_betac1_factor);
                                 }
                             }
 
-                            // a_uFP31_value, s_uFP31_increment, a_uFP32_value, s_uFP32_increment, a_uFP33_value, s_uFP33_increment, a_uFP34_value and s_uFP34_increment terms must be calculated numerically by iterating through a range of r-values
+                            // a_uFP32_value, s_uFP32_increment, a_uFP33_value and s_uFP33_increment terms must be calculated numerically by iterating through a range of r-values
                             // The static uF increments calculated in this iteration represent growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                            double rb_minRad = 0;
-                            double rb_maxRad = 0;
                             for (int r_bin = 0; r_bin < no_r_bins; r_bin++)
                             {
-                                // Calculate range of radii sizes in the current r-bin
-                                rb_minRad = rb_maxRad;
-                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * max_uF_radius;
+                                // Get range of radii sizes in the current r-bin
+                                double rb_minRad = uF_radii[r_bin];
+                                double rb_maxRad = uF_radii[r_bin + 1];
 
                                 // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
                                 if (rb_maxRad < rmin_cutoff) continue;
@@ -3950,63 +3963,53 @@ namespace DFMGenerator_SharedCode
                                 // Do not calculate a value if the extrapolated initial minimum radius is zero or less
                                 if (rb_rminCumGammaN_factor > 0)
                                 {
+                                    // Calculate a_DuFP30 value for this bin
+                                    double a_DuFP30_rbin = CapB * ts_theta_N * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_DuFP30_values[r_bin] = a_DuFP30_rbin;
+
+                                    // Calculate s_DuFP30 increment for this bin
+                                    double s_DuFP30_increment_rbin = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
+                                        (rb_rmaxCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor + rb_rminCumGammaNminus1_betac1_factor);
+                                    s_DuFP30_increments[r_bin] = s_DuFP30_increment_rbin;
+
                                     // Calculate term for a_uFP31_value component
-                                    a_uFP31_value += rb_minRad * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    //a_uFP31_value += uFP31_multiplier * rb_minRad * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP31_increment component
-                                    s_uFP31_increment += rb_minRad *
-                                        (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
+                                    //s_uFP31_increment += uFP31_multiplier * rb_minRad * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP32_value component
-                                    a_uFP32_value += Math.Pow(rb_minRad, 2) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_uFP32_value += uFP32_multiplier * Math.Pow(rb_minRad, 2) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP32_increment component
-                                    s_uFP32_increment += Math.Pow(rb_minRad, 2) *
-                                        (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
+                                    s_uFP32_increment += uFP32_multiplier * Math.Pow(rb_minRad, 2) * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP33_value component
-                                    a_uFP33_value += Math.Pow(rb_minRad, 3) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_uFP33_value += uFP33_multiplier * Math.Pow(rb_minRad, 3) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP33_increment component
-                                    s_uFP33_increment += Math.Pow(rb_minRad, 3) *
-                                        (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
+                                    s_uFP33_increment += uFP33_multiplier * Math.Pow(rb_minRad, 3) * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP34_value component
-                                    a_uFP34_value += Math.Pow(rb_minRad, 4) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    //a_uFP34_value += uFP34_multiplier * Math.Pow(rb_minRad, 4) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP34_increment component
-                                    s_uFP34_increment += Math.Pow(rb_minRad, 4) *
-                                        (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
+                                    //s_uFP34_increment += uFP34_multiplier * Math.Pow(rb_minRad, 4) * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP35_value component
-                                    a_uFP35_value += Math.Pow(rb_minRad, 5) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_uFP35_value += uFP35_multiplier * Math.Pow(rb_minRad, 5) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP35_increment component
-                                    s_uFP35_increment += Math.Pow(rb_minRad, 5) *
-                                        (rb_rminCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor + rb_rmaxCumGammaN_betac1_factor);
+                                    s_uFP35_increment += uFP35_multiplier * Math.Pow(rb_minRad, 5) * s_DuFP30_increment_rbin;
                                 }
                             }
-
-                            // Apply multipliers for microfracture deactivation rates for this timestep
-                            a_uFP30_value *= ts_theta_N;
-                            a_uFP31_value *= ts_theta_N;
-                            a_uFP32_value *= ts_theta_N;
-                            a_uFP33_value *= ts_theta_N;
-                            a_uFP34_value *= ts_theta_N;
-                            a_uFP35_value *= ts_theta_N;
-                            s_uFP30_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP31_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP32_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP33_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP34_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP35_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                         }
                         break;
                     case bType.Equals2:
                         {
                             // Calculate local helper variables
                             double ts_CumGammaN_betac_factor = Math.Exp(betac_factor * ts_CumGammaN);
-                            double ts_CumGammaMminus1_betac_factor = Math.Exp(betac_factor * ts_CumGammaNminus1);
+                            double ts_CumGammaNminus1_betac_factor = Math.Exp(betac_factor * ts_CumGammaNminus1);
 
                             // Calculate terms analytically for whole fracture population
                             // When b=2 the extrapolated initial minimum radius is always greater than 0
@@ -4016,106 +4019,132 @@ namespace DFMGenerator_SharedCode
                                 {
                                     // Calculate useful components
                                     double rb_minRad_betac_factor = Math.Pow(rmin_cutoff, betac_factor);
-                                    double rb_rminCumGammaM_betac_factor = rb_minRad_betac_factor * ts_CumGammaN_betac_factor;
-                                    double rb_rminCumGammaMminus1_betac_factor = rb_minRad_betac_factor * ts_CumGammaMminus1_betac_factor;
+                                    double rb_rminCumGammaN_betac_factor = rb_minRad_betac_factor * ts_CumGammaN_betac_factor;
+                                    double rb_rminCumGammaNminus1_betac_factor = rb_minRad_betac_factor * ts_CumGammaNminus1_betac_factor;
 
                                     // Calculate a_uFP30 value for rmin_cutoff
-                                    a_uFP30_value = (rb_rminCumGammaM_betac_factor - ts_CumhGammaN_betac_factor);
+                                    a_uFP30_value = CapB * ts_theta_N * (rb_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
 
                                     // Calculate s_uFP30 increment for rmin_cutoff
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP30_increment +=
-                                        (rb_rminCumGammaM_betac_factor - rb_rminCumGammaMminus1_betac_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
+                                    s_uFP30_increment = CapB * (ts_suF_deactivation_multiplier / c_coefficient) *
+                                        (rb_rminCumGammaN_betac_factor - rb_rminCumGammaNminus1_betac_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
+                                }
+
+                                // a_uFP32_value, s_uFP32_increment, a_uFP33_value and s_uFP33_increment terms can be calculated analytically
+                                // However we will still need to cycle through the r_bins to calculate the components of the a_DuFP30 and s_DuFP30 arrays
+                                for (int r_bin = 0; r_bin < no_r_bins; r_bin++)
+                                {
+                                    // Get range of radii sizes in the current r-bin
+                                    double rb_minRad = uF_radii[r_bin];
+                                    double rb_maxRad = uF_radii[r_bin + 1];
+
+                                    // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
+                                    if (rb_maxRad < rmin_cutoff) continue;
+                                    // If the minimum bin size is less than the minimum cutoff, set it to equal the minimum cutoff
+                                    if (rb_minRad < rmin_cutoff) rb_minRad = rmin_cutoff;
+                                    // If the minimum bin size is zero, go straight on to the next bin
+                                    if (rb_minRad <= 0) continue;
+
+                                    // Calculate useful components
+                                    double rb_minRad_betac_factor = Math.Pow(rb_minRad, betac_factor);
+                                    double rb_rminCumGammaN_betac_factor = rb_minRad_betac_factor * ts_CumGammaN_betac_factor;
+                                    double rb_rminCumGammaNminus1_betac_factor = rb_minRad_betac_factor * ts_CumGammaNminus1_betac_factor;
+                                    double rb_maxRad_betac_factor = Math.Pow(rb_maxRad, betac_factor);
+                                    double rb_rmaxCumGammaN_betac_factor = rb_maxRad_betac_factor * ts_CumGammaN_betac_factor;
+                                    double rb_rmaxCumGammaNminus1_betac_factor = rb_maxRad_betac_factor * ts_CumGammaNminus1_betac_factor;
+
+                                    // Calculate a_DuFP30 value for this bin
+                                    double a_DuFP30_rbin = CapB * ts_theta_N * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_DuFP30_values[r_bin] = a_DuFP30_rbin;
+
+                                    // Calculate s_DuFP30 increment for this bin
+                                    double s_DuFP30_increment_rbin = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
+                                        (rb_rminCumGammaN_betac_factor - rb_rminCumGammaNminus1_betac_factor - rb_rmaxCumGammaN_betac_factor + rb_rmaxCumGammaNminus1_betac_factor);
+                                    s_DuFP30_increments[r_bin] = s_DuFP30_increment_rbin;
                                 }
 
                                 // We cannot calculate the a_uFP31 and s_uFP31 terms if the rmin cutoff is zero and c>=1, as they will be infinite
-                                if ((rmin_cutoff > 0) || (c_coefficient < 1))
+                                /*if ((rmin_cutoff > 0) || (c_coefficient < 1))
                                 {
                                     // Calculate useful components
+                                    double b2_uFP31_factor = (c_coefficient == 1 ? 1 : (1 - c_coefficient));
                                     double rb_minRad_1c_factor = (c_coefficient == 1 ? Math.Log(rmin_cutoff) : Math.Pow(rmin_cutoff, 1 - c_coefficient));
 
                                     // Calculate term for a_uFP31_value
-                                    a_uFP31_value = ts_CumGammaN_betac_factor * (h1c_factor - rb_minRad_1c_factor);
+                                    a_uFP31_value = CapB * uFP31_multiplier * ts_theta_N * (c_coefficient / b2_uFP31_factor) * ts_CumGammaN_betac_factor * (h1c_factor - rb_minRad_1c_factor);
 
                                     // Calculate term for s_uFP31_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP31_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h1c_factor - rb_minRad_1c_factor);
-                                }
+                                    s_uFP31_increment = CapB * uFP31_multiplier * (ts_suF_deactivation_multiplier / b2_uFP31_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h1c_factor - rb_minRad_1c_factor);
+                                }*/
 
                                 // We cannot calculate the a_uFP32 and s_uFP32 terms if the rmin cutoff is zero and c>=2, as they will be infinite
                                 if ((rmin_cutoff > 0) || (c_coefficient < 2))
                                 {
                                     // Calculate useful components
+                                    double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
                                     double rb_minRad_2c_factor = (c_coefficient == 2 ? Math.Log(rmin_cutoff) : Math.Pow(rmin_cutoff, 2 - c_coefficient));
 
                                     // Calculate term for a_uFP32_value
-                                    a_uFP32_value = ts_CumGammaN_betac_factor * (h2c_factor - rb_minRad_2c_factor);
+                                    a_uFP32_value = CapB * uFP32_multiplier * ts_theta_N * (c_coefficient / b2_uFP32_factor) * ts_CumGammaN_betac_factor * (h2c_factor - rb_minRad_2c_factor);
 
                                     // Calculate term for s_uFP32_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP32_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
+                                    s_uFP32_increment = CapB * uFP32_multiplier * (ts_suF_deactivation_multiplier / b2_uFP32_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
                                 }
 
                                 // We cannot calculate the a_uFP33 and s_uFP33 terms if the rmin cutoff is zero and c>=3, as they will be infinite
                                 if ((rmin_cutoff > 0) || (c_coefficient < 3))
                                 {
                                     // Calculate useful components
+                                    double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
                                     double rb_minRad_3c_factor = (c_coefficient == 3 ? Math.Log(rmin_cutoff) : Math.Pow(rmin_cutoff, 3 - c_coefficient));
 
                                     // Calculate term for a_uFP33_value
-                                    a_uFP33_value = ts_CumGammaN_betac_factor * (h3c_factor - rb_minRad_3c_factor);
+                                    a_uFP33_value = CapB * uFP33_multiplier * ts_theta_N * (c_coefficient / b2_uFP33_factor) * ts_CumGammaN_betac_factor * (h3c_factor - rb_minRad_3c_factor);
 
                                     // Calculate term for s_uFP33_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP33_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
+                                    s_uFP33_increment = CapB * uFP33_multiplier * (ts_suF_deactivation_multiplier / b2_uFP33_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
                                 }
 
                                 // We cannot calculate the a_uFP34 and s_uFP34 terms if the rmin cutoff is zero and c>=4, as they will be infinite
-                                if ((rmin_cutoff > 0) || (c_coefficient < 4))
+                                /*if ((rmin_cutoff > 0) || (c_coefficient < 4))
                                 {
                                     // Calculate useful components
+                                    double b2_uFP34_factor = (c_coefficient == 4 ? 1 : (4 - c_coefficient));
                                     double rb_minRad_4c_factor = (c_coefficient == 4 ? Math.Log(rmin_cutoff) : Math.Pow(rmin_cutoff, 4 - c_coefficient));
 
                                     // Calculate term for a_uFP34_value
-                                    a_uFP34_value = ts_CumGammaN_betac_factor * (h4c_factor - rb_minRad_4c_factor);
+                                    a_uFP34_value = CapB * uFP34_multiplier * ts_theta_N * (c_coefficient / b2_uFP34_factor) * ts_CumGammaN_betac_factor * (h4c_factor - rb_minRad_4c_factor);
 
                                     // Calculate term for s_uFP34_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP34_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h4c_factor - rb_minRad_4c_factor);
-                                }
+                                    s_uFP34_increment = CapB * uFP34_multiplier * (ts_suF_deactivation_multiplier / b2_uFP34_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h4c_factor - rb_minRad_4c_factor);
+                                }*/
 
                                 // We cannot calculate the a_uFP35 and s_uFP35 terms if the rmin cutoff is zero and c>=5, as they will be infinite
                                 if ((rmin_cutoff > 0) || (c_coefficient < 5))
                                 {
                                     // Calculate useful components
+                                    double b2_uFP35_factor = (c_coefficient == 5 ? 1 : (5 - c_coefficient));
                                     double rb_minRad_5c_factor = (c_coefficient == 5 ? Math.Log(rmin_cutoff) : Math.Pow(rmin_cutoff, 5 - c_coefficient));
 
                                     // Calculate term for a_uFP35_value
-                                    a_uFP35_value = ts_CumGammaN_betac_factor * (h5c_factor - rb_minRad_5c_factor);
+                                    a_uFP35_value = CapB * uFP35_multiplier * ts_theta_N * (c_coefficient / b2_uFP35_factor) * ts_CumGammaN_betac_factor * (h5c_factor - rb_minRad_5c_factor);
 
                                     // Calculate term for s_uFP35_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP35_increment = (ts_CumGammaN_betac_factor - ts_CumGammaMminus1_betac_factor) * (h5c_factor - rb_minRad_5c_factor);
+                                    s_uFP35_increment = CapB * uFP35_multiplier * (ts_suF_deactivation_multiplier / b2_uFP35_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h5c_factor - rb_minRad_5c_factor);
                                 }
                             }
-
-                            // Apply multipliers for microfracture deactivation rates for this timestep
-                            a_uFP30_value *= ts_theta_N;
-                            a_uFP32_value *= ts_theta_N * (c_coefficient / b2_uFP32_factor);
-                            a_uFP33_value *= ts_theta_N * (c_coefficient / b2_uFP33_factor);
-                            a_uFP34_value *= ts_theta_N * (c_coefficient / b2_uFP34_factor);
-                            a_uFP35_value *= ts_theta_N * (c_coefficient / b2_uFP35_factor);
-                            s_uFP30_increment *= (ts_suF_deactivation_multiplier / c_coefficient);
-                            s_uFP32_increment *= (ts_suF_deactivation_multiplier / b2_uFP32_factor);
-                            s_uFP33_increment *= (ts_suF_deactivation_multiplier / b2_uFP33_factor);
-                            s_uFP34_increment *= (ts_suF_deactivation_multiplier / b2_uFP34_factor);
-                            s_uFP35_increment *= (ts_suF_deactivation_multiplier / b2_uFP35_factor);
                         }
                         break;
                     case bType.GreaterThan2:
                         {
-                            // a_uF_P_30 and s_uF_P_30 terms can be calculated directly
-                            // However we cannot calculate a_uF_P_30 or s_uF_P_30 if the rmin cutoff is zero, as they will be infinite 
+                            // a_uFP30 and s_uFP30 terms can be calculated directly
+                            // However we cannot calculate a_uFP30 or s_uFP30 if the rmin cutoff is zero, as they will be infinite 
                             if (rmin_cutoff > 0)
                             {
                                 // Calculate useful components
@@ -4130,24 +4159,22 @@ namespace DFMGenerator_SharedCode
                                 if (ts_rminCumGammaN_factor < double.PositiveInfinity)
                                 {
                                     // Calculate a_uFP30 value for rmin_cutoff
-                                    a_uFP30_value = (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
+                                    a_uFP30_value = CapB * ts_theta_N * (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
 
                                     // Calculate s_uFP30 increment for rmin_cutoff
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP30_increment +=
+                                    s_uFP30_increment = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
                                         (ts_rminCumGammaN_betac1_factor - ts_rminCumGammaNminus1_betac1_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
                                 }
                             }
 
-                            // a_uFP31_value, s_uFP31_increment, a_uFP32_value, s_uFP32_increment, a_uFP33_value, s_uFP33_increment, a_uFP34_value and s_uFP34_increment terms must be calculated numerically by iterating through a range of r-values
+                            // a_uFP32_value, s_uFP32_increment, a_uFP33_value and s_uFP33_increment terms must be calculated numerically by iterating through a range of r-values
                             // The static uF increments calculated in this iteration represent growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                            double rb_minRad = 0;
-                            double rb_maxRad = 0;
                             for (int r_bin = 0; r_bin < no_r_bins; r_bin++)
                             {
-                                // Calculate range of radii sizes in the current r-bin
-                                rb_minRad = rb_maxRad;
-                                rb_maxRad = ((double)(r_bin + 1) / (double)no_r_bins) * max_uF_radius;
+                                // Get range of radii sizes in the current r-bin
+                                double rb_minRad = uF_radii[r_bin];
+                                double rb_maxRad = uF_radii[r_bin + 1];
 
                                 // If the maximum bin size is less than the minimum cutoff, go straight on to the next bin
                                 if (rb_maxRad < rmin_cutoff) continue;
@@ -4172,117 +4199,104 @@ namespace DFMGenerator_SharedCode
                                 // However if b is very large, 1/beta will be large and negative, so rb_rminCumGammaN_factor and rb_rmaxCumGammaN_factor may tend to infinity; in this case no uFP32 or uFP33 values will be calculated
                                 if (rb_rminCumGammaN_factor < double.PositiveInfinity)
                                 {
+                                    // Calculate a_DuFP30 value for this bin
+                                    double a_DuFP30_rbin = CapB * ts_theta_N * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_DuFP30_values[r_bin] = a_DuFP30_rbin;
+
+                                    // Calculate s_DuFP30 increment for this bin
+                                    double s_DuFP30_increment_rbin = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
+                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    s_DuFP30_increments[r_bin] = s_DuFP30_increment_rbin;
+
                                     // Calculate term for a_uFP31_value component
-                                    a_uFP31_value += rb_minRad * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    //a_uFP31_value += uFP31_multiplier * rb_minRad * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP31_increment component
-                                    s_uFP31_increment += rb_minRad *
-                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    //s_uFP31_increment += uFP31_multiplier * rb_minRad * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP32_value component
-                                    a_uFP32_value += Math.Pow(rb_minRad, 2) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_uFP32_value += uFP32_multiplier * Math.Pow(rb_minRad, 2) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP32_increment component
-                                    s_uFP32_increment += Math.Pow(rb_minRad, 2) *
-                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    s_uFP32_increment += uFP32_multiplier * Math.Pow(rb_minRad, 2) * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP33_value component
-                                    a_uFP33_value += Math.Pow(rb_minRad, 3) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_uFP33_value += uFP33_multiplier * Math.Pow(rb_minRad, 3) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP33_increment component
-                                    s_uFP33_increment += Math.Pow(rb_minRad, 3) *
-                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    s_uFP33_increment += uFP33_multiplier * Math.Pow(rb_minRad, 3) * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP34_value component
-                                    a_uFP34_value += Math.Pow(rb_minRad, 4) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    //a_uFP34_value += uFP34_multiplier * Math.Pow(rb_minRad, 4) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP34_increment component
-                                    s_uFP34_increment += Math.Pow(rb_minRad, 4) *
-                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    //s_uFP34_increment += uFP34_multiplier * Math.Pow(rb_minRad, 4) * s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP35_value component
-                                    a_uFP35_value += Math.Pow(rb_minRad, 5) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
+                                    a_uFP35_value += uFP35_multiplier * Math.Pow(rb_minRad, 5) * a_DuFP30_rbin;
 
                                     // Calculate term for s_uFP35_increment component
-                                    s_uFP35_increment += Math.Pow(rb_minRad, 5) *
-                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    s_uFP35_increment += uFP35_multiplier * Math.Pow(rb_minRad, 5) * s_DuFP30_increment_rbin;
                                 }
                             }
-
-                            // Apply multipliers for microfracture deactivation rates for this timestep
-                            a_uFP30_value *= ts_theta_N;
-                            a_uFP31_value *= ts_theta_N;
-                            a_uFP32_value *= ts_theta_N;
-                            a_uFP33_value *= ts_theta_N;
-                            a_uFP34_value *= ts_theta_N;
-                            a_uFP35_value *= ts_theta_N;
-                            s_uFP30_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP31_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP32_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP33_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP34_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
-                            s_uFP35_increment *= (ts_suF_deactivation_multiplier / betac1_factor);
                         }
                         break;
                     default:
                         break;
                 }
 
-                // Add additional terms to s_uFP30_increment, s_uFP31_increment, s_uFP32_increment, s_uFP33_increment and s_uFP35_increment to account for transition deactivation microfractures
+                // Add additional terms to s_uFP30_increment, s_uFP32_increment and s_uFP33_increment to account for transition deactivation microfractures
                 double transition_deactivation_term = 0;
                 if (ts_CumhGammaN < double.PositiveInfinity)
                     transition_deactivation_term = (ts_theta_Nminus1 - ts_theta_dashed_Nminus1) * (ts_CumhGammaN_betac_factor - ts_CumhGammaNminus1_betac_factor);
-                s_uFP30_increment += transition_deactivation_term;
-                s_uFP31_increment += (transition_deactivation_term * max_uF_radius);
-                s_uFP32_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 2));
-                s_uFP33_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 3));
-                s_uFP34_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 4));
-                s_uFP35_increment += (transition_deactivation_term * Math.Pow(max_uF_radius, 5));
+                s_uFP30_increment += CapB * transition_deactivation_term;
+                //s_uFP31_increment += CapB * uFP31_multiplier * max_uF_radius * transition_deactivation_term;
+                s_uFP32_increment += CapB * uFP32_multiplier * Math.Pow(max_uF_radius, 2) * transition_deactivation_term;
+                s_uFP33_increment += CapB * uFP33_multiplier * Math.Pow(max_uF_radius, 3) * transition_deactivation_term;
+                //s_uFP34_increment += CapB * uFP34_multiplier * Math.Pow(max_uF_radius, 4) * transition_deactivation_term;
+                s_uFP35_increment += CapB * uFP35_multiplier * Math.Pow(max_uF_radius, 5) * transition_deactivation_term;
 
-                // Area of static microfractures cannot decrease 
-                // Therefore the static microfracture increments s_uFP30, s_uFP31, s_uFP32, s_uFP33 and s_uFP35 can never be negative; if they are set them to zero
+                // Add final components to a_DuFP30 and s_DuFP30 arrays representing transition deactivation microfractures
+                a_DuFP30_values[no_r_bins] = 0;
+                s_DuFP30_increments[no_r_bins] = CapB * transition_deactivation_term;
+
+                // Number or area of static microfractures cannot decrease 
+                // Therefore the static microfracture increments s_uFP30, s_uFP32 and s_uFP33 can never be negative; if they are set them to zero
                 if (s_uFP30_increment < 0)
                     s_uFP30_increment = 0;
-                if (s_uFP31_increment < 0)
-                    s_uFP31_increment = 0;
+                //if (s_uFP31_increment < 0)
+                //    s_uFP31_increment = 0;
                 if (s_uFP32_increment < 0)
                     s_uFP32_increment = 0;
                 if (s_uFP33_increment < 0)
                     s_uFP33_increment = 0;
-                if (s_uFP34_increment < 0)
-                    s_uFP34_increment = 0;
+                //if (s_uFP34_increment < 0)
+                //    s_uFP34_increment = 0;
                 if (s_uFP35_increment < 0)
                     s_uFP35_increment = 0;
 
-                // Apply general multipliers to increment and value terms
-                a_uFP30_value *= CapB;
-                a_uFP31_value *= uFP31_multiplier;
-                a_uFP32_value *= uFP32_multiplier;
-                a_uFP33_value *= uFP33_multiplier;
-                a_uFP34_value *= uFP34_multiplier;
-                a_uFP35_value *= uFP35_multiplier;
-                s_uFP30_increment *= CapB;
-                s_uFP31_increment *= uFP31_multiplier;
-                s_uFP32_increment *= uFP32_multiplier;
-                s_uFP33_increment *= uFP33_multiplier;
-                s_uFP34_increment *= uFP34_multiplier;
-                s_uFP35_increment *= uFP35_multiplier;
-
             } // End if the rmin cutoff is greater than the maximum microfracture radius
 
-            // Update values for total linear half-macrofracture population data for this fracture dip set
+            // Update values for the total microfracture population data for this fracture dip set
             MicroFractures.a_P30_total = a_uFP30_value;
             MicroFractures.s_P30_total += s_uFP30_increment;
-            MicroFractures.a_P31_total = a_uFP31_value;
-            MicroFractures.s_P31_total += s_uFP31_increment;
+            //MicroFractures.a_P31_total = a_uFP31_value;
+            //MicroFractures.s_P31_total += s_uFP31_increment;
             MicroFractures.a_P32_total = a_uFP32_value;
             MicroFractures.s_P32_total += s_uFP32_increment;
             MicroFractures.a_P33_total = a_uFP33_value;
             MicroFractures.s_P33_total += s_uFP33_increment;
-            MicroFractures.a_P34_total = a_uFP34_value;
-            MicroFractures.s_P34_total += s_uFP34_increment;
+            //MicroFractures.a_P34_total = a_uFP34_value;
+            //MicroFractures.s_P34_total += s_uFP34_increment;
             MicroFractures.a_P35_total = a_uFP35_value;
             MicroFractures.s_P35_total += s_uFP35_increment;
+
+            // Update values for the microfracture density distribution data for this fracture dip set
+            for (int r_bin = 0; r_bin < no_r_bins + 1; r_bin++)
+            {
+                MicroFractures.a_DP30[r_bin] = a_DuFP30_values[r_bin];
+                MicroFractures.s_DP30[r_bin] += s_DuFP30_increments[r_bin];
+            }
         }
         /// <summary>
         /// Calculate the cumulative active and static half-macrofracture density distribution functions a_MFP30(l), sII_MFP30(l), sIJ_MFP30(l), a_MFP32(l) and s_MFP32(l) at the current time, for a specified list of lengths l
@@ -4321,9 +4335,6 @@ namespace DFMGenerator_SharedCode
             // hb2_factor is (h/2)^b, = (h/2)^2 if b=2
             // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
             double hb2_factor = (bis2 ? Math.Pow((h / 2), 2) : Math.Pow(h / 2, b));
-
-            // Resort index array
-            MF_halflengths.Sort();
 #if DBLOG
             MF_halflengths[0] = 0;
             string fileName = string.Format("logFile_X{0}_Y{1}_Strike{2}_Dip{3}.txt", gbc.SWtop.X, gbc.SWtop.Y, (int)(fs.Strike * 180 / Math.PI), (int)(Dip * 180 / Math.PI));
@@ -4331,24 +4342,22 @@ namespace DFMGenerator_SharedCode
             StreamWriter logFile = new StreamWriter(namecomb);
             logFile.WriteLine("NewSet");
 #endif
-            int noIndexPoints = MF_halflengths.Count();
+            int noHalflengths = MF_halflengths.Count();
 
-            // Also set up local arrays to store the cumulative macrofracture population values for each index value as they are calculated
-            List<double> tsN_a_MFP30_values = new List<double>();
-            List<double> tsN_sII_MFP30_values = new List<double>();
-            List<double> tsN_sIJ_MFP30_values = new List<double>();
-            List<double> tsN_a_MFP32_values = new List<double>();
-            List<double> tsN_s_MFP32_values = new List<double>();
-
-            // Initialise and populate local arrays
-            for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+            // Also set up local arrays to store the cumulative macrofracture population values for each index value as they are calculated, and set the initial values to zero
+            double[] tsN_a_MFP30_values = new double[noHalflengths];
+            double[] tsN_sII_MFP30_values = new double[noHalflengths];
+            double[] tsN_sIJ_MFP30_values = new double[noHalflengths];
+            double[] tsN_a_MFP32_values = new double[noHalflengths];
+            double[] tsN_s_MFP32_values = new double[noHalflengths];
+            for (int halflength_no = 0; halflength_no < noHalflengths; halflength_no++)
             {
                 // Add zero values to the local cumulative macrofracture population data arrays
-                tsN_a_MFP30_values.Add(0d);
-                tsN_sII_MFP30_values.Add(0d);
-                tsN_sIJ_MFP30_values.Add(0d);
-                tsN_a_MFP32_values.Add(0d);
-                tsN_s_MFP32_values.Add(0d);
+                tsN_a_MFP30_values[halflength_no] = 0;
+                tsN_sII_MFP30_values[halflength_no] = 0;
+                tsN_sIJ_MFP30_values[halflength_no] = 0;
+                tsN_a_MFP32_values[halflength_no] = 0;
+                tsN_s_MFP32_values[halflength_no] = 0;
             }
 
             // Loop through the previous timesteps K to calculate the static data increments
@@ -4358,33 +4367,33 @@ namespace DFMGenerator_SharedCode
                 // Set flag to determine if this is the last timestep
                 bool is_tsN = (tsK == tsN);
 
-                // Set up local array of J-timestep values for each index half-length
-                List<int> tsJ = new List<int>();
+                // Also set up local arrays to store the cumulative macrofracture population values calculated for this timestep K, and set the initial values to zero
+                double[] tsK_a_MFP30_values = new double[noHalflengths];
+                double[] tsK_s_MFP30_increments = new double[noHalflengths];
+                double[] tsK_sII_MFP30_increments = new double[noHalflengths];
+                double[] tsK_sIJ_MFP30_increments = new double[noHalflengths];
+                double[] tsK_a_MFP32_values = new double[noHalflengths];
+                double[] tsK_s_MFP32_increments = new double[noHalflengths];
+                for (int halflength_no = 0; halflength_no < noHalflengths; halflength_no++)
+                {
+                    // Add zero values to the local cumulative macrofracture population data arrays
+                    tsK_a_MFP30_values[halflength_no] = 0;
+                    tsK_s_MFP30_increments[halflength_no] = 0;
+                    tsK_sII_MFP30_increments[halflength_no] = 0;
+                    tsK_sIJ_MFP30_increments[halflength_no] = 0;
+                    tsK_a_MFP32_values[halflength_no] = 0;
+                    tsK_s_MFP32_increments[halflength_no] = 0;
+                }
 
-                // Set up arrays for the increments or values calculated for this timestep K
-                List<double> tsK_a_MFP30_values = new List<double>();
-                List<double> tsK_s_MFP30_increments = new List<double>();
-                List<double> tsK_sII_MFP30_increments = new List<double>();
-                List<double> tsK_sIJ_MFP30_increments = new List<double>();
-                List<double> tsK_a_MFP32_values = new List<double>();
-                List<double> tsK_s_MFP32_increments = new List<double>();
-
-                // Initialise and populate local arrays
+                // Set up and populate a local array of J-timestep values for each index half-length
+                int[] tsJ = new int[noHalflengths];
                 int currentJTimestep = tsK;
-                for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                for (int halflength_no = 0; halflength_no < noHalflengths; halflength_no++)
                 {
                     // Calculate the J timesteps for each index value: this is the timestep in which a currently active fracture of the specified half-length must have nucleated
-                    while ((currentJTimestep > 0) && (MF_halflengths[indexPoint] >= PreviousFractureData.getCumulativeHalfLength(tsK, currentJTimestep)))
+                    while ((currentJTimestep > 0) && (MF_halflengths[halflength_no] >= PreviousFractureData.getCumulativeHalfLength(tsK, currentJTimestep)))
                         currentJTimestep--;
-                    tsJ.Add(currentJTimestep);
-
-                    // Add zero values to the local cumulative macrofracture population data arrays
-                    tsK_a_MFP30_values.Add(0d);
-                    tsK_s_MFP30_increments.Add(0d);
-                    tsK_sII_MFP30_increments.Add(0d);
-                    tsK_sIJ_MFP30_increments.Add(0d);
-                    tsK_a_MFP32_values.Add(0d);
-                    tsK_s_MFP32_increments.Add(0d);
+                    tsJ[halflength_no] = currentJTimestep;
                 }
 
                 switch (PreviousFractureData.getEvolutionStage(tsK))
@@ -4423,7 +4432,7 @@ namespace DFMGenerator_SharedCode
                                     // Calculate terms for a_MFP32_values
                                     double tsM_a_MFP32_M_increment = ts_Phi_K_M * h * Math.Pow(max_uF_radius, -c_coefficient) * ts_halfLength_K_M;
 
-                                    for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                                    for (int indexPoint = 0; indexPoint < noHalflengths; indexPoint++)
                                     {
                                         // Add M=0 values to a_MFP32 value arrays
                                         if (MF_halflengths[indexPoint] <= ts_halfLength_K_M)
@@ -4490,7 +4499,7 @@ namespace DFMGenerator_SharedCode
                                 }
 
                                 // Loop through all index points and populate the cumulative macrofracture population data arrays
-                                for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                                for (int indexPoint = 0; indexPoint < noHalflengths; indexPoint++)
                                 {
                                     double length = MF_halflengths[indexPoint];
 
@@ -4637,7 +4646,7 @@ namespace DFMGenerator_SharedCode
                             } // End loop through all timesteps M
 
                             // Multiply s_MFP30 and s_MFP32 increments by fracture deactivation probabilities
-                            for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                            for (int indexPoint = 0; indexPoint < noHalflengths; indexPoint++)
                             {
                                 tsK_sII_MFP30_increments[indexPoint] = tsK_s_MFP30_increments[indexPoint] * mean_FII_K;
                                 tsK_sIJ_MFP30_increments[indexPoint] = tsK_s_MFP30_increments[indexPoint] * mean_FIJ_K;
@@ -4670,6 +4679,8 @@ namespace DFMGenerator_SharedCode
                             // Rate of growth of exclusion zone of this dipset relative to rate of total exclusion zone growth
                             // NB for consistency we will take the value at the end of the previous timestep, since this is the value used by the with the calculateTotalMacrofracturePopulation() function in the first timestep iteration
                             double dChiMP_dChiTot_K = fs.get_dChiMP_dChiTot(this, tsK - 1);
+                            // Convert the macrofracture halflength array to a list
+                            List<double> MF_halflength_list = new List<double>(MF_halflengths);
 
                             // Current instantaneous probabilities of macrofracture deactivation
                             double inst_F_K = PreviousFractureData.getInstantaneousF(tsK);
@@ -4677,14 +4688,14 @@ namespace DFMGenerator_SharedCode
                             double inst_FIJ_K = PreviousFractureData.getInstantaneousFIJ(tsK);
 
                             // Get a list of the probabilities that fractures will reach the index lengths
-                            List<double> fractureLengthProbabilityMultipliers = fs.Calculate_Phi_ByDistance(this, tsK, MF_halflengths);
+                            List<double> fractureLengthProbabilityMultipliers = fs.Calculate_Phi_ByDistance(this, tsK, MF_halflength_list);
 
                             // Get a list of the normalised cumulative lengths of fractures longer than the index lengths
                             // In the evenly distributed stress scenario, the fractures in the other sets are randomly distributed, and we can use a quick version of the formula that assumes a constant instantaneous deactivation probability
                             // If there are stress shadows, the fractures in the other sets have a semi-regular distribution
                             // In this case we must use an approximate formula that takes the weighted mean stress shadow width of all dip sets - this should give a good approximation if most fractures are in one dip set
                             bool useQuickFormula = (gbc.PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress);
-                            List<double> fractureLengthGrowthMultipliers = fs.Calculate_MeanPropagationDistance(this, tsK, MF_halflengths, useQuickFormula);
+                            List<double> fractureLengthGrowthMultipliers = fs.Calculate_MeanPropagationDistance(this, tsK, MF_halflength_list, useQuickFormula);
                             // Also get the mean length and duration of zero length macrofractures for calculating the base values
                             double ts_MeanMFLength = fs.Calculate_MeanPropagationDistance(this, tsK, new List<double>() { 0 }, useQuickFormula)[0];
                             // The mean duration of residual active macrofractures is the mean length divided by the propagation rate
@@ -4724,7 +4735,7 @@ namespace DFMGenerator_SharedCode
                             string lengthProbabilityMultipliers = string.Format("LengthProbabilityMultipliers Timestep {0}", tsK);
                             string lengthGrowthMultipliers = string.Format("LengthGrowthMultipliers Timestep {0}", tsK);
 #endif
-                            for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                            for (int indexPoint = 0; indexPoint < noHalflengths; indexPoint++)
                             {
                                 // Get the length for this index point and calculate the proportion of fractures longer than this
                                 double length = MF_halflengths[indexPoint];
@@ -4777,7 +4788,7 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Update the cumulative macrofracture population arrays
-                for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                for (int indexPoint = 0; indexPoint < noHalflengths; indexPoint++)
                 {
                     // Set new a_MFP30 value for Timestep K
                     tsN_a_MFP30_values[indexPoint] = tsK_a_MFP30_values[indexPoint];
@@ -4806,7 +4817,7 @@ namespace DFMGenerator_SharedCode
 #endif
 
             // Apply general multipliers to all values
-            for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+            for (int indexPoint = 0; indexPoint < noHalflengths; indexPoint++)
             {
                 tsN_a_MFP30_values[indexPoint] *= CapB;
                 tsN_sII_MFP30_values[indexPoint] *= CapB;
@@ -4822,11 +4833,11 @@ namespace DFMGenerator_SharedCode
             IPlus_halfMacroFractures.a_P32 = tsN_a_MFP32_values;
             IPlus_halfMacroFractures.s_P32 = tsN_s_MFP32_values;
             // For the IMinus_halfMacroFractures we will create duplicate lists of values rather than references to the same lists as IPlus_halfMacroFractures
-            IMinus_halfMacroFractures.a_P30 = new List<double>(tsN_a_MFP30_values);
-            IMinus_halfMacroFractures.sII_P30 = new List<double>(tsN_sII_MFP30_values);
-            IMinus_halfMacroFractures.sIJ_P30 = new List<double>(tsN_sIJ_MFP30_values);
-            IMinus_halfMacroFractures.a_P32 = new List<double>(tsN_a_MFP32_values);
-            IMinus_halfMacroFractures.s_P32 = new List<double>(tsN_s_MFP32_values);
+            IMinus_halfMacroFractures.a_P30 = (double[])tsN_a_MFP30_values.Clone();
+            IMinus_halfMacroFractures.sII_P30 = (double[])tsN_sII_MFP30_values.Clone();
+            IMinus_halfMacroFractures.sIJ_P30 = (double[])tsN_sIJ_MFP30_values.Clone();
+            IMinus_halfMacroFractures.a_P32 = (double[])tsN_a_MFP32_values.Clone();
+            IMinus_halfMacroFractures.s_P32 = (double[])tsN_s_MFP32_values.Clone();
         }
         /// <summary>
         /// Calculate the cumulative active and static microfracture density distribution functions a_uFP30(r), s_uFP30(r), a_uFP32(r), s_uFP32(r), a_uFP33(r) and s_uFP33(r) at the current time, for a specified list of radii r
@@ -4835,397 +4846,218 @@ namespace DFMGenerator_SharedCode
         {
             // Cache constants locally
             //double h = gbc.ThicknessAtDeformation;
-            double max_uF_radius = gbc.MaximumMicrofractureRadius;
             double b = gbc.MechProps.b_factor;
             double beta = gbc.MechProps.beta;
             bType b_type = gbc.MechProps.GetbType();
             bool bis2 = (b_type == bType.Equals2);
             int tsN = PreviousFractureData.NoTimesteps;
+            int no_r_bins = uF_radii.Count() - 1;
             double rmin_cutoff = gbc.PropControl.minImplicitMicrofractureRadius;
+            double max_uF_radius = gbc.MaximumMicrofractureRadius;
 
-            // Calculate local helper variables
-            // betac factor is -beta*c if b<>2, -c if b=2
-            double betac_factor = (b == 2 ? -c_coefficient : -(beta * c_coefficient));
-            // betac1 factor is (1 - (beta c)) if b!=2, -c if b=2
-            double betac1_factor = (b == 2 ? -c_coefficient : 1 - ((2 * c_coefficient) / (2 - b)));
-            // hb1_factor is (h/2)^(b/2), = h/2 if b=2
-            //double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
-            // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
-            double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
-            // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
-            double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
             // Calculate multipliers for the P32 and P33 values
-            double uFP32_multiplier = CapB * Math.PI;
-            double uFP33_multiplier = CapB * (4d / 3d) * Math.PI;
-            double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
-            double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
+            double uFP32_multiplier = Math.PI;
+            double uFP33_multiplier = (4d / 3d) * Math.PI;
 
-            // Resort index array and ensure the maximum value is h/2
-            uF_radii.Sort();
-            int no_r_bins = uF_radii.Count();
-            while (uF_radii[no_r_bins - 1] > max_uF_radius)
+            // Also set up local arrays to store the cumulative microfracture population values for each index value as they are calculated, and set the initial values to zero
+            double[] a_uFP30_values = new double[no_r_bins + 1];
+            double[] s_uFP30_values = new double[no_r_bins + 1];
+            double[] a_uFP32_components = new double[no_r_bins + 1];
+            double[] s_uFP32_components = new double[no_r_bins + 1];
+            double[] a_uFP33_components = new double[no_r_bins + 1];
+            double[] s_uFP33_components = new double[no_r_bins + 1];
+            double[] a_uFP32_values = new double[no_r_bins + 1];
+            double[] s_uFP32_values = new double[no_r_bins + 1];
+            double[] a_uFP33_values = new double[no_r_bins + 1];
+            double[] s_uFP33_values = new double[no_r_bins + 1];
+            for (int r_bin = 0; r_bin < no_r_bins + 1; r_bin++)
             {
-                uF_radii.RemoveAt(no_r_bins - 1);
-                no_r_bins--;
+                // Add zero values to the local cumulative microfracture population data arrays
+                a_uFP30_values[r_bin] = 0;
+                s_uFP30_values[r_bin] = 0;
+                a_uFP32_components[r_bin] = 0;
+                s_uFP32_components[r_bin] = 0;
+                a_uFP33_components[r_bin] = 0;
+                s_uFP33_components[r_bin] = 0;
+                a_uFP32_values[r_bin] = 0;
+                s_uFP32_values[r_bin] = 0;
+                a_uFP33_values[r_bin] = 0;
+                s_uFP33_values[r_bin] = 0;
             }
-            if (uF_radii[no_r_bins - 1] < max_uF_radius)
-            {
-                uF_radii.Add(max_uF_radius);
-                no_r_bins++;
-            }
-
-            // Also set up local arrays to store the cumulative macrofracture population values for each index value as they are calculated
-            List<double> a_uFP30_values = new List<double>();
-            List<double> s_uFP30_values = new List<double>();
-            List<double> a_uFP32_components = new List<double>();
-            List<double> s_uFP32_components = new List<double>();
-            List<double> a_uFP33_components = new List<double>();
-            List<double> s_uFP33_components = new List<double>();
-            List<double> a_uFP32_values = new List<double>();
-            List<double> s_uFP32_values = new List<double>();
-            List<double> a_uFP33_values = new List<double>();
-            List<double> s_uFP33_values = new List<double>();
-
-            // Initialise and populate local arrays, and clear out the arrays in the microfracture set object
-            for (int indexPoint = 0; indexPoint < no_r_bins; indexPoint++)
-            {
-                // Add zero values to the local cumulative macrofracture population data arrays
-                a_uFP30_values.Add(0d);
-                s_uFP30_values.Add(0d);
-                a_uFP32_components.Add(0d);
-                s_uFP32_components.Add(0d);
-                a_uFP33_components.Add(0d);
-                s_uFP33_components.Add(0d);
-                a_uFP32_values.Add(0d);
-                s_uFP32_values.Add(0d);
-                a_uFP33_values.Add(0d);
-                s_uFP33_values.Add(0d);
-            }
-
-            // Finally set up a local variable to store the cumulative volumetric density for transition deactivation microfractures
-            double st_uFP30_component = 0;
 
             // If the rmin cutoff is greater than the maximum microfracture radius, all terms will be zero
             if (rmin_cutoff < max_uF_radius)
             {
-                // Loop through the previous timesteps M to calculate the static data increments
-                // For the current timestep N also calculate the active data values
-                for (int tsM = 1; tsM <= tsN; tsM++)
+                // If b=2 we can calculate all cumulative density values analytically
+                if (bis2)
                 {
-                    // Set flag to determine if this is the last timestep
-                    bool is_tsN = (tsM == tsN);
+                    // Calculate local helper variables
+                    // betac factor is -beta*c if b<>2, -c if b=2
+                    double betac_factor = (b == 2 ? -c_coefficient : -(beta * c_coefficient));
+                    // betac1 factor is (1 - (beta c)) if b!=2, -c if b=2
+                    double betac1_factor = (b == 2 ? -c_coefficient : 1 - ((2 * c_coefficient) / (2 - b)));
+                    // hb1_factor is (h/2)^(b/2), = h/2 if b=2
+                    //double hb1_factor = (b_type == bType.Equals2 ? half_h : Math.Pow(half_h, b / 2));
+                    // h2c_factor is (h/2)^(2-c) when c!=2, ln(h/2) when c=2
+                    double h2c_factor = (c_coefficient == 2 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 2 - c_coefficient));
+                    // h3c_factor is (h/2)^(3-c) when c!=3, ln(h/2) when c=3
+                    double h3c_factor = (c_coefficient == 3 ? Math.Log(max_uF_radius) : Math.Pow(max_uF_radius, 3 - c_coefficient));
+                    double b2_uFP32_factor = (c_coefficient == 2 ? 1 : (2 - c_coefficient));
+                    double b2_uFP33_factor = (c_coefficient == 3 ? 1 : (3 - c_coefficient));
 
-                    // Cache timestep M duration
-                    double tsM_Duration = PreviousFractureData.getDuration(tsM);
-
-                    // Cache current mean probability of microfracture deactivation
-                    double mean_qiI_M = PreviousFractureData.getMean_qiI(tsM);
-
-                    // Cache useful variables locally
-                    double ts_gamma_InvBeta_M = PreviousFractureData.getuFPropagationRateFactor(tsM);
-                    double ts_CumGammaM = PreviousFractureData.getCum_Gamma_M(tsM);
-                    double ts_CumGammaMminus1 = PreviousFractureData.getCum_Gamma_M(tsM - 1);
-                    double ts_theta_M = PreviousFractureData.getCumulativeTheta_AllFS_M(tsM);
-                    double ts_theta_Mminus1 = PreviousFractureData.getCumulativeTheta_AllFS_M(tsM - 1);
-                    // These variables are used for the terms representing transition deactivation microfractures, and also for calculating the upper cutoff for growth deactivation microfractures
-                    double ts_CumhGammaM = PreviousFractureData.getCum_hGamma_M(tsM);
-                    double ts_CumhGammaM_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaM) : Math.Pow(ts_CumhGammaM, betac_factor));
-                    double ts_CumhGammaM_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaM) : Math.Pow(ts_CumhGammaM, betac1_factor));
-                    double ts_CumhGammaMminus1 = PreviousFractureData.getCum_hGamma_M(tsM - 1);
-                    double ts_CumhGammaMminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac_factor));
-                    double ts_CumhGammaMminus1_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac1_factor));
-                    double ts_theta_dashed_Mminus1 = PreviousFractureData.getCumulativeThetaDashed_AllFS_M(tsM - 1);
-                    // If driving stress is zero (i.e. ts_gamma_InvBeta_M is zero) there will be no fracture propagation and hence no fracture deactivation
-                    double ts_suF_deactivation_multiplier = (ts_gamma_InvBeta_M > 0 ? (mean_qiI_M * ts_theta_Mminus1) / ts_gamma_InvBeta_M : 0);
-
-                    // Equations are different for b<2, b=2 and b>2
-                    switch (b_type)
+                    // Loop through the previous timesteps M to calculate the static data increments
+                    // For the current timestep N also calculate the active data values
+                    for (int tsM = 1; tsM <= tsN; tsM++)
                     {
-                        case bType.LessThan2:
+                        // Set flag to determine if this is the last timestep
+                        bool is_tsN = (tsM == tsN);
+
+                        // Cache current mean probability of microfracture deactivation
+                        double mean_qiI_M = PreviousFractureData.getMean_qiI(tsM);
+
+                        // Cache useful variables locally
+                        double ts_gamma_InvBeta_M = PreviousFractureData.getuFPropagationRateFactor(tsM);
+                        double ts_CumGammaM = PreviousFractureData.getCum_Gamma_M(tsM);
+                        double ts_CumGammaMminus1 = PreviousFractureData.getCum_Gamma_M(tsM - 1);
+                        double ts_theta_M = PreviousFractureData.getCumulativeTheta_AllFS_M(tsM);
+                        double ts_theta_Mminus1 = PreviousFractureData.getCumulativeTheta_AllFS_M(tsM - 1);
+                        // These variables are used for the terms representing transition deactivation microfractures, and also for calculating the upper cutoff for growth deactivation microfractures
+                        double ts_CumhGammaM = PreviousFractureData.getCum_hGamma_M(tsM);
+                        double ts_CumhGammaM_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaM) : Math.Pow(ts_CumhGammaM, betac_factor));
+                        double ts_CumhGammaM_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaM) : Math.Pow(ts_CumhGammaM, betac1_factor));
+                        double ts_CumhGammaMminus1 = PreviousFractureData.getCum_hGamma_M(tsM - 1);
+                        double ts_CumhGammaMminus1_betac_factor = (bis2 ? Math.Exp(betac_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac_factor));
+                        double ts_CumhGammaMminus1_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac1_factor));
+                        double ts_theta_dashed_Mminus1 = PreviousFractureData.getCumulativeThetaDashed_AllFS_M(tsM - 1);
+                        // If driving stress is zero (i.e. ts_gamma_InvBeta_M is zero) there will be no fracture propagation and hence no fracture deactivation
+                        double ts_suF_deactivation_multiplier = (ts_gamma_InvBeta_M > 0 ? (mean_qiI_M * ts_theta_Mminus1) / ts_gamma_InvBeta_M : 0);
+
+                        // Calculate useful components
+                        double ts_CumGammaM_betac_factor = Math.Exp(betac_factor * ts_CumGammaM);
+                        double ts_CumGammaMminus1_betac_factor = Math.Exp(betac_factor * ts_CumGammaMminus1);
+
+                        // Loop through all index points / r_bins and calculate the components of microfracture population data arrays
+                        for (int r_bin = 0; r_bin < no_r_bins; r_bin++)
+                        {
+                            // Get minimum radius size in the current r-bin
+                            double rb_minRad = uF_radii[r_bin];
+                            // If the minimum bin size is less than the minimum cutoff, set it to equal the minimum cutoff
+                            if (rb_minRad < rmin_cutoff) rb_minRad = rmin_cutoff;
+
+                            // When b=2 the extrapolated initial minimum radius is always greater than 0
                             {
-                                // Loop through all index points / r_bins and calculate the components of microfracture population data arrays
-                                for (int r_bin = 1; r_bin < no_r_bins; r_bin++)
+                                // We cannot calculate the a_uFP30 and s_uFP30 terms if rmin is zero, as they will be infinite 
+                                if (rb_minRad > 0)
                                 {
-                                    // Get range of radii sizes in the current r-bin
-                                    double rb_minRad = uF_radii[r_bin - 1];
-                                    double rb_maxRad = uF_radii[r_bin];
-
-                                    // If the minimum bin size is less than the minimum cutoff, set it to equal the minimum cutoff
-                                    if (rb_minRad < rmin_cutoff) rb_minRad = rmin_cutoff;
-                                    // If the minimum bin size is zero, go straight on to the next bin
-                                    if (rb_minRad <= 0) continue;
-
                                     // Calculate useful components
-                                    double rb_rminCumGammaM_factor = Math.Pow(rb_minRad, 1 / beta) + ts_CumGammaM;
-                                    double rb_rmaxCumGammaM_factor = Math.Pow(rb_maxRad, 1 / beta) + ts_CumGammaM;
-                                    double rb_rminCumGammaMminus1_factor = Math.Pow(rb_minRad, 1 / beta) + ts_CumGammaMminus1;
-                                    double rb_rmaxCumGammaMminus1_factor = Math.Pow(rb_maxRad, 1 / beta) + ts_CumGammaMminus1;
-                                    double rb_rminCumGammaM_betac_factor = Math.Pow(rb_rminCumGammaM_factor, betac_factor);
-                                    double rb_rmaxCumGammaM_betac_factor = Math.Pow(rb_rmaxCumGammaM_factor, betac_factor);
-                                    double rb_rminCumGammaM_betac1_factor = Math.Pow(rb_rminCumGammaM_factor, betac1_factor);
-                                    double rb_rmaxCumGammaM_betac1_factor = Math.Pow(rb_rmaxCumGammaM_factor, betac1_factor);
-                                    double rb_rminCumGammaMminus1_betac1_factor = Math.Pow(rb_rminCumGammaMminus1_factor, betac1_factor);
-                                    double rb_rmaxCumGammaMminus1_betac1_factor = Math.Pow(rb_rmaxCumGammaMminus1_factor, betac1_factor);
+                                    double rb_minRad_betac_factor = Math.Pow(rb_minRad, betac_factor);
+                                    double rb_rminCumGammaM_betac_factor = rb_minRad_betac_factor * ts_CumGammaM_betac_factor;
+                                    double rb_rminCumGammaMminus1_betac_factor = rb_minRad_betac_factor * ts_CumGammaMminus1_betac_factor;
 
-                                    // Do not calculate values if the extrapolated initial minimum radius is zero or less
-                                    if (rb_rminCumGammaM_factor > 0)
+                                    // Only calculate a_uFP30 value if timestep M=N
+                                    if (is_tsN)
                                     {
-                                        // Only calculate a_uFP30 value if timestep M=N
-                                        if (is_tsN)
-                                        {
-                                            // Calculate term for a_uFP30 value for rmin
-                                            a_uFP30_values[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - ts_CumhGammaM_betac_factor);
-                                        }
-
-                                        // Calculate term for s_uFP30 increment for rmin
-                                        s_uFP30_values[r_bin - 1] += ts_suF_deactivation_multiplier *
-                                            (ts_CumhGammaM_betac1_factor - ts_CumhGammaMminus1_betac1_factor - rb_rminCumGammaM_betac1_factor + rb_rminCumGammaMminus1_betac1_factor);
-
-                                        // If the maximum bin size is less than the minimum cutoff, do not calculate increment terms but go straight on to the next bin
-                                        if (rb_maxRad < rmin_cutoff) continue;
-
-                                        // Only calculate a_uFP32 and a_uFP33 increments if timestep M=N
-                                        if (is_tsN)
-                                        {
-                                            // Calculate term for a_uFP32 value component for rmin to rmax
-                                            a_uFP32_components[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - rb_rmaxCumGammaM_betac_factor);
-
-                                            // Calculate term for a_uFP33 value component for rmin to rmax
-                                            a_uFP33_components[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - rb_rmaxCumGammaM_betac_factor);
-                                        }
-
-                                        // Calculate term for s_uFP32 and s_uFP33 increment component for rmin to rmax
-                                        // At this point they will be the same - as we have not yet converted to area or volume
-                                        double s_uFP32_component_increment = ts_suF_deactivation_multiplier *
-                                            (rb_rminCumGammaMminus1_betac1_factor - rb_rminCumGammaM_betac1_factor - rb_rmaxCumGammaMminus1_betac1_factor + rb_rmaxCumGammaM_betac1_factor);
-                                        s_uFP32_components[r_bin - 1] += s_uFP32_component_increment;
-                                        s_uFP33_components[r_bin - 1] += s_uFP32_component_increment;
+                                        // Calculate term for a_uFP30 value for rmin
+                                        a_uFP30_values[r_bin] = CapB * ts_theta_M * (rb_rminCumGammaM_betac_factor - ts_CumhGammaM_betac_factor);
                                     }
-                                } // End loop through all r_bins
-                            }
-                            break;
-                        case bType.Equals2:
-                            {
-                                // Calculate useful components
-                                double ts_CumGammaM_betac_factor = Math.Exp(betac_factor * ts_CumGammaM);
-                                double ts_CumGammaMminus1_betac_factor = Math.Exp(betac_factor * ts_CumGammaMminus1);
 
-                                // Loop through all index points / r_bins and calculate the components of microfracture population data arrays
-                                for (int r_bin = 1; r_bin < no_r_bins; r_bin++)
+                                    // Calculate term for s_uFP30 increment for rmin (excluding transition deactivation microfractures)
+                                    s_uFP30_values[r_bin] += CapB * (ts_suF_deactivation_multiplier / c_coefficient) *
+                                        (rb_rminCumGammaM_betac_factor - rb_rminCumGammaMminus1_betac_factor - ts_CumhGammaM_betac1_factor + ts_CumhGammaMminus1_betac1_factor);
+                                }
+
+                                // We cannot calculate the a_uFP32 and s_uFP32 terms if rmin is zero and c>=2, as they will be infinite
+                                if ((rb_minRad > 0) || (c_coefficient < 2))
                                 {
-                                    // Get minimum radius size in the current r-bin
-                                    double rb_minRad = uF_radii[r_bin - 1];
-
-                                    // If the minimum bin size is less than the minimum cutoff, set it to equal the minimum cutoff
-                                    if (rb_minRad < rmin_cutoff) rb_minRad = rmin_cutoff;
-
-                                    // When b=2 the extrapolated initial minimum radius is always greater than 0
-                                    {
-                                        // We cannot calculate the a_uFP30 and s_uFP30 terms if rmin is zero, as they will be infinite 
-                                        if (rb_minRad > 0)
-                                        {
-                                            // Calculate useful components
-                                            double rb_minRad_betac_factor = Math.Pow(rb_minRad, betac_factor);
-                                            double rb_rminCumGammaM_betac_factor = rb_minRad_betac_factor * ts_CumGammaM_betac_factor;
-                                            double rb_rminCumGammaMminus1_betac_factor = rb_minRad_betac_factor * ts_CumGammaMminus1_betac_factor;
-
-                                            // Only calculate a_uFP30 value if timestep M=N
-                                            if (is_tsN)
-                                            {
-                                                // Calculate term for a_uFP30 value for rmin
-                                                a_uFP30_values[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - ts_CumhGammaM_betac_factor);
-                                            }
-
-                                            // Calculate term for s_uFP30 increment for rmin (excluding transition deactivation microfractures)
-                                            s_uFP30_values[r_bin - 1] += ts_suF_deactivation_multiplier *
-                                                (rb_rminCumGammaM_betac_factor - rb_rminCumGammaMminus1_betac_factor - ts_CumhGammaM_betac1_factor + ts_CumhGammaMminus1_betac1_factor);
-                                        }
-
-                                        // We cannot calculate the a_uFP32 and s_uFP32 terms if rmin is zero and c>=2, as they will be infinite
-                                        if ((rb_minRad > 0) || (c_coefficient < 2))
-                                        {
-                                            // Calculate useful components
-                                            double rb_minRad_2c_factor = (c_coefficient == 2 ? Math.Log(rb_minRad) : Math.Pow(rb_minRad, 2 - c_coefficient));
-
-                                            // Only calculate a_uFP32 value if timestep M=N
-                                            if (is_tsN)
-                                            {
-                                                // Calculate term for a_uFP32 value for rmin
-                                                a_uFP32_values[r_bin - 1] = ts_theta_M * ts_CumGammaM_betac_factor * (h2c_factor - rb_minRad_2c_factor);
-                                            }
-
-                                            // Calculate term for s_uFP32 increment for rmin (excluding transition deactivation microfractures)
-                                            s_uFP32_values[r_bin - 1] += ts_suF_deactivation_multiplier * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
-                                        }
-
-                                        // We cannot calculate the a_uFP33 and s_uFP33 terms if rmin is zero and c>=3, as they will be infinite
-                                        if ((rb_minRad > 0) || (c_coefficient < 3))
-                                        {
-                                            // Calculate useful components
-                                            double rb_minRad_3c_factor = (c_coefficient == 3 ? Math.Log(rb_minRad) : Math.Pow(rb_minRad, 3 - c_coefficient));
-
-                                            // Only calculate a_uFP33 value if timestep M=N
-                                            if (is_tsN)
-                                            {
-                                                // Calculate term for a_uFP33 value for rmin
-                                                a_uFP33_values[r_bin - 1] = ts_theta_M * ts_CumGammaM_betac_factor * (h3c_factor - rb_minRad_3c_factor);
-                                            }
-
-                                            // Calculate term for s_uFP33 increment for rmin (excluding transition deactivation microfractures)
-                                            s_uFP33_values[r_bin - 1] += ts_suF_deactivation_multiplier * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
-                                        }
-                                    }
-                                } // End loop through all r_bins
-                            }
-                            break;
-                        case bType.GreaterThan2:
-                            {
-                                // Loop through all index points / r_bins and calculate the components of microfracture population data arrays
-                                for (int r_bin = 1; r_bin < no_r_bins; r_bin++)
-                                {
-                                    // Get range of radii sizes in the current r-bin
-                                    double rb_minRad = uF_radii[r_bin - 1];
-                                    double rb_maxRad = uF_radii[r_bin];
-
-                                    // If the minimum bin size is less than the minimum cutoff, set it to equal the minimum cutoff
-                                    if (rb_minRad < rmin_cutoff) rb_minRad = rmin_cutoff;
-                                    // If the minimum bin size is zero, go straight on to the next bin
-                                    if (rb_minRad <= 0) continue;
-
                                     // Calculate useful components
-                                    double rb_rminCumGammaM_factor = Math.Pow(rb_minRad, 1 / beta) + ts_CumGammaM;
-                                    double rb_rmaxCumGammaM_factor = Math.Pow(rb_maxRad, 1 / beta) + ts_CumGammaM;
-                                    double rb_rminCumGammaMminus1_factor = Math.Pow(rb_minRad, 1 / beta) + ts_CumGammaMminus1;
-                                    double rb_rmaxCumGammaMminus1_factor = Math.Pow(rb_maxRad, 1 / beta) + ts_CumGammaMminus1;
-                                    double rb_rminCumGammaM_betac_factor = Math.Pow(rb_rminCumGammaM_factor, betac_factor);
-                                    double rb_rmaxCumGammaM_betac_factor = Math.Pow(rb_rmaxCumGammaM_factor, betac_factor);
-                                    double rb_rminCumGammaM_betac1_factor = Math.Pow(rb_rminCumGammaM_factor, betac1_factor);
-                                    double rb_rmaxCumGammaM_betac1_factor = Math.Pow(rb_rmaxCumGammaM_factor, betac1_factor);
-                                    double rb_rminCumGammaMminus1_betac1_factor = Math.Pow(rb_rminCumGammaMminus1_factor, betac1_factor);
-                                    double rb_rmaxCumGammaMminus1_betac1_factor = Math.Pow(rb_rmaxCumGammaMminus1_factor, betac1_factor);
+                                    double rb_minRad_2c_factor = (c_coefficient == 2 ? Math.Log(rb_minRad) : Math.Pow(rb_minRad, 2 - c_coefficient));
 
-                                    // When b>2 the extrapolated initial minimum radius is always greater than 0
-                                    // However if b is very large, 1/beta will be large and negative, so rb_rminCumGammaM_factor and rb_rmaxCumGammaM_factor may tend to infinity; in this case no uFP30, uFP32 or uFP33 values will be calculated
-                                    if (rb_rminCumGammaM_factor < double.PositiveInfinity)
+                                    // Only calculate a_uFP32 value if timestep M=N
+                                    if (is_tsN)
                                     {
-                                        // Only calculate a_uFP30 value if timestep M=N
-                                        if (is_tsN)
-                                        {
-                                            // Calculate term for a_uFP30 value for rmin
-                                            a_uFP30_values[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - ts_CumhGammaM_betac_factor);
-                                        }
-
-                                        // Calculate term for s_uFP30 increment for rmin
-                                        s_uFP30_values[r_bin - 1] += ts_suF_deactivation_multiplier *
-                                            (rb_rminCumGammaM_betac1_factor - rb_rminCumGammaMminus1_betac1_factor - ts_CumhGammaM_betac1_factor + ts_CumhGammaMminus1_betac1_factor);
-
-                                        // If the maximum bin size is less than the minimum cutoff, do not calculate increment terms but go straight on to the next bin
-                                        if (rb_maxRad < rmin_cutoff) continue;
-
-                                        // Only calculate a_uFP32 and a_uFP33 increments if timestep M=N
-                                        if (is_tsN)
-                                        {
-                                            // Calculate term for a_uFP32 value component for rmin to rmax
-                                            a_uFP32_components[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - rb_rmaxCumGammaM_betac_factor);
-
-                                            // Calculate term for a_uFP33 value component for rmin to rmax
-                                            a_uFP33_components[r_bin - 1] = ts_theta_M * (rb_rminCumGammaM_betac_factor - rb_rmaxCumGammaM_betac_factor);
-                                        }
-
-                                        // Calculate term for s_uFP32 and s_uFP33 increment component for rmin to rmax
-                                        // At this point they will be the same - as we have not yet converted to area or volume
-                                        double s_uFP32_component_increment = ts_suF_deactivation_multiplier *
-                                            (rb_rminCumGammaM_betac1_factor - rb_rminCumGammaMminus1_betac1_factor - rb_rmaxCumGammaM_betac1_factor + rb_rmaxCumGammaMminus1_betac1_factor);
-                                        s_uFP32_components[r_bin - 1] += s_uFP32_component_increment;
-                                        s_uFP33_components[r_bin - 1] += s_uFP32_component_increment;
+                                        // Calculate term for a_uFP32 value for rmin
+                                        a_uFP32_values[r_bin] = CapB * uFP32_multiplier * (c_coefficient / b2_uFP32_factor) * ts_theta_M * ts_CumGammaM_betac_factor * (h2c_factor - rb_minRad_2c_factor);
                                     }
-                                } // End loop through all r_bins
+
+                                    // Calculate term for s_uFP32 increment for rmin (excluding transition deactivation microfractures)
+                                    s_uFP32_values[r_bin] += CapB * uFP32_multiplier * (ts_suF_deactivation_multiplier / b2_uFP32_factor) * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
+                                }
+
+                                // We cannot calculate the a_uFP33 and s_uFP33 terms if rmin is zero and c>=3, as they will be infinite
+                                if ((rb_minRad > 0) || (c_coefficient < 3))
+                                {
+                                    // Calculate useful components
+                                    double rb_minRad_3c_factor = (c_coefficient == 3 ? Math.Log(rb_minRad) : Math.Pow(rb_minRad, 3 - c_coefficient));
+
+                                    // Only calculate a_uFP33 value if timestep M=N
+                                    if (is_tsN)
+                                    {
+                                        // Calculate term for a_uFP33 value for rmin
+                                        a_uFP33_values[r_bin] = CapB * uFP33_multiplier * (c_coefficient / b2_uFP33_factor) * ts_theta_M * ts_CumGammaM_betac_factor * (h3c_factor - rb_minRad_3c_factor);
+                                    }
+
+                                    // Calculate term for s_uFP33 increment for rmin (excluding transition deactivation microfractures)
+                                    s_uFP33_values[r_bin] += CapB * uFP33_multiplier * (ts_suF_deactivation_multiplier / b2_uFP33_factor) * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
+                                }
                             }
-                            break;
-                        default:
-                            break;
-                    } // End switch on b_type
+                        } // End loop through all r_bins
 
-                    // Calculate increment for the volumetric density of transition deactivation microfractures
-                    st_uFP30_component += (ts_theta_Mminus1 - ts_theta_dashed_Mminus1) * (ts_CumhGammaM_betac_factor - ts_CumhGammaMminus1_betac_factor);
+                        // Calculate increment for the volumetric density of transition deactivation microfractures
+                        double transition_deactivation_term = 0;
+                        if (ts_CumhGammaM < double.PositiveInfinity)
+                            transition_deactivation_term = (ts_theta_Mminus1 - ts_theta_dashed_Mminus1) * (ts_CumhGammaM_betac_factor - ts_CumhGammaMminus1_betac_factor);
 
-                } // End timestep M
+                        // Add terms for transition deactivation microfractures to static fracture density values
+                        for (int r_bin = 0; r_bin < no_r_bins + 1; r_bin++)
+                        {
+                            s_uFP30_values[r_bin] += CapB * transition_deactivation_term;
+                            s_uFP32_values[r_bin] += CapB * uFP32_multiplier * Math.Pow(max_uF_radius, 2) * transition_deactivation_term;
+                            s_uFP33_values[r_bin] += CapB * uFP33_multiplier * Math.Pow(max_uF_radius, 3) * transition_deactivation_term;
+                        }
+                    } // End loop through the previous timesteps M
 
-                // Calculate final values for each component of the cumulative arrays
-
-                if (bis2) // If b=2 then the cumulative uFP32 and uFP33 values have been calculated directly and we need only apply multipliers
+                } // End if b=2
+                // If b!=2 then we must calculate the cumulative density values numerically by summing the components in each r_bin, using the microfracture density distribution arrays
+                else
                 {
-                    // Loop through the local value arrays and apply general multipliers
-                    // Also add terms for transition deactivation microfractures to static fracture values
-                    for (int r_bin = no_r_bins; r_bin > 0; r_bin--)
+                    // Since the density values are cumulative, we will loop backwards through the bins, incrementing the cumulative densities with the density values calculated for each bin
+                    // Create local variables to store the ongoing cumulative density values
+                    double cumulative_a_uFP30 = 0;
+                    double cumulative_s_uFP30 = 0;
+                    double cumulative_a_uFP32 = 0;
+                    double cumulative_s_uFP32 = 0;
+                    double cumulative_a_uFP33 = 0;
+                    double cumulative_s_uFP33 = 0;
+
+                    // Loop through the backwards through the r_bins
+                    for (int r_bin = no_r_bins; r_bin >= 0; r_bin--)
                     {
-                        // Apply multiplier to a_uFP30
-                        a_uFP30_values[r_bin - 1] *= CapB;
+                        // Get minimum radius size in the current r-bin
+                        double rb_minRad = uF_radii[r_bin];
+                        // If the minimum bin size is less than the minimum cutoff, set it to equal the minimum cutoff
+                        if (rb_minRad < rmin_cutoff) rb_minRad = rmin_cutoff;
 
-                        // Apply multipliers and add term for transition deactivation microfractures to s_uFP30
-                        s_uFP30_values[r_bin - 1] /= c_coefficient;
-                        s_uFP30_values[r_bin - 1] += st_uFP30_component;
-                        s_uFP30_values[r_bin - 1] *= CapB;
+                        // Increment the cumulative uFP30 values and copy them into the cumulative density arrays
+                        cumulative_a_uFP30 += MicroFractures.a_DP30[r_bin];
+                        cumulative_s_uFP30 += MicroFractures.s_DP30[r_bin];
+                        a_uFP30_values[r_bin] = cumulative_a_uFP30;
+                        s_uFP30_values[r_bin] = cumulative_s_uFP30;
 
-                        // Apply multipliers to a_uFP32 and a_uFP33
-                        a_uFP32_values[r_bin - 1] *= uFP32_multiplier * (c_coefficient / b2_uFP32_factor);
-                        a_uFP33_values[r_bin - 1] *= uFP33_multiplier * (c_coefficient / b2_uFP33_factor);
+                        // Increment the cumulative uFP32 values and copy them into the cumulative density arrays
+                        cumulative_a_uFP32 += uFP32_multiplier * Math.Pow(rb_minRad, 2) * MicroFractures.a_DP30[r_bin];
+                        cumulative_s_uFP32 += uFP32_multiplier * Math.Pow(rb_minRad, 2) * MicroFractures.s_DP30[r_bin];
+                        a_uFP32_values[r_bin] = cumulative_a_uFP32;
+                        s_uFP32_values[r_bin] = cumulative_s_uFP32;
 
-                        // Apply multipliers and add terms for transition deactivation microfractures to s_uFP32 and s_uFP33
-                        s_uFP32_values[r_bin - 1] /= b2_uFP32_factor;
-                        s_uFP32_values[r_bin - 1] += (st_uFP30_component * Math.Pow(max_uF_radius, 2));
-                        s_uFP32_values[r_bin - 1] *= uFP32_multiplier;
-                        s_uFP33_values[r_bin - 1] /= b2_uFP33_factor;
-                        s_uFP33_values[r_bin - 1] += (st_uFP30_component * Math.Pow(max_uF_radius, 3));
-                        s_uFP33_values[r_bin - 1] *= uFP33_multiplier;
-                    }
-                }
-                else // If b!=2 then we must calculate the cumulative uFP32 and uFP33 values numerically by summing the components in each r_bin
-                {
-                    // The largest value in the array will just contain the residual values
-                    int r_bin = no_r_bins;
-
-                    // Set a_uFP30, a_uFP32 and a_uFP33 to zero and set s_uFP30, s_uFP32 and s_uFP33 to the appropriate values for the transition deactivation microfractures
-                    a_uFP30_values[r_bin - 1] = 0;
-                    a_uFP32_values[r_bin - 1] = 0;
-                    a_uFP33_values[r_bin - 1] = 0;
-                    s_uFP30_values[r_bin - 1] = CapB * st_uFP30_component;
-                    s_uFP32_values[r_bin - 1] = uFP32_multiplier * Math.Pow(max_uF_radius, 2) * st_uFP30_component;
-                    s_uFP33_values[r_bin - 1] = uFP33_multiplier * Math.Pow(max_uF_radius, 3) * st_uFP30_component;
-
-                    // Loop through the local value arrays
-                    for (r_bin--; r_bin > 0; r_bin--)
-                    {
-                        // Get range of radii sizes in the current r-bin
-                        double rb_minRad = uF_radii[r_bin - 1];
-                        double rb_maxRad = uF_radii[r_bin];
-
-                        // uFP30 values have been calculated directly and we need only apply multipliers and terms for transition deactivation microfractures (to s_uFP30) 
-                        // Apply multiplier to a_uFP30
-                        a_uFP30_values[r_bin - 1] *= CapB;
-
-                        // Apply multipliers and add term for transition deactivation microfractures to s_uFP30
-                        s_uFP30_values[r_bin - 1] /= betac1_factor;
-                        s_uFP30_values[r_bin - 1] += st_uFP30_component;
-                        s_uFP30_values[r_bin - 1] *= CapB;
-
-                        // uFP32 and uFP33 values must be calculated numerically as the sum of components from all the higher component bins  
-
-                        // Copy the previously calculated cumulative density values from the next higher bin
-                        a_uFP32_values[r_bin - 1] = a_uFP32_values[r_bin];
-                        a_uFP33_values[r_bin - 1] = a_uFP33_values[r_bin];
-                        s_uFP32_values[r_bin - 1] = s_uFP32_values[r_bin];
-                        s_uFP33_values[r_bin - 1] = s_uFP33_values[r_bin];
-
-                        // Now add the components calculated for this bin
-                        a_uFP32_values[r_bin - 1] += uFP32_multiplier * Math.Pow(rb_minRad, 2) * a_uFP32_components[r_bin - 1];
-                        a_uFP33_values[r_bin - 1] += uFP33_multiplier * Math.Pow(rb_minRad, 3) * a_uFP33_components[r_bin - 1];
-                        s_uFP32_values[r_bin - 1] += (uFP32_multiplier / betac1_factor) * Math.Pow(rb_minRad, 2) * s_uFP32_components[r_bin - 1];
-                        s_uFP33_values[r_bin - 1] += (uFP33_multiplier / betac1_factor) * Math.Pow(rb_minRad, 3) * s_uFP33_components[r_bin - 1];
+                        // Increment the cumulative uFP33 values and copy them into the cumulative density arrays
+                        cumulative_a_uFP33 += uFP33_multiplier * Math.Pow(rb_minRad, 3) * MicroFractures.a_DP30[r_bin];
+                        cumulative_s_uFP33 += uFP33_multiplier * Math.Pow(rb_minRad, 3) * MicroFractures.s_DP30[r_bin];
+                        a_uFP33_values[r_bin] = cumulative_a_uFP33;
+                        s_uFP33_values[r_bin] = cumulative_s_uFP33;
 
                     } // End loop through all r_bins
 
-                } // End if bis2
+                } // End if b!=2
 
             } // End if the rmin cutoff is greater than the maximum microfracture radius
 
@@ -5269,14 +5101,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public void resetFractureData()
         {
-            // Create empty arrays for microfracture radii and macrofracture halflengths
-            uF_radii = new List<double>();
-            MF_halflengths = new List<double>();
-
-            // Create new Microfracture and Macrofracture objects; override the microfracture radii and macrofracture halflength arrays
-            MicroFractures = new MicrofractureData(gbc, this, uF_radii);
-            IPlus_halfMacroFractures = new MacrofractureData(gbc, this, MF_halflengths);
-            IMinus_halfMacroFractures = new MacrofractureData(gbc, this, MF_halflengths);
+            // Create new Microfracture and Macrofracture objects; this will override the microfracture radii and macrofracture halflength arrays
+            MicroFractures = new MicrofractureData(gbc, this);
+            IPlus_halfMacroFractures = new MacrofractureData(gbc, this);
+            IMinus_halfMacroFractures = new MacrofractureData(gbc, this);
 
             // Set initial microfracture densities according to specified density and distribution coefficients
             double max_uF_radius = gbc.MaximumMicrofractureRadius;
@@ -5285,10 +5113,10 @@ namespace DFMGenerator_SharedCode
             if ((rmin_cutoff > 0) && (rmin_cutoff < max_uF_radius))
             {
                 MicroFractures.a_P30_total = CapB * (Math.Pow(rmin_cutoff, -c_coefficient) - Math.Pow(rmin_cutoff, -c_coefficient));
-                if (c_coefficient == 1)
-                    MicroFractures.a_P31_total = 2 * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
-                else
-                    MicroFractures.a_P31_total = 2 * CapB * (c_coefficient / (1 - c_coefficient)) * (Math.Pow(max_uF_radius, 1 - c_coefficient) - Math.Pow(rmin_cutoff, 1 - c_coefficient));
+                //if (c_coefficient == 1)
+                //    MicroFractures.a_P31_total = 2 * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
+                //else
+                //    MicroFractures.a_P31_total = 2 * CapB * (c_coefficient / (1 - c_coefficient)) * (Math.Pow(max_uF_radius, 1 - c_coefficient) - Math.Pow(rmin_cutoff, 1 - c_coefficient));
                 if (c_coefficient == 2)
                     MicroFractures.a_P32_total = Math.PI * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
@@ -5297,14 +5125,14 @@ namespace DFMGenerator_SharedCode
                     MicroFractures.a_P33_total = (4d / 3d) * Math.PI * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
                 else
                     MicroFractures.a_P33_total = (4d / 3d) * Math.PI * CapB * (c_coefficient / (3 - c_coefficient)) * (Math.Pow(max_uF_radius, 3 - c_coefficient) - Math.Pow(rmin_cutoff, 3 - c_coefficient));
-                if (c_coefficient == 4)
-                    MicroFractures.a_P34_total =  * Math.PI * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
-                else
-                    MicroFractures.a_P34_total =  * Math.PI * CapB * (c_coefficient / (4 - c_coefficient)) * (Math.Pow(max_uF_radius, 4 - c_coefficient) - Math.Pow(rmin_cutoff, 4 - c_coefficient));
-                if (c_coefficient == 5)
-                    MicroFractures.a_P35_total = (16d / 5d) * Math.PI * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
-                else
-                    MicroFractures.a_P35_total = (16d / 5d) * Math.PI * CapB * (c_coefficient / (5 - c_coefficient)) * (Math.Pow(max_uF_radius, 5 - c_coefficient) - Math.Pow(rmin_cutoff, 5 - c_coefficient));
+                //if (c_coefficient == 4)
+                //    MicroFractures.a_P34_total = (8d / 4d) * Math.PI * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
+                //else
+                //    MicroFractures.a_P34_total = (8d / 4d) * Math.PI * CapB * (c_coefficient / (4 - c_coefficient)) * (Math.Pow(max_uF_radius, 4 - c_coefficient) - Math.Pow(rmin_cutoff, 4 - c_coefficient));
+                //if (c_coefficient == 5)
+                //    MicroFractures.a_P35_total = (16d / 5d) * Math.PI * CapB * c_coefficient * (Math.Log(max_uF_radius) - Math.Log(rmin_cutoff));
+                //else
+                //    MicroFractures.a_P35_total = (16d / 5d) * Math.PI * CapB * (c_coefficient / (5 - c_coefficient)) * (Math.Pow(max_uF_radius, 5 - c_coefficient) - Math.Pow(rmin_cutoff, 5 - c_coefficient));
             }
 
             // Macrofracture growth rate data - set all growth rates to zero
@@ -5320,6 +5148,8 @@ namespace DFMGenerator_SharedCode
             // Create an new list for previous fracture calculation data objects and use the CurrentFractureData object for timestep 0 
             // Initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
             PreviousFractureData = new FCD_List(gbc.Initial_uF_factor, CurrentFractureData, true);
+            // Set the flag to deactivate the fracture set at the start of the next timestep to false
+            DeactivateNextTimestep = false;
         }
 
         // Constructors

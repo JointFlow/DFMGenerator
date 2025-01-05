@@ -2510,7 +2510,7 @@ namespace DFMGenerator_SharedCode
                 case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
                     {
                         // The permeability will be calculated on a set by set basis
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        /*foreach (Gridblock_FractureSet fs in FractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                             {
                                 // First we must get the uncorrected microfracture permeability tensor for this set, and extract the ii components that need to be corrected
@@ -2537,7 +2537,7 @@ namespace DFMGenerator_SharedCode
                                 fds_uF_Permeability.Component(Tensor2SComponents.YY, corrected_kyy);
                                 fds_uF_Permeability.Component(Tensor2SComponents.ZZ, corrected_kzz);
                                 microfracturePermeability += fds_uF_Permeability;
-                            }
+                            }*/
                     }
                     break;
                 // If no algorithm is specified, return a null tensor
@@ -2721,10 +2721,18 @@ namespace DFMGenerator_SharedCode
             // Flag for whether all fracture sets have been deactivated
             bool AllSetsDeactivated = false;
 
-            // Set the number of bins to split the microfracture radii into when calculating uFP33 numerically
+            // Set the number of bins to split the microfracture radii into when calculating uFP32 and uFP33 numerically
             int no_r_bins = PropControl.no_r_bins;
             // Maximum radius of microfractures in the smallest bin - used in determining fracture set deactivation
             double minrb_maxRad = (1 / (double)no_r_bins) * MaximumMicrofractureRadius;
+            // Reset the microfracture index array for each fracture dipset
+            foreach (Gridblock_FractureSet fs in FractureSets)
+            {
+                foreach (FractureDipSet fds in fs.FractureDipSets)
+                {
+                    fds.reset_uF_radii_array(no_r_bins);
+                }
+            }
             // Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set
             // NB we do not need to do this in the evenly distributed stress scenario
             bool checkAlluFStressShadows = PropControl.checkAlluFStressShadows && (SD != StressDistribution.EvenlyDistributedStress);
@@ -2742,6 +2750,9 @@ namespace DFMGenerator_SharedCode
             bool CalculateFracturePermeabilityTensor = PropControl.CalculateFracturePermeabilityTensor;
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
             FractureApertureType FractureApertureControl = PropControl.FractureApertureControl;
+            // Flag to save microfracture density distribution data for each timestep
+            // This is only required if calculating cumulative population distribution function or calculating permeability using the size and connectivity correction algorithm
+            bool saveMicrofractureDensityDistributionData = CalculatePopulationDistributionData || (PropControl.PermeabilityAlgorithm == PermeabilityCalculationAlgorithm.SizeConnectivityCorrected);
 
             // Get time units and unit conversion modifier for output time data if not in SI units
             TimeUnits timeUnits = PropControl.timeUnits;
@@ -3238,9 +3249,10 @@ namespace DFMGenerator_SharedCode
                         setCrossFSStressShadows();
 
                     // Check if any of the fracture sets meet the deactivation criteria, after in situ stress and stress shadow widths have been recalculated 
+                    AllSetsDeactivated = true;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
-                        fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                        AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
                     }
 
                     // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
@@ -3322,17 +3334,19 @@ namespace DFMGenerator_SharedCode
                         {
                             // Calculate the total linear microfracture population data for this timestep for each fracture dip set
                             // NB we cannot calculate uF_P_30(0,t) for power law initial microfracture distribution as this will be infinite
-                            fds.calculateTotalMicrofracturePopulation(no_r_bins);
+                            fds.calculateTotalMicrofracturePopulation();
                             fds.setMicrofractureDensityData();
+                            if (saveMicrofractureDensityDistributionData)
+                                fds.setMicrofractureDistributionData();
                         }
                     }
 
                     // Check if any or all of the fracture sets meet the deactivation criteria, after the fracture densities have been recalculated
-                    AllSetsDeactivated = true;
+                    /*AllSetsDeactivated = true;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
                         AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
-                    }
+                    }*/
 
                     // Update stress and strain tensors for the next timestep
                     // Update the depth of burial
@@ -3569,50 +3583,16 @@ namespace DFMGenerator_SharedCode
                         // Get a reference to the fracture dip set object
                         FractureDipSet fds = fs.FractureDipSets[dipsetIndex];
 
+                            // Reset the macrofracture index array
                         // Check to see if a maximum length has been set for the macrofracture cumulative population distribution function index values
                         if (maxIndexLength > 0) // If a maximum length has been set, generate the halflength index array manually
-                        {
-                            // Create a new list of halflength values
-                            List<double> indexPoints = new List<double>();
-
-                            // Add the required number of intermediate index points on a logarithmic scale
-                            double logMaxLength = Math.Log(maxIndexLength + 1);
-#if LOGDFNPOP
-                            // Use to create an index point at length zero; this is for debugging only, as normally we will use the total P30 and P32 values calculated while looping through the timesteps for the zero length cumulative distribution function values
-                            for (int indexPointNo = 0; indexPointNo < no_l_IndexPoints; indexPointNo++)
-#else
-                            for (int indexPointNo = 1; indexPointNo < no_l_IndexPoints; indexPointNo++)
-#endif
-                            {
-                                if (fs.FractureDistribution == StressDistribution.EvenlyDistributedStress)
-                                {
-                                    double logNewValue = ((double)(no_l_IndexPoints - indexPointNo) / (double)no_l_IndexPoints) * logMaxLength;
-                                    indexPoints.Add(maxIndexLength + 1 - Math.Exp(logNewValue));
-                                }
-                                else
-                                {
-                                    double logNewValue = ((double)indexPointNo / (double)no_l_IndexPoints) * logMaxLength;
-                                    indexPoints.Add(Math.Exp(logNewValue) - 1);
-                                }
-                            }
-
-                            // Add the final index point
-                            indexPoints.Add(maxIndexLength);
-
-                            // Set the macrofracture index array
-                            fds.MF_halflengths = indexPoints;
-                        }
+                            fds.reset_MF_halflength_array(no_l_IndexPoints, maxIndexLength);
                         else // otherwise generate the index array automatically using the reset_MF_halflength_array function
-                        {
-                            // Reset the macrofracture index array
-                            fds.reset_MF_halflength_array(true, cullValue);
-                        }
+                            fds.reset_MF_halflength_array(cullValue);
 
                         // Call the calculation function for the macrofracture cumulative population distribution function arrays
                         fds.calculateCumulativeMacrofracturePopulationArrays();
 
-                        // Reset the microfracture index array
-                        fds.reset_uF_radii_array(true, no_r_bins);
                         // Call the calculation function for the macrofracture cumulative population distribution function arrays
                         fds.calculateCumulativeMicrofracturePopulationArrays();
 
@@ -3626,12 +3606,18 @@ namespace DFMGenerator_SharedCode
                             // Write macrofracture data
                             {
                                 // Create stings for macrofracture data
-                                string indexData = string.Format("Half-length\t{0}\t", 0);
+                                /*string indexData = string.Format("Half-length\t{0}\t", 0);
                                 string a_MFP30_data = string.Format("a_MFP30\t{0}\t", fds.a_MFP30_total());
                                 string sII_MFP30_data = string.Format("sII_MFP30\t{0}\t", fds.sII_MFP30_total());
                                 string sIJ_MFP30_data = string.Format("sIJ_MFP30\t{0}\t", fds.sIJ_MFP30_total());
                                 string a_MFP32_data = string.Format("a_MFP32\t{0}\t", fds.a_MFP32_total());
-                                string s_MFP32_data = string.Format("s_MFP32\t{0}\t", fds.s_MFP32_total());
+                                string s_MFP32_data = string.Format("s_MFP32\t{0}\t", fds.s_MFP32_total());*/
+                                string indexData = "Half-length\t";
+                                string a_MFP30_data = "a_MFP30\t";
+                                string sII_MFP30_data = "sII_MFP30\t";
+                                string sIJ_MFP30_data = "sIJ_MFP30\t";
+                                string a_MFP32_data = "a_MFP32\t";
+                                string s_MFP32_data = "s_MFP32\t";
 
                                 // Loop through each point in the index value array and write data for that point
                                 int noIndexPoints = fds.MF_halflengths.Count();
@@ -3657,13 +3643,20 @@ namespace DFMGenerator_SharedCode
                             // Write microfracture data
                             {
                                 // Create stings for macrofracture data
-                                string indexData = string.Format("Radius\t{0}\t", 0);
+                                /*string indexData = string.Format("Radius\t{0}\t", 0);
                                 string a_uFP30_data = string.Format("a_uFP30\t{0}\t", fds.a_uFP30_total());
                                 string s_uFP30_data = string.Format("s_uFP30\t{0}\t", fds.s_uFP30_total());
                                 string a_uFP32_data = string.Format("a_uFP32\t{0}\t", fds.a_uFP32_total());
                                 string s_uFP32_data = string.Format("s_uFP32\t{0}\t", fds.s_uFP32_total());
                                 string a_uFP33_data = string.Format("a_uFP33\t{0}\t", fds.a_uFP33_total());
-                                string s_uFP33_data = string.Format("s_uFP33\t{0}\t", fds.s_uFP33_total());
+                                string s_uFP33_data = string.Format("s_uFP33\t{0}\t", fds.s_uFP33_total());*/
+                                string indexData = "Radius\t";
+                                string a_uFP30_data = "a_uFP30\t";
+                                string s_uFP30_data = "s_uFP30\t";
+                                string a_uFP32_data = "a_uFP32\t";
+                                string s_uFP32_data = "s_uFP32\t";
+                                string a_uFP33_data = "a_uFP33\t";
+                                string s_uFP33_data = "s_uFP33\t";
 
                                 // Loop through each point in the index value array and write data for that point
                                 int noIndexPoints = fds.uF_radii.Count();
