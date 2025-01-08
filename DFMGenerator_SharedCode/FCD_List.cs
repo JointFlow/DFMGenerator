@@ -345,7 +345,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double[] getuFP30_distribution_M(int Timestep_M) { return dataList[Timestep_M].DuFP30_distribution_M; }
+        public double[] getDuFP30_distribution_M(int Timestep_M) { return dataList[Timestep_M].DuFP30_distribution_M; }
         /// <summary>
         /// Azimuthal component of mean macrofracture stress shadow width
         /// </summary>

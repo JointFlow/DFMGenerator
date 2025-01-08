@@ -407,7 +407,7 @@ namespace DFMGenerator_SharedCode
         public void SetMicrofractureDistributionData(double[] a_DuFP30_distribution_in, double[] s_DuFP30_distribution_in)
         {
             // Get the size of the input arrays
-            int no_r_bins = Math.Min(a_DuFP30_distribution_in.Count(), s_DuFP30_distribution_in.Count());
+            int no_r_bins = Math.Min(a_DuFP30_distribution_in.Length, s_DuFP30_distribution_in.Length);
 
             // Copy the density data from the input active and static fracture density arrays into the total fracture density distribution array
             DuFP30_distribution_M = new double[no_r_bins];

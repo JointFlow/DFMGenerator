@@ -391,6 +391,11 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotaluFP35() { return CurrentFractureData.Total_uFP35_M; }
         /// <summary>
+        /// Return the piecewise population distribution function (not cumulative) for total microfracture volumetric density, during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double[] getDuFP30_distribution() { return CurrentFractureData.DuFP30_distribution_M; }
+        /// <summary>
         /// Return the volumetric ratio of all half-macrofractures, static and dynamic, during the current timestep
         /// </summary>
         /// <returns></returns>
@@ -676,6 +681,12 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getTotaluFP35(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP35_M(Timestep_M); }
+        /// <summary>
+        /// Return the piecewise population distribution function (not cumulative) for total microfracture volumetric density, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double[] getDuFP30_distribution(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getDuFP30_distribution_M(Timestep_M); }
         /// <summary>
         /// Return the volumetric ratio of all half-macrofractures, static and dynamic, at the end of a specified previous timestep
         /// </summary>
@@ -1377,6 +1388,30 @@ namespace DFMGenerator_SharedCode
         public double s_MFP33_total(PropagationDirection propdir) { return (Math.PI / 4) * gbc.ThicknessAtDeformation * s_MFP32_total(propdir); }
 
         // Functions to get cumulative population data for all fractures in the dipset
+        /// <summary>
+        /// Volumetric density distribution (not cumulative) for active microfractures 
+        /// </summary>
+        /// <param name="index">Index for piecewise distribution function arrays</param>
+        /// <returns></returns>
+        public double a_uFDP30(int index) { return MicroFractures.a_DP30[index]; }
+        /// <summary>
+        /// Volumetric density distribution (not cumulative) for static microfractures 
+        /// </summary>
+        /// <param name="index">Index for piecewise distribution function arrays</param>
+        /// <returns></returns>
+        public double s_uFDP30(int index) { return MicroFractures.s_DP30[index]; }
+        /// <summary>
+        /// Volumetric density distribution function (not cumulative) for all microfractures 
+        /// </summary>
+        /// <returns></returns>
+        public double[] T_uFDP30()
+        {
+            int no_rbins = uF_radii.Length;
+            double[] output = new double[no_rbins];
+            for (int r_bin = 0; r_bin < no_rbins; r_bin++)
+                output[r_bin] = MicroFractures.a_DP30[r_bin] + MicroFractures.s_DP30[r_bin];
+            return output;
+        }
         /// <summary>
         /// Cumulative volumetric density distribution for active microfractures 
         /// </summary>
@@ -2171,6 +2206,118 @@ namespace DFMGenerator_SharedCode
             return permTensor;
         }
         /// <summary>
+        /// Get the corrected permeability tensor for all current microfractures in this dipset
+        /// This assumes microfractures are unconnected and takes into account microfracture size distribution
+        /// </summary>
+        /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
+        public Tensor2S Total_uF_Permeability_Corrected()
+        {
+            return Total_uF_Permeability_Corrected(-1);
+        }
+        /// <summary>
+        /// Get the corrected permeability tensor for all microfractures in this dipset, at the end of a specified previous timestep
+        /// This assumes microfractures are unconnected and takes into account microfracture size distribution
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
+        public Tensor2S Total_uF_Permeability_Corrected(int Timestep_M)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+            bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
+
+            // Create and populate a local array for the cumulative uFP30 density distribution function
+            double[] DuFP30 = useCurrentDensityData ? T_uFDP30() : getDuFP30_distribution(Timestep_M);
+            int no_rbins = Math.Min(uF_radii.Length, DuFP30.Length);
+            double rmin = gbc.PropControl.minImplicitMicrofractureRadius;
+            int min_bin = no_rbins - 1;
+            double uFP30_rmin = 0;
+            while ((min_bin > 0) && (uF_radii[min_bin] > rmin))
+            {
+                uFP30_rmin += DuFP30[min_bin];
+                min_bin--;
+            }
+            uFP30_rmin += DuFP30[min_bin];
+
+            // Get the fracture multipliers
+            // For now this calculation assumes square fractures of uniform (although potentially size-dependent) aperture
+            double geometryMultiplier = 1d / 12d;
+            // If the fracture aperture is uniform and independent of fracture size, get the aperture multiplier now
+            // Otherwise we will get the fracture aperture within each size bin
+            double apertureMultiplier = 0;
+            FractureApertureType apertureType = gbc.PropControl.FractureApertureControl;
+            if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
+                apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
+            double k_f = geometryMultiplier * apertureMultiplier;
+
+            // Calculate total permeability (including microfractures and host rock) in series
+            // Loop through all the bins and calculate permeability parallel to the fracture
+            // For now we will assume host rock permeability is isotropic and ignore host rock kv
+            double k_h = gbc.MechProps.HostRock_kh;
+            double boxSize = Math.Pow(uFP30_rmin, -1d / 3d);
+            double length = 0;
+            double cum_inv_perm = 0;
+            for (int r_bin = min_bin; r_bin < no_rbins; r_bin++)
+            {
+                // Get geometric information for this bin
+                double radius = uF_radii[r_bin];
+                if (radius < rmin)
+                    radius = rmin;
+                double diameter = 2 * radius;
+
+                // If the fracture aperture is size dependent, recalculate the fracture permeability for this bin
+                if ((apertureType == FractureApertureType.SizeDependent) || (apertureType == FractureApertureType.Dynamic))
+                {
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(radius) : getMeanMicrofractureAperture(radius, Timestep_M), 3);
+                    k_f = geometryMultiplier * apertureMultiplier;
+                }
+
+                // If the fracture is shorter than the box, calculate permeability of series flow through the fracture and the rest of the box
+                double length_increment, cum_inv_perm_increment;
+                if (diameter < boxSize)
+                {
+                    double box_minus_fracture = boxSize - diameter;
+                    double box_minus_fracture_ratio_squared = Math.Pow((box_minus_fracture / boxSize), 2);
+                    double misalignmentMultiplier = 4 * box_minus_fracture_ratio_squared * Math.Log(1 + (1 / (4 * box_minus_fracture_ratio_squared)));
+
+                    length_increment = DuFP30[r_bin] * boxSize;
+                    cum_inv_perm_increment = DuFP30[r_bin] * ((diameter / ((diameter * k_f))) + ((boxSize - diameter) / (boxSize * boxSize * k_h * misalignmentMultiplier)));
+                    //cum_inv_perm_increment = DuFP30[r_bin] * ((diameter / ((diameter * k_f) + (boxSize * boxSize * k_h))) + ((boxSize - diameter) / (boxSize * boxSize * k_h * misalignmentMultiplier)));
+                }
+                // Otherwise calculate the permeability of series flow through the fracture and orthogonally into the next adjacent fracture
+                else
+                {
+                    double uFP32 = useCurrentDensityData ? a_uFP32_total() + s_uFP32_total() : getTotaluFP32(Timestep_M);
+                    double uF_spacing = 1 / uFP32;
+
+                    length_increment = DuFP30[r_bin] * diameter;
+                    cum_inv_perm_increment = DuFP30[r_bin] * ((1 / k_f) + (uF_spacing / (diameter * boxSize * k_h)));
+                    //double k_mean = (boxSize * boxSize * k_h) + (diameter / ((1 / k_f) + (uF_spacing / (diameter * boxSize * k_h))));
+                    //cum_inv_perm_increment = DuFP30[r_bin] * (diameter / k_mean);
+                }
+                if (!double.IsNaN(length_increment) && !double.IsNaN(cum_inv_perm_increment))
+                {
+                    length += length_increment;
+                    cum_inv_perm += cum_inv_perm_increment;
+                }
+            }
+            // Calculate the new total permeability
+            double k_tot = (1 / (boxSize * boxSize)) * (length / cum_inv_perm);
+
+            // Subtract the original host rock permeability
+            //k_tot -= k_h;
+            if (k_tot < 0)
+                k_tot = 0;
+
+            Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, k_tot);
+            // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
+            if (BiazimuthalConjugate)
+            {
+                permTensor.Component(Tensor2SComponents.YZ, 0);
+                permTensor.Component(Tensor2SComponents.ZX, 0);
+            }
+            return permTensor;
+        }
+        /// <summary>
         /// Get the uncorrected permeability tensor for all current half-macrofractures in this dipset
         /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
         /// </summary>
@@ -2221,6 +2368,159 @@ namespace DFMGenerator_SharedCode
                 permTensor.Component(Tensor2SComponents.YZ, 0);
                 permTensor.Component(Tensor2SComponents.ZX, 0);
             }
+            return permTensor;
+        }
+        /// <summary>
+        /// Get the corrected permeability tensor for all current half-macrofractures in this dipset
+        /// This takes into account half-macrofracture connectivity and size distribution
+        /// </summary>
+        /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
+        public Tensor2S Total_MF_Permeability_Corrected()
+        {
+            return Total_MF_Permeability_Corrected(-1);
+        }
+        /// <summary>
+        /// Get the corrected permeability tensor for all half-macrofractures in this dipset, at the end of a specified previous timestep
+        /// This takes into account half-macrofracture connectivity and size distribution
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
+        public Tensor2S Total_MF_Permeability_Corrected(int Timestep_M)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+            bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
+
+            double geometryMultiplier = 1d / 12d;
+            double apertureMultiplier;
+            double relayApertureMultiplier;
+            FractureDipSet relayDipSet = gbc.getClosestFractureSet(fs, fs.Strike + (Math.PI / 2)).FractureDipSets[0];
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                // In the Uniform and Barton Bandis fracture aperture scenarios, aperture is uniform across the fracture
+                // The permeability will therefore be proportional to the cube of the mean aperture
+                case FractureApertureType.Uniform:
+                case FractureApertureType.BartonBandis:
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMacrofractureAperture() : getMeanMacrofractureAperture(Timestep_M), 3);
+                    relayApertureMultiplier = Math.Pow(useCurrentApertureData ? relayDipSet.getMeanMacrofractureAperture() : relayDipSet.getMeanMacrofractureAperture(Timestep_M), 3);
+                    break;
+                // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
+                // The aperture multiplier must therefore be calculated by integrating the cube of the local aperture across the fracture
+                case FractureApertureType.SizeDependent:
+                case FractureApertureType.Dynamic:
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumMacrofractureAperture() : getMaximumMacrofractureAperture(Timestep_M), 3) * (3 * Math.PI / 16);
+                    relayApertureMultiplier = Math.Pow(useCurrentApertureData ? relayDipSet.getMaximumMacrofractureAperture() : relayDipSet.getMaximumMacrofractureAperture(Timestep_M), 3) * (3 * Math.PI / 16);
+                    break;
+                // Aperture is not defined
+                default:
+                    apertureMultiplier = 0;
+                    relayApertureMultiplier = 1;
+                    break;
+            }
+            double MFP32 = useCurrentDensityData ? a_MFP32_total() + s_MFP32_total() : getTotalMFP32(Timestep_M);
+            double densityMultiplier = MFP32 / sindip;
+
+            Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
+            if (BiazimuthalConjugate)
+            {
+                permTensor.Component(Tensor2SComponents.YZ, 0);
+                permTensor.Component(Tensor2SComponents.ZX, 0);
+            }
+
+            // Get connectivity and size distribution indices
+            double sinStrike = Math.Abs(VectorXYZ.Sin_trim(fs.Strike));
+            double cosStrike = Math.Abs(VectorXYZ.Cos_trim(fs.Strike));
+            double tanStrike = sinStrike / cosStrike;
+            double cotStrike = cosStrike / sinStrike;
+            double kf = geometryMultiplier * apertureMultiplier;
+            double kf_kh = (gbc.MechProps.HostRock_kh > 0) ? kf / gbc.MechProps.HostRock_kh : double.PositiveInfinity;
+            double kf_kr = (relayApertureMultiplier > 0)? apertureMultiplier / relayApertureMultiplier : double.PositiveInfinity;
+            double unconnectedTipRatio, hardLinkedRelayTipRatio, softLinkedRelayTipRatio, connectedTipRatio;
+            double meanLength;
+            double meanRelayOffset;
+            double meanNonRelayOffset = MFP32 / 2;
+            if (useCurrentDensityData)
+            {
+                unconnectedTipRatio = UnconnectedTipRatio(false);
+                if (gbc.LinkFracturesInStressShadow)
+                {
+                    softLinkedRelayTipRatio = 0;
+                    hardLinkedRelayTipRatio = RelayTipRatio(false);
+                }
+                else
+                {
+                    softLinkedRelayTipRatio = RelayTipRatio(false);
+                    hardLinkedRelayTipRatio = 0;
+                }
+                connectedTipRatio = ConnectedTipRatio(false);
+                meanLength = Mean_MF_HalfLength() * 2;
+                meanRelayOffset = Mean_MF_StressShadowWidth / 2;
+            }
+            else
+            {
+                double INodes = getActiveMFP30(Timestep_M);
+                double RNodes = getStaticRelayMFP30(Timestep_M);
+                double YNodes = getStaticIntersectMFP30(Timestep_M);
+                double TotalNodes = INodes + RNodes + YNodes;
+                unconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : 1);
+                if (gbc.LinkFracturesInStressShadow)
+                {
+                    softLinkedRelayTipRatio = 0;
+                    hardLinkedRelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : 0);
+                }
+                else
+                {
+                    softLinkedRelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : 0);
+                    hardLinkedRelayTipRatio = 0;
+                }
+                connectedTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : 0);
+                double MFP30_Thickness = TotalNodes * gbc.ThicknessAtDeformation;
+                meanLength = (MFP30_Thickness > 0 ? 2 * (MFP32 / MFP30_Thickness) : 0);
+                meanRelayOffset = getMeanStressShadowWidth(Timestep_M) / 2;
+            }
+            double unconnectedTipCrossFractureFlowFactor = meanNonRelayOffset * kf_kh;
+            double softLinkedRelayCrossFractureFlowFactor = meanRelayOffset * kf_kh;
+            double hardLinkedRelayCrossFractureFlowFactor = meanRelayOffset * kf_kr;
+            double connectedTipCrossFractureFlowFactor = meanNonRelayOffset * kf_kr;
+            if (double.IsNaN(unconnectedTipCrossFractureFlowFactor)) unconnectedTipCrossFractureFlowFactor = 0;
+            if (double.IsNaN(softLinkedRelayCrossFractureFlowFactor)) softLinkedRelayCrossFractureFlowFactor = 0;
+            if (double.IsNaN(hardLinkedRelayCrossFractureFlowFactor)) hardLinkedRelayCrossFractureFlowFactor = 0;
+            if (double.IsNaN(connectedTipCrossFractureFlowFactor)) connectedTipCrossFractureFlowFactor = 0;
+            double kxxNonRelayDistanceFactor = meanNonRelayOffset * cotStrike;
+            double kxxRelayDistanceFactor = meanRelayOffset * cotStrike;
+            double kyyNonRelayDistanceFactor = meanNonRelayOffset * tanStrike;
+            double kyyRelayDistanceFactor = meanRelayOffset * tanStrike;
+            if (double.IsNaN(kxxNonRelayDistanceFactor)) kxxNonRelayDistanceFactor = 0;
+            if (double.IsNaN(kxxRelayDistanceFactor)) kxxRelayDistanceFactor = 0;
+            if (double.IsNaN(kyyNonRelayDistanceFactor)) kyyNonRelayDistanceFactor = 0;
+            if (double.IsNaN(kyyRelayDistanceFactor)) kyyRelayDistanceFactor = 0;
+
+            // Calculate the permeability component multipliers
+            double kxx_multiplier = (unconnectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowFactor)))
+                + (softLinkedRelayTipRatio * ((meanLength + kxxRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowFactor)))
+                + (hardLinkedRelayTipRatio * ((meanLength + meanRelayOffset) / (meanLength + hardLinkedRelayCrossFractureFlowFactor)))
+                + (connectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowFactor)));
+            double kyy_multiplier = (unconnectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowFactor)))
+                + (softLinkedRelayTipRatio * ((meanLength + kyyRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowFactor)))
+                + (hardLinkedRelayTipRatio * ((meanLength + meanRelayOffset) / (meanLength + hardLinkedRelayCrossFractureFlowFactor)))
+                + (connectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowFactor)));
+            double kxy_multiplier = (unconnectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + unconnectedTipCrossFractureFlowFactor)))
+                + (softLinkedRelayTipRatio * ((meanLength - meanRelayOffset) / (meanLength + softLinkedRelayCrossFractureFlowFactor)))
+                + (hardLinkedRelayTipRatio * ((meanLength) / (meanLength + hardLinkedRelayCrossFractureFlowFactor)))
+                + (connectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + connectedTipCrossFractureFlowFactor)));
+            if (double.IsNaN(kxx_multiplier)) kxx_multiplier = 1;
+            if (double.IsNaN(kyy_multiplier)) kyy_multiplier = 1;
+            if (double.IsNaN(kxy_multiplier)) kxy_multiplier = 1;
+            // kzz, kyz and kzx components of the permeability tensor will not change
+
+            // Apply the multipliers to the permeability tensor components
+            double new_kxx = kxx_multiplier * permTensor.Component(Tensor2SComponents.XX);
+            double new_kyy = kyy_multiplier * permTensor.Component(Tensor2SComponents.YY);
+            double new_kxy = kxy_multiplier * permTensor.Component(Tensor2SComponents.XY);
+            permTensor.Component(Tensor2SComponents.XX, new_kxx);
+            permTensor.Component(Tensor2SComponents.YY, new_kyy);
+            permTensor.Component(Tensor2SComponents.XY, new_kxy);
+
             return permTensor;
         }
 
@@ -3825,7 +4125,7 @@ namespace DFMGenerator_SharedCode
             bType b_type = gbc.MechProps.GetbType();
             bool bis2 = (b_type == bType.Equals2);
             int tsN = PreviousFractureData.NoTimesteps;
-            int no_r_bins = uF_radii.Count() - 1;
+            int no_r_bins = uF_radii.Length - 1;
             double rmin_cutoff = gbc.PropControl.minImplicitMicrofractureRadius;
             double max_uF_radius = gbc.MaximumMicrofractureRadius;
 
@@ -4342,7 +4642,7 @@ namespace DFMGenerator_SharedCode
             StreamWriter logFile = new StreamWriter(namecomb);
             logFile.WriteLine("NewSet");
 #endif
-            int noHalflengths = MF_halflengths.Count();
+            int noHalflengths = MF_halflengths.Length;
 
             // Also set up local arrays to store the cumulative macrofracture population values for each index value as they are calculated, and set the initial values to zero
             double[] tsN_a_MFP30_values = new double[noHalflengths];
@@ -4851,7 +5151,7 @@ namespace DFMGenerator_SharedCode
             bType b_type = gbc.MechProps.GetbType();
             bool bis2 = (b_type == bType.Equals2);
             int tsN = PreviousFractureData.NoTimesteps;
-            int no_r_bins = uF_radii.Count() - 1;
+            int no_r_bins = uF_radii.Length - 1;
             double rmin_cutoff = gbc.PropControl.minImplicitMicrofractureRadius;
             double max_uF_radius = gbc.MaximumMicrofractureRadius;
 

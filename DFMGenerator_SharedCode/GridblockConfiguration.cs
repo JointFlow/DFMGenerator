@@ -1008,7 +1008,38 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Get a reference to the fracture set in this gridblock that best matches the orientation and strike of another fracture set (typically in another gridblock)
         /// </summary>
-        /// <param name="inputFS_index">Orientation of the input fracture set</param>
+        /// <param name="thisGB_fs">Reference to the input fracture set</param>
+        /// <param name="inputFS_strike">Strike of the input fracture set</param>
+        /// <returns></returns>
+        public Gridblock_FractureSet getClosestFractureSet(Gridblock_FractureSet thisGB_fs, double inputFS_strike)
+        {
+            // Check if the strike of this equivalent set lies within the allowed range
+            double maxStrikeDifference = gd.DFNControl.MaxConsistencyAngle;
+            double actualStrikeDifference = PointXYZ.getStrikeDifference(inputFS_strike, thisGB_fs.Strike);
+            if (actualStrikeDifference > maxStrikeDifference)
+            {
+                // If the strike of the equivalent set lies outside the allowed range, loop through all fracture sets to find the best fit
+                // NB this may still be the equivalent set
+                foreach (Gridblock_FractureSet test_fs in FractureSets)
+                {
+                    // Check if the difference between the previous propagation direction and this configuration is less than the minimum found so far
+                    double test_StrikeDifference = PointXYZ.getStrikeDifference(inputFS_strike, test_fs.Strike);
+                    if (test_StrikeDifference < actualStrikeDifference)
+                    {
+                        // If so set the best match set to this set; also update the minimum angular difference found so far
+                        actualStrikeDifference = test_StrikeDifference;
+                        thisGB_fs = test_fs;
+                    }
+                }
+            }
+
+            // Return a reference to the best fit fracture set
+            return thisGB_fs;
+        }
+        /// <summary>
+        /// Get a reference to the fracture set in this gridblock that best matches the orientation and strike of another fracture set (typically in another gridblock)
+        /// </summary>
+        /// <param name="inputFS_index">Index number of the input fracture set</param>
         /// <param name="inputFS_strike">Strike of the input fracture set</param>
         /// <returns></returns>
         public Gridblock_FractureSet getClosestFractureSet(int inputFS_index, double inputFS_strike)
@@ -1075,6 +1106,10 @@ namespace DFMGenerator_SharedCode
             // Return a reference to the best fit fracture set
             return inputFS_index;
         }
+        /// <summary>
+        /// Flag to connect parallel fractures that are deactivated because their stress shadows interact; this will allow long composite fractures to form
+        /// </summary>
+        public bool LinkFracturesInStressShadow { get { return gd.DFNControl.LinkFracturesInStressShadow; } }
 
         // References to adjacent gridblocks
         /// <summary>
@@ -2509,38 +2544,12 @@ namespace DFMGenerator_SharedCode
                 // The host rock permeability is required to calculate the latter
                 case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
                     {
-                        // The permeability will be calculated on a set by set basis
-                        /*foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (Gridblock_FractureSet fs in FractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
-                            {
-                                // First we must get the uncorrected microfracture permeability tensor for this set, and extract the ii components that need to be corrected
-                                Tensor2S fds_uF_Permeability = fds.Total_uF_Permeability(Timestep_M);
-                                double uncorrected_kxx = fds_uF_Permeability.Component(Tensor2SComponents.XX);
-                                double uncorrected_kyy = fds_uF_Permeability.Component(Tensor2SComponents.YY);
-                                double uncorrected_kzz = fds_uF_Permeability.Component(Tensor2SComponents.ZZ);
-
-                                // Next, get the permeability of a single fracture times the total fracture length / unit volume (P31)
-                                double fds_kf_uFP31 = fds.Total_uF_PermeabilityLength(Timestep_M);
-
-                                // Now apply the correction factor to each of the microfracture permeability tensor components
-                                double sin_fx = VectorXYZ.Cos_trim(fs.Azimuth);
-                                double sin_fy = VectorXYZ.Sin_trim(fs.Azimuth);
-                                double sin_fz = VectorXYZ.Sin_trim(fds.Dip);
-                                double kh = MechProps.HostRock_kh;
-                                double kv = MechProps.HostRock_kv;
-                                double corrected_kxx = uncorrected_kxx / (1 + (fds_kf_uFP31 * sin_fx / kh) - uncorrected_kxx);
-                                double corrected_kyy = uncorrected_kyy / (1 + (fds_kf_uFP31 * sin_fy / kh) - uncorrected_kyy);
-                                double corrected_kzz = uncorrected_kzz / (1 + (fds_kf_uFP31 * sin_fz / kv) - uncorrected_kzz);
-
-                                // Reinsert the corrected tensor components back into the permeability tensor for this fracture set, and add it to the overall tensor
-                                fds_uF_Permeability.Component(Tensor2SComponents.XX, corrected_kxx);
-                                fds_uF_Permeability.Component(Tensor2SComponents.YY, corrected_kyy);
-                                fds_uF_Permeability.Component(Tensor2SComponents.ZZ, corrected_kzz);
-                                microfracturePermeability += fds_uF_Permeability;
-                            }*/
+                                microfracturePermeability += fds.Total_uF_Permeability_Corrected(Timestep_M);
                     }
                     break;
-                // If no algorithm is specified, return a null tensor
+                // If no algorithm is specified, return a zero tensor
                 default:
                     microfracturePermeability = new Tensor2S();
                     break;
@@ -2557,30 +2566,44 @@ namespace DFMGenerator_SharedCode
         public Tensor2S MacrofracturePermeability(int Timestep_M)
         {
             // The network connectivity multiplier reflects the connectivity of the entire fracture network
-            double networkConnectivityMultiplier;
+            Tensor2S macrofracturePermeability = new Tensor2S();
             switch (PropControl.PermeabilityAlgorithm)
             {
                 // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
                 case PermeabilityCalculationAlgorithm.Oda1986:
-                    networkConnectivityMultiplier = 1;
+                    {
+                        // Get the basic macrofracture permeability tensor
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                                macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
+                    }
                     break;
                 // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
-                    networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
+                    {
+                        // Get the basic macrofracture permeability tensor and then apply a multiplier
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                                macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
+                        double networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
+                        macrofracturePermeability = networkConnectivityMultiplier * macrofracturePermeability;
+                    }
+                    break;
+                // The size and connectivity correction algorithm takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock
+                // The host rock permeability is required to calculate the latter
+                case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                    {
+                        // In this case the correction is applied to individual components of the permeability tensors for each fracture set
+                        // This is based on the size and connectivity data for the fracture sets
+                        foreach (Gridblock_FractureSet fs in FractureSets)
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                                macrofracturePermeability += fds.Total_MF_Permeability_Corrected(Timestep_M);
+                    }
                     break;
                 default:
-                    networkConnectivityMultiplier = 0;
                     break;
             }
 
-            // Get the basic microfracture permeability tensor
-            Tensor2S macrofracturePermeability = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
-                foreach (FractureDipSet fds in fs.FractureDipSets)
-                    macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
-
-            // Multiply it by the network connectivity multiplier before returning it
-            macrofracturePermeability = networkConnectivityMultiplier * macrofracturePermeability;
             return macrofracturePermeability;
         }
         /// <summary>
@@ -2626,7 +2649,6 @@ namespace DFMGenerator_SharedCode
             totalFracturePermeability = networkConnectivityMultiplier * totalFracturePermeability;
             return totalFracturePermeability;*/
         }
-
 
         // Bulk rock elastic properties
         /// <summary>
@@ -2692,7 +2714,7 @@ namespace DFMGenerator_SharedCode
             bool WithinTimestepLimit = true;
             StrainRelaxationCase SRC = MechProps.GetStrainRelaxationCase();
             StressDistribution SD = PropControl.StressDistributionCase;
-            
+
             // Cache constants locally
             // Cache thermo-poro-elastic properties locally
             double E_r = MechProps.E_r;
@@ -2792,7 +2814,7 @@ namespace DFMGenerator_SharedCode
                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
                 {
                     Gridblock_FractureSet fs = FractureSets[fs_index];
-                    int NoDipSets = fs.FractureDipSets.Count();
+                    int NoDipSets = fs.FractureDipSets.Count;
                     List<string> dipSetLabels = fs.DipSetLabels();
                     for (int dipsetIndex = 0; dipsetIndex < NoDipSets; dipsetIndex++)
                     {
@@ -3576,14 +3598,14 @@ namespace DFMGenerator_SharedCode
                         maxIndexLength = (maxHMinLength * HMinComponent) + (maxHMaxLength * HMaxComponent);
                     }
 
-                    int NoDipSets = fs.FractureDipSets.Count();
+                    int NoDipSets = fs.FractureDipSets.Count;
                     List<string> dipSetLabels = fs.DipSetLabels();
                     for (int dipsetIndex = 0; dipsetIndex < NoDipSets; dipsetIndex++)
                     {
                         // Get a reference to the fracture dip set object
                         FractureDipSet fds = fs.FractureDipSets[dipsetIndex];
 
-                            // Reset the macrofracture index array
+                        // Reset the macrofracture index array
                         // Check to see if a maximum length has been set for the macrofracture cumulative population distribution function index values
                         if (maxIndexLength > 0) // If a maximum length has been set, generate the halflength index array manually
                             fds.reset_MF_halflength_array(no_l_IndexPoints, maxIndexLength);
@@ -3620,7 +3642,7 @@ namespace DFMGenerator_SharedCode
                                 string s_MFP32_data = "s_MFP32\t";
 
                                 // Loop through each point in the index value array and write data for that point
-                                int noIndexPoints = fds.MF_halflengths.Count();
+                                int noIndexPoints = fds.MF_halflengths.Length;
                                 for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
                                 {
                                     indexData += string.Format("{0}\t", fds.MF_halflengths[indexPoint]);
@@ -3659,7 +3681,7 @@ namespace DFMGenerator_SharedCode
                                 string s_uFP33_data = "s_uFP33\t";
 
                                 // Loop through each point in the index value array and write data for that point
-                                int noIndexPoints = fds.uF_radii.Count();
+                                int noIndexPoints = fds.uF_radii.Length;
                                 for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
                                 {
                                     indexData += string.Format("{0}\t", fds.uF_radii[indexPoint]);
@@ -3953,7 +3975,7 @@ namespace DFMGenerator_SharedCode
 #endif
 
                 // Determine the number of fracture dip sets and the maximum macrofracture propagation length for each dip set
-                int NoDipSets = fs.FractureDipSets.Count();
+                int NoDipSets = fs.FractureDipSets.Count;
                 List<double> fs_maxPropLengths = new List<double>();
                 for (int dipsetIndex = 0; dipsetIndex < NoDipSets; dipsetIndex++)
                 {
@@ -4908,7 +4930,7 @@ namespace DFMGenerator_SharedCode
             double newSegment_NucleationLTime = newSegment_fs.FractureDipSets[newSegment_DipSetIndex].ConvertTimeToLength(newSegmentNucleationTime, newSegment_NucleationTimestep);
 
             // Create a new macrofracture segment and add it to the local DFN
-           MacrofractureSegmentIJK newSegment = new MacrofractureSegmentIJK(newSegment_fs, newSegment_DipSetIndex, newSegment_fs.convertXYZtoIJK(insertionPoint), FromBoundary, newSegment_PropDir, original_PropDir, newSegment_DipDir, newSegment_NucleationLTime, newSegment_NucleationTimestep);
+            MacrofractureSegmentIJK newSegment = new MacrofractureSegmentIJK(newSegment_fs, newSegment_DipSetIndex, newSegment_fs.convertXYZtoIJK(insertionPoint), FromBoundary, newSegment_PropDir, original_PropDir, newSegment_DipDir, newSegment_NucleationLTime, newSegment_NucleationTimestep);
 
             // Check if there is a boundary-tracking fracture at the insertion point
             // If so, do not add this fracture segment, and set the initiator node fracture deactivation mechanism to Intersection

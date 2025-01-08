@@ -7162,9 +7162,9 @@ namespace DFMGenerator_Ocean
             private Droid argument_SubcriticalPropagationIndex;
             private double argument_CriticalPropagationRate = 2000;
             // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
-            private double argument_kh_default = 1;
+            private double argument_kh_default = 9.869233e-16; // 1mD converted to m2
             private Droid argument_kh;
-            private double argument_kv_default = 1;
+            private double argument_kv_default = 9.869233e-16; // 1mD converted to m2
             private Droid argument_kv;
             private bool argument_AverageMechanicalPropertyData = true;
 
@@ -7250,7 +7250,7 @@ namespace DFMGenerator_Ocean
             // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
             private double argument_MaxTSDuration = double.NaN;
             private double argument_Max_TS_MFP33_increase = 0.005;
-            private double argument_MinimumImplicitMicrofractureRadius = 0.05;
+            private double argument_MinimumImplicitMicrofractureRadius = double.NaN;
             private int argument_No_r_bins = 10;
             // Calculation termination controls
             private int argument_MaxNoTimesteps = 1000;
@@ -11280,9 +11280,9 @@ namespace DFMGenerator_Ocean
                 argument_SubcriticalPropagationIndex = null;
                 argument_CriticalPropagationRate = 2000;
                 // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
-                argument_kh_default = 1;
+                argument_kh_default = 9.869233e-16; // 1mD converted to m2
                 argument_kh = null;
-                argument_kv_default = 1;
+                argument_kv_default = 9.869233e-16; // 1mD converted to m2
                 argument_kv = null;
                 argument_AverageMechanicalPropertyData = true;
 
@@ -11353,7 +11353,7 @@ namespace DFMGenerator_Ocean
                 // NB the maximum timestep duration must be supplied in SI units (seconds), not geological time units
                 argument_MaxTSDuration = double.NaN;
                 argument_Max_TS_MFP33_increase = 0.005;
-                argument_MinimumImplicitMicrofractureRadius = 0.05;
+                argument_MinimumImplicitMicrofractureRadius = double.NaN;
                 argument_No_r_bins = 10;
                 // Calculation termination controls
                 argument_MaxNoTimesteps = 1000;
