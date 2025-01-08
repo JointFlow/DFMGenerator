@@ -7192,7 +7192,7 @@ namespace DFMGenerator_Ocean
             private bool argument_CalculateBulkRockElasticTensors = false;
             private bool argument_PopulateEmptyGridblocks = true;
             private bool argument_CalculateFracturePermeabilityTensor = false;
-            private int argument_PermeabilityAlgorithm = 1;
+            private int argument_PermeabilityAlgorithm = 0;
             private int argument_FractureTypesInPermeabilityTensor = 2;
             private bool argument_CalculateFractureReactivationPotential = false;
 
@@ -11310,7 +11310,7 @@ namespace DFMGenerator_Ocean
                 argument_CalculateBulkRockElasticTensors = false;
                 argument_PopulateEmptyGridblocks = true;
                 argument_CalculateFracturePermeabilityTensor = false;
-                argument_PermeabilityAlgorithm = 1;
+                argument_PermeabilityAlgorithm = 0;
                 argument_FractureTypesInPermeabilityTensor = 2;
                 argument_CalculateFractureReactivationPotential = false;
 

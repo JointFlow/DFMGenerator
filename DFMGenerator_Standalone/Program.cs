@@ -545,7 +545,7 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(0);// -0.001);
+            EhminRate_list.Add(-0.001);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
@@ -625,8 +625,8 @@ namespace DFMGenerator_Standalone
             double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
             // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
-            double HostRock_kh = 9.869233e-16;// 0;
-            double HostRock_kv = 9.869233e-16;// 0;
+            double HostRock_kh = 0;// 9.869233e-16;// 1mD in m2
+            double HostRock_kv = 0;// 9.869233e-16;// 1mD in m2
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -671,9 +671,9 @@ namespace DFMGenerator_Standalone
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
             // Flag to calculate and output fracture permeability tensors
-            bool CalculateFracturePermeabilityTensor = true;// false;
+            bool CalculateFracturePermeabilityTensor = false;
             // Algorithm to use for calculating fracture permeability
-            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;// PermeabilityCalculationAlgorithm.Oda1986;
+            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1986;
             // Flag to calculate implicit fracture population distribution functions
             bool CalculatePopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
@@ -759,7 +759,7 @@ namespace DFMGenerator_Standalone
             // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
             // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
             // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
-            double MinImplicitMicrofractureRadius = 0.04;// -1;
+            double MinImplicitMicrofractureRadius = -1;
             // Number of bins used in numerical integration of uFP32
             // This controls accuracy of numerical calculation of microfracture populations - increase this to increase accuracy of the numerical integration at expense of runtime 
             int No_r_bins = 10;
