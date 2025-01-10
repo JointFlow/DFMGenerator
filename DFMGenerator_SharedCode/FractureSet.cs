@@ -701,6 +701,18 @@ namespace DFMGenerator_SharedCode
             foreach (FractureDipSet DipSet in FractureDipSets) output += (DipSet.a_uFP33_total() + DipSet.s_uFP33_total());
             return output;
         }
+        /// <summary>
+        /// Total linear density of all microfractures in all dip sets, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double combined_T_uFP32_total(int Timestep_M)
+        {
+            double output = 0;
+            foreach (FractureDipSet DipSet in FractureDipSets)
+                output += DipSet.getTotaluFP32(Timestep_M);
+            return output;
+        }
 
         // Macrofracture total population data
         /// <summary>
@@ -804,6 +816,18 @@ namespace DFMGenerator_SharedCode
             foreach (FractureDipSet DipSet in FractureDipSets) output += (DipSet.a_MFP33_total() + DipSet.s_MFP33_total());
             return output;
         }
+        /// <summary>
+        /// Total linear density of all half-macrofractures in all dip sets, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double combined_T_MFP32_total(int Timestep_M)
+        {
+            double output = 0;
+            foreach (FractureDipSet DipSet in FractureDipSets)
+                output += DipSet.getTotalMFP32(Timestep_M);
+            return output;
+        }
 
         // Fracture porosity values
         /// <summary>
@@ -880,7 +904,7 @@ namespace DFMGenerator_SharedCode
         // Fracture permeability tensors
         // NB These functions return the uncorrected fracture peremabilities, based on based on the Oda (1986) model, which assumes fractures of infinite size and connectivity
         // Corrections for fracture length and connectivity must take into account other fracture sets and the host rock, so are made at the gridblock level
-        /// <summary>
+        /*/// <summary>
         /// Get the combined uncorrected microfracture permeability tensor for all current microfractures in every dipset in this fracture set
         /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
         /// </summary>
@@ -923,7 +947,7 @@ namespace DFMGenerator_SharedCode
             foreach (FractureDipSet DipSet in FractureDipSets)
                 permTensor += DipSet.Total_MF_Permeability(Timestep_M);
             return permTensor;
-        }
+        }*/
 
         // Macrofracture stress shadow, fracture spacing and exclusion zone volume
         // Functions to return stress shadow width and volume

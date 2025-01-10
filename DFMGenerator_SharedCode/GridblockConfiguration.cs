@@ -2524,7 +2524,8 @@ namespace DFMGenerator_SharedCode
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
                         foreach (Gridblock_FractureSet fs in FractureSets)
-                            microfracturePermeability += fs.combined_uF_Permeability(Timestep_M);
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                                microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
                     }
                     break;
                 // The Oda corrected (1987) algorithm includes a simple multiplier to take account of the connectivity of individual fractures
@@ -2532,7 +2533,8 @@ namespace DFMGenerator_SharedCode
                     {
                         // First we must get the sum of the uncorrected microfracture permeability tensors
                         foreach (Gridblock_FractureSet fs in FractureSets)
-                            microfracturePermeability += fs.combined_uF_Permeability(Timestep_M);
+                            foreach (FractureDipSet fds in fs.FractureDipSets)
+                                microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
 
                         // Then we can apply a correction factor based on the trace and anisotropy of the fracture connectivity tensor
                         double f0, anistropy;
@@ -2648,6 +2650,221 @@ namespace DFMGenerator_SharedCode
             // Multiply it by the network connectivity multiplier before returning it
             totalFracturePermeability = networkConnectivityMultiplier * totalFracturePermeability;
             return totalFracturePermeability;*/
+        }
+
+        // Functions to return fracture sigma factor (related to the mean block size, as defined by Warren & Root 1963)
+
+        /// <summary>
+        /// Calculate the current minimum and maximum horizontal dimensions of fracture-bounded blocks
+        /// </summary>
+        /// <param name="FracType">Flag to specify whether the block is bounded by microfractures only, layer-bound macrofractures only or all fractures</param>
+        /// <param name="MinL">Reference parameter for the minimum block dimension</param>
+        /// <param name="MaxL">Reference parameter for the maximum block dimension</param>
+        private void GetBlockDimensions(FractureType FracType, out double MinL, out double MaxL)
+        {
+            GetBlockDimensions(FracType, -1, out MinL, out MaxL);
+        }
+        /// <summary>
+        /// Calculate the minimum and maximum horizontal dimensions of fracture-bounded blocks, at at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="FracType">Flag to specify whether the block is bounded by microfractures only, layer-bound macrofractures only or all fractures</param>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <param name="MinL">Reference parameter for the minimum block dimension</param>
+        /// <param name="MaxL">Reference parameter for the maximum block dimension</param>
+        private void GetBlockDimensions(FractureType FracType, int Timestep_M, out double MinL, out double MaxL)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+
+            MinL = double.PositiveInfinity;
+            MaxL = double.PositiveInfinity;
+
+            // Get the respective P32 values for each fracture set
+            double[] P32_values = new double[NoFractureSets];
+            // Loop through every set of propagating fractures I
+            for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+            {
+                Gridblock_FractureSet fsI = FractureSets[fsI_Index];
+
+                switch (FracType)
+                {
+                    case FractureType.Microfractures:
+                        P32_values[fsI_Index] = useCurrentDensityData ? fsI.combined_T_uFP32_total() : fsI.combined_T_uFP32_total(Timestep_M);
+                        break;
+                    case FractureType.LayerBoundFractures:
+                        P32_values[fsI_Index] = useCurrentDensityData ? fsI.combined_T_MFP32_total() : fsI.combined_T_MFP32_total(Timestep_M);
+                        break;
+                    case FractureType.AllFractures:
+                        P32_values[fsI_Index] = useCurrentDensityData ? fsI.combined_T_uFP32_total() + fsI.combined_T_MFP32_total() : fsI.combined_T_uFP32_total(Timestep_M) + fsI.combined_T_MFP32_total(Timestep_M);
+                        break;
+                    default:
+                        P32_values[fsI_Index] = 0;
+                        break;
+                }
+            }
+
+            // If there are no fracture sets, both block dimensions will be infinite
+            if (NoFractureSets == 0)
+            {
+                return;
+            }
+            // If there is only one fracture set, we can only define the minimum block dimension
+            else if (NoFractureSets == 1)
+            {
+                MinL = 1 / P32_values[0];
+            }
+            // If there are only two fracture sets, one will determine the minimum block dimension and the other will determine the maximum block dimension
+            else if (NoFractureSets == 2)
+            {
+                if (P32_values[0] > P32_values[1])
+                {
+                    MinL = 1 / P32_values[0];
+                    MaxL = 1 / P32_values[1];
+                }
+                else
+                {
+                    MinL = 1 / P32_values[1];
+                    MaxL = 1 / P32_values[0];
+                }
+            }
+            // If there are more than two fracture sets, the minimum and maximum block dimensions will be determined by a combination of all fracture sets
+            else
+            {
+                // Find the orientation minimum block dimension
+                // This will be the orientation where the combined apparent P32 densities of all sets is maximum
+                // This need not coincide with the azimuth of any specific set; however for convenience we will only calculate density along set azimuths
+                double maxP32_azimuth = 0;
+                double maxP32 = 0;
+                for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                {
+                    double fsI_azimuth = FractureSets[fsI_Index].Azimuth;
+                    double P32_I = 0;
+                    for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                    {
+                        double fsJ_azimuth = FractureSets[fsJ_Index].Azimuth;
+                        double cosIJ = Math.Abs(VectorXYZ.Cos_trim(fsI_azimuth - fsJ_azimuth));
+                        P32_I += cosIJ * P32_values[fsJ_Index];
+                    }
+
+                    if (maxP32 < P32_I)
+                    {
+                        maxP32 = P32_values[fsI_Index];
+                        maxP32_azimuth = fsI_azimuth;
+                    }
+                }
+
+                // The maximum block dimension will be perpendicular to this
+                // Get the combined apparent P32 densities of all sets in this orientation 
+                double minP32_azimuth = maxP32_azimuth + (Math.PI / 2);
+                double minP32 = 0;
+                for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                {
+                    double fsJ_azimuth = FractureSets[fsJ_Index].Azimuth;
+                    double cosIJ = Math.Abs(VectorXYZ.Cos_trim(minP32_azimuth - fsJ_azimuth));
+                    minP32 += cosIJ * P32_values[fsJ_Index];
+                }
+
+                // Calculate the minimum and maximum block dimensions
+                MinL = 1 / maxP32;
+                MaxL = 1 / minP32;
+            }
+        }
+        /// <summary>
+        /// Calculate the sigma factor given the minimum and maximum block dimensions, as defined in Kazemi et al (1976)
+        /// </summary>
+        /// <param name="MinL">Minimum block dimension; if this is infinite, sigma will be undefined</param>
+        /// <param name="MaxL">Maximum block dimension; if this is infinite, sigma will be calculated for a single fracture set</param>
+        /// <returns></returns>
+        private double CalculateSigma(double MinL, double MaxL)
+        {
+            double n_factor, l_factor;
+            // If there are no fractures, the minimum block dimension will be infinite
+            // In this case sigma will be undefined
+            if (double.IsInfinity(MinL))
+            {
+                n_factor = 0;
+                l_factor = double.PositiveInfinity;
+            }
+            // If there is only one set of fractures, the maximum block dimension will be infinite
+            // In this case return sigma for a single fracture set
+            else if (double.IsInfinity(MaxL))
+            {
+                int n = 1;
+                n_factor = 4d * (double)n * (double)(n + 2);
+                l_factor = MinL;
+            }
+            // If there are more than one set of fractures, both the minimum and maximum block dimensions will be defined
+            // In this case return sigma for two fracture sets
+            else
+            {
+                int n = 2;
+                n_factor = 4d * (double)n * (double)(n + 2);
+                l_factor = (double)n * (MinL * MaxL) / (MinL + MaxL);
+            }
+
+            return n_factor / (l_factor * l_factor);
+        }
+        /// <summary>
+        /// Sigma factor for all current microfractures in the gridblock
+        /// </summary>
+        /// <returns>Sigma factor for the microfractures in the gridblock</returns>
+        public double MicrofractureSigmaFactor()
+        {
+            return MicrofractureSigmaFactor(-1);
+        }
+        /// <summary>
+        /// Sigma factor for all current layer-bound macrofractures in the gridblock
+        /// </summary>
+        /// <returns>Sigma factor for the macrofractures in the gridblock</returns>
+        public double MacrofractureSigmaFactor()
+        {
+            return MacrofractureSigmaFactor(-1);
+        }
+        /// <summary>
+        /// Sigma factor for all current fractures in the gridblock
+        /// </summary>
+        /// <returns>Sigma factor for all fractures in the gridblock</returns>
+        public double TotalFractureSigmaFactor()
+        {
+            return TotalFractureSigmaFactor(-1);
+        }
+        /// <summary>
+        /// <summary>
+        /// Sigma factor for all microfractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Sigma factor for the microfractures in the gridblock</returns>
+        public double MicrofractureSigmaFactor(int Timestep_M)
+        {
+            // Get the minimum and maximim block dimensions
+            GetBlockDimensions(FractureType.Microfractures, Timestep_M, out double MinL, out double MaxL);
+
+            // Calculate and return the sigma factor
+            return CalculateSigma(MinL, MaxL);
+        }
+        /// Sigma factor for all layer-bound macrofractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Sigma factor for the macrofractures in the gridblock</returns>
+        public double MacrofractureSigmaFactor(int Timestep_M)
+        {
+            // Get the minimum and maximim block dimensions
+            GetBlockDimensions(FractureType.LayerBoundFractures, Timestep_M, out double MinL, out double MaxL);
+
+            // Calculate and return the sigma factor
+            return CalculateSigma(MinL, MaxL);
+        }
+        /// <summary>
+        /// Sigma factor for all fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Sigma factor for all fractures in the gridblock</returns>
+        public double TotalFractureSigmaFactor(int Timestep_M)
+        {
+            // Get the minimum and maximim block dimensions
+            GetBlockDimensions(FractureType.AllFractures, Timestep_M, out double MinL, out double MaxL);
+
+            // Calculate and return the sigma factor
+            return CalculateSigma(MinL, MaxL);
         }
 
         // Bulk rock elastic properties
@@ -2833,26 +3050,32 @@ namespace DFMGenerator_SharedCode
                 {
                     Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
                     // Header for microfracture permeability tensor
-                    headerLine1 += "uF Permeability tensor\t\t\t\t\t\t";
+                    headerLine1 += "uF Permeability tensor\t\t\t\t\t\t\t";
                     foreach (Tensor2SComponents ij in tensorComponents)
                     {
                         headerLine2 += ij + "\t";
                         TS0data += string.Format("0\t");
                     }
+                    headerLine2 += "Sigma\t";
+                    TS0data += string.Format("0\t");
                     // Header for macrofracture permeability tensor
-                    headerLine1 += "MF Permeability tensor\t\t\t\t\t\t";
+                    headerLine1 += "MF Permeability tensor\t\t\t\t\t\t\t";
                     foreach (Tensor2SComponents ij in tensorComponents)
                     {
                         headerLine2 += ij + "\t";
                         TS0data += string.Format("0\t");
                     }
+                    headerLine2 += "Sigma\t";
+                    TS0data += string.Format("0\t");
                     // Header for total fracture permeability tensor
-                    headerLine1 += "Total fracture Permeability tensor\t\t\t\t\t\t";
+                    headerLine1 += "Total fracture Permeability tensor\t\t\t\t\t\t\t";
                     foreach (Tensor2SComponents ij in tensorComponents)
                     {
                         headerLine2 += ij + "\t";
                         TS0data += string.Format("0\t");
                     }
+                    headerLine2 += "Sigma\t";
+                    TS0data += string.Format("0\t");
                 }
                 if (OutputBulkRockElasticTensors)
                 {
@@ -3499,6 +3722,9 @@ namespace DFMGenerator_SharedCode
                                 MFPermeabilityTensorComponents += string.Format("{0}\t", MFPermeabilityTensor.Component(ij));
                                 TFPermeabilityTensorComponents += string.Format("{0}\t", TFPermeabilityTensor.Component(ij));
                             }
+                            uFPermeabilityTensorComponents += string.Format("{0}\t", MicrofractureSigmaFactor());
+                            MFPermeabilityTensorComponents += string.Format("{0}\t", MacrofractureSigmaFactor());
+                            TFPermeabilityTensorComponents += string.Format("{0}\t", TotalFractureSigmaFactor());
 
                             timestepData += uFPermeabilityTensorComponents;
                             timestepData += MFPermeabilityTensorComponents;

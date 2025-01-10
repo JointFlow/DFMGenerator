@@ -2308,6 +2308,7 @@ namespace DFMGenerator_SharedCode
             if (k_tot < 0)
                 k_tot = 0;
 
+
             Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, k_tot);
             // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
             if (BiazimuthalConjugate)
@@ -2416,16 +2417,16 @@ namespace DFMGenerator_SharedCode
                     relayApertureMultiplier = 1;
                     break;
             }
-            double MFP32 = useCurrentDensityData ? a_MFP32_total() + s_MFP32_total() : getTotalMFP32(Timestep_M);
-            double densityMultiplier = MFP32 / sindip;
+            double dipset_MFP32 = useCurrentDensityData ? a_MFP32_total() + s_MFP32_total() : getTotalMFP32(Timestep_M);
+            double densityMultiplier = dipset_MFP32 / sindip;
+            double set_MFP32 = useCurrentDensityData ? fs.combined_T_MFP32_total() : fs.combined_T_MFP32_total(Timestep_M);
 
-            Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
-            // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
-            if (BiazimuthalConjugate)
-            {
-                permTensor.Component(Tensor2SComponents.YZ, 0);
-                permTensor.Component(Tensor2SComponents.ZX, 0);
-            }
+            // We must exclude the component of flow parallel to the fracture azimuth due to inclination of the fractures, as this will not be connected to other fractures
+            // Therefore we will calculate the permeability tensor assuming vertical fractures, before making corrections to the vertical (ZZ) components to account for fracture dip
+            // NB the calculated YZ and ZX components for a vertical fracture will be 0
+            Tensor2S permTensor = Tensor2S.BiaxialTensor(fs.AzimuthVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            double new_kzz = sindip * sindip * permTensor.Component(Tensor2SComponents.ZZ);
+            permTensor.Component(Tensor2SComponents.ZZ, new_kzz);
 
             // Get connectivity and size distribution indices
             double sinStrike = Math.Abs(VectorXYZ.Sin_trim(fs.Strike));
@@ -2438,7 +2439,7 @@ namespace DFMGenerator_SharedCode
             double unconnectedTipRatio, hardLinkedRelayTipRatio, softLinkedRelayTipRatio, connectedTipRatio;
             double meanLength;
             double meanRelayOffset;
-            double meanNonRelayOffset = MFP32 / 2;
+            double meanNonRelayOffset = set_MFP32 / 2;
             if (useCurrentDensityData)
             {
                 unconnectedTipRatio = UnconnectedTipRatio(false);
@@ -2475,7 +2476,7 @@ namespace DFMGenerator_SharedCode
                 }
                 connectedTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : 0);
                 double MFP30_Thickness = TotalNodes * gbc.ThicknessAtDeformation;
-                meanLength = (MFP30_Thickness > 0 ? 2 * (MFP32 / MFP30_Thickness) : 0);
+                meanLength = (MFP30_Thickness > 0 ? 2 * (dipset_MFP32 / MFP30_Thickness) : 0);
                 meanRelayOffset = getMeanStressShadowWidth(Timestep_M) / 2;
             }
             double unconnectedTipCrossFractureFlowFactor = meanNonRelayOffset * kf_kh;

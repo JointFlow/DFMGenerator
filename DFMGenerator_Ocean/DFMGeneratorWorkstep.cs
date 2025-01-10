@@ -1983,6 +1983,7 @@ namespace DFMGenerator_Ocean
                         }
                         permeabilityLabel += " algorithm\n";
                         implicitInputParams += permeabilityLabel;
+                        implicitInputParams += permeabilityLabel2;
                     }
 
                     // Calculation control parameters
@@ -4946,6 +4947,7 @@ namespace DFMGenerator_Ocean
                             FracturePermeabilityTemplate[Tensor2SComponents.XY] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityXY;
                             FracturePermeabilityTemplate[Tensor2SComponents.YZ] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityYZ;
                             FracturePermeabilityTemplate[Tensor2SComponents.ZX] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityXZ;
+                            Template SigmaFactorTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.MatrixFractureCoupling;
 
                             // Create a transaction to write the property data to the Petrel grid
                             using (ITransaction transactionWritePropertyData = DataManager.NewTransaction())
@@ -5135,7 +5137,7 @@ namespace DFMGenerator_Ocean
                                                     }
                                                     catch (Exception e)
                                                     {
-                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to column {2}, {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                         errorMessage = errorMessage + string.Format(" cell_MF_P30_tot {0}", (float)cell_MF_P30_tot);
                                                         errorMessage = errorMessage + string.Format(" cell_MF_P32_tot {0}", (float)cell_MF_P32_tot);
                                                         errorMessage = errorMessage + string.Format(" cell_uF_P32_tot {0}", (float)cell_uF_P32_tot);
@@ -5255,7 +5257,7 @@ namespace DFMGenerator_Ocean
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to column {2}, {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                             errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                             errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
                                                             errorMessage = errorMessage + string.Format(" ConnectedTipRatio {0}", (float)ConnectedTipRatio);
@@ -5348,7 +5350,7 @@ namespace DFMGenerator_Ocean
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to column {2}, {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                             errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
                                                             errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
@@ -5568,7 +5570,7 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 catch (Exception e)
                                                 {
-                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data to column {0}, {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
                                                     errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
                                                     errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
                                                     errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
@@ -5713,7 +5715,7 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 catch (Exception e)
                                                 {
-                                                    string errorMessage = string.Format("Exception thrown when writing porosity data to column {0}, {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                    string errorMessage = string.Format("Exception thrown when writing porosity data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
                                                     errorMessage = errorMessage + string.Format(" uF_P32_value {0}", (float)uF_P32_value);
                                                     errorMessage = errorMessage + string.Format(" MF_P32_value {0}", (float)MF_P32_value);
                                                     errorMessage = errorMessage + string.Format(" uF_Porosity_value {0}", (float)uF_Porosity_value);
@@ -5730,10 +5732,10 @@ namespace DFMGenerator_Ocean
 
                                     } // End write fracture porosity data
 
-                                    // Write fracture permeability tensor data to Petrel grid
+                                    // Write fracture permeability tensor and sigma factor data to Petrel grid
                                     if (CalculateFracturePermeabilityTensor)
                                     {
-                                        // Create a subfolder for the fracture permeability tensor components
+                                        // Create a subfolder for the fracture permeability tensor components and sigma factors
                                         string FracturePermeabilityTensorCollectionName;
                                         string PermeabilityTensorComponentName_base;
                                         switch (FractureTypesInPermeabilityTensor)
@@ -5763,6 +5765,9 @@ namespace DFMGenerator_Ocean
                                             case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                                                 FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
                                                 break;
+                                            case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                                                FracturePermeabilityTensorCollectionName += ": Connectivity and size corrected";
+                                                break;
                                             default:
                                                 break;
                                         }
@@ -5779,6 +5784,11 @@ namespace DFMGenerator_Ocean
                                             PermeabilityTensor_ijHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                             PermeabilityTensorProperties[ij] = PermeabilityTensor_ij;
                                         }
+                                        // Create property for the sigma factor
+                                        Property SigmaFactorProperty = FracturePermeabilityTensorData.CreateProperty(SigmaFactorTemplate);
+                                        SigmaFactorProperty.Name = string.Format("{0}_sigma", PermeabilityTensorComponentName_base);
+                                        IHistoryInfoEditor SigmaFactorHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(SigmaFactorProperty);
+                                        SigmaFactorHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                         // Loop through all columns and rows in the Fracture Grid
                                         // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
@@ -5816,21 +5826,26 @@ namespace DFMGenerator_Ocean
 
                                                 // Get the appropriate permeability tensor for this gridblock
                                                 Tensor2S gridblockPermeabilityTensor;
+                                                double gridblockSigmaFactor;
                                                 if (finalStage)
                                                 {
                                                     switch (FractureTypesInPermeabilityTensor)
                                                     {
                                                         case FractureType.Microfractures:
                                                             gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability();
+                                                            gridblockSigmaFactor = fractureGridCell.MicrofractureSigmaFactor();
                                                             break;
                                                         case FractureType.LayerBoundFractures:
                                                             gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability();
+                                                            gridblockSigmaFactor = fractureGridCell.MacrofractureSigmaFactor();
                                                             break;
                                                         case FractureType.AllFractures:
                                                             gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability();
+                                                            gridblockSigmaFactor = fractureGridCell.TotalFractureSigmaFactor();
                                                             break;
                                                         default:
                                                             gridblockPermeabilityTensor = new Tensor2S();
+                                                            gridblockSigmaFactor = double.NaN;
                                                             break;
                                                     }
                                                 }
@@ -5841,15 +5856,19 @@ namespace DFMGenerator_Ocean
                                                     {
                                                         case FractureType.Microfractures:
                                                             gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability(TSNo);
+                                                            gridblockSigmaFactor = fractureGridCell.MicrofractureSigmaFactor(TSNo);
                                                             break;
                                                         case FractureType.LayerBoundFractures:
                                                             gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability(TSNo);
+                                                            gridblockSigmaFactor = fractureGridCell.MacrofractureSigmaFactor(TSNo);
                                                             break;
                                                         case FractureType.AllFractures:
                                                             gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability(TSNo);
+                                                            gridblockSigmaFactor = fractureGridCell.TotalFractureSigmaFactor(TSNo);
                                                             break;
                                                         default:
                                                             gridblockPermeabilityTensor = new Tensor2S();
+                                                            gridblockSigmaFactor = double.NaN;
                                                             break;
                                                     }
                                                 }
@@ -5881,12 +5900,14 @@ namespace DFMGenerator_Ocean
                                                                     lastij = ij;
                                                                     PermeabilityTensorProperties[ij][index_cell] = (float)gridblockPermeabilityTensor.Component(ij);
                                                                 }
+                                                                SigmaFactorProperty[index_cell] = (float)gridblockSigmaFactor;
                                                             } // End loop through all the Petrel cells in the gridblock
                                                 }
                                                 catch (Exception e)
                                                 {
-                                                    string errorMessage = string.Format("Exception thrown when writing fracture permeability tensor components to column {0}, {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
-                                                    errorMessage = errorMessage + string.Format("{0}{1} {2}", PermeabilityTensorComponentName_base, lastij, (float)gridblockPermeabilityTensor.Component(lastij));
+                                                    string errorMessage = string.Format("Exception thrown when writing fracture permeability tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                    errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, lastij, (float)gridblockPermeabilityTensor.Component(lastij));
+                                                    errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, "sigma", (float)gridblockSigmaFactor);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
                                                     PetrelLogger.InfoOutputWindow(e.Message);
                                                     PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -5997,7 +6018,7 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 catch (Exception e)
                                                 {
-                                                    string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to column {0}, {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                    string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
                                                     errorMessage = errorMessage + string.Format(" S_{0}{1} {2}", lastij, lastkl, (float)gridblockComplianceTensor.Component(lastij, lastkl));
                                                     errorMessage = errorMessage + string.Format(" C_{0}{1} {2}", lastij, lastkl, (float)gridblockStiffnessTensor.Component(lastij, lastkl));
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
