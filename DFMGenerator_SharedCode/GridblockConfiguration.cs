@@ -6025,6 +6025,70 @@ namespace DFMGenerator_SharedCode
             // NB we cannot populate this until we have regenerated the fracture sets
             MFTerminations = new double[NoFractureSets, NoFractureSets][];
         }
+        /// <summary>
+        /// Set the uniform aperture and size-dependent aperture multipliers for each fracture set
+        /// </summary>
+        /// <param name="Mode1HMin_UniformAperture">Specified aperture for Mode 1 fractures striking perpendicular to shmin</param>
+        /// <param name="Mode2HMin_UniformAperture">Specified aperture for Mode 2 fractures striking perpendicular to shmin</param>
+        /// <param name="Mode1HMax_UniformAperture">Specified aperture for Mode 1 fractures striking perpendicular to shmax</param>
+        /// <param name="Mode2HMax_UniformAperture">Specified aperture for Mode 2 fractures striking perpendicular to shmax</param>
+        /// <param name="Mode1HMin_SizeDependentApertureMultiplier">Specified size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to shmin</param>
+        /// <param name="Mode2HMin_SizeDependentApertureMultiplier">Specified size-dependent aperture multiplier for Mode 2 fractures striking perpendicular to shmin</param>
+        /// <param name="Mode1HMax_SizeDependentApertureMultiplier">Specified size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to shmax</param>
+        /// <param name="Mode2HMax_SizeDependentApertureMultiplier">Specified size-dependent aperture multiplier for Mode 2 fractures striking perpendicular to shmax</param>
+        public void SetFractureApertureControlData(double Mode1HMin_UniformAperture, double Mode2HMin_UniformAperture, double Mode1HMax_UniformAperture, double Mode2HMax_UniformAperture, double Mode1HMin_SizeDependentApertureMultiplier, double Mode2HMin_SizeDependentApertureMultiplier, double Mode1HMax_SizeDependentApertureMultiplier, double Mode2HMax_SizeDependentApertureMultiplier)
+        {
+            // The uniform aperture and size-dependent aperture multipliers will be determined by the orientation of the fracture set relative to the minimum horizontal strain azimuth at the present day or at the time of deformation
+            double hMinAzi = UsePresentDayStress ? PresentDayStress.GetMinimumHorizontalAzimuth() : Hmin_azimuth;
+
+            foreach (Gridblock_FractureSet fs in FractureSets)
+            {
+                double relativeAngle = hMinAzi - fs.Azimuth;
+                double HMinComponent = Math.Pow(VectorXYZ.Cos_trim(relativeAngle), 2);
+                double HMaxComponent = Math.Pow(VectorXYZ.Sin_trim(relativeAngle), 2);
+                double Mode1_UniformAperture_in = (Mode1HMin_UniformAperture * HMinComponent) + (Mode1HMax_UniformAperture * HMaxComponent);
+                double Mode2_UniformAperture_in = (Mode2HMin_UniformAperture * HMinComponent) + (Mode2HMax_UniformAperture * HMaxComponent);
+                double Mode1_SizeDependentApertureMultiplier_in = (Mode1HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode1HMax_SizeDependentApertureMultiplier * HMaxComponent);
+                double Mode2_SizeDependentApertureMultiplier_in = (Mode2HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode2HMax_SizeDependentApertureMultiplier * HMaxComponent);
+                fs.SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
+            }
+
+            // Calculate the uniform aperture and size-dependent aperture multipliers for each fracture set based on the number of fracture sets
+            // This is only valid for stress at the time of deformation and if the fracture sets are evenly spaced
+            // Not used
+            /*{
+                // Set the fracture aperture control data
+                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                {
+                    double Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in;
+                    if (fs_index == 0)
+                    {
+                        Mode1_UniformAperture_in = Mode1HMin_UniformAperture;
+                        Mode2_UniformAperture_in = Mode2HMin_UniformAperture;
+                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMin_SizeDependentApertureMultiplier;
+                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMin_SizeDependentApertureMultiplier;
+                    }
+                    else if ((fs_index == (NoFractureSets / 2)) && ((NoFractureSets % 2) == 0))
+                    {
+                        Mode1_UniformAperture_in = Mode1HMax_UniformAperture;
+                        Mode2_UniformAperture_in = Mode2HMax_UniformAperture;
+                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMax_SizeDependentApertureMultiplier;
+                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMax_SizeDependentApertureMultiplier;
+                    }
+                    else
+                    {
+                        double relativeAngle = Math.PI * ((double)fs_index / (double)NoFractureSets);
+                        double HMinComponent = Math.Pow(Math.Cos(relativeAngle), 2);
+                        double HMaxComponent = Math.Pow(Math.Sin(relativeAngle), 2);
+                        Mode1_UniformAperture_in = (Mode1HMin_UniformAperture * HMinComponent) + (Mode1HMax_UniformAperture * HMaxComponent);
+                        Mode2_UniformAperture_in = (Mode2HMin_UniformAperture * HMinComponent) + (Mode2HMax_UniformAperture * HMaxComponent);
+                        Mode1_SizeDependentApertureMultiplier_in = (Mode1HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode1HMax_SizeDependentApertureMultiplier * HMaxComponent);
+                        Mode2_SizeDependentApertureMultiplier_in = (Mode2HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode2HMax_SizeDependentApertureMultiplier * HMaxComponent);
+                    }
+                    FractureSets[fs_index].SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
+                }
+            }*/
+        }
 
         // Constructors
         /// <summary>

@@ -2206,6 +2206,41 @@ namespace DFMGenerator_SharedCode
             return permTensor;
         }
         /// <summary>
+        /// Calculate the ratio of mean permeability of the fracture-controlled fault block to host rock permeability for a flat square fracture of uniform aperture
+        /// </summary>
+        /// <param name="fracPermRatio">Ratio of fracture permeability (aperture^3 / 12) to host rock permeability times fracture-controlled flow block width</param>
+        /// <returns></returns>
+        private double SquareFracturePermeabilityMultiplier(double fracPermRatio)
+        {
+            return fracPermRatio + 1;
+        }
+        /// <summary>
+        /// Calculate the ratio of mean permeability of the fracture-controlled fault block to host rock permeability for a flat circular fracture of uniform aperture
+        /// </summary>
+        /// <param name="fracPermRatio">Ratio of fracture permeability (aperture^3 / 12) to host rock permeability times fracture-controlled flow block width</param>
+        /// <returns></returns>
+        private double DiscFracturePermeabilityMultiplier(double fracPermRatio)
+        {
+            const double exponent = 0.97;
+            const double powerCoefficient = 0.75;
+            //const double logCoefficient = 0.2;
+            const double constantFactor = 1;
+            return (powerCoefficient * Math.Pow(fracPermRatio, exponent)) + constantFactor;
+        }
+        /// <summary>
+        /// Calculate the ratio of mean permeability of the fracture-controlled fault block to host rock permeability for a spheroidal fracture with maximum aperture in the centre
+        /// </summary>
+        /// <param name="fracPermRatio">Ratio of maximum fracture permeability (maximum aperture^3 / 12) to host rock permeability times fracture-controlled flow block width</param>
+        /// <returns></returns>
+        private double SpheroidalFracturePermeabilityMultiplier(double fracPermRatio)
+        {
+            const double exponent = 0.505;
+            const double powerCoefficient = 1.2;
+            const double logCoefficient = 0.2;
+            const double constantFactor = 0.25;
+            return (powerCoefficient * Math.Pow(fracPermRatio, exponent)) - (logCoefficient * Math.Log(fracPermRatio + Math.Exp((constantFactor - 1) / logCoefficient))) + constantFactor;
+        }
+        /// <summary>
         /// Get the corrected permeability tensor for all current microfractures in this dipset
         /// This assumes microfractures are unconnected and takes into account microfracture size distribution
         /// </summary>
@@ -2230,85 +2265,92 @@ namespace DFMGenerator_SharedCode
             int no_rbins = Math.Min(uF_radii.Length, DuFP30.Length);
             double rmin = gbc.PropControl.minImplicitMicrofractureRadius;
             int min_bin = no_rbins - 1;
-            double uFP30_rmin = 0;
+            double uFP32_rmin = 0;
             while ((min_bin > 0) && (uF_radii[min_bin] > rmin))
             {
-                uFP30_rmin += DuFP30[min_bin];
+                uFP32_rmin += (DuFP30[min_bin] * Math.PI * Math.Pow(uF_radii[min_bin], 2));
                 min_bin--;
             }
-            uFP30_rmin += DuFP30[min_bin];
+            uFP32_rmin += (DuFP30[min_bin] * Math.PI * Math.Pow(uF_radii[min_bin], 2));
 
             // Get the fracture multipliers
             // For now this calculation assumes square fractures of uniform (although potentially size-dependent) aperture
             double geometryMultiplier = 1d / 12d;
-            // If the fracture aperture is uniform and independent of fracture size, get the aperture multiplier now
-            // Otherwise we will get the fracture aperture within each size bin
+            // If the fracture aperture is uniform and independent of fracture size, calculate the fracture permeability now
+            // Otherwise we will get the fracture permeability within each size bin
             double apertureMultiplier = 0;
             FractureApertureType apertureType = gbc.PropControl.FractureApertureControl;
             if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
                 apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
-            double k_f = geometryMultiplier * apertureMultiplier;
-
-            // Calculate total permeability (including microfractures and host rock) in series
-            // Loop through all the bins and calculate permeability parallel to the fracture
+            double k_fmax = geometryMultiplier * apertureMultiplier;
+            // Host rock permeability
             // For now we will assume host rock permeability is isotropic and ignore host rock kv
             double k_h = gbc.MechProps.HostRock_kh;
-            double boxSize = Math.Pow(uFP30_rmin, -1d / 3d);
-            double length = 0;
-            double cum_inv_perm = 0;
+            // Flow pipe geometry
+            // The flow pipe width multiplier is the ratio of the width of the fracture-controlled flow block (perpendicular to both the fracture and the flow direction) to the fracture diameter
+            // This represents the width of the zone where fluid can transfer between the fracture and the host rock
+            double flowPipeWidthMultiplier = 1;
+            // The flow pipe length is the mean distance until the fluid will enter another fracture-controlled flow block
+            double flowPipeLength = 1 / (flowPipeWidthMultiplier * uFP32_rmin);
+
+            // Calculate total permeability (including microfractures and host rock)
+            // Loop through all the size bins and calculate permeability parallel to the fracture
+            double cum_perm = 0;
             for (int r_bin = min_bin; r_bin < no_rbins; r_bin++)
             {
-                // Get geometric information for this bin
+                // Get geometric information for this size bin
                 double radius = uF_radii[r_bin];
                 if (radius < rmin)
                     radius = rmin;
-                double diameter = 2 * radius;
+                double fracDiameter = 2 * radius;
+                double DP32_bin = DuFP30[r_bin] * Math.PI * radius * radius;
 
-                // If the fracture aperture is size dependent, recalculate the fracture permeability for this bin
-                if ((apertureType == FractureApertureType.SizeDependent) || (apertureType == FractureApertureType.Dynamic))
+                // Get the fracture permeability multiplier for this size bin
+                // This represents the ratio of mean permeability of the fracture-controlled fault block to host rock permeability
+                double fracPermeabilityMultiplier;
+                if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
                 {
-                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(radius) : getMeanMicrofractureAperture(radius, Timestep_M), 3);
-                    k_f = geometryMultiplier * apertureMultiplier;
+                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
+                    fracPermeabilityMultiplier = DiscFracturePermeabilityMultiplier(fracPermRatio);
                 }
-
-                // If the fracture is shorter than the box, calculate permeability of series flow through the fracture and the rest of the box
-                double length_increment, cum_inv_perm_increment;
-                if (diameter < boxSize)
-                {
-                    double box_minus_fracture = boxSize - diameter;
-                    double box_minus_fracture_ratio_squared = Math.Pow((box_minus_fracture / boxSize), 2);
-                    double misalignmentMultiplier = 4 * box_minus_fracture_ratio_squared * Math.Log(1 + (1 / (4 * box_minus_fracture_ratio_squared)));
-
-                    length_increment = DuFP30[r_bin] * boxSize;
-                    cum_inv_perm_increment = DuFP30[r_bin] * ((diameter / ((diameter * k_f))) + ((boxSize - diameter) / (boxSize * boxSize * k_h * misalignmentMultiplier)));
-                    //cum_inv_perm_increment = DuFP30[r_bin] * ((diameter / ((diameter * k_f) + (boxSize * boxSize * k_h))) + ((boxSize - diameter) / (boxSize * boxSize * k_h * misalignmentMultiplier)));
-                }
-                // Otherwise calculate the permeability of series flow through the fracture and orthogonally into the next adjacent fracture
+                // If the fracture aperture is size dependent, we will first need to recalculate the maximum fracture permeability for this size bin
                 else
                 {
-                    double uFP32 = useCurrentDensityData ? a_uFP32_total() + s_uFP32_total() : getTotaluFP32(Timestep_M);
-                    double uF_spacing = 1 / uFP32;
-
-                    length_increment = DuFP30[r_bin] * diameter;
-                    cum_inv_perm_increment = DuFP30[r_bin] * ((1 / k_f) + (uF_spacing / (diameter * boxSize * k_h)));
-                    //double k_mean = (boxSize * boxSize * k_h) + (diameter / ((1 / k_f) + (uF_spacing / (diameter * boxSize * k_h))));
-                    //cum_inv_perm_increment = DuFP30[r_bin] * (diameter / k_mean);
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(radius) : getMeanMicrofractureAperture(radius, Timestep_M), 3);
+                    k_fmax = geometryMultiplier * apertureMultiplier;
+                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
+                    fracPermeabilityMultiplier = SpheroidalFracturePermeabilityMultiplier(fracPermRatio);
                 }
-                if (!double.IsNaN(length_increment) && !double.IsNaN(cum_inv_perm_increment))
+
+                // If the fracture diameter is shorter than the flow pipe length, calculate permeability of series flow through the fracture and the unfractured pipe
+                double cum_perm_increment;
+                if (fracDiameter < flowPipeLength)
                 {
-                    length += length_increment;
-                    cum_inv_perm += cum_inv_perm_increment;
+                    double fractureControlledFlowBlockResistance = fracDiameter / (fracPermeabilityMultiplier * k_h);
+                    double unfracturedPipeResistance = (flowPipeLength - fracDiameter) / k_h;
+                    double kmean_FlowPipe = flowPipeLength / (fractureControlledFlowBlockResistance + unfracturedPipeResistance);
+                    cum_perm_increment = DuFP30[r_bin] * kmean_FlowPipe;
+                }
+                // Otherwise calculate the permeability of parallel flow through the pipe and adjacent overlapping fractures
+                else
+                {
+                    double kmean_FlowPipe = (fracDiameter / flowPipeLength) * fracPermeabilityMultiplier * k_h;
+                    cum_perm_increment = DuFP30[r_bin] * kmean_FlowPipe;
+                }
+                if (!double.IsNaN(cum_perm_increment))
+                {
+                    cum_perm += cum_perm_increment;
                 }
             }
             // Calculate the new total permeability
-            double k_tot = (1 / (boxSize * boxSize)) * (length / cum_inv_perm);
+            double k_tot = cum_perm / uFP32_rmin;
 
             // Subtract the original host rock permeability
             //k_tot -= k_h;
             if (k_tot < 0)
                 k_tot = 0;
 
-
+            // Create a biaxial permeability tensor for the fracture set
             Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, k_tot);
             // If the fracture set is biazimuthally conjugate, the YZ and ZX components of the permeability tensor should be 0
             if (BiazimuthalConjugate)
@@ -2439,7 +2481,7 @@ namespace DFMGenerator_SharedCode
             double unconnectedTipRatio, hardLinkedRelayTipRatio, softLinkedRelayTipRatio, connectedTipRatio;
             double meanLength;
             double meanRelayOffset;
-            double meanNonRelayOffset = set_MFP32 / 2;
+            double meanNonRelayOffset = 1 / set_MFP32;
             if (useCurrentDensityData)
             {
                 unconnectedTipRatio = UnconnectedTipRatio(false);
@@ -2479,14 +2521,18 @@ namespace DFMGenerator_SharedCode
                 meanLength = (MFP30_Thickness > 0 ? 2 * (dipset_MFP32 / MFP30_Thickness) : 0);
                 meanRelayOffset = getMeanStressShadowWidth(Timestep_M) / 2;
             }
-            double unconnectedTipCrossFractureFlowFactor = meanNonRelayOffset * kf_kh;
-            double softLinkedRelayCrossFractureFlowFactor = meanRelayOffset * kf_kh;
-            double hardLinkedRelayCrossFractureFlowFactor = meanRelayOffset * kf_kr;
-            double connectedTipCrossFractureFlowFactor = meanNonRelayOffset * kf_kr;
-            if (double.IsNaN(unconnectedTipCrossFractureFlowFactor)) unconnectedTipCrossFractureFlowFactor = 0;
-            if (double.IsNaN(softLinkedRelayCrossFractureFlowFactor)) softLinkedRelayCrossFractureFlowFactor = 0;
-            if (double.IsNaN(hardLinkedRelayCrossFractureFlowFactor)) hardLinkedRelayCrossFractureFlowFactor = 0;
-            if (double.IsNaN(connectedTipCrossFractureFlowFactor)) connectedTipCrossFractureFlowFactor = 0;
+            double unconnectedTipLeakOffZoneLength = ((meanNonRelayOffset / kf_kh) < 1) ? meanNonRelayOffset / Math.Sqrt(1 - (meanNonRelayOffset / kf_kh)) : meanLength;
+            if (unconnectedTipLeakOffZoneLength > meanLength) unconnectedTipLeakOffZoneLength = meanLength;
+            double softLinkedRelayLeakOffZoneLength = ((meanRelayOffset / kf_kh) < 1) ? meanRelayOffset / Math.Sqrt(1 - (meanRelayOffset / kf_kh)) : meanLength;
+            if (softLinkedRelayLeakOffZoneLength > meanLength) softLinkedRelayLeakOffZoneLength = meanLength;
+            double unconnectedTipCrossFractureFlowResistance = (((meanNonRelayOffset / unconnectedTipLeakOffZoneLength) + (unconnectedTipLeakOffZoneLength / meanNonRelayOffset)) * kf_kh) - unconnectedTipLeakOffZoneLength;
+            double softLinkedRelayCrossFractureFlowResistance = (((meanRelayOffset / softLinkedRelayLeakOffZoneLength) + (softLinkedRelayLeakOffZoneLength / meanRelayOffset)) * kf_kh) - softLinkedRelayLeakOffZoneLength;
+            double hardLinkedRelayCrossFractureFlowResistance = meanRelayOffset * kf_kr;
+            double connectedTipCrossFractureFlowResistance = meanNonRelayOffset * kf_kr;
+            if (double.IsNaN(unconnectedTipCrossFractureFlowResistance)) unconnectedTipCrossFractureFlowResistance = 0;
+            if (double.IsNaN(softLinkedRelayCrossFractureFlowResistance)) softLinkedRelayCrossFractureFlowResistance = 0;
+            if (double.IsNaN(hardLinkedRelayCrossFractureFlowResistance)) hardLinkedRelayCrossFractureFlowResistance = 0;
+            if (double.IsNaN(connectedTipCrossFractureFlowResistance)) connectedTipCrossFractureFlowResistance = 0;
             double kxxNonRelayDistanceFactor = meanNonRelayOffset * cotStrike;
             double kxxRelayDistanceFactor = meanRelayOffset * cotStrike;
             double kyyNonRelayDistanceFactor = meanNonRelayOffset * tanStrike;
@@ -2497,18 +2543,18 @@ namespace DFMGenerator_SharedCode
             if (double.IsNaN(kyyRelayDistanceFactor)) kyyRelayDistanceFactor = 0;
 
             // Calculate the permeability component multipliers
-            double kxx_multiplier = (unconnectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowFactor)))
-                + (softLinkedRelayTipRatio * ((meanLength + kxxRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowFactor)))
-                + (hardLinkedRelayTipRatio * ((meanLength + meanRelayOffset) / (meanLength + hardLinkedRelayCrossFractureFlowFactor)))
-                + (connectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowFactor)));
-            double kyy_multiplier = (unconnectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowFactor)))
-                + (softLinkedRelayTipRatio * ((meanLength + kyyRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowFactor)))
-                + (hardLinkedRelayTipRatio * ((meanLength + meanRelayOffset) / (meanLength + hardLinkedRelayCrossFractureFlowFactor)))
-                + (connectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowFactor)));
-            double kxy_multiplier = (unconnectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + unconnectedTipCrossFractureFlowFactor)))
-                + (softLinkedRelayTipRatio * ((meanLength - meanRelayOffset) / (meanLength + softLinkedRelayCrossFractureFlowFactor)))
-                + (hardLinkedRelayTipRatio * ((meanLength) / (meanLength + hardLinkedRelayCrossFractureFlowFactor)))
-                + (connectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + connectedTipCrossFractureFlowFactor)));
+            double kxx_multiplier = (unconnectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowResistance)))
+                + (softLinkedRelayTipRatio * ((meanLength + kxxRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowResistance)))
+                + (hardLinkedRelayTipRatio * ((meanLength + kxxRelayDistanceFactor) / (meanLength + hardLinkedRelayCrossFractureFlowResistance)))
+                + (connectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowResistance)));
+            double kyy_multiplier = (unconnectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowResistance)))
+                + (softLinkedRelayTipRatio * ((meanLength + kyyRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowResistance)))
+                + (hardLinkedRelayTipRatio * ((meanLength + kyyRelayDistanceFactor) / (meanLength + hardLinkedRelayCrossFractureFlowResistance)))
+                + (connectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowResistance)));
+            double kxy_multiplier = (unconnectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + unconnectedTipCrossFractureFlowResistance)))
+                + (softLinkedRelayTipRatio * ((meanLength - meanRelayOffset) / (meanLength + softLinkedRelayCrossFractureFlowResistance)))
+                + (hardLinkedRelayTipRatio * ((meanLength) / (meanLength + hardLinkedRelayCrossFractureFlowResistance)))
+                + (connectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + connectedTipCrossFractureFlowResistance)));
             if (double.IsNaN(kxx_multiplier)) kxx_multiplier = 1;
             if (double.IsNaN(kyy_multiplier)) kyy_multiplier = 1;
             if (double.IsNaN(kxy_multiplier)) kxy_multiplier = 1;

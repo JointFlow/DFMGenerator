@@ -3820,41 +3820,7 @@ namespace DFMGenerator_Ocean
                                 else
                                     PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
 #endif
-
-                                // Set the fracture aperture control data for fracture porosity calculation
-                                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
-                                {
-                                    double Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in;
-                                    if (fs_index == 0)
-                                    {
-                                        Mode1_UniformAperture_in = Mode1HMin_UniformAperture;
-                                        Mode2_UniformAperture_in = Mode2HMin_UniformAperture;
-                                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMin_SizeDependentApertureMultiplier;
-                                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMin_SizeDependentApertureMultiplier;
-                                    }
-                                    else if ((fs_index == (NoFractureSets / 2)) && ((NoFractureSets % 2) == 0))
-                                    {
-                                        Mode1_UniformAperture_in = Mode1HMax_UniformAperture;
-                                        Mode2_UniformAperture_in = Mode2HMax_UniformAperture;
-                                        Mode1_SizeDependentApertureMultiplier_in = Mode1HMax_SizeDependentApertureMultiplier;
-                                        Mode2_SizeDependentApertureMultiplier_in = Mode2HMax_SizeDependentApertureMultiplier;
-                                    }
-                                    else
-                                    {
-                                        double relativeAngle = Math.PI * ((double)fs_index / (double)NoFractureSets);
-                                        double HMinComponent = Math.Pow(Math.Cos(relativeAngle), 2);
-                                        double HMaxComponent = Math.Pow(Math.Sin(relativeAngle), 2);
-                                        Mode1_UniformAperture_in = (Mode1HMin_UniformAperture * HMinComponent) + (Mode1HMax_UniformAperture * HMaxComponent);
-                                        Mode2_UniformAperture_in = (Mode2HMin_UniformAperture * HMinComponent) + (Mode2HMax_UniformAperture * HMaxComponent);
-                                        Mode1_SizeDependentApertureMultiplier_in = (Mode1HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode1HMax_SizeDependentApertureMultiplier * HMaxComponent);
-                                        Mode2_SizeDependentApertureMultiplier_in = (Mode2HMin_SizeDependentApertureMultiplier * HMinComponent) + (Mode2HMax_SizeDependentApertureMultiplier * HMaxComponent);
-                                    }
-                                    gc.FractureSets[fs_index].SetFractureApertureControlData(Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in);
-
-#if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.FractureSets[{0}].SetFractureApertureControlData(({1}, {2}, {3}, {4});", fs_index, Mode1_UniformAperture_in, Mode2_UniformAperture_in, Mode1_SizeDependentApertureMultiplier_in, Mode2_SizeDependentApertureMultiplier_in));
-#endif
-                                }
+                                // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
 
                                 // If required, define the present day stress
                                 if (UsePresentDayStress)
@@ -4812,6 +4778,12 @@ namespace DFMGenerator_Ocean
                                             break;
                                     }
                                 }
+
+                                // Set the fracture aperture control data
+                                gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
+#if DEBUG_FRACS
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
+#endif
 
                                 // Add the gridblock to the grid
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
