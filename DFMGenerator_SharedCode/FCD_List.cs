@@ -301,14 +301,26 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Volumetric density of all half-macrofractures, static and dynamic, at the end of timestep M
         /// </summary>
-        /// <param name="Timestep_M"></param>
+        /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getTotal_MFP30_M(int Timestep_M) { return dataList[Timestep_M].Total_MFP30_M; }
         /// <summary>
-        /// P31 value for all microfractures, static and dynamic, at the end of timestep M
+        /// Volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
+        public double getTerminatingFractureDensity_M(int Timestep_M) { return dataList[Timestep_M].TerminatingFractureDensity_M; }
+        /// <summary>
+        /// Mean number of half-macrofractures from other fracture sets that terminate against a half-macrofracture from this dipset, at the end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double getTerminatingFracturesPerMF_M(int Timestep_M) { return dataList[Timestep_M].TerminatingFracturesPerMF_M; }
+        ///// <summary>
+        ///// P31 value for all microfractures, static and dynamic, at the end of timestep M
+        ///// </summary>
+        ///// <param name="Timestep_M">Timestep M</param>
+        ///// <returns></returns>
         //public double getTotal_uFP31_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP31_M; }
         /// <summary>
         /// Mean linear density of all microfractures, static and dynamic, at the end of timestep M
@@ -328,11 +340,11 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getTotal_uFP33_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP33_M; }
-        /// <summary>
-        /// P34 value for all microfractures, static and dynamic, at the end of timestep M
-        /// </summary>
-        /// <param name="Timestep_M">Timestep M</param>
-        /// <returns></returns>
+        ///// <summary>
+        ///// P34 value for all microfractures, static and dynamic, at the end of timestep M
+        ///// </summary>
+        ///// <param name="Timestep_M">Timestep M</param>
+        ///// <returns></returns>
         //public double getTotal_uFP34_M(int Timestep_M) { return dataList[Timestep_M].Total_uFP34_M; }
         /// <summary>
         /// P35 value for all microfractures, static and dynamic, at the end of timestep M

@@ -1502,6 +1502,28 @@ namespace DFMGenerator_SharedCode
                     } // End loop through each dipset Jm
                 } // End loop through every other fracture set J
             } // End loop through every fracture set I
+
+            // Loop through every fracture dipset Jm and set the total number of fractures I terminating against them
+            for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+            {
+                Gridblock_FractureSet fsJ = FractureSets[fsJ_Index];
+
+                // Loop through each dipset Jm in J
+                int noDipSetsJ = fsJ.FractureDipSets.Count;
+                for (int dipSetIndexJm = 0; dipSetIndexJm < noDipSetsJ; dipSetIndexJm++)
+                {
+                    FractureDipSet dipSetJm = fsJ.FractureDipSets[dipSetIndexJm];
+
+                    // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
+                    double sIJm_MFP32 = 0;
+                    for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                        sIJm_MFP32 += MFTerminations[fsI_Index, fsJ_Index][dipSetIndexJm];
+
+                    // Set the mean number of fractures from all fracture sets I terminating against dipset Jm
+                    dipSetJm.setTerminatingFractureDensity(sIJm_MFP32);
+
+                } // End loop through each dipset Jm
+            } // End loop through every other fracture set J
         }
         /// <summary>
         /// Calculate the inverse stress shadow and clear zone volume for each fracture set J due to the stress shadows from other fracture sets I, and apply these to the FractureDipSet objects
@@ -2371,28 +2393,55 @@ namespace DFMGenerator_SharedCode
             return (TotalAllTips > 0 ? TotalRelayTips / TotalAllTips : undefinedReturn);
         }
         /// <summary>
-        /// Proportion of connected macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
+        /// Proportion of intersecting macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
         /// </summary>
         /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sIJ_MFP30_total to T_MFP30_total</returns>
-        public double ConnectedTipRatio(bool ReturnNanForUndefined)
+        public double IntersectingTipRatio(bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
-            double TotalConnectedTips = 0;
+            double TotalIntersectingTips = 0;
             double TotalAllTips = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
             {
-                TotalConnectedTips += fs.combined_sIJ_MFP30_total();
+                TotalIntersectingTips += fs.combined_sIJ_MFP30_total();
                 TotalAllTips += fs.combined_T_MFP30_total();
             }
 
-            return (TotalAllTips > 0 ? TotalConnectedTips / TotalAllTips : undefinedReturn);
+            return (TotalAllTips > 0 ? TotalIntersectingTips / TotalAllTips : undefinedReturn);
+        }
+        /// <summary>
+        /// Get the mean number of half-macrofractures from other fracture sets that terminate against a half-macrofracture from a specified fracture dipset
+        /// </summary>
+        /// <param name="FractureSetNo">Index number of the specified fracture set</param>
+        /// <param name="DipSetNo">Index number of the specified dipset</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns></returns>
+        public double getTerminatingFracturesPerMF(int FractureSetNo, int DipSetNo, bool ReturnNanForUndefined)
+        {
+            // Check if the sepcified fracture dipset exists - if not return NaN
+            if ((FractureSetNo < 0) || (FractureSetNo >= NoFractureSets) || (DipSetNo < 0) || (DipSetNo >= FractureSets[FractureSetNo].FractureDipSets.Count))
+                return double.NaN;
+
+            // Set the return value if there are no fractures in the specified dipset
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+
+            // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
+            double sIJm_MFP32 = 0;
+            for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                sIJm_MFP32 += MFTerminations[fsI_Index, FractureSetNo][DipSetNo];
+
+            // Calculate the total number of fractures in dipset Jm
+            FractureDipSet Jm = FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+            double I_MFP30 = Jm.a_MFP30_total() + Jm.sII_MFP30_total() + Jm.sIJ_MFP30_total();
+
+            return (I_MFP30 > 0) ? (sIJm_MFP32 / I_MFP30) : undefinedReturn;
         }
         /// <summary>
         /// Mean number of other macrofractures that each macrofracture is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of macrofractures
         /// </summary>
         /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
-        /// <returns>Ratio of (4 * sII_MFP30_total * sIJ_MFP30_total) / T_MFP30_total</returns>
+        /// <returns>Ratio of ((2 * sII_MFP30_total) + (4 * sII_MFP30_total)) / T_MFP30_total</returns>
         public double ConnectionsPerMacrofracture(bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
@@ -2400,15 +2449,43 @@ namespace DFMGenerator_SharedCode
             double TotalFractures = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
             {
-                // Only hard-linked relays will be counted. These count as two intersections, one for each fracture segment
+                // Only hard-linked relays will be counted
                 if (gd.DFNControl.LinkFracturesInStressShadow)
-                    TotalConnections += (2 * fs.combined_sII_MFP30_total());
+                    TotalConnections += fs.combined_sII_MFP30_total();
                 // Intersections create two fracture connections, one on the terminating fracture and one on the terminated fracture
                 TotalConnections += (2 * fs.combined_sIJ_MFP30_total());
+
+                // The total number of macrofractures is half of the total number of half-macrofractures
                 TotalFractures += (fs.combined_T_MFP30_total() / 2);
             }
 
             return (TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn);
+        }
+        /// <summary>
+        /// Mean number of other macrofractures that each macrofracture in the specified fracture dip set is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of macrofractures
+        /// </summary>
+        /// <param name="FractureSetNo">Index number of the specified fracture set</param>
+        /// <param name="DipSetNo">Index number of the specified dipset</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns></returns>
+        public double ConnectionsPerMacrofracture(int FractureSetNo, int DipSetNo, bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double TotalConnections = 0;
+            Gridblock_FractureSet fs = FractureSets[FractureSetNo];
+            double TotalFractures = fs.combined_T_MFP30_total() / 2;
+
+            // Calculate the number of connections at the fracture tips
+            // Only hard-linked relays will be counted
+            if (gd.DFNControl.LinkFracturesInStressShadow)
+                TotalConnections += fs.combined_sII_MFP30_total();
+            TotalConnections += fs.combined_sIJ_MFP30_total();
+            double connectionsPerFracture = TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn;
+
+            // We must double the mean number of terminating fractures as this is calculated per half-macrofracture
+            connectionsPerFracture += (2 * getTerminatingFracturesPerMF(FractureSetNo, DipSetNo, ReturnNanForUndefined));
+
+            return connectionsPerFracture;
         }
         /// <summary>
         /// Get the current fracture fabric tensor F, as defined by Oda 1983
@@ -3550,9 +3627,8 @@ namespace DFMGenerator_SharedCode
                         }
                     }
 
-                    // If required, update the macrofracture termination array
-                    if (checkAlluFStressShadows)
-                        upDateMFTerminations();
+                    // Update the macrofracture termination array
+                    upDateMFTerminations();
 
                     // Calculate and update the macrofracture density, macrofracture spacing distribution and clear zone volume data in the CurrentFractureData object
                     // NB we cannot do this as we calculate the new macrofracture density data for the timestep, because we need to keep the previous values until all macrofracture sets have been calculated

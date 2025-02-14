@@ -361,9 +361,19 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotalMFP30() { return CurrentFractureData.Total_MFP30_M; }
         /// <summary>
-        /// Return the P31 value for all microfractures, static and dynamic, during the current timestep
+        /// Return the volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, during the current timestep
         /// </summary>
         /// <returns></returns>
+        public double getTerminatingFractureDensity() { return CurrentFractureData.TerminatingFractureDensity_M; }
+        /// <summary>
+        /// Return the mean number of half-macrofractures from other fracture sets that terminate against a half-macrofracture from this dipset, during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTerminatingFracturesPerMF() { return CurrentFractureData.TerminatingFracturesPerMF_M; }
+        ///// <summary>
+        ///// Return the P31 value for all microfractures, static and dynamic, during the current timestep
+        ///// </summary>
+        ///// <returns></returns>
         //public double getTotaluFP31() { return CurrentFractureData.Total_uFP31_M; }
         /// <summary>
         /// Return the mean linear density of all microfractures, static and dynamic, during the current timestep
@@ -380,10 +390,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double getTotaluFP33() { return CurrentFractureData.Total_uFP33_M; }
-        /// <summary>
-        /// Return the P34 value for all microfractures, static and dynamic, during the current timestep
-        /// </summary>
-        /// <returns></returns>
+        ///// <summary>
+        ///// Return the P34 value for all microfractures, static and dynamic, during the current timestep
+        ///// </summary>
+        ///// <returns></returns>
         //public double getTotaluFP34() { return CurrentFractureData.Total_uFP34_M; }
         /// <summary>
         /// Return the P35 value for all microfractures, static and dynamic, during the current timestep
@@ -646,10 +656,22 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotalMFP30(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_MFP30_M(Timestep_M); }
         /// <summary>
-        /// Return the P31 value for all microfractures, static and dynamic, at the end of a specified previous timestep
+        /// Return the volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
+        public double getTerminatingFractureDensity(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTerminatingFractureDensity_M(Timestep_M); }
+        /// <summary>
+        /// Return the mean number of half-macrofractures from other fracture sets that terminate against a half-macrofracture from this dipset, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTerminatingFracturesPerMF(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTerminatingFracturesPerMF_M(Timestep_M); }
+        ///// <summary>
+        ///// Return the P31 value for all microfractures, static and dynamic, at the end of a specified previous timestep
+        ///// </summary>
+        ///// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        ///// <returns></returns>
         //public double getTotaluFP31(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP31_M(Timestep_M); }
         /// <summary>
         /// Return the mean linear density of all microfractures, static and dynamic, at the end of a specified previous timestep
@@ -669,11 +691,11 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getTotaluFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP33_M(Timestep_M); }
-        /// <summary>
-        /// Return the P34 value for all microfractures, static and dynamic, at the end of a specified previous timestep
-        /// </summary>
-        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
-        /// <returns></returns>
+        ///// <summary>
+        ///// Return the P34 value for all microfractures, static and dynamic, at the end of a specified previous timestep
+        ///// </summary>
+        ///// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        ///// <returns></returns>
         //public double getTotaluFP34(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_uFP34_M(Timestep_M); }
         /// <summary>
         /// Return the P35 value for all microfractures, static and dynamic, at the end of a specified previous timestep
@@ -2495,7 +2517,7 @@ namespace DFMGenerator_SharedCode
                     softLinkedRelayTipRatio = RelayTipRatio(false);
                     hardLinkedRelayTipRatio = 0;
                 }
-                connectedTipRatio = ConnectedTipRatio(false);
+                connectedTipRatio = IntersectingTipRatio(false);
                 meanLength = Mean_MF_HalfLength() * 2;
                 meanRelayOffset = Mean_MF_StressShadowWidth / 2;
             }
@@ -2792,11 +2814,11 @@ namespace DFMGenerator_SharedCode
             return (T_MFP30 > 0 ? sII_MFP30_total() / T_MFP30 : undefinedReturn);
         }
         /// <summary>
-        /// Proportion of connected macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
+        /// Proportion of intersecting macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
         /// </summary>
         /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sIJ_MFP30_total to T_MFP30_total</returns>
-        public double ConnectedTipRatio(bool ReturnNanForUndefined)
+        public double IntersectingTipRatio(bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double T_MFP30 = a_MFP30_total() + sII_MFP30_total() + sIJ_MFP30_total();
@@ -3152,6 +3174,14 @@ namespace DFMGenerator_SharedCode
         {
             double MFP32 = a_MFP32_total() + s_MFP32_total();
             CurrentFractureData.SetMacrofractureDensityData(a_MFP30_total(), sII_MFP30_total(), sIJ_MFP30_total(), MFP32);
+        }
+        /// <summary>
+        /// Set the volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, at the end of timestep M
+        /// </summary>
+        /// <param name="terminatingFractureDensity_in">Volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset</param>
+        public void setTerminatingFractureDensity(double terminatingFractureDensity_in)
+        {
+            CurrentFractureData.TerminatingFractureDensity_M = terminatingFractureDensity_in;
         }
         /// <summary>
         /// Set the microfracture density indices uFP32, uFP33 and uFP35 in the CurrentFractureData object

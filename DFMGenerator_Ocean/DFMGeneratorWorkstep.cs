@@ -5132,19 +5132,23 @@ namespace DFMGenerator_Ocean
                                                 MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
                                                 Property MF_RelayTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
                                                 MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
-                                                Property MF_ConnectedTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
-                                                MF_ConnectedTipRatio.Name = "Connected_fracture_tip_ratio";
+                                                Property MF_IntersectingTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
+                                                MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
+                                                Property ConnectionsPerMF = FracSetData.CreateProperty(ConnectionsPerFractureTemplate);
+                                                ConnectionsPerMF.Name = "Connections_per_fracture";
                                                 Property EndDeformationTime = FracSetData.CreateProperty(DeformationTimeTemplate);
                                                 EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
 
                                                 // Add creation event to each property
                                                 IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
                                                 IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
-                                                IHistoryInfoEditor MF_ConnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_ConnectedTipRatio);
+                                                IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
+                                                IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
                                                 IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
                                                 MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                                 MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                MF_ConnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                                 EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                                 // Loop through all columns and rows in the Fracture Grid
@@ -5179,12 +5183,13 @@ namespace DFMGenerator_Ocean
                                                         int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
 
                                                         // Get data from GridblockConfiguration object
-                                                        double UnconnectedTipRatio, RelayTipRatio, ConnectedTipRatio, EndTime;
+                                                        double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
                                                         if (finalStage)
                                                         {
                                                             UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
                                                             RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                            ConnectedTipRatio = fds.ConnectedTipRatio(!PopulateEmptyGridblocks);
+                                                            IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
+                                                            NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
                                                             EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
                                                         }
                                                         else
@@ -5195,9 +5200,11 @@ namespace DFMGenerator_Ocean
                                                             double RNodes = fds.getStaticRelayMFP30(TSNo);
                                                             double YNodes = fds.getStaticIntersectMFP30(TSNo);
                                                             double TotalNodes = INodes + RNodes + YNodes;
+                                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + fds.getTerminatingFractureDensity(TSNo);
                                                             UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
                                                             RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
-                                                            ConnectedTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                            IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                            NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
                                                             EndTime = stageEndTime;
                                                         }
 
@@ -5223,7 +5230,8 @@ namespace DFMGenerator_Ocean
                                                                         // Write data to Petrel grid
                                                                         MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
                                                                         MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
-                                                                        MF_ConnectedTipRatio[index_cell] = (float)ConnectedTipRatio;
+                                                                        MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
+                                                                        ConnectionsPerMF[index_cell] = (float)NodesPerMF;
                                                                         EndDeformationTime[index_cell] = (float)EndTime;
                                                                     } // End loop through all the Petrel cells in the gridblock
                                                         }
@@ -5232,7 +5240,8 @@ namespace DFMGenerator_Ocean
                                                             string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                             errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                             errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
-                                                            errorMessage = errorMessage + string.Format(" ConnectedTipRatio {0}", (float)ConnectedTipRatio);
+                                                            errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
+                                                            errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
                                                             errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
@@ -5358,8 +5367,8 @@ namespace DFMGenerator_Ocean
                                         MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
                                         Property MF_RelayTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
                                         MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
-                                        Property MF_ConnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                        MF_ConnectedTipRatio.Name = "Connected_fracture_tip_ratio";
+                                        Property MF_IntersectingTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                        MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
                                         Property ConnectionsPerMF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
                                         ConnectionsPerMF.Name = "Connections_per_fracture";
                                         Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
@@ -5370,14 +5379,14 @@ namespace DFMGenerator_Ocean
                                         IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
                                         IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
                                         IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
-                                        IHistoryInfoEditor MF_ConnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_ConnectedTipRatio);
+                                        IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
                                         IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
                                         IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
                                         P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        MF_ConnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
                                         EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
@@ -5406,7 +5415,7 @@ namespace DFMGenerator_Ocean
 
                                                 // Calculate fracture anisotropy and connectivity for the entire fracture network
                                                 double P32_anisotropy, P33_anisotropy;
-                                                double UnconnectedTipRatio, RelayTipRatio, ConnectedTipRatio, NodesPerMF, EndTime;
+                                                double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
                                                 if (finalStage)
                                                 {
                                                     // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
@@ -5419,7 +5428,7 @@ namespace DFMGenerator_Ocean
                                                     // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
                                                     UnconnectedTipRatio = fractureGridCell.UnconnectedTipRatio(!PopulateEmptyGridblocks);
                                                     RelayTipRatio = fractureGridCell.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                    ConnectedTipRatio = fractureGridCell.ConnectedTipRatio(!PopulateEmptyGridblocks);
+                                                    IntersectingTipRatio = fractureGridCell.IntersectingTipRatio(!PopulateEmptyGridblocks);
                                                     NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
 
                                                     // Calculate end deformation time using the function in the GridblockConfiguration object
@@ -5496,8 +5505,8 @@ namespace DFMGenerator_Ocean
                                                     double TotalNodes = INodes + RNodes + YNodes;
                                                     UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
                                                     RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
-                                                    ConnectedTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
-                                                    double NoConnections = (LinkStressShadows ? 2 * RNodes : 0) + (2 * YNodes);
+                                                    IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                    double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
                                                     NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
 
                                                     // Get the time at the end of this intermediate stage
@@ -5532,8 +5541,8 @@ namespace DFMGenerator_Ocean
                                                                     MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
                                                                 if (!double.IsNaN(RelayTipRatio))
                                                                     MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
-                                                                if (!double.IsNaN(ConnectedTipRatio))
-                                                                    MF_ConnectedTipRatio[index_cell] = (float)ConnectedTipRatio;
+                                                                if (!double.IsNaN(IntersectingTipRatio))
+                                                                    MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
                                                                 if (!double.IsNaN(NodesPerMF))
                                                                     ConnectionsPerMF[index_cell] = (float)NodesPerMF;
                                                                 if (!double.IsNaN(EndTime))
@@ -5547,8 +5556,8 @@ namespace DFMGenerator_Ocean
                                                     errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
                                                     errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                     errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                    errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
                                                     errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
-                                                    errorMessage = errorMessage + string.Format(" ConnectedTipRatio {0}", (float)ConnectedTipRatio);
                                                     errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
                                                     PetrelLogger.InfoOutputWindow(errorMessage);
                                                     PetrelLogger.InfoOutputWindow(e.Message);

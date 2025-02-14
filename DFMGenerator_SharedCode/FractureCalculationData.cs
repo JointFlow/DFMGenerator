@@ -236,10 +236,18 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Total_MFP30_M { get { return a_MFP30_M + sII_MFP30_M + sIJ_MFP30_M; } }
         /// <summary>
-        /// P31 value for all microfractures, static and dynamic, at the end of timestep M
-        /// This represents the sum of the diameters of every microfracture
-        /// It is used to calculate the microfracture permeability corrected for fracture size distribution
+        /// Volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, at the end of timestep M
         /// </summary>
+        public double TerminatingFractureDensity_M { get; set; }
+        /// <summary>
+        /// Mean number of half-macrofractures from other fracture sets that terminate against a half-macrofracture from this dipset, at the end of timestep M
+        /// </summary>
+        public double TerminatingFracturesPerMF_M { get { return Total_MFP30_M > 0 ? TerminatingFractureDensity_M / Total_MFP30_M : 0; } }
+        ///// <summary>
+        ///// P31 value for all microfractures, static and dynamic, at the end of timestep M
+        ///// This represents the sum of the diameters of every microfracture
+        ///// It is used to calculate the microfracture permeability corrected for fracture size distribution
+        ///// </summary>
         //public double Total_uFP31_M { get; private set; }
         /// <summary>
         /// Mean linear density of all microfractures, static and dynamic, at the end of timestep M
@@ -253,11 +261,11 @@ namespace DFMGenerator_SharedCode
         /// Volumetric ratio of all microfractures, static and dynamic, at the end of timestep M
         /// </summary>
         public double Total_uFP33_M { get; private set; }
-        /// <summary>
-        /// P34 value for all microfractures, static and dynamic, at the end of timestep M
-        /// This represents the combined integral of R^3 along the diameter of every microfracture, where R is the microfracture radius
-        /// It is used to calculate the microfracture permeability correction factor where microfracture aperture is size-dependent, and permeability is proportional to aperture cubed
-        /// </summary>
+        ///// <summary>
+        ///// P34 value for all microfractures, static and dynamic, at the end of timestep M
+        ///// This represents the combined integral of R^3 along the diameter of every microfracture, where R is the microfracture radius
+        ///// It is used to calculate the microfracture permeability correction factor where microfracture aperture is size-dependent, and permeability is proportional to aperture cubed
+        ///// </summary>
         //public double Total_uFP34_M { get; private set; }
         /// <summary>
         /// P35 value for all microfractures, static and dynamic, at the end of timestep M
@@ -682,6 +690,8 @@ namespace DFMGenerator_SharedCode
             sII_MFP30_M = 0;
             // Volumetric density of all static half-macrofractures terminated due to intersection, at the end of timestep M
             sIJ_MFP30_M = 0;
+            // Volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, at the end of timestep M
+            TerminatingFractureDensity_M = 0;
             // P31 of all microfractures, static and dynamic, at the end of timestep M
             //Total_uFP31_M = 0;
             // Mean linear density of all microfractures, static and dynamic, at the end of timestep M
@@ -786,6 +796,8 @@ namespace DFMGenerator_SharedCode
             sII_MFP30_M = fcd_in.sII_MFP30_M;
             // Volumetric density of all static half-macrofractures terminated due to intersection, at the end of timestep M
             sIJ_MFP30_M = fcd_in.sIJ_MFP30_M;
+            // Volumetric density of all half-macrofractures from other fracture sets that terminate against half-macrofractures from this dipset, at the end of timestep M
+            TerminatingFractureDensity_M = fcd_in.TerminatingFractureDensity_M;
             // P31 of all microfractures, static and dynamic, at the end of timestep M
             //Total_uFP31_M = fcd_in.Total_uFP31_M;
             // Mean linear density of all microfractures, static and dynamic, at the end of timestep M
