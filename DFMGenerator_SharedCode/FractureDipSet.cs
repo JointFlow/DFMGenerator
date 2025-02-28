@@ -2455,6 +2455,8 @@ namespace DFMGenerator_SharedCode
             bool useCurrentDensityData = (Timestep_M < 0);
             bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
 
+            // Calculate the fracture density, aperture and geometric multipliers
+            // These are independent of the fracture orientation and connectivity
             double geometryMultiplier = 1d / 12d;
             double apertureMultiplier;
             double relayApertureMultiplier;
@@ -2483,50 +2485,50 @@ namespace DFMGenerator_SharedCode
             }
             double dipset_MFP32 = useCurrentDensityData ? a_MFP32_total() + s_MFP32_total() : getTotalMFP32(Timestep_M);
             double densityMultiplier = dipset_MFP32 / sindip;
-            double set_MFP32 = useCurrentDensityData ? fs.combined_T_MFP32_total() : fs.combined_T_MFP32_total(Timestep_M);
+            double kf_singlefrac = geometryMultiplier * apertureMultiplier;
+            double kf_set = kf_singlefrac * densityMultiplier;
 
-            // We must exclude the component of flow parallel to the fracture azimuth due to inclination of the fractures, as this will not be connected to other fractures
-            // Therefore we will calculate the permeability tensor assuming vertical fractures, before making corrections to the vertical (ZZ) components to account for fracture dip
-            // NB the calculated YZ and ZX components for a vertical fracture will be 0
-            Tensor2S permTensor = Tensor2S.BiaxialTensor(fs.AzimuthVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
-            double new_kzz = sindip * sindip * permTensor.Component(Tensor2SComponents.ZZ);
-            permTensor.Component(Tensor2SComponents.ZZ, new_kzz);
+            // If the P32 fracture density is zero or the fracture aperture is zero, the permeability tensor will be zero so we can return a null tensor immediately
+            if (kf_set == 0)
+                return new Tensor2S();
 
-            // Get connectivity and size distribution indices
+            // Calculate the geometric and connectivity indices
             double sinStrike = Math.Abs(VectorXYZ.Sin_trim(fs.Strike));
             double cosStrike = Math.Abs(VectorXYZ.Cos_trim(fs.Strike));
-            double tanStrike = sinStrike / cosStrike;
-            double cotStrike = cosStrike / sinStrike;
-            double kf = geometryMultiplier * apertureMultiplier;
-            double kf_kh = (gbc.MechProps.HostRock_kh > 0) ? kf / gbc.MechProps.HostRock_kh : double.PositiveInfinity;
-            double kf_kr = (relayApertureMultiplier > 0)? apertureMultiplier / relayApertureMultiplier : double.PositiveInfinity;
-            double unconnectedTipRatio, hardLinkedRelayTipRatio, softLinkedRelayTipRatio, connectedTipRatio;
-            double meanLength;
-            double meanRelayOffset;
-            double meanNonRelayOffset = 1 / set_MFP32;
+            double kf_kh = kf_singlefrac / gbc.MechProps.HostRock_kh;
+            double kf_kr = apertureMultiplier / relayApertureMultiplier;
+            double unconnectedTipRatio, hardLinkedRelayTipRatio, softLinkedRelayTipRatio, connectedTipRatio, connectedSideRatio;
+            double meanLength, meanRelayOffset, meanNonRelayOffset;
             if (useCurrentDensityData)
             {
-                unconnectedTipRatio = UnconnectedTipRatio(false);
+                double terminatingFracturesPerMF = getTerminatingFracturesPerMF();
+                double TotalNodes = 1 + terminatingFracturesPerMF;
+
+                unconnectedTipRatio = UnconnectedTipRatio(false) / TotalNodes;
                 if (gbc.LinkFracturesInStressShadow)
                 {
                     softLinkedRelayTipRatio = 0;
-                    hardLinkedRelayTipRatio = RelayTipRatio(false);
+                    hardLinkedRelayTipRatio = RelayTipRatio(false) / TotalNodes;
                 }
                 else
                 {
-                    softLinkedRelayTipRatio = RelayTipRatio(false);
+                    softLinkedRelayTipRatio = RelayTipRatio(false) / TotalNodes;
                     hardLinkedRelayTipRatio = 0;
                 }
-                connectedTipRatio = IntersectingTipRatio(false);
-                meanLength = Mean_MF_HalfLength() * 2;
+                connectedTipRatio = IntersectingTipRatio(false) / TotalNodes;
+                connectedSideRatio = terminatingFracturesPerMF / TotalNodes;
+                meanLength = Mean_MF_HalfLength() / (0.5 + terminatingFracturesPerMF);
                 meanRelayOffset = Mean_MF_StressShadowWidth / 2;
+                meanNonRelayOffset = 1 / fs.combined_T_MFP32_total();
             }
             else
             {
+                double terminatingFractureDensity = getTerminatingFractureDensity(Timestep_M);
+                double terminatingFracturesPerMF = getTerminatingFracturesPerMF();
                 double INodes = getActiveMFP30(Timestep_M);
                 double RNodes = getStaticRelayMFP30(Timestep_M);
                 double YNodes = getStaticIntersectMFP30(Timestep_M);
-                double TotalNodes = INodes + RNodes + YNodes;
+                double TotalNodes = INodes + RNodes + YNodes + terminatingFractureDensity;
                 unconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : 1);
                 if (gbc.LinkFracturesInStressShadow)
                 {
@@ -2539,56 +2541,153 @@ namespace DFMGenerator_SharedCode
                     hardLinkedRelayTipRatio = 0;
                 }
                 connectedTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : 0);
+                connectedSideRatio = (TotalNodes > 0 ? terminatingFractureDensity / TotalNodes : 0);
                 double MFP30_Thickness = TotalNodes * gbc.ThicknessAtDeformation;
-                meanLength = (MFP30_Thickness > 0 ? 2 * (dipset_MFP32 / MFP30_Thickness) : 0);
+                meanLength = (MFP30_Thickness > 0 ? (dipset_MFP32 / MFP30_Thickness) / (0.5 + terminatingFracturesPerMF) : 0);
                 meanRelayOffset = getMeanStressShadowWidth(Timestep_M) / 2;
+                meanNonRelayOffset = 1 / fs.combined_T_MFP32_total(Timestep_M);
             }
-            double unconnectedTipLeakOffZoneLength = ((meanNonRelayOffset / kf_kh) < 1) ? meanNonRelayOffset / Math.Sqrt(1 - (meanNonRelayOffset / kf_kh)) : meanLength;
-            if (unconnectedTipLeakOffZoneLength > meanLength) unconnectedTipLeakOffZoneLength = meanLength;
-            double softLinkedRelayLeakOffZoneLength = ((meanRelayOffset / kf_kh) < 1) ? meanRelayOffset / Math.Sqrt(1 - (meanRelayOffset / kf_kh)) : meanLength;
-            if (softLinkedRelayLeakOffZoneLength > meanLength) softLinkedRelayLeakOffZoneLength = meanLength;
-            double unconnectedTipCrossFractureFlowResistance = (((meanNonRelayOffset / unconnectedTipLeakOffZoneLength) + (unconnectedTipLeakOffZoneLength / meanNonRelayOffset)) * kf_kh) - unconnectedTipLeakOffZoneLength;
-            double softLinkedRelayCrossFractureFlowResistance = (((meanRelayOffset / softLinkedRelayLeakOffZoneLength) + (softLinkedRelayLeakOffZoneLength / meanRelayOffset)) * kf_kh) - softLinkedRelayLeakOffZoneLength;
-            double hardLinkedRelayCrossFractureFlowResistance = meanRelayOffset * kf_kr;
-            double connectedTipCrossFractureFlowResistance = meanNonRelayOffset * kf_kr;
-            if (double.IsNaN(unconnectedTipCrossFractureFlowResistance)) unconnectedTipCrossFractureFlowResistance = 0;
-            if (double.IsNaN(softLinkedRelayCrossFractureFlowResistance)) softLinkedRelayCrossFractureFlowResistance = 0;
-            if (double.IsNaN(hardLinkedRelayCrossFractureFlowResistance)) hardLinkedRelayCrossFractureFlowResistance = 0;
-            if (double.IsNaN(connectedTipCrossFractureFlowResistance)) connectedTipCrossFractureFlowResistance = 0;
-            double kxxNonRelayDistanceFactor = meanNonRelayOffset * cotStrike;
-            double kxxRelayDistanceFactor = meanRelayOffset * cotStrike;
-            double kyyNonRelayDistanceFactor = meanNonRelayOffset * tanStrike;
-            double kyyRelayDistanceFactor = meanRelayOffset * tanStrike;
-            if (double.IsNaN(kxxNonRelayDistanceFactor)) kxxNonRelayDistanceFactor = 0;
-            if (double.IsNaN(kxxRelayDistanceFactor)) kxxRelayDistanceFactor = 0;
-            if (double.IsNaN(kyyNonRelayDistanceFactor)) kyyNonRelayDistanceFactor = 0;
-            if (double.IsNaN(kyyRelayDistanceFactor)) kyyRelayDistanceFactor = 0;
 
-            // Calculate the permeability component multipliers
-            double kxx_multiplier = (unconnectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowResistance)))
-                + (softLinkedRelayTipRatio * ((meanLength + kxxRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowResistance)))
-                + (hardLinkedRelayTipRatio * ((meanLength + kxxRelayDistanceFactor) / (meanLength + hardLinkedRelayCrossFractureFlowResistance)))
-                + (connectedTipRatio * ((meanLength + kxxNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowResistance)));
-            double kyy_multiplier = (unconnectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + unconnectedTipCrossFractureFlowResistance)))
-                + (softLinkedRelayTipRatio * ((meanLength + kyyRelayDistanceFactor) / (meanLength + softLinkedRelayCrossFractureFlowResistance)))
-                + (hardLinkedRelayTipRatio * ((meanLength + kyyRelayDistanceFactor) / (meanLength + hardLinkedRelayCrossFractureFlowResistance)))
-                + (connectedTipRatio * ((meanLength + kyyNonRelayDistanceFactor) / (meanLength + connectedTipCrossFractureFlowResistance)));
-            double kxy_multiplier = (unconnectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + unconnectedTipCrossFractureFlowResistance)))
-                + (softLinkedRelayTipRatio * ((meanLength - meanRelayOffset) / (meanLength + softLinkedRelayCrossFractureFlowResistance)))
-                + (hardLinkedRelayTipRatio * ((meanLength) / (meanLength + hardLinkedRelayCrossFractureFlowResistance)))
-                + (connectedTipRatio * ((meanLength - meanNonRelayOffset) / (meanLength + connectedTipCrossFractureFlowResistance)));
-            if (double.IsNaN(kxx_multiplier)) kxx_multiplier = 1;
-            if (double.IsNaN(kyy_multiplier)) kyy_multiplier = 1;
-            if (double.IsNaN(kxy_multiplier)) kxy_multiplier = 1;
-            // kzz, kyz and kzx components of the permeability tensor will not change
+            // Calculate the length multipliers for different fracture node types
+            double LIT_xx = (meanLength * sinStrike * sinStrike) + (meanNonRelayOffset * sinStrike * cosStrike);
+            double LIT_yy = (meanLength * cosStrike * cosStrike) + (meanNonRelayOffset * sinStrike * cosStrike);
+            double LIT_xy = (meanLength - meanNonRelayOffset) * sinStrike * cosStrike;
+            double LRN_xx = meanLength * sinStrike * sinStrike;
+            double LRN_yy = meanLength * cosStrike * cosStrike;
+            double LRN_xy = meanLength * sinStrike * cosStrike;
 
-            // Apply the multipliers to the permeability tensor components
-            double new_kxx = kxx_multiplier * permTensor.Component(Tensor2SComponents.XX);
-            double new_kyy = kyy_multiplier * permTensor.Component(Tensor2SComponents.YY);
-            double new_kxy = kxy_multiplier * permTensor.Component(Tensor2SComponents.XY);
-            permTensor.Component(Tensor2SComponents.XX, new_kxx);
-            permTensor.Component(Tensor2SComponents.YY, new_kyy);
-            permTensor.Component(Tensor2SComponents.XY, new_kxy);
+            // Calculate the resistivity multipliers for different fracture node types
+            double RI;
+            if (meanNonRelayOffset >= kf_kh)
+                RI = meanLength;
+            else if ((meanNonRelayOffset / Math.Sqrt(1 - (meanNonRelayOffset / kf_kh))) < meanLength)
+                RI = meanLength + (2 * kf_kh * Math.Sqrt(1 - (meanNonRelayOffset / kf_kh)));
+            else
+                RI = kf_kh * ((meanNonRelayOffset / meanLength) + (meanLength / meanNonRelayOffset));
+            double RRs;
+            if (meanRelayOffset >= kf_kh)
+                RRs = meanLength;
+            else if ((meanRelayOffset / Math.Sqrt(1 - (meanRelayOffset / kf_kh))) < meanLength)
+                RRs = meanLength + (2 * kf_kh * Math.Sqrt(1 - (meanRelayOffset / kf_kh)));
+            else
+                RRs = kf_kh * ((meanRelayOffset / meanLength) + (meanLength / meanRelayOffset));
+            double RRh = meanLength + (meanRelayOffset > 0 ? meanRelayOffset * kf_kr : 0);
+            double RT = meanLength + (meanNonRelayOffset > 0 ? meanNonRelayOffset * kf_kr : 0);
+            double RN = meanLength;
+
+            // Since all relay nodes are either all soft-linked or all hard-linked, we can simplify the calculation by considering only one type
+            double relayTipRatio, RR;
+            if (gbc.LinkFracturesInStressShadow)
+            {
+                relayTipRatio = hardLinkedRelayTipRatio;
+                RR = RRh;
+            }
+            else
+            {
+                relayTipRatio = softLinkedRelayTipRatio;
+                RR = RRs;
+            }
+
+            // Calculate the overall permeability multipliers for the horizontal tensor components
+            double kxx_multiplier, kyy_multiplier, kxy_multiplier;
+            const double P_cutoff = 0.99;
+            int maxChainLength = 25;
+            // If there are no junction nodes, then we must calculate the permeability multipliers for indefinite series flow through I and R nodes
+            if ((unconnectedTipRatio + relayTipRatio ) > P_cutoff)
+            {
+                kxx_multiplier = ((unconnectedTipRatio * LIT_xx) + (relayTipRatio * LRN_xx)) / ((unconnectedTipRatio * RI) + (relayTipRatio * RR));
+                kyy_multiplier = ((unconnectedTipRatio * LIT_yy) + (relayTipRatio * LRN_yy)) / ((unconnectedTipRatio * RI) + (relayTipRatio * RR));
+                kxy_multiplier = ((unconnectedTipRatio * LIT_xy) + (relayTipRatio * LRN_xy)) / ((unconnectedTipRatio * RI) + (relayTipRatio * RR));
+            }
+            // If there are junction nodes, then we must calculate the weighted mean of the permeability multipliers for series flow through every possible chain of nodes ending in a junction node
+            // In practice we can ignore the longer chains where the probability is very low
+            else
+            {
+                // Define a cutoff probability for ignoring longer chains
+                // We will start with the shortest chains and build upwards
+                // When the cumulative probability of all chains so far exceeds the cutoff, we can stop calculating
+                double P_cumulative = 0;
+
+                // Set the initial permeability multipliers to 0
+                kxx_multiplier = 0;
+                kyy_multiplier = 0;
+                kxy_multiplier = 0;
+
+                // We will loop through chains of nodes of increasing length
+                // Each chain will consist of a series of 0 or more I or R nodes, followed by a single T or H node
+                // The probability of each chain will therefore be given by a binomial distribution for the I and R nodes
+                // We must therefore define and update a row of Pascal's triangle
+                int[] PTriangle = new int[0] { };
+                // NB noNodes is the number of I and R nodes in the chain; it does not include the final T or H node
+                int noNodes = 0;
+                do
+                {
+                    // Update Pascal's triangle for the new chain length
+                    int[] PTriangle_nextRow = new int[noNodes + 1];
+                    PTriangle_nextRow[0] = 1;
+                    for (int m = 1; m < noNodes; m++)
+                        PTriangle_nextRow[m] = PTriangle[m - 1] + PTriangle[m];
+                    PTriangle_nextRow[noNodes] = 1;
+                    PTriangle = PTriangle_nextRow;
+
+                    // Loop through the possible number of R nodes in the chain
+                    for (int noRnodes = 0; noRnodes <= noNodes; noRnodes++)
+                    {
+                        // The number of I nodes is the number of I and R nodes minus the number of R nodes
+                        int noInodes = noNodes - noRnodes;
+
+                        // Calculate the probability of the specified number of I and R nodes appearing in a chain (in any order)
+                        // This includes the probability of the chain ending in either a T or H node
+                        double P_IRchain = (double)PTriangle[noRnodes] * Math.Pow(unconnectedTipRatio, noInodes) * Math.Pow(relayTipRatio, noRnodes);
+                        double P_chain = P_IRchain * (connectedTipRatio + connectedSideRatio);
+                        P_cumulative += P_chain;
+
+                        // Calculate the kxx, kyy and kxy multipliers for the current chain
+                        double R_IR = (noInodes > 0 ? (double)noInodes * RI : 0) + (noRnodes > 0 ? (double)noRnodes * RR : 0);
+                        double LIR_xx = (noInodes > 0 ? (double)noInodes * LIT_xx : 0) + (noRnodes > 0 ? (double)noRnodes * LRN_xx : 0);
+                        double LIR_yy = (noInodes > 0 ? (double)noInodes * LIT_yy : 0) + (noRnodes > 0 ? (double)noRnodes * LRN_yy : 0);
+                        double LIR_xy = (noInodes > 0 ? (double)noInodes * LIT_xy : 0) + (noRnodes > 0 ? (double)noRnodes * LRN_xy : 0);
+                        double kIRT_xx = (LIR_xx + LIT_xx) / (R_IR + RT);
+                        double kIRT_yy = (LIR_yy + LIT_yy) / (R_IR + RT);
+                        double kIRT_xy = (LIR_xy + LIT_xy) / (R_IR + RT);
+                        double kIRH_xx = (LIR_xx + LRN_xx) / (R_IR + RN);
+                        double kIRH_yy = (LIR_yy + LRN_yy) / (R_IR + RN);
+                        double kIRH_xy = (LIR_xy + LRN_xy) / (R_IR + RN);
+
+                        // Increment the overall permeability multipliers
+                        kxx_multiplier += (P_IRchain * ((connectedTipRatio * kIRT_xx) + (connectedSideRatio * kIRH_xx)));
+                        kyy_multiplier += (P_IRchain * ((connectedTipRatio * kIRT_yy) + (connectedSideRatio * kIRH_yy)));
+                        kxy_multiplier += (P_IRchain * ((connectedTipRatio * kIRT_xy) + (connectedSideRatio * kIRH_xy)));
+                    }
+
+                    // Increment the number of nodes
+                    noNodes++;
+                }
+                while ((P_cumulative < P_cutoff) && (noNodes < maxChainLength));
+
+                // Adjust the overall permeability multipliers to take account of the longer chains that were excluded from the calculation
+                // We can do this by dividing by the cumulative probability of all the chains we have included
+                kxx_multiplier /= P_cumulative;
+                kyy_multiplier /= P_cumulative;
+                kxy_multiplier /= P_cumulative;
+            }
+
+            // Calculate the overall permeability multipliers for the vertical tensor components
+            double kzz_multiplier = sindip * sindip;
+            // We will set the vertical shear components kyz and kzx to 0
+            double kyz_multiplier = 0;
+            double kzx_multiplier = 0;
+
+            // We can now create a fracture permeability tensor using the tensor component multipliers
+            // Unlike the Oda (1986) tensor, this calculation excludes the component of flow parallel to the fracture azimuth due to inclination of the fractures
+            // This is valid as we can assume that fractures will not directly intersect other fractures in the same set, even if they are inclined
+            double kxx = kxx_multiplier * kf_set;
+            double kyy = kyy_multiplier * kf_set;
+            double kzz = kzz_multiplier * kf_set;
+            double kxy = kxy_multiplier * kf_set;
+            double kyz = kyz_multiplier * kf_set;
+            double kzx = kzx_multiplier * kf_set;
+            Tensor2S permTensor = new Tensor2S(kxx, kyy, kzz, kxy, kyz, kzx);
 
             return permTensor;
         }
