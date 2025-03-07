@@ -2660,10 +2660,12 @@ namespace DFMGenerator_SharedCode
                 // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     {
-                        // Get the basic macrofracture permeability tensor and then apply a multiplier
+                        // First we must get the sum of the uncorrected macrofracture permeability tensors
                         foreach (Gridblock_FractureSet fs in FractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
+
+                        // Then we can apply a correction factor based on the mean number of connections per macrofracture
                         double networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
                         macrofracturePermeability = networkConnectivityMultiplier * macrofracturePermeability;
                     }
@@ -2693,44 +2695,17 @@ namespace DFMGenerator_SharedCode
         public Tensor2S TotalFracturePermeability(int Timestep_M)
         {
             // Return the sum of the microfracture and macrofracture permeability tensors
-            // In this way the network connectivity multiplier can be different for microfractures and macrofractures
+            // For the Oda (1986) algorithm, this gives the same result as if calculated for the combined fracture population
+            // For the Oda corrected (1987) algorithm, the microfractures and macrofractures use different correction factors
+            //  - the microfractures use a correction factor based on the trace and anisotropy of the fracture connectivity tensor
+            //  - the macrofractures use a correction factor based on the mean number of connections per macrofracture
+            // For the size and connectivity correction algorithm, the microfractures and macrofractures will use different algorithms
+            //  - the microfractures use an algorithm assuming each microfracture is isolated and calculating the distribution of distances between neighbouring microfractures where fluid must flow through the matrix
+            //  - the macrofractures use an algorithm that constructs chains of connected macrofractures, and uses the tip type ratios to calculate the mean distances between neighbouring macrofractures and the flow resistance (whether flow is through the host rock or connecting fracture segments)
             return MicrofracturePermeability(Timestep_M) + MacrofracturePermeability(Timestep_M);
-
-            // Calculate the total fracture permeability tensor independently
-            // In this way the same network connectivity multiplier is used for both microfractures and macrofractures
-            /*// The network connectivity multiplier reflects the connectivity of the entire fracture network
-            double networkConnectivityMultiplier;
-            switch (PropControl.PermeabilityAlgorithm)
-            {
-                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
-                case PermeabilityCalculationAlgorithm.Oda1986:
-                    networkConnectivityMultiplier = 1;
-                    break;
-                // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
-                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
-                    networkConnectivityMultiplier = GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
-                    break;
-                default:
-                    networkConnectivityMultiplier = 0;
-                    break;
-            }
-
-            // Get the basic microfracture permeability tensor
-            Tensor2S totalFracturePermeability = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
-                foreach (FractureDipSet fds in fs.FractureDipSets)
-                {
-                    totalFracturePermeability += fds.Total_uF_Permeability(Timestep_M);
-                    totalFracturePermeability += fds.Total_MF_Permeability(Timestep_M);
-                }
-
-            // Multiply it by the network connectivity multiplier before returning it
-            totalFracturePermeability = networkConnectivityMultiplier * totalFracturePermeability;
-            return totalFracturePermeability;*/
         }
 
         // Functions to return fracture sigma factor (related to the mean block size, as defined by Warren & Root 1963)
-
         /// <summary>
         /// Calculate the current minimum and maximum horizontal dimensions of fracture-bounded blocks
         /// </summary>

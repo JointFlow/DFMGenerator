@@ -545,8 +545,8 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.001);
-            EhmaxRate_list.Add(-0.001);// EhmaxRate);
+            EhminRate_list.Add(-0.01);// -0.001);
+            EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
@@ -614,7 +614,7 @@ namespace DFMGenerator_Standalone
             bool VariableFriction = false;
             // Strain relaxation data
             // Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
-            double RockStrainRelaxation = 0;
+            double RockStrainRelaxation = 0.2;// 0;
             // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
             double FractureRelaxation = 0;
             // Density of initial microfractures
@@ -2531,7 +2531,12 @@ namespace DFMGenerator_Standalone
                     gc.StressStrain.GeothermalGradient = GeothermalGradient;
 
                     // Calculate the minimum microfracture radius from the layer thickness, if required
-                    double local_minImplicitMicrofractureRadius = (MinImplicitMicrofractureRadius < 0 ? local_LayerThickness / (double)No_r_bins : MinImplicitMicrofractureRadius);
+                    double local_minImplicitMicrofractureRadius = MinImplicitMicrofractureRadius;
+                    if (MinImplicitMicrofractureRadius < 0)
+                    {
+                        double maxMicrofractureRadius = local_LayerThickness * (0.5 + (FractureNucleationPosition >= 0 ? Math.Abs(FractureNucleationPosition - 0.5) : 0));
+                        local_minImplicitMicrofractureRadius = maxMicrofractureRadius / (double)No_r_bins;
+                    }
 
                     // Determine whether to check for stress shadows from other fracture sets
                     bool local_checkAlluFStressShadows;

@@ -2327,22 +2327,21 @@ namespace DFMGenerator_SharedCode
                 double fracDiameter = 2 * radius;
                 double DP32_bin = DuFP30[r_bin] * Math.PI * radius * radius;
 
-                // Get the fracture permeability multiplier for this size bin
-                // This represents the ratio of mean permeability of the fracture-controlled fault block to host rock permeability
-                double fracPermeabilityMultiplier;
-                if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
-                {
-                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
-                    fracPermeabilityMultiplier = DiscFracturePermeabilityMultiplier(fracPermRatio);
-                }
                 // If the fracture aperture is size dependent, we will first need to recalculate the maximum fracture permeability for this size bin
-                else
+                if ((apertureType == FractureApertureType.SizeDependent)||(apertureType==FractureApertureType.Dynamic))
                 {
                     apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(radius) : getMeanMicrofractureAperture(radius, Timestep_M), 3);
                     k_fmax = geometryMultiplier * apertureMultiplier;
-                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
-                    fracPermeabilityMultiplier = SpheroidalFracturePermeabilityMultiplier(fracPermRatio);
                 }
+
+                    // Get the fracture permeability multiplier for this size bin
+                    // This represents the ratio of mean permeability of the fracture-controlled fault block to host rock permeability
+                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
+                    double fracPermeabilityMultiplier;
+                    if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
+                        fracPermeabilityMultiplier = DiscFracturePermeabilityMultiplier(fracPermRatio);
+                    else
+                        fracPermeabilityMultiplier = SpheroidalFracturePermeabilityMultiplier(fracPermRatio);
 
                 // If the fracture diameter is shorter than the flow pipe length, calculate permeability of series flow through the fracture and the unfractured pipe
                 double cum_perm_increment;
@@ -2351,13 +2350,14 @@ namespace DFMGenerator_SharedCode
                     double fractureControlledFlowBlockResistance = fracDiameter / (fracPermeabilityMultiplier * k_h);
                     double unfracturedPipeResistance = (flowPipeLength - fracDiameter) / k_h;
                     double kmean_FlowPipe = flowPipeLength / (fractureControlledFlowBlockResistance + unfracturedPipeResistance);
-                    cum_perm_increment = DuFP30[r_bin] * kmean_FlowPipe;
+                    cum_perm_increment = DP32_bin * kmean_FlowPipe;
                 }
                 // Otherwise calculate the permeability of parallel flow through the pipe and adjacent overlapping fractures
                 else
                 {
-                    double kmean_FlowPipe = (fracDiameter / flowPipeLength) * fracPermeabilityMultiplier * k_h;
-                    cum_perm_increment = DuFP30[r_bin] * kmean_FlowPipe;
+                    double noFracsInPipe = fracDiameter / flowPipeLength;
+                    double kmean_FlowPipe = (noFracsInPipe * fracPermeabilityMultiplier * k_h) - ((noFracsInPipe - 1) * k_h);
+                    cum_perm_increment = DP32_bin * kmean_FlowPipe;
                 }
                 if (!double.IsNaN(cum_perm_increment))
                 {
@@ -2366,9 +2366,8 @@ namespace DFMGenerator_SharedCode
             }
             // Calculate the new total permeability
             double k_tot = cum_perm / uFP32_rmin;
-
-            // Subtract the original host rock permeability
-            //k_tot -= k_h;
+            // We must subtract the host rock permeability, since this is included in the calculation
+            k_tot -= k_h;
             if (k_tot < 0)
                 k_tot = 0;
 
@@ -2595,9 +2594,10 @@ namespace DFMGenerator_SharedCode
             // If there are no junction nodes, then we must calculate the permeability multipliers for indefinite series flow through I and R nodes
             if ((unconnectedTipRatio + relayTipRatio ) > P_cutoff)
             {
-                kxx_multiplier = ((unconnectedTipRatio * LIT_xx) + (relayTipRatio * LRN_xx)) / ((unconnectedTipRatio * RI) + (relayTipRatio * RR));
-                kyy_multiplier = ((unconnectedTipRatio * LIT_yy) + (relayTipRatio * LRN_yy)) / ((unconnectedTipRatio * RI) + (relayTipRatio * RR));
-                kxy_multiplier = ((unconnectedTipRatio * LIT_xy) + (relayTipRatio * LRN_xy)) / ((unconnectedTipRatio * RI) + (relayTipRatio * RR));
+                double RRI = (unconnectedTipRatio > 0 ? unconnectedTipRatio * RI : 0) + (relayTipRatio > 0 ? relayTipRatio * RR : 0);
+                kxx_multiplier = ((unconnectedTipRatio * LIT_xx) + (relayTipRatio * LRN_xx)) / RRI;
+                kyy_multiplier = ((unconnectedTipRatio * LIT_yy) + (relayTipRatio * LRN_yy)) / RRI;
+                kxy_multiplier = ((unconnectedTipRatio * LIT_xy) + (relayTipRatio * LRN_xy)) / RRI;
             }
             // If there are junction nodes, then we must calculate the weighted mean of the permeability multipliers for series flow through every possible chain of nodes ending in a junction node
             // In practice we can ignore the longer chains where the probability is very low

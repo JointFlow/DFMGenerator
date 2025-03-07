@@ -1657,7 +1657,7 @@ namespace DFMGenerator_SharedCode
             return new Tensor2S(xx, yy, zz, xy, yz, zx);
         }
         /// <summary>
-        /// Create a uniaxial second order tensor with a principal axis of arbitrary orientation and magnitude
+        /// Create a uniaxial second order tensor with a principal axis of specified orientation and magnitude
         /// For example a permeability tensor for flow along parallel tubes
         /// </summary>
         /// <param name="Axis">VectorXYZ object representing the principal axis; NB if the supplied axis vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the axis vector</param>
@@ -1707,7 +1707,7 @@ namespace DFMGenerator_SharedCode
             return new Tensor2S(xx, yy, zz, xy, yz, zx);
         }
         /// <summary>
-        /// Create a biaxial second order tensor with two principal axes of equal magnitude, both lying on a plane with arbitrary orientation
+        /// Create a biaxial second order tensor with two principal axes of equal magnitude, both lying on a plane of specified orientation
         /// For example a permeability tensor for flow along parallel fractures
         /// </summary>
         /// <param name="Normal">VectorXYZ object representing the normal to the plane containing the two principal axes; NB if the supplied normal vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the normal vector</param>

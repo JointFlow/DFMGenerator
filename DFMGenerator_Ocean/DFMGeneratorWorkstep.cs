@@ -3719,7 +3719,12 @@ namespace DFMGenerator_Ocean
                                 gc.StressStrain.GeothermalGradient = GeothermalGradient;
 
                                 // Calculate the minimum microfracture radius from the layer thickness, if required
-                                double local_minImplicitMicrofractureRadius = (MinImplicitMicrofractureRadius < 0 ? local_LayerThickness / (double)No_r_bins : MinImplicitMicrofractureRadius);
+                                double local_minImplicitMicrofractureRadius = MinImplicitMicrofractureRadius;
+                                if (MinImplicitMicrofractureRadius < 0)
+                                {
+                                    double maxMicrofractureRadius = local_LayerThickness * (0.5 + (FractureNucleationPosition >= 0 ? Math.Abs(FractureNucleationPosition - 0.5) : 0));
+                                    local_minImplicitMicrofractureRadius = maxMicrofractureRadius / (double)No_r_bins;
+                                }
 
                                 // Determine whether to check for stress shadows from other fracture sets
                                 bool local_checkAlluFStressShadows;
