@@ -625,8 +625,8 @@ namespace DFMGenerator_Standalone
             double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
             // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
-            double HostRock_kh = 0;// 9.869233e-16;// 1mD in m2
-            double HostRock_kv = 0;// 9.869233e-16;// 1mD in m2
+            double HostRock_kh = 9.869233e-16;// 1mD in m2
+            double HostRock_kv = 9.869233e-16;// 1mD in m2
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect

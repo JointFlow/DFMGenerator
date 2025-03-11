@@ -2287,13 +2287,10 @@ namespace DFMGenerator_SharedCode
             int no_rbins = Math.Min(uF_radii.Length, DuFP30.Length);
             double rmin = gbc.PropControl.minImplicitMicrofractureRadius;
             int min_bin = no_rbins - 1;
-            double uFP32_rmin = 0;
+            double dipset_uFP32 = useCurrentDensityData ? a_uFP32_total() + s_uFP32_total() : getTotaluFP32(Timestep_M);
+            double set_uFP32 = useCurrentDensityData ? fs.combined_T_uFP32_total() : fs.combined_T_uFP32_total(Timestep_M);
             while ((min_bin > 0) && (uF_radii[min_bin] > rmin))
-            {
-                uFP32_rmin += (DuFP30[min_bin] * Math.PI * Math.Pow(uF_radii[min_bin], 2));
                 min_bin--;
-            }
-            uFP32_rmin += (DuFP30[min_bin] * Math.PI * Math.Pow(uF_radii[min_bin], 2));
 
             // Get the fracture multipliers
             // For now this calculation assumes square fractures of uniform (although potentially size-dependent) aperture
@@ -2313,9 +2310,13 @@ namespace DFMGenerator_SharedCode
             // This represents the width of the zone where fluid can transfer between the fracture and the host rock
             double flowPipeWidthMultiplier = 1;
             // The flow pipe length is the mean distance until the fluid will enter another fracture-controlled flow block
-            double flowPipeLength = 1 / (flowPipeWidthMultiplier * uFP32_rmin);
+            // NB this is calculated from the uFP32 value for the entire fracture set, not just this dipset
+            // This allows fluid to switch to the pipe of any other microfracture in the fracture set, not just microfractures in this dipset, when it reaches the end of the current pipe
+            double flowPipeLength = 1 / (flowPipeWidthMultiplier * set_uFP32);
 
             // Calculate total permeability (including microfractures and host rock)
+            // We assume flow through the pipes is in parallel - i.e. fluid can switch between different pipes at the end of each pipe (including pipes from other dipsets in this fracture set)
+            // We therefore take an arithmetic average of the permeability of each pipe, weighted by the cross-sectional area of the pipes (i.e. the duFP32 for the microfracture size bin)
             // Loop through all the size bins and calculate permeability parallel to the fracture
             double cum_perm = 0;
             for (int r_bin = min_bin; r_bin < no_rbins; r_bin++)
@@ -2328,20 +2329,20 @@ namespace DFMGenerator_SharedCode
                 double DP32_bin = DuFP30[r_bin] * Math.PI * radius * radius;
 
                 // If the fracture aperture is size dependent, we will first need to recalculate the maximum fracture permeability for this size bin
-                if ((apertureType == FractureApertureType.SizeDependent)||(apertureType==FractureApertureType.Dynamic))
+                if ((apertureType == FractureApertureType.SizeDependent) || (apertureType == FractureApertureType.Dynamic))
                 {
                     apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(radius) : getMeanMicrofractureAperture(radius, Timestep_M), 3);
                     k_fmax = geometryMultiplier * apertureMultiplier;
                 }
 
-                    // Get the fracture permeability multiplier for this size bin
-                    // This represents the ratio of mean permeability of the fracture-controlled fault block to host rock permeability
-                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
-                    double fracPermeabilityMultiplier;
-                    if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
-                        fracPermeabilityMultiplier = DiscFracturePermeabilityMultiplier(fracPermRatio);
-                    else
-                        fracPermeabilityMultiplier = SpheroidalFracturePermeabilityMultiplier(fracPermRatio);
+                // Get the fracture permeability multiplier for this size bin
+                // This represents the ratio of mean permeability of the fracture-controlled fault block to host rock permeability
+                double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
+                double fracPermeabilityMultiplier;
+                if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
+                    fracPermeabilityMultiplier = DiscFracturePermeabilityMultiplier(fracPermRatio);
+                else
+                    fracPermeabilityMultiplier = SpheroidalFracturePermeabilityMultiplier(fracPermRatio);
 
                 // If the fracture diameter is shorter than the flow pipe length, calculate permeability of series flow through the fracture and the unfractured pipe
                 double cum_perm_increment;
@@ -2364,10 +2365,12 @@ namespace DFMGenerator_SharedCode
                     cum_perm += cum_perm_increment;
                 }
             }
-            // Calculate the new total permeability
-            double k_tot = cum_perm / uFP32_rmin;
+            // Calculate the average permeability
+            // NB this is calculated from the uFP32 value for the entire fracture set, not just this dipset
+            // This allows fluid to switch to the pipe of any other microfracture in the fracture set, not just microfractures in this dipset, when it reaches the end of the current pipe
+            double k_tot = cum_perm / set_uFP32;
             // We must subtract the host rock permeability, since this is included in the calculation
-            k_tot -= k_h;
+            k_tot -= (k_h * (dipset_uFP32 / set_uFP32));
             if (k_tot < 0)
                 k_tot = 0;
 
@@ -2453,6 +2456,12 @@ namespace DFMGenerator_SharedCode
         {
             bool useCurrentDensityData = (Timestep_M < 0);
             bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
+            // If this flag is true, we will calculate the permeability of the fracture network assuming the gridblock size is infinite
+            // In this case the chains of fractures through which fluid flows are unlimited in length; flow will be restricted to the chain until it reaches a branch point
+            // If this flag is false, we will calculate the permeability of the fracture network within a single gridblock
+            // In this case the chains of fractures through which fluid flows cannot be longer than the gridblock
+            // This will tend to give a higher permebility as fluid is less likely to be forced through unconnected nodes (I and soft-linked R nodes) where it relies on matrix permeability
+            bool extendToInfiniteSize = true;
 
             // Calculate the fracture density, aperture and geometric multipliers
             // These are independent of the fracture orientation and connectivity
@@ -2483,12 +2492,13 @@ namespace DFMGenerator_SharedCode
                     break;
             }
             double dipset_MFP32 = useCurrentDensityData ? a_MFP32_total() + s_MFP32_total() : getTotalMFP32(Timestep_M);
+            double set_MFP32 = useCurrentDensityData ? fs.combined_T_MFP32_total() : fs.combined_T_MFP32_total(Timestep_M);
             double densityMultiplier = dipset_MFP32 / sindip;
             double kf_singlefrac = geometryMultiplier * apertureMultiplier;
-            double kf_set = kf_singlefrac * densityMultiplier;
+            double kf_dipset = kf_singlefrac * densityMultiplier;
 
             // If the P32 fracture density is zero or the fracture aperture is zero, the permeability tensor will be zero so we can return a null tensor immediately
-            if (kf_set == 0)
+            if (kf_dipset == 0)
                 return new Tensor2S();
 
             // Calculate the geometric and connectivity indices
@@ -2518,7 +2528,9 @@ namespace DFMGenerator_SharedCode
                 connectedSideRatio = terminatingFracturesPerMF / TotalNodes;
                 meanLength = Mean_MF_HalfLength() / (0.5 + terminatingFracturesPerMF);
                 meanRelayOffset = Mean_MF_StressShadowWidth / 2;
-                meanNonRelayOffset = 1 / fs.combined_T_MFP32_total();
+                // NB the non-relay offset is based on the MFP32 value for the entire fracture set, not just this dipset
+                // This allows fluid to switch to any other macrofracture in the fracture set, not just macrofractures in this dipset, when it reaches an I or Y node
+                meanNonRelayOffset = 1 / set_MFP32;
             }
             else
             {
@@ -2544,7 +2556,9 @@ namespace DFMGenerator_SharedCode
                 double MFP30_Thickness = TotalNodes * gbc.ThicknessAtDeformation;
                 meanLength = (MFP30_Thickness > 0 ? (dipset_MFP32 / MFP30_Thickness) / (0.5 + terminatingFracturesPerMF) : 0);
                 meanRelayOffset = getMeanStressShadowWidth(Timestep_M) / 2;
-                meanNonRelayOffset = 1 / fs.combined_T_MFP32_total(Timestep_M);
+                // NB the non-relay offset is based on the MFP32 value for the entire fracture set, not just this dipset
+                // This allows fluid to switch to any other macrofracture in the fracture set, not just macrofractures in this dipset, when it reaches an I or Y node
+                meanNonRelayOffset = 1 / set_MFP32;
             }
 
             // Calculate the length multipliers for different fracture node types
@@ -2590,7 +2604,7 @@ namespace DFMGenerator_SharedCode
             // Calculate the overall permeability multipliers for the horizontal tensor components
             double kxx_multiplier, kyy_multiplier, kxy_multiplier;
             const double P_cutoff = 0.99;
-            int maxChainLength = 25;
+
             // If there are no junction nodes, then we must calculate the permeability multipliers for indefinite series flow through I and R nodes
             if ((unconnectedTipRatio + relayTipRatio ) > P_cutoff)
             {
@@ -2603,9 +2617,17 @@ namespace DFMGenerator_SharedCode
             // In practice we can ignore the longer chains where the probability is very low
             else
             {
-                // Define a cutoff probability for ignoring longer chains
+                // Set the maximum chain length
+                int maxChainLength = 25;
+                if (!extendToInfiniteSize)
+                {
+                    int maxChainLengthFromSize = (int)(gbc.MaxGridblockLength / meanLength);
+                    if (maxChainLength > maxChainLengthFromSize) maxChainLength = maxChainLengthFromSize;
+                }
+
                 // We will start with the shortest chains and build upwards
-                // When the cumulative probability of all chains so far exceeds the cutoff, we can stop calculating
+                // When the cumulative probability of all chains so far exceeds the cutoff we will stop calculating, thus ignoring longer chains
+                // This is necessary as otherwise chains could extend to infinite length
                 double P_cumulative = 0;
 
                 // Set the initial permeability multipliers to 0
@@ -2681,12 +2703,12 @@ namespace DFMGenerator_SharedCode
             // We can now create a fracture permeability tensor using the tensor component multipliers
             // Unlike the Oda (1986) tensor, this calculation excludes the component of flow parallel to the fracture azimuth due to inclination of the fractures
             // This is valid as we can assume that fractures will not directly intersect other fractures in the same set, even if they are inclined
-            double kxx = kxx_multiplier * kf_set;
-            double kyy = kyy_multiplier * kf_set;
-            double kzz = kzz_multiplier * kf_set;
-            double kxy = kxy_multiplier * kf_set;
-            double kyz = kyz_multiplier * kf_set;
-            double kzx = kzx_multiplier * kf_set;
+            double kxx = kxx_multiplier * kf_dipset;
+            double kyy = kyy_multiplier * kf_dipset;
+            double kzz = kzz_multiplier * kf_dipset;
+            double kxy = kxy_multiplier * kf_dipset;
+            double kyz = kyz_multiplier * kf_dipset;
+            double kzx = kzx_multiplier * kf_dipset;
             Tensor2S permTensor = new Tensor2S(kxx, kyy, kzz, kxy, kyz, kzx);
 
             return permTensor;
@@ -4350,8 +4372,7 @@ namespace DFMGenerator_SharedCode
             double ts_CumhGammaN_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaN) : Math.Pow(ts_CumhGammaN, betac1_factor));
             double ts_CumhGammaNminus1_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaNminus1) : Math.Pow(ts_CumhGammaNminus1, betac1_factor));
             double ts_theta_dashed_Nminus1 = PreviousFractureData.getCumulativeThetaDashed_AllFS_M(tsN - 1);
-            // If driving stress is zero (i.e. ts_gamma_InvBeta_M is zero) there will be no fracture propagation and hence no fracture deactivation
-            double ts_suF_deactivation_multiplier = (ts_gamma_InvBeta_N > 0 ? (mean_qiI_N * ts_theta_Nminus1) / ts_gamma_InvBeta_N : 0);
+            double ts_suF_deactivation_multiplier = mean_qiI_N * ts_theta_Nminus1;
 
             // Create local variables to calculate summation
             double a_uFP30_value = 0;
@@ -4404,8 +4425,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate s_uFP30 increment for rmin_cutoff
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP30_increment = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
-                                        (ts_CumhGammaN_betac1_factor - ts_CumhGammaNminus1_betac1_factor - ts_rminCumGammaN_betac1_factor + ts_rminCumGammaNminus1_betac1_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP30_increment = (CapB / betac1_factor) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (ts_CumhGammaN_betac1_factor - ts_CumhGammaNminus1_betac1_factor - ts_rminCumGammaN_betac1_factor + ts_rminCumGammaNminus1_betac1_factor);
+                                    else
+                                        s_uFP30_increment = CapB * (ts_theta_Nminus1 - ts_theta_N) * (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
                                 }
                             }
 
@@ -4444,8 +4469,13 @@ namespace DFMGenerator_SharedCode
                                     a_DuFP30_values[r_bin] = a_DuFP30_rbin;
 
                                     // Calculate s_DuFP30 increment for this bin
-                                    double s_DuFP30_increment_rbin = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
-                                        (rb_rmaxCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor + rb_rminCumGammaNminus1_betac1_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    double s_DuFP30_increment_rbin;
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_DuFP30_increment_rbin = (CapB / betac1_factor) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (rb_rmaxCumGammaN_betac1_factor - rb_rmaxCumGammaNminus1_betac1_factor - rb_rminCumGammaN_betac1_factor + rb_rminCumGammaNminus1_betac1_factor);
+                                    else
+                                        s_DuFP30_increment_rbin = CapB * (ts_theta_Nminus1 - ts_theta_N) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
                                     s_DuFP30_increments[r_bin] = s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP31_value component
@@ -4503,8 +4533,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate s_uFP30 increment for rmin_cutoff
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP30_increment = CapB * (ts_suF_deactivation_multiplier / c_coefficient) *
-                                        (rb_rminCumGammaN_betac_factor - rb_rminCumGammaNminus1_betac_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP30_increment = (CapB / c_coefficient) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (rb_rminCumGammaN_betac_factor - rb_rminCumGammaNminus1_betac_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
+                                    else
+                                        s_uFP30_increment = CapB * (ts_theta_Nminus1 - ts_theta_N) * (rb_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
                                 }
 
                                 // a_uFP32_value, s_uFP32_increment, a_uFP33_value and s_uFP33_increment terms can be calculated analytically
@@ -4535,8 +4569,13 @@ namespace DFMGenerator_SharedCode
                                     a_DuFP30_values[r_bin] = a_DuFP30_rbin;
 
                                     // Calculate s_DuFP30 increment for this bin
-                                    double s_DuFP30_increment_rbin = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
-                                        (rb_rminCumGammaN_betac_factor - rb_rminCumGammaNminus1_betac_factor - rb_rmaxCumGammaN_betac_factor + rb_rmaxCumGammaNminus1_betac_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    double s_DuFP30_increment_rbin;
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_DuFP30_increment_rbin = (CapB / c_coefficient) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (rb_rminCumGammaN_betac_factor - rb_rminCumGammaNminus1_betac_factor - rb_rmaxCumGammaN_betac_factor + rb_rmaxCumGammaNminus1_betac_factor);
+                                    else
+                                        s_DuFP30_increment_rbin = CapB * (ts_theta_Nminus1 - ts_theta_N) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
                                     s_DuFP30_increments[r_bin] = s_DuFP30_increment_rbin;
                                 }
 
@@ -4567,7 +4606,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate term for s_uFP32_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP32_increment = CapB * uFP32_multiplier * (ts_suF_deactivation_multiplier / b2_uFP32_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP32_increment = (CapB / b2_uFP32_factor) * uFP32_multiplier * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
+                                    else
+                                        s_uFP32_increment = CapB * uFP32_multiplier * (c_coefficient / b2_uFP32_factor) * (ts_theta_Nminus1 - ts_theta_N) * ts_CumGammaN_betac_factor * (h2c_factor - rb_minRad_2c_factor);
+                                    //s_uFP32_increment = CapB * uFP32_multiplier * (ts_suF_deactivation_multiplier / b2_uFP32_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
                                 }
 
                                 // We cannot calculate the a_uFP33 and s_uFP33 terms if the rmin cutoff is zero and c>=3, as they will be infinite
@@ -4582,7 +4626,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate term for s_uFP33_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP33_increment = CapB * uFP33_multiplier * (ts_suF_deactivation_multiplier / b2_uFP33_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP33_increment = (CapB / b2_uFP33_factor) * uFP33_multiplier * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
+                                    else
+                                        s_uFP33_increment = CapB * uFP33_multiplier * (c_coefficient / b2_uFP33_factor) * (ts_theta_Nminus1 - ts_theta_N) * ts_CumGammaN_betac_factor * (h3c_factor - rb_minRad_3c_factor);
+                                    //s_uFP33_increment = CapB * uFP33_multiplier * (ts_suF_deactivation_multiplier / b2_uFP33_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
                                 }
 
                                 // We cannot calculate the a_uFP34 and s_uFP34 terms if the rmin cutoff is zero and c>=4, as they will be infinite
@@ -4597,7 +4646,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate term for s_uFP34_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP34_increment = CapB * uFP34_multiplier * (ts_suF_deactivation_multiplier / b2_uFP34_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h4c_factor - rb_minRad_4c_factor);
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP34_increment = (CapB / b2_uFP34_factor) * uFP34_multiplier * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h4c_factor - rb_minRad_4c_factor);
+                                    else
+                                        s_uFP34_increment = CapB * uFP34_multiplier * (c_coefficient / b2_uFP34_factor) * (ts_theta_Nminus1 - ts_theta_N) * ts_CumGammaN_betac_factor * (h4c_factor - rb_minRad_4c_factor);
+                                    //s_uFP34_increment = CapB * uFP34_multiplier * (ts_suF_deactivation_multiplier / b2_uFP34_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h4c_factor - rb_minRad_4c_factor);
                                 }*/
 
                                 // We cannot calculate the a_uFP35 and s_uFP35 terms if the rmin cutoff is zero and c>=5, as they will be infinite
@@ -4612,7 +4666,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate term for s_uFP35_increment
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP35_increment = CapB * uFP35_multiplier * (ts_suF_deactivation_multiplier / b2_uFP35_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h5c_factor - rb_minRad_5c_factor);
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP35_increment = (CapB / b2_uFP35_factor) * uFP35_multiplier * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h5c_factor - rb_minRad_5c_factor);
+                                    else
+                                        s_uFP35_increment = CapB * uFP35_multiplier * (c_coefficient / b2_uFP35_factor) * (ts_theta_Nminus1 - ts_theta_N) * ts_CumGammaN_betac_factor * (h5c_factor - rb_minRad_5c_factor);
+                                    //s_uFP35_increment = CapB * uFP35_multiplier * (ts_suF_deactivation_multiplier / b2_uFP35_factor) * (ts_CumGammaN_betac_factor - ts_CumGammaNminus1_betac_factor) * (h5c_factor - rb_minRad_5c_factor);
                                 }
                             }
                         }
@@ -4639,8 +4698,12 @@ namespace DFMGenerator_SharedCode
 
                                     // Calculate s_uFP30 increment for rmin_cutoff
                                     // This increment represents growth deactivation microfractures; additional terms for transition deactivation microfractures will be added later
-                                    s_uFP30_increment = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
-                                        (ts_rminCumGammaN_betac1_factor - ts_rminCumGammaNminus1_betac1_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_uFP30_increment = (CapB / betac1_factor) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (ts_rminCumGammaN_betac1_factor - ts_rminCumGammaNminus1_betac1_factor - ts_CumhGammaN_betac1_factor + ts_CumhGammaNminus1_betac1_factor);
+                                    else
+                                        s_uFP30_increment = CapB * (ts_theta_Nminus1 - ts_theta_N) * (ts_rminCumGammaN_betac_factor - ts_CumhGammaN_betac_factor);
                                 }
                             }
 
@@ -4680,8 +4743,13 @@ namespace DFMGenerator_SharedCode
                                     a_DuFP30_values[r_bin] = a_DuFP30_rbin;
 
                                     // Calculate s_DuFP30 increment for this bin
-                                    double s_DuFP30_increment_rbin = CapB * (ts_suF_deactivation_multiplier / betac1_factor) *
-                                        (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    double s_DuFP30_increment_rbin;
+                                    if (ts_gamma_InvBeta_N > 0)
+                                        s_DuFP30_increment_rbin = (CapB / betac1_factor) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_N) *
+                                            (rb_rminCumGammaN_betac1_factor - rb_rminCumGammaNminus1_betac1_factor - rb_rmaxCumGammaN_betac1_factor + rb_rmaxCumGammaNminus1_betac1_factor);
+                                    else
+                                        s_DuFP30_increment_rbin = CapB * (ts_theta_Nminus1 - ts_theta_N) * (rb_rminCumGammaN_betac_factor - rb_rmaxCumGammaN_betac_factor);
                                     s_DuFP30_increments[r_bin] = s_DuFP30_increment_rbin;
 
                                     // Calculate term for a_uFP31_value component
@@ -5406,7 +5474,7 @@ namespace DFMGenerator_SharedCode
                         double ts_CumhGammaMminus1_betac1_factor = (bis2 ? Math.Exp(betac1_factor * ts_CumhGammaMminus1) : Math.Pow(ts_CumhGammaMminus1, betac1_factor));
                         double ts_theta_dashed_Mminus1 = PreviousFractureData.getCumulativeThetaDashed_AllFS_M(tsM - 1);
                         // If driving stress is zero (i.e. ts_gamma_InvBeta_M is zero) there will be no fracture propagation and hence no fracture deactivation
-                        double ts_suF_deactivation_multiplier = (ts_gamma_InvBeta_M > 0 ? (mean_qiI_M * ts_theta_Mminus1) / ts_gamma_InvBeta_M : 0);
+                        double ts_suF_deactivation_multiplier = mean_qiI_M * ts_theta_Mminus1;
 
                         // Calculate useful components
                         double ts_CumGammaM_betac_factor = Math.Exp(betac_factor * ts_CumGammaM);
@@ -5438,8 +5506,12 @@ namespace DFMGenerator_SharedCode
                                     }
 
                                     // Calculate term for s_uFP30 increment for rmin (excluding transition deactivation microfractures)
-                                    s_uFP30_values[r_bin] += CapB * (ts_suF_deactivation_multiplier / c_coefficient) *
-                                        (rb_rminCumGammaM_betac_factor - rb_rminCumGammaMminus1_betac_factor - ts_CumhGammaM_betac1_factor + ts_CumhGammaMminus1_betac1_factor);
+                                    // NB the static microfracture population can still grow even if the driving stress is zero, as microfractures can be deactivated by macrofractures from other dipsets
+                                    if (ts_gamma_InvBeta_M > 0)
+                                        s_uFP30_values[r_bin] += (CapB / c_coefficient) * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_M) *
+                                            (rb_rminCumGammaM_betac_factor - rb_rminCumGammaMminus1_betac_factor - ts_CumhGammaM_betac1_factor + ts_CumhGammaMminus1_betac1_factor);
+                                    else
+                                        s_uFP30_values[r_bin] += CapB * (ts_theta_Mminus1 - ts_theta_M) * (rb_rminCumGammaM_betac_factor - ts_CumhGammaM_betac_factor);
                                 }
 
                                 // We cannot calculate the a_uFP32 and s_uFP32 terms if rmin is zero and c>=2, as they will be infinite
@@ -5456,7 +5528,12 @@ namespace DFMGenerator_SharedCode
                                     }
 
                                     // Calculate term for s_uFP32 increment for rmin (excluding transition deactivation microfractures)
-                                    s_uFP32_values[r_bin] += CapB * uFP32_multiplier * (ts_suF_deactivation_multiplier / b2_uFP32_factor) * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
+                                    if (ts_gamma_InvBeta_M > 0)
+                                        s_uFP32_values[r_bin] += (CapB / b2_uFP32_factor) * uFP32_multiplier * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_M) *
+                                            (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
+                                    else
+                                        s_uFP32_values[r_bin] += CapB * uFP32_multiplier * (c_coefficient / b2_uFP32_factor) * (ts_theta_Mminus1 - ts_theta_M) * ts_CumGammaM_betac_factor * (h2c_factor - rb_minRad_2c_factor);
+                                    //s_uFP32_values[r_bin] += CapB * uFP32_multiplier * (ts_suF_deactivation_multiplier / b2_uFP32_factor) * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h2c_factor - rb_minRad_2c_factor);
                                 }
 
                                 // We cannot calculate the a_uFP33 and s_uFP33 terms if rmin is zero and c>=3, as they will be infinite
@@ -5473,7 +5550,12 @@ namespace DFMGenerator_SharedCode
                                     }
 
                                     // Calculate term for s_uFP33 increment for rmin (excluding transition deactivation microfractures)
-                                    s_uFP33_values[r_bin] += CapB * uFP33_multiplier * (ts_suF_deactivation_multiplier / b2_uFP33_factor) * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
+                                    if (ts_gamma_InvBeta_M > 0)
+                                        s_uFP33_values[r_bin] += (CapB / b2_uFP33_factor) * uFP33_multiplier * (ts_suF_deactivation_multiplier / ts_gamma_InvBeta_M) *
+                                            (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
+                                    else
+                                        s_uFP33_values[r_bin] += CapB * uFP33_multiplier * (c_coefficient / b2_uFP33_factor) * (ts_theta_Mminus1 - ts_theta_M) * ts_CumGammaM_betac_factor * (h3c_factor - rb_minRad_3c_factor);
+                                    //s_uFP33_values[r_bin] += CapB * uFP33_multiplier * (ts_suF_deactivation_multiplier / b2_uFP33_factor) * (ts_CumGammaM_betac_factor - ts_CumGammaMminus1_betac_factor) * (h3c_factor - rb_minRad_3c_factor);
                                 }
                             }
                         } // End loop through all r_bins
