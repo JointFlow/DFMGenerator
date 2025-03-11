@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -545,7 +545,7 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.01);// -0.001);
+            EhminRate_list.Add(-0.001);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
@@ -614,7 +614,7 @@ namespace DFMGenerator_Standalone
             bool VariableFriction = false;
             // Strain relaxation data
             // Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
-            double RockStrainRelaxation = 0.2;// 0;
+            double RockStrainRelaxation = 0;
             // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
             double FractureRelaxation = 0;
             // Density of initial microfractures
@@ -671,9 +671,9 @@ namespace DFMGenerator_Standalone
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
             // Flag to calculate and output fracture permeability tensors
-            bool CalculateFracturePermeabilityTensor = true;// false;
+            bool CalculateFracturePermeabilityTensor = false;
             // Algorithm to use for calculating fracture permeability
-            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;// PermeabilityCalculationAlgorithm.Oda1986;
+            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1986;
             // Flag to calculate implicit fracture population distribution functions
             bool CalculatePopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions

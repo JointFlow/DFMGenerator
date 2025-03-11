@@ -105,6 +105,13 @@ OutputComplianceTensor false
 % Fracture porosity control parameters
 % Flag to calculate and output fracture porosity
 CalculateFracturePorosity true
+% Flag to calculate and output fracture permeability tensors
+CalculateFracturePermeabilityTensor true
+% Algorithm to use for calculating fracture permeability
+%      - Oda1986 (The Oda 1986 model assumes fractures of infinite size and connectivity)
+%      - OdaCorrected1987 (This algorithm adds a correction factor to account for fracture connectivity)
+%      - SizeConnectivityCorrected (This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock; for the latter, host rock permeability must be specified)
+PermeabilityAlgorithm SizeConnectivityCorrected
 % Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
 % Set to Uniform, SizeDependent, Dynamic, or BartonBandis
 FractureApertureControl Uniform

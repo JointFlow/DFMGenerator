@@ -105,6 +105,13 @@ OutputComplianceTensor false
 % Fracture porosity control parameters
 % Flag to calculate and output fracture porosity
 CalculateFracturePorosity true
+% Flag to calculate and output fracture permeability tensors
+CalculateFracturePermeabilityTensor true
+% Algorithm to use for calculating fracture permeability
+%      - Oda1986 (The Oda 1986 model assumes fractures of infinite size and connectivity)
+%      - OdaCorrected1987 (This algorithm adds a correction factor to account for fracture connectivity)
+%      - SizeConnectivityCorrected (This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock; for the latter, host rock permeability must be specified)
+PermeabilityAlgorithm Oda1986
 % Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
 % Set to Uniform, SizeDependent, Dynamic, or BartonBandis
 FractureApertureControl Uniform
@@ -140,6 +147,18 @@ InitialNormalStress 2E+5
 FractureNormalStiffness 2.5E+9
 % Maximum fracture closure (m)
 MaximumClosure 0.0005
+% Present day effective stress parameters
+% Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
+UsePresentDayStress true
+% Present Terzaghi effective day stress tensor components (Pa)
+% These will override the stress at the time of deformation when calculating fracture aperture and permeability
+% Any undefined components will be set to 0
+PresentDayEffectiveStress_XX 10000000
+PresentDayEffectiveStress_YY 15000000
+PresentDayEffectiveStress_ZZ 25000000
+PresentDayEffectiveStress_XY 0
+PresentDayEffectiveStress_YZ 0
+PresentDayEffectiveStress_ZX 0
 
 % Calculation control parameters
 % Number of fracture sets
