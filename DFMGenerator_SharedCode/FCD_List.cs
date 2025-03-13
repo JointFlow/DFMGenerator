@@ -376,6 +376,115 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getMean_StressShadowWidth_M(int Timestep_M) { return dataList[Timestep_M].Mean_StressShadowWidth_M; }
+        /// <summary>
+        /// Get the weighted average azimuthal stress shadow width throughout the growth of the fracture network
+        /// </summary>
+        /// <returns>The average of the azimuthal stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_AzimuthalStressShadowWidth()
+        {
+            return getWeightedAverage_AzimuthalStressShadowWidth(NoTimesteps);
+        }
+        /// <summary>
+        /// Get the weighted average azimuthal stress shadow width up to a specified timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns>The average of the azimuthal stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_AzimuthalStressShadowWidth(int Timestep_M)
+        {
+            double W_P32 = 0;
+            double lastP32 = 0;
+
+            for (int tsNo = 1; tsNo <= Timestep_M; tsNo++)
+            {
+                FractureCalculationData nextFCD = dataList[tsNo];
+                double nextP32 = nextFCD.Total_MFP32_M;
+                W_P32 += (nextFCD.Mean_AzimuthalStressShadowWidth_M * (nextP32 - lastP32));
+                lastP32 = nextP32;
+            }
+
+            // If there are no macrofractures it will not be possible to calculate a weighted average; in that case return the calculated stress shadow width for Timestep M
+            return lastP32 > 0 ? W_P32 / lastP32 : dataList[Timestep_M].Mean_AzimuthalStressShadowWidth_M;
+        }
+        /// <summary>
+        /// Get the weighted average shear stress shadow width throughout the growth of the fracture network
+        /// </summary>
+        /// <returns>The average of the shear stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_ShearStressShadowWidth()
+        {
+            return getWeightedAverage_ShearStressShadowWidth(NoTimesteps);
+        }
+        /// <summary>
+        /// Get the weighted average shear stress shadow width up to a specified timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns>The average of the shear stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_ShearStressShadowWidth(int Timestep_M)
+        {
+            double W_P32 = 0;
+            double lastP32 = 0;
+
+            for (int tsNo = 1; tsNo <= Timestep_M; tsNo++)
+            {
+                FractureCalculationData nextFCD = dataList[tsNo];
+                double nextP32 = nextFCD.Total_MFP32_M;
+                W_P32 += (nextFCD.Mean_ShearStressShadowWidth_M * (nextP32 - lastP32));
+                lastP32 = nextP32;
+            }
+
+            // If there are no macrofractures it will not be possible to calculate a weighted average; in that case return the calculated stress shadow width for Timestep M
+            return lastP32 > 0 ? W_P32 / lastP32 : dataList[Timestep_M].Mean_ShearStressShadowWidth_M;
+        }
+        /// <summary>
+        /// Get the weighted average stress shadow width throughout the growth of the fracture network
+        /// </summary>
+        /// <returns>The average of the stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_StressShadowWidth()
+        {
+            return getWeightedAverage_StressShadowWidth(NoTimesteps);
+        }
+        /// <summary>
+        /// Get the weighted average stress shadow width up to a specified timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns>The average of the stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_StressShadowWidth(int Timestep_M)
+        {
+            double W_P32 = 0;
+            double lastP32 = 0;
+
+            for (int tsNo = 1; tsNo <= Timestep_M; tsNo++)
+            {
+                FractureCalculationData nextFCD = dataList[tsNo];
+                double nextP32 = nextFCD.Total_MFP32_M;
+                W_P32 += (nextFCD.Mean_StressShadowWidth_M * (nextP32 - lastP32));
+                lastP32 = nextP32;
+            }
+
+            // If there are no macrofractures it will not be possible to calculate a weighted average; in that case return the calculated stress shadow width for Timestep M
+            return lastP32 > 0 ? W_P32 / lastP32 : dataList[Timestep_M].Mean_StressShadowWidth_M;
+        }
+        /// <summary>
+        /// Get the time at which the fracture set becomes deactivated
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if the fracture set was never active: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Deactivation time of fracture set; will return zero or NaN if the fracture set was never active</returns>
+        public double getFinalActiveTime(bool ReturnNanForUndefined)
+        {
+            // Loop through the timesteps in reverse order
+            for (int TimestepNo = NoTimesteps; TimestepNo > 0; TimestepNo--)
+            {
+                // Check if the dipset is active (or residual active); if so return the end time of the current timestep
+                FractureEvolutionStage CurrentStage = getEvolutionStage(TimestepNo);
+                if ((CurrentStage == FractureEvolutionStage.Growing) || (CurrentStage == FractureEvolutionStage.ResidualActivity))
+                    return getEndTime(TimestepNo);
+            }
+
+            // If the fracture set was never active, return 0 or NaN as appropriate
+            if (ReturnNanForUndefined)
+                return double.NaN;
+            else
+                return 0;
+        }
 
         // Functions to add data
         /// <summary>

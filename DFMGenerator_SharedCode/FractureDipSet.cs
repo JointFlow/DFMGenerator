@@ -425,6 +425,21 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double getMeanStressShadowWidth() { return CurrentFractureData.Mean_StressShadowWidth_M; }
+        /// <summary>
+        /// Return the weighted average azimuthal stress shadow width throughout the growth of the fracture network
+        /// </summary>
+        /// <returns>The average of the azimuthal stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_AzimuthalStressShadowWidth() { return PreviousFractureData.getWeightedAverage_AzimuthalStressShadowWidth(); }
+        /// <summary>
+        /// Return the weighted average shear stress shadow width throughout the growth of the fracture network
+        /// </summary>
+        /// <returns>The average of the shear stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_ShearStressShadowWidth() { return PreviousFractureData.getWeightedAverage_ShearStressShadowWidth(); }
+        /// <summary>
+        /// Return the weighted average stress shadow width throughout the growth of the fracture network
+        /// </summary>
+        /// <returns>The average of the stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_StressShadowWidth() { return PreviousFractureData.getWeightedAverage_StressShadowWidth(); }
 
         // Functions to return data for previous timesteps from the PreviousFractureData list
         /// <summary>
@@ -824,6 +839,24 @@ namespace DFMGenerator_SharedCode
             return output;
         }
         /// <summary>
+        /// Return the weighted average azimuthal stress shadow width up to a specified timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns>The average of the azimuthal stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_AzimuthalStressShadowWidth(int Timestep_M) { return PreviousFractureData.getWeightedAverage_AzimuthalStressShadowWidth(Timestep_M); }
+        /// <summary>
+        /// Return the weighted average shear stress shadow width up to a specified timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns>The average of the shear stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_ShearStressShadowWidth(int Timestep_M) { return PreviousFractureData.getWeightedAverage_ShearStressShadowWidth(Timestep_M); }
+        /// <summary>
+        /// Return the weighted average stress shadow width up to a specified timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns>The average of the stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
+        public double getWeightedAverage_StressShadowWidth(int Timestep_M) { return PreviousFractureData.getWeightedAverage_StressShadowWidth(Timestep_M); }
+        /// <summary>
         /// Get the time at which the fracture set becomes deactivated
         /// </summary>
         /// <param name="ReturnNanForUndefined">Determine return value if the fracture set was never active: if true, will return Nan; if false, will return 0</param>
@@ -833,20 +866,7 @@ namespace DFMGenerator_SharedCode
             // Get time units and unit conversion modifier for output time data if not in SI units
             double timeUnits_Modifier = gbc.PropControl.getTimeUnitsModifier();
 
-            // Loop through the timesteps in reverse order
-            for (int TimestepNo = PreviousFractureData.NoTimesteps; TimestepNo > 0; TimestepNo--)
-            {
-                // Check if the dipset is active (or residual active); if so return the end time of the current timestep
-                FractureEvolutionStage CurrentStage = getEvolutionStage(TimestepNo);
-                if ((CurrentStage == FractureEvolutionStage.Growing) || (CurrentStage == FractureEvolutionStage.ResidualActivity))
-                    return PreviousFractureData.getEndTime(TimestepNo) / timeUnits_Modifier;
-            }
-
-            // If the fracture set was never active, return 0 or NaN as appropriate
-            if (ReturnNanForUndefined)
-                return double.NaN;
-            else
-                return 0;
+            return PreviousFractureData.getFinalActiveTime(ReturnNanForUndefined) / timeUnits_Modifier;
         }
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
@@ -2527,7 +2547,7 @@ namespace DFMGenerator_SharedCode
                 connectedTipRatio = IntersectingTipRatio(false) / TotalNodes;
                 connectedSideRatio = terminatingFracturesPerMF / TotalNodes;
                 meanLength = Mean_MF_HalfLength() / (0.5 + terminatingFracturesPerMF);
-                meanRelayOffset = Mean_MF_StressShadowWidth / 2;
+                meanRelayOffset = getWeightedAverage_StressShadowWidth() / 2;
                 // NB the non-relay offset is based on the MFP32 value for the entire fracture set, not just this dipset
                 // This allows fluid to switch to any other macrofracture in the fracture set, not just macrofractures in this dipset, when it reaches an I or Y node
                 meanNonRelayOffset = 1 / set_MFP32;
@@ -2555,7 +2575,7 @@ namespace DFMGenerator_SharedCode
                 connectedSideRatio = (TotalNodes > 0 ? terminatingFractureDensity / TotalNodes : 0);
                 double MFP30_Thickness = TotalNodes * gbc.ThicknessAtDeformation;
                 meanLength = (MFP30_Thickness > 0 ? (dipset_MFP32 / MFP30_Thickness) / (0.5 + terminatingFracturesPerMF) : 0);
-                meanRelayOffset = getMeanStressShadowWidth(Timestep_M) / 2;
+                meanRelayOffset = getWeightedAverage_StressShadowWidth(Timestep_M) / 2;
                 // NB the non-relay offset is based on the MFP32 value for the entire fracture set, not just this dipset
                 // This allows fluid to switch to any other macrofracture in the fracture set, not just macrofractures in this dipset, when it reaches an I or Y node
                 meanNonRelayOffset = 1 / set_MFP32;

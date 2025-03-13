@@ -521,14 +521,21 @@ namespace DFMGenerator_SharedCode
                 case FractureEvolutionStage.Deactivated:
                     {
                         EvolutionStage = FractureEvolutionStage.Deactivated;
+
                         // Set the mean half-macrofracture propagation rate and microfracture propagation rate coefficient to zero for this timestep
                         // This will prevent any growth in the populations of implicit microfractures (or macrofractures in future timesteps), and also prevent nucleation and growth of explicit fractures in the DFN
                         // NB we will keep the values for the driving stress, U and V; this is equivalent to reducing the timestep duration to zero
-                        Mean_MF_PropagationRate_M = 0;
+                        // Before updating the dynamic data for timestep M we must cache the cumulative data at the start of the timestep Cum_Gamma_Mminus1 and Cum_HalfLength_Mminus1
+                        double temp_Cum_Gamma = Cum_Gamma_Mminus1;
+                        double temp_Cum_Halflength = Cum_HalfLength_Mminus1;
                         gamma_InvBeta_M = 0;
-                        // Set the cumulative half-macrofracture activation function at the end of the timestep Cum_Phi_M to 0 
-                        // We will also set the half-macrofracture activation functions within the timestep (Phi_II_M and Phi_IJ_M) to 1 to avoid getting DIV0 errors when calculating Cum_Phi_Mminus1
-                        //Cum_Phi_M = 0;
+                        Mean_MF_PropagationRate_M = 0;
+                        // Update the cumulative data for the start of this timestep; the FractureCalculationData object will then automatically calculate the cumulative data for the end of this timestep
+                        Cum_Gamma_Mminus1 = temp_Cum_Gamma;
+                        Cum_HalfLength_Mminus1 = temp_Cum_Halflength;
+
+                        // Since the fractures cannot be deactivated if the dipset is already deactivated, we will set the half-macrofracture activation functions within the timestep (Phi_II_M and Phi_IJ_M) to 1
+                        // This will also prevent DIV0 errors when calculating Cum_Phi_Mminus1
                         Phi_II_M = 1;
                         Phi_IJ_M = 1;
                     }
