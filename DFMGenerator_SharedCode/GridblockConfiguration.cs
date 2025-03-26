@@ -1953,6 +1953,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public List<Gridblock_FractureSet> FractureSets;
         /// <summary>
+        /// Collection of unconfined fracture setsreferenced by Orientation
+        /// </summary>
+        public List<UnconfinedFractureSet> UnconfinedFractureSets;
+        /// <summary>
         /// List of references to all macrofracture segments in all fracture sets in the gridblock in order of nucleation - used to ensure fracture propagation is carried out strictly in order of nucleation, with no 
         /// </summary>
         private List<MacrofractureSegmentHolder> MacrofractureSegments;
@@ -6033,6 +6037,56 @@ namespace DFMGenerator_SharedCode
                 }
         }
         /// <summary>
+        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new unconfined fracture sets
+        /// </summary>
+        /// <param name="NoStrikeSets_in">Number of different strike orientations used to create new fracture sets</param>
+        /// <param name="NoDipSets_in">Number of different dip orientations used to create new fracture sets</param>
+        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
+        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
+        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, double B_in, double c_in)
+        {
+            // Clear all existing data
+            ClearFractureData();
+
+            // Reset the number of fracture sets
+            NoFractureSets = 0;
+
+            // Create a list of fracture dips
+            List<double> dips = new List<double>();
+            // Add a vertical dip
+            dips.Add(Math.PI / 2);
+            // Add inclined dips
+            for (int dipSetNo = NoDipSets_in - 1; dipSetNo > 0; dipSetNo--)
+            {
+                double dip = ((double)dipSetNo / (double)NoDipSets_in) * (Math.PI / 2);
+                dips.Add(dip);
+                dips.Add(-dip);
+            }
+
+            // Get the number of rays per fracture and the minimum fracture radius
+            int noRays = gd.DFNControl.NumberOfuFPoints;
+            double minRadius = PropControl.minImplicitMicrofractureRadius;
+
+            // Create new fracture sets
+            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+            {
+                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets));
+
+                foreach(double dip in dips)
+                {
+                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, noRays, minRadius, InitialFractureDistribution.PowerLaw, B_in, c_in);
+                    UnconfinedFractureSets.Add(new_FractureSet);
+                    NoFractureSets++;
+                }
+            }
+            // Create a horizontal fracture set
+            {
+                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, noRays, minRadius, InitialFractureDistribution.PowerLaw, B_in, c_in);
+                UnconfinedFractureSets.Add(new_FractureSet);
+                NoFractureSets++;
+            }
+        }
+        /// <summary>
         /// Clear any existing fracture data in the gridblock
         /// </summary>
         private void ClearFractureData()
@@ -6053,6 +6107,7 @@ namespace DFMGenerator_SharedCode
 
             // Clear all current fracture sets: no fractures, no deformation history
             FractureSets.Clear();
+            UnconfinedFractureSets.Clear();
 
             // Reset the azimuthal and strike-slip shear stress shadow multiplier arrays, and populate with default values
             FaaIJ = new double[NoFractureSets, NoFractureSets];
@@ -6208,6 +6263,7 @@ namespace DFMGenerator_SharedCode
                 Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this);
                 FractureSets.Add(new_FractureSet);
             }
+            UnconfinedFractureSets = new List<UnconfinedFractureSet>();
 
             // Create the azimuthal and strike-slip shear stress shadow multiplier arrays
             FaaIJ = new double[NoFractureSets, NoFractureSets];

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace DFMGenerator_SharedCode
 {
+    /// <summary>
+    /// Statistical data describing implicit microfracture population for a single dipset
+    /// </summary>
     class MicrofractureData
     {
         // References to external objects

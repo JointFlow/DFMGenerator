@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace DFMGenerator_SharedCode
 {
+    /// <summary>
+    /// Statistical data describing implicit layer-bound macrofracture population for a single dipset
+    /// </summary>
     class MacrofractureData
     {
         // References to external objects

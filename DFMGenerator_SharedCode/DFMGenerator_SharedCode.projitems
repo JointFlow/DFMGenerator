@@ -11,7 +11,9 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)DFNComponents.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FCD_List.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FCD_List_Minimised.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData_Minimised.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureDipSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GeometricObjects.cs" />
@@ -23,5 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ProgressReporter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PropagationControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StressStrainState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnconfinedFractureData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnconfinedFractureSet.cs" />
   </ItemGroup>
 </Project>

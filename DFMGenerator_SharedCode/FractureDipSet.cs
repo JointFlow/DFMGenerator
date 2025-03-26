@@ -27,9 +27,10 @@ namespace DFMGenerator_SharedCode
     /// </summary>
     public enum FractureDisplacementSense { Dilatant, Normal, RightLateral, Reverse, LeftLateral }
     /// <summary>
-    /// Enumerator for initial microfracture distribution - at present only Power Law is implemented
+    /// Enumerator for the form of the function representing the initial microfracture population; this will control fracture nucleation rate
+    /// At present only Power Law is implemented; this should be expanded to include exponential and log-normal
     /// </summary>
-    public enum InitialFractureDistribution { PowerLaw, Exponential }
+    public enum InitialFractureDistribution { PowerLaw, Exponential, LogNormal }
     /// <summary>
     /// Enumerator for method used to determine fracture aperture - used in porosity and permeability calculation
     /// </summary>
