@@ -281,6 +281,45 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double sIJ_RP33_total { get { return RP33_total[RayPropagationStatus.StaticIntersection]; } }
         /// <summary>
+        /// Volumetric density of all fractures
+        /// </summary>
+        public double FP30_total 
+        { 
+            get
+            {
+                double RP30 = 0;
+                foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                    RP30 += RP30_total[status];
+                return RP30 / (double)noSegments;
+            }
+        }
+        /// <summary>
+        /// Mean linear density of all fractures
+        /// </summary>
+        public double FP32_total
+        {
+            get
+            {
+                double RP32 = 0;
+                foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                    RP32 += RP32_total[status];
+                return RP32;
+            }
+        }
+        /// <summary>
+        /// Volumetric ratio of all fractures
+        /// </summary>
+        public double FP33_total
+        {
+            get
+            {
+                double RP33 = 0;
+                foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                    RP33 += RP33_total[status];
+                return RP33;
+            }
+        }
+        /// <summary>
         /// Dictionary object containing volumetric density of fracture rays for all ray propagation statuses
         /// </summary>
         private Dictionary<RayPropagationStatus, double> RP30_total;

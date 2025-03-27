@@ -500,7 +500,6 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private UnconfinedFractureData Fractures { get; set; }
 
-
         // Fracture data for previous timesteps
         /// <summary>
         /// Object containing minimal dynamic propagation data for the current timestep; updated as each timestep is calculated
@@ -514,7 +513,6 @@ namespace DFMGenerator_SharedCode
         /// Flag to deactivate the fracture set at the start of the next timestep
         /// </summary>
         private bool DeactivateNextTimestep;
-
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
         // NB fracture aperture control data for dynamic and Barton-Bandis aperture are independent of dip set, so are contained in the MechanicalProperties object for the gridblock
@@ -565,7 +563,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="radius">Fracture radius (m)</param>
         /// <returns>Mean fracture aperture (m)</returns>
-        public double getMeanMicrofractureAperture(double radius)
+        public double getMeanFractureAperture(double radius)
         {
             double output;
 
@@ -619,8 +617,8 @@ namespace DFMGenerator_SharedCode
             double a0 = (JRC / 5) * ((0.2 * UCS_ratio) - 0.1);
             // Then calculate stress-dependent fracture closure in mm
             // This is dependent on the fracture mode
-            double delta_a = 0;
-            if (true)//(Mode == FractureMode.Mode1)
+            double delta_a;
+            if (SigmaNeff < 0)
             {
                 // If effective normal stress on the fracture is tensile, set it to zero
                 SigmaNeff = Math.Max(SigmaNeff, 0);
@@ -643,7 +641,7 @@ namespace DFMGenerator_SharedCode
         /// Get the Fracture compressibility, based on the aperture control data
         /// </summary>
         /// <returns>Elastic compressibility for Dynamic aperture, inverse of specified fracture normal stiffness for Barton-Bandis aperture, NaN for other apertures</returns>
-        public double getMicrofractureCompressibility(double radius)
+        public double getFractureCompressibility(double radius)
         {
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -667,6 +665,481 @@ namespace DFMGenerator_SharedCode
                     return double.NaN;
             }
         }
+
+        // Dynamic and geomechanical data
+        /// <summary>
+        /// Unit vector for the direction of shear stress on the fracture surface
+        /// </summary>
+        private VectorXYZ shearStressVector;
+        /// <summary>
+        /// Pitch of the shear stress vector on the surface of the fractures relative to fracture strike (radians, positive downwards; will return NaN if shear stress is zero)
+        /// </summary>
+        public double ShearStressPitch { get; private set; }
+        /// <summary>
+        /// Unit vector for the direction of shear stress on the fracture surface
+        /// </summary>
+        public VectorXYZ ShearStressVector { get { return new VectorXYZ(shearStressVector); } }
+        /// <summary>
+        /// Predominant sense of fracture displacement
+        /// </summary>
+        public FractureDisplacementSense DisplacementSense
+        {
+            get
+            {
+                if (CurrentFractureData.SigmaNeff_Const_M < 0)
+                    return FractureDisplacementSense.Dilatant;
+                else if (ShearStressPitch > (0.75 * Math.PI))
+                    return FractureDisplacementSense.LeftLateral;
+                else if (ShearStressPitch >= (0.25 * Math.PI))
+                    return FractureDisplacementSense.Reverse;
+                else if (ShearStressPitch > -(0.25 * Math.PI))
+                    return FractureDisplacementSense.RightLateral;
+                else //if (ShearStressPitch >= (-0.75 * Math.PI))
+                    return FractureDisplacementSense.Normal;
+            }
+        }
+        /// <summary>
+        /// Driving stress vector at the start of the timestep; this is equivalent to and has a magnitude equal to the scalar quantity U
+        /// </summary>
+        private VectorXYZ DrivingStressVector;
+        /// <summary>
+        /// Mean displacement vector at the start of the timestep for a fracture of unit radius
+        /// </summary>
+        public VectorXYZ DisplacementVector { get { return -(16 / (3 * Math.PI * gbc.MechProps.PlainStrainEffectiveE_r)) * DrivingStressVector; } }
+        /// <summary>
+        /// Recalculate the shear displacement pitch and vector, the fracture mode and the compliance tensor base for the given effective stress tensor
+        /// </summary>
+        public void RecalculateElasticResponse(Tensor2S CurrentStress)
+        {
+            // Get stress vector acting on the fracture plane
+            VectorXYZ stressOnFracture = CurrentStress * normalVector;
+
+            // Calculate the magnitude of normal stress on the fracture plane, and the shear stresses acting on the fracture plane in the downdip and along-strike directions respectively
+            double normalStressMagnitude = normalVector & stressOnFracture;
+            double dipShearStressMagnitude = dipVector & stressOnFracture;
+            double strikeShearStressMagnitude = strikeVector & stressOnFracture;
+
+            // Recalculate the shear displacement pitch and vector, and flag if it has changed
+            double shearStressMagnitude;
+            bool stressVectorChanged = RecalculateStressDisplacementVectors(dipShearStressMagnitude, strikeShearStressMagnitude, out shearStressMagnitude);
+
+            // Check if the fractures are dilatant, and flag if this has changed
+            // Fractures are dilatant if the effective normal stress acting on them is tensile (i.e. negative)
+            bool previous_sigmaneff_negative = (CurrentFractureData.SigmaNeff_Const_M< 0);
+            bool sigmaneff_negative = (normalStressMagnitude < 0);
+            bool sigmaneff_changed = (sigmaneff_negative != previous_sigmaneff_negative);
+
+            // Check if the fractures can accommodate elastic strain, and flag if this has changed
+            // Fractures can only accumulate displacement, and hence accommodate elastic strain, if the driving stress is positive
+            // This will be the case if either the normal stress on the fractures is negative (Mode 1 displacement) or the shear stress exceeds the frictional traction (Mode 2 displacement)
+            // NB If the driving stress is zero (within rounding error) we will count it as positive - since it is likely to increase over the current timestep
+            bool previous_sigmad_positive = (CurrentFractureData.Mean_SigmaD_M > 0);
+            bool sigmad_positive = false;
+            if (normalStressMagnitude <= PreviousFractureData.MaxDrivingStressRoundingError)
+                sigmad_positive = true;
+            else if ((float)shearStressMagnitude - (float)(gbc.MechProps.MuFr * normalStressMagnitude) >= -PreviousFractureData.MaxDrivingStressRoundingError)
+                sigmad_positive = true;
+            bool sigmad_changed = (sigmad_positive != previous_sigmad_positive);
+
+            // Recalculate the compliance tensor base
+            // This is only necessary if either:
+            // - the fracture mode has changed (from dilatant to shear or vice versa)
+            // - the driving stress has changed from positive to negative, or vice versa, so fractures can now / can no longer accommodate elastic strain
+            // - the shear displacement vector has changed, for shear fractures (the compliance tensor is independent of the shear displacement vector for dilatant fractures so this does not apply for these)
+            if (sigmaneff_changed || sigmad_changed || (stressVectorChanged && !sigmaneff_negative))
+                RecalculateComplianceTensorBase(sigmaneff_negative, sigmad_positive);
+        }
+        /// <summary>
+        /// Recalculate the shear stress and displacement pitch and vectors if they have changed
+        /// </summary>
+        /// <param name="DipShearStressMagnitude">Magnitude of the shear stress acting on the fracture in the downdip direction</param>
+        /// <param name="StrikeShearStressMagnitude">Magnitude of the shear stress acting on the fracture in the strike direction</param>
+        /// <param name="ShearStressMagnitude">Reference parameter for the magnitude of the total shear stress acting on the fracture</param>
+        /// <returns>True if the shear displacement vector has changed, false if it has not</returns>
+        private bool RecalculateStressDisplacementVectors(double DipShearStressMagnitude, double StrikeShearStressMagnitude, out double ShearStressMagnitude)
+        {
+            // Calculate pitch of shear stress on the fracture
+            // NB there will be two possible shear stress pitches in opposite directions, one with a negative shear stress magnitude and one with a positive shear stress magnitude
+            // We will use the one with a positive shear stress magnitude
+            // If the shear stress magnitude is zero then the shear displacement pitch will be set to NaN
+            double newShearStressPitch = Math.Atan2(DipShearStressMagnitude, StrikeShearStressMagnitude);
+            ShearStressMagnitude = (DipShearStressMagnitude * VectorXYZ.Sin_trim(newShearStressPitch)) + (StrikeShearStressMagnitude * (VectorXYZ.Cos_trim(newShearStressPitch)));
+            if (ShearStressMagnitude == 0)
+                newShearStressPitch = double.NaN;
+
+            // If the shear displacement pitch has not changed we do not need to recalculate the shear displacement vector, and can simply return false
+            // NB We use Equals to compare rather than == so if both pitches are NaN (e.g. shear stress on the fracture is 0) the overall expression will return true
+            if (newShearStressPitch.Equals(ShearStressPitch))
+                return false;
+
+            // Update the shear stress pitch and vector
+            // The shear stress vector is parallel to fracture, in the direction of the shear stress pitch
+            // If the shear stress magnitude is zero, will be set to (0,0,0)
+            ShearStressPitch = newShearStressPitch;
+            if (double.IsNaN(newShearStressPitch))
+                shearStressVector = new VectorXYZ(0, 0, 0);
+            else
+                shearStressVector = (VectorXYZ.Sin_trim(newShearStressPitch) * dipVector) + (VectorXYZ.Cos_trim(newShearStressPitch) * StrikeVector);
+
+            // The shear displacement vector has changed so return true
+            return true;
+        }
+        /// <summary>
+        /// Recalculate the compliance tensor base, based on the current driving stress, fracture orientation, mode and displacement vector
+        /// </summary>
+        /// <param name="sigmaneff_negative">True if the current effective normal stress on the fracture negative (i.e. the fracture is dilatant), otherwise false</param>
+        /// <param name="sigmad_positive">True if the current fracture driving stress is positive, otherwise false</param>
+        private void RecalculateComplianceTensorBase(bool sigmaneff_negative, bool sigmad_positive)
+        {
+            // If the driving stress is positive, the components of the compliance tensor base will be dependent on the current fracture mode, orientation and displacement vector
+            if (sigmad_positive)
+            {
+                if (sigmaneff_negative)
+                {
+                    // For dilatant fractures, the fracture compliance tensor base is most easily generated using the fourth order outer vector product operator on the normal vector
+                    // This returns a fourth order tensor C such that Cijkl=(AiBkDjl+AiBlDjk+AjBkDil+AjBlDik)/4, where D is the Kronecker delta
+                    Fracture_ComplianceTensorBase = normalVector | normalVector;
+                    Fracture_ComplianceTensorBase.DoubleShearColumnComponents();
+
+                    // Recalculate fracture mode factors
+                    double oneMinusNur = 1 - gbc.MechProps.Nu_r;
+                    double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
+                    Mff = Math.Pow(oneMinusNur, 2) / oneMinus2Nur;
+                    Mfw = 0;
+                    Mww = oneMinusNur / 2;
+                    Mfs = 0;
+                    Mss = oneMinusNur / 2;
+                }
+                else
+                {
+                    // For shear fractures, the fracture compliance tensor base is most easily generated using a combination of outer vector product and outer tensor product operators on the normal and shear displacement vectors
+                    double mufr = gbc.MechProps.MuFr;
+                    VectorXYZ strikeVector = StrikeVector;
+                    Tensor2S normal_OP_mu_normal = normalVector ^ (mufr * normalVector);
+                    Tensor2S normal_OP_dip = normalVector ^ dipVector;
+                    Tensor2S normal_OP_strike = normalVector ^ strikeVector;
+                    Tensor4_2Sx2S normal_OP_dip_OP_normal_OP_dip = normal_OP_dip ^ normal_OP_dip;
+                    Tensor4_2Sx2S normal_OP_strike_OP_normal_OP_strike = normal_OP_strike ^ normal_OP_strike;
+                    Tensor4_2Sx2S frictional_traction = (normalVector ^ shearStressVector) ^ normal_OP_mu_normal;
+                    Fracture_ComplianceTensorBase = normal_OP_dip_OP_normal_OP_dip + normal_OP_strike_OP_normal_OP_strike - frictional_traction;
+                    Fracture_ComplianceTensorBase.DoubleShearColumnComponents();
+
+                    // Recalculate fracture mode factors
+                    double sinpitch, cospitch;
+                    if (double.IsNaN(ShearStressPitch))
+                    {
+                        sinpitch = 0;
+                        cospitch = 0;
+                    }
+                    else
+                    {
+                        sinpitch = VectorXYZ.Sin_trim(ShearStressPitch);
+                        cospitch = VectorXYZ.Cos_trim(ShearStressPitch);
+                    }
+                    double oneMinusNur = 1 - gbc.MechProps.Nu_r;
+                    double oneMinus2Nur = 1 - (2 * gbc.MechProps.Nu_r);
+                    Mff = 0;
+                    Mfw = -(Math.Pow(oneMinusNur, 2) / (2 * oneMinus2Nur)) * mufr * sinpitch;
+                    Mww = oneMinusNur / 2;
+                    Mfs = -(Math.Pow(oneMinusNur, 2) / (2 * oneMinus2Nur)) * mufr * cospitch;
+                    Mss = oneMinusNur / 2;
+                }
+            }
+            // If the driving stress is negative, no displacement can occur on the fractures so the compliance tensor and mode factors will be zero
+            else
+            {
+                // In this case the compliance tensor bases will contain only zero values
+                Fracture_ComplianceTensorBase = new Tensor4_2Sx2S();
+
+                // Set all mode factors to zero
+                Mff = 0;
+                Mfw = 0;
+                Mww = 0;
+                Mfs = 0;
+                Mss = 0;
+            }
+        }
+        /// <summary>
+        /// Base for the fracture compliance tensor, constructed from a combination of the fracture normal vector and the shear displacement vector
+        /// </summary>
+        private Tensor4_2Sx2S Fracture_ComplianceTensorBase;
+        /// <summary>
+        /// Compliance tensor for this fracture set
+        /// </summary>
+        public Tensor4_2Sx2S S_set
+        {
+            get
+            {
+                double elasticityMultiplier = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
+                double fractureDensityMultiplier = (4 / Math.PI) * Fractures.FP33_total;
+                return elasticityMultiplier * fractureDensityMultiplier * Fracture_ComplianceTensorBase;
+            }
+        }
+
+        // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
+        // In this case we will use a supplied effective stress tensor to calculate the present day stress on the fracture
+        /// <summary>
+        /// Present day effective normal stress acting on the fracture
+        /// </summary>
+        private double PresentDaySigmaNeff { get; set; }
+        /// <summary>
+        /// Present day shear stress acting on the fracture
+        /// </summary>
+        private double PresentDayTau { get; set; }
+        /// <summary>
+        /// Present day fracture reactivition potential
+        /// This will return the driving stress if that is positive; however it will return a negative value representing the cohesionless distance to failure if the fracture is closed and not critically stressed
+        /// </summary>
+        public double PresentDayReactivationPotential { get { return Math.Max(PresentDayDilatancyPotential, PresentDaySlipPotential); } }
+        /// <summary>
+        /// Present day fracture dilatancy potential
+        /// This will return the inverse of the normal effective stress on the fracture, representing the dilatant driving stress if positive, and the cohesionless distance to dilational failure if it is negative
+        /// </summary>
+        public double PresentDayDilatancyPotential
+        {
+            get
+            {
+                // If the fractures are dilatant (i.e. the normal stress on them is tensile), the dilatancy protential is positive and equal to the total stress (normal and shear) on the fracture
+                if (PresentDaySigmaNeff <= 0)
+                    return Math.Sqrt(Math.Pow(PresentDaySigmaNeff, 2) + Math.Pow(PresentDayTau, 2));
+                // If the fractures are closed, the dilatancy potential will be the inverse of the (compressive) normal effective stress on the fracture
+                else
+                    return -PresentDaySigmaNeff;
+            }
+        }
+        /// <summary>
+        /// Present day fracture slip potential
+        /// This represents the shear driving stress if that is positive, and the cohesionless distance to shear failure if it is negative
+        /// </summary>
+        public double PresentDaySlipPotential
+        {
+            get
+            {
+                // If the fractures are dilatant (i.e. the normal stress on them is tensile), we do not need to take into account friction
+                // Therefore the slip potential is equal to the maximum shear stress
+                if (PresentDaySigmaNeff <= 0)
+                    return PresentDayTau;
+                // If the fractures are closed, the shear driving stress and slip potential will equal the shear stress on the fractures minus the frictional traction
+                return PresentDayTau - (gbc.MechProps.MuFr * PresentDaySigmaNeff);
+            }
+        }
+        /// <summary>
+        /// Present day fracture slip tendency
+        /// This represents the minimum frictional coefficient required to prevent slip on a cohesionless fracture, i.e. shear stress / normal stress
+        /// If the fractures are dilatant (i.e. the normal stress on them is tensile), the slip tendency is undefined and will return NaN 
+        /// </summary>
+        public double PresentDaySlipTendency
+        {
+            get
+            {
+                if (PresentDaySigmaNeff > 0)
+                    return PresentDayTau / PresentDaySigmaNeff;
+                else
+                    return double.NaN;
+            }
+        }
+        /// <summary>
+        /// This represents the diplacement sense closest to failure, or with the highest driving stress if the fracture is critical
+        /// </summary>
+        public FractureDisplacementSense MostLikelyReactivationSense { get; private set; }
+        /// <summary>
+        /// Present day driving stress acting on the fracture
+        /// </summary>
+        public double PresentDayDrivingStress { get { return (PresentDayReactivationPotential > 0 ? PresentDayReactivationPotential : 0); } }
+        /// <summary>
+        /// Flag specifying whether to use present day stress or stress at the time of fracture development to calculate fracture aperture and reactivation risk
+        /// </summary>
+        private bool usePresentDayStress;
+        /// <summary>
+        /// Call this function to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development  
+        /// </summary>
+        /// <param name="PresentDayEffectiveStress">Tensor2S object to specify the present day effective stress; if null, the stress at the time of fracture development will be used to calculate fracture aperture and reactivation risk</param>
+        public void UsePresentDayStress(Tensor2S PresentDayEffectiveStress)
+        {
+            if (PresentDayEffectiveStress is null) // Set Present Day normal and driving stress to NaN
+            {
+                usePresentDayStress = false;
+                PresentDaySigmaNeff = double.NaN;
+                PresentDayTau = double.NaN;
+            }
+            else // Set Present Day normal and driving stress based on the supplied effective stress tensor
+            {
+                usePresentDayStress = true;
+
+                // Get stress vector acting on the fracture plane
+                VectorXYZ stressOnFracture = PresentDayEffectiveStress * normalVector;
+
+                // Calculate the magnitude of normal stress on the fracture plane, and the shear stresses acting on the fracture plane in the along-strike and downdip directions respectively
+                // The maximum present day shear stress Tau can be calculated by taking the root of the squares of the orthogonal strike and downdip shear stress components
+                PresentDaySigmaNeff = normalVector & stressOnFracture;
+                double presentDayTauDip = dipVector & stressOnFracture;
+                double presentDayTauStrike = strikeVector & stressOnFracture;
+                PresentDayTau = Math.Sqrt(Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
+
+                // Calculate the most likely reactivation displacement sense
+                double presentDayShearStressPitch = Math.Atan2(presentDayTauDip, presentDayTauStrike);
+                if (PresentDayDilatancyPotential > PresentDaySlipPotential)
+                    MostLikelyReactivationSense = FractureDisplacementSense.Dilatant;
+                else if (presentDayShearStressPitch > (0.75 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.LeftLateral;
+                else if (presentDayShearStressPitch >= (0.25 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.Reverse;
+                else if (presentDayShearStressPitch > -(0.25 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.RightLateral;
+                else //if (presentDayShearStressPitch >= (-0.75 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.Normal;
+            }
+        }
+
+        // Applied strain components
+        /// <summary>
+        /// Ratio of incremental normal strain to total incremental normal strain on the fracture, given by eff^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double eff2d_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental normal strain x downdip shear strain to total incremental normal strain on the fracture, given by eff*efw / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efffwd_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental downdip shear strain to total incremental normal strain on the fracture, given by efw^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efw2d_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental normal strain x alongstrike shear strain to total incremental normal strain on the fracture, given by eff*efs / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efffsd_e2d { get; set; }
+        /// <summary>
+        /// Ratio of incremental alongstrike shear strain to total incremental normal strain on the fracture, given by efs^2 / (eff^2 + efw^2 + efs^2)
+        /// </summary>
+        private double efs2d_e2d { get { return 1 - eff2d_e2d - efw2d_e2d; } }
+        /// <summary>
+        /// Recalculate the applied strain components acting on the fractures, for a specified strain or strain rate tensor
+        /// </summary>
+        /// <param name="AppliedStrainTensor">Current strain or strain rate tensor</param>
+        public void RecalculateStrainRatios(Tensor2S AppliedStrainTensor)
+        {
+            VectorXYZ normalStrainOnFracture = AppliedStrainTensor * normalVector;
+            VectorXYZ downDipStrainOnFracture = AppliedStrainTensor * dipVector;
+            VectorXYZ alongStrikeStrainOnFracture = AppliedStrainTensor * strikeVector;
+            double effd = normalVector & normalStrainOnFracture;
+            double efwd = dipVector & normalStrainOnFracture;
+            double ewwd = dipVector & downDipStrainOnFracture;
+            double efsd = strikeVector & normalStrainOnFracture;
+            double essd = strikeVector & alongStrikeStrainOnFracture;
+
+            // Set the strain ratios to zero if they are small - this will avoid rounding errors
+            double emax = effd + efwd + ewwd + efsd + essd;
+            if ((float)(emax + effd) == (float)emax)
+                effd = 0;
+            if ((float)(emax + efwd) == (float)emax)
+                efwd = 0;
+            if ((float)(emax + ewwd) == (float)emax)
+                ewwd = 0;
+            if ((float)(emax + efsd) == (float)emax)
+                efsd = 0;
+            if ((float)(emax + essd) == (float)emax)
+                essd = 0;
+            double eff_squared = Math.Pow(effd, 2);
+            double efw_squared = Math.Pow(efwd, 2);
+            double efs_squared = Math.Pow(efsd, 2);
+            double e_squared = eff_squared + efw_squared + efs_squared;
+            eff2d_e2d = (e_squared > 0 ? eff_squared / e_squared : 1);
+            efw2d_e2d = (e_squared > 0 ? efw_squared / e_squared : 0);
+            efffwd_e2d = (e_squared > 0 ? (effd * efwd) / e_squared : 0);
+            efffsd_e2d = (e_squared > 0 ? (effd * efsd) / e_squared : 0);
+        }
+
+        // Fracture mode factors - these form the basis for the stress shadow width
+        // They represent the ratio of far-field displacement (i.e. applied strain) to displacement on a fracture, normalised to remove the effects of fracture size and geometry
+        // For convenience, these are combined with the respective strain components when they are calculated, so they need only be multiplied by geometric factors to determine stress shadow widths
+        /// <summary>
+        /// Fracture Mode Factor: azimuthal strain => azimuthal displacement
+        /// </summary>
+        private double Maa_eaa2d_eh2d { get { return Math.Max(((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)), 0); } }
+        /// <summary>
+        /// Fracture Mode Factor: strike-parallel shear strain => azimuthal displacement
+        /// </summary>
+        private double Mas_eaaasd_eh2d { get { return Math.Max((efffsd_e2d * Mfs), 0); } }
+        /// <summary>
+        /// Fracture Mode Factor: strike-parallel shear strain => strike-slip displacement
+        /// </summary>
+        private double Mss_eas2d_eh2d { get { return Math.Max((efs2d_e2d * Mss), 0); } }
+        /// <summary>
+        /// Fracture Mode Factor: maximum horizontal strain => horizontal displacement
+        /// </summary>
+        private double Mhh_eh2d { get { return Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d; } }
+        /// <summary>
+        /// Geometric factor: normal strain => normal displacement
+        /// </summary>
+        private double Mff { get; set; }
+        /// <summary>
+        /// Geometric factor: normal strain => down-dip displacement
+        /// </summary>
+        private double Mfw { get; set; }
+        /// <summary>
+        /// Geometric factor: normal strain => along-strike displacement
+        /// </summary>
+        private double Mfs { get; set; }
+        /// <summary>
+        /// Geometric factor: down-dip strain => down-dip displacement
+        /// </summary>
+        private double Mww { get; set; }
+        /// <summary>
+        /// Geometric factor: along-strike strain => along-strike displacement
+        /// </summary>
+        private double Mss { get; set; }
+
+        // Stress shadow width
+        /// <summary>
+        /// Ratio of maximum stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// </summary>
+        /// <returns></returns>
+        public double Max_F_StressShadowWidth_r
+        {
+            get { return Mhh_eh2d * (8 / Math.PI); }
+        }
+        /// <summary>
+        /// Ratio of mean stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// </summary>
+        /// <returns></returns>
+        public double Mean_F_StressShadowWidth_r
+        {
+            get { return Mhh_eh2d * (16 / (3 * Math.PI)); }
+        }
+        /*/// <summary>
+        /// Azimuthal component of ratio of mean fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// </summary>
+        /// <returns></returns>
+        public double Mean_Azimuthal_F_StressShadowWidth_r
+        {
+            get { return Maa_eaa2d_eh2d * (16 / (3 * Math.PI)); }
+        }
+        /// <summary>
+        /// Strike-slip shear component of ratio of mean fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// </summary>
+        /// <returns></returns>
+        public double Mean_Shear_F_StressShadowWidth_r
+        {
+            get { return (Mas_eaaasd_eh2d + Mss_eas2d_eh2d) * (16 / (3 * Math.PI)); }
+        }*/
+
+        // Functions to calculate fracture population data
+        /// <summary>
+        /// Create a new FractureCalculationData object for the current timestep, populate it with data from the end of the previous timestep, and add it to the list of previous timestep data
+        /// </summary>
+        public void setTimestepData()
+        {
+            // Create a new FractureCalculationData object for the current timestep
+            CurrentFractureData = CurrentFractureData.GetNextTimestepData();
+
+            // Now we can add the CurrentFractureData object to the list of previous FractureCalculationData objects in the PreviousFractureData object
+            PreviousFractureData.AddTimestep(CurrentFractureData, true);
+
+            // If the flag is set to deactivate the fracture set at the start of the next timestep, do this now
+            if (DeactivateNextTimestep)
+                CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
+        }
+
 
         // Reset and data input functions
         /// <summary>
@@ -766,7 +1239,7 @@ namespace DFMGenerator_SharedCode
             //MFDisplacementAdjustedDrivingStressVector = new VectorXYZ(0, 0, 0);
 
             // Calculate the initial compliance tensor base; NB we assume initial driving stress is zero
-            //RecalculateComplianceTensorBase(false);
+            RecalculateComplianceTensorBase(false);
 
             // Reset implicit fracture population data
             resetFractureData((ushort) raysPerFracture_in, rmin_in, uFDistributionIn, B_in, c_in);

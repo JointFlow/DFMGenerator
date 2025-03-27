@@ -2935,6 +2935,8 @@ namespace DFMGenerator_SharedCode
                 Tensor4_2Sx2S s_F = new Tensor4_2Sx2S();
                 foreach (Gridblock_FractureSet fs in FractureSets)
                     s_F += fs.S_set;
+                foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    s_F += ufs.S_set;
                 return s_F;
             }
         }
@@ -3297,11 +3299,15 @@ namespace DFMGenerator_SharedCode
                 {
                     foreach (Gridblock_FractureSet fs in FractureSets)
                         fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        ufs.RecalculateStrainRatios(appliedStrainRate);
                 }
                 else
                 {
                     foreach (Gridblock_FractureSet fs in FractureSets)
                         fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        ufs.RecalculateStrainRatios(StressStrain.el_Epsilon_noncompactional);
                     // NB We use ! Equals to compare rather than != or ! == so if both azimuths are NaN (e.g. strain is isotropic strain) the overall expression will return false
                     if (!((float)StressStrain.el_Epsilon_noncompactional.GetMinimumHorizontalAzimuth()).Equals((float)appliedStrainRate.GetMinimumHorizontalAzimuth()))
                         recalculateHorizontalStrainRatios = true;
@@ -3355,6 +3361,10 @@ namespace DFMGenerator_SharedCode
                         {
                             fds.RecalculateElasticResponse(StressStrain.Sigma_eff);
                         }
+                    }
+                    foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        ufs.RecalculateElasticResponse(StressStrain.Sigma_eff);
                     }
 
                     if (stressLoad)
@@ -3525,6 +3535,8 @@ namespace DFMGenerator_SharedCode
                     {
                         foreach (Gridblock_FractureSet fs in FractureSets)
                             fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
+                        foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                            ufs.RecalculateStrainRatios(StressStrain.el_Epsilon_noncompactional);
                     }
 
                     // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep
@@ -3534,6 +3546,10 @@ namespace DFMGenerator_SharedCode
                         {
                             fds.setTimestepData();
                         }
+                    }
+                    foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        ufs.setTimestepData();
                     }
 
                     // Update the macrofracture stress shadow widths (which may have changed due to changes in the in situ stress)

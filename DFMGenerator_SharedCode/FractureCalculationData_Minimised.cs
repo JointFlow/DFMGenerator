@@ -22,6 +22,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double M_EndTime { get { return M_StartTime + M_Duration; } }
         /// <summary>
+        /// Flag for the current stage of evolution of the fracture set
+        /// </summary>
+        public FractureEvolutionStage EvolutionStage { get; private set; }
+        /// <summary>
         /// Constant component of effective normal stress on the fracture for timestep M
         /// </summary>
         public double SigmaNeff_Const_M { get; set; }
@@ -266,6 +270,48 @@ namespace DFMGenerator_SharedCode
             if ((theta_dashed_in >= 0) && (theta_dashed_in <= 1))
                 theta_dashed_M = theta_dashed_in;
         }
+        /// <summary>
+        /// Reset the fracture evolutionary stage; this may also reset other data items
+        /// </summary>
+        /// <param name="evolutionStage_in">New evolutionary stage for the fracture set</param>
+        public void SetEvolutionStage(FractureEvolutionStage evolutionStage_in)
+        {
+            // Set the fracture evolution to the specified stage and perform any other data manipulation required
+            switch (evolutionStage_in)
+            {
+                case FractureEvolutionStage.NotActivated:
+                    {
+                        EvolutionStage = FractureEvolutionStage.NotActivated;
+                    }
+                    break;
+                case FractureEvolutionStage.Growing:
+                    {
+                        EvolutionStage = FractureEvolutionStage.Growing;
+                    }
+                    break;
+                case FractureEvolutionStage.ResidualActivity:
+                    {
+                        EvolutionStage = FractureEvolutionStage.Deactivated;
+                    }
+                    break;
+                case FractureEvolutionStage.Deactivated:
+                    {
+                        EvolutionStage = FractureEvolutionStage.Deactivated;
+
+                        // Set the mean fracture propagation rate coefficient to zero for this timestep
+                        // This will prevent any growth in the populations of implicit fractures, and also prevent nucleation and growth of explicit fractures in the DFN
+                        // NB we will keep the values for the driving stress, U and V; this is equivalent to reducing the timestep duration to zero
+                        // Before updating the dynamic data for timestep M we must cache the cumulative data at the start of the timestep Cum_Gamma_Mminus1 and Cum_HalfLength_Mminus1
+                        //double temp_Cum_Gamma = Cum_Gamma_Mminus1;
+                        //gamma_InvBeta_M = 0;
+                        // Update the cumulative data for the start of this timestep; the FractureCalculationData object will then automatically calculate the cumulative data for the end of this timestep
+                        //Cum_Gamma_Mminus1 = temp_Cum_Gamma;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
         /*/// <summary>
         /// Reduce the fracture propagation rate coefficient by a specified amount
         /// This will reduce growth in the populations of implicit fractures, and of explicit fractures in the DFN, in the case that the fracture dipset is deactivated within the timestep
@@ -335,6 +381,8 @@ namespace DFMGenerator_SharedCode
             M_StartTime = 0;
             // Timestep duration (s)
             M_Duration = 0;
+            // Flag for the current stage of evolution of the fracture set: set to NotActivated
+            EvolutionStage = FractureEvolutionStage.NotActivated;
             // Constant component of effective normal stress on the fracture for timestep M
             SigmaNeff_Const_M = 0;
             // Variable component of effective normal stress on the fracture for timestep M
@@ -405,6 +453,8 @@ namespace DFMGenerator_SharedCode
             M_StartTime = fcd_in.M_StartTime;
             // Timestep duration
             M_Duration = fcd_in.M_Duration;
+            // Flag for the current stage of evolution of the fracture set
+            EvolutionStage = fcd_in.EvolutionStage;
             // Constant component of effective normal stress on the fracture for timestep M
             SigmaNeff_Const_M = fcd_in.SigmaNeff_Const_M;
             // Variable component of effective normal stress on the fracture for timestep M

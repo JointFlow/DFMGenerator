@@ -1570,18 +1570,16 @@ namespace DFMGenerator_SharedCode
         {
             get
             {
-                if (double.IsNaN(DisplacementPitch))
+                if (CurrentFractureData.SigmaNeff_Const_M < 0)
                     return FractureDisplacementSense.Dilatant;
-                else if (DisplacementPitch > (0.75 * Math.PI))
+                else if (ShearStressPitch > (0.75 * Math.PI))
                     return FractureDisplacementSense.LeftLateral;
-                else if (DisplacementPitch >= (0.25 * Math.PI))
+                else if (ShearStressPitch >= (0.25 * Math.PI))
                     return FractureDisplacementSense.Reverse;
-                else if (DisplacementPitch > -(0.25 * Math.PI))
+                else if (ShearStressPitch > -(0.25 * Math.PI))
                     return FractureDisplacementSense.RightLateral;
-                else if (DisplacementPitch >= (-0.75 * Math.PI))
+                else //if (ShearStressPitch >= (-0.75 * Math.PI))
                     return FractureDisplacementSense.Normal;
-                else
-                    return FractureDisplacementSense.LeftLateral;
             }
         }
         /// <summary>
@@ -1950,9 +1948,9 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
-        /// This represents the fracture mode closest to failure, or with the highest driving stress if the fracture is critical
+        /// This represents the diplacement sense closest to failure, or with the highest driving stress if the fracture is critical
         /// </summary>
-        public FractureMode MostLikelyReactivationMode { get; private set; }
+        public FractureDisplacementSense MostLikelyReactivationSense { get; private set; }
         /// <summary>
         /// Present day driving stress acting on the fracture
         /// </summary>
@@ -1987,11 +1985,18 @@ namespace DFMGenerator_SharedCode
                 double presentDayTauStrike = fs.StrikeVector & stressOnFracture;
                 PresentDayTau = Math.Sqrt(Math.Pow(presentDayTauDip, 2) + Math.Pow(presentDayTauStrike, 2));
 
-                // Calculate the most likely reactivation mode
-                if (PresentDaySigmaNeff <= 0)
-                    MostLikelyReactivationMode = FractureMode.Mode1;
-                else
-                    MostLikelyReactivationMode = (presentDayTauDip >= presentDayTauStrike ? FractureMode.Mode2 : FractureMode.Mode3);
+                // Calculate the most likely reactivation displacement sense
+                double presentDayShearStressPitch = Math.Atan2(presentDayTauDip, presentDayTauStrike);
+                if (PresentDayDilatancyPotential > PresentDaySlipPotential)
+                    MostLikelyReactivationSense = FractureDisplacementSense.Dilatant;
+                else if (presentDayShearStressPitch > (0.75 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.LeftLateral;
+                else if (presentDayShearStressPitch >= (0.25 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.Reverse;
+                else if (presentDayShearStressPitch > -(0.25 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.RightLateral;
+                else //if (presentDayShearStressPitch >= (-0.75 * Math.PI))
+                    MostLikelyReactivationSense = FractureDisplacementSense.Normal;
             }
         }
 

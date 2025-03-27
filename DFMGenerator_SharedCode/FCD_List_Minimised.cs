@@ -44,6 +44,12 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getEndTime(int Timestep_M) { return dataList[Timestep_M].M_EndTime; }
         /// <summary>
+        /// Flag for the current stage of evolution of the fracture set
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public FractureEvolutionStage getEvolutionStage(int Timestep_M) { return dataList[Timestep_M].EvolutionStage; }
+        /// <summary>
         /// Constant component of effective normal stress on the fracture for timestep M (Pa)
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
