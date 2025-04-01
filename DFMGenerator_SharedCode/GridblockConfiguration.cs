@@ -3569,7 +3569,11 @@ namespace DFMGenerator_SharedCode
                     AllSetsDeactivated = true;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
-                        AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                        AllSetsDeactivated = AllSetsDeactivated & fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                    }
+                    foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        AllSetsDeactivated = AllSetsDeactivated & ufs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume);
                     }
 
                     // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
@@ -3587,6 +3591,17 @@ namespace DFMGenerator_SharedCode
                                 TimestepDuration = maxdur;
                         }
                     }
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        // Use the getOptimalDuration function in the fracture set object to get the optimal timestep duration for that set
+                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_MFP33);
+
+                        // Check to see if the maximum timstep duration calculated for this timestep is less than the maximum timestep duration so far
+                        // NB if it is not possible to calculate a value for the optimal timestep duration, the getOptimalDuration function will return infinity
+                        // This will always be greater than any actual calculated optimal duration
+                        if (maxdur < TimestepDuration)
+                            TimestepDuration = maxdur;
+                    }
 
                     // If the timestep duration is still infinity, no further fractures can form; therefore set the current timestep duration to zero and set the flag to stop the calculation at the end of it
                     if (double.IsInfinity(TimestepDuration))
@@ -3603,6 +3618,11 @@ namespace DFMGenerator_SharedCode
                             fds.setTimestepPropagationData(endLastTimestep, TimestepDuration);
                         }
                     }
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        ufs.setTimestepPropagationData(endLastTimestep, TimestepDuration);
+                    }
+
 
                     // Calculate the macrofracture deactivation probabilities Phi_II_M and Phi_IJ_M for each fracture dip set
                     foreach (Gridblock_FractureSet fs in FractureSets)
@@ -4020,7 +4040,7 @@ namespace DFMGenerator_SharedCode
                 {
                     tableTitle += "Present day fracture aperture and reactivation potential\t\t\t\t\t\t\t";
                     headerLine1 += "\t\t\t\t\t\t\t";
-                    headerLine2 += "Fracture set\tAperture (m)\tDilatancy potential (Pa)\tSlip potential (Pa)\tReactivation mode\t\t\t";
+                    headerLine2 += "Fracture set\tAperture (m)\tDilatancy potential (Pa)\tSlip potential (Pa)\tReactivation sense\t\t\t";
                 }
                 if (outputConnectivityTable)
                 {
@@ -4052,7 +4072,7 @@ namespace DFMGenerator_SharedCode
 
                         if (outputApertureReactivationPotentialTable)
                         {
-                            tableRow += string.Format("{0}\t{1}\t{2}\t{3}\t{4}", dipsetName, dipSet.getMeanMacrofractureAperture(), dipSet.PresentDayDilatancyPotential, dipSet.PresentDaySlipPotential, dipSet.MostLikelyReactivationMode);
+                            tableRow += string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t\t\t", dipsetName, dipSet.getMeanMacrofractureAperture(), dipSet.PresentDayDilatancyPotential, dipSet.PresentDaySlipPotential, dipSet.MostLikelyReactivationSense);
                         }
 
                         if (outputConnectivityTable)

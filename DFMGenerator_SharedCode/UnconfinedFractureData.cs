@@ -383,6 +383,12 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private ushort noSegments { get; set; }
 
+        // Data calculation and output functions
+        public double getClearZoneVolume(double radius_in)
+        {
+            return 0;
+        }
+
         // Reset and data input functions
         /// <summary>
         /// Reset the total population values to zero 

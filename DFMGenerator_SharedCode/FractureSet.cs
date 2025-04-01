@@ -4119,7 +4119,7 @@ namespace DFMGenerator_SharedCode
                     deactivateFractureSet = true;
             }
 
-            // Calculate the active to total half-macrofracture volumetric ratio for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
+            // Calculate the active to total half-macrofracture volumetric density for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
             // We only need to do this if the specified minimum is greater than zero; otherwise the check is not performed
             if (active_total_MFP30_termination_ratio > 0)
             {
@@ -4146,7 +4146,7 @@ namespace DFMGenerator_SharedCode
                     OneDipSetDeactivated = true;
                 }
                 // If the clear zone volume has dropped below the minimum specified, deactivate this fracture dipset only
-                else if (fds.getClearZoneVolumeAllFS() < gbc.PropControl.minimum_ClearZone_Volume)
+                else if (fds.getClearZoneVolumeAllFS() < minimum_ClearZone_Volume)
                 {
                     fds.deactivateFractures();
                     OneDipSetDeactivated = true;

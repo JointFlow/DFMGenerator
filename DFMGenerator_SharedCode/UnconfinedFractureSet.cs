@@ -496,9 +496,17 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double MinimumFractureRadius { get; set; }
         /// <summary>
+        /// Maximum fracture radius; this will be the current radius of the first fully active fractures to nucleate; if there are no fully active fracture datapoints, return the minimum fracture radius
+        /// </summary>
+        private double MaximumFractureRadius { get { return (Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count > 0) ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][0].RayLength : MinimumFractureRadius; } }
+        /// <summary>
         /// Object containing cumulative population data for all fractures
         /// </summary>
         private UnconfinedFractureData Fractures { get; set; }
+        /// <summary>
+        /// Variable to hold maximum historic active fracture volumetric ratio; used to check if termination criteria are met, and updated when the CheckFractureDeactivation is called
+        /// </summary>
+        private double max_historic_a_RP33;
 
         // Fracture data for previous timesteps
         /// <summary>
@@ -1139,7 +1147,412 @@ namespace DFMGenerator_SharedCode
             if (DeactivateNextTimestep)
                 CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
         }
+        /// <summary>
+        /// Check if the fracture set meets the specified deactivation criteria, and if so set the fracture evolution stage to Deactivated
+        /// </summary>
+        /// <param name="historic_a_RP33_termination_ratio">Ratio of current to maximum active fracture volumetric ratio at which fracture sets are considered inactive; calculation will terminate when fracture set falls below this ratio</param>
+        /// <param name="active_total_RP30_termination_ratio">Ratio of active to total fracture volumetric density at which fracture sets are considered inactive; calculation will terminate when fracture set falls below this ratio</param>
+        /// <param name="minimum_ClearZone_Volume">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
+        /// <returns>True if the fracture set meets any of the deactivation criteria</returns>
+        public bool CheckFractureDeactivation(double historic_a_RP33_termination_ratio, double active_total_RP30_termination_ratio, double minimum_ClearZone_Volume)
+        {
+            // If the fracture set is already deactivated, we do not need to check it again
+            if (CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated)
+                return true;
 
+            // Flag to deactivate fracture set; initially set to false
+            bool deactivateFractureSet = false;
+
+            // Calculate the ratio of current to maximum active fracture volumetric ratio for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
+            // We only need to do this if the specified minimum is greater than zero; otherwise the check is not performed
+            if (historic_a_RP33_termination_ratio > 0)
+            {
+                // If the active fracture volumetric ratio for this fracture set is increasing, update the maximum historic active fracture volumetric ratio
+                double current_tot_a_RP33 = Fractures.a_RP33_total;
+                if (max_historic_a_RP33 < current_tot_a_RP33)
+                    max_historic_a_RP33 = current_tot_a_RP33;
+
+                double historic_a_RP33_ratio = (max_historic_a_RP33 > 0 ? current_tot_a_RP33 / max_historic_a_RP33 : 1);
+                if (historic_a_RP33_ratio <= historic_a_RP33_termination_ratio)
+                    deactivateFractureSet = true;
+            }
+
+            // Calculate the active to total fracture volumetric density for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
+            // We only need to do this if the specified minimum is greater than zero; otherwise the check is not performed
+            if (active_total_RP30_termination_ratio > 0)
+            {
+                double activeRays = Fractures.a_RP30_total + Fractures.r_RP30_total;
+                double totalRays = activeRays + Fractures.sII_RP30_total + Fractures.sIJ_RP30_total;
+                double a_RP30_ratio = activeRays / totalRays;
+                if (a_RP30_ratio <= active_total_RP30_termination_ratio)
+                    deactivateFractureSet = true;
+            }
+
+            // If the clear zone volume for nucleating fractures has dropped below the minimum specified, set the fracture deactivation flag to true
+            if (Fractures.getClearZoneVolume(MinimumFractureRadius) < minimum_ClearZone_Volume)
+            {
+                deactivateFractureSet = true;
+            }
+
+            // Check if the extrapolated initial microfracture radius of current nucleating fractures is less than zero (will only apply if b<2); if so, set the fracture deactivation flag to true
+            if (Check_Initial_uF_Radius(MinimumFractureRadius))
+            {
+                deactivateFractureSet = true;
+            }
+
+            // If the fracture deactivation flag is set to true, deactivate the fracture set
+            if (deactivateFractureSet)
+                deactivateFractures();
+
+            // Return the fracture deactivation flag
+            return deactivateFractureSet;
+        }
+        /// <summary>
+        /// Calculate the constant and variable components of the driving stress (U and V) for the upcoming timestep, and estimate the optimal timestep duration based on a specified maximum increase in fracture radius
+        /// NB this function should be run before the CurrentFractureData object is updated to the new timestep, so it still contains dynamic data from the previous timestep 
+        /// </summary>
+        /// <param name="Sigma_Const">Tensor for initial in situ effective stress (Pa)</param>
+        /// <param name="Sigma_Var">Tensor for rate of change of effective stress (Pa/s)</param>
+        /// <param name="d_rmax">Maximum allowed increase in fracture radius</param>
+        /// <returns>Maximum allowable timestep duration (s)</returns>
+        public double getOptimalDuration(Tensor2S Sigma_Const, Tensor2S Sigma_Var, double d_rmax)
+        {
+            // If it is not possible to calculate a value for the optimal timestep duration, return infinity
+            // This will always be greater than any actual calculated optimal duration
+            double optdur = double.PositiveInfinity;
+
+            // Set the ratio for comparing initial and rate of change of stress values; if the initial value is less than the rate of change times the comparison ratio, we can round the initial value down to zero
+            const double stress_comparator = 0.01;
+
+            // Get the magnitudes of the initial values and the rate of change of the normal and shear stresses acting on the fractures
+            // NB sneff, taustrike and taudip represent three orthogonal components of the stress acting on the fault: normal, shear in the direction of strike, and shear in the downdip direction
+            // These can be calculated by taking the dot product of the (initial or rate of change of) stress vector on the fracture and the normal, strike or downdip vector of the fracture
+            VectorXYZ SigmaF_Const = Sigma_Const * normalVector;
+            VectorXYZ SigmaF_Var = Sigma_Var * normalVector;
+            double sneff_cst = normalVector & SigmaF_Const;
+            double sneff_var = normalVector & SigmaF_Var;
+            // If sneff_cst << sneff_var or sneff_cst is less than the maximum driving stress error then we can assume this is rounding error and set snd_cst to 0; otherwise we will get stuck in a loop
+            if ((Math.Abs(sneff_cst) < Math.Abs(sneff_var * stress_comparator)) || (Math.Abs(sneff_cst) <= PreviousFractureData.MaxDrivingStressRoundingError))
+                sneff_cst = 0;
+            double taudip_cst = dipVector & SigmaF_Const;
+            double taudip_var = dipVector & SigmaF_Var;
+            // If taudip_cst << taudip_var or taudip_cst is less than the maximum driving stress error then we can assume this is rounding error and set taudip_cst to 0
+            if ((Math.Abs(taudip_cst) < (taudip_var * stress_comparator)) || (Math.Abs(taudip_cst) <= PreviousFractureData.MaxDrivingStressRoundingError))
+                taudip_cst = 0;
+            double taustrike_cst = strikeVector & SigmaF_Const;
+            double taustrike_var = strikeVector & SigmaF_Var;
+            // If taustrike_cst << taustrike_var or taustrike_cst is less than the maximum driving stress error then we can assume this is rounding error and set taustrike_cst to 0
+            if ((Math.Abs(taustrike_cst) < (taustrike_var * stress_comparator)) || (Math.Abs(taustrike_cst) <= PreviousFractureData.MaxDrivingStressRoundingError))
+                taustrike_cst = 0;
+
+            // Check whether the normal stress on the fractures is tensile (i.e. the fractures are dilatant) or compressive (the fractures are closed)
+            // NB If the sneff_cst is zero but sneff_var is negative, the normal stress on the fractures will be tensile during most of the timestep so we flag the fractures as dilatant
+            bool dilatant = (sneff_cst < 0) || ((sneff_cst == 0) && (sneff_var < 0));
+
+            // Calculate initial estimates for U and V
+            // U is the initial driving stress at the start of the timestep
+            // V is the rate of change of driving stress (in SI units, Pa/s) at the start of the timestep
+            // NB V may not be constant, as the shear displacement vector may change through time as the in situ stress changes
+            double U = 0;
+            double V = 0;
+            // If the fractures are dilatant (i.e. the initial normal stress on them is tensile), we do not need to take into account friction
+            if (dilatant)
+            {
+                // For vertical dilatant (Mode 1) fractures, the driving stress will equal the tensile normal stress on the fractures
+                // For inclined dilatant fractures, the driving stress will equal the root of the square of the normal and shear stress components acting on the fractures
+                U = Math.Sqrt(Math.Pow(sneff_cst, 2) + Math.Pow(taudip_cst, 2) + Math.Pow(taustrike_cst, 2));
+                // If U is zero, V can also be calculated by taking the square of the normal and shear stress components acting on the fractures
+                // If U is not zero, we will have to calculate V by differentiating the expression for driving stress in terms of its three components sneff, taudip and taustrike
+                // NB the rate of change of driving stress may not be constant, since the shear displacement vector may change through time as the in situ stress changes
+                // Here we set V to the rate of change of driving stress at the start of the timestep
+                if ((float)U == 0f)
+                    V = Math.Sqrt(Math.Pow(sneff_var, 2) + Math.Pow(taudip_var, 2) + Math.Pow(taustrike_var, 2));
+                else
+                    V = ((sneff_cst * sneff_var) + (taudip_cst * taudip_var) + (taustrike_cst * taustrike_var)) / U;
+            }
+            // If initial normal stress on fracture is compressive, we must take into account friction
+            else
+            {
+                // For inclined closed (Mode 2) fractures, the driving stress will equal the shear stress on the fractures minus the frictional traction
+                // We must therefore start by calculating the magnitude of the shear stress in the direction of shear displacement (i.e. the maximum shear stress, tau)
+                // The initial shear stress (tau_cst) can be calculated by taking the root of the squares of the orthogonal strike and downdip shear stress components
+                double tau_cst = Math.Sqrt(Math.Pow(taudip_cst, 2) + Math.Pow(taustrike_cst, 2));
+                // If tau_cst is zero, the variable component of the maximum shear stress (tau_var) can also be calculated by taking the root of the squares of the orthogonal strike and downdip shear stress components
+                // If tau_cst is not zero, we will have to calculate tau_var by differentiating the expression for maximum shear stress in terms of its two components taudip and taustrike
+                // NB the rate of change of shear stress may not be constant, since the shear displacement vector may change through time as the in situ stress changes
+                // Here we set tau_var to the rate of change of shear stress at the start of the timestep
+                double tau_var = Math.Sqrt(Math.Pow(taudip_var, 2) + Math.Pow(taustrike_var, 2));
+                if ((float)tau_cst > (float)tau_var)
+                    tau_var = ((taudip_cst * taudip_var) + (taustrike_cst * taustrike_var)) / tau_cst;
+
+                // We also need to know the coefficient of friction on the fractures
+                double MuFr = gbc.MechProps.MuFr;
+
+                // We can now calculate U and V as the shear stress on the fractures minus the frictional traction
+                // NB the rate of change of driving stress may not be constant, since tau_var may change through time
+                // Here we set V to the rate of change of driving stress at the start of the timestep
+                U = tau_cst - (MuFr * sneff_cst);
+                V = tau_var - (MuFr * sneff_var);
+            }
+
+            // Set the constant and variable components of normal stress on the fracture in the current Fracture Calculation Data object
+            CurrentFractureData.SigmaNeff_Const_M = sneff_cst;
+            CurrentFractureData.SigmaNeff_Var_M = sneff_var;
+
+            // Now we can calculate the optimal timestep duration for this fracture set
+
+            // First we will calculate the time taken for the driving stress to reach zero (from either a positive or negative value) based on the rate of change of driving stress
+            // This will act as an upper bound to the timestep length
+            // If the driving stress is less than zero it will represent the time until the fracture set becomes active
+            // If the driving stress is greater than zero it will represent the time until the fracture set stops propagating
+            // This can only be calculated if the initial driving stress U is not zero and the rate of change of driving stress V is in the opposite direction to U
+            // In fact we compare the initial driving stress to the maximum rounding error, not zero, to determine if this is the case.
+            // This is because calculating the time required for driving stress to reach zero, multiplying it by horizontal strain rate to increment horizontal strain, and using new horizontal strain to calculate driving stress does not always give a driving stress = 0 (as it should).
+            // Sometimes due to rounding errors in the calculation, it generates a slightly negative driving stress. This can cause the calculation to get stuck in a loop, with no strain increments and no fracture growth, until the maximum number of timesteps is reached.
+            if ((Math.Abs(U) > PreviousFractureData.MaxDrivingStressRoundingError) && (Math.Sign(U) != Math.Sign(V)) && ((float)Math.Abs(V) > 0f))
+            {
+                // Calculating the time taken for the driving stress to reach zero for a fracture with shear displacement is more complicated than simply dividing the negative initial driving stress -U by the rate of change of driving stress V
+                // As we have noted previously, the rate of change of driving stress may itself change through time, as the shear displacement vector and in situ stress change
+                // We must therefore use a quadratic expression comprising the three orthogonal components of the stress acting on the fault: normal, shear in the direction of strike, and shear in the downdip direction
+                // The rates of change of these components do not change through time
+
+                // Calculate the multiplier for the normal stress component
+                double mufr_squared = Math.Pow(gbc.MechProps.MuFr, 2);
+
+                // Calculate the three quadratic terms
+                double a_term = Math.Pow(taustrike_var, 2) + Math.Pow(taudip_var, 2) - (mufr_squared * Math.Pow(sneff_var, 2));
+                double b_term = 2 * ((taustrike_cst * taustrike_var) + (taudip_cst * taudip_var) - (mufr_squared * sneff_cst * sneff_var));
+                double c_term = Math.Pow(taustrike_cst, 2) + Math.Pow(taudip_cst, 2) - (mufr_squared * Math.Pow(sneff_cst, 2));
+                double rootterm = Math.Sqrt(Math.Pow(b_term, 2) - (4 * a_term * c_term));
+
+                // Take the lowest positive root as the optimal timestep duration
+                // If U is negative and V is positive (i.e. the initial driving stress is negative but increasing) then at least one root should be positive
+                // However in case neither are, or the quadratic does not have real roots (i.e. rootterm is NaN) then we can approximate the optimal timestep duration by dividing the negative initial driving stress -U by the rate of change of driving stress V
+                double negativeroot = (-b_term - rootterm) / (2 * a_term);
+                double positiveroot = (-b_term + rootterm) / (2 * a_term);
+                double timeToSdZero;
+                if ((negativeroot > PreviousFractureData.MaxDrivingStressRoundingError) && (negativeroot < positiveroot))
+                    timeToSdZero = negativeroot;
+                else if (positiveroot > PreviousFractureData.MaxDrivingStressRoundingError)
+                    timeToSdZero = positiveroot;
+                else
+                    timeToSdZero = -U / V;
+                if (timeToSdZero < optdur)
+                    optdur = timeToSdZero;
+            }
+
+            // Next, we will calculate the time taken for the normal stress on the fracture to reach zero (from either a positive or negative value)
+            // This will act as an upper bound to the timestep length if it is less than the time taken for the driving stress to reach zero
+            // This represents the point at which the fracture will switch mode, from Mode 1 to Mode 2 or 3, or vice versa
+            // This can only happen if it is moving in the right direction, and is not already zero
+            if ((Math.Sign(sneff_cst) == -Math.Sign(sneff_var)) && ((float)sneff_cst != 0f) && ((float)sneff_var != 0f))
+            {
+                double timeToSneffZero = -(sneff_cst / sneff_var);
+                if (timeToSneffZero < optdur)
+                    optdur = timeToSneffZero;
+            }
+
+            // Finally, we will calculate a maximum timestep duration based on the rate of fracture growth, and the time taken for the largest fully active fractures to grow by the specified limit d_rmax
+            // This is only required if the fracture set is growing
+            // Otherwise we will return the upper bound to the duration (the time until fracture driving stress or normal stress reaches zero), or if this is not calculated, the default value infinity (no optimal duration calculated)
+            // If the initial driving stress is negative, there will be no fracture growth in this timestep so we cannot calculate an optimal duration
+            if (U < -PreviousFractureData.MaxDrivingStressRoundingError)
+            {
+                // Update the maximum driving stress rounding error
+                PreviousFractureData.UpdateMaxDrivingStressRoundingError(U);
+
+                // Since the initial driving stress is negative or zero throughout this timestep, we can set U and V to zero
+                U = 0;
+                V = 0;
+            }
+            // If the initial driving stress is zero and not increasing (i.e. U=0, V<=0), there will be no fracture growth in this timestep so we cannot calculate an optimal duration
+            else if ((U < PreviousFractureData.MaxDrivingStressRoundingError) && ((float)V <= 0f))
+            {
+                // If U is not quite zero due to rounding error, we must round it up to zero
+                // We can also set V to zero
+                U = 0;
+                V = 0;
+            }
+            // If the fracture set has been deactivated, there will be no fracture growth in this timestep so we cannot calculate an optimal duration
+            // Driving stress may still be positive however
+            else if (CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated)
+            {
+                // No calculation required
+            }
+            // If the initial driving stress is positive or zero, there will be no fracture growth in this timestep so the optimal timestep duration will be the estimated minimum time taken for the fracture set to grow by the specified limit dMFP33
+            // This can be calculated from the appropriate equations
+            else
+            {
+                // If U is less than zero due to rounding error, we must round it up to zero
+                if (U < 0) U = 0;
+
+                // Cache constants locally
+                double b = gbc.MechProps.b_factor;
+                double beta = gbc.MechProps.beta;
+                bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
+                double CapA = gbc.MechProps.CapA;
+                double Kc = gbc.MechProps.Kc;
+                double SqrtPi = Math.Sqrt(Math.PI);
+                double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+                double alpha = CapA * Math.Pow(sqrtpi_Kc_factor, b);
+
+                // Get current maximum fracture radius
+                // If the maximum fracture radius is zero we cannot calculate an optimal duration
+                double maxR = MaximumFractureRadius;
+                if (maxR > 0)
+                {
+                    double U_factor = Math.Pow(U, b + 1);
+                    double V_factor1 = -beta * (((1 + Math.Pow(d_rmax, 1 / beta)) * Math.Pow(maxR, 1 / beta)) / alpha);
+                    double V_factor2 = ((b + 1) * V_factor1) / Math.Pow(V, b);
+                    double UV_factor = U_factor + V_factor2;
+                    double timeTodRmax;
+
+                    // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
+                    if ((float)UV_factor > (float)U_factor)
+                    {
+                        // Use the formula for increasing stress to calculate optimal duration
+                        timeTodRmax = Math.Pow(UV_factor, 1 / (b + 1)) - (U / V);
+                    }
+                    else // In this case we can approximate V=0 and use the constant driving stress formula
+                    {
+                        // Use the formula for constant stress to calculate optimal duration, and set V to zero
+                        timeTodRmax = V_factor1 / Math.Pow(U, b);
+                        V = 0;
+                    }
+
+                    if (timeTodRmax < optdur)
+                        optdur = timeTodRmax;
+                }
+            }
+
+            // Set the constant and variable components of driving stress in the current Fracture Calculation Data object
+            CurrentFractureData.U_M = U;
+            CurrentFractureData.V_M = V;
+
+            // Recalculate the fracture driving stress vectors
+            if (U <= 0)
+            {
+                DrivingStressVector = new VectorXYZ(0, 0, 0);
+            }
+            else if (sneff_cst <= 0)
+            {
+                double oneMinusNur = 1 - gbc.MechProps.Nu_r;
+                DrivingStressVector = SigmaF_Const;
+            }
+            else
+            {
+                double oneMinusNur = 1 - gbc.MechProps.Nu_r;
+                double MuFr = gbc.MechProps.MuFr;
+                double sinpitch = VectorXYZ.Sin_trim(ShearStressPitch);
+                double cospitch = VectorXYZ.Cos_trim(ShearStressPitch);
+
+                DrivingStressVector = ((taudip_cst - (sinpitch * MuFr * sneff_cst)) * dipVector) + ((taustrike_cst - (cospitch * MuFr * sneff_cst)) * strikeVector);
+            }
+
+            // Return the calculated maximum duration
+            return optdur;
+        }
+        /// <summary>
+        /// Set the duration, driving stress and propagation rate data for the current timestep; this can only be done after U and V are set using the getOptimalDuration function
+        /// </summary>
+        /// <param name="CurrentTime_in">Time at start of timestep (s)</param>
+        /// <param name="TimestepDuration_in">Timestep duration (s)</param>
+        public void setTimestepPropagationData(double CurrentTime_in, double TimestepDuration_in)
+        {
+            // Get a reference to the mechanical property data object for the gridblock
+            MechanicalProperties MechProps = gbc.MechProps;
+
+            // Set the timestep start time
+            CurrentFractureData.M_StartTime = CurrentTime_in;
+
+            // Cache required mechanical properties locally
+            double CapA = MechProps.CapA;
+            double b = MechProps.b_factor;
+            double beta = MechProps.beta;
+            bType b_type = MechProps.GetbType();
+            bool bis2 = (b_type == bType.Equals2);
+            double Kc = MechProps.Kc;
+            double SqrtPi = Math.Sqrt(Math.PI);
+            double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+            //double alpha = CapA * Math.Pow(sqrtpi_Kc_factor, b);
+            // Flag to show that the fracture set has not been deactivated
+            bool FracturesActive = !(CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated);
+
+            // Set the flag for whether subcritical fracture propagation index b is less than, equal to or greater than 2
+            CurrentFractureData.M_bType = b_type;
+
+            // Cache constant and variable components of driving stress for this timestep locally
+            double U_M = CurrentFractureData.U_M;
+            double V_M = CurrentFractureData.V_M;
+
+            // Calculate weighted mean driving stress (Pa) and fracture propagation rate coefficient (gamma ^ 1/beta) during timestep M
+            // These will have default values of zero if there is no fracture propagation in this timestep
+            // Weighted mean driving stress during timestep M (Pa)
+            double mean_SigmaD_M = 0;
+            // Fracture propagation rate coefficient (gamma ^ 1/beta) - a helper function related to fracture propagation rate for timestep M 
+            // (alpha / |B|) * SigmaD^b (m^(1+b/2)/s) for b!=2; alpha * SigmaD^2 (m^2/s) for b=2
+            // This is the same for both constant and variable driving stress, but is calculated differently to optimise accuracy
+            double F_PropRate_Coefficient = 0;
+            if ((float)U_M >= 0f) // If the initial driving stress is less than zero, the mean driving stress for the timestep will be zero
+            {
+                // Calculate the final driving stress for the timestep
+                double final_SigmaD_M = U_M + (TimestepDuration_in * V_M);
+
+                if ((float)final_SigmaD_M == (float)U_M) // If the final driving stress is equal to the initial driving stress then assume the driving stress is constant; NB we check this rather than checking for V_M equals zero, as this will also pick up very short timesteps, where the change in driving stress during the timestep is negligible even though V_M > 0
+                {
+                    // To calculate alpha * SigmaDb_M, we divide mean_SigmaD_M by Kc before raising it to b, to avoid excessively large numbers
+                    mean_SigmaD_M = U_M;
+                    // We will only calculate the fracture propagation rate coefficient if the fractures are active
+                    if (FracturesActive)
+                    {
+                        F_PropRate_Coefficient = CapA * Math.Pow(sqrtpi_Kc_factor * mean_SigmaD_M, b);
+                        if (!bis2)
+                            F_PropRate_Coefficient /= Math.Abs(beta);
+                    }
+                }
+                else // If final driving stress is equal to the initial driving stress then the driving stress will vary through the timestep, so we must calculate a weighted mean
+                {
+                    // We will combine the U and V power terms with Kc to avoid getting extreme values when b is high
+                    double UV_U_term = (final_SigmaD_M < 0 ? 0 : (final_SigmaD_M * Math.Pow(sqrtpi_Kc_factor * final_SigmaD_M, b)) - (U_M * Math.Pow(sqrtpi_Kc_factor * U_M, b)));
+
+                    mean_SigmaD_M = Math.Pow(UV_U_term / ((b + 1) * V_M * TimestepDuration_in), 1 / b) / sqrtpi_Kc_factor;
+                    // We will only calculate the mean half-macrofracture propagation rate and microfracture propagation rate coefficient if the fractures are active
+                    if (FracturesActive)
+                    {
+                        F_PropRate_Coefficient = CapA * (UV_U_term / ((b + 1) * V_M * TimestepDuration_in));
+                        if (!bis2)
+                            F_PropRate_Coefficient /= Math.Abs(beta);
+                    }
+                }
+            }
+
+            // Set the timestep duration mean driving stress, mean macrofracture propagation rate and microfracture propagation rate coefficient (= gamma ^ 1/beta)
+            CurrentFractureData.SetDynamicData(TimestepDuration_in, mean_SigmaD_M, F_PropRate_Coefficient);
+        }
+
+        /// <summary>
+        /// Set the current fracture evolution stage to Deactivated
+        /// </summary>
+        private void deactivateFractures()
+        {
+            CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
+        }
+        /// <summary>
+        /// Check if the if the extrapolated initial radius of a fully active fracture with current radius r is zero or less (will only apply if b is less than 2)
+        /// </summary>
+        /// <param name="r">Current fracture radius</param>
+        /// <returns>True if initial fracture radius is zero or less; false if it is greater than zero or b is greater than or equal to 2</returns>
+        public bool Check_Initial_uF_Radius(double r)
+        {
+            double b = gbc.MechProps.b_factor;
+            if (b < 2)
+            {
+                double initial_minrb_minRad = Math.Pow(r, (2 - b) / 2) + CurrentFractureData.Cum_Gamma_M;
+                if (initial_minrb_minRad <= 0)
+                    return true;
+            }
+            return false;
+        }
 
         // Reset and data input functions
         /// <summary>
@@ -1239,7 +1652,7 @@ namespace DFMGenerator_SharedCode
             //MFDisplacementAdjustedDrivingStressVector = new VectorXYZ(0, 0, 0);
 
             // Calculate the initial compliance tensor base; NB we assume initial driving stress is zero
-            RecalculateComplianceTensorBase(false);
+            RecalculateComplianceTensorBase(false, false);
 
             // Reset implicit fracture population data
             resetFractureData((ushort) raysPerFracture_in, rmin_in, uFDistributionIn, B_in, c_in);
@@ -1249,6 +1662,9 @@ namespace DFMGenerator_SharedCode
             UniformAperture = UniformAperture_in;
             // Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier
             SizeDependentApertureMultiplier = SizeDependentApertureMultiplier_in;
+
+            // Set the maximum historic active fracture volumetric ratio to 0
+            max_historic_a_RP33 = 0;
         }
 
     }

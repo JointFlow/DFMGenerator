@@ -91,7 +91,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getFinalDrivingStressSigmaD(int Timestep_M) { return dataList[Timestep_M].Final_SigmaD_M; }
-        /*/// <summary>
+        /// <summary>
         /// Factor related to fracture propagation rate for timestep M: (A / |beta|) * ((2 sigmaD) / (Sqrt(Pi) * Kc)) ^ b (m^(1+b/2)/s) for b!=2; A * (4 * sigmaD^2) / (Pi * Kc^2) (m^2/s) for b=2
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
@@ -108,7 +108,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getCum_Gamma_M(int Timestep_M) { return dataList[Timestep_M].Cum_Gamma_M; }*/
+        public double getCum_Gamma_M(int Timestep_M) { return dataList[Timestep_M].Cum_Gamma_M; }
         /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
         /// </summary>

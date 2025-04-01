@@ -26,6 +26,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public FractureEvolutionStage EvolutionStage { get; private set; }
         /// <summary>
+        /// Flag for whether subcritical fracture propagation index b is less than, equal to or greater than 2; this will affect the calculation of gamma_Duration_M
+        /// </summary>
+        public bType M_bType { get; set; }
+        /// <summary>
         /// Constant component of effective normal stress on the fracture for timestep M
         /// </summary>
         public double SigmaNeff_Const_M { get; set; }
@@ -53,7 +57,7 @@ namespace DFMGenerator_SharedCode
         /// Mean driving stress at the end of timestep M (Pa)
         /// </summary>
         public double Final_SigmaD_M { get { return U_M + (V_M * M_Duration); } }
-        /*/// <summary>
+        /// <summary>
         /// Factor related to fracture propagation rate for timestep M: (A / |beta|) * ((2 sigmaD) / (Sqrt(Pi) * Kc)) ^ b (m^(1+b/2)/s) for b!=2; A * (4 * sigmaD^2) / (Pi * Kc^2) (m^2/s) for b=2
         /// </summary>
         public double gamma_InvBeta_M { get; private set; }
@@ -68,19 +72,19 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Cumulative value of gamma_InvBeta_K * K_duration in this gridblock for all timesteps K up to and including M (m^(1+b/2))
         /// </summary>
-        public double Cum_Gamma_M { get; set; }*/
-        /*/// <summary>
+        public double Cum_Gamma_M { get; set; }
+        /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at start of timestep M
         /// </summary>
-        public double theta_Mminus1 { get; private set; }*/
+        public double theta_Mminus1 { get; private set; }
         /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
         /// </summary>
         public double theta_M { get; private set; }
-        /*/// <summary>
+        /// <summary>
         /// Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at start of timestep M
         /// </summary>
-        public double theta_dashed_Mminus1 { get; private set; }*/
+        public double theta_dashed_Mminus1 { get; private set; }
         /// <summary>
         /// Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of timestep M
         /// </summary>
@@ -158,11 +162,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="duration_in">New timestep duration (s); set to -1 to keep current value</param>
         /// <param name="meanSigmaD_in">New mean driving stress (Pa); set to -1 to keep current value</param>
         /// <param name="gammaInvBeta_in">Microfracture propagation rate coefficient (= gamma ^ 1/beta)</param>
-        /// <param name="meanMFPropRate_in">Mean macrofracture propagation rate</param>
-        public void SetDynamicData(double duration_in, double meanSigmaD_in, double gammaInvBeta_in, double meanMFPropRate_in)
+        public void SetDynamicData(double duration_in, double meanSigmaD_in, double gammaInvBeta_in)
         {
             // Before updating the dynamic data for timestep M we must cache the cumulative data at the start of the timestep Cum_Gamma_Mminus1
-            //double temp_Cum_Gamma = Cum_Gamma_Mminus1;
+            double temp_Cum_Gamma = Cum_Gamma_Mminus1;
 
             // Set the new timestep duration - if input value <0 keep old data
             if (duration_in >= 0) M_Duration = duration_in;
@@ -171,10 +174,10 @@ namespace DFMGenerator_SharedCode
             if (meanSigmaD_in >= 0) Mean_SigmaD_M = meanSigmaD_in;
 
             // Set the mean fracture propagation rate coefficient
-            //gamma_InvBeta_M = gammaInvBeta_in;
+            gamma_InvBeta_M = gammaInvBeta_in;
 
             // Update the cumulative data for the start of this timestep; the FractureCalculationData object will then automatically calculate the cumulative data for the end of this timestep
-            //Cum_Gamma_Mminus1 = temp_Cum_Gamma;
+            Cum_Gamma_Mminus1 = temp_Cum_Gamma;
         }
         /// <summary>
         /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, RP32 and RP33 at the end of the timestep
@@ -185,7 +188,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="sIJ_RP30_in">Volumetric density of static rays terminated due to intersection (sIJ_RP30) at end of timestep M</param>
         /// <param name="Total_RP32_in">Total mean linear density of rays (Total_RP32) at end of timestep M</param>
         /// <param name="Total_RP33_in">Total volumetric ratio of rays (Total_RP33) at end of timestep M</param>
-        public void SetMacrofractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double Total_RP32_in, double Total_RP33_in)
+        public void SetFractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double Total_RP32_in, double Total_RP33_in)
         {
             // Set the new values for all ray densities at the end of the timestep
             a_RP30_M = a_RP30_in;
@@ -352,13 +355,13 @@ namespace DFMGenerator_SharedCode
             // Equivalent mean driving stress during timestep M (Pa): set to 0
             nextTimestepData.Mean_SigmaD_M = 0;
             // Helper function related to fracture propagation rate for timestep M: set to 0
-            //nextTimestepData.gamma_InvBeta_M = 0;
+            nextTimestepData.gamma_InvBeta_M = 0;
             // Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active at start of timestep M: set to the same value as that at the end of the timestep
             // Mean_qiI_M will therefore be 0
-            //nextTimestepData.theta_Mminus1 = theta_M;
+            nextTimestepData.theta_Mminus1 = theta_M;
             // Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone at start of timestep M: set to the same value as that at the end of the timestep
             // Mean_qiI_dashed_M will therefore be 0
-            //nextTimestepData.theta_dashed_Mminus1 = theta_dashed_M;
+            nextTimestepData.theta_dashed_Mminus1 = theta_dashed_M;
             // Volumetric density of all active rays: does not change
             // Volumetric density of all restricted rays: does not change
             // Volumetric density of all static rays terminated due to stress shadow interaction: does not change
@@ -383,6 +386,8 @@ namespace DFMGenerator_SharedCode
             M_Duration = 0;
             // Flag for the current stage of evolution of the fracture set: set to NotActivated
             EvolutionStage = FractureEvolutionStage.NotActivated;
+            // Flag for whether subcritical fracture propagation index b is less than, equal to or greater than 2
+            M_bType = bType.GreaterThan2;
             // Constant component of effective normal stress on the fracture for timestep M
             SigmaNeff_Const_M = 0;
             // Variable component of effective normal stress on the fracture for timestep M
@@ -394,15 +399,15 @@ namespace DFMGenerator_SharedCode
             // Equivalent mean driving stress during timestep M (Pa)
             Mean_SigmaD_M = 0;
             // Helper function related to fracture propagation rate for timestep M: (A / |B|) * ((2 sigmaD) / (Sqrt(Pi) * Kc)) ^ b (m^(1+b/2)/s) for b<>2; A * (4 * sigmaD^2) / (Pi * Kc^2) (m^2/s) for b=2
-            //gamma_InvBeta_M = 0;
+            gamma_InvBeta_M = 0;
             // Cumulative value of gamma_InvBeta_K * K_duration in this gridblock for all timesteps K up to and including M (m^(1+b/2))
-            //Cum_Gamma_M = 0;
+            Cum_Gamma_M = 0;
             // Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at start of timestep M
-            //theta_Mminus1 = 1;
+            theta_Mminus1 = 1;
             // Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
             theta_M = 1;
             // Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at start of timestep M
-            //theta_dashed_Mminus1 = 1;
+            theta_dashed_Mminus1 = 1;
             // Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of timestep M
             theta_dashed_M = 1;
             // Volumetric density of all fully active rays
@@ -455,6 +460,8 @@ namespace DFMGenerator_SharedCode
             M_Duration = fcd_in.M_Duration;
             // Flag for the current stage of evolution of the fracture set
             EvolutionStage = fcd_in.EvolutionStage;
+            // Flag for whether subcritical fracture propagation index b is less than, equal to or greater than 2
+            M_bType = fcd_in.M_bType;
             // Constant component of effective normal stress on the fracture for timestep M
             SigmaNeff_Const_M = fcd_in.SigmaNeff_Const_M;
             // Variable component of effective normal stress on the fracture for timestep M
@@ -466,15 +473,15 @@ namespace DFMGenerator_SharedCode
             // Equivalent mean driving stress during timestep M (Pa)
             Mean_SigmaD_M = fcd_in.Mean_SigmaD_M;
             // Helper function related to fracture propagation rate for timestep M: (A / |B|) * ((2 sigmaD) / (Sqrt(Pi) * Kc)) ^ b (m^(1+b/2)/s) for b<>2; A * (4 * sigmaD^2) / (Pi * Kc^2) (m^2/s) for b=2
-            //gamma_InvBeta_M = fcd_in.gamma_InvBeta_M;
+            gamma_InvBeta_M = fcd_in.gamma_InvBeta_M;
             // Cumulative value of gamma_InvBeta_K * K_duration in this gridblock for all timesteps K up to and including M (m^(1+b/2))
-            //Cum_Gamma_M = fcd_in.Cum_Gamma_M;
+            Cum_Gamma_M = fcd_in.Cum_Gamma_M;
             // Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at start of timestep M
-            //theta_Mminus1 = fcd_in.theta_Mminus1;
+            theta_Mminus1 = fcd_in.theta_Mminus1;
             // Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
             theta_M = fcd_in.theta_M;
             // Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at start of timestep M
-            //theta_dashed_Mminus1 = fcd_in.theta_dashed_Mminus1;
+            theta_dashed_Mminus1 = fcd_in.theta_dashed_Mminus1;
             // Clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of timestep M
             theta_dashed_M = fcd_in.theta_dashed_M;
             // Volumetric density of all fully active rays
