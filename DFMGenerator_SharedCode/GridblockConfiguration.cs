@@ -3549,7 +3549,7 @@ namespace DFMGenerator_SharedCode
                     AllSetsDeactivated = true;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
-                        AllSetsDeactivated = AllSetsDeactivated && fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                        AllSetsDeactivated = AllSetsDeactivated & fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
                     }
 
                     // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
