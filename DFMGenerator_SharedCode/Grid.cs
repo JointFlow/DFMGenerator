@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Set this flag to output a list of gridblocks when calculating the implicit and explicit fracture populations
+// Use for debugging only; will significantly increase runtime
+#define LOGGRIDBLOCKS
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -93,6 +97,17 @@ namespace DFMGenerator_SharedCode
         /// <param name="progressReporter">Reference to a progress reporter - can be any object implementing the IProgressReporterWrapper interface</param>
         public void CalculateAllFractureData(IProgressReporterWrapper progressReporter)
         {
+#if LOGGRIDBLOCKS
+            // If the output folder does not exist, create it
+            string logFolderPath = DFNControl.FolderPath;
+            if (!Directory.Exists(logFolderPath))
+                Directory.CreateDirectory(logFolderPath);
+            // Open the log file
+            string logFileName = string.Format("ImplicitCalculation_LogFile.txt");
+            String logFileNameComb = logFolderPath + logFileName;
+            StreamWriter logFile = new StreamWriter(logFileNameComb);
+#endif
+
             // Reset the counter for the number of gridblocks in which the timestep limit is hit and the number of exceptions thrown
             HitTimestepLimit = 0;
             ImplicitCalculationException = 0;
@@ -144,6 +159,11 @@ namespace DFMGenerator_SharedCode
                         try
 #endif
                         {
+#if LOGGRIDBLOCKS
+                            // Write next gridblock details to logfile
+                            string nextGridBlockLabel = string.Format("Launching Gridblock.CalculateFractureData() for gridblock {0},{1} at real time {2}", ColNo, RowNo, DateTime.Now);
+                            logFile.WriteLine(nextGridBlockLabel);
+#endif
                             // Run the calculation function for the specified gridblock and get the return code
                             CalculateFractureDataReturnCode calculateDataReturnCode = Gridblock.CalculateFractureData();
                             if (calculateDataReturnCode == CalculateFractureDataReturnCode.TimestepLimitExceeded)
@@ -171,6 +191,11 @@ namespace DFMGenerator_SharedCode
                 string timestepLimitMessage = string.Format("Timestep limit was reached in {0} out of {1} gridblocks.", HitTimestepLimit, NoGridblocksCalculated);
                 progressReporter.OutputMessage(timestepLimitMessage);
             }
+
+#if LOGGRIDBLOCKS
+            // Close the log file
+            logFile.Close();
+#endif
         }
         /// <summary>
         /// Generate a global DFN based on based on existing Grid.DFNControl object, without updating progress
@@ -700,6 +725,17 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if the end of the GridblockTimestepControl list has been reached, otherwise false</returns>
         private bool PropagateLocalDFNs(ref int currentCalculationElement, int endCalculationElement, List<GridblockTimestepControl> timestepList, IProgressReporterWrapper progressReporter)
         {
+#if LOGGRIDBLOCKS
+            // If the output folder does not exist, create it
+            string logFolderPath = DFNControl.FolderPath;
+            if (!Directory.Exists(logFolderPath))
+                Directory.CreateDirectory(logFolderPath);
+            // Open the log file
+            string logFileName = string.Format("ExplicitCalculation_LogFile_Element_{0}_to_{1}.txt", currentCalculationElement, endCalculationElement);
+            String logFileNameComb = logFolderPath + logFileName;
+            StreamWriter logFile = new StreamWriter(logFileNameComb);
+#endif
+
             // If the supplied progress reporter is null, create a new DefaultProgressReporter object (this will not actually report any progress)
             if (progressReporter == null)
                 progressReporter = new DefaultProgressReporter();
@@ -737,6 +773,11 @@ namespace DFMGenerator_SharedCode
                 {
                     if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     {
+#if LOGGRIDBLOCKS
+                        // Write next gridblock details to logfile
+                        string nextGridBlockLabel = string.Format("Launching Gridblock.PropagateDFN() for gridblock at {0},{1} TS {2} at real time {3}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo, DateTime.Now);
+                        logFile.WriteLine(nextGridBlockLabel);
+#endif
                         PropagateDFNReturnCode DFNReturnCode = nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
                         switch (DFNReturnCode)
                         {
@@ -774,6 +815,11 @@ namespace DFMGenerator_SharedCode
             if (currentTime >= 0)
                 CurrentDFN.updateDFN(currentTime);
 
+#if LOGGRIDBLOCKS
+            // Close the log file
+            logFile.Close();
+#endif
+
             // Return true if we have reached the end of the GridblockTimestepControl list, otherwise return false
             return (currentCalculationElement > lastCalculationElement);
         }
@@ -787,6 +833,17 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if the end of the GridblockTimestepControl list has been reached, otherwise false</returns>
         private bool PropagateLocalDFNs(ref int currentCalculationElement, double endTime, List<GridblockTimestepControl> timestepList, IProgressReporterWrapper progressReporter)
         {
+#if LOGGRIDBLOCKS
+            // If the output folder does not exist, create it
+            string logFolderPath = DFNControl.FolderPath;
+            if (!Directory.Exists(logFolderPath))
+                Directory.CreateDirectory(logFolderPath);
+            // Open the log file
+            string logFileName = string.Format("ExplicitCalculation_LogFile_Element_{0}_to_{1}s.txt", currentCalculationElement, endTime);
+            String logFileNameComb = logFolderPath + logFileName;
+            StreamWriter logFile = new StreamWriter(logFileNameComb);
+#endif
+
             // If the supplied progress reporter is null, create a new DefaultProgressReporter object (this will not actually report any progress)
             if (progressReporter == null)
                 progressReporter = new DefaultProgressReporter();
@@ -823,6 +880,11 @@ namespace DFMGenerator_SharedCode
                 {
                     if (nextTimestep.Gridblock.ThicknessAtDeformation > minLayerThickness)
                     {
+#if LOGGRIDBLOCKS
+                        // Write next gridblock details to logfile
+                        string nextGridBlockLabel = string.Format("Launching Gridblock.PropagateDFN() for gridblock at {0},{1} TS {2} at real time {3}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.TimestepNo, DateTime.Now);
+                        logFile.WriteLine(nextGridBlockLabel);
+#endif
                         PropagateDFNReturnCode DFNReturnCode = nextTimestep.Gridblock.PropagateDFN(CurrentDFN, DFNControl);
                         switch (DFNReturnCode)
                         {
@@ -859,6 +921,11 @@ namespace DFMGenerator_SharedCode
             // If we have run any calculations, regenerate the fractures in the global DFN
             if (currentTime >= 0)
                 CurrentDFN.updateDFN(endTime);
+
+#if LOGGRIDBLOCKS
+            // Close the log file
+            logFile.Close();
+#endif
 
             // Return true if we have reached the end of the GridblockTimestepControl list, otherwise return false
             return (currentCalculationElement > lastCalculationElement);

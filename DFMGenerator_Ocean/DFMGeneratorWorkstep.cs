@@ -6981,7 +6981,7 @@ namespace DFMGenerator_Ocean
             private int argument_DeformationEpisodeTimeUnits = 2;
             private double argument_EhminAzi_default = 0;
             private Droid argument_EhminAzi;
-            private double argument_EhminRate_default = -0.01;
+            private double argument_EhminRate_default = 0;
             private Droid argument_EhminRate;
             private double argument_EhmaxRate_default = 0;
             private Droid argument_EhmaxRate;
@@ -11098,7 +11098,7 @@ namespace DFMGenerator_Ocean
                 argument_DeformationEpisodeTimeUnits = 2;
                 argument_EhminAzi_default = 0;
                 argument_EhminAzi = null;
-                argument_EhminRate_default = -0.01;
+                argument_EhminRate_default = 0;
                 argument_EhminRate = null;
                 argument_EhmaxRate_default = 0;
                 argument_EhmaxRate = null;
