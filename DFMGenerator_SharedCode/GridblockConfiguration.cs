@@ -1384,6 +1384,8 @@ namespace DFMGenerator_SharedCode
         /// Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax
         /// </summary>
         public int NoFractureSets { get; private set; }
+
+        public int NoUnconfinedSets { get { return UnconfinedFractureSets.Count; } }
         /// <summary>
         /// Index number of the fracture set perpendicular to HMin
         /// </summary>
@@ -3074,6 +3076,7 @@ namespace DFMGenerator_SharedCode
                 string headerLine2 = "\t\t\t\t\t\t\t";
                 string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
                 string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tClear zone volume\t";
+                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tStress shadow volume\tClear zone volume\t";
 #if LOGDFNPOP
                 headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\t{1}\t{2}\t{3}\t{4}\t", timeUnits, "Sigma_eff.XX", "Sigma_eff.YY", "Sigma_eff.XY", "Sigma_eff.ZZ");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
@@ -3097,6 +3100,14 @@ namespace DFMGenerator_SharedCode
                         headerLine2 += FSheader2;
                         TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                     }
+                }
+                for (int ufs_index = 0; ufs_index < NoUnconfinedSets; ufs_index++)
+                {
+                    UnconfinedFractureSet ufs = UnconfinedFractureSets[ufs_index];
+                    string setLabel = string.Format("Unconfined set {0}: Strike {1} Dip {2}", ufs_index, (int)(ufs.Strike * 180 / Math.PI), (int)(ufs.Dip * 180 / Math.PI));
+                    headerLine1 += setLabel + FSheader1;
+                    headerLine2 += FSheader3;
+                    TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                 }
                 if (CalculateFracturePorosity)
                 {
@@ -3362,7 +3373,7 @@ namespace DFMGenerator_SharedCode
                             fds.RecalculateElasticResponse(StressStrain.Sigma_eff);
                         }
                     }
-                    foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         ufs.RecalculateElasticResponse(StressStrain.Sigma_eff);
                     }
@@ -3547,7 +3558,7 @@ namespace DFMGenerator_SharedCode
                             fds.setTimestepData();
                         }
                     }
-                    foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         ufs.setTimestepData();
                     }
@@ -3569,11 +3580,11 @@ namespace DFMGenerator_SharedCode
                     AllSetsDeactivated = true;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
-                        AllSetsDeactivated = AllSetsDeactivated & fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                        AllSetsDeactivated &= fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
                     }
-                    foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
-                        AllSetsDeactivated = AllSetsDeactivated & ufs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume);
+                        AllSetsDeactivated &= ufs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume);
                     }
 
                     // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
@@ -3632,6 +3643,10 @@ namespace DFMGenerator_SharedCode
                             fds.setMacrofractureDeactivationRate();
                         }
                     }
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        ufs.setFractureDeactivationRate();
+                    }
 
                     // Calculate the total half-macrofracture population data for this timestep for each fracture dip set
                     foreach (Gridblock_FractureSet fs in FractureSets)
@@ -3640,6 +3655,10 @@ namespace DFMGenerator_SharedCode
                         {
                             fds.calculateTotalMacrofracturePopulation();
                         }
+                    }
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        ufs.updateTotalFracturePopulation();
                     }
 
                     // Update the macrofracture termination array
@@ -3655,6 +3674,10 @@ namespace DFMGenerator_SharedCode
                             fds.setMacrofractureDensityData();
                         }
                         fs.calculateMacrofractureSpacingDistributionData();
+                    }
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        ufs.setFractureExclusionZoneData();
                     }
 
                     // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
@@ -3767,6 +3790,15 @@ namespace DFMGenerator_SharedCode
 #endif
                                 timestepData = timestepData + fractureSetData;
                             }
+                        }
+                        // Write data for each unconfined fracture set
+                        foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        {
+                            // Get fracture data and add to timestep log string
+                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP30_total(), ufs.r_RP30_total(), ufs.sII_RP30_total(), ufs.sIJ_RP30_total(),
+                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), 1-ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+
+                            timestepData = timestepData + fractureSetData;
                         }
 
                         // If required, write the fracture porosity data
@@ -6084,9 +6116,6 @@ namespace DFMGenerator_SharedCode
             // Clear all existing data
             ClearFractureData();
 
-            // Reset the number of fracture sets
-            NoFractureSets = 0;
-
             // Create a list of fracture dips
             List<double> dips = new List<double>();
             // Add a vertical dip
@@ -6104,22 +6133,20 @@ namespace DFMGenerator_SharedCode
             double minRadius = PropControl.minImplicitMicrofractureRadius;
 
             // Create new fracture sets
-            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+            for (int fs_index = 0; fs_index < NoStrikeSets_in; fs_index++)
             {
-                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets));
+                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoStrikeSets_in));
 
                 foreach(double dip in dips)
                 {
                     UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, noRays, minRadius, InitialFractureDistribution.PowerLaw, B_in, c_in);
                     UnconfinedFractureSets.Add(new_FractureSet);
-                    NoFractureSets++;
                 }
             }
             // Create a horizontal fracture set
             {
                 UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, noRays, minRadius, InitialFractureDistribution.PowerLaw, B_in, c_in);
                 UnconfinedFractureSets.Add(new_FractureSet);
-                NoFractureSets++;
             }
         }
         /// <summary>

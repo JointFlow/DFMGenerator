@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace DFMGenerator_SharedCode
 {
@@ -15,7 +16,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private GridblockConfiguration gbc;
 
-        // Local copies centrepoints of corner pillars in fracture set (IJK) coordinates
+        /*// Local copies centrepoints of corner pillars in fracture set (IJK) coordinates
         // NB these are stored as hard variables to reduce calculation time when propagating fractures, so must be recalculated whenever fracture orientation or gridblock geometry is reset
         /// <summary>
         /// Local IJK coordinates of the southwest corner of the vertical centre of the gridblock
@@ -75,7 +76,7 @@ namespace DFMGenerator_SharedCode
                     if (MaxJ < cornerPoint.J) MaxJ = cornerPoint.J;
                 }
             }
-        }
+        }*/
 
         // Geometric data and functions
         /// <summary>
@@ -111,9 +112,13 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private VectorXYZ normalVector;
         /// <summary>
+        /// Array of vectors representing the fracture rays
+        /// </summary>
+        private VectorXYZ[] rayVectors;
+        /// <summary>
         /// Strike of fracture set (radians); positive in the IPlus direction
         /// </summary>
-        public double Strike { get { return strike; } private set { while (value >= (2 * Math.PI)) value -= (2 * Math.PI); while (value < 0) value += (2 * Math.PI); strike = value; strikeVector = VectorXYZ.GetLineVector(value, 0); azimuthVector = VectorXYZ.GetLineVector(value + (Math.PI / 2), 0); setCornerPoints(); } }
+        public double Strike { get { return strike; } private set { while (value >= (2 * Math.PI)) value -= (2 * Math.PI); while (value < 0) value += (2 * Math.PI); strike = value; strikeVector = VectorXYZ.GetLineVector(value, 0); azimuthVector = VectorXYZ.GetLineVector(value + (Math.PI / 2), 0); } }
         /// <summary>
         /// Azimuth of fracture set (radians); positive in the JPlus direction
         /// </summary>
@@ -161,10 +166,14 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public VectorXYZ AzimuthVector { get { return new VectorXYZ(azimuthVector); } }
         /// <summary>
+        /// Array of vectors representing the fracture rays
+        /// </summary>
+        public VectorXYZ[] RayVectors { get { VectorXYZ[] output = (VectorXYZ[])rayVectors.Clone(); for (int rayNo = 0; rayNo < output.Length; rayNo++) output[rayNo] = new VectorXYZ(rayVectors[rayNo]); return output; } }
+        /// <summary>
         /// StressDistribution object describing the spatial distribution of the fractures: EvenlyDistributedStress gives a random fracture distribution, StressShadow and DuctileBoundary gives a regular spacing
         /// </summary>
         public StressDistribution FractureDistribution { get; set; }
-        /// <summary>
+        /*/// <summary>
         /// Calculate the I coordinate (relative to fracture strike) of a point in grid (XYZ) coordinates
         /// </summary>
         /// <param name="point_in">Input point in XYZ coordinates</param>
@@ -439,7 +448,7 @@ namespace DFMGenerator_SharedCode
 
             // Return the new point
             return nucleationPoint;
-        }
+        }*/
 
         // Fracture distribution control data
         /// <summary>
@@ -521,6 +530,90 @@ namespace DFMGenerator_SharedCode
         /// Flag to deactivate the fracture set at the start of the next timestep
         /// </summary>
         private bool DeactivateNextTimestep;
+
+        // Functions to return data for the current timestep from the CurrentFractureData object
+        /// <summary>
+        /// Flag for the current stage of evolution of the fracture dip set
+        /// </summary>
+        /// <returns></returns>
+        public FractureEvolutionStage getEvolutionStage() { return CurrentFractureData.EvolutionStage; }
+        /// <summary>
+        /// Effective normal stress on the fracture at the end of the current timestep (Pa)
+        /// </summary>
+        /// <returns></returns>
+        public double getFinalEffectiveNormalStress() { return CurrentFractureData.SigmaNeff_Final_M; }
+        /// <summary>
+        /// Driving stress at the start of the current timestep U (Pa) 
+        /// </summary>
+        /// <returns></returns>
+        public double getConstantDrivingStressU() { return CurrentFractureData.U_M; }
+        /// <summary>
+        /// Rate of increase of driving stress during the current timestep V (Pa/s)
+        /// </summary>
+        /// <returns></returns>
+        public double getVariableDrivingStressV() { return CurrentFractureData.V_M; }
+        /// <summary>
+        /// Weighted mean driving stress during the current timestep (Pa)
+        /// </summary>
+        /// <returns></returns>
+        public double getMeanDrivingStressSigmaD() { return CurrentFractureData.Mean_SigmaD_M; }
+        /// <summary>
+        /// Driving stress at the end of the current timestep (Pa)
+        /// </summary>
+        /// <returns></returns>
+        public double getFinalDrivingStressSigmaD() { return CurrentFractureData.Final_SigmaD_M; }
+        /// <summary>
+        /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getInverseStressShadowVolume() { return CurrentFractureData.theta_M; }
+        /// <summary>
+        /// Clear zone volume (1 - Chi), i.e. cumulative probability that a macrofracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getClearZoneVolume() { return CurrentFractureData.theta_dashed_M; }
+
+        // Functions to get total population data for all fractures in the dipset
+        /// <summary>
+        /// Total volumetric density of fully active fracture segments
+        /// </summary>
+        /// <returns></returns>
+        public double a_RP30_total() { return Fractures.a_RP30_total; }
+        /// <summary>
+        /// Total volumetric density of restricted fracture segments
+        /// </summary>
+        /// <returns></returns>
+        public double r_RP30_total() { return Fractures.r_RP30_total; }
+        /// <summary>
+        /// Total volumetric density of fracture segments deactivated due to stress shadow interaction
+        /// </summary>
+        /// <returns></returns>
+        public double sII_RP30_total() { return Fractures.sII_RP30_total; }
+        /// <summary>
+        /// Total volumetric density of fracture segments deactivated due to intersection
+        /// </summary>
+        /// <returns></returns>
+        public double sIJ_RP30_total() { return Fractures.sIJ_RP30_total; }
+        /// <summary>
+        /// Total mean linear density of fully active fracture segments
+        /// </summary>
+        /// <returns></returns>
+        public double a_RP32_total() { return Fractures.a_RP32_total; }
+        /// <summary>
+        /// Total mean linear density of restricted fracture segments
+        /// </summary>
+        /// <returns></returns>
+        public double r_RP32_total() { return Fractures.r_RP32_total; }
+        /// <summary>
+        /// Total mean linear density of fracture segments deactivated due to stress shadow interaction
+        /// </summary>
+        /// <returns></returns>
+        public double sII_RP32_total() { return Fractures.sII_RP32_total; }
+        /// <summary>
+        /// Total mean linear density of fracture segments deactivated due to intersection
+        /// </summary>
+        /// <returns></returns>
+        public double sIJ_RP32_total() { return Fractures.sIJ_RP32_total; }
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
         // NB fracture aperture control data for dynamic and Barton-Bandis aperture are independent of dip set, so are contained in the MechanicalProperties object for the gridblock
@@ -1189,7 +1282,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // If the clear zone volume for nucleating fractures has dropped below the minimum specified, set the fracture deactivation flag to true
-            if (Fractures.getClearZoneVolume(MinimumFractureRadius) < minimum_ClearZone_Volume)
+            if (CurrentFractureData.theta_dashed_M < minimum_ClearZone_Volume)
             {
                 deactivateFractureSet = true;
             }
@@ -1493,6 +1586,7 @@ namespace DFMGenerator_SharedCode
             // (alpha / |B|) * SigmaD^b (m^(1+b/2)/s) for b!=2; alpha * SigmaD^2 (m^2/s) for b=2
             // This is the same for both constant and variable driving stress, but is calculated differently to optimise accuracy
             double F_PropRate_Coefficient = 0;
+            double F_PropRate_Coefficient_time = 0;
             if ((float)U_M >= 0f) // If the initial driving stress is less than zero, the mean driving stress for the timestep will be zero
             {
                 // Calculate the final driving stress for the timestep
@@ -1506,8 +1600,12 @@ namespace DFMGenerator_SharedCode
                     if (FracturesActive)
                     {
                         F_PropRate_Coefficient = CapA * Math.Pow(sqrtpi_Kc_factor * mean_SigmaD_M, b);
+                        F_PropRate_Coefficient_time = F_PropRate_Coefficient * TimestepDuration_in;
                         if (!bis2)
+                        {
                             F_PropRate_Coefficient /= Math.Abs(beta);
+                            F_PropRate_Coefficient_time /= beta;
+                        }
                     }
                 }
                 else // If final driving stress is equal to the initial driving stress then the driving stress will vary through the timestep, so we must calculate a weighted mean
@@ -1519,15 +1617,179 @@ namespace DFMGenerator_SharedCode
                     // We will only calculate the mean half-macrofracture propagation rate and microfracture propagation rate coefficient if the fractures are active
                     if (FracturesActive)
                     {
-                        F_PropRate_Coefficient = CapA * (UV_U_term / ((b + 1) * V_M * TimestepDuration_in));
+                        F_PropRate_Coefficient_time = CapA * (UV_U_term / ((b + 1) * V_M));
+                        F_PropRate_Coefficient = F_PropRate_Coefficient_time / TimestepDuration_in;
                         if (!bis2)
+                        {
                             F_PropRate_Coefficient /= Math.Abs(beta);
+                            F_PropRate_Coefficient_time /= beta;
+                        }
                     }
                 }
             }
 
+            // Set the growth rates for all fully active datapoints
+            foreach (ImplicitFracturePopulationDatapoint activeFracturePopulationDatapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
+            {
+                double initialR = activeFracturePopulationDatapoint.RayLength;
+                double finalR = bis2 ? (initialR * Math.Exp(F_PropRate_Coefficient_time)) : Math.Pow(Math.Pow(initialR, 1 / beta) + F_PropRate_Coefficient_time, beta);
+                activeFracturePopulationDatapoint.RayLengthIncrement = (finalR - initialR);
+            }
+
+            // Set the growth rates for all restricted datapoints
+            foreach (ImplicitFracturePopulationDatapoint restrictedFracturePopulationDatapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
+            {
+                double initialR = restrictedFracturePopulationDatapoint.RayLength;
+                double initialReff = restrictedFracturePopulationDatapoint.EffectiveRayLength;
+                double initialRc = restrictedFracturePopulationDatapoint.PropagationControllingLength;
+                double finalR = bis2 ? (2 * initialReff * Math.Exp(F_PropRate_Coefficient_time / 2)) - initialRc : (2 * Math.Pow(Math.Pow(initialReff, 1 / beta) + (F_PropRate_Coefficient_time / 2), beta)) - initialRc;
+                restrictedFracturePopulationDatapoint.RayLengthIncrement = (finalR - initialR);
+            }
+
             // Set the timestep duration mean driving stress, mean macrofracture propagation rate and microfracture propagation rate coefficient (= gamma ^ 1/beta)
             CurrentFractureData.SetDynamicData(TimestepDuration_in, mean_SigmaD_M, F_PropRate_Coefficient);
+
+            // Add a new fully active datapoint representing fractures nucleating in this timestep
+            Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Add(getNucleatingFractures());
+        }
+        /// <summary>
+        /// Get a fracture population datapoint representing the new fractures nucleating during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        private ImplicitFracturePopulationDatapoint getNucleatingFractures()
+        {
+            double beta = gbc.MechProps.beta;
+            bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
+            double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
+            double cumGammaRmin_N = rmin_beta + CurrentFractureData.Cum_Gamma_M;
+            double cumGammaRmin_Nminus1 = rmin_beta + CurrentFractureData.Cum_Gamma_Mminus1;
+
+            // Get the initial and final volumetric density of fractures with radius > rmin for the current timestep, ignoring stress shadows
+            // For now we will assume a power law initial microfracture distribution - however this could be changed
+            double dMFP30;
+            // Power law initial microfracture distribution
+            {
+                // betac_factor is -beta*c if b<>2, -c if b=2
+                double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
+                dMFP30 = CapB * (bis2 ? Math.Exp(cumGammaRmin_N * betac_factor) - Math.Exp(cumGammaRmin_Nminus1 * betac_factor) : Math.Pow(cumGammaRmin_N, betac_factor) - Math.Pow(cumGammaRmin_Nminus1, betac_factor));
+            }
+
+            // Multiply the volumetric density increment by the total clear zone volume seen by fully active fractures with minimum radius
+            // This will correct for fractures nucleating in an exclusion zone
+            dMFP30 *= CurrentFractureData.theta_dashed_Mminus1;
+
+            // Multiply by the number of rays per fracture to get the volumetric density of rays
+            double dRP30 = dMFP30 * (double)RaysPerFracture;
+
+            // Create a new datapoint and return it
+            return new ImplicitFracturePopulationDatapoint(MinimumFractureRadius, dRP30);
+        }
+        /// <summary>
+        /// Calculate the probability of deactivation for fractures represented by each of the datapoints, and implement the deactivation
+        /// </summary>
+        public void setFractureDeactivationRate()
+        {
+            // Create an array for the orientation multipliers for the weighted mean linear density of fractures from other sets seen by rays from this set
+            int noSets = gbc.UnconfinedFractureSets.Count;
+            double[,] orientationMultipliers = new double[noSets, RaysPerFracture];
+            for (int setNo = 0; setNo < noSets; setNo++)
+            {
+                UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
+                for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
+                    orientationMultipliers[setNo, rayNo] = (ufs.normalVector & this.rayVectors[rayNo]) / (double)RaysPerFracture;
+            }
+
+            // Cache the stress shadow width ratio locally
+            double stressShadowWidthRatio = Max_F_StressShadowWidth_r;
+
+            // Loop through all restricted datapoints, calculating deactivation rates due to stress shadow interaction and intersection
+            // We will calculate the restricted datapoints before the fullay active ones, as the deactivation of fully active fractures will create new restircted fractures
+            foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
+            {
+                // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
+                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
+                double minStressShadowInteractionRadius = gbc.PropControl.MinStressShadowDeactivationRatio * datapoint.EffectiveRayLength;
+                double phiII = Fractures.getStressShadowNonInteractionVolume(datapoint, minStressShadowInteractionRadius, stressShadowWidthRatio);
+
+                // Get the probability that a fracture represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
+                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
+                double mean_apparent_P32 = 0;
+                double minIntersectionRadius = gbc.PropControl.MinIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
+                for (int setNo = 0; setNo < noSets; setNo++)
+                {
+                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
+                    for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
+                        mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
+                }
+                double phiIJ = Math.Exp(-mean_apparent_P32 * datapoint.RayLengthIncrement);
+
+                // Calculate the probability that this ray will be deactivated due to stress shadow interaction and due to intersection during this timestep
+                // This function will also reduce the volumetric density for the datapoint proportionally
+                ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays(phiII, phiIJ);
+
+                // Add the new datapoints to the appropriate arrays
+                if (newdatapoints.Length == 2)
+                {
+                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[0]);
+                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[1]);
+                }
+            }
+
+            // Loop through all fully active datapoints, calculating deactivation rates due to stress shadow interaction and intersection
+            foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
+            {
+                // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
+                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
+                double minStressShadowInteractionRadius = gbc.PropControl.MinStressShadowDeactivationRatio * datapoint.EffectiveRayLength;
+                double phiII = Fractures.getStressShadowNonInteractionVolume(datapoint, minStressShadowInteractionRadius, stressShadowWidthRatio);
+
+                // Get the probability that a fracture represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
+                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
+                double mean_apparent_P32 = 0;
+                double minIntersectionRadius = gbc.PropControl.MinIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
+                for (int setNo = 0; setNo < noSets; setNo++)
+                {
+                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
+                    for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
+                        mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
+                }
+                double phiIJ = Math.Exp(-mean_apparent_P32 * datapoint.RayLengthIncrement);
+
+                // Calculate the probability that this ray will be deactivated due to stress shadow interaction and due to intersection during this timestep
+                // This function will also reduce the volumetric density for the datapoint proportionally
+                ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays(phiII, phiIJ);
+
+                // Add the new datapoints to the appropriate arrays
+                if (newdatapoints.Length == 3)
+                {
+                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newdatapoints[0]);
+                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[1]);
+                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[2]);
+                }
+            }
+        }
+        /// <summary>
+        /// Lock in the previously calculated increments in ray length and resort the fracture population distribution arrays
+        /// </summary>
+        public void updateTotalFracturePopulation()
+        {
+            // Lock in the increments in ray length calculated by setTimestepPropagationData()
+            foreach (RayPropagationStatus status in new RayPropagationStatus[2] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted })
+                foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[status])
+                    datapoint.IncrementRayLength();
+
+            // Resort the fracture population distribution arrays based on new effective radius, from largest to smallest
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                Fractures.fracturePopulationDatapoints[status].Sort();
+        }
+        /// <summary>
+        /// Update the values describing the inverse stress shadow and clear zone volumes for this fracture set
+        /// </summary>
+        public void setFractureExclusionZoneData()
+        {
+            double theta, theta_dashed;
+            Fractures.getStressShadowClearZoneVolume(MinimumFractureRadius, Max_F_StressShadowWidth_r, out theta, out theta_dashed);
+            CurrentFractureData.SetFractureExclusionZoneData(theta, theta_dashed);
         }
 
         /// <summary>
@@ -1572,6 +1834,19 @@ namespace DFMGenerator_SharedCode
             MinimumFractureRadius = rmin_in;
             // Create new UnconfinedFractureData object
             Fractures = new UnconfinedFractureData(InitialP30(), rmin_in, raysPerFracture_in);
+
+            // Recreate the array of fracture ray vectors
+            // We start with the dip vector and then rotate this using the Rodrigues method
+            rayVectors = new VectorXYZ[raysPerFracture_in];
+            double rotationAngle = (2d * Math.PI) / (double)raysPerFracture_in;
+            double sinRotationAngle = VectorXYZ.Sin_trim(rotationAngle);
+            double cosRotationAngle = VectorXYZ.Cos_trim(rotationAngle);
+            VectorXYZ nextVector = new VectorXYZ(dipVector);
+            for (int rayNo = 0; rayNo < raysPerFracture_in; rayNo++)
+            {
+                rayVectors[rayNo] = nextVector;
+                nextVector = (cosRotationAngle * nextVector) + (sinRotationAngle * (normalVector * nextVector)) + ((1 - cosRotationAngle) * (normalVector & nextVector) * normalVector);
+            }
 
             // Create new fracture calculation data object, and initialise for timestep 0 (i.e. initial data before the model runs)
             CurrentFractureData = new FractureCalculationData_Minimised();
