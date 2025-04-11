@@ -1,6 +1,6 @@
 ﻿// Set this flag to output a list of gridblocks when calculating the implicit and explicit fracture populations
 // Use for debugging only; will significantly increase runtime
-#define LOGGRIDBLOCKS
+//#define LOGGRIDBLOCKS
 
 using System;
 using System.Collections.Generic;

@@ -499,7 +499,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Number of rays comprising each fracture
         /// </summary>
-        private int RaysPerFracture { get; set; }
+        private ushort RaysPerFracture { get; set; }
         /// <summary>
         /// Minimum radius for a fracture; this will be the length of the rays at nucleation
         /// </summary>
@@ -1489,6 +1489,10 @@ namespace DFMGenerator_SharedCode
                 double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
                 double alpha = CapA * Math.Pow(sqrtpi_Kc_factor, b);
 
+                // If the fracture set has not yet been activated, activate the fracture set
+                if (CurrentFractureData.EvolutionStage == FractureEvolutionStage.NotActivated)
+                    CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Growing);
+
                 // Get current maximum fracture radius
                 // If the maximum fracture radius is zero we cannot calculate an optimal duration
                 double maxR = MaximumFractureRadius;
@@ -1658,6 +1662,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         private ImplicitFracturePopulationDatapoint getNucleatingFractures()
         {
+            // Cache required data locally
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
             double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
@@ -1665,14 +1670,27 @@ namespace DFMGenerator_SharedCode
             double cumGammaRmin_Nminus1 = rmin_beta + CurrentFractureData.Cum_Gamma_Mminus1;
 
             // Get the initial and final volumetric density of fractures with radius > rmin for the current timestep, ignoring stress shadows
-            // For now we will assume a power law initial microfracture distribution - however this could be changed
-            double dMFP30;
-            // Power law initial microfracture distribution
+            // Only Power Law is currently implemented
+            double dMFP30 = 0;
+            switch (InitialDistribution)
             {
-                // betac_factor is -beta*c if b<>2, -c if b=2
-                double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
-                dMFP30 = CapB * (bis2 ? Math.Exp(cumGammaRmin_N * betac_factor) - Math.Exp(cumGammaRmin_Nminus1 * betac_factor) : Math.Pow(cumGammaRmin_N, betac_factor) - Math.Pow(cumGammaRmin_Nminus1, betac_factor));
+                case InitialFractureDistribution.PowerLaw:
+                    {
+                        // betac_factor is -beta*c if b<>2, -c if b=2
+                        double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
+                        dMFP30 = CapB * (bis2 ? Math.Exp(cumGammaRmin_N * betac_factor) - Math.Exp(cumGammaRmin_Nminus1 * betac_factor) : Math.Pow(cumGammaRmin_N, betac_factor) - Math.Pow(cumGammaRmin_Nminus1, betac_factor));
+                    }
+                    break;
+                case InitialFractureDistribution.Exponential:
+                    break;
+                case InitialFractureDistribution.LogNormal:
+                    break;
+                default:
+                    break;
             }
+
+            // For now we will assume a power law initial microfracture distribution - however this could be changed
+            // Power law initial microfracture distribution
 
             // Multiply the volumetric density increment by the total clear zone volume seen by fully active fractures with minimum radius
             // This will correct for fractures nucleating in an exclusion zone
@@ -1727,11 +1745,13 @@ namespace DFMGenerator_SharedCode
                 // This function will also reduce the volumetric density for the datapoint proportionally
                 ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays(phiII, phiIJ);
 
-                // Add the new datapoints to the appropriate arrays
+                // Add the new datapoints to the appropriate arrays - but only if the volumetric density is greater than zero
                 if (newdatapoints.Length == 2)
                 {
-                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[0]);
-                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[1]);
+                    if ((float)newdatapoints[0].dP30 > 0f)
+                        Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[0]);
+                    if ((float)newdatapoints[1].dP30 > 0f)
+                        Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[1]);
                 }
             }
 
@@ -1762,9 +1782,12 @@ namespace DFMGenerator_SharedCode
                 // Add the new datapoints to the appropriate arrays
                 if (newdatapoints.Length == 3)
                 {
-                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newdatapoints[0]);
-                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[1]);
-                    Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[2]);
+                    if ((float)newdatapoints[0].dP30 > 0f)
+                        Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newdatapoints[0]);
+                    if ((float)newdatapoints[1].dP30 > 0f)
+                        Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[1]);
+                    if ((float)newdatapoints[2].dP30 > 0f)
+                        Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[2]);
                 }
             }
         }
@@ -1818,8 +1841,20 @@ namespace DFMGenerator_SharedCode
 
         // Reset and data input functions
         /// <summary>
-        /// Reset all fracture data to initial values (no fractures, no previous deformation)
+        /// Clear the implicit fracture population arrays and reset them to the initial state (comprising a single fully active fracture datapoint representing initial microfractures)
         /// </summary>
+        public void clearImplicitFracturePopulationArrays()
+        {
+            Fractures.ResetPopulationDistributionData(InitialP30(), MinimumFractureRadius, RaysPerFracture);
+        }
+        /// <summary>
+        /// Reset all fracture data to initial values (implicit population comprising only initial microfractures, no explicit fractures, no previous deformation)
+        /// </summary>
+        /// <param name="raysPerFracture_in">Number of rays comprising each fracture</param>
+        /// <param name="rmin_in">Minimum radius for a fracture; this will be the length of the rays at nucleation</param>
+        /// <param name="uFDistributionIn">Initial microfracture distribution function</param>
+        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
+        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         public void resetFractureData(ushort raysPerFracture_in, double rmin_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in)
         {
             // Set the initial fracture distribution data

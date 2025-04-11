@@ -1381,10 +1381,13 @@ namespace DFMGenerator_SharedCode
 
         // List containing fracture sets
         /// <summary>
-        /// Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax
+        /// Number of layer-bound fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax
         /// </summary>
-        public int NoFractureSets { get; private set; }
-
+        public int NoFractureSets { get { return FractureSets.Count; } }
+        /// <summary>
+        /// Number of unconfined fracture sets
+        /// NB Unconfined fracture sets are not subdivided into dipsets; unconfined fractures with the same strike but different dips are counted as different sets
+        /// </summary>
         public int NoUnconfinedSets { get { return UnconfinedFractureSets.Count; } }
         /// <summary>
         /// Index number of the fracture set perpendicular to HMin
@@ -4121,6 +4124,11 @@ namespace DFMGenerator_SharedCode
                 outputFile.Close();
             }
 
+            // To free space at the end of the run we will clear the implicit fracture population function datapoint arrays for the unconfined fractures
+            // We must therefore ensure that any data that may be required later is saved in the FractureCalculationData list
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                ufs.clearImplicitFracturePopulationArrays();
+
             // Determine the return code and return it
             CalculateFractureDataReturnCode returnCode = (WithinTimestepLimit ? CalculateFractureDataReturnCode.Completed : CalculateFractureDataReturnCode.TimestepLimitExceeded);
             return returnCode;
@@ -6023,25 +6031,13 @@ namespace DFMGenerator_SharedCode
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         public void resetFractures(int NoFractureSets_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
         {
-            NoFractureSets = NoFractureSets_in;
-            resetFractures(B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
-        }
-        /// <summary>
-        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new fracture sets each containing two dip sets (Mode 1 and Mode 2)
-        /// </summary>
-        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
-        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public void resetFractures(double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
-        {
             // Clear all existing data
             ClearFractureData();
 
             // Create new fracture sets
-            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+            for (int fs_index = 0; fs_index < NoFractureSets_in; fs_index++)
             {
-                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets));
+                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets_in));
                 Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
                 FractureSets.Add(new_FractureSet);
             }
@@ -6066,30 +6062,16 @@ namespace DFMGenerator_SharedCode
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         public void resetFractures(int NoFractureSets_in, double B_in, double c_in, FractureMode FractureMode_in, bool IncludeReverseFractures_in)
         {
-            NoFractureSets = NoFractureSets_in;
-            resetFractures(B_in, c_in, FractureMode_in, IncludeReverseFractures_in);
-        }
-        /// <summary>
-        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new fracture sets each containing only one dip set of specified mode
-        /// </summary>
-        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
-        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="FractureMode_in">Fracture mode; Fracture sets will contain only 1 dip set of specified mode</param>
-        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public void resetFractures(double B_in, double c_in, FractureMode FractureMode_in, bool IncludeReverseFractures_in)
-        {
             // Clear all existing data
             ClearFractureData();
 
             // Fracture dip is vertical for Mode 1 or Mode 3 fractures, inclined (dependent on friction coefficient) for Mode 2 fractures
-            double opt_dip = Math.PI / 2;
-            if (FractureMode_in == FractureMode.Mode2)
-                opt_dip = ((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2;
+            double opt_dip = (FractureMode_in == FractureMode.Mode2) ? ((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2 : Math.PI / 2;
 
             // Create new fracture sets
-            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+            for (int fs_index = 0; fs_index < NoFractureSets_in; fs_index++)
             {
-                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets));
+                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets_in));
                 Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, FractureMode_in, opt_dip, B_in, c_in, IncludeReverseFractures_in);
                 FractureSets.Add(new_FractureSet);
             }
@@ -6109,9 +6091,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="NoStrikeSets_in">Number of different strike orientations used to create new fracture sets</param>
         /// <param name="NoDipSets_in">Number of different dip orientations used to create new fracture sets</param>
+        /// <param name="NoRaysPerFracture_in">Number of rays comprising each unconfined fracture</param>
+        /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, double B_in, double c_in)
+        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double B_in, double c_in)
         {
             // Clear all existing data
             ClearFractureData();
@@ -6128,10 +6112,6 @@ namespace DFMGenerator_SharedCode
                 dips.Add(-dip);
             }
 
-            // Get the number of rays per fracture and the minimum fracture radius
-            int noRays = gd.DFNControl.NumberOfuFPoints;
-            double minRadius = PropControl.minImplicitMicrofractureRadius;
-
             // Create new fracture sets
             for (int fs_index = 0; fs_index < NoStrikeSets_in; fs_index++)
             {
@@ -6139,13 +6119,13 @@ namespace DFMGenerator_SharedCode
 
                 foreach(double dip in dips)
                 {
-                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, noRays, minRadius, InitialFractureDistribution.PowerLaw, B_in, c_in);
+                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
                     UnconfinedFractureSets.Add(new_FractureSet);
                 }
             }
             // Create a horizontal fracture set
             {
-                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, noRays, minRadius, InitialFractureDistribution.PowerLaw, B_in, c_in);
+                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
                 UnconfinedFractureSets.Add(new_FractureSet);
             }
         }
@@ -6274,21 +6254,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Constructor: specify layer thickness and depth at the start of deformation, but create two empty fracture sets
         /// </summary>
-        /// <param name="thickness_in">Layer thickness at time of deformation (m)</param>
-        /// <param name="depth_in">Depth at time of deformation (m)</param>
-        public GridblockConfiguration(double thickness_in, double depth_in) : this(thickness_in, depth_in, 2)
-        {
-            // Defaults:
-
-            // Set the number of fracture sets to 2, for two orthogonal sets perpendicular to ehmin and ehmax
-        }
-        /// <summary>
-        /// Constructor: specify layer thickness and depth at the start of deformation, and the number of fracture sets, but create empty fracture sets
-        /// </summary>
-        /// <param name="InitialThickness_in">Layer thickness at the start of deformation (m)</param>
-        /// <param name="InitialDepth_in">Depth at the start of deformation (m)</param>
-        /// <param name="NoFractureSets">Number of fracture sets</param>
-        public GridblockConfiguration(double InitialThickness_in, double InitialDepth_in, int NoFractureSets_in)
+        /// <param name="InitialThickness_in">Layer thickness at time of deformation (m)</param>
+        /// <param name="InitialDepth_in">Depth at time of deformation (m)</param>
+        public GridblockConfiguration(double InitialThickness_in, double InitialDepth_in) 
         {
             // Set layer thickness and depth at the start of deformation
             SetInitialThicknessAndDepth(InitialThickness_in, InitialDepth_in);
@@ -6314,18 +6282,9 @@ namespace DFMGenerator_SharedCode
             // If the present day stress tensor is defined, it will override the StressStrain object when calculating fracture aperture and permeability
             PresentDayStress = null;
 
-            // Set the number of fracture sets (minimum 0)
-            if (NoFractureSets_in < 0)
-                NoFractureSets_in = 0;
-            NoFractureSets = NoFractureSets_in;
-
-            // Create empty fracture sets
+            // Create empty fracture set lists
+            // The fracture sets themselves are created by calling the resetFractures or resetUnconfinedFractures functions
             FractureSets = new List<Gridblock_FractureSet>();
-            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
-            {
-                Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this);
-                FractureSets.Add(new_FractureSet);
-            }
             UnconfinedFractureSets = new List<UnconfinedFractureSet>();
 
             // Create the azimuthal and strike-slip shear stress shadow multiplier arrays
