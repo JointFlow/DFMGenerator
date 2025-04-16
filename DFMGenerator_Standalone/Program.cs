@@ -289,6 +289,10 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration");
                 input_file.WriteLine("% Increase this to run calculation faster, with fewer but longer timesteps");
                 input_file.WriteLine("MaxTimestepMFP33Increase 0.005");
+                input_file.WriteLine("% Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)");
+                input_file.WriteLine("Max_R_timestep_increase 0.05");
+                input_file.WriteLine("% Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)");
+                input_file.WriteLine("Max_R_DeactivationCheck_interval 0.05");
                 input_file.WriteLine("% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)");
                 input_file.WriteLine("% If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite");
                 input_file.WriteLine("% If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)");
@@ -462,8 +466,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 3;
-            int NoCols = 3;
+            int NoRows = 1;// 3;
+            int NoCols = 1;// 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 50;
             double Length_NS = 50;
@@ -560,7 +564,7 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.001);
+            EhminRate_list.Add(-0.01);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
@@ -775,8 +779,11 @@ namespace DFMGenerator_Standalone
             // Number of rays comprising each unconfined fracture
             int NoRaysPerUnconfinedFracture = 8;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
-            // If set to -1, will use 0.1 * layer thickness
-            double MinUnconfinedFractureRadius = -1;
+            // If set to -1, will use 0.01 * layer thickness
+            double MinUnconfinedFractureRadius = 0.5;// -1;
+            // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
+            // If set to -1, will use 0.5 * layer thickness
+            double MaxUnconfinedFractureRadius = 50;// -1;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
             double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
@@ -786,6 +793,10 @@ namespace DFMGenerator_Standalone
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
             double MaxTimestepMFP33Increase = 0.005;
+            // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
+            double Max_R_timestep_increase = 0.2;// 0.05;
+            // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
+            double Max_R_DeactivationCheck_interval = 0.05;
             // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
             // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
             // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -1448,6 +1459,14 @@ namespace DFMGenerator_Standalone
                         case "MaxTimestepMFP33Increase":
                         case "max_TS_MFP33_increase_in": // For backwards compatibility
                             MaxTimestepMFP33Increase = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
+                        case "Max_R_timestep_increase":
+                            Max_R_timestep_increase = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
+                        case "Max_R_DeactivationCheck_interval":
+                            Max_R_DeactivationCheck_interval = Convert.ToDouble(line_split[1]);
                             break;
                         // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
                         // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
@@ -2595,8 +2614,9 @@ namespace DFMGenerator_Standalone
                         local_minImplicitMicrofractureRadius = maxMicrofractureRadius / (double)No_r_bins;
                     }
 
-                    // Calculate the minimum unconfined fracture radius from the layer thickness, if required
-                    double local_minUnconfinedFractureRadius = (MinUnconfinedFractureRadius > 0) ? MinUnconfinedFractureRadius : 0.1 * local_LayerThickness;
+                    // Calculate the minimum and maximum unconfined fracture radius from the layer thickness, if required
+                    double local_minUnconfinedFractureRadius = (MinUnconfinedFractureRadius > 0) ? MinUnconfinedFractureRadius : 0.01 * local_LayerThickness;
+                    double local_maxUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : 0.5 * local_LayerThickness;
 
                     // Determine whether to check for stress shadows from other fracture sets
                     bool local_checkAlluFStressShadows;
@@ -2621,7 +2641,7 @@ namespace DFMGenerator_Standalone
                     double local_DefaultFractureAzimuth = (EhminAzi_array.Count > 0 ? EhminAzi_array[0][RowNo, ColNo] : EhminAzi);
 
                     // Set the propagation control data for the gridblock
-                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                          MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
 
                     // Set folder path for output files
@@ -2646,9 +2666,9 @@ namespace DFMGenerator_Standalone
                     Console.WriteLine(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                     Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                     Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22}, {23}, {24}); ",
-                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                        MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
+                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, TimeUnits.{23}, {24}, {25}, {26}, {27}, {28}); ",
+                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                        MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 
                     // Add the deformation load data 
@@ -2695,7 +2715,7 @@ namespace DFMGenerator_Standalone
                         gc.resetFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
                     else
                         gc.resetFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
-                    gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
+                    gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
 
 #if DEBUG_FRACS
                     if (Mode1Only)

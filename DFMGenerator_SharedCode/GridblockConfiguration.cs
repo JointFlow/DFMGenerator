@@ -3009,6 +3009,8 @@ namespace DFMGenerator_SharedCode
             // Calculation control criteria
             // Set the target maximum increase in MFP33 allowed per timestep
             double d_MFP33 = PropControl.max_TS_MFP33_increase;
+            // Set the target maximum increase in unconfined fracture radius allowed per timestep
+            double d_Radius = PropControl.max_R_timestep_increase;
             // Set the ratio of current to maximum active macrofracture volumetric ratio at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio
             double historic_a_MFP33_termination_ratio = PropControl.historic_a_MFP33_termination_ratio;
             // Set the ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio 
@@ -3608,7 +3610,7 @@ namespace DFMGenerator_SharedCode
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         // Use the getOptimalDuration function in the fracture set object to get the optimal timestep duration for that set
-                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_MFP33);
+                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_Radius);
 
                         // Check to see if the maximum timstep duration calculated for this timestep is less than the maximum timestep duration so far
                         // NB if it is not possible to calculate a value for the optimal timestep duration, the getOptimalDuration function will return infinity
@@ -6093,9 +6095,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoDipSets_in">Number of different dip orientations used to create new fracture sets</param>
         /// <param name="NoRaysPerFracture_in">Number of rays comprising each unconfined fracture</param>
         /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
+        /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double B_in, double c_in)
+        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double B_in, double c_in)
         {
             // Clear all existing data
             ClearFractureData();
@@ -6119,13 +6122,13 @@ namespace DFMGenerator_SharedCode
 
                 foreach(double dip in dips)
                 {
-                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
+                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
                     UnconfinedFractureSets.Add(new_FractureSet);
                 }
             }
             // Create a horizontal fracture set
             {
-                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
+                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
                 UnconfinedFractureSets.Add(new_FractureSet);
             }
         }

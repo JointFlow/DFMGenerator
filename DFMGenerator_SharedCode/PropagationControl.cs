@@ -935,9 +935,17 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public StressDistribution StressDistributionCase { get; set; }
         /// <summary>
-        /// Maximum allowable increase in MFP33 value in each timestep (controls accuracy of calculation)
+        /// Maximum allowable increase in MFP33 value in each timestep (controls speed and accuracy of calculation)
         /// </summary>
         public double max_TS_MFP33_increase { get; set; }
+        /// <summary>
+        /// Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
+        /// </summary>
+        public double max_R_timestep_increase { get; set; }
+        /// <summary>
+        /// Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
+        /// </summary>
+        public double max_R_DeactivationCheck_interval { get; set; }
         /// <summary>
         /// Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio
         /// </summary>
@@ -1301,7 +1309,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateRelaxedStrainPartitioning_in">Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor</param>
         /// <param name="OutputBulkRockElasticTensors_in">Flag to output the bulk rock compliance and stiffness tensors</param>
         /// <param name="StressDistribution_in">Stress distribution case</param>
-        /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls accuracy of calculation)</param>
+        /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls speed and accuracy of calculation)</param>
+        /// <param name="max_R_timestep_increase_in">Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)</param>
+        /// <param name="max_R_DeactivationCheck_interval_in">Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)</param>
         /// <param name="historic_a_MFP33_termination_ratio_in">Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="active_total_MFP30_termination_ratio_in">Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="minimum_ClearZone_Volume_in">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
@@ -1321,7 +1331,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateFracturePermeabilityTensor_in">Flag to calculate and output fracture permeability tensor</param>
         /// <param name="PermeabilityAlgorithm_in">Algorithm to use for calculating fracture permeability</param>
         /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
-        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in)
+        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double max_R_timestep_increase_in, double max_R_DeactivationCheck_interval_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in)
         {
             // Set the time units and calculate unit conversion multiplier to adjust input rates if not in SI units
             timeUnits = timeUnits_in;
@@ -1340,8 +1350,12 @@ namespace DFMGenerator_SharedCode
             OutputBulkRockElasticTensors = OutputBulkRockElasticTensors_in;
             // Stress distribution case
             StressDistributionCase = StressDistribution_in;
-            // Maximum allowable increase in MFP33 value in each timestep
+            // Maximum allowable increase in MFP33 value in each timestep (controls speed and accuracy of calculation)
             max_TS_MFP33_increase = max_TS_MFP33_increase_in;
+            // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
+            max_R_timestep_increase = max_R_timestep_increase_in;
+            // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
+            max_R_DeactivationCheck_interval = max_R_DeactivationCheck_interval_in;
             // Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio
             historic_a_MFP33_termination_ratio = historic_a_MFP33_termination_ratio_in;
             // Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio 
@@ -1386,7 +1400,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public PropagationControl()
-                : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, 1, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, false, PermeabilityCalculationAlgorithm.Oda1986, 0)
+                : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, 0.05, 0.05, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, 1, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, false, PermeabilityCalculationAlgorithm.Oda1986, 0)
         {
             // Defaults:
 
@@ -1398,6 +1412,8 @@ namespace DFMGenerator_SharedCode
             // Flag to output the bulk rock compliance tensor: false
             // Stress distribution case: Stress shadow
             // Maximum allowable increase in MFP33 value in each timestep: 0.002
+            // Maximum proportional increase in the radius of the unconfined fractures in each timestep: 0.05
+            // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation: 0.05
             // Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive: -1 (control deactivated)
             // Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio: -1 (control deactivated)
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume): 0.01 (1%)
@@ -1428,8 +1444,11 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateRelaxedStrainPartitioning_in">Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor</param>
         /// <param name="OutputComplianceTensor_in">Flag to output the bulk rock compliance tensor</param>
         /// <param name="StressDistribution_in">Stress distribution case</param>
-        /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls accuracy of calculation)</param>
+        /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls speed and accuracy of calculation)</param>
+        /// <param name="max_R_timestep_increase_in">Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)</param>
+        /// <param name="max_R_DeactivationCheck_interval_in">Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)</param>
         /// <param name="historic_a_MFP33_termination_ratio_in">Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control</param>
+        /// <param name="max_R_timestep_increase_in">Maximum proportional increase in the radius of the unconfined fractures in a timestep</param>
         /// <param name="active_total_MFP30_termination_ratio_in">Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="minimum_ClearZone_Volume_in">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
         /// <param name="maxTimesteps_in">Maximum number of timesteps allowed; calculation will abort when this is reached regardless of time or fracture growth (controls calculation termination)</param>
@@ -1448,14 +1467,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateFracturePermeabilityTensor_in">Flag to calculate and output fracture permeability tensor</param>
         /// <param name="PermeabilityAlgorithm_in">Algorithm to use for calculating fracture permeability</param>
         /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in)
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double max_R_timestep_increase_in, double max_R_DeactivationCheck_interval_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeLoadControl>();
             // Set all other data
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, CalculateFracturePermeabilityTensor_in, PermeabilityAlgorithm_in, DefaultFractureAzimuth_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, max_R_timestep_increase_in, max_R_DeactivationCheck_interval_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, CalculateFracturePermeabilityTensor_in, PermeabilityAlgorithm_in, DefaultFractureAzimuth_in);
         }
         /// <summary>
         /// Constructor: Set all calculation control data, and create a single deformation episode with an applied strain load only; set index points for cumulative fracture size distribution arrays independently for each fracture set
@@ -1467,7 +1486,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateRelaxedStrainPartitioning_in">Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor</param>
         /// <param name="OutputComplianceTensor_in">Flag to output the bulk rock compliance tensor</param>
         /// <param name="StressDistribution_in">Stress distribution case</param>
-        /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls accuracy of calculation)</param>
+        /// <param name="max_TS_MFP33_increase_in">Maximum allowable increase in MFP33 value in each timestep (controls speed and accuracy of calculation)</param>
+        /// <param name="max_R_timestep_increase_in">Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)</param>
+        /// <param name="max_R_DeactivationCheck_interval_in">Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)</param>
         /// <param name="historic_a_MFP33_termination_ratio_in">Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="active_total_MFP30_termination_ratio_in">Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="minimum_ClearZone_Volume_in">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
@@ -1490,14 +1511,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="FractureApertureControl_in">Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation</param>
         /// <param name="CalculateFracturePermeabilityTensor_in">Flag to calculate and output fracture permeability tensor</param>
         /// <param name="PermeabilityAlgorithm_in">Algorithm to use for calculating fracture permeability</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, double DeformationEpisodeDuration_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, bool WriteImplicitDataFiles_in, double Applied_Epsilon_hmin_azimuth_in, double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in)
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputComplianceTensor_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double max_R_timestep_increase_in, double max_R_DeactivationCheck_interval_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_ClearZone_Volume_in, double DeformationEpisodeDuration_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, bool WriteImplicitDataFiles_in, double Applied_Epsilon_hmin_azimuth_in, double Applied_Epsilon_hmin_dashed_in, double Applied_Epsilon_hmax_dashed_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeLoadControl>();
             // Set all other data
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, CalculateFracturePermeabilityTensor_in, PermeabilityAlgorithm_in, Applied_Epsilon_hmin_dashed_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputComplianceTensor_in, StressDistribution_in, max_TS_MFP33_increase_in, max_R_timestep_increase_in, max_R_DeactivationCheck_interval_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_ClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, CalculateFracturePermeabilityTensor_in, PermeabilityAlgorithm_in, Applied_Epsilon_hmin_dashed_in);
             // Create the deformation episode
             AddDeformationEpisode(Applied_Epsilon_hmin_dashed_in, Applied_Epsilon_hmax_dashed_in, Applied_Epsilon_hmin_azimuth_in, DeformationEpisodeDuration_in);
         }
