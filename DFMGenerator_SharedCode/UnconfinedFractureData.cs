@@ -8,7 +8,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for the fracture ray propagation status: FullyActive (i.e. all rays in the fracture are active), Restricted (i.e. at least one other ray in the fracture is deactivated), StaticStressShadow (i.e. this ray is deactivated due to stress shadow interaction), StaticIntersection (i.e. this ray is deactivated due to intersecting a fracture from another set)
     /// </summary>
-    enum RayPropagationStatus { FullyActive, Restricted, StaticStressShadow, StaticIntersection }
+    enum RayPropagationStatus { FullyActive, Restricted, StaticStressShadow, StaticIntersection, StaticMaxRadius }
 
     /// <summary>
     /// Object representing a specific point in an implicit fracture population distribution function array
@@ -91,6 +91,7 @@ namespace DFMGenerator_SharedCode
                         return RayLengthIncrement / 2;
                     case RayPropagationStatus.StaticStressShadow:
                     case RayPropagationStatus.StaticIntersection:
+                    case RayPropagationStatus.StaticMaxRadius:
                         return 0;
                     default:
                         return 0;
@@ -224,14 +225,15 @@ namespace DFMGenerator_SharedCode
                     // There will be two datapoints in the output array, representing the rays that become deactivated due to stress shadow interaction and intersection respectively
                     outputDatapoints = new ImplicitFracturePopulationDatapoint[2];
                     // The first datapoint in the output array represents the new static rays due to stress shadow interaction
-                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, RayLength);
+                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, PropagationControllingLength);
                     // The second datapoint in the output array represents the new static rays due to intersection
-                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, RayLength);
+                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, PropagationControllingLength);
                     // Reduce the volumetric density of restricted rays represented by this datapoint
                     dP30 *= Phi;
                     break;
                 case RayPropagationStatus.StaticStressShadow:
                 case RayPropagationStatus.StaticIntersection:
+                case RayPropagationStatus.StaticMaxRadius:
                     // There will be no datapoints in the output array
                     outputDatapoints = new ImplicitFracturePopulationDatapoint[0];
                     break;
@@ -313,6 +315,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double sIJ_RP30_total { get { return RP30_total[RayPropagationStatus.StaticIntersection]; } }
         /// <summary>
+        /// Volumetric density of static fracture rays deactivated due to reaching the maximum radius
+        /// </summary>
+        public double sMR_RP30_total { get { return RP30_total[RayPropagationStatus.StaticMaxRadius]; } }
+        /// <summary>
         /// Mean linear density of fully active fracture rays (i.e. all rays in the fracture are active)
         /// </summary>
         public double a_RP32_total { get { return RP32_total[RayPropagationStatus.FullyActive]; } }
@@ -328,6 +334,10 @@ namespace DFMGenerator_SharedCode
         /// Mean linear density of static fracture rays deactivated due to intersection
         /// </summary>
         public double sIJ_RP32_total { get { return RP32_total[RayPropagationStatus.StaticIntersection]; } }
+        /// <summary>
+        /// Mean linear density of static fracture rays deactivated due to reaching the maximum radius
+        /// </summary>
+        public double sMR_RP32_total { get { return RP32_total[RayPropagationStatus.StaticMaxRadius]; } }
         /// <summary>
         /// Volumetric ratio of fully active fracture rays (i.e. all rays in the fracture are active)
         /// </summary>
@@ -348,6 +358,12 @@ namespace DFMGenerator_SharedCode
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
         public double sIJ_RP33_total { get { return RP33_total[RayPropagationStatus.StaticIntersection]; } }
+        /// <summary>
+        /// Maximum volumetric ratio of static fracture rays deactivated due to reaching the maximum radius
+        /// This value does not take into account that the stress shadows around static fractures may overlap
+        /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
+        /// </summary>
+        public double sMR_RP33_total { get { return RP33_total[RayPropagationStatus.StaticMaxRadius]; } }
         /// <summary>
         /// Volumetric density of all fractures
         /// </summary>
@@ -542,13 +558,13 @@ namespace DFMGenerator_SharedCode
             InverseStressShadowVolume = 1;
             double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * StressShadowWidthRatio / (double)noSegments;
 
-            // Stress shadows around fully active and restricted rays cannot overlap, so this component of the exclusion zone volume is equal to the sum of the stress shadow volume
-            double ar_RStressShadow = StressShadowWidthRatio * (RP33_total[RayPropagationStatus.FullyActive] + RP33_total[RayPropagationStatus.Restricted]);
+            // Stress shadows around fully active and restricted rays, and rays that have reached maximum length, cannot overlap, so this component of the exclusion zone volume is equal to the sum of the stress shadow volume
+            double ar_RStressShadow = StressShadowWidthRatio * (RP33_total[RayPropagationStatus.FullyActive] + RP33_total[RayPropagationStatus.Restricted] + RP33_total[RayPropagationStatus.StaticMaxRadius]);
             InverseStressShadowVolume -= ar_RStressShadow;
             if (InverseStressShadowVolume < 0) InverseStressShadowVolume = 0;
 
-            // Stress shadows around static fractures from different datapoints can overlap so must be calculated by multiplying their inverses
-            // NB Stress shadows around static fractures represented by the same datapoint cannot overlap, since these were all deactivated at the same time so must all have been active simultaneously
+            // Stress shadows around static rays from different datapoints can overlap so must be calculated by multiplying their inverses
+            // NB Stress shadows around static rays represented by the same datapoint cannot overlap, since these were all deactivated at the same time so must all have been active simultaneously
             foreach (RayPropagationStatus status in new RayPropagationStatus[2] { RayPropagationStatus.StaticStressShadow, RayPropagationStatus.StaticIntersection })
                 foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
                 {

@@ -792,11 +792,11 @@ namespace DFMGenerator_Standalone
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepMFP33Increase = 0.005;
+            double MaxTimestepMFP33Increase = 0.2;// 0.005;
             // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
             double Max_R_timestep_increase = 0.2;// 0.05;
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
-            double Max_R_DeactivationCheck_interval = 0.05;
+            double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
             // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
             // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -820,7 +820,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 1000;
+            int MaxTimesteps = 350;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;

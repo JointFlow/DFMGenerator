@@ -3619,6 +3619,13 @@ namespace DFMGenerator_SharedCode
                             TimestepDuration = maxdur;
                     }
 
+#if DEBUG
+                    Console.WriteLine(string.Format("TS {0}, duration {1}, CZA {2}, NoDP FA {3}, R {4}, SII {5}, SIJ {6}, SMax {7}", CurrentImplicitTimestep, TimestepDuration,
+                        UnconfinedFractureSets[1].getClearZoneVolume(), UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count,
+                        UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Count, UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Count,
+                        UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Count, UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius].Count));
+#endif
+
                     // If the timestep duration is still infinity, no further fractures can form; therefore set the current timestep duration to zero and set the flag to stop the calculation at the end of it
                     if (double.IsInfinity(TimestepDuration))
                     {
