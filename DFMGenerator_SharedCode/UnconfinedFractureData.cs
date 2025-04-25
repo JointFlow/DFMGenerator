@@ -119,7 +119,7 @@ namespace DFMGenerator_SharedCode
 
             // Since the outer exclusion zone volumes can overlap, the total inverse outer exclusion zone volume musat be calculated by multiplying the inverse of the outer exclusion zone volume around each fracture
             // This can be done by raising the inverse exclusion zone volume around a single fracture to the power of the number of fractures
-            double OEZShellVolume = (4d / 3d) * Math.PI * StressShadowWidthRatio * ((EZLength * EZLength * EZWidth) - (RayLength * RayLength * EffectiveRayLength));
+            double OEZShellVolume = (4d / 3d) * Math.PI * (StressShadowWidthRatio / 2) * ((EZLength * EZLength * EZWidth) - (RayLength * RayLength * EffectiveRayLength));
             return Math.Exp(-OEZShellVolume * (dP30 / (double)NoRaysPerFracture));
         }
         /*/// <summary>
@@ -144,13 +144,13 @@ namespace DFMGenerator_SharedCode
         public double GetNonInteractionZoneVolume(ImplicitFracturePopulationDatapoint Fracture2, double StressShadowWidthRatio)
         {
             double EZLength = this.RayLength + Fracture2.RayLength;
-            double EZWidth = (this.EffectiveRayLength + Fracture2.EffectiveRayLength) * StressShadowWidthRatio;
+            double EZWidth = (this.EffectiveRayLength + Fracture2.EffectiveRayLength) * (StressShadowWidthRatio / 2);
             double IZLength = EZLength + this.RayLengthIncrement + Fracture2.RayLengthIncrement;
-            double IZWidth = EZWidth + ((this.EffectiveRayLengthIncrement + Fracture2.EffectiveRayLengthIncrement) * StressShadowWidthRatio);
+            double IZWidth = EZWidth + ((this.EffectiveRayLengthIncrement + Fracture2.EffectiveRayLengthIncrement) * (StressShadowWidthRatio / 2));
 
             double IZShellVolume = (4d / 3d) * Math.PI * ((IZLength * IZLength * IZWidth) - (EZLength * EZLength * EZWidth));
-            double output = Math.Exp(-IZShellVolume * (Fracture2.dP30 / (double)NoRaysPerFracture));
-            return Math.Exp(-IZShellVolume * (Fracture2.dP30 / (double)NoRaysPerFracture));
+            //double output = Math.Exp(-IZShellVolume * (Fracture2.dP30 / (double)NoRaysPerFracture));
+            return Math.Exp(-IZShellVolume * (this.dP30 / (double)NoRaysPerFracture));
         }
 
         // Functions to manipulate data
