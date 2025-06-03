@@ -293,6 +293,12 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("Max_R_timestep_increase 0.05");
                 input_file.WriteLine("% Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)");
                 input_file.WriteLine("Max_R_DeactivationCheck_interval 0.05");
+                input_file.WriteLine("% Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint");
+                input_file.WriteLine("Min_R_ActivationProbability 0.8");
+                input_file.WriteLine("% Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point");
+                input_file.WriteLine("Min_R_staticDatapointSizeRatio 0.02");
+                input_file.WriteLine("% Frequency (in timesteps) with which static unconfined fracture datapoints are culled");
+                input_file.WriteLine("CullTSFrequency 10");
                 input_file.WriteLine("% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)");
                 input_file.WriteLine("% If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite");
                 input_file.WriteLine("% If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)");
@@ -794,9 +800,15 @@ namespace DFMGenerator_Standalone
             // Increase this to run calculation faster, with fewer but longer timesteps
             double MaxTimestepMFP33Increase = 0.2;// 0.005;
             // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
-            double Max_R_timestep_increase = 0.2;// 0.05;
+            double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
+            // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
+            double Min_R_ActivationProbability = 0.8;
+            // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
+            double Min_R_staticDatapointSizeRatio = 0.02;
+            // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
+            int CullTSFrequency = 10;
             // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
             // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
             // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -820,7 +832,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 350;// 1000;
+            int MaxTimesteps = 750;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
@@ -1467,6 +1479,18 @@ namespace DFMGenerator_Standalone
                         // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
                         case "Max_R_DeactivationCheck_interval":
                             Max_R_DeactivationCheck_interval = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
+                        case "Min_R_ActivationProbability":
+                            Min_R_ActivationProbability = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
+                        case "Min_R_staticDatapointSizeRatio":
+                            Min_R_staticDatapointSizeRatio = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
+                        case "CullTSFrequency":
+                            CullTSFrequency = Convert.ToInt32(line_split[1]);
                             break;
                         // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
                         // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
@@ -2641,7 +2665,7 @@ namespace DFMGenerator_Standalone
                     double local_DefaultFractureAzimuth = (EhminAzi_array.Count > 0 ? EhminAzi_array[0][RowNo, ColNo] : EhminAzi);
 
                     // Set the propagation control data for the gridblock
-                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                          MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
 
                     // Set folder path for output files
@@ -2666,8 +2690,8 @@ namespace DFMGenerator_Standalone
                     Console.WriteLine(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                     Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                     Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, TimeUnits.{23}, {24}, {25}, {26}, {27}, {28}); ",
-                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, TimeUnits.{26}, {27}, {28}, {29}, {30}, {31}); ",
+                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                         MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 

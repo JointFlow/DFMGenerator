@@ -26,6 +26,16 @@ namespace DFMGenerator_SharedCode
         {
             return -this.EffectiveRayLength.CompareTo(that.EffectiveRayLength);
         }
+        /// <summary>
+        /// Comparator function to use as an overload for the default comparator in order to sort the datapoint arrays by ray length, in ascending order, if required
+        /// </summary>
+        /// <param name="dp1">First ImplicitFracturePopulationDatapoint object to compare</param>
+        /// <param name="dp2">Second ImplicitFracturePopulationDatapoint object to compare</param>
+        /// <returns>>Positive if the first ImplicitFracturePopulationDatapoint represents the longest rays, negative if the second FractureDipSet ImplicitFracturePopulationDatapoint represents the longest rays, zero if they represent rays of equal length</returns>
+        public static int CompareByRayLengthAscending(ImplicitFracturePopulationDatapoint dp1, ImplicitFracturePopulationDatapoint dp2)
+        {
+            return dp1.RayLength.CompareTo(dp2.RayLength);
+        }
 
         // Basic data
         /// <summary>
@@ -63,6 +73,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double PhiIJ { get; private set; }
         /// <summary>
+        /// Probability that an active ray has not been deactivated for any reason since the last deactivation check
+        /// </summary>
+        public double Phi { get { return PhiII * PhiIJ; } }
+        /// <summary>
         /// Effective ray length at the last deactivation check
         /// </summary>
         private double EffectiveRayLengthAtLastDeactivationCheck { get; set; }
@@ -70,6 +84,21 @@ namespace DFMGenerator_SharedCode
         /// The proportional growth in the effective ray length since the last deactivation check
         /// </summary>
         public double ProportionalGrowthSinceLastDeactivationCheck { get { return (EffectiveRayLength + EffectiveRayLengthIncrement - EffectiveRayLengthAtLastDeactivationCheck) / EffectiveRayLengthAtLastDeactivationCheck; } }
+        // Debugging data - only required in debug mode
+#if DEBUG
+        /// <summary>
+        /// Probability that an active ray has not been deactivated due to stress shadow interaction since the start of the model
+        /// </summary>
+        public double CumulativePhiII { get; private set; }
+        /// <summary>
+        /// Probability that an active ray has not been deactivated due to intersecting a fracture from another set since the start of the model
+        /// </summary>
+        public double CumulativePhiIJ { get; private set; }
+        /// <summary>
+        /// Probability that an active ray has not been deactivated for any reason since the start of the model
+        /// </summary>
+        public double CumulativePhi { get { return CumulativePhiII * CumulativePhiIJ; } }
+#endif
 
         // Properties and functions to extract data
         /// <summary>
@@ -107,6 +136,56 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double dP33factor { get { return  dP30 * RayLength * RayLength * EffectiveRayLength; } }
         /// <summary>
+        /// Factor to calculate volume of the stress shadow represented by this datapoint plus or minus an additional shell; must be multiplied by a geometric factor to get the true shell volume
+        /// </summary>
+        /// <param name="shellWidth">Width of the shell; positive for an outer shell (outside the stress shadow), negative for an inner shell (inside the stress shadow)</param>
+        /// <returns></returns>
+        public double dP33AdjustedFactor(double shellWidth)
+        {
+            return dP33AdjustedFactor(shellWidth, shellWidth);
+        }
+        /// <summary>
+        /// Factor to calculate volume of the stress shadow represented by this datapoint plus or minus an additional shell; must be multiplied by a geometric factor to get the true shell volume
+        /// </summary>
+        /// <param name="shellWidth">Width of the shell in the plane of the fracture; positive for an outer shell (outside the stress shadow), negative for an inner shell (inside the stress shadow)</param>
+        /// <param name="effectiveShellWidth">Width of the shell perpendicular to the plane of the fracture; positive for an outer shell (outside the stress shadow), negative for an inner shell (inside the stress shadow)</param>
+        /// <returns></returns>
+        public double dP33AdjustedFactor(double shellWidth, double effectiveShellWidth)
+        {
+            double shellRadius = RayLength + shellWidth;
+            double effectiveShellRadius = EffectiveRayLength + effectiveShellWidth;
+            if (effectiveShellRadius < 0)
+                return 0;
+            else
+                return dP30 * (shellRadius * shellRadius * effectiveShellRadius);
+        }
+        /// <summary>
+        /// Factor to calculate volume of a symmetric shell around the stress shadow represented by this datapoint; must be multiplied by a geometric factor to get the true shell volume
+        /// </summary>
+        /// <param name="shellWidth">Width of the shell; positive for an outer shell (outside the stress shadow), negative for an inner shell (inside the stress shadow)</param>
+        /// <returns></returns>
+        public double dP33ShellFactor(double shellWidth)
+        {
+            return dP33ShellFactor(shellWidth, shellWidth);
+        }
+        /// <summary>
+        /// Factor to calculate volume of an asymmetric shell around the stress shadow represented by this datapoint; must be multiplied by a geometric factor to get the true shell volume
+        /// </summary>
+        /// <param name="shellWidth">Width of the shell in the plane of the fracture; positive for an outer shell (outside the stress shadow), negative for an inner shell (inside the stress shadow)</param>
+        /// <param name="effectiveShellWidth">Width of the shell perpendicular to the plane of the fracture; positive for an outer shell (outside the stress shadow), negative for an inner shell (inside the stress shadow)</param>
+        /// <returns></returns>
+        public double dP33ShellFactor(double shellWidth, double effectiveShellWidth)
+        {
+            double shellRadius = RayLength + shellWidth;
+            double effectiveShellRadius = EffectiveRayLength + effectiveShellWidth;
+            if (effectiveShellRadius < 0)
+                return 0;
+            else if (shellWidth < 0)
+                return dP30 * ((RayLength * RayLength * EffectiveRayLength) - (shellRadius * shellRadius * effectiveShellRadius));
+            else
+                return dP30 * ((shellRadius * shellRadius * effectiveShellRadius) - (RayLength * RayLength * EffectiveRayLength));
+        }
+        /*/// <summary>
         /// Get the inverse of the exclusion zone volume seen by a fully active fracture with a specified radius, around all fractures represented by this datapoint
         /// </summary>
         /// <param name="Fracture2Radius">Radius of the fully active fracture</param>
@@ -122,7 +201,7 @@ namespace DFMGenerator_SharedCode
             double OEZShellVolume = (4d / 3d) * Math.PI * (StressShadowWidthRatio / 2) * ((EZLength * EZLength * EZWidth) - (RayLength * RayLength * EffectiveRayLength));
             return Math.Exp(-OEZShellVolume * (dP30 / (double)NoRaysPerFracture));
         }
-        /*/// <summary>
+        /// <summary>
         /// Get the total volume of the exclusion zones around fracture segments represented by another datapoint as seen by rays represented by this datapoint
         /// </summary>
         /// <param name="Fracture2">Reference to another implicit fracture population distribution function datapoint, representing the segments around which the exclusion zones lie</param>
@@ -133,7 +212,7 @@ namespace DFMGenerator_SharedCode
             double EZLength = this.RayLength + Fracture2.RayLength;
             double EZWidth = (this.EffectiveRayLength + Fracture2.EffectiveRayLength) * StressShadowWidthRatio;
             return (4d / 3d) * Math.PI * (Fracture2.dP30 / (double)NoRaysPerFracture) * EZLength * EZLength * EZWidth;
-        }*/
+        }
         /// <summary>
         /// Get the inverse of the total volume of the interaction zones around fracture segments represented by this datapoint as seen by rays represented by another datapoint
         /// The interaction zone is the zone surrounding the exclusion zone; if the centrepoint of the other fracture lies within the interaction zone of this fracture, the two stress shadows will intersect in the next timestep
@@ -151,7 +230,7 @@ namespace DFMGenerator_SharedCode
             double IZShellVolume = (4d / 3d) * Math.PI * ((IZLength * IZLength * IZWidth) - (EZLength * EZLength * EZWidth));
             //double output = Math.Exp(-IZShellVolume * (Fracture2.dP30 / (double)NoRaysPerFracture));
             return Math.Exp(-IZShellVolume * (this.dP30 / (double)NoRaysPerFracture));
-        }
+        }*/
 
         // Functions to manipulate data
         /// <summary>
@@ -177,6 +256,10 @@ namespace DFMGenerator_SharedCode
                 PhiII = 0;
             if (PhiIJ < 0)
                 PhiIJ = 0;
+#if DEBUG
+            CumulativePhiII *= PhiII_M;
+            CumulativePhiIJ *= PhiIJ_M;
+#endif
         }
         /// <summary>
         /// Reset the fracture activation probabilites and the effective ray length at the last deactivation check
@@ -289,6 +372,10 @@ namespace DFMGenerator_SharedCode
             else
                 PropagationControllingLength = propagationControllingLength_in;
             ResetFractureActivationProbabilities();
+#if DEBUG
+            CumulativePhiII = 1;
+            CumulativePhiIJ = 1;
+#endif
         }
     }
 
@@ -338,32 +425,32 @@ namespace DFMGenerator_SharedCode
         /// Mean linear density of static fracture rays deactivated due to reaching the maximum radius
         /// </summary>
         public double sMR_RP32_total { get { return RP32_total[RayPropagationStatus.StaticMaxRadius]; } }
-        /// <summary>
+        /*/// <summary>
         /// Volumetric ratio of fully active fracture rays (i.e. all rays in the fracture are active)
         /// </summary>
-        public double a_RP33_total { get { return RP33_total[RayPropagationStatus.FullyActive]; } }
+        public double a_RP33_total { get { return RP33_exclusive[RayPropagationStatus.FullyActive]; } }
         /// <summary>
         /// Volumetric ratio of restricted fracture rays (i.e. at least one other ray in the fracture is deactivated)
         /// </summary>
-        public double r_RP33_total { get { return RP33_total[RayPropagationStatus.Restricted]; } }
+        public double r_RP33_total { get { return RP33_exclusive[RayPropagationStatus.Restricted]; } }
         /// <summary>
         /// Maximum volumetric ratio of static fracture rays deactivated due to stress shadow interaction
         /// This value does not take into account that the stress shadows around static fractures may overlap
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
-        public double sII_RP33_total { get { return RP33_total[RayPropagationStatus.StaticStressShadow]; } }
+        public double sII_RP33_total { get { return RP33_exclusive[RayPropagationStatus.StaticStressShadow]; } }
         /// <summary>
         /// Maximum volumetric ratio of static fracture rays deactivated due to intersection
         /// This value does not take into account that the stress shadows around static fractures may overlap
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
-        public double sIJ_RP33_total { get { return RP33_total[RayPropagationStatus.StaticIntersection]; } }
+        public double sIJ_RP33_total { get { return RP33_exclusive[RayPropagationStatus.StaticIntersection]; } }
         /// <summary>
         /// Maximum volumetric ratio of static fracture rays deactivated due to reaching the maximum radius
         /// This value does not take into account that the stress shadows around static fractures may overlap
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
-        public double sMR_RP33_total { get { return RP33_total[RayPropagationStatus.StaticMaxRadius]; } }
+        public double sMR_RP33_total { get { return RP33_exclusive[RayPropagationStatus.StaticMaxRadius]; } }*/
         /// <summary>
         /// Volumetric density of all fractures
         /// </summary>
@@ -390,27 +477,33 @@ namespace DFMGenerator_SharedCode
                 return RP32;
             }
         }
-        /// <summary>
-        /// Maximum volumetric ratio of all fractures
-        /// This value does not take into account that the stress shadows around static fractures may overlap
-        /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
+        /// Maximum volumetric ratio of all non-overlapping fractures
+        /// This includes all fully active and restricted rays, all rays that have reached maximum length, and the largest static rays
+        /// However it does not include static rays with effective ray length shprter than the minimum size that can be deactivated by the largest current fractures
+        /// It should therefore not be used directly for calculating total stress shadow volume
         /// </summary>
-        public double FP33_total
+        public double FP33_exclusive_total
         {
             get
             {
                 double RP33 = 0;
                 foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
-                    RP33 += RP33_total[status];
+                    RP33 += RP33_exclusive_total[status];
                 return RP33;
-
-                /*double OneMinus_arRP33 = 1 - RP33_total[RayPropagationStatus.FullyActive] - RP33_total[RayPropagationStatus.Restricted];
-                if (OneMinus_arRP33 < 0) OneMinus_arRP33 = 0;
-                double OneMinus_sIIRP33 = 1 - RP33_total[RayPropagationStatus.StaticStressShadow];
-                if (OneMinus_sIIRP33 < 0) OneMinus_sIIRP33 = 0;
-                double OneMinus_sIJRP33 = 1 - RP33_total[RayPropagationStatus.StaticIntersection];
-                if (OneMinus_sIJRP33 < 0) OneMinus_sIJRP33 = 0;
-                return 1 - (OneMinus_arRP33 * OneMinus_sIIRP33 * OneMinus_sIJRP33);*/
+            }
+        }
+        /// Maximum volumetric ratio of all overlapping fractures
+        /// This value does not take into account that the stress shadows around these fractures may overlap
+        /// It will therefore be an overestimate of the true value and should not be used directly for calculating total stress shadow volume
+        /// </summary>
+        public double FP33_overlapping_total
+        {
+            get
+            {
+                double RP33 = 0;
+                foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                    RP33 += RP33_overlapping_total[status];
+                return RP33;
             }
         }
         /// <summary>
@@ -453,27 +546,66 @@ namespace DFMGenerator_SharedCode
             return RP32 * (Math.PI / (double)noSegments);
         }
         /// <summary>
-        /// Get the total volumetric ratio of all segments with effective radius greater than a specified value
+        /// Get the total volumetric ratio of all non-overlapping fracture segments with effective radius greater than a specified value
+        /// This includes all fully active and restricted rays, all rays that have reached maximum length, and the largest static rays
+        /// However it does not include static rays with effective ray length shprter than the minimum size that can be deactivated by the largest current fractures
+        /// It should therefore not be used directly for calculating total stress shadow volume
         /// </summary>
         /// <param name="CutoffRadius">Minimum effective radius</param>
         /// <returns>Cumulative P33 density of all fractures with effective radius greater than or equal to the specified minimum</returns>
-        public double cumulative_FP33(double CutoffRadius)
+        public double cumulative_FP33_exclusive(double CutoffRadius)
         {
             // NB this calculation assumes that the population data arrays have already been sorted from largest to smallest
             // It also ignores the adjustment factors - these are only calculated for the entire fracture population
-            // Finally it does not take into account that the stress shadows around static fractures may overlap
-            // It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
+
             double RP33 = 0;
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // If the minimum size for non-overlapping fracture rays for the current ray propagation status is greater than the specified cutoff, we will only look at fractures larger than that
+                double minEffectiveRayLength = Math.Max(CutoffRadius, getMinimumExclusiveStressShadowEffectiveRayLength(status));
+
                 foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
                 {
-                    if (datapoint.EffectiveRayLength < CutoffRadius)
+                    if (datapoint.EffectiveRayLength < minEffectiveRayLength)
                         break;
                     RP33 += datapoint.dP33factor;
                 }
+            }
 
             return RP33 * (4 / 3) * (Math.PI / (double)noSegments);
         }
+        /// <summary>
+        /// Get the total volumetric ratio of all overlapping fracture segments with effective radius greater than a specified value
+        /// This value does not take into account that the stress shadows around these fractures may overlap
+        /// It will therefore be an overestimate of the true value and should not be used directly for calculating total stress shadow volume
+        /// </summary>
+        /// <param name="CutoffRadius">Minimum effective radius</param>
+        /// <returns>Cumulative P33 density of all fractures with effective radius greater than or equal to the specified minimum</returns>
+        public double cumulative_FP33_overlapping(double CutoffRadius)
+        {
+            // NB this calculation assumes that the population data arrays have already been sorted from largest to smallest
+            // It also ignores the adjustment factors - these are only calculated for the entire fracture population
+
+            double RP33 = 0;
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+                double minExclusiveEffectiveRayLength = Math.Max(CutoffRadius, getMinimumExclusiveStressShadowEffectiveRayLength(status));
+
+                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
+                {
+                    if (datapoint.EffectiveRayLength < minExclusiveEffectiveRayLength)
+                    {
+                        if (datapoint.EffectiveRayLength < CutoffRadius)
+                            break;
+                        RP33 += datapoint.dP33factor;
+                    }
+                }
+            }
+
+            return RP33 * (4 / 3) * (Math.PI / (double)noSegments);
+        }
+
         /// <summary>
         /// Dictionary object containing volumetric density of fracture rays for all ray propagation statuses
         /// </summary>
@@ -483,9 +615,15 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private Dictionary<RayPropagationStatus, double> RP32_total;
         /// <summary>
-        /// Dictionary object containing volumetric ratio of fracture rays for all ray propagation statuses
+        /// Dictionary object containing volumetric ratio of non-overlapping fracture rays for all ray propagation statuses
+        /// This includes all fully active and restricted rays, all rays that have reached maximum length, and the largest static rays
         /// </summary>
-        private Dictionary<RayPropagationStatus, double> RP33_total;
+        private Dictionary<RayPropagationStatus, double> RP33_exclusive_total;
+        /// <summary>
+        /// Dictionary object containing volumetric ratio of overlapping fracture rays for all ray propagation statuses
+        /// This includes only the smaller static rays, and no fully active rays, restricted rays, or rays that have reached maximum length
+        /// </summary>
+        private Dictionary<RayPropagationStatus, double> RP33_overlapping_total;
         /// <summary>
         /// Dictionary object containing the adjustment factors for mean linear density of fracture rays for all ray propagation statuses
         /// The adjustment factor arises when the size of the population distribution function arrays are reduced by amalgamating datapoints
@@ -493,11 +631,53 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private Dictionary<RayPropagationStatus, double> RP32_total_adjustment;
         /// <summary>
-        /// Dictionary object containing the adjustment factors for volumetric ratio of fracture rays for all ray propagation statuses
+        /// Dictionary object containing the adjustment factors for volumetric ratio of non-overlapping fracture rays for all ray propagation statuses
         /// The adjustment factor arises when the size of the population distribution function arrays are reduced by amalgamating datapoints
         /// It represents the difference in volume between the actual size of fractures represented by datapoints that are removed and the size represented by the datapoint they are reassigned to
         /// </summary>
-        private Dictionary<RayPropagationStatus, double> RP33_total_adjustment;
+        private Dictionary<RayPropagationStatus, double> RP33_exclusive_adjustment;
+        /// <summary>
+        /// Dictionary object containing the adjustment factors for volumetric ratio of overlapping fracture rays for all ray propagation statuses
+        /// The adjustment factor arises when the size of the population distribution function arrays are reduced by amalgamating datapoints
+        /// It represents the difference in volume between the actual size of fractures represented by datapoints that are removed and the size represented by the datapoint they are reassigned to
+        /// </summary>
+        private Dictionary<RayPropagationStatus, double> RP33_overlapping_adjustment;
+        /// <summary>
+        /// Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
+        /// </summary>
+        private double minStressShadowDeactivationRatio;
+        /// <summary>
+        /// Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
+        /// </summary>
+        private double minIntersectionDeactivationRatio;
+        /// <summary>
+        /// Get the minimum effective radius for overlapping fracture rays for the specified ray propagation status
+        /// The stress shadows of rays with effective radius below this cutoff may overlap, while the stress shadows of rays with effective radius above this cutoff may not overlap
+        /// </summary>
+        /// <param name="status">Specified ray propagation status</param>
+        /// <returns></returns>
+        private double getMinimumExclusiveStressShadowEffectiveRayLength (RayPropagationStatus status)
+        {
+            // All fully active rays, restricted rays and rays that have reached maximum length are non-overlapping, so for these ray propagation statuses the minimum value is -1
+            // Static rays with effective ray length longer than the minimum size that can be deactivated by the largest current fractures are also non-overlapping
+            // However static rays with effective ray length shprter than the minimum size that can be deactivated by the largest current fractures may overlap
+
+            switch (status)
+            {
+                case RayPropagationStatus.FullyActive:
+                    return -1;
+                case RayPropagationStatus.Restricted:
+                    return -1;
+                case RayPropagationStatus.StaticStressShadow:
+                    return minStressShadowDeactivationRatio * MaximumEffectiveRayLength;
+                case RayPropagationStatus.StaticIntersection:
+                    return minIntersectionDeactivationRatio * MaximumEffectiveRayLength;
+                case RayPropagationStatus.StaticMaxRadius:
+                    return -1;
+                default:
+                    return -1;
+            }
+        }
         /// <summary>
         /// Recalculate the total population data from the piecewise population distribution function arrays
         /// </summary>
@@ -506,31 +686,37 @@ namespace DFMGenerator_SharedCode
             // Reset the total population values to zero
             ResetTotalPopulationData();
 
-            // Recalculate each of the fracture population distribution functions
+            // Sort each of the fracture population distribution arrays on effective ray length from largest to smallest
+            // This must be done for all raays before recalculating any of the total fracture population distribution values, so we get the correct minimum size for non-overlapping fracture rays
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
-            {
-                // Sort the arrays on effective ray length from largest to smallest
                 fracturePopulationDatapoints[status].Sort();
 
-                // NB The RP33 values for static fractures calculated here do not take into account that the stress shadows around static fractures may overlap
-                // These values will therefore be overestimates of the true values and should not be used for calculating total stress shadow volume
-                // However it is not possible to calculate the true RP33 values without knowing the stress shadow widths
+            // Recalculate all of the total fracture population distribution values
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+                double minExclusiveEffectiveRayLength = getMinimumExclusiveStressShadowEffectiveRayLength(status);
 
                 // Loop through the arrays for population distribution functions
                 foreach (ImplicitFracturePopulationDatapoint dataPoint in fracturePopulationDatapoints[status])
                 {
                     RP30_total[status] += dataPoint.dP30;
                     RP32_total[status] += dataPoint.dP32factor;
-                    RP33_total[status] += dataPoint.dP33factor;
+                    if (dataPoint.EffectiveRayLength < minExclusiveEffectiveRayLength)
+                        RP33_overlapping_total[status] += dataPoint.dP33factor;
+                    else
+                        RP33_exclusive_total[status] += dataPoint.dP33factor;
                 }
 
                 // Add the adjustment factors to the P32 and P33 values
                 RP32_total[status] += RP32_total_adjustment[status];
-                RP33_total[status] += RP33_total_adjustment[status];
+                RP33_exclusive_total[status] += RP33_exclusive_adjustment[status];
+                RP33_overlapping_total[status] += RP33_overlapping_adjustment[status];
 
                 // Apply the area and volume multipliers
                 RP32_total[status] *= (Math.PI / (double)noSegments);
-                RP33_total[status] *= (4 / 3) * (Math.PI / (double)noSegments);
+                RP33_exclusive_total[status] *= (4 / 3) * (Math.PI / (double)noSegments);
+                RP33_overlapping_total[status] *= (4 / 3) * (Math.PI / (double)noSegments);
             }
         }
 
@@ -543,67 +729,279 @@ namespace DFMGenerator_SharedCode
         /// Number of segments in each fracture (a segment is the part of the fracture surrounding each ray)
         /// </summary>
         private ushort noSegments { get; set; }
+        /// <summary>
+        /// Get the maximum effective ray length of all the current fractures
+        /// </summary>
+        public double MaximumEffectiveRayLength
+        {
+            get
+            {
+                // If any fractures have reached the maximum radius, return this
+                if (fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius].Count > 0)
+                    return fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius][0].EffectiveRayLength;
+                // Otherwise go through all the other categories and find the largest effective radius
+                // We assume that the arrays are sorted so the first datapoint will have the largest effective radius
+                double maxEffRadius = 0;
+                foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                    if (fracturePopulationDatapoints[status].Count > 0)
+                    {
+                        double nextMaxEffRadius = fracturePopulationDatapoints[status][0].EffectiveRayLength;
+                        if (maxEffRadius < nextMaxEffRadius)
+                            maxEffRadius = nextMaxEffRadius;
+                    }
+                return maxEffRadius;
+            }
+        }
 
         // Data calculation and output functions
         /// <summary>
-        /// Get the total clear zone volume seen by a fully active fracture with a specified radius 
+        /// Get the total volume not in stress shadow, taking account of overlapping stress shadows
         /// </summary>
-        /// <param name="radius_in">Radius of the fully active fracture</param>
-        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to fracture radius</param>
-        /// <returns>Clear zone volume seen by the specified fracture; this is the inverse of the exclusion zone volume seen by the fracture</returns>
-        public void getStressShadowClearZoneVolume(double Radius, double StressShadowWidthRatio, out double InverseStressShadowVolume, out double ClearZoneVolume)
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to effective fracture radius</param>
+        /// <returns></returns>
+        public double getInverseStressShadowVolume(double StressShadowWidthRatio)
         {
-            // First calculate the inverse stress shadow volume
-            // This will also be the basis of the clear zone volume
-            InverseStressShadowVolume = 1;
-            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * StressShadowWidthRatio / (double)noSegments;
+            double inverseStressShadowVolume = 1;
 
-            // Stress shadows around fully active and restricted rays, and rays that have reached maximum length, cannot overlap, so this component of the exclusion zone volume is equal to the sum of the stress shadow volume
-            double ar_RStressShadow = StressShadowWidthRatio * (RP33_total[RayPropagationStatus.FullyActive] + RP33_total[RayPropagationStatus.Restricted] + RP33_total[RayPropagationStatus.StaticMaxRadius]);
-            InverseStressShadowVolume -= ar_RStressShadow;
-            if (InverseStressShadowVolume < 0) InverseStressShadowVolume = 0;
+            // First remove the exclusive stress shadow volume
+            // This is the volume of stress shadows around fully active and restricted rays, rays that have reached maximum length, and the largest static rays, which cannot overlap each other
+            double exclusiveStressShadowVolume = FP33_exclusive_total * StressShadowWidthRatio;
+            inverseStressShadowVolume -= exclusiveStressShadowVolume;
+            if (inverseStressShadowVolume < 0)
+                inverseStressShadowVolume = 0;
 
-            // Stress shadows around static rays from different datapoints can overlap so must be calculated by multiplying their inverses
-            // NB Stress shadows around static rays represented by the same datapoint cannot overlap, since these were all deactivated at the same time so must all have been active simultaneously
-            foreach (RayPropagationStatus status in new RayPropagationStatus[2] { RayPropagationStatus.StaticStressShadow, RayPropagationStatus.StaticIntersection })
-                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
-                {
-                    double datapoint_issv = 1 - (datapoint.dP33factor * stressShadowVolumeMultiplier);
-                    if (datapoint_issv < 0) datapoint_issv = 0;
-                    InverseStressShadowVolume *= datapoint_issv;
-                }
+            // Now remove the overlapping stress shadow volume
+            // Since this comprises the stress shadows that can overlap other stress shadows, we must calculate this as an exponential multiplier
+            double overlappingStressShadowVolume = FP33_overlapping_total * StressShadowWidthRatio;
+            inverseStressShadowVolume *= Math.Exp(-overlappingStressShadowVolume);
 
-            // The clear zone volume can be calculated from the inverse stress shadow volume by removing the outer exclusion zone volume
-            ClearZoneVolume = InverseStressShadowVolume;
-
-            // The outer exclusion zones can overlap with exclusion zones and stress shadows around all other fractures, including other fractures represented by the same datapoint
-            // We therefore use the ImplicitFracturePopulationDatapoint.GetInverseOuterExclusionZoneVolume to get the inverse exclusion zone volume for each datapoint
-            // This function allows for overlap between exclusion zones around each fracture
-            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
-                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
-                {
-                    ClearZoneVolume *= datapoint.GetInverseOuterExclusionZoneVolume(Radius, StressShadowWidthRatio);
-                }
+            // Return the final calculated inverse stress shadow volume
+            return inverseStressShadowVolume;
         }
         /// <summary>
-        /// Get the inverse of the total volume of the interaction zones around all fracture segments in this set as seen by rays represented by specific datapoint
+        /// Get the total stress shadow volume, taking account of overlap
         /// </summary>
-        /// <param name="Fracture2"></param>
-        /// <param name="MinRadiusToCheck"></param>
-        /// <param name="StressShadowWidthRatio"></param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to effective fracture radius</param>
         /// <returns></returns>
-        public double getStressShadowNonInteractionVolume(ImplicitFracturePopulationDatapoint Fracture2, double MinRadiusToCheck, double StressShadowWidthRatio)
+        public double getStressShadowVolume(double StressShadowWidthRatio)
         {
-            double niv = 1;
+            return 1 - getInverseStressShadowVolume(StressShadowWidthRatio);
+        }
+        /// <summary>
+        /// Get the total clear zone volume seen by a fully active fracture with a specified radius, taking account of overlap
+        /// </summary>
+        /// <param name="Radius">Radius of the fully active fracture</param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to effective fracture radius</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by the specified fracture; this is the inverse of the exclusion zone volume seen by the fracture</returns>
+        public double getStressShadowClearZoneVolume(double Radius, double StressShadowWidthRatio, out double InverseStressShadowVolume)
+        {
+            return getStressShadowClearZoneVolume(Radius, Radius, StressShadowWidthRatio, out InverseStressShadowVolume);
+        }
+        /// <summary>
+        /// Get the total clear zone volume seen by as seen by rays represented by a specified datapoint, taking account of overlap and the effective radius of all fractures
+        /// </summary>
+        /// <param name="Fracture2">Implicit fracture population datapoint representing the dimensions of the specified fracture rays</param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to effective fracture radius</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by the specified fracture; this is the inverse of the exclusion zone volume seen by the fracture</returns>
+        public double getStressShadowClearZoneVolume(ImplicitFracturePopulationDatapoint Fracture2, double StressShadowWidthRatio, out double InverseStressShadowVolume)
+        {
+            return getStressShadowClearZoneVolume(Fracture2.RayLength, Fracture2.EffectiveRayLength, StressShadowWidthRatio, out InverseStressShadowVolume);
+        }
+        /// <summary>
+        /// Get the total clear zone volume seen by as seen any other fracture, taking account of overlap and the effective radius of all fractures
+        /// </summary>
+        /// <param name="radius">Radius of the fully active fracture</param>
+        /// <param name="effectiveRadius">Effective radius of the fully active fracture</param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to effective fracture radius</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by the specified fracture; this is the inverse of the exclusion zone volume seen by the fracture</returns>
+        private double getStressShadowClearZoneVolume(double radius, double effectiveRadius, double StressShadowWidthRatio, out double InverseStressShadowVolume)
+        {
+            // First get the inverse stress shadow volume
+            InverseStressShadowVolume = getInverseStressShadowVolume(StressShadowWidthRatio);
+            double clearZoneVolume = InverseStressShadowVolume;
 
-            // Loop through all the datapoints that exceed the minimum specified radius and incorporate the non-interaction volume for that datapoint into the total non-interaction volume
-            // Since interaction zones around individual fractures can overlap, this must be done by multiplying
-            // NB this will include the interaction zones around the specified datapopint, as one fracture represented by this datapoint may interact with other fractures represented by the same datapoint
+            // Calculate the inner core and outer shell volumes of the non-overlapping fractures, and the outer shell volumes of the overlapping fractures
+            // The outer shell volume of non-overlapping stress shadows is the outer exclusion zone of the non-overlapping fractures - i.e. not part of the stress shadow, but where new fractures cannot nucleate without overlapping the stress shadow
+            // Although the stress shadows of the non-overlapping fractures cannot overlap, the outer exclusion zones can overlap each other and, to a limited extent, the stress shadows
+            // The inner core volume of non-overlapping stress shadows is the volume which the outer exclusion zones cannot overlap
+            // The outer shell volume of overlapping stress shadows is the outer exclusion zone of the overlapping fractures - like the stress shadows, these can overlap anything
+            double exclusiveOuterShellVolume = 0;
+            double exclusiveInnerCoreVolume = 0;
+            double overlappingOuterShellVolume = 0;
+            // Loop through each ray propagation status
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
-                foreach (ImplicitFracturePopulationDatapoint dataPoint in fracturePopulationDatapoints[status])
-                    if (dataPoint.EffectiveRayLength >= MinRadiusToCheck)
-                        niv *= dataPoint.GetNonInteractionZoneVolume(Fracture2, StressShadowWidthRatio);
-            return niv;
+            {
+                // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+                double minExclusiveEffectiveRayLength = getMinimumExclusiveStressShadowEffectiveRayLength(status);
+
+                // Loop through each datapoint in the population data array
+                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
+                {
+                    // Check if it is an overlapping or a non-overlapping datapoint, and increment the appropriate total shell volumes
+                    if (datapoint.EffectiveRayLength < minExclusiveEffectiveRayLength)
+                    {
+                        overlappingOuterShellVolume += datapoint.dP33ShellFactor(radius, effectiveRadius);
+                    }
+                    else
+                    {
+                        exclusiveOuterShellVolume += datapoint.dP33ShellFactor(radius, effectiveRadius);
+                        exclusiveInnerCoreVolume += datapoint.dP33AdjustedFactor(-radius, -effectiveRadius);
+                    }
+                }
+            }
+            // Apply the required multiplier to calculate the true shell volumes 
+            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * StressShadowWidthRatio / (double)noSegments;
+            if (exclusiveInnerCoreVolume > 1)
+                exclusiveInnerCoreVolume = 1;
+            exclusiveOuterShellVolume *= stressShadowVolumeMultiplier;
+            exclusiveInnerCoreVolume *= stressShadowVolumeMultiplier;
+            overlappingOuterShellVolume *= stressShadowVolumeMultiplier;
+
+            // Remove the outer exclusion zone of non-overlapping stress shadows, taking into account that these may overlap the stress shadows to a limited degree and the other exclusion zones without limit
+            clearZoneVolume *= Math.Exp(-exclusiveOuterShellVolume / (1 - exclusiveInnerCoreVolume));
+
+            // Remove the outer exclusion zone of overlapping stress shadows, assuming that these may overlap all stress shadows and other exclusion zones without limit
+            clearZoneVolume *= Math.Exp(-overlappingOuterShellVolume);
+
+            // Return the clear zone volume
+            return clearZoneVolume;
+        }
+        /// <summary>
+        /// Get the inverse of the total volume of the interaction zones around all fracture segments in this set as seen by rays represented by a specified datapoint
+        /// </summary>
+        /// <param name="Fracture2">Implicit fracture population datapoint representing the dimensions of the specified fracture rays</param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to fracture radius</param>
+        /// <returns></returns>
+        public double getStressShadowNonInteractionVolume(ImplicitFracturePopulationDatapoint Fracture2, double StressShadowWidthRatio)
+        {
+            // This calculates the probability that a random point lies within the clear zone volume after an incremental increase in the size of all fracture rays
+            // (including the specified datapoint), assuming that it lay within the clear zone volume before the incremental increase
+            // This is more complex than calculating the clear zone volume, since the increment in fracture ray length will be different for every datapoint
+            // Also we must take account of the minimum stress shadow deactivation ratio
+            // Fractures will not terminate if they encounter another fracture with effective radius less than a specified proportion of their own effective radius
+            double minDeactivationRadius = Fracture2.EffectiveRayLength * minStressShadowDeactivationRatio;
+
+            // Get the initial and final radius and effective radius of fracture 2
+            double frac2InitialRadius = Fracture2.RayLength;
+            double frac2InitialEffectiveRadius = Fracture2.EffectiveRayLength;
+            double frac2FinalRadius = frac2InitialRadius + Fracture2.RayLengthIncrement;
+            double frac2FinalEffectiveRadius = frac2InitialEffectiveRadius + Fracture2.EffectiveRayLengthIncrement;
+
+            // Calculate the fixed components of the inner shell volumes of the non-overlapping fractures
+            double Gamma0 = 0;
+            double Gamma1 = 0;
+            double Gamma2 = 0;
+            double Gamma3 = 0;
+            double Gamma4 = 0;
+            double Gamma5 = 0;
+            // Loop through each ray propagation status
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+                double minExclusiveEffectiveRayLength = getMinimumExclusiveStressShadowEffectiveRayLength(status);
+
+                // Loop through each datapoint in the population data array
+                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
+                {
+                    // If the effective ray length is less than the specified minimum, we can move on to the next array (assuming all arrays are sorted in descending order of effective ray length)
+                    double frac1EffRayLength = datapoint.EffectiveRayLength;
+                    if (frac1EffRayLength < minExclusiveEffectiveRayLength)
+                        break;
+
+                    double dp_dp30 = datapoint.dP30;
+                    double dp_shellRadius = datapoint.RayLength - frac2FinalRadius;
+                    double dp_shellEffectiveRadius = datapoint.EffectiveRayLength - frac2FinalEffectiveRadius;
+                    if (dp_shellRadius < 0)
+                        dp_shellRadius = 0;
+                    if (dp_shellEffectiveRadius < 0)
+                        dp_shellEffectiveRadius = 0;
+
+                    Gamma0 += (dp_dp30 * dp_shellRadius * dp_shellRadius * dp_shellEffectiveRadius);
+                    Gamma1 += (dp_dp30 * dp_shellRadius * dp_shellRadius);
+                    Gamma2 += (dp_dp30 * dp_shellRadius * dp_shellEffectiveRadius);
+                    Gamma3 += (dp_dp30 * dp_shellRadius);
+                    Gamma4 += (dp_dp30 * dp_shellEffectiveRadius);
+                    Gamma5 += dp_dp30;
+                }
+            }
+            // Apply the required multiplier to calculate the true shell volumes 
+            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * StressShadowWidthRatio / (double)noSegments;
+            Gamma0 *= stressShadowVolumeMultiplier;
+            Gamma1 *= stressShadowVolumeMultiplier;
+            Gamma2 *= stressShadowVolumeMultiplier;
+            Gamma3 *= stressShadowVolumeMultiplier;
+            Gamma4 *= stressShadowVolumeMultiplier;
+            Gamma5 *= stressShadowVolumeMultiplier;
+
+            // Calculate the outer shell volumes of the non-overlapping fractures, and the outer shell volumes of the overlapping fractures, before and after ray length increment
+            // The outer shell volume of non-overlapping stress shadows is the outer exclusion zone of the non-overlapping fractures - i.e. not part of the stress shadow, but where new fractures cannot nucleate without overlapping the stress shadow
+            // Although the stress shadows of the non-overlapping fractures cannot overlap, the outer exclusion zones can overlap each other and, to a limited extent, the stress shadows
+            // The inner core volume of non-overlapping stress shadows is the volume which the outer exclusion zones cannot overlap
+            // The outer shell volume of overlapping stress shadows is the outer exclusion zone of the overlapping fractures - like the stress shadows, these can overlap anything
+            double initialExclusiveOuterShellVolume = 0;
+            double initialOverlappingOuterShellVolume = 0;
+            double finalExclusiveOuterShellVolume = 0;
+            double finalOverlappingOuterShellVolume = 0;
+            // Loop through each ray propagation status
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+                double minExclusiveEffectiveRayLength = getMinimumExclusiveStressShadowEffectiveRayLength(status);
+
+                // Loop through each datapoint in the population data array
+                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
+                {
+                    // Get the increment of the radius and effective radius of fracture 1
+                    double frac1RadiusIncrement = datapoint.RayLengthIncrement;
+                    double frac1EffectiveRadiusIncrement = datapoint.EffectiveRayLengthIncrement;
+
+                    // If the effective ray length is less than the specified minimum, we can move on to the next array (assuming all arrays are sorted in descending order of effective ray length)
+                    double frac1EffRayLength = datapoint.EffectiveRayLength;
+                    if (frac1EffRayLength < minDeactivationRadius)
+                        break;
+
+                    // Check if it is an overlapping or a non-overlapping datapoint, and increment the appropriate total shell volumes
+                    if (frac1EffRayLength < minExclusiveEffectiveRayLength)
+                    {
+                        initialOverlappingOuterShellVolume += datapoint.dP33ShellFactor(frac2InitialRadius, frac2InitialEffectiveRadius);
+                        finalOverlappingOuterShellVolume += datapoint.dP33ShellFactor(frac2FinalRadius + frac1RadiusIncrement, frac2FinalEffectiveRadius + frac1EffectiveRadiusIncrement);
+                    }
+                    else
+                    {
+                        // The initial exclusive inner core volume is the same for all fractures, but the final exclusive inner core volume will vary as it includes the increment of fracture size
+                        // We must therefore calculate it separately for all fractures
+                        // We can use a full version or an approximation, valid when frac1RadiusIncrement << frac1Radius
+                        // Full version
+                        double finalExclusiveInnerCoreVolume = Gamma0 - (Gamma1 * frac1EffectiveRadiusIncrement) - (2 * Gamma2 * frac1RadiusIncrement) + (2 * Gamma3 * frac1RadiusIncrement * frac1EffectiveRadiusIncrement)
+                            + (Gamma4 * frac1RadiusIncrement * frac1RadiusIncrement) - (Gamma5 * frac1RadiusIncrement * frac1RadiusIncrement * frac1EffectiveRadiusIncrement);
+                        // Approximation
+                        //double finalExclusiveInnerCoreVolume = Gamma0 - (Gamma1 * frac1EffectiveRadiusIncrement) - (2 * Gamma2 * frac1RadiusIncrement);
+                        finalExclusiveInnerCoreVolume *= stressShadowVolumeMultiplier;
+                        if (finalExclusiveInnerCoreVolume > 1)
+                            finalExclusiveInnerCoreVolume = 1;
+                        initialExclusiveOuterShellVolume += datapoint.dP33ShellFactor(frac2InitialRadius, frac2InitialEffectiveRadius);
+                        finalExclusiveOuterShellVolume += (datapoint.dP33ShellFactor(frac2FinalRadius + frac1RadiusIncrement, frac2FinalEffectiveRadius + frac1EffectiveRadiusIncrement) / (1 - finalExclusiveInnerCoreVolume));
+                    }
+                }
+            }
+            double initialExclusiveInnerCoreVolume = Gamma0 * stressShadowVolumeMultiplier;
+            if (initialExclusiveInnerCoreVolume > 1)
+                initialExclusiveInnerCoreVolume = 1;
+            initialExclusiveOuterShellVolume /= (1 - initialExclusiveInnerCoreVolume);
+
+            // Apply the required multiplier to calculate the true shell volumes 
+            initialOverlappingOuterShellVolume *= stressShadowVolumeMultiplier;
+            finalOverlappingOuterShellVolume *= stressShadowVolumeMultiplier;
+            initialExclusiveOuterShellVolume *= stressShadowVolumeMultiplier;
+            finalExclusiveOuterShellVolume *= stressShadowVolumeMultiplier;
+
+            // Calculate the initial and final clear zone volumes and return the ratio of the two
+            double initialClearZoneVolume = Math.Exp(-(initialExclusiveOuterShellVolume + initialOverlappingOuterShellVolume));
+            double finalClearZoneVolume = Math.Exp(-(finalExclusiveOuterShellVolume + finalOverlappingOuterShellVolume));
+            return finalClearZoneVolume / initialClearZoneVolume;
         }
 
         // Reset and data input functions
@@ -616,7 +1014,8 @@ namespace DFMGenerator_SharedCode
             {
                 RP30_total[status] = 0;
                 RP32_total[status] = 0;
-                RP33_total[status] = 0;
+                RP33_exclusive_total[status] = 0;
+                RP33_overlapping_total[status] = 0;
             }
         }
         /// <summary>
@@ -628,7 +1027,10 @@ namespace DFMGenerator_SharedCode
             // Initial volumetric fracture density set to zero
             // Initial fracture radius set to zero
             // Number of rays comprising each fracture set to 8
-            ResetPopulationDistributionData(0, 0, 8);
+            // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction: set to 1
+            // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection: set to 1
+
+            ResetPopulationDistributionData(0, 0, 8, 1, 1);
         }
         /// <summary>
         /// Reset the total population values and the arrays for the piecewise population distribution functions
@@ -636,7 +1038,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="a_RP30_initial">Initial volumetric density of fractures</param>
         /// <param name="rmin">Radius of initial fractures</param>
         /// <param name="raysPerFracture">Number of rays comprising each fracture (equal to the number of segments per fracture)</param>
-        public void ResetPopulationDistributionData(double a_RP30_initial, double rmin, ushort raysPerFracture)
+        /// <param name="minStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
+        /// <param name="minIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
+        public void ResetPopulationDistributionData(double a_RP30_initial, double rmin, ushort raysPerFracture, double minStressShadowDeactivationRatio_in, double minIntersectionDeactivationRatio_in)
         {
             // Set the number of segments per fracture
             noSegments = raysPerFracture;
@@ -646,12 +1050,19 @@ namespace DFMGenerator_SharedCode
             // The adjustment factors arise when the size of the population distribution function arrays are reduced by amalgamating datapoints
             // They represent the difference in area or volume between the actual size of fractures represented by datapoints that are removed and the size represented by the datapoint they are reassigned to
             RP32_total_adjustment = new Dictionary<RayPropagationStatus, double>();
-            RP33_total_adjustment = new Dictionary<RayPropagationStatus, double>();
+            RP33_exclusive_adjustment = new Dictionary<RayPropagationStatus, double>();
+            RP33_overlapping_adjustment = new Dictionary<RayPropagationStatus, double>();
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
             {
                 RP32_total_adjustment[status] = 0;
-                RP33_total_adjustment[status] = 0;
+                RP33_exclusive_adjustment[status] = 0;
+                RP33_overlapping_adjustment[status] = 0;
             }
+
+            // Set the variables for the minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction and intersection, as a ratio of the propagating fracture radius
+            // These are used to calculate the minimum effective radius for overlapping static fracture rays
+            minStressShadowDeactivationRatio = minStressShadowDeactivationRatio_in;
+            minIntersectionDeactivationRatio = minIntersectionDeactivationRatio_in;
 
             // Reset the population arrays
             fracturePopulationDatapoints = new Dictionary<RayPropagationStatus, List<ImplicitFracturePopulationDatapoint>>();
@@ -665,7 +1076,8 @@ namespace DFMGenerator_SharedCode
             // Reset and recalculate the total population values
             RP30_total = new Dictionary<RayPropagationStatus, double>();
             RP32_total = new Dictionary<RayPropagationStatus, double>();
-            RP33_total = new Dictionary<RayPropagationStatus, double>();
+            RP33_exclusive_total = new Dictionary<RayPropagationStatus, double>();
+            RP33_overlapping_total = new Dictionary<RayPropagationStatus, double>();
             RecalculateTotalPopulationData();
         }
         /// <summary>
@@ -675,36 +1087,75 @@ namespace DFMGenerator_SharedCode
         /// <param name="PointSpacing">Number of points to amalgamate into a single datapoint</param>
         public void CullArray(RayPropagationStatus ArrayToCull, ushort PointSpacing)
         {
-            double P32_adjustment = 0;
-            double P33_adjustment = 0;
+            // This function amalgamates a collection of population distribution function array datapoints into a single datapoint, if both the ray lengths and effective ray lengths lie within a specified range (expressed as a ratio)
+            // NB this function will remove the smaller datapoints from each collection of points to be amalgamated, and retain the largest datapoint
+            // The P32 and P33 adjustments will therefore be negative
+
+            // Get a reference to the list to be culled
             List<ImplicitFracturePopulationDatapoint> listToCull = fracturePopulationDatapoints[ArrayToCull];
-            int dataPointNo = listToCull.Count - 1;
-            for (int nextPointToKeep = (dataPointNo / PointSpacing) * PointSpacing; nextPointToKeep >= 0; nextPointToKeep -= PointSpacing)
+
+            // First sort the fracture population distribution arrays on effective ray length from largest to smallest
+            listToCull.Sort();
+
+            // Create variables to calculate the total P32 and P33 adjustments that will be required
+            double P32_adjustment = 0;
+            double P33_exclusive_adjustment = 0;
+            double P33_overlapping_adjustment = 0;
+
+            // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+            double minExclusiveEffectiveRayLength = getMinimumExclusiveStressShadowEffectiveRayLength(ArrayToCull);
+
+            // Loop through the list of datapoints in descending order of index number, i.e. in ascending order of effective ray length
+            int currentDataPointNo = listToCull.Count - 1;
+            for (int nextDataPointNoToKeep = (currentDataPointNo / PointSpacing) * PointSpacing; nextDataPointNoToKeep >= 0; nextDataPointNoToKeep -= PointSpacing)
             {
-                double dP30_increment = 0;
-                double nextPoint_Radius = listToCull[nextPointToKeep].RayLength;
-                double nextPoint_EffectiveRadius = listToCull[nextPointToKeep].EffectiveRayLength;
+                // Get a reference to the next datapoint to keep and cache relevant data locally
+                ImplicitFracturePopulationDatapoint nextPointToKeep = listToCull[nextDataPointNoToKeep];
+                double nextPoint_Radius = nextPointToKeep.RayLength;
+                double nextPoint_EffectiveRadius = nextPointToKeep.EffectiveRayLength;
                 double nextPoint_Area = nextPoint_Radius * nextPoint_Radius;
                 double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRadius;
-                for (; dataPointNo > nextPointToKeep; dataPointNo--)
+
+                // Check whether the next datapoint to keep is an exclusive or an overlapping datapoint
+                bool nextPointIsOverlapping = (nextPoint_EffectiveRadius < minExclusiveEffectiveRayLength);
+
+                // Create a variable for the total volumetric density of rays to be amalgamated into the current datapoint 
+                double dP30_increment = 0;
+
+                // Loop through the datapoints to cull
+                for (; currentDataPointNo > nextDataPointNoToKeep; currentDataPointNo--)
                 {
-                    double thisPoint_dP30 = listToCull[dataPointNo].dP30;
-                    double thisPoint_Radius = listToCull[dataPointNo].RayLength;
-                    double thisPoint_EffectiveRadius = listToCull[dataPointNo].EffectiveRayLength;
-                    double thisPoint_Area = thisPoint_Radius * thisPoint_Radius;
-                    double thisPoint_Volume = thisPoint_Area * thisPoint_EffectiveRadius;
-                    dP30_increment += thisPoint_dP30;
-                    P32_adjustment += thisPoint_dP30 * (thisPoint_Area - nextPoint_Area);
-                    P33_adjustment += thisPoint_dP30 * (thisPoint_Volume - nextPoint_Volume);
-                    listToCull.RemoveAt(dataPointNo);
+                    // Get a reference to the current datapoint to keep and cache relevant data locally
+                    ImplicitFracturePopulationDatapoint currentPoint = listToCull[currentDataPointNo];
+                    double currentPoint_dP30 = currentPoint.dP30;
+                    double currentPoint_Radius = currentPoint.RayLength;
+                    double currentPoint_EffectiveRadius = listToCull[currentDataPointNo].EffectiveRayLength;
+                    double currentPoint_Area = currentPoint_Radius * currentPoint_Radius;
+                    double currentPoint_Volume = currentPoint_Area * currentPoint_EffectiveRadius;
+
+                    // Increment the variables for the total volumetric density of rays to be amalgamated into the current datapoint and the total P32 and P33 adjustments
+                    dP30_increment += currentPoint_dP30;
+                    P32_adjustment += currentPoint_dP30 * (currentPoint_Area - nextPoint_Area);
+                    if (nextPointIsOverlapping)
+                        P33_overlapping_adjustment += currentPoint_dP30 * (currentPoint_Volume - nextPoint_Volume);
+                    else
+                        P33_exclusive_adjustment += currentPoint_dP30 * (currentPoint_Volume - nextPoint_Volume);
+
+                    // Remove the datapoint to be culled
+                    listToCull.RemoveAt(currentDataPointNo);
                 }
-                listToCull[dataPointNo].Increment_dP30(dP30_increment);
-                dataPointNo--;
+
+                // Increment the total volumetric density of rays associated with the current datapoint to include the datapoints that have been culled
+                listToCull[currentDataPointNo].Increment_dP30(dP30_increment);
+
+                // Reduce the current datapoint number by one, so that we skip the point we are keeping
+                currentDataPointNo--;
             }
 
             // Update the adjustment factors
             RP32_total_adjustment[ArrayToCull] += P32_adjustment;
-            RP33_total_adjustment[ArrayToCull] += P33_adjustment;
+            RP33_exclusive_adjustment[ArrayToCull] += P33_exclusive_adjustment;
+            RP33_overlapping_adjustment[ArrayToCull] += P33_overlapping_adjustment;
         }
         /// <summary>
         /// Reduce the size of a specified population distribution function array by amalgamating datapoints representing ray lengths within a specified ratio
@@ -713,36 +1164,81 @@ namespace DFMGenerator_SharedCode
         /// <param name="LengthRatio">Ratio of ray lengths to amalgamate into a single datapoint</param>
         public void CullArray(RayPropagationStatus ArrayToCull, double LengthRatio)
         {
-            double P32_adjustment = 0;
-            double P33_adjustment = 0;
+            // This function amalgamates a collection of population distribution function array datapoints into a single datapoint, if both the ray lengths and effective ray lengths lie within a specified range (expressed as a ratio)
+            // NB this function will remove the smaller datapoints from each collection of points to be amalgamated, and retain the largest datapoint
+            // The P32 and P33 adjustments will therefore be negative
+
+            // Get a reference to the list to be culled
             List<ImplicitFracturePopulationDatapoint> listToCull = fracturePopulationDatapoints[ArrayToCull];
 
-            for (int dataPointNo = 0; dataPointNo < listToCull.Count; dataPointNo++)
+            // First sort the fracture population distribution arrays on effective ray length from largest to smallest
+            listToCull.Sort();
+
+            // Create variables to calculate the total P32 and P33 adjustments that will be required
+            double P32_adjustment = 0;
+            double P33_exclusive_adjustment = 0;
+            double P33_overlapping_adjustment = 0;
+
+            // Get the minimum size for non-overlapping fracture rays for the current ray propagation status
+            double minExclusiveEffectiveRayLength = getMinimumExclusiveStressShadowEffectiveRayLength(ArrayToCull);
+
+            // Loop through the list of datapoints in ascending order of index number, i.e. in descending order of effective ray length
+            for (int currentDataPointNo = 0; currentDataPointNo < listToCull.Count; currentDataPointNo++)
             {
-                double maxRayLength = listToCull[dataPointNo].RayLength * LengthRatio;
+                // Get a reference to the current datapoint and cache relevant data locally
+                ImplicitFracturePopulationDatapoint currentPoint = listToCull[currentDataPointNo];
+                double currentPoint_Radius = currentPoint.RayLength;
+                double currentPoint_EffectiveRadius = currentPoint.EffectiveRayLength;
+                double currentPoint_Area = currentPoint_Radius * currentPoint_Radius;
+                double currentPoint_Volume = currentPoint_Area * currentPoint_EffectiveRadius;
+
+                // Check whether the current datapoint is an exclusive or an overlapping datapoint
+                bool currentPointIsOverlapping = (currentPoint_EffectiveRadius < minExclusiveEffectiveRayLength);
+
+                // Calculate the minimum ray length and effective ray lengths for the smaller datapoints that will be amalgamated with this datapoint
+                double minRayLengthToAmalgamate = currentPoint_Radius / (1 + LengthRatio);
+                double minEffectiveRayLengthToAmalgamate = currentPoint_EffectiveRadius / (1 + LengthRatio);
+
+                // Create a variable for the total volumetric density of rays to be amalgamated into the current datapoint 
                 double dP30_increment = 0;
-                double thisPoint_Radius = listToCull[dataPointNo].RayLength;
-                double thisPoint_EffectiveRadius = listToCull[dataPointNo].EffectiveRayLength;
-                double thisPoint_Area = thisPoint_Radius * thisPoint_Radius;
-                double thisPoint_Volume = thisPoint_Area * thisPoint_EffectiveRadius;
-                for (int nextDataPointNo = dataPointNo + 1; (nextDataPointNo < listToCull.Count) && (listToCull[nextDataPointNo].RayLength < maxRayLength);)
+
+                // Loop ahead of the current datapoint to find any other datapoints within the specified effective ray length
+                for (int nextDataPointNo = currentDataPointNo + 1; (nextDataPointNo < listToCull.Count) && (listToCull[nextDataPointNo].EffectiveRayLength >= minEffectiveRayLengthToAmalgamate);)
                 {
-                    double nextPoint_dP30 = listToCull[nextDataPointNo].dP30;
-                    double nextPoint_Radius = listToCull[nextDataPointNo].RayLength;
-                    double nextPoint_EffectiveRadius = listToCull[nextDataPointNo].EffectiveRayLength;
+                    // Get a reference to the next datapoint and check if it is also within the specified ray length range
+                    ImplicitFracturePopulationDatapoint nextPoint = listToCull[nextDataPointNo];
+                    double nextPoint_Radius = nextPoint.RayLength;
+                    if (nextPoint_Radius < minRayLengthToAmalgamate)
+                    {
+                        currentDataPointNo++;
+                        nextDataPointNo++;
+                        continue;
+                    }
+
+                    // Increment the variables for the total volumetric density of rays to be amalgamated into the current datapoint and the total P32 and P33 adjustments
+                    double nextPoint_EffectiveRadius = nextPoint.EffectiveRayLength;
+                    double nextPoint_dP30 = nextPoint.dP30;
                     double nextPoint_Area = nextPoint_Radius * nextPoint_Radius;
                     double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRadius;
                     dP30_increment += nextPoint_dP30;
-                    P32_adjustment += nextPoint_dP30 * (nextPoint_Area - thisPoint_Area);
-                    P33_adjustment += nextPoint_dP30 * (nextPoint_Volume - thisPoint_Volume);
+                    P32_adjustment += nextPoint_dP30 * (nextPoint_Area - currentPoint_Area);
+                    if (currentPointIsOverlapping)
+                        P33_overlapping_adjustment += nextPoint_dP30 * (nextPoint_Volume - currentPoint_Volume);
+                    else
+                        P33_exclusive_adjustment += nextPoint_dP30 * (nextPoint_Volume - currentPoint_Volume);
+
+                    // Remove the datapoint to be culled
                     listToCull.RemoveAt(nextDataPointNo);
                 }
-                listToCull[dataPointNo].Increment_dP30(dP30_increment);
+
+                // Increment the total volumetric density of rays associated with the current datapoint to include the datapoints that have been culled
+                listToCull[currentDataPointNo].Increment_dP30(dP30_increment);
             }
 
             // Update the adjustment factors
             RP32_total_adjustment[ArrayToCull] += P32_adjustment;
-            RP33_total_adjustment[ArrayToCull] += P33_adjustment;
+            RP33_exclusive_adjustment[ArrayToCull] += P33_exclusive_adjustment;
+            RP33_overlapping_adjustment[ArrayToCull] += P33_overlapping_adjustment;
         }
         /// <summary>
         /// Save memory space by clearing all data from the population distribution function arrays
@@ -767,9 +1263,11 @@ namespace DFMGenerator_SharedCode
         /// <param name="a_RP30_initial">Initial volumetric density of fractures</param>
         /// <param name="rmin">Radius of initial fractures</param>
         /// <param name="raysPerFracture">Number of rays comprising each fracture (equal to the number of segments per fracture)</param>
-        public UnconfinedFractureData(double a_RP30_initial, double rmin, ushort raysPerFracture)
+        /// <param name="minStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
+        /// <param name="minIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
+        public UnconfinedFractureData(double a_RP30_initial, double rmin, ushort raysPerFracture, double minStressShadowDeactivationRatio_in, double minIntersectionDeactivationRatio_in)
         {
-            ResetPopulationDistributionData(a_RP30_initial, rmin, raysPerFracture);
+            ResetPopulationDistributionData(a_RP30_initial, rmin, raysPerFracture, minStressShadowDeactivationRatio_in, minIntersectionDeactivationRatio_in);
         }
     }
 }

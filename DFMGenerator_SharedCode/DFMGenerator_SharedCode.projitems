@@ -25,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ProgressReporter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PropagationControl.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)StressStrainState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UnconfinedDFNComponents.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnconfinedFractureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UnconfinedFractureSet.cs" />
   </ItemGroup>

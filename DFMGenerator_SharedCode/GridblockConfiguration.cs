@@ -1,4 +1,7 @@
-﻿// Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
+﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
+// Use for debugging only; will significantly increase runtime
+#define LOGIMPPOP
+// Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
 
@@ -3024,6 +3027,8 @@ namespace DFMGenerator_SharedCode
             bool useMaxTSDurationCutoff = (maxTimestepDuration > 0);
             // Flag for whether all fracture sets have been deactivated
             bool AllSetsDeactivated = false;
+            // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
+            int ufsDatapointCullFrequency = PropControl.cullTSFrequency;
 
             // Set the number of bins to split the microfracture radii into when calculating uFP32 and uFP33 numerically
             int no_r_bins = PropControl.no_r_bins;
@@ -3073,6 +3078,13 @@ namespace DFMGenerator_SharedCode
             }
             bool useSetNames = false;
             bool useDipSetNames = true;
+#if LOGIMPPOP
+            RayPropagationStatus[] rayTypesToLog = new RayPropagationStatus[5] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted, RayPropagationStatus.StaticStressShadow, RayPropagationStatus.StaticIntersection, RayPropagationStatus.StaticMaxRadius };
+            Dictionary<RayPropagationStatus, StreamWriter> rayLogFiles = new Dictionary<RayPropagationStatus, StreamWriter>();
+            foreach (RayPropagationStatus rayType in rayTypesToLog)
+                rayLogFiles[rayType] = new StreamWriter(PropControl.FolderPath + string.Format("{0}_X{1}_Y{2}.txt", rayType, SWtop.X, SWtop.Y));
+            UnconfinedFractureSet UFSToLog = UnconfinedFractureSets[1];
+#endif
 
             // Write header to logfile
             if (writeImplicitDataToFile)
@@ -3177,6 +3189,12 @@ namespace DFMGenerator_SharedCode
                 outputFile.WriteLine(headerLine2);
                 outputFile.WriteLine(TS0data);
             }
+
+#if LOGIMPPOP
+            string logFileHeaderLine = string.Format("Timestep\tDuration\tEnd time\tDriving stress\tClear zone volume\tNo datapoints\t");
+            foreach (RayPropagationStatus rayType in rayTypesToLog)
+                rayLogFiles[rayType].WriteLine(logFileHeaderLine);
+#endif
 
             // Set the fracture distribution flags for each fracture set, based on the specified stress distribution case
             foreach (Gridblock_FractureSet fs in FractureSets)
@@ -3610,7 +3628,7 @@ namespace DFMGenerator_SharedCode
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         // Use the getOptimalDuration function in the fracture set object to get the optimal timestep duration for that set
-                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_Radius);
+                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_Radius, d_MFP33);
 
                         // Check to see if the maximum timstep duration calculated for this timestep is less than the maximum timestep duration so far
                         // NB if it is not possible to calculate a value for the optimal timestep duration, the getOptimalDuration function will return infinity
@@ -3619,12 +3637,6 @@ namespace DFMGenerator_SharedCode
                             TimestepDuration = maxdur;
                     }
 
-#if DEBUG
-                    Console.WriteLine(string.Format("TS {0}, duration {1}, CZA {2}, NoDP FA {3}, R {4}, SII {5}, SIJ {6}, SMax {7}", CurrentImplicitTimestep, TimestepDuration,
-                        UnconfinedFractureSets[1].getClearZoneVolume(), UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count,
-                        UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Count, UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Count,
-                        UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Count, UnconfinedFractureSets[1].Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius].Count));
-#endif
 
                     // If the timestep duration is still infinity, no further fractures can form; therefore set the current timestep duration to zero and set the flag to stop the calculation at the end of it
                     if (double.IsInfinity(TimestepDuration))
@@ -3645,7 +3657,6 @@ namespace DFMGenerator_SharedCode
                     {
                         ufs.setTimestepPropagationData(endLastTimestep, TimestepDuration);
                     }
-
 
                     // Calculate the macrofracture deactivation probabilities Phi_II_M and Phi_IJ_M for each fracture dip set
                     foreach (Gridblock_FractureSet fs in FractureSets)
@@ -3691,6 +3702,13 @@ namespace DFMGenerator_SharedCode
                     {
                         ufs.setFractureExclusionZoneData();
                     }
+
+                    // If required, cull the static unconfined fracture population arrays to reduce the number of datapoints
+                    if (CurrentImplicitTimestep % ufsDatapointCullFrequency == 0)
+                        foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        {
+                            ufs.cullStaticFracturePopulationDatapoints();
+                        }
 
                     // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
                     if (checkAlluFStressShadows)
@@ -3804,11 +3822,11 @@ namespace DFMGenerator_SharedCode
                             }
                         }
                         // Write data for each unconfined fracture set
-                        foreach(UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         {
                             // Get fracture data and add to timestep log string
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP30_total(), ufs.r_RP30_total(), ufs.sII_RP30_total(), ufs.sIJ_RP30_total(),
-                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), 1-ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 
                             timestepData = timestepData + fractureSetData;
                         }
@@ -3888,6 +3906,22 @@ namespace DFMGenerator_SharedCode
                         // Write timestep data to log file
                         outputFile.WriteLine(timestepData);
                     }
+
+#if LOGIMPPOP
+                    Console.WriteLine(string.Format("TS {0}, duration {1}, CZA {2}, NoDP FA {3}, R {4}, SII {5}, SIJ {6}, SMax {7}", CurrentImplicitTimestep, TimestepDuration,
+                        UFSToLog.getClearZoneVolume(), UFSToLog.getNoDatapoints(RayPropagationStatus.FullyActive),
+                        UFSToLog.getNoDatapoints(RayPropagationStatus.Restricted), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticStressShadow),
+                        UFSToLog.getNoDatapoints(RayPropagationStatus.StaticIntersection), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticMaxRadius)));
+                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getClearZoneVolume());
+                    foreach (RayPropagationStatus rayType in rayTypesToLog)
+                    {
+                        string rayTypeDatapointOutput = TAdataoutput + string.Format("{0}\t\t", UFSToLog.getNoDatapoints(rayType));
+                        List<double> dataList = UFSToLog.getdP33Factors(rayType);//UFSToLog.getEffectiveRayLengths(rayType);// UFSToLog.getPhiIJValues(rayType);
+                        foreach (double dataPoint in dataList)
+                            rayTypeDatapointOutput += string.Format("{0}\t", dataPoint);
+                        rayLogFiles[rayType].WriteLine(rayTypeDatapointOutput);
+                    }
+#endif
 
                     // Check if calculation is finished
                     // Check if we have run to completion
@@ -4132,6 +4166,12 @@ namespace DFMGenerator_SharedCode
                 // Close the log file
                 outputFile.Close();
             }
+
+#if LOGIMPPOP
+            foreach (RayPropagationStatus rayType in rayTypesToLog)
+                rayLogFiles[rayType].Close();
+#endif
+
 
             // To free space at the end of the run we will clear the implicit fracture population function datapoint arrays for the unconfined fractures
             // We must therefore ensure that any data that may be required later is saved in the FractureCalculationData list
