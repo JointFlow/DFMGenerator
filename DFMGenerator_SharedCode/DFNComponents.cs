@@ -2468,13 +2468,30 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public List<MacrofractureXYZ> GlobalDFNMacrofractures;
         /// <summary>
+        /// List of discrete unconfined fracture objects in XYZ coordinates - represents unconfined fracture component of global DFN
+        /// </summary>
+        public List<UnconfinedFractureXYZ> GlobalDFNUnconfinedFractures;
+        /// <summary>
         /// End time of last timestep used to generate this DFN
         /// </summary>
         public double CurrentTime { get; private set; }
 
+        // Functions to get output data
+        /// <summary>
+        /// Get the total number of triangular unconfined fracture elements in the DFN
+        /// </summary>
+        /// <returns></returns>
+        public int NoUnconfinedFractureElements()
+        {
+            int noElements = 0;
+            foreach (UnconfinedFractureXYZ ufc in GlobalDFNUnconfinedFractures)
+                noElements += ufc.NoTriangularElements();
+            return noElements;
+        }
+
         // Functions to populate and sort DFN
         /// <summary>
-        /// Repopulate the microfracture and macrofracture collections by calling the respective PopulateData functions
+        /// Repopulate the fracture collections by calling the respective PopulateData functions
         /// </summary>
         /// <param name="currentTime_in">End time of last timestep used to generate this DFN</param>
         public void updateDFN(double currentTime_in)
@@ -2509,6 +2526,10 @@ namespace DFMGenerator_SharedCode
             foreach (MacrofractureXYZ MF in GlobalDFNMacrofractures)
                 MF.PopulateData();
 
+            // Loop through each unconfined fracture in the discrete unconfined fracture list and update the geometry and dynamic data
+            foreach (UnconfinedFractureXYZ UF in GlobalDFNUnconfinedFractures)
+                UF.PopulateData();
+
             // Set the current time
             CurrentTime = currentTime_in;
         }
@@ -2522,14 +2543,17 @@ namespace DFMGenerator_SharedCode
             GlobalDFNMacrofractures.Sort();
             MicrofractureXYZ.SortCriterion = SortCriterion_in;
             GlobalDFNMicrofractures.Sort();
+            UnconfinedFractureXYZ.SortCriterion = SortCriterion_in;
+            GlobalDFNUnconfinedFractures.Sort();
         }
         /// <summary>
-        /// Cull the smallest fractures (both microfractures and macrofractures) based on specified minimum sizes and/or maximum number of fractures
+        /// Cull the smallest fractures (microfractures, macrofractures and unconfined fractures) based on specified minimum sizes and/or maximum number of fractures
         /// </summary>
         /// <param name="MinMicrofractureRadius">Minimum microfracture radius: all microfractures smaller than or equal to this radius will be removed; if negative, no microfractures will be removed at this stag</param>
         /// <param name="MinMacrofractureLength">Minimum macrofracture length: all macrofractures shorter than or equal to this length will be removed; if negative, no macrofractures will be removed at this stag</param>
-        /// <param name="MaxFractureNumber">Maximum number of fractures: the smallest fractures (microfractures then macrofractures) will be removed to bring the total number of fractures under this limit; if negative, no fractures will be removed at this stage</param>
-        public void removeShortestFractures(double MinMicrofractureRadius, double MinMacrofractureLength, int MaxFractureNumber)
+        /// <param name="MinUnconfinedfractureArea">Minimum unconfined fracture area: all unconfined fractures smaller than or equal to this will be removed; if negative, no unconfined fractures will be removed at this stag</param>
+        /// <param name="MaxFractureNumber">Maximum number of fractures: the smallest fractures (microfractures then macrofractures then unconfined fractures) will be removed to bring the total number of fractures under this limit; if negative, no fractures will be removed at this stage</param>
+        public void removeShortestFractures(double MinMicrofractureRadius, double MinMacrofractureLength, double MinUnconfinedfractureArea, int MaxFractureNumber)
         {
             // Sort all the fractures, largest first
             sortFractures(SortProperty.Size_LargestFirst);
@@ -2580,6 +2604,26 @@ namespace DFMGenerator_SharedCode
                 LastMacrofractureIndex--;
             }
 
+            // Get the index number of the smallest unconfinedfracture
+            int LastUnconfinedFractureIndex = GlobalDFNUnconfinedFractures.Count - 1;
+
+            // Loop through all unconfined fractures in reverse order, deleting them if they are smaller than or equal to the specified minimum area
+            while (LastUnconfinedFractureIndex >= 0)
+            {
+                // Get reference to the smallest macrofracture
+                UnconfinedFractureXYZ LastUnconfinedFracture = GlobalDFNUnconfinedFractures[LastUnconfinedFractureIndex];
+
+                // If the area is greater than the specified minimum, we can break out of the loop 
+                if ((float)LastUnconfinedFracture.Area > (float)MinUnconfinedfractureArea)
+                    break;
+
+                // Remove the MacrofractureXYZ object from the list
+                GlobalDFNUnconfinedFractures.Remove(LastUnconfinedFracture);
+
+                // Update the counter for the smallest macrofracture
+                LastUnconfinedFractureIndex--;
+            }
+
             // Remove all fractures in excess of the specified maximum number
             if (MaxFractureNumber >= 0)
             {
@@ -2619,6 +2663,21 @@ namespace DFMGenerator_SharedCode
                     LastMacrofractureIndex--;
                     NoFracsRemaining--;
                 }
+
+                // Loop through unconfined fractures in reverse order, deleting them until we have the specified maximum number
+                while ((LastUnconfinedFractureIndex >= 0) && (NoFracsRemaining > MaxFractureNumber))
+                {
+                    // Get reference to the smallest unconfined fracture
+                    UnconfinedFractureXYZ LastUnconfinedFracture = GlobalDFNUnconfinedFractures[LastUnconfinedFractureIndex];
+
+                    // Remove the UnconfinedFractureXYZ object from the list
+                    GlobalDFNUnconfinedFractures.Remove(LastUnconfinedFracture);
+
+                    // Update the counters for the smallest unconfined fracture and total number of fractures remaining
+                    LastUnconfinedFractureIndex--;
+                    NoFracsRemaining--;
+                }
+
             }
         }
 
@@ -2640,6 +2699,9 @@ namespace DFMGenerator_SharedCode
 
             // Create an empty list for the discrete macrofractures
             GlobalDFNMacrofractures = new List<MacrofractureXYZ>();
+
+            // Create an empty list for the discrete unconfined fractures
+            GlobalDFNUnconfinedFractures = new List<UnconfinedFractureXYZ>();
         }
         /// <summary>
         /// Copy constructor: copy all data from an existing GlobalDFN object
@@ -2662,6 +2724,11 @@ namespace DFMGenerator_SharedCode
             GlobalDFNMacrofractures = new List<MacrofractureXYZ>();
             foreach (MacrofractureXYZ MF in DFNToCopy.GlobalDFNMacrofractures)
                 GlobalDFNMacrofractures.Add(new MacrofractureXYZ(MF));
+
+            // Create an empty list for the discrete unconfined fractures
+            GlobalDFNUnconfinedFractures = new List<UnconfinedFractureXYZ>();
+            foreach (UnconfinedFractureXYZ UF in DFNToCopy.GlobalDFNUnconfinedFractures)
+                GlobalDFNUnconfinedFractures.Add(new UnconfinedFractureXYZ(UF));
         }
     }
 }

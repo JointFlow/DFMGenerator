@@ -69,7 +69,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double gamma_InvBeta_M { get; private set; }
         /// <summary>
-        /// Factor related to microfracture growth during timestep M: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2) in this gridblock for timestep M
+        /// Factor related to microfracture growth in this gridblock during timestep M: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2)
         /// </summary>
         public double gamma_Duration_M { get { return (M_bType == bType.GreaterThan2 ? gamma_InvBeta_M * M_Duration : -gamma_InvBeta_M * M_Duration); } }
         /// <summary>

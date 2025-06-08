@@ -206,6 +206,28 @@ namespace DFMGenerator_SharedCode
             return new PointXYZ(midpointX, midpointY, midpointZ);
         }
         /// <summary>
+        /// Get the centroid of an arbitrary number of points; the centroid is the point with coordinates equal to the mean of the coordinates of all the supplied points
+        /// </summary>
+        /// <param name="points">List of PointXYZ objects</param>
+        /// <returns>PointXYZ object representing the centroid of the input points</returns>
+        public static PointXYZ getCentroid(List<PointXYZ> points)
+        {
+            double Xcoord = 0;
+            double Ycoord = 0;
+            double Zcoord = 0;
+            int noPoints = 0;
+            foreach (PointXYZ point in points)
+            {
+                if (point is null)
+                    continue;
+                Xcoord += point.X;
+                Ycoord += point.Y;
+                Zcoord += point.Z;
+                noPoints++;
+            }
+            return new PointXYZ(Xcoord / (double)noPoints, Ycoord / (double)noPoints, Zcoord / (double)noPoints);
+        }
+        /// <summary>
         /// Check to see if two line segments cross, when projected onto a horizontal plane
         /// </summary>
         /// <param name="Line1Point1"></param>
@@ -432,6 +454,54 @@ namespace DFMGenerator_SharedCode
 
             // Return the calculated point
             return returnPoint;
+        }
+        /// <summary>
+        /// Calculate the position of the intersection point between a vector and a plane defined by three points
+        /// </summary>
+        /// <param name="initialPoint">Start point of the vector</param>
+        /// <param name="propagationVector">Vector</param>
+        /// <param name="PlanePoint1">Point 1 defining the plane to intersect</param>
+        /// <param name="PlanePoint2">Point 2 defining the plane to intersect</param>
+        /// <param name="PlanePoint3">Point 3 defining the plane to intersect</param>
+        /// <param name="XOType">Controls calculation: Extend will return the location of intersection wherever it occurs on the plane; Restrict will only return the location of intersection if it lies within the triangle defined by the three plane points, otherwise it will return NaN</param>
+        /// <returns>Distance from the start point of the vector to the intersection with the plane, along the line of the propagation vector</returns>
+        public static double getIntersectionDistance(PointXYZ initialPoint, VectorXYZ propagationVector, PointXYZ PlanePoint1, PointXYZ PlanePoint2, PointXYZ PlanePoint3, CrossoverType XOType)
+        {
+            VectorXYZ lineVector = propagationVector.GetNormalisedVector();
+
+            double LX = lineVector.Component(VectorComponents.X);
+            double LY = lineVector.Component(VectorComponents.Y);
+            double LZ = lineVector.Component(VectorComponents.Z);
+
+            double axy = (LY * (PlanePoint1.X - PlanePoint3.X)) - (LX * (PlanePoint1.Y - PlanePoint3.Y));
+            double ayz = (LZ * (PlanePoint1.Y - PlanePoint3.Y)) - (LY * (PlanePoint1.Z - PlanePoint3.Z));
+            double bxy = (LY * (PlanePoint1.X - PlanePoint3.X)) - (LX * (PlanePoint2.Y - PlanePoint3.Y));
+            double byz = (LZ * (PlanePoint2.Y - PlanePoint3.Y)) - (LY * (PlanePoint2.Z - PlanePoint3.Z));
+            double cxy = (LY * (PlanePoint3.X - initialPoint.X)) - (LX * (PlanePoint3.Y - initialPoint.Y));
+            double cyz = (LZ * (PlanePoint3.Y - initialPoint.Y)) - (LY * (PlanePoint3.Z - initialPoint.Z));
+
+            double alpha = ((cyz * bxy) - (cxy * byz)) / ((axy * byz) - (ayz * bxy));
+            double beta = ((cyz * axy) - (cxy * ayz)) / ((bxy * ayz) - (byz * axy));
+
+            // If alpha, beta or alpha + beta lie outside the range 0 to 1, the intersection point will not lie within a triangle defiend by the three specified points
+            // If the crossover type restrict is selcleted, in this case we should return NaN
+            if (XOType == CrossoverType.Restrict)
+            {
+                if ((alpha < 0) || (alpha > 1) || (beta < 0) || (beta > 1) || (alpha + beta > 1))
+                    return double.NaN;
+            }
+
+            // Otherwise we can calculate the distance from the initial point to the intersection point as a mutliple of the propagation vector
+            // First we will select the most advantageous coordinate to use
+            double gamma;
+            if ((LX > LY) && (LX > LZ))
+                gamma = ((alpha * (PlanePoint1.X - PlanePoint3.X)) + (beta * (PlanePoint2.X - PlanePoint3.X)) - (PlanePoint3.X - initialPoint.X)) / LX;
+            else if (LY > LZ)
+                gamma = ((alpha * (PlanePoint1.Y - PlanePoint3.Y)) + (beta * (PlanePoint2.Y - PlanePoint3.Y)) - (PlanePoint3.Y - initialPoint.Y)) / LY;
+            else
+                gamma = ((alpha * (PlanePoint1.Z - PlanePoint3.Z)) + (beta * (PlanePoint2.Z - PlanePoint3.Z)) - (PlanePoint3.Z - initialPoint.Z)) / LZ;
+
+            return gamma;
         }
         /// <summary>
         /// Check if two points have the same coordinates

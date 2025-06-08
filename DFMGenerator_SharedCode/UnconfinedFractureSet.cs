@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DFMGenerator_SharedCode
 {
@@ -169,6 +170,106 @@ namespace DFMGenerator_SharedCode
         /// Array of vectors representing the fracture rays
         /// </summary>
         public VectorXYZ[] RayVectors { get { VectorXYZ[] output = (VectorXYZ[])rayVectors.Clone(); for (int rayNo = 0; rayNo < output.Length; rayNo++) output[rayNo] = new VectorXYZ(rayVectors[rayNo]); return output; } }
+        /// <summary>
+        /// Get the orientation of the unconfined fracture ray closest to the supplied vector
+        /// </summary>
+        /// <param name="InputVector">Vector to test against the rays of this unconfined fracture set</param>
+        /// <returns>VectorXYZ object representing the orientation of the closest unconfined fracture ray to the supplied vector</returns>
+        public VectorXYZ getClosestRayOrientation(VectorXYZ InputVector)
+        {
+            // Normalise the input vector if it is not already normalised - therefore the dot product of the input vector and the ray vectors will just be the cosine of the angle between them
+            VectorXYZ vectorToTest = InputVector.GetNormalisedVector();
+
+            // Loop through all ray vectors, checking the cosine of the angle between them and the input vector
+            // The closest match in orientation will have an absolute value of cosine nearest to 1
+            VectorXYZ closestRayOrientation = null;
+            double bestMatch = 0;
+            foreach (VectorXYZ rayVector in RayVectors)
+            {
+                double orientationMatch = Math.Abs(rayVector & vectorToTest);
+                if (orientationMatch > bestMatch)
+                {
+                    bestMatch = orientationMatch;
+                    closestRayOrientation = rayVector;
+                }
+            }
+
+            // Return the orientation of the closest matching ray
+            return closestRayOrientation;
+        }
+        /// <summary>
+        /// Find the index number of the unconfined fracture ray with orientation closest to the supplied vector
+        /// </summary>
+        /// <param name="InputVector">Vector to test against the rays of this unconfined fracture set</param>
+        /// <returns>Index number of the UnconfinedFractureSet with vector closest to the supplied vector</returns>
+        public int getClosestRayIndex(VectorXYZ InputVector)
+        {
+            // Normalise the input vector if it is not already normalised - therefore the dot product of the input vector and the ray vectors will just be the cosine of the angle between them
+            VectorXYZ vectorToTest = InputVector.GetNormalisedVector();
+
+            // Loop through all ray vectors, checking the cosine of the angle between them and the input vector
+            // The closest match in orientation will have an absolute value of cosine nearest to 1
+            int closestRayIndex = -1;
+            double bestMatch = 0;
+            for (int ray_index = 0; ray_index < RaysPerFracture; ray_index++)
+            {
+                VectorXYZ rayVector = rayVectors[ray_index];
+                double orientationMatch = Math.Abs(rayVector & vectorToTest);
+                if (orientationMatch > bestMatch)
+                {
+                    bestMatch = orientationMatch;
+                    closestRayIndex = ray_index;
+                }
+            }
+
+            // Return the index number of the closest matching ray
+            return closestRayIndex;
+        }
+        /// <summary>
+        /// Convert a vector in XYZ coordinates into a vector in FDS coordinates for this fracture set (fracture normal, fracture dip, fracture strike)
+        /// NB since we have not yet created and FDS vector object, the output will be supplied as individual coordinates in reference variables
+        /// </summary>
+        /// <param name="InputVector">Vector in XYZ coordinates to convert</param>
+        /// <param name="Fcoord">Reference variable for the F coordinate of the FDS vector</param>
+        /// <param name="Dcoord">Reference variable for the D coordinate of the FDS vector</param>
+        /// <param name="Scoord">Reference variable for the S coordinate of the FDS vector</param>
+        public void convertXYZVectortoFDSVector(VectorXYZ InputVector, out double Fcoord, out double Dcoord, out double Scoord)
+        {
+            double sinAzi = VectorXYZ.Sin_trim(Azimuth);
+            double cosAzi = VectorXYZ.Cos_trim(Azimuth);
+            double sinDip = VectorXYZ.Sin_trim(Dip);
+            double cosDip = VectorXYZ.Cos_trim(Dip);
+
+            double Xcoord = InputVector.Component(VectorComponents.X);
+            double Ycoord = InputVector.Component(VectorComponents.Y);
+            double Zcoord = InputVector.Component(VectorComponents.Z);
+
+            Fcoord = (sinAzi * sinDip * Xcoord) + (cosAzi * sinDip * Ycoord) + (cosDip * Zcoord);
+            Dcoord = (sinAzi * cosDip * Xcoord) + (cosAzi * cosDip * Ycoord) + (-sinDip * Zcoord);
+            Scoord = (-cosAzi * Xcoord) + (sinAzi * Ycoord);
+        }
+        /// <summary>
+        /// Convert a vector in FDS coordinates for this fracture set (fracture normal, fracture dip, fracture strike) into a vector in XYZ coordinates
+        /// NB since we have not yet created and FDS vector object, the input will be supplied as individual coordinates
+        /// </summary>
+        /// <param name="Fcoord">F coordinate of the input FDS vector</param>
+        /// <param name="Dcoord">D coordinate of the input FDS vector</param>
+        /// <param name="Scoord">S coordinate of the input FDS vector</param>
+        /// <returns>Vector in XYZ coordinates</returns>
+        public VectorXYZ convertFDSVectortoXYZVector(double Fcoord, double Dcoord, double Scoord)
+        {
+            double sinAzi = VectorXYZ.Sin_trim(Azimuth);
+            double cosAzi = VectorXYZ.Cos_trim(Azimuth);
+            double sinDip = VectorXYZ.Sin_trim(Dip);
+            double cosDip = VectorXYZ.Cos_trim(Dip);
+
+            double Xcoord = (sinAzi * sinDip * Fcoord) + (sinAzi * cosDip * Dcoord) + (-cosAzi * Scoord);
+            double Ycoord = (cosAzi * sinDip * Fcoord) + (cosAzi * cosDip * Dcoord) + (sinAzi * Scoord);
+            double Zcoord = (cosDip * Fcoord) + (-sinDip * Dcoord);
+
+            return new VectorXYZ(Xcoord, Ycoord, Zcoord);
+        }
+
         /// <summary>
         /// StressDistribution object describing the spatial distribution of the fractures: EvenlyDistributedStress gives a random fracture distribution, StressShadow and DuctileBoundary gives a regular spacing
         /// </summary>
@@ -503,15 +604,15 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Number of rays comprising each fracture
         /// </summary>
-        private ushort RaysPerFracture { get; set; }
+        public ushort RaysPerFracture { get; private set; }
         /// <summary>
         /// Minimum radius for a fracture; this will be the length of the rays at nucleation
         /// </summary>
-        private double MinimumFractureRadius { get; set; }
+        public double MinimumFractureRadius { get; private set; }
         /// <summary>
         /// Maximum allowed radius for a ray; rays will stop propagating when they reach this length
         /// </summary>
-        private double MaximumFractureRadius { get; set; }
+        public double MaximumFractureRadius { get; private set; }
         /// <summary>
         /// Effective radius of the largest current fracture; if there are no datapoints, return zero
         /// NB this assumes that the fracture population datapoint arrays have already been sorted from largest to smallest
@@ -537,6 +638,10 @@ namespace DFMGenerator_SharedCode
         /// Object containing cumulative population data for all fractures
         /// </summary>
         private UnconfinedFractureData Fractures { get; set; }
+        /// <summary>
+        /// List of discrete unconfined fracture objects in XYZ coordinates - represents all unconfined fractures from this set that lie wholly or partially within this gridblock
+        /// </summary>
+        public List<UnconfinedFractureXYZ> LocalDFNUnconfinedFractures;
         /// <summary>
         /// Variable to hold maximum historic active mean linear fracture density; used to check if termination criteria are met, and updated when the CheckFractureDeactivation is called
         /// </summary>
@@ -596,6 +701,21 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getFinalDrivingStressSigmaD() { return CurrentFractureData.Final_SigmaD_M; }
         /// <summary>
+        /// Factor related to fracture propagation rate during the current timestep: (A / |beta|) * ((2 sigmaD) / (Sqrt(Pi) * Kc)) ^ b (m^(1+b/2)/s) for b!=2; A * (4 * sigmaD^2) / (Pi * Kc^2) (m^2/s) for b=2
+        /// </summary>
+        /// <returns></returns>
+        public double getFracturePropRateCoefficient() { return CurrentFractureData.gamma_InvBeta_M; }
+        /// <summary>
+        /// Factor related to fracture growth during the current timestep: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2)
+        /// </summary>
+        /// <returns></returns>
+        public double getFractureGrowthFactor() { return CurrentFractureData.gamma_Duration_M; }
+        /// <summary>
+        /// Cumulative value of gamma_InvBeta_K * K_duration in this gridblock for all timesteps K up to and including the current timestep (m^(1+b/2))
+        /// </summary>
+        /// <returns></returns>
+        public double getCumGamma() { return CurrentFractureData.Cum_Gamma_M; }
+        /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during the current timestep
         /// </summary>
         /// <returns></returns>
@@ -605,6 +725,114 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double getClearZoneVolume() { return CurrentFractureData.theta_dashed_M; }
+        /// <summary>
+        /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getAzimuthalStressShadowWidthRatio() { return CurrentFractureData.AzimuthalStressShadowWidthRatio_M; }
+        /// <summary>
+        /// Ratio of the strike-slip shear component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getShearStressShadowWidthRatio() { return CurrentFractureData.ShearStressShadowWidthRatio_M; }
+        /// <summary>
+        /// Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getStressShadowWidthRatio() { return CurrentFractureData.StressShadowWidthRatio_M; }
+
+        // Functions to return data for previous timesteps from the PreviousFractureData list
+        /// <summary>
+        /// Flag for the stage of evolution of the fracture dip set at a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public FractureEvolutionStage getEvolutionStage(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getEvolutionStage(Timestep_M); }
+        /// <summary>
+        /// Effective normal stress on the fracture at the end of a specified previous timestep (Pa)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getFinalEffectiveNormalStress(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getFinalNormalStress(Timestep_M); }
+        /// <summary>
+        /// Driving stress at the start of a specified previous timestep U (Pa) 
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getConstantDrivingStressU(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getConstantDrivingStressU(Timestep_M); }
+        /// <summary>
+        /// Rate of increase of driving stress during a specified previous timestep V (Pa/s)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getVariableDrivingStressV(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getVariableDrivingStressV(Timestep_M); }
+        /// <summary>
+        /// Weighted mean driving stress during a specified previous timestep (Pa)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getMeanDrivingStressSigmaD(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getMeanDrivingStressSigmaD(Timestep_M); }
+        /// <summary>
+        /// Driving stress at the end of a specified previous timestep (Pa)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getFinalDrivingStressSigmaD(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getFinalDrivingStressSigmaD(Timestep_M); }
+        /// <summary>
+        /// Factor related to fracture propagation rate during a specified previous timestep: (A / |beta|) * ((2 sigmaD) / (Sqrt(Pi) * Kc)) ^ b (m^(1+b/2)/s) for b!=2; A * (4 * sigmaD^2) / (Pi * Kc^2) (m^2/s) for b=2
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getFracturePropRateCoefficient(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getFPropagationRateFactor(Timestep_M); }
+        /// <summary>
+        /// Factor related to fracture growth during a specified previous timestep: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2) in this gridblock for timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getFractureGrowthFactor(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getFGrowthFactor(Timestep_M); }
+        /// <summary>
+        /// Get the cumulative fracture growth factor between the end of timestep M and the end of timestep N
+        /// </summary>
+        /// <param name="Timestep_N">Index number of the end timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <param name="Timestep_M">Index number of the start timestep</param>
+        /// <returns></returns>
+        public double getCumulativeFractureGrowthFactor(int Timestep_N, int Timestep_M) { if (Timestep_N < 0) Timestep_N = gbc.CurrentExplicitTimestep; return PreviousFractureData.getFGrowthFactor(Timestep_N, Timestep_M); }
+        /// <summary>
+        /// Cumulative value of gamma_InvBeta_K * K_duration in this gridblock for all timesteps K up to and including a specified previous timestep (m^(1+b/2))
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getCumGamma(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getCum_Gamma_M(Timestep_M); }
+        /// <summary>
+        /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getInverseStressShadowVolume(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getCumulativeTheta(Timestep_M); }
+        /// <summary>
+        /// Clear zone volume (1 - Chi), i.e. cumulative probability that a macrofracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getClearZoneVolume(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getCumulativeThetaDashed(Timestep_M); }
+        /// <summary>
+        /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getAzimuthalStressShadowWidthRatio(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getAzimuthalStressShadowWidthRatio_M(Timestep_M); }
+        /// <summary>
+        /// Ratio of the strike-slip shear component of the maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getShearStressShadowWidthRatio(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getShearStressShadowWidthRatio_M(Timestep_M); }
+        /// <summary>
+        /// Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getStressShadowWidthRatio(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getStressShadowWidthRatio_M(Timestep_M); }
 
         // Functions to get logging data - only required in debug mode
 #if DEBUG
@@ -726,7 +954,6 @@ namespace DFMGenerator_SharedCode
             return output;
         }
 #endif
-
 
         // Functions to get total population data for all fractures in the dipset
         /// <summary>
@@ -1347,38 +1574,196 @@ namespace DFMGenerator_SharedCode
 
         // Stress shadow width
         /// <summary>
-        /// Ratio of maximum stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// Ratio of maximum stress shadow width to effective fracture radius - returns a value regardless of the FractureDistribution case
         /// </summary>
         /// <returns></returns>
-        public double Max_F_StressShadowWidth_r
+        public double Max_F_StressShadowWidthRatio
         {
             get { return Mhh_eh2d * (8 / Math.PI); }
         }
         /// <summary>
-        /// Ratio of mean stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// Ratio of azimuthal component of maximum fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
         /// </summary>
         /// <returns></returns>
-        public double Mean_F_StressShadowWidth_r
+        public double Max_Azimuthal_F_StressShadowWidth
+        {
+            get { return Maa_eaa2d_eh2d * (8 / Math.PI); }
+        }
+        /// <summary>
+        /// Ratio of strike-slip shear component of maximum fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        /// </summary>
+        /// <returns></returns>
+        public double Max_Shear_F_StressShadowWidth
+        {
+            get { return (Mas_eaaasd_eh2d + Mss_eas2d_eh2d) * (8 / Math.PI); }
+        }
+        /// <summary>
+        /// Ratio of mean stress shadow width to effective fracture radius - returns a value regardless of the FractureDistribution case
+        /// </summary>
+        /// <returns></returns>
+        public double Mean_F_StressShadowWidthRatio
         {
             get { return Mhh_eh2d * (16 / (3 * Math.PI)); }
         }
-        /*/// <summary>
-        /// Azimuthal component of ratio of mean fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
+        // Functions to set stress shadow width ratio
+        /// <summary>
+        /// Set the new stress shadow width ratios
         /// </summary>
-        /// <returns></returns>
-        public double Mean_Azimuthal_F_StressShadowWidth_r
+        /// <returns>True if the stress shadow width ratio of this fracture set has changed, false if the stress shadow width ratio is unchanged</returns>
+        public bool setStressShadowWidthData()
         {
-            get { return Maa_eaa2d_eh2d * (16 / (3 * Math.PI)); }
+            // Get the current stress shadow width ratios
+            // These will depend on the stress distribution scenario
+            double azimuthal_StressShadowWidthRatio, total_StressShadowWidthRatio;
+            switch (FractureDistribution)
+            {
+                // There are no stress shadows in the evenly distributed stress scenario
+                case StressDistribution.EvenlyDistributedStress:
+                    azimuthal_StressShadowWidthRatio = 0;
+                    total_StressShadowWidthRatio = 0;
+                    break;
+                // Stress shadow widths are proportional to the effective fracture radius in the stress shadow scenario
+                case StressDistribution.StressShadow:
+                // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
+                case StressDistribution.DuctileBoundary:
+                    azimuthal_StressShadowWidthRatio = Max_Azimuthal_F_StressShadowWidth;
+                    total_StressShadowWidthRatio = Max_F_StressShadowWidthRatio;
+                    break;
+                // By default assume no stress shadows
+                default:
+                    azimuthal_StressShadowWidthRatio = 0;
+                    total_StressShadowWidthRatio = 0;
+                    break;
+            }
+
+            // If the stress shadow widths have changed, update the CurrentFractureData object
+            bool stressShadowWidthChanged = (total_StressShadowWidthRatio != CurrentFractureData.StressShadowWidthRatio_M) || (azimuthal_StressShadowWidthRatio != CurrentFractureData.AzimuthalStressShadowWidthRatio_M);
+            if (stressShadowWidthChanged)
+            {
+                CurrentFractureData.SetStressShadowWidth(azimuthal_StressShadowWidthRatio, total_StressShadowWidthRatio);
+
+                // Also revert any residual active sets to growing, since the deactivation probabilities may have significantly reduced
+                // If the deactivation probabilities have not significantly reduced, the fracture dipsets will revert to Residual Active when the calculateTotalMacrofracturePopulation() function is called
+                if (getEvolutionStage() == FractureEvolutionStage.ResidualActivity)
+                    CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Growing);
+            }
+
+            // Return the flag for stress shaow widths changed
+            return stressShadowWidthChanged;
+        }
+
+        // Functions to convert between fracture growth weighted time (RTime, proportional to CumGamma) and real time
+        /// <summary>
+        /// Convert from fracture growth weighted time (WTime) since start of timestep to real time; for constant driving stress these are proportional but for variable driving stress they are not
+        /// </summary>
+        /// <param name="wtime">Weighted time since the start of the timestep</param>
+        /// <param name="timestep">Timestep index</param>
+        /// <returns>Real time (s)</returns>
+        public double ConvertWeightedTimeToTime(double wtime, int timestep)
+        {
+            double time;
+
+            // Check specified timestep is within range
+            if ((timestep >= 0) && (timestep <= PreviousFractureData.NoTimesteps))
+            {
+                // Cache constants locally
+                double b = gbc.MechProps.b_factor;
+                double CapA = gbc.MechProps.CapA;
+                double Kc = gbc.MechProps.Kc;
+                double SqrtPi = Math.Sqrt(Math.PI);
+                double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+
+                // Set start time to timestep
+                time = PreviousFractureData.getStartTime(timestep);
+
+                // Get U, V
+                double tsU = PreviousFractureData.getConstantDrivingStressU(timestep);
+                double tsV = PreviousFractureData.getVariableDrivingStressV(timestep);
+
+                if (tsV == 0) // If V is zero (i.e. UniformStrainRelaxation and FractureOnlyStrainRelaxation strain relaxation cases) the driving stress is constant, given by U
+                {
+                    if (tsU > 0)
+                        time += wtime / (CapA * Math.Pow(sqrtpi_Kc_factor * tsU, b));
+                }
+                else // If V is not zero (i.e. NoStrainRelaxation strain relaxation case) the driving stress will vary through the timestep, so we must calculate a weighted mean
+                {
+                    double U_factor = Math.Pow(sqrtpi_Kc_factor * tsU, b) * tsU;
+                    double V_factor = ((b + 1) * tsV * wtime) / CapA;
+                    double UV_factor = Math.Pow(sqrtpi_Kc_factor, -b / (b + 1)) * Math.Pow(V_factor + U_factor, 1 / (b + 1));
+                    double UV_factor_minus_U = UV_factor - tsU;
+                    // UV_factor should always be greater than U, but due to rounding errors, sometimes (UV_factor - tsU) returns a small negative number when it should return 0
+                    // This is incorrect and can cause problems later, so to prevent this we will ensure that UV_factor_minus_U is never less than 0
+                    if (UV_factor_minus_U < 0) UV_factor_minus_U = 0;
+                    time += (UV_factor_minus_U / tsV);
+                }
+            }
+            // If the specified timestep is out of range, set return value to NaN
+            else
+            {
+                time = double.NaN;
+            }
+
+            return time;
         }
         /// <summary>
-        /// Strike-slip shear component of ratio of mean fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
-        /// </summary>
-        /// <returns></returns>
-        public double Mean_Shear_F_StressShadowWidth_r
+        /// Convert from real time to fracture growth weighted time (WTime) since start of timestep; for constant driving stress these are proportional but for variable driving stress they are not
+        /// <param name="time">Real time (s)</param>
+        /// <param name="timestep">Timestep index</param>
+        /// <returns>Weighted time since the start of the timestep</returns>
+        public double ConvertTimeToWeightedTime(double time, int timestep)
         {
-            get { return (Mas_eaaasd_eh2d + Mss_eas2d_eh2d) * (16 / (3 * Math.PI)); }
-        }*/
+            double wtime;
 
+            // Check specified timestep is within range
+            if ((timestep >= 0) && (timestep <= PreviousFractureData.NoTimesteps))
+            {
+                // Cache constants locally
+                double b = gbc.MechProps.b_factor;
+                double CapA = gbc.MechProps.CapA;
+                double Kc = gbc.MechProps.Kc;
+                double SqrtPi = Math.Sqrt(Math.PI);
+                double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+
+                // Subtract start time of timestep
+                time -= PreviousFractureData.getStartTime(timestep);
+
+                // Get U, V
+                double tsU = PreviousFractureData.getConstantDrivingStressU(timestep);
+                double tsV = PreviousFractureData.getVariableDrivingStressV(timestep);
+
+                if (tsV == 0) // If V is zero (i.e. UniformStrainRelaxation and FractureOnlyStrainRelaxation strain relaxation cases) the driving stress is constant, given by U
+                {
+                    if (tsU >= 0)
+                        wtime = time * (CapA * Math.Pow(sqrtpi_Kc_factor * tsU, b));
+                    // If U < 0 then the driving stress is negative; therefore the fractures cannot grow and weighted time is 0
+                    else
+                        wtime = 0;
+                }
+                else // If V is not zero (i.e. NoStrainRelaxation strain relaxation case) the driving stress will vary through the timestep, so we must calculate a weighted mean
+                {
+                    double UV_factor1 = tsU + (tsV * time);
+                    if (UV_factor1 >= 0)
+                    {
+                        double UV_factor2 = Math.Pow(sqrtpi_Kc_factor * UV_factor1, b) * UV_factor1;
+                        double U_factor2 = Math.Pow(sqrtpi_Kc_factor * tsU, b) * tsU;
+                        wtime = (CapA / ((b + 1) * tsV)) * (UV_factor2 - U_factor2);
+                    }
+                    // If UV_factor1 < 0 then the driving stress is negative; therefore the fractures cannot grow and weighted time is 0
+                    else
+                    {
+                        wtime = 0;
+                    }
+                }
+            }
+            // If the specified timestep is out of range, set return value to NaN
+            else
+            {
+                wtime = double.NaN;
+            }
+
+            return wtime;
+        }
+        
         // Functions to calculate fracture population data
         /// <summary>
         /// Create a new FractureCalculationData object for the current timestep, populate it with data from the end of the previous timestep, and add it to the list of previous timestep data
@@ -1731,7 +2116,7 @@ namespace DFMGenerator_SharedCode
                     double R0 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].PropagationControllingLength;
 
                     // If a maximum dP33 increase is specified, find the radius the current fracture would need to grow to to increment dP33 by the required amount
-                    double current_dP33 = (4 / 3) * Math.PI * Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dP33factor;
+                    double current_dP33 = (4 / 3) * Math.PI * Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dP33factor;
                     double d_rmax_dP33 = Math.Pow((d_P33max / current_dP33) + 1, 1d / 3d) - 1;
                     // Use the lowest of the two radius increments to calculate the timestep duration
                     double dR = (double.IsNaN(d_rmax) || (d_rmax_dP33 < d_rmax)) ? d_rmax_dP33 : d_rmax;
@@ -1844,7 +2229,7 @@ namespace DFMGenerator_SharedCode
             // (alpha / |B|) * SigmaD^b (m^(1+b/2)/s) for b!=2; alpha * SigmaD^2 (m^2/s) for b=2
             // This is the same for both constant and variable driving stress, but is calculated differently to optimise accuracy
             double F_PropRate_Coefficient = 0;
-            double F_PropRate_Coefficient_time = 0;
+            double F_Growth_Factor = 0;
             if ((float)U_M >= 0f) // If the initial driving stress is less than zero, the mean driving stress for the timestep will be zero
             {
                 // Calculate the final driving stress for the timestep
@@ -1858,11 +2243,11 @@ namespace DFMGenerator_SharedCode
                     if (FracturesActive)
                     {
                         F_PropRate_Coefficient = CapA * Math.Pow(sqrtpi_Kc_factor * mean_SigmaD_M, b);
-                        F_PropRate_Coefficient_time = F_PropRate_Coefficient * TimestepDuration_in;
+                        F_Growth_Factor = F_PropRate_Coefficient * TimestepDuration_in;
                         if (!bis2)
                         {
                             F_PropRate_Coefficient /= Math.Abs(beta);
-                            F_PropRate_Coefficient_time /= beta;
+                            F_Growth_Factor /= -beta;
                         }
                     }
                 }
@@ -1875,23 +2260,27 @@ namespace DFMGenerator_SharedCode
                     // We will only calculate the mean half-macrofracture propagation rate and microfracture propagation rate coefficient if the fractures are active
                     if (FracturesActive)
                     {
-                        F_PropRate_Coefficient_time = CapA * (UV_U_term / ((b + 1) * V_M));
-                        F_PropRate_Coefficient = F_PropRate_Coefficient_time / TimestepDuration_in;
+                        F_Growth_Factor = CapA * (UV_U_term / ((b + 1) * V_M));
+                        F_PropRate_Coefficient = F_Growth_Factor / TimestepDuration_in;
                         if (!bis2)
                         {
                             F_PropRate_Coefficient /= Math.Abs(beta);
-                            F_PropRate_Coefficient_time /= beta;
+                            F_Growth_Factor /= -beta;
                         }
                     }
                 }
             }
 
+            // Set the timestep duration mean driving stress, mean macrofracture propagation rate and microfracture propagation rate coefficient (= gamma ^ 1/beta)
+            CurrentFractureData.SetDynamicData(TimestepDuration_in, mean_SigmaD_M, F_PropRate_Coefficient);
+
             // Set the growth rates for all fully active datapoints
             foreach (ImplicitFracturePopulationDatapoint activeFracturePopulationDatapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
             {
                 double initialR = activeFracturePopulationDatapoint.RayLength;
-                // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 double incrementR;
+
+                // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
                 double criticalRadius = Math.Pow(sqrtpi_Kc_factor * U_M, -2);
                 if (initialR > criticalRadius)
@@ -1902,7 +2291,7 @@ namespace DFMGenerator_SharedCode
                 else
                 {
                     // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
-                    double finalR = bis2 ? (initialR * Math.Exp(F_PropRate_Coefficient_time)) : Math.Pow(Math.Pow(initialR, 1 / beta) + F_PropRate_Coefficient_time, beta);
+                    double finalR = bis2 ? (initialR * Math.Exp(-F_Growth_Factor)) : Math.Pow(Math.Pow(initialR, 1 / beta) - F_Growth_Factor, beta);
                     // If the fracture reaches the blow-up radius within this timestep then the finalR calculation will return NaN (this can only happen for R>2)
                     // In this case we will use the critical propagation rate to calculate the growth increment
                     if (double.IsNaN(finalR))
@@ -1924,8 +2313,9 @@ namespace DFMGenerator_SharedCode
                 double initialR = restrictedFracturePopulationDatapoint.RayLength;
                 double initialReff = restrictedFracturePopulationDatapoint.EffectiveRayLength;
                 double initialRc = restrictedFracturePopulationDatapoint.PropagationControllingLength;
-                // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 double incrementR;
+
+                // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
                 double criticalRadius = (2 * Math.Pow(sqrtpi_Kc_factor * U_M, -2)) - initialRc;
                 if (initialR > criticalRadius)
@@ -1936,7 +2326,7 @@ namespace DFMGenerator_SharedCode
                 else
                 {
                     // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
-                    double finalR = bis2 ? (2 * initialReff * Math.Exp(F_PropRate_Coefficient_time / 2)) - initialRc : (2 * Math.Pow(Math.Pow(initialReff, 1 / beta) + (F_PropRate_Coefficient_time / 2), beta)) - initialRc;
+                    double finalR = bis2 ? (2 * initialReff * Math.Exp(-F_Growth_Factor / 2)) - initialRc : (2 * Math.Pow(Math.Pow(initialReff, 1 / beta) - (F_Growth_Factor / 2), beta)) - initialRc;
                     // If the fracture reaches the blow-up radius within this timestep then the finalR calculation will return NaN (this can only happen for R>2)
                     // In this case we will use the critical propagation rate to calculate the growth increment
                     if (double.IsNaN(finalR))
@@ -1951,9 +2341,6 @@ namespace DFMGenerator_SharedCode
 
                 restrictedFracturePopulationDatapoint.RayLengthIncrement = incrementR;
             }
-
-            // Set the timestep duration mean driving stress, mean macrofracture propagation rate and microfracture propagation rate coefficient (= gamma ^ 1/beta)
-            CurrentFractureData.SetDynamicData(TimestepDuration_in, mean_SigmaD_M, F_PropRate_Coefficient);
 
             // Add a new fully active datapoint representing fractures nucleating in this timestep - but only if any new fractures nucleate
             if (FracturesActive && ((float)mean_SigmaD_M > 0f))
@@ -2032,7 +2419,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // Cache the stress shadow width ratio, fracture growth deactivation cutoff and minimum fracture activation probability locally
-            double stressShadowWidthRatio = Max_F_StressShadowWidth_r;
+            double stressShadowWidthRatio = Max_F_StressShadowWidthRatio;
             double max_R_deactivation = gbc.PropControl.max_R_DeactivationCheck_interval;
             double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
 
@@ -2046,7 +2433,25 @@ namespace DFMGenerator_SharedCode
 
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
                 // This is given by the inverse of the interaction zone volume around all other fractures in the current set
-                double phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                // This will depend on the stress distribution scenario
+                double phiII_M;
+                switch (FractureDistribution)
+                {
+                    // There are no stress shadows in the evenly distributed stress scenario
+                    case StressDistribution.EvenlyDistributedStress:
+                        phiII_M = 1;
+                        break;
+                    // Stress shadow widths are proportional to the effective fracture radius in the stress shadow scenario
+                    case StressDistribution.StressShadow:
+                    // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
+                    case StressDistribution.DuctileBoundary:
+                        phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                        break;
+                    // By default assume no stress shadows
+                    default:
+                        phiII_M = 1;
+                        break;
+                }
 
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
                 // This is given by the inverse of the interaction zone volume around all other fractures in the current set
@@ -2090,7 +2495,25 @@ namespace DFMGenerator_SharedCode
             {
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
                 // This is given by the inverse of the interaction zone volume around all other fractures in the current set
-                double phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                // This will depend on the stress distribution scenario
+                double phiII_M;
+                switch (FractureDistribution)
+                {
+                    // There are no stress shadows in the evenly distributed stress scenario
+                    case StressDistribution.EvenlyDistributedStress:
+                        phiII_M = 1;
+                        break;
+                    // Stress shadow widths are proportional to the effective fracture radius in the stress shadow scenario
+                    case StressDistribution.StressShadow:
+                    // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
+                    case StressDistribution.DuctileBoundary:
+                        phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                        break;
+                    // By default assume no stress shadows
+                    default:
+                        phiII_M = 1;
+                        break;
+                }
 
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
                 // This is given by the inverse of the interaction zone volume around all other fractures in the current set
@@ -2170,7 +2593,7 @@ namespace DFMGenerator_SharedCode
         public void setFractureExclusionZoneData()
         {
             double theta;
-            double theta_dashed = Fractures.getStressShadowClearZoneVolume(MinimumFractureRadius, Max_F_StressShadowWidth_r, out theta);
+            double theta_dashed = Fractures.getStressShadowClearZoneVolume(MinimumFractureRadius, Max_F_StressShadowWidthRatio, out theta);
             CurrentFractureData.SetFractureExclusionZoneData(theta, theta_dashed);
         }
 
@@ -2196,6 +2619,365 @@ namespace DFMGenerator_SharedCode
                     return true;
             }
             return false;
+        }
+
+        // DFN fracture interaction functions: used to check if fractures interact with other fractures during DFN generation
+        /// <summary>
+        /// Check whether a specified point (in XYZ coordinates) lies within the stress shadow of any of the unconfined fractures in the explicit DFN associated with this fracture set
+        /// </summary>
+        /// <param name="point">Input point in XYZ coordinates</param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to fracture radius</param>
+        /// <returns></returns>
+        public bool checkInUCFStressShadow(PointXYZ point, double StressShadowWidthRatio)
+        {
+            return checkInUCFExclusionZone(point, 0, StressShadowWidthRatio);
+        }
+        /// <summary>
+        /// Check whether a specified point (in XYZ coordinates) lies within an exclusion zone of arbitrary width around any of the stress shadows of the unconfined fractures in the explicit DFN associated with this fracture set
+        /// </summary>
+        /// <param name="point">Input point in XYZ coordinates</param>
+        /// <param name="outerExclusionZoneZoneWidth">Width of the outer exclusion zone (this will be the effective radius of the fracture we are checking against</param>
+        /// <param name="StressShadowWidthRatio">Ratio of stress shadow width to fracture radius</param>
+        /// <returns>True if point lies within an unconfined fracture stress shadow or within the surrounding proximity zone, otherwise false</returns>
+        public bool checkInUCFExclusionZone(PointXYZ point, double outerExclusionZoneZoneWidth, double StressShadowWidthRatio)
+        {
+            // Loop through every unconfined fracture and check if the specified point lies in the exclusion zone
+            foreach (UnconfinedFractureXYZ UCF in LocalDFNUnconfinedFractures)
+            {
+                // Get the maximum radius of the exclusion zone around this fracture
+                // This will be the sum of the effective radius of this fracture plus the outer exclusion zone width
+                double EZwidth = UCF.MeanEffectiveRadius + outerExclusionZoneZoneWidth;
+
+                // Get the vector between the centroid of this fracture and the specified point
+                VectorXYZ centroidToPoint = new VectorXYZ(UCF.Centroid, point);
+
+                // Convert the vector coordinates to the FDS frame for this fracture set (fracture normal, fracture dip,, fracture strike)
+                double Fcoord, Dcoord, Scoord;
+                convertXYZVectortoFDSVector(centroidToPoint, out Fcoord, out Dcoord, out Scoord);
+
+                // Adjust the Fcoordinate of the vector to take account of the stress shadow width to fracture radius ratio
+                // This will have the effect of stretching the FDS coordinate space parallel to F to make the exclusion zone into a sphere
+                Fcoord /= (StressShadowWidthRatio / 2);
+
+                // Now find whether the length of the stretched vector is less than the radius of the exclusion zone sphere
+                double adjustedCentroidToPointDistance = Math.Sqrt((Fcoord * Fcoord) + (Dcoord * Dcoord) + (Scoord * Scoord));
+                if (adjustedCentroidToPointDistance < EZwidth)
+                    return true;
+            }
+
+            // If the point does not lie in the exclusion zone around any of the fractures, return false
+            return false;
+        }
+        /// <summary>
+        /// Check whether a propagating unconfined fracture ray segment from this fracture set will terminate due to stress shadow interaction with of any of the other unconfined fractures in this set
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to a UnconfinedFractureRaySegment object representing the propagating fracture ray segment</param>
+        /// <param name="propagationLength">Reference to variable containing the maximum length that this ray segment will propagate; this will be altered if the propagating ray segment interacts with another unconfined fracture stress shadow (m)</param>
+        /// <param name="terminateIfInteracts">If true, automatically flag propagating ray segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
+        /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
+        public bool checkStressShadowInteraction(UnconfinedFractureRaySegment propagatingSegment, ref double propagationLength, bool terminateIfInteracts)
+        {
+            return checkStressShadowInteraction(propagatingSegment, this, ref propagationLength, 1, terminateIfInteracts);
+        }
+        /// <summary>
+        /// Check whether a propagating unconfined fracture ray segment from this fracture set will terminate due to stress shadow interaction with of any of the other unconfined fractures in the explicit DFN associated with an unconfined fracture set in another gridblock
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to a UnconfinedFractureRaySegment object representing the propagating fracture ray segment</param>
+        /// <param name="interacting_ufs">Reference to a UnconfinedFractureSet object representing the fracture set which the propagating ray segment will interact with</param>
+        /// <param name="propagationLength">Reference to variable containing the maximum length that this ray segment will propagate; this will be altered if the propagating ray segment interacts with another unconfined fracture stress shadow (m)</param>
+        /// <param name="StressShadowWidthMultiplier">Multiplier for the stress shadow width to take account of misalignment between the fracture sets; if not known, set to 1</param>
+        /// <param name="terminateIfInteracts">If true, automatically flag propagating ray segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
+        /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
+        public bool checkStressShadowInteraction(UnconfinedFractureRaySegment propagatingSegment, UnconfinedFractureSet interacting_ufs, ref double propagationLength, double StressShadowWidthMultiplier, bool terminateIfInteracts)
+        {
+            // Set return value to false initially
+            bool interacts = false;
+
+            // Flag to indicate whether the propagating fracture segment is from the same fracture set (and hence gridblock) as the interacting set
+            // NB This calculation assumes that both fractures are parallel
+            // If the two fractures are in different gridblocks this may not be true
+            // However we will assume the mismatch in alignments is small
+            bool sameSet = (interacting_ufs == this);
+
+            // Cache useful data locally
+            VectorXYZ fractureNormalVector = NormalVector;
+            VectorXYZ propagationDirection = propagatingSegment.UnitVector;
+            VectorXYZ segmentAxis = (fractureNormalVector * propagationDirection).GetNormalisedVector();
+            double initialEffectiveRayLength = propagatingSegment.EffectiveRayLength;
+            double finalEffectiveRayLength = initialEffectiveRayLength + propagationLength;
+            // Calculate the effective origin of the propagating ray by extrapolating back along the propagation direction
+            PointXYZ rayTip = propagatingSegment.PropNode;
+            PointXYZ effectiveRayOrigin = propagatingSegment.PropNode;
+            effectiveRayOrigin.SubtractVector(finalEffectiveRayLength * propagationDirection);
+            double stressShadowHalfWidthRatio = getStressShadowWidthRatio(-1) * StressShadowWidthMultiplier / 2;
+            PointXYZ edgeOfRayStressShadow = new PointXYZ(effectiveRayOrigin);
+            edgeOfRayStressShadow.AddVector((finalEffectiveRayLength * stressShadowHalfWidthRatio) * fractureNormalVector);
+
+            // Loop through all the fractures in the intersecting fracture set
+            foreach (UnconfinedFractureXYZ UCF in LocalDFNUnconfinedFractures)
+            {
+                // Check if it is the parent fracture of the propagating segment; if so move on to the next
+                if (propagatingSegment.IsSegmentInFracture(UCF))
+                    continue;
+
+                // Cache the centrepoint and effective radius of this fracture locally
+                PointXYZ fractureCentrepoint = UCF.Centroid;
+                double fractureEffectiveRadius = UCF.MeanEffectiveRadius;
+
+                // Determine whether the point of intersection of the fracture axis vector and the plane of the ray stress shadow lies within the fracture shadow
+                // If it does not, the stress shadows do not interact and we can move on to the next fracture
+                double distanceToAxisIntersection = PointXYZ.getIntersectionDistance(fractureCentrepoint, segmentAxis, effectiveRayOrigin, rayTip, edgeOfRayStressShadow, CrossoverType.Extend);
+                if (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius)
+                    continue;
+                PointXYZ axis_rayStressShadow_intersection = new PointXYZ(fractureCentrepoint);
+                axis_rayStressShadow_intersection.AddVector(distanceToAxisIntersection * segmentAxis);
+
+                // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +-90degrees) of the propagation direction
+                // THis will be the case if the scalar product of the two vectors is positive
+                // If not, the ray is propagating in the wrong direction to interact with the fracture so we can move on to the next fracture
+                VectorXYZ rayOriginToIntersection = new VectorXYZ(effectiveRayOrigin, axis_rayStressShadow_intersection);
+                if ((rayOriginToIntersection & propagationDirection) < 0)
+                    continue;
+
+                // Check if the intersection point lies within the ray stress shadow
+                double fx = fractureNormalVector.Component(VectorComponents.X);
+                double fy = fractureNormalVector.Component(VectorComponents.Y);
+                double fz = fractureNormalVector.Component(VectorComponents.Z);
+                double rx = propagationDirection.Component(VectorComponents.X);
+                double ry = propagationDirection.Component(VectorComponents.Y);
+                double rz = propagationDirection.Component(VectorComponents.Z);
+                double intersectionToRayOriginX = axis_rayStressShadow_intersection.X - effectiveRayOrigin.X;
+                double intersectionToRayOriginY = axis_rayStressShadow_intersection.Y - effectiveRayOrigin.Y;
+                double intersectionToRayOriginZ = axis_rayStressShadow_intersection.Z - effectiveRayOrigin.Z;
+                double frxy_factor = Math.Abs((fx * ry) - (fy * rx));
+                double fryz_factor = Math.Abs((fy * rz) - (fz * ry));
+                double frzx_factor = Math.Abs((fy * rx) - (fx * rz));
+                // Find the best set of axes to calculate the distance from the ray origin to the intersection point, taking into account the squashing of the ray circle
+                double adjustedIntersectionPointDistanceFromRayOrigin;
+                if ((frxy_factor > fryz_factor) && (frxy_factor > frzx_factor))
+                {
+                    double wfpc_factor = stressShadowHalfWidthRatio * ((fy * intersectionToRayOriginX) - (fx * intersectionToRayOriginY));
+                    double rpc_factor = (ry * intersectionToRayOriginX) - (rx * intersectionToRayOriginY);
+                    adjustedIntersectionPointDistanceFromRayOrigin = Math.Sqrt((wfpc_factor * wfpc_factor) + (rpc_factor * rpc_factor)) / (stressShadowHalfWidthRatio * frxy_factor);
+                }
+                else if (fryz_factor > frzx_factor)
+                {
+                    double wfpc_factor = stressShadowHalfWidthRatio * ((fz * intersectionToRayOriginY) - (fy * intersectionToRayOriginZ));
+                    double rpc_factor = (rz * intersectionToRayOriginY) - (ry * intersectionToRayOriginZ);
+                    adjustedIntersectionPointDistanceFromRayOrigin = Math.Sqrt((wfpc_factor * wfpc_factor) + (rpc_factor * rpc_factor)) / (stressShadowHalfWidthRatio * fryz_factor);
+                }
+                else
+                {
+                    double wfpc_factor = stressShadowHalfWidthRatio * ((fx * intersectionToRayOriginZ) - (fz * intersectionToRayOriginX));
+                    double rpc_factor = (rx * intersectionToRayOriginZ) - (rz * intersectionToRayOriginX);
+                    adjustedIntersectionPointDistanceFromRayOrigin = Math.Sqrt((wfpc_factor * wfpc_factor) + (rpc_factor * rpc_factor)) / (stressShadowHalfWidthRatio * frzx_factor);
+                }
+
+                // If the adjusted distance from the intersection point to the ray origin is greater than the radius of the stress shadow around the ray, the two stress shadows may still intersect
+                // We can check this by a geometric calculation
+                // If the two stress shadows do not overlap, move onto the next fracture
+                double fractureStressShadowRadius_projectedOntoRaySegmentPlane = Math.Sqrt((fractureEffectiveRadius * fractureEffectiveRadius) - (distanceToAxisIntersection * distanceToAxisIntersection));
+                if (adjustedIntersectionPointDistanceFromRayOrigin > finalEffectiveRayLength)
+                {
+                    if ((finalEffectiveRayLength - adjustedIntersectionPointDistanceFromRayOrigin) > fractureStressShadowRadius_projectedOntoRaySegmentPlane)
+                        continue;
+                }
+
+                // The two stress shadows do overlap
+                // We can easily find the ray length at which they first touch
+                double proportional_IntersectionPointDistanceFromRayOrigin = adjustedIntersectionPointDistanceFromRayOrigin / finalEffectiveRayLength;
+                double rayLengthForStressShadowInteraction = fractureStressShadowRadius_projectedOntoRaySegmentPlane / (1 - proportional_IntersectionPointDistanceFromRayOrigin);
+                // If the ray length at which they first touch is greater than the initial effective ray length, then two stress shadows already overlap before any propagation
+                // In this case we will set the propagation distance to zero
+                double propagationLengthToStressShadowInteraction = (rayLengthForStressShadowInteraction > initialEffectiveRayLength) ? (rayLengthForStressShadowInteraction - initialEffectiveRayLength) : 0;
+
+                // Set the return value to true
+                interacts = true;
+
+                // Reduce the maximum propagation distance accordingly
+                propagationLength = propagationLengthToStressShadowInteraction;
+
+                // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
+                if (terminateIfInteracts)
+                {
+                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedStressShadow;
+                    propagatingSegment.TerminatingFracture = UCF;
+                }
+            }
+
+            return interacts;
+        }
+        /// <summary>
+        /// Check if a propagating unconfined fracture ray segment will intersect any of the fractures in a specified unconfined fracture set
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to the propagating UnconfinedFractureRaySegment</param>
+        /// <param name="intersecting_ufs">Reference to the UnconfinedFractureSet to check for intersection</param>
+        /// <param name="MaxPropagationLength">Reference to the current maximum propagation length of the propagating ray segment; this will be updated if intersection is detected</param>
+        /// <param name="TerminateIfIntersects">If true, automatically flag propagating fracture ray segment as inactive due to intersection; if false only update maximum propagation length</param>
+        /// <returns>True if the propagating unconfined fracture ray segment will intersect any of the fractures in the specified unconfined fracture set; otherwise false</returns>
+        public bool checkUnconfinedFractureIntersection(UnconfinedFractureRaySegment propagatingSegment, UnconfinedFractureSet intersecting_ufs, ref double MaxPropagationLength, bool TerminateIfIntersects)
+        {
+            // Set return value to false initially
+            bool intersects = false;
+
+            // Get the propagation direction and start point
+            PointXYZ startPoint = propagatingSegment.PropNode;
+            VectorXYZ propagationVector = propagatingSegment.UnitVector;
+
+            // Loop through all the fractures in the supplied fracture set
+            foreach (UnconfinedFractureXYZ fracture in intersecting_ufs.LocalDFNUnconfinedFractures)
+            {
+                // Get a list of triangular segments comprising the fracture surface
+                List<PointXYZ[]> fractureSegments = fracture.GetTriangularFractureSegmentsInXYZ();
+
+                // Go through each triangular fracture segment and find the distance the propagating ray segment needs to propagate in order to intersect it
+                foreach (PointXYZ[] fractureSegment in fractureSegments)
+                {
+                    if (fractureSegment.Length < 3)
+                        continue;
+
+                    double distanceToIntersection = PointXYZ.getIntersectionDistance(startPoint, propagationVector, fractureSegment[0], fractureSegment[1], fractureSegment[2], CrossoverType.Restrict);
+
+                    // If the propagating ray segment will never intersect the fracture segment, the function will return NaN or a negative value
+                    if (distanceToIntersection > 0)
+                    {
+                        // If it does intersect the fracture segment, check if the distance to the intersection point is less than the current maximum propagation distance
+                        if (distanceToIntersection < MaxPropagationLength)
+                        {
+                            // If so, set the return value to true
+                            intersects = true;
+
+                            // Reduce the maximum propagation distance of the propagating fracture ray segment accordingly
+                            MaxPropagationLength = distanceToIntersection;
+
+                            // Set the propagating fracture ray segment to inactive, due to intersection, and set reference to terminating fracture
+                            if (TerminateIfIntersects)
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.Intersection;
+                                propagatingSegment.TerminatingFracture = fracture;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return intersects;
+        }
+        /// <summary>
+        /// Container for the four cornerpoints of a gridblock boundary
+        /// </summary>
+        private class BoundaryCornerpoints
+        {
+            // Data
+            /// <summary>
+            /// Orientation of the boundary
+            /// </summary>
+            public GridDirection Boundary;
+            /// <summary>
+            /// List of the cornerpoints, in order: top left, top right, bottom right, bottom left looking out from the centre of the gridblock
+            /// </summary>
+            public PointXYZ[] CornerPoints;
+
+            // Constructors
+            /// <summary>
+            /// Default constructor
+            /// </summary>
+            /// <param name="Boundary_in"Orientation of the boundary></param>
+            /// <param name="TopLeftCorner">Position in XYZ coordinates of the top left corner</param>
+            /// <param name="TopRightCorner">Position in XYZ coordinates of the top right corner</param>
+            /// <param name="BottomRightCorner">Position in XYZ coordinates of the bottom right corner</param>
+            /// <param name="BottomLeftCorner">Position in XYZ coordinates of the bottom left corner</param>
+            public BoundaryCornerpoints(GridDirection Boundary_in, PointXYZ TopLeftCorner, PointXYZ TopRightCorner, PointXYZ BottomRightCorner, PointXYZ BottomLeftCorner)
+            {
+                Boundary = Boundary_in;
+
+                CornerPoints = new PointXYZ[4];
+                CornerPoints[0] = TopLeftCorner;
+                CornerPoints[1] = TopRightCorner;
+                CornerPoints[2] = BottomRightCorner;
+                CornerPoints[3] = BottomLeftCorner;
+            }
+        }
+        /// <summary>
+        /// Check whether a propagating unconfined fracture ray segment will intersect a gridblock boundary
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to the propagating UnconfinedFractureRaySegment</param>
+        /// <param name="MaxPropagationLength">Reference to the current maximum propagation length of the propagating ray segment; this will be updated if intersection is detected</param>
+        /// <param name="boundaryCrossed">Reference to a GridDirection enum; this will be set to indicate which boundary is intersected</param>
+        /// <param name="terminateIfIntersects">If true, update propagating ray segment status and flags; if false only update maximum propagation length</param>
+        /// <param name="terminateIfNoNeighbour">If true, deactivate propagating ray segment and reduce maximum propagation length even if neighbouring gridblock is null; if false only deactivate propagating ray segment and reduce maximum propagation length if neighbouring gridblock is defined</param>
+        /// <returns>True if the propagating unconfined fracture ray segment intersects a gridblock boundary, otherwise false</returns>
+        public bool checkBoundaryIntersection(UnconfinedFractureRaySegment propagatingSegment, ref double MaxPropagationLength, out GridDirection boundaryCrossed, bool terminateIfIntersects, bool terminateIfNoNeighbour)
+        {
+            // Set the return value and the boundary crossed parameter to null to false initially
+            bool crossesBoundary = false;
+            boundaryCrossed = GridDirection.None;
+
+            // Get the propagation direction and start point
+            PointXYZ startPoint = propagatingSegment.PropNode;
+            VectorXYZ propagationVector = propagatingSegment.UnitVector;
+
+            // Start by creating a list of cornerpoints for each boundary
+            List<BoundaryCornerpoints> boundaries = new List<BoundaryCornerpoints>();
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.N, gbc.NWtop, gbc.NEtop, gbc.NEbottom, gbc.NWbottom));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.E, gbc.NEtop, gbc.SEtop, gbc.SEbottom, gbc.NEbottom));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.S, gbc.SEtop, gbc.SWtop, gbc.SWbottom, gbc.SEbottom));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.W, gbc.SWtop, gbc.NWtop, gbc.NWbottom, gbc.SWbottom));
+            // Since the GridDirection enum does not yet contain top and bottom directions, we will to set these to GridDirection.None for now
+            // Top
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.None, gbc.SWtop, gbc.SEtop, gbc.NEtop, gbc.NWtop));
+            // Bottom
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.None, gbc.NWbottom, gbc.NEbottom, gbc.SEbottom, gbc.SWbottom));
+
+            // Loop through the six gridblock boundaries checking for intersection
+            foreach (BoundaryCornerpoints boundary in boundaries)
+            {
+                // Each boundary can be split into two triangular segments to check for intersection
+                // However since these are coplanar we only need to check one of them if we set crossover type to extend
+                double distanceToIntersection = PointXYZ.getIntersectionDistance(startPoint, propagationVector, boundary.CornerPoints[0], boundary.CornerPoints[1], boundary.CornerPoints[2], CrossoverType.Extend);
+
+                // If the propagating ray segment will never intersect the fracture segment, the function will return negative value
+                if (distanceToIntersection > 0)
+                {
+                    // If it does intersect the fracture segment, check if the distance to the intersection point is less than the current maximum propagation distance
+                    if (distanceToIntersection < MaxPropagationLength)
+                    {
+                        // Set the return value to true
+                        crossesBoundary = true;
+
+                        // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
+                        boundaryCrossed = boundary.Boundary;
+                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+
+                        // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
+                        if (!NoNeighbour || terminateIfNoNeighbour)
+                            MaxPropagationLength = distanceToIntersection;
+
+                        // Set the propagating fracture ray segment status and flags, if we have specified to do so
+                        // The exact status and flags will depend on the boundary type and input settings
+                        // NB there is no terminating fracture so we set this reference to null
+                        if (terminateIfIntersects)
+                        {
+                            if (!NoNeighbour) // If the neighbour is non-null, set NodeType to ConnectedGridblockBound 
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.ConnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                propagatingSegment.TerminatingFracture = null;
+                            }
+                            else if (terminateIfNoNeighbour) // If the neighbour is null but we have specified to terminate the ray segment anyway, set NodeType to NonconnectedGridblockBound
+                            {
+                                propagatingSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
+                                propagatingSegment.PropNodeBoundary = boundaryCrossed;
+                                propagatingSegment.TerminatingFracture = null;
+                            }
+                            // If we have specified not to terminate the fracture when the neighbour is null, leave the ray segment as active and NodeType as Propagating
+                        }
+                    }
+                }
+            }
+
+            // Return true if the propagating segment will intersect a boundary, otherwise false
+            return crossesBoundary;
         }
 
         // Reset and data input functions
@@ -2345,9 +3127,11 @@ namespace DFMGenerator_SharedCode
             // Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier
             SizeDependentApertureMultiplier = SizeDependentApertureMultiplier_in;
 
+            // Create an empty list for the local gridblock DFN
+            LocalDFNUnconfinedFractures = new List<UnconfinedFractureXYZ>();
+
             // Set the maximum historic active fracture volumetric ratio to 0
             max_historic_a_RP32 = 0;
         }
-
     }
 }

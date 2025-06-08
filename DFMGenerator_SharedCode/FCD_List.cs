@@ -104,7 +104,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getuFPropagationRateFactor(int Timestep_M) { return dataList[Timestep_M].gamma_InvBeta_M; }
         /// <summary>
-        /// Factor related to microfracture growth during timestep M: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2) in this gridblock for timestep M
+        /// Factor related to microfracture growth in this gridblock during timestep M: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2)
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>

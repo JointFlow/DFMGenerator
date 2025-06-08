@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace DFMGenerator_SharedCode
 {
@@ -765,14 +766,14 @@ namespace DFMGenerator_SharedCode
 
             // First remove the exclusive stress shadow volume
             // This is the volume of stress shadows around fully active and restricted rays, rays that have reached maximum length, and the largest static rays, which cannot overlap each other
-            double exclusiveStressShadowVolume = FP33_exclusive_total * StressShadowWidthRatio;
+            double exclusiveStressShadowVolume = FP33_exclusive_total * (StressShadowWidthRatio / 2);
             inverseStressShadowVolume -= exclusiveStressShadowVolume;
             if (inverseStressShadowVolume < 0)
                 inverseStressShadowVolume = 0;
 
             // Now remove the overlapping stress shadow volume
             // Since this comprises the stress shadows that can overlap other stress shadows, we must calculate this as an exponential multiplier
-            double overlappingStressShadowVolume = FP33_overlapping_total * StressShadowWidthRatio;
+            double overlappingStressShadowVolume = FP33_overlapping_total * (StressShadowWidthRatio / 2);
             inverseStressShadowVolume *= Math.Exp(-overlappingStressShadowVolume);
 
             // Return the final calculated inverse stress shadow volume
@@ -853,7 +854,7 @@ namespace DFMGenerator_SharedCode
                 }
             }
             // Apply the required multiplier to calculate the true shell volumes 
-            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * StressShadowWidthRatio / (double)noSegments;
+            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * (StressShadowWidthRatio / 2) / (double)noSegments;
             if (exclusiveInnerCoreVolume > 1)
                 exclusiveInnerCoreVolume = 1;
             exclusiveOuterShellVolume *= stressShadowVolumeMultiplier;
@@ -883,6 +884,9 @@ namespace DFMGenerator_SharedCode
             // Also we must take account of the minimum stress shadow deactivation ratio
             // Fractures will not terminate if they encounter another fracture with effective radius less than a specified proportion of their own effective radius
             double minDeactivationRadius = Fracture2.EffectiveRayLength * minStressShadowDeactivationRatio;
+
+            // Calculate the required multiplier to convert dP33 factors into true shell volumes 
+            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * (StressShadowWidthRatio / 2) / (double)noSegments;
 
             // Get the initial and final radius and effective radius of fracture 2
             double frac2InitialRadius = Fracture2.RayLength;
@@ -927,20 +931,12 @@ namespace DFMGenerator_SharedCode
                     Gamma5 += dp_dp30;
                 }
             }
-            // Apply the required multiplier to calculate the true shell volumes 
-            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * StressShadowWidthRatio / (double)noSegments;
-            Gamma0 *= stressShadowVolumeMultiplier;
-            Gamma1 *= stressShadowVolumeMultiplier;
-            Gamma2 *= stressShadowVolumeMultiplier;
-            Gamma3 *= stressShadowVolumeMultiplier;
-            Gamma4 *= stressShadowVolumeMultiplier;
-            Gamma5 *= stressShadowVolumeMultiplier;
-
             // Calculate the outer shell volumes of the non-overlapping fractures, and the outer shell volumes of the overlapping fractures, before and after ray length increment
             // The outer shell volume of non-overlapping stress shadows is the outer exclusion zone of the non-overlapping fractures - i.e. not part of the stress shadow, but where new fractures cannot nucleate without overlapping the stress shadow
             // Although the stress shadows of the non-overlapping fractures cannot overlap, the outer exclusion zones can overlap each other and, to a limited extent, the stress shadows
             // The inner core volume of non-overlapping stress shadows is the volume which the outer exclusion zones cannot overlap
             // The outer shell volume of overlapping stress shadows is the outer exclusion zone of the overlapping fractures - like the stress shadows, these can overlap anything
+            double initialExclusiveInnerCoreVolume = Gamma0;           
             double initialExclusiveOuterShellVolume = 0;
             double initialOverlappingOuterShellVolume = 0;
             double finalExclusiveOuterShellVolume = 0;
@@ -979,6 +975,7 @@ namespace DFMGenerator_SharedCode
                             + (Gamma4 * frac1RadiusIncrement * frac1RadiusIncrement) - (Gamma5 * frac1RadiusIncrement * frac1RadiusIncrement * frac1EffectiveRadiusIncrement);
                         // Approximation
                         //double finalExclusiveInnerCoreVolume = Gamma0 - (Gamma1 * frac1EffectiveRadiusIncrement) - (2 * Gamma2 * frac1RadiusIncrement);
+                        // Apply the required multiplier to calculate the true final exclusive inner core volume 
                         finalExclusiveInnerCoreVolume *= stressShadowVolumeMultiplier;
                         if (finalExclusiveInnerCoreVolume > 1)
                             finalExclusiveInnerCoreVolume = 1;
@@ -987,12 +984,12 @@ namespace DFMGenerator_SharedCode
                     }
                 }
             }
-            double initialExclusiveInnerCoreVolume = Gamma0 * stressShadowVolumeMultiplier;
+
+            // Apply the required multiplier to calculate the true shell volumes 
+            initialExclusiveInnerCoreVolume *= stressShadowVolumeMultiplier;
             if (initialExclusiveInnerCoreVolume > 1)
                 initialExclusiveInnerCoreVolume = 1;
             initialExclusiveOuterShellVolume /= (1 - initialExclusiveInnerCoreVolume);
-
-            // Apply the required multiplier to calculate the true shell volumes 
             initialOverlappingOuterShellVolume *= stressShadowVolumeMultiplier;
             finalOverlappingOuterShellVolume *= stressShadowVolumeMultiplier;
             initialExclusiveOuterShellVolume *= stressShadowVolumeMultiplier;

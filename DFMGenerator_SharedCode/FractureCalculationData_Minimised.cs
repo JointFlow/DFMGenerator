@@ -62,7 +62,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double gamma_InvBeta_M { get; private set; }
         /// <summary>
-        /// Factor related to fracture growth during timestep M: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2) in this gridblock for timestep M
+        /// Factor related to fracture growth in this gridblock during timestep M: -inv_gamma_factor * M_duration (b less than or equal to 2) or +inv_gamma_factor * M_duration (b greater than 2)
         /// </summary>
         public double gamma_Duration_M { get { return (M_bType == bType.GreaterThan2 ? gamma_InvBeta_M * M_Duration : -gamma_InvBeta_M * M_Duration); } }
         /// <summary>
@@ -151,17 +151,17 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double[] DRP30_distribution_M { get; private set; }
         /// <summary>
-        /// Azimuthal component of mean fracture stress shadow width
+        /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
         /// </summary>
-        public double Mean_AzimuthalStressShadowWidth_M { get; private set; }
+        public double AzimuthalStressShadowWidthRatio_M { get; private set; }
         /// <summary>
-        /// Strike-slip shear component of mean fracture stress shadow width
+        /// Ratio of the strike-slip shear component of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
         /// </summary>
-        public double Mean_ShearStressShadowWidth_M { get { return Mean_StressShadowWidth_M - Mean_AzimuthalStressShadowWidth_M; } }
+        public double ShearStressShadowWidthRatio_M { get { return StressShadowWidthRatio_M - AzimuthalStressShadowWidthRatio_M; } }
         /// <summary>
-        /// Mean fracture stress shadow width
+        /// Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
         /// </summary>
-        public double Mean_StressShadowWidth_M { get; private set; }
+        public double StressShadowWidthRatio_M { get; private set; }
 
         // Reset and data input functions
         /// <summary>
@@ -245,26 +245,24 @@ namespace DFMGenerator_SharedCode
                 DRP30_distribution_M[r_bin] = a_DRP30_distribution_in[r_bin] + s_DRP30_distribution_in[r_bin];
         }*/
         /// <summary>
-        /// Set values for the mean total and azimuthal stress shadow width, at the end of the timestep
+        /// Set values for the ratio of the maximum total and azimuthal stress shadow width to effective fracture radius at the end of the timestep
         /// </summary>
-        /// <param name="Mean_AzimuthalStressShadowWidth_in">Azimuthal component of mean stress shadow width at end of timestep M</param>
-        /// <param name="Mean_StressShadowWidth_in">Mean stress shadow width at end of timestep M</param>
-        public void SetStressShadowWidth(double Mean_AzimuthalStressShadowWidth_in, double Mean_StressShadowWidth_in)
+        /// <param name="AzimuthalStressShadowWidthRatio_in">Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius at the end of timestep M</param>
+        /// <param name="StressShadowWidthRatio_in">Ratio of the total maximum fracture stress shadow width to effective fracture radius at the end of timestep M</param>
+        public void SetStressShadowWidth(double AzimuthalStressShadowWidthRatio_in, double StressShadowWidthRatio_in)
         {
-            // Set the new values for mean total and azimuthal stress shadow width at the end of the timestep
-            // The mean shear stress shadow width is calculated from the total and azimuthal widths
-            // NB we do not set the inverse stress shadow volume theta here, as this may not be equal to 1 - (MFP32 * W) if the stress shadow width varies through time
-            // In this case it will be controlled by the cumulative macrofracture spacing distribution function, so is set in the SetFractureExclusionZoneData function
+            // Set the new values for the ratio of the maximum total and azimuthal stress shadow width to effective fracture radius at the end of the timestep
+            // The shear stress shadow width ratio is calculated from the total and azimuthal width ratios
 
-            // Check if the input stress shadow widths are negative, and if so set them to 0
-            if (Mean_AzimuthalStressShadowWidth_in < 0)
-                Mean_AzimuthalStressShadowWidth_in = 0;
-            if (Mean_StressShadowWidth_in < 0)
-                Mean_StressShadowWidth_in = 0;
+            // Check if the input stress shadow width ratios are negative, and if so set them to 0
+            if (AzimuthalStressShadowWidthRatio_in < 0)
+                AzimuthalStressShadowWidthRatio_in = 0;
+            if (StressShadowWidthRatio_in < 0)
+                StressShadowWidthRatio_in = 0;
 
-            // Set the new stress shadow widths
-            Mean_AzimuthalStressShadowWidth_M = Mean_AzimuthalStressShadowWidth_in;
-            Mean_StressShadowWidth_M = Mean_StressShadowWidth_in;
+            // Set the new stress shadow width ratios
+            AzimuthalStressShadowWidthRatio_M = AzimuthalStressShadowWidthRatio_in;
+            StressShadowWidthRatio_M = StressShadowWidthRatio_in;
         }
         /// <summary>
         /// Set the inverse stress shadow and clear zone volume for this fracture set
@@ -376,8 +374,8 @@ namespace DFMGenerator_SharedCode
             // Volumetric density of all static rays terminated due to intersection: does not change
             // Mean linear density of all rays, static and dynamic: does not change
             // Volumetric ratio of all rays, static and dynamic: does not change
-            // Azimuthal component of mean fracture stress shadow width: does not change
-            // Mean fracture stress shadow width: does not change
+            // Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius: does not change
+            // Ratio of the total maximum fracture stress shadow width to effective fracture radius: does not change
 
             return nextTimestepData;
         }
@@ -439,10 +437,10 @@ namespace DFMGenerator_SharedCode
             // Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M
             // NB This list will only be instantiated if required to calculate fracture permeability
             //DRP30_distribution_M = null;
-            // Azimuthal component of mean fracture stress shadow width
-            Mean_AzimuthalStressShadowWidth_M = 0;
-            // Mean fracture stress shadow width
-            Mean_StressShadowWidth_M = 0;
+            // Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+            AzimuthalStressShadowWidthRatio_M = 0;
+            // Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+            StressShadowWidthRatio_M = 0;
         }
         /// <summary>
         /// Constructor: specify start time and timestep duration, set everything else to zero
@@ -513,10 +511,10 @@ namespace DFMGenerator_SharedCode
             // Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M
             // NB This list will only be instantiated if required to calculate fracture permeability
             //DRP30_distribution_M = null;
-            // Azimuthal component of mean fracture stress shadow width
-            Mean_AzimuthalStressShadowWidth_M = fcd_in.Mean_AzimuthalStressShadowWidth_M;
-            // Mean fracture stress shadow width
-            Mean_StressShadowWidth_M = fcd_in.Mean_StressShadowWidth_M;
+            // Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+            AzimuthalStressShadowWidthRatio_M = fcd_in.AzimuthalStressShadowWidthRatio_M;
+            // Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+            StressShadowWidthRatio_M = fcd_in.StressShadowWidthRatio_M;
         }
     }
 }
