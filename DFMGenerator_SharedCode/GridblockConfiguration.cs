@@ -2254,6 +2254,17 @@ namespace DFMGenerator_SharedCode
             return MF_P32_value;
         }
         /// <summary>
+        /// Get the current P32 density of all unconfined fractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double UnconfinedFractureDensity_P32()
+        {
+            double UCF_P32_value = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                UCF_P32_value += ufs.RP32_total();
+            return UCF_P32_value;
+        }
+        /// <summary>
         /// Get the current P32 density of all fractures in the gridblock
         /// </summary>
         /// <returns></returns>
@@ -2262,6 +2273,8 @@ namespace DFMGenerator_SharedCode
             double P32_value = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
                 P32_value += (fs.combined_T_uFP32_total() + fs.combined_T_MFP32_total());
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                P32_value += ufs.RP32_total();
             return P32_value;
         }
         /// <summary>
@@ -2287,6 +2300,17 @@ namespace DFMGenerator_SharedCode
             return MF_Porosity_value;
         }
         /// <summary>
+        /// Get the current porosity of all unconfined fractures in the gridblock
+        /// </summary>
+        /// <returns></returns>
+        public double UnconfinedFracturePorosity()
+        {
+            double UCF_Porosity_value = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                UCF_Porosity_value += ufs.Total_UCF_Porosity();
+            return UCF_Porosity_value;
+        }
+        /// <summary>
         /// Get the current porosity of all fractures in the gridblock
         /// </summary>
         /// <returns></returns>
@@ -2295,6 +2319,8 @@ namespace DFMGenerator_SharedCode
             double Porosity_value = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
                 Porosity_value += (fs.combined_uF_Porosity() + fs.combined_MF_Porosity());
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                Porosity_value += ufs.Total_UCF_Porosity();
             return Porosity_value;
         }
         /// <summary>
@@ -2324,6 +2350,18 @@ namespace DFMGenerator_SharedCode
             return MF_P32_value;
         }
         /// <summary>
+        /// Get the P32 density of all unconfined fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double UnconfinedFractureDensity_P32(int Timestep_M)
+        {
+            double UCF_P32_value = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                UCF_P32_value += ufs.getTotalUCFP32(Timestep_M);
+            return UCF_P32_value;
+        }
+        /// <summary>
         /// Get the P32 density of all fractures in the gridblock, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
@@ -2334,6 +2372,8 @@ namespace DFMGenerator_SharedCode
             foreach (Gridblock_FractureSet fs in FractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     P32_value += (fds.getTotaluFP32(Timestep_M) + fds.getTotalMFP32(Timestep_M));
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                P32_value += ufs.getTotalUCFP32(Timestep_M);
             return P32_value;
         }
         /// <summary>
@@ -2363,6 +2403,18 @@ namespace DFMGenerator_SharedCode
             return MF_Porosity_value;
         }
         /// <summary>
+        /// Get the porosity of all unconfined fractures in the gridblock, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns></returns>
+        public double UnconfinedFracturePorosity(int Timestep_M)
+        {
+            double UCF_Porosity_value = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                UCF_Porosity_value += ufs.getTotalUCFPorosity(Timestep_M);
+            return UCF_Porosity_value;
+        }
+        /// <summary>
         /// Get the porosity of all fractures in the gridblock, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
@@ -2373,6 +2425,8 @@ namespace DFMGenerator_SharedCode
             foreach (Gridblock_FractureSet fs in FractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     Porosity_value += (fds.getTotaluFPorosity(Timestep_M) + fds.getTotalMFPorosity(Timestep_M));
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                Porosity_value += ufs.getTotalUCFPorosity(Timestep_M);
             return Porosity_value;
         }
 
@@ -3182,6 +3236,8 @@ namespace DFMGenerator_SharedCode
             // Flag to save microfracture density distribution data for each timestep
             // This is only required if calculating cumulative population distribution function or calculating permeability using the size and connectivity correction algorithm
             bool saveMicrofractureDensityDistributionData = CalculatePopulationDistributionData || (PropControl.PermeabilityAlgorithm == PermeabilityCalculationAlgorithm.SizeConnectivityCorrected);
+            // Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures
+            bool CalculateImplicitUCFData = PropControl.calculateImplicitUCFData;
 
             // Get time units and unit conversion modifier for output time data if not in SI units
             TimeUnits timeUnits = PropControl.timeUnits;
@@ -3793,6 +3849,7 @@ namespace DFMGenerator_SharedCode
                             fds.setMacrofractureDeactivationRate();
                         }
                     }
+                    if (CalculateImplicitUCFData)
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         ufs.setFractureDeactivationRate();
@@ -3827,6 +3884,7 @@ namespace DFMGenerator_SharedCode
                     }
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
+                        ufs.setFractureDensityData();
                         ufs.setFractureExclusionZoneData();
                     }
 
@@ -7004,14 +7062,36 @@ namespace DFMGenerator_SharedCode
 
             // Create a list of fracture dips
             List<double> dips = new List<double>();
-            // Add a vertical dip
-            dips.Add(Math.PI / 2);
-            // Add inclined dips
-            for (int dipSetNo = NoDipSets_in - 1; dipSetNo > 0; dipSetNo--)
+
+            // Add dips
+            // If the specified number of dip sets is 0, add two sets, a vertical set and an inclined set in the optimal orientation
+            if (NoDipSets_in == 0)
             {
-                double dip = ((double)dipSetNo / (double)NoDipSets_in) * (Math.PI / 2);
-                dips.Add(dip);
-                dips.Add(-dip);
+                dips.Add(Math.PI / 2);
+                dips.Add(((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2);
+            }
+            // If the specified number of dip sets is -1, add a single vertical set
+            else if (NoDipSets_in == -1)
+            {
+                dips.Add(Math.PI / 2);
+            }
+            // If the specified number of dip sets is -2, add a single inclined set in the optimal orientation
+            else if (NoDipSets_in < -1)
+            {
+                dips.Add(((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2);
+            }
+            // Otherwise add the specified number of sets at equal increments of dip
+            else
+            {
+                // Add a vertical dip
+                dips.Add(Math.PI / 2);
+                // Add inclined dips
+                for (int dipSetNo = NoDipSets_in - 1; dipSetNo > 0; dipSetNo--)
+                {
+                    double dip = ((double)dipSetNo / (double)NoDipSets_in) * (Math.PI / 2);
+                    dips.Add(dip);
+                    dips.Add(-dip);
+                }
             }
 
             // Create new fracture sets
@@ -7026,6 +7106,7 @@ namespace DFMGenerator_SharedCode
                 }
             }
             // Create a horizontal fracture set
+            if (NoDipSets_in > 0)
             {
                 UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
                 UnconfinedFractureSets.Add(new_FractureSet);

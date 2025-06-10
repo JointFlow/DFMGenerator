@@ -784,12 +784,12 @@ namespace DFMGenerator_SharedCode
                     output = PreviousFractureData.getTotal_uFP32_M(Timestep_M) * UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = PreviousFractureData.getTotal_uFP33_M(Timestep_M) * SizeDependentApertureMultiplier;
+                    output = PreviousFractureData.getTotal_uFP33_M(Timestep_M) * (SizeDependentApertureMultiplier / 2);
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = PreviousFractureData.getTotal_uFP33_M(Timestep_M) * gbc.MechProps.DynamicApertureMultiplier * (4 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = PreviousFractureData.getTotal_uFP33_M(Timestep_M) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -2059,12 +2059,12 @@ namespace DFMGenerator_SharedCode
                     output = (a_uFP32_total() + s_uFP32_total()) * UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = (a_uFP33_total() + s_uFP33_total()) * SizeDependentApertureMultiplier;
+                    output = (a_uFP33_total() + s_uFP33_total()) * (SizeDependentApertureMultiplier / 2);
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = (a_uFP33_total() + s_uFP33_total()) * gbc.MechProps.DynamicApertureMultiplier * (4 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = (a_uFP33_total() + s_uFP33_total()) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -2094,12 +2094,12 @@ namespace DFMGenerator_SharedCode
                     output = (a_uFP32(index) + s_uFP32(index)) * UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = (a_uFP33(index) + s_uFP33(index)) * SizeDependentApertureMultiplier;
+                    output = (a_uFP33(index) + s_uFP33(index)) * (SizeDependentApertureMultiplier / 2);
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = (a_uFP33(index) + s_uFP33(index)) * gbc.MechProps.DynamicApertureMultiplier * (4 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = (a_uFP33(index) + s_uFP33(index)) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -2133,7 +2133,7 @@ namespace DFMGenerator_SharedCode
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = (a_MFP33_total() + s_MFP33_total()) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
+                    output = (Math.PI / 4) * (a_MFP33_total() + s_MFP33_total()) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -2168,7 +2168,7 @@ namespace DFMGenerator_SharedCode
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = (a_MFP33(index) + s_MFP33(index)) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
+                    output = (Math.PI / 4) * (a_MFP33(index) + s_MFP33(index)) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);

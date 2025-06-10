@@ -153,6 +153,12 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getsIJ_RP30_M(int Timestep_M) { return dataList[Timestep_M].sIJ_RP30_M; }
         /// <summary>
+        /// Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M"></param>
+        /// <returns></returns>
+        public double getsRMax_RP30_M(int Timestep_M) { return dataList[Timestep_M].sRMax_RP30_M; }
+        /// <summary>
         /// Volumetric density of all rays, static and dynamic, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
@@ -183,11 +189,17 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotal_RP32_M(int Timestep_M) { return dataList[Timestep_M].Total_RP32_M; }
         /// <summary>
-        /// Volumetric ratio of all rays, static and dynamic, at the end of timestep M
+        /// Volumetric ratio of all non-overlapping rays, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getTotal_RP33_M(int Timestep_M) { return dataList[Timestep_M].Total_RP33_M; }
+        public double getTotal_RP33Exclusive_M(int Timestep_M) { return dataList[Timestep_M].Total_RP33Exclusive_M; }
+        /// <summary>
+        /// Volumetric ratio of all overlapping rays, at the end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double getTotal_RP33Overlapping_M(int Timestep_M) { return dataList[Timestep_M].Total_RP33Overlapping_M; }
         /*/// <summary>
         /// P35 value for all rays, static and dynamic, at the end of timestep M
         /// </summary>

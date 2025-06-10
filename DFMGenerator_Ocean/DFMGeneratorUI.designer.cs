@@ -31,189 +31,189 @@ namespace DFMGenerator_Ocean
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo1 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem1 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo2 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem2 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo62 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem96 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo63 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem97 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo64 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem98 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo65 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem99 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem100 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem101 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DFMGeneratorUI));
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem8 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem9 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator1 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem10 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo8 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem11 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo9 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem12 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo10 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem13 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo11 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem14 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo12 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem15 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo13 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem16 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo14 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem17 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo15 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem18 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo16 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem19 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo17 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem20 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo18 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem21 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem1 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem2 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo19 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem22 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo20 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem23 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo21 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem24 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem25 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem26 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem27 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo22 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem28 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo23 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem29 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo24 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem30 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo25 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem31 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo26 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem32 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo27 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem33 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem3 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem4 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem5 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem6 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo28 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem34 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo29 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem35 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo30 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem36 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo31 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem37 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem38 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem39 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem40 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem41 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem7 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem8 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem9 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem10 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem11 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem12 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem13 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem14 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem15 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo32 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem42 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo33 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem43 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo34 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem44 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo35 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem45 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo36 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem46 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem47 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem48 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem49 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem16 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem17 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo37 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem50 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo38 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem51 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo39 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem52 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo40 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem53 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem54 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem55 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo41 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem56 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem57 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem58 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo42 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem59 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem60 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem61 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem62 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem63 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem18 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem19 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem20 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo43 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem64 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo44 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem65 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo45 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem66 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo46 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem67 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo47 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem68 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo48 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem69 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo49 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem70 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem71 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem72 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem73 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem74 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem21 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem22 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem23 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo50 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem75 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo51 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem76 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo52 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem77 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo53 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem78 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo54 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem79 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo55 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem80 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo56 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem81 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo57 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem82 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem83 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem84 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem85 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo58 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem86 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo59 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem87 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo60 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem88 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem89 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem90 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem91 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem92 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator2 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem93 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem94 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo61 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem95 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo66 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem102 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo67 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem103 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo68 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem104 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem105 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo69 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem106 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo70 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem107 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo71 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem108 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo72 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem109 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo73 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem110 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo74 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem111 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo75 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem112 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo76 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem113 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo77 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem114 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo78 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem115 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo79 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem116 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem24 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem25 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo80 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem117 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo81 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem118 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo82 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem119 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem120 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem121 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem122 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo83 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem123 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo84 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem124 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo85 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem125 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo86 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem126 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo87 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem127 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo88 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem128 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem26 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem27 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem28 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem29 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo89 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem129 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo90 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem130 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo91 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem131 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo92 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem132 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem133 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem134 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem135 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem136 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem30 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem31 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem32 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem33 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem34 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem35 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem36 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem37 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem38 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo93 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem137 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo94 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem138 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo95 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem139 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo96 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem140 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo97 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem141 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem142 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem143 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem144 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem39 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem40 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo98 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem145 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo99 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem146 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo100 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem147 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo101 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem148 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem149 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem150 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo102 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem151 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem152 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem153 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo103 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem154 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem155 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem156 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem157 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem158 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem41 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem42 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem43 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo104 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem159 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo105 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem160 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo106 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem161 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo107 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem162 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo108 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem163 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo109 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem164 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo110 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem165 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem166 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem167 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem168 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem169 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem44 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem45 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem46 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo111 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem170 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo112 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem171 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo113 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem172 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo114 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem173 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo115 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem174 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo116 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem175 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo117 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem176 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo118 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem177 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem178 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem179 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem180 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo119 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem181 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo120 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem182 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo121 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem183 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem184 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem185 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem186 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem187 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem188 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem189 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo122 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem190 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             this.btnApply = new System.Windows.Forms.Button();
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -518,6 +518,34 @@ namespace DFMGenerator_Ocean
             this.label_MaxTSDuration = new System.Windows.Forms.Label();
             this.label_HorizontalUpscalingFactor = new System.Windows.Forms.Label();
             this.label_FractureMode = new System.Windows.Forms.Label();
+            this.tabGeometry = new Slb.Ocean.Petrel.UI.Controls.TabPage();
+            this.checkBox_CalculateImplicitUCFData = new System.Windows.Forms.CheckBox();
+            this.numericUpDown_RaysPerUCF = new System.Windows.Forms.NumericUpDown();
+            this.unitTextBox_MaxDeactivationCheckInterval = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinPhi = new System.Windows.Forms.Label();
+            this.unitTextBox_MinPhi = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.textBox_StaticDPCullInterval = new System.Windows.Forms.TextBox();
+            this.label_StaticDPCullInterval = new System.Windows.Forms.Label();
+            this.label_StaticDPCullInterval_Units = new System.Windows.Forms.Label();
+            this.label_MaxUCFRadius = new System.Windows.Forms.Label();
+            this.unitTextBox_MaxUCFRadius = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxUCFRadius_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_MinStaticDPSizeRatio = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinStaticDPSizeRatio = new System.Windows.Forms.Label();
+            this.label_MinIDR = new System.Windows.Forms.Label();
+            this.unitTextBox_MinIDR = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxUCFRTSIncrease = new System.Windows.Forms.Label();
+            this.unitTextBox_MaxUCFRTSIncrease = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxDeactivationCheckInterval = new System.Windows.Forms.Label();
+            this.label_MaxDeactivationCheckInterval_Units = new System.Windows.Forms.Label();
+            this.label_MaxUCFRTSIncrease_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_MinSSDR = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.checkBox_UseUnconfinedFractures = new System.Windows.Forms.CheckBox();
+            this.label_MinSSDR = new System.Windows.Forms.Label();
+            this.label_RaysPerUCF = new System.Windows.Forms.Label();
+            this.label_MinUCFRadius = new System.Windows.Forms.Label();
+            this.unitTextBox_MinUCFRadius = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinUCFRadius_Units = new System.Windows.Forms.Label();
             this.toolTipManager_DFMGenerator = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
             this.btnRestoreDefaults = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
@@ -539,6 +567,8 @@ namespace DFMGenerator_Ocean
             this.groupBox_DFNGeometryControls.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoMicrofractureCornerpoints)).BeginInit();
             this.groupBox_CalculationTerminationControl.SuspendLayout();
+            this.tabGeometry.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_RaysPerUCF)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DFMGenerator)).BeginInit();
             this.SuspendLayout();
             // 
@@ -586,7 +616,7 @@ namespace DFMGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 4;
+            this.tabControl1.SelectedIndex = 6;
             this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
@@ -596,7 +626,8 @@ namespace DFMGenerator_Ocean
             this.tabStressState,
             this.tabFracAperture,
             this.tabOutputs,
-            this.tabControls});
+            this.tabControls,
+            this.tabGeometry});
             // 
             // tabMain
             // 
@@ -653,10 +684,10 @@ namespace DFMGenerator_Ocean
             this.btnRemoveDeformationEpisode.Size = new System.Drawing.Size(164, 23);
             this.btnRemoveDeformationEpisode.TabIndex = 57;
             this.btnRemoveDeformationEpisode.Text = "Remove deformation episode";
-            toolTipItem1.Text = "Remove the selected deformation episode from the list.";
-            toolTipInfo1.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem1});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.btnRemoveDeformationEpisode, toolTipInfo1);
+            toolTipItem96.Text = "Remove the selected deformation episode from the list.";
+            toolTipInfo62.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem96});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.btnRemoveDeformationEpisode, toolTipInfo62);
             this.btnRemoveDeformationEpisode.UseVisualStyleBackColor = true;
             this.btnRemoveDeformationEpisode.Click += new System.EventHandler(this.btnRemoveDeformationEpisode_Click);
             // 
@@ -668,11 +699,11 @@ namespace DFMGenerator_Ocean
             this.btnAddDeformationEpisode.Size = new System.Drawing.Size(164, 23);
             this.btnAddDeformationEpisode.TabIndex = 56;
             this.btnAddDeformationEpisode.Text = "Add deformation episode";
-            toolTipItem2.Text = "Add a new deformation episode with default parameters, and open the Edit Deformat" +
+            toolTipItem97.Text = "Add a new deformation episode with default parameters, and open the Edit Deformat" +
     "ion Episode dialog box.";
-            toolTipInfo2.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem2});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.btnAddDeformationEpisode, toolTipInfo2);
+            toolTipInfo63.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem97});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.btnAddDeformationEpisode, toolTipInfo63);
             this.btnAddDeformationEpisode.UseVisualStyleBackColor = true;
             this.btnAddDeformationEpisode.Click += new System.EventHandler(this.btnAddDeformationEpisode_Click);
             // 
@@ -684,11 +715,11 @@ namespace DFMGenerator_Ocean
             this.btnEditDeformationEpisode.Size = new System.Drawing.Size(164, 23);
             this.btnEditDeformationEpisode.TabIndex = 55;
             this.btnEditDeformationEpisode.Text = "Edit deformation episode";
-            toolTipItem3.Text = "Open the Edit Deformation Episode dialog box to edit the selected deformation epi" +
+            toolTipItem98.Text = "Open the Edit Deformation Episode dialog box to edit the selected deformation epi" +
     "sode.";
-            toolTipInfo3.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem3});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.btnEditDeformationEpisode, toolTipInfo3);
+            toolTipInfo64.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem98});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.btnEditDeformationEpisode, toolTipInfo64);
             this.btnEditDeformationEpisode.UseVisualStyleBackColor = true;
             this.btnEditDeformationEpisode.Click += new System.EventHandler(this.btnEditDeformationEpisode_Click);
             // 
@@ -698,18 +729,18 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot__IncludeObliqueFracs.Name = "toolTipHotspot__IncludeObliqueFracs";
             this.toolTipHotspot__IncludeObliqueFracs.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot__IncludeObliqueFracs.TabIndex = 51;
-            toolTipItem4.Text = "Check this to include oblique and strike-slip fractures in the output:";
-            toolTipItem5.ShowBullet = true;
-            toolTipItem5.Text = "If unchecked, only two fracture sets will be generated, striking perpendicular to" +
+            toolTipItem99.Text = "Check this to include oblique and strike-slip fractures in the output:";
+            toolTipItem100.ShowBullet = true;
+            toolTipItem100.Text = "If unchecked, only two fracture sets will be generated, striking perpendicular to" +
     " the principal horizontal stress directions, so there will be no strike-slip dis" +
     "placement.";
-            toolTipItem6.ShowBullet = true;
-            toolTipItem6.Text = resources.GetString("toolTipItem6.Text");
-            toolTipInfo4.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem4,
-            toolTipItem5,
-            toolTipItem6});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot__IncludeObliqueFracs, toolTipInfo4);
+            toolTipItem101.ShowBullet = true;
+            toolTipItem101.Text = resources.GetString("toolTipItem101.Text");
+            toolTipInfo65.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem99,
+            toolTipItem100,
+            toolTipItem101});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot__IncludeObliqueFracs, toolTipInfo65);
             // 
             // checkBox_IncludeObliqueFracs
             // 
@@ -728,12 +759,12 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_GenerateExplicitDFN.Name = "toolTipHotspot_GenerateExplicitDFN";
             this.toolTipHotspot_GenerateExplicitDFN.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_GenerateExplicitDFN.TabIndex = 49;
-            toolTipItem7.Text = "Check this to generate an explicit DFN as a Petrel DFN object. If unchecked, only" +
+            toolTipItem102.Text = "Check this to generate an explicit DFN as a Petrel DFN object. If unchecked, only" +
     " implicit fracture density data will be generated, as a series of grid propertie" +
     "s.";
-            toolTipInfo5.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem7});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_GenerateExplicitDFN, toolTipInfo5);
+            toolTipInfo66.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem102});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_GenerateExplicitDFN, toolTipInfo66);
             // 
             // toolTipHotspot_NoIntermediateOutputs
             // 
@@ -741,10 +772,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_NoIntermediateOutputs.Name = "toolTipHotspot_NoIntermediateOutputs";
             this.toolTipHotspot_NoIntermediateOutputs.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_NoIntermediateOutputs.TabIndex = 45;
-            toolTipItem8.Text = resources.GetString("toolTipItem8.Text");
-            toolTipInfo6.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem8});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoIntermediateOutputs, toolTipInfo6);
+            toolTipItem103.Text = resources.GetString("toolTipItem103.Text");
+            toolTipInfo67.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem103});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoIntermediateOutputs, toolTipInfo67);
             // 
             // toolTipHotspot_Kindices
             // 
@@ -752,15 +783,15 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_Kindices.Name = "toolTipHotspot_Kindices";
             this.toolTipHotspot_Kindices.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_Kindices.TabIndex = 44;
-            toolTipItem9.Text = resources.GetString("toolTipItem9.Text");
-            toolTipItem10.Text = "NB it is only possible to model one brittle layer at a time. It is of course poss" +
+            toolTipItem104.Text = resources.GetString("toolTipItem104.Text");
+            toolTipItem105.Text = "NB it is only possible to model one brittle layer at a time. It is of course poss" +
     "ible to rerun the model several times to generate multiple DFNs for different br" +
     "ittle layers.";
-            toolTipInfo7.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem9,
-            toolTipSeparator1,
-            toolTipItem10});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Kindices, toolTipInfo7);
+            toolTipInfo68.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem104,
+            toolTipSeparator4,
+            toolTipItem105});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Kindices, toolTipInfo68);
             // 
             // toolTipHotspot_IJindices
             // 
@@ -768,10 +799,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_IJindices.Name = "toolTipHotspot_IJindices";
             this.toolTipHotspot_IJindices.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_IJindices.TabIndex = 43;
-            toolTipItem11.Text = resources.GetString("toolTipItem11.Text");
-            toolTipInfo8.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem11});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_IJindices, toolTipInfo8);
+            toolTipItem106.Text = resources.GetString("toolTipItem106.Text");
+            toolTipInfo69.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem106});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_IJindices, toolTipInfo69);
             // 
             // toolTipHotspot_Grid
             // 
@@ -779,11 +810,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_Grid.Name = "toolTipHotspot_Grid";
             this.toolTipHotspot_Grid.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_Grid.TabIndex = 42;
-            toolTipItem12.Text = "You must specify a grid object representing the model geometry. This is the only " +
+            toolTipItem107.Text = "You must specify a grid object representing the model geometry. This is the only " +
     "required input.";
-            toolTipInfo9.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem12});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Grid, toolTipInfo9);
+            toolTipInfo70.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem107});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Grid, toolTipInfo70);
             // 
             // toolTipHotspot_ModelName
             // 
@@ -791,10 +822,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_ModelName.Name = "toolTipHotspot_ModelName";
             this.toolTipHotspot_ModelName.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_ModelName.TabIndex = 41;
-            toolTipItem13.Text = resources.GetString("toolTipItem13.Text");
-            toolTipInfo10.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem13});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_ModelName, toolTipInfo10);
+            toolTipItem108.Text = resources.GetString("toolTipItem108.Text");
+            toolTipInfo71.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem108});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_ModelName, toolTipInfo71);
             // 
             // textBox_BottomLayerK
             // 
@@ -1162,10 +1193,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_InitialMicrofractureDensity.Name = "toolTipHotspot_InitialMicrofractureDensity";
             this.toolTipHotspot_InitialMicrofractureDensity.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_InitialMicrofractureDensity.TabIndex = 81;
-            toolTipItem14.Text = resources.GetString("toolTipItem14.Text");
-            toolTipInfo11.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem14});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialMicrofractureDensity, toolTipInfo11);
+            toolTipItem109.Text = resources.GetString("toolTipItem109.Text");
+            toolTipInfo72.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem109});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialMicrofractureDensity, toolTipInfo72);
             // 
             // toolTipHotspot_FrictionCoefficient
             // 
@@ -1173,10 +1204,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FrictionCoefficient.Name = "toolTipHotspot_FrictionCoefficient";
             this.toolTipHotspot_FrictionCoefficient.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FrictionCoefficient.TabIndex = 80;
-            toolTipItem15.Text = resources.GetString("toolTipItem15.Text");
-            toolTipInfo12.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem15});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FrictionCoefficient, toolTipInfo12);
+            toolTipItem110.Text = resources.GetString("toolTipItem110.Text");
+            toolTipInfo73.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem110});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FrictionCoefficient, toolTipInfo73);
             // 
             // label_FrictionCoefficient_units
             // 
@@ -1280,10 +1311,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FractureStrainRelaxation.Name = "toolTipHotspot_FractureStrainRelaxation";
             this.toolTipHotspot_FractureStrainRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FractureStrainRelaxation.TabIndex = 66;
-            toolTipItem16.Text = resources.GetString("toolTipItem16.Text");
-            toolTipInfo13.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem16});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureStrainRelaxation, toolTipInfo13);
+            toolTipItem111.Text = resources.GetString("toolTipItem111.Text");
+            toolTipInfo74.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem111});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureStrainRelaxation, toolTipInfo74);
             // 
             // toolTipHotspot_AverageMechanicalPropertyData
             // 
@@ -1291,10 +1322,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_AverageMechanicalPropertyData.Name = "toolTipHotspot_AverageMechanicalPropertyData";
             this.toolTipHotspot_AverageMechanicalPropertyData.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AverageMechanicalPropertyData.TabIndex = 65;
-            toolTipItem17.Text = resources.GetString("toolTipItem17.Text");
-            toolTipInfo14.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem17});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AverageMechanicalPropertyData, toolTipInfo14);
+            toolTipItem112.Text = resources.GetString("toolTipItem112.Text");
+            toolTipInfo75.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem112});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AverageMechanicalPropertyData, toolTipInfo75);
             // 
             // toolTipHotspot_SubcriticalPropagationIndex
             // 
@@ -1302,10 +1333,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_SubcriticalPropagationIndex.Name = "toolTipHotspot_SubcriticalPropagationIndex";
             this.toolTipHotspot_SubcriticalPropagationIndex.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SubcriticalPropagationIndex.TabIndex = 64;
-            toolTipItem18.Text = resources.GetString("toolTipItem18.Text");
-            toolTipInfo15.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem18});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SubcriticalPropagationIndex, toolTipInfo15);
+            toolTipItem113.Text = resources.GetString("toolTipItem113.Text");
+            toolTipInfo76.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem113});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SubcriticalPropagationIndex, toolTipInfo76);
             // 
             // toolTipHotspot_RockStrainRelaxation
             // 
@@ -1313,10 +1344,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_RockStrainRelaxation.Name = "toolTipHotspot_RockStrainRelaxation";
             this.toolTipHotspot_RockStrainRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_RockStrainRelaxation.TabIndex = 63;
-            toolTipItem19.Text = resources.GetString("toolTipItem19.Text");
-            toolTipInfo16.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem19});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_RockStrainRelaxation, toolTipInfo16);
+            toolTipItem114.Text = resources.GetString("toolTipItem114.Text");
+            toolTipInfo77.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem114});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_RockStrainRelaxation, toolTipInfo77);
             // 
             // toolTipHotspot_MechanicalProperties
             // 
@@ -1324,10 +1355,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MechanicalProperties.Name = "toolTipHotspot_MechanicalProperties";
             this.toolTipHotspot_MechanicalProperties.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MechanicalProperties.TabIndex = 62;
-            toolTipItem20.Text = resources.GetString("toolTipItem20.Text");
-            toolTipInfo17.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem20});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MechanicalProperties, toolTipInfo17);
+            toolTipItem115.Text = resources.GetString("toolTipItem115.Text");
+            toolTipInfo78.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem115});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MechanicalProperties, toolTipInfo78);
             // 
             // checkBox_AverageMechanicalPropertyData
             // 
@@ -1784,10 +1815,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_GeothermalGradient.Name = "toolTipHotspot_GeothermalGradient";
             this.toolTipHotspot_GeothermalGradient.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_GeothermalGradient.TabIndex = 32;
-            toolTipItem21.Text = "The geothermal gradient controls the rate of cooling during uplift.";
-            toolTipInfo18.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem21});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_GeothermalGradient, toolTipInfo18);
+            toolTipItem116.Text = "The geothermal gradient controls the rate of cooling during uplift.";
+            toolTipInfo79.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem116});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_GeothermalGradient, toolTipInfo79);
             // 
             // unitTextBox_GeothermalGradient
             // 
@@ -1915,11 +1946,11 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_StressDistribution.DisableMouseWheelScrolling = false;
             this.comboBox_StressDistribution.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem1.Text = "Evenly distributed stress";
-            comboBoxItem2.Text = "Stress shadow";
+            comboBoxItem24.Text = "Evenly distributed stress";
+            comboBoxItem25.Text = "Stress shadow";
             this.comboBox_StressDistribution.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem1,
-            comboBoxItem2});
+            comboBoxItem24,
+            comboBoxItem25});
             this.comboBox_StressDistribution.Location = new System.Drawing.Point(171, 14);
             this.comboBox_StressDistribution.Name = "comboBox_StressDistribution";
             this.comboBox_StressDistribution.Size = new System.Drawing.Size(186, 22);
@@ -1931,11 +1962,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_InitialOverpressure.Name = "toolTipHotspot_InitialOverpressure";
             this.toolTipHotspot_InitialOverpressure.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_InitialOverpressure.TabIndex = 18;
-            toolTipItem22.Text = "High fluid overpressure will reduce the effective vertical stress and promote the" +
+            toolTipItem117.Text = "High fluid overpressure will reduce the effective vertical stress and promote the" +
     " development of Mode 1 dilatant fractures rather than Mode 2 shear fractures.";
-            toolTipInfo19.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem22});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialOverpressure, toolTipInfo19);
+            toolTipInfo80.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem117});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialOverpressure, toolTipInfo80);
             // 
             // toolTipHotspot_AverageStressStrainData
             // 
@@ -1943,10 +1974,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_AverageStressStrainData.Name = "toolTipHotspot_AverageStressStrainData";
             this.toolTipHotspot_AverageStressStrainData.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AverageStressStrainData.TabIndex = 17;
-            toolTipItem23.Text = resources.GetString("toolTipItem23.Text");
-            toolTipInfo20.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem23});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AverageStressStrainData, toolTipInfo20);
+            toolTipItem118.Text = resources.GetString("toolTipItem118.Text");
+            toolTipInfo81.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem118});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AverageStressStrainData, toolTipInfo81);
             // 
             // toolTipHotspot_InitialStressRelaxation
             // 
@@ -1954,20 +1985,20 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_InitialStressRelaxation.Name = "toolTipHotspot_InitialStressRelaxation";
             this.toolTipHotspot_InitialStressRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_InitialStressRelaxation.TabIndex = 16;
-            toolTipItem24.Text = "This controls the initial horizontal stress, prior to the application of horizont" +
+            toolTipItem119.Text = "This controls the initial horizontal stress, prior to the application of horizont" +
     "al strain:";
-            toolTipItem25.ShowBullet = true;
-            toolTipItem25.Text = "Set to 0 for elastic equilibrium, Sh0\' = v/(1-v) * Sv\'";
-            toolTipItem26.ShowBullet = true;
-            toolTipItem26.Text = "Set to 1 for viscoelastic equilibrium, Sh0\' = Sv\'";
-            toolTipItem27.ShowBullet = true;
-            toolTipItem27.Text = "Leave blank for critical stress state, Sh0\' = Mohr-Coulomb failure stress";
-            toolTipInfo21.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem24,
-            toolTipItem25,
-            toolTipItem26,
-            toolTipItem27});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialStressRelaxation, toolTipInfo21);
+            toolTipItem120.ShowBullet = true;
+            toolTipItem120.Text = "Set to 0 for elastic equilibrium, Sh0\' = v/(1-v) * Sv\'";
+            toolTipItem121.ShowBullet = true;
+            toolTipItem121.Text = "Set to 1 for viscoelastic equilibrium, Sh0\' = Sv\'";
+            toolTipItem122.ShowBullet = true;
+            toolTipItem122.Text = "Leave blank for critical stress state, Sh0\' = Mohr-Coulomb failure stress";
+            toolTipInfo82.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem119,
+            toolTipItem120,
+            toolTipItem121,
+            toolTipItem122});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialStressRelaxation, toolTipInfo82);
             // 
             // toolTipHotspot_DepthAtDeformation
             // 
@@ -1975,10 +2006,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DepthAtDeformation.Name = "toolTipHotspot_DepthAtDeformation";
             this.toolTipHotspot_DepthAtDeformation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DepthAtDeformation.TabIndex = 15;
-            toolTipItem28.Text = resources.GetString("toolTipItem28.Text");
-            toolTipInfo22.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem28});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_DepthAtDeformation, toolTipInfo22);
+            toolTipItem123.Text = resources.GetString("toolTipItem123.Text");
+            toolTipInfo83.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem123});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_DepthAtDeformation, toolTipInfo83);
             // 
             // toolTipHotspot_StressDistribution
             // 
@@ -1986,10 +2017,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_StressDistribution.Name = "toolTipHotspot_StressDistribution";
             this.toolTipHotspot_StressDistribution.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_StressDistribution.TabIndex = 14;
-            toolTipItem29.Text = "Use this control to turn the stress shadow effect on or off.";
-            toolTipInfo23.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem29});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_StressDistribution, toolTipInfo23);
+            toolTipItem124.Text = "Use this control to turn the stress shadow effect on or off.";
+            toolTipInfo84.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem124});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_StressDistribution, toolTipInfo84);
             // 
             // checkBox_AverageStressStrainData
             // 
@@ -2158,10 +2189,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_BartonBandisAperture.Name = "toolTipHotspot_BartonBandisAperture";
             this.toolTipHotspot_BartonBandisAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_BartonBandisAperture.TabIndex = 12;
-            toolTipItem30.Text = resources.GetString("toolTipItem30.Text");
-            toolTipInfo24.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem30});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_BartonBandisAperture, toolTipInfo24);
+            toolTipItem125.Text = resources.GetString("toolTipItem125.Text");
+            toolTipInfo85.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem125});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_BartonBandisAperture, toolTipInfo85);
             // 
             // label_MaximumClosure
             // 
@@ -2233,10 +2264,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DynamicAperture.Name = "toolTipHotspot_DynamicAperture";
             this.toolTipHotspot_DynamicAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DynamicAperture.TabIndex = 8;
-            toolTipItem31.Text = resources.GetString("toolTipItem31.Text");
-            toolTipInfo25.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem31});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_DynamicAperture, toolTipInfo25);
+            toolTipItem126.Text = resources.GetString("toolTipItem126.Text");
+            toolTipInfo86.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem126});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_DynamicAperture, toolTipInfo86);
             // 
             // label_DynamicApertureMultiplier
             // 
@@ -2281,10 +2312,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_SizeDependentAperture.Name = "toolTipHotspot_SizeDependentAperture";
             this.toolTipHotspot_SizeDependentAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SizeDependentAperture.TabIndex = 8;
-            toolTipItem32.Text = resources.GetString("toolTipItem32.Text");
-            toolTipInfo26.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem32});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SizeDependentAperture, toolTipInfo26);
+            toolTipItem127.Text = resources.GetString("toolTipItem127.Text");
+            toolTipInfo87.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem127});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SizeDependentAperture, toolTipInfo87);
             // 
             // label_HMax_SizeDependentApertureMultiplier
             // 
@@ -2358,10 +2389,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_UniformAperture.Name = "toolTipHotspot_UniformAperture";
             this.toolTipHotspot_UniformAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_UniformAperture.TabIndex = 4;
-            toolTipItem33.Text = resources.GetString("toolTipItem33.Text");
-            toolTipInfo27.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem33});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_UniformAperture, toolTipInfo27);
+            toolTipItem128.Text = resources.GetString("toolTipItem128.Text");
+            toolTipInfo88.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem128});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_UniformAperture, toolTipInfo88);
             // 
             // label_HMax_UniformAperture
             // 
@@ -2385,15 +2416,15 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_FractureApertureControl.DisableMouseWheelScrolling = false;
             this.comboBox_FractureApertureControl.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem3.Text = "Uniform";
-            comboBoxItem4.Text = "Size dependent";
-            comboBoxItem5.Text = "Dynamic";
-            comboBoxItem6.Text = "Barton-Bandis";
+            comboBoxItem26.Text = "Uniform";
+            comboBoxItem27.Text = "Size dependent";
+            comboBoxItem28.Text = "Dynamic";
+            comboBoxItem29.Text = "Barton-Bandis";
             this.comboBox_FractureApertureControl.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem3,
-            comboBoxItem4,
-            comboBoxItem5,
-            comboBoxItem6});
+            comboBoxItem26,
+            comboBoxItem27,
+            comboBoxItem28,
+            comboBoxItem29});
             this.comboBox_FractureApertureControl.Location = new System.Drawing.Point(240, 12);
             this.comboBox_FractureApertureControl.Name = "comboBox_FractureApertureControl";
             this.comboBox_FractureApertureControl.Size = new System.Drawing.Size(149, 22);
@@ -2442,10 +2473,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_PopulateEmptyGridblocks.Name = "toolTipHotspot_PopulateEmptyGridblocks";
             this.toolTipHotspot_PopulateEmptyGridblocks.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_PopulateEmptyGridblocks.TabIndex = 58;
-            toolTipItem34.Text = resources.GetString("toolTipItem34.Text");
-            toolTipInfo28.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem34});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PopulateEmptyGridblocks, toolTipInfo28);
+            toolTipItem129.Text = resources.GetString("toolTipItem129.Text");
+            toolTipInfo89.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem129});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PopulateEmptyGridblocks, toolTipInfo89);
             // 
             // checkBox_PopulateEmptyGridblocks
             // 
@@ -2474,10 +2505,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_UsePresentDayStress.Name = "toolTipHotspot_UsePresentDayStress";
             this.toolTipHotspot_UsePresentDayStress.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_UsePresentDayStress.TabIndex = 29;
-            toolTipItem35.Text = resources.GetString("toolTipItem35.Text");
-            toolTipInfo29.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem35});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_UsePresentDayStress, toolTipInfo29);
+            toolTipItem130.Text = resources.GetString("toolTipItem130.Text");
+            toolTipInfo90.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem130});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_UsePresentDayStress, toolTipInfo90);
             // 
             // checkBox_UsePresentDayStress
             // 
@@ -2496,10 +2527,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CalculateFractureReactivationPotential.Name = "toolTipHotspot_CalculateFractureReactivationPotential";
             this.toolTipHotspot_CalculateFractureReactivationPotential.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CalculateFractureReactivationPotential.TabIndex = 27;
-            toolTipItem36.Text = resources.GetString("toolTipItem36.Text");
-            toolTipInfo30.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem36});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureReactivationPotential, toolTipInfo30);
+            toolTipItem131.Text = resources.GetString("toolTipItem131.Text");
+            toolTipInfo91.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem131});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureReactivationPotential, toolTipInfo91);
             // 
             // checkBox_CalculateFractureReactivationPotential
             // 
@@ -2646,23 +2677,23 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FracturePermeability.Name = "toolTipHotspot_FracturePermeability";
             this.toolTipHotspot_FracturePermeability.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FracturePermeability.TabIndex = 28;
-            toolTipItem37.Text = resources.GetString("toolTipItem37.Text");
-            toolTipItem38.Text = "The following algorithms can be used to calculate fracture permeability:";
-            toolTipItem39.ShowBullet = true;
-            toolTipItem39.Text = resources.GetString("toolTipItem39.Text");
-            toolTipItem40.ShowBullet = true;
-            toolTipItem40.Text = "Oda corrected (1987): This algorithm adds a correction factor to account for frac" +
+            toolTipItem132.Text = resources.GetString("toolTipItem132.Text");
+            toolTipItem133.Text = "The following algorithms can be used to calculate fracture permeability:";
+            toolTipItem134.ShowBullet = true;
+            toolTipItem134.Text = resources.GetString("toolTipItem134.Text");
+            toolTipItem135.ShowBullet = true;
+            toolTipItem135.Text = "Oda corrected (1987): This algorithm adds a correction factor to account for frac" +
     "ture connectivity, as described in Oda, et al. (1987), Journal of Geophysical Re" +
     "search 92, B8, 8037-8048.";
-            toolTipItem41.ShowBullet = true;
-            toolTipItem41.Text = resources.GetString("toolTipItem41.Text");
-            toolTipInfo31.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem37,
-            toolTipItem38,
-            toolTipItem39,
-            toolTipItem40,
-            toolTipItem41});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FracturePermeability, toolTipInfo31);
+            toolTipItem136.ShowBullet = true;
+            toolTipItem136.Text = resources.GetString("toolTipItem136.Text");
+            toolTipInfo92.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem132,
+            toolTipItem133,
+            toolTipItem134,
+            toolTipItem135,
+            toolTipItem136});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FracturePermeability, toolTipInfo92);
             // 
             // label_FractureTypesInPermeabilityTensor
             // 
@@ -2677,13 +2708,13 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_FractureTypesInPermeabilityTensor.DisableMouseWheelScrolling = false;
             this.comboBox_FractureTypesInPermeabilityTensor.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem7.Text = "Microfractures only";
-            comboBoxItem8.Text = "Layer-bound fractures only";
-            comboBoxItem9.Text = "All fractures";
+            comboBoxItem30.Text = "Microfractures only";
+            comboBoxItem31.Text = "Layer-bound fractures only";
+            comboBoxItem32.Text = "All fractures";
             this.comboBox_FractureTypesInPermeabilityTensor.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem7,
-            comboBoxItem8,
-            comboBoxItem9});
+            comboBoxItem30,
+            comboBoxItem31,
+            comboBoxItem32});
             this.comboBox_FractureTypesInPermeabilityTensor.Location = new System.Drawing.Point(470, 45);
             this.comboBox_FractureTypesInPermeabilityTensor.Name = "comboBox_FractureTypesInPermeabilityTensor";
             this.comboBox_FractureTypesInPermeabilityTensor.Size = new System.Drawing.Size(216, 22);
@@ -2712,13 +2743,13 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_PermeabilityAlgorithm.DisableMouseWheelScrolling = false;
             this.comboBox_PermeabilityAlgorithm.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem10.Text = "Oda (1986)";
-            comboBoxItem11.Text = "Oda corrected (1987)";
-            comboBoxItem12.Text = "Size and connectivity corrected";
+            comboBoxItem33.Text = "Oda (1986)";
+            comboBoxItem34.Text = "Oda corrected (1987)";
+            comboBoxItem35.Text = "Size and connectivity corrected";
             this.comboBox_PermeabilityAlgorithm.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem10,
-            comboBoxItem11,
-            comboBoxItem12});
+            comboBoxItem33,
+            comboBoxItem34,
+            comboBoxItem35});
             this.comboBox_PermeabilityAlgorithm.Location = new System.Drawing.Point(470, 17);
             this.comboBox_PermeabilityAlgorithm.Name = "comboBox_PermeabilityAlgorithm";
             this.comboBox_PermeabilityAlgorithm.Size = new System.Drawing.Size(216, 22);
@@ -2729,13 +2760,13 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_IntermediateOutputInterval.DisableMouseWheelScrolling = false;
             this.comboBox_IntermediateOutputInterval.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem13.Text = "Deformation Episodes";
-            comboBoxItem14.Text = "Equal Time";
-            comboBoxItem15.Text = "Equal Area";
+            comboBoxItem36.Text = "Deformation Episodes";
+            comboBoxItem37.Text = "Equal Time";
+            comboBoxItem38.Text = "Equal Area";
             this.comboBox_IntermediateOutputInterval.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem13,
-            comboBoxItem14,
-            comboBoxItem15});
+            comboBoxItem36,
+            comboBoxItem37,
+            comboBoxItem38});
             this.comboBox_IntermediateOutputInterval.Location = new System.Drawing.Point(213, 16);
             this.comboBox_IntermediateOutputInterval.Name = "comboBox_IntermediateOutputInterval";
             this.comboBox_IntermediateOutputInterval.Size = new System.Drawing.Size(155, 22);
@@ -2756,10 +2787,10 @@ namespace DFMGenerator_Ocean
             this.toolTip_CalculateBulkRockElasticTensors.Name = "toolTip_CalculateBulkRockElasticTensors";
             this.toolTip_CalculateBulkRockElasticTensors.Size = new System.Drawing.Size(20, 20);
             this.toolTip_CalculateBulkRockElasticTensors.TabIndex = 20;
-            toolTipItem42.Text = resources.GetString("toolTipItem42.Text");
-            toolTipInfo32.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem42});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTip_CalculateBulkRockElasticTensors, toolTipInfo32);
+            toolTipItem137.Text = resources.GetString("toolTipItem137.Text");
+            toolTipInfo93.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem137});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTip_CalculateBulkRockElasticTensors, toolTipInfo93);
             // 
             // checkBox_CalculateBulkRockElasticTensors
             // 
@@ -2777,10 +2808,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy.Name = "toolTipHotspot_CalculateFractureConnectivityAnisotropy";
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy.TabIndex = 18;
-            toolTipItem43.Text = resources.GetString("toolTipItem43.Text");
-            toolTipInfo33.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem43});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureConnectivityAnisotropy, toolTipInfo33);
+            toolTipItem138.Text = resources.GetString("toolTipItem138.Text");
+            toolTipInfo94.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem138});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureConnectivityAnisotropy, toolTipInfo94);
             // 
             // toolTipHotspot_OutputCentrepoints
             // 
@@ -2788,11 +2819,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_OutputCentrepoints.Name = "toolTipHotspot_OutputCentrepoints";
             this.toolTipHotspot_OutputCentrepoints.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_OutputCentrepoints.TabIndex = 17;
-            toolTipItem44.Text = "Check this to output a set of polylines representing the centrelines of the fract" +
+            toolTipItem139.Text = "Check this to output a set of polylines representing the centrelines of the fract" +
     "ures. These will be placed in a folder on the Input tree.";
-            toolTipInfo34.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem44});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_OutputCentrepoints, toolTipInfo34);
+            toolTipInfo95.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem139});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_OutputCentrepoints, toolTipInfo95);
             // 
             // toolTipHotspot_CalculateFracturePorosity
             // 
@@ -2800,12 +2831,12 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CalculateFracturePorosity.Name = "toolTipHotspot_CalculateFracturePorosity";
             this.toolTipHotspot_CalculateFracturePorosity.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CalculateFracturePorosity.TabIndex = 16;
-            toolTipItem45.Text = "Check this to calculate fracture porosity data, output as grid properties in the " +
+            toolTipItem140.Text = "Check this to calculate fracture porosity data, output as grid properties in the " +
     "implicit output folder(s). The fracture aperture can be calculated using one of " +
     "4 methods (see below).";
-            toolTipInfo35.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem45});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFracturePorosity, toolTipInfo35);
+            toolTipInfo96.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem140});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFracturePorosity, toolTipInfo96);
             // 
             // toolTipHotspot_OutputIntermediatesByTime
             // 
@@ -2813,22 +2844,22 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_OutputIntermediatesByTime.Name = "toolTipHotspot_OutputIntermediatesByTime";
             this.toolTipHotspot_OutputIntermediatesByTime.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_OutputIntermediatesByTime.TabIndex = 15;
-            toolTipItem46.Text = "This controls the interval between the intermediate stage outputs:";
-            toolTipItem47.ShowBullet = true;
-            toolTipItem47.Text = "Select Deformation Episodes to output a DFM at the end of each deformation episod" +
+            toolTipItem141.Text = "This controls the interval between the intermediate stage outputs:";
+            toolTipItem142.ShowBullet = true;
+            toolTipItem142.Text = "Select Deformation Episodes to output a DFM at the end of each deformation episod" +
     "e";
-            toolTipItem48.ShowBullet = true;
-            toolTipItem48.Text = "Select Equal Time to output the specified number of DFMs at equal intervals of ti" +
+            toolTipItem143.ShowBullet = true;
+            toolTipItem143.Text = "Select Equal Time to output the specified number of DFMs at equal intervals of ti" +
     "me";
-            toolTipItem49.ShowBullet = true;
-            toolTipItem49.Text = "Select Equal Area to output the specified number of DFMs with approximately equal" +
+            toolTipItem144.ShowBullet = true;
+            toolTipItem144.Text = "Select Equal Area to output the specified number of DFMs with approximately equal" +
     " increments of total fracture area";
-            toolTipInfo36.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem46,
-            toolTipItem47,
-            toolTipItem48,
-            toolTipItem49});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_OutputIntermediatesByTime, toolTipInfo36);
+            toolTipInfo97.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem141,
+            toolTipItem142,
+            toolTipItem143,
+            toolTipItem144});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_OutputIntermediatesByTime, toolTipInfo97);
             // 
             // checkBox_CalculateFracturePorosity
             // 
@@ -2880,11 +2911,11 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_DFNFileType.DisableMouseWheelScrolling = false;
             this.comboBox_DFNFileType.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem16.Text = "ASCII";
-            comboBoxItem17.Text = "FAB";
+            comboBoxItem39.Text = "ASCII";
+            comboBoxItem40.Text = "FAB";
             this.comboBox_DFNFileType.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem16,
-            comboBoxItem17});
+            comboBoxItem39,
+            comboBoxItem40});
             this.comboBox_DFNFileType.Location = new System.Drawing.Point(186, 76);
             this.comboBox_DFNFileType.Name = "comboBox_DFNFileType";
             this.comboBox_DFNFileType.Size = new System.Drawing.Size(105, 22);
@@ -2897,10 +2928,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_WriteDFNFiles.Name = "toolTipHotspot_WriteDFNFiles";
             this.toolTipHotspot_WriteDFNFiles.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_WriteDFNFiles.TabIndex = 5;
-            toolTipItem50.Text = resources.GetString("toolTipItem50.Text");
-            toolTipInfo37.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem50});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_WriteDFNFiles, toolTipInfo37);
+            toolTipItem145.Text = resources.GetString("toolTipItem145.Text");
+            toolTipInfo98.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem145});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_WriteDFNFiles, toolTipInfo98);
             // 
             // toolTipHotspot_LogCalculation
             // 
@@ -2908,10 +2939,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_LogCalculation.Name = "toolTipHotspot_LogCalculation";
             this.toolTipHotspot_LogCalculation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_LogCalculation.TabIndex = 4;
-            toolTipItem51.Text = resources.GetString("toolTipItem51.Text");
-            toolTipInfo38.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem51});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_LogCalculation, toolTipInfo38);
+            toolTipItem146.Text = resources.GetString("toolTipItem146.Text");
+            toolTipInfo99.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem146});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_LogCalculation, toolTipInfo99);
             // 
             // checkBox_LogCalculation
             // 
@@ -3042,11 +3073,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_AnisotropyCutoff.Name = "toolTipHotspot_AnisotropyCutoff";
             this.toolTipHotspot_AnisotropyCutoff.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AnisotropyCutoff.TabIndex = 32;
-            toolTipItem52.Text = "Cutoff value to use the isotropic method for calculating cross-fracture set stres" +
+            toolTipItem147.Text = "Cutoff value to use the isotropic method for calculating cross-fracture set stres" +
     "s shadow and exclusion zone volumes";
-            toolTipInfo39.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem52});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AnisotropyCutoff, toolTipInfo39);
+            toolTipInfo100.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem147});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AnisotropyCutoff, toolTipInfo100);
             // 
             // label_AnisotropyCutoff
             // 
@@ -3063,18 +3094,18 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_AllowReverseFractures.Name = "toolTipHotspot_AllowReverseFractures";
             this.toolTipHotspot_AllowReverseFractures.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AllowReverseFractures.TabIndex = 29;
-            toolTipItem53.Text = "Flag to allow reverse fractures:";
-            toolTipItem54.ShowBullet = true;
-            toolTipItem54.Text = "If true, fracture dipsets with a reverse displacement vector can accumulate displ" +
+            toolTipItem148.Text = "Flag to allow reverse fractures:";
+            toolTipItem149.ShowBullet = true;
+            toolTipItem149.Text = "If true, fracture dipsets with a reverse displacement vector can accumulate displ" +
     "acement and grow";
-            toolTipItem55.ShowBullet = true;
-            toolTipItem55.Text = "If false, fracture dipsets with a reverse displacement vector will not be allowed" +
+            toolTipItem150.ShowBullet = true;
+            toolTipItem150.Text = "If false, fracture dipsets with a reverse displacement vector will not be allowed" +
     " to accumulate displacement or grow";
-            toolTipInfo40.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem53,
-            toolTipItem54,
-            toolTipItem55});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AllowReverseFractures, toolTipInfo40);
+            toolTipInfo101.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem148,
+            toolTipItem149,
+            toolTipItem150});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AllowReverseFractures, toolTipInfo101);
             // 
             // checkBox_AllowReverseFractures
             // 
@@ -3092,19 +3123,19 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CheckAlluFStressShadows.Name = "toolTipHotspot_CheckAlluFStressShadows";
             this.toolTipHotspot_CheckAlluFStressShadows.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CheckAlluFStressShadows.TabIndex = 27;
-            toolTipItem56.Text = "Flag to check microfractures against stress shadows of all macrofractures, regard" +
+            toolTipItem151.Text = "Flag to check microfractures against stress shadows of all macrofractures, regard" +
     "less of set:";
-            toolTipItem57.ShowBullet = true;
-            toolTipItem57.Text = "If true, microfractures will be deactivated if they lie in the stress shadow zone" +
+            toolTipItem152.ShowBullet = true;
+            toolTipItem152.Text = "If true, microfractures will be deactivated if they lie in the stress shadow zone" +
     " of oblique or perpendicular macrofractures, depending on the strain tensor";
-            toolTipItem58.ShowBullet = true;
-            toolTipItem58.Text = "If false, microfractures will only be deactivated if they lie in the stress shado" +
+            toolTipItem153.ShowBullet = true;
+            toolTipItem153.Text = "If false, microfractures will only be deactivated if they lie in the stress shado" +
     "w zone of parallel macrofractures";
-            toolTipInfo41.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem56,
-            toolTipItem57,
-            toolTipItem58});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CheckAlluFStressShadows, toolTipInfo41);
+            toolTipInfo102.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem151,
+            toolTipItem152,
+            toolTipItem153});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CheckAlluFStressShadows, toolTipInfo102);
             // 
             // checkBox_CheckAlluFStressShadows
             // 
@@ -3122,24 +3153,24 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_NoFractureSets.Name = "toolTipHotspot_NoFractureSets";
             this.toolTipHotspot_NoFractureSets.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_NoFractureSets.TabIndex = 25;
-            toolTipItem59.Text = "Number of fracture sets:";
-            toolTipItem60.ShowBullet = true;
-            toolTipItem60.Text = "Set to 1 to generate a single fracture set, perpendicular to ehmin.";
-            toolTipItem61.ShowBullet = true;
-            toolTipItem61.Text = "Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehm" +
+            toolTipItem154.Text = "Number of fracture sets:";
+            toolTipItem155.ShowBullet = true;
+            toolTipItem155.Text = "Set to 1 to generate a single fracture set, perpendicular to ehmin.";
+            toolTipItem156.ShowBullet = true;
+            toolTipItem156.Text = "Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehm" +
     "ax. This is typical of a single stage of deformation in intact rock.";
-            toolTipItem62.ShowBullet = true;
-            toolTipItem62.Text = "Set to 6 or more to generate oblique fractures. This is typical of multiple stage" +
+            toolTipItem157.ShowBullet = true;
+            toolTipItem157.Text = "Set to 6 or more to generate oblique fractures. This is typical of multiple stage" +
     "s of deformation with fracture reactivation, or transtensional strain.";
-            toolTipItem63.Text = "This is valid only if the \"Include oblique fractures\" box on the Main tab is chec" +
+            toolTipItem158.Text = "This is valid only if the \"Include oblique fractures\" box on the Main tab is chec" +
     "ked; otherwise the number of fracture sets will default to 2.";
-            toolTipInfo42.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem59,
-            toolTipItem60,
-            toolTipItem61,
-            toolTipItem62,
-            toolTipItem63});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoFractureSets, toolTipInfo42);
+            toolTipInfo103.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem154,
+            toolTipItem155,
+            toolTipItem156,
+            toolTipItem157,
+            toolTipItem158});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoFractureSets, toolTipInfo103);
             // 
             // numericUpDown_NoFractureSets
             // 
@@ -3162,13 +3193,13 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_FractureMode.DisableMouseWheelScrolling = false;
             this.comboBox_FractureMode.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem18.Text = "Optimal mode";
-            comboBoxItem19.Text = "Mode 1";
-            comboBoxItem20.Text = "Mode 2";
+            comboBoxItem41.Text = "Optimal mode";
+            comboBoxItem42.Text = "Mode 1";
+            comboBoxItem43.Text = "Mode 2";
             this.comboBox_FractureMode.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem18,
-            comboBoxItem19,
-            comboBoxItem20});
+            comboBoxItem41,
+            comboBoxItem42,
+            comboBoxItem43});
             this.comboBox_FractureMode.Location = new System.Drawing.Point(592, 10);
             this.comboBox_FractureMode.Name = "comboBox_FractureMode";
             this.comboBox_FractureMode.Size = new System.Drawing.Size(88, 22);
@@ -3180,10 +3211,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_Max_TS_MFP33_increase.Name = "toolTipHotspot_Max_TS_MFP33_increase";
             this.toolTipHotspot_Max_TS_MFP33_increase.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_Max_TS_MFP33_increase.TabIndex = 21;
-            toolTipItem64.Text = resources.GetString("toolTipItem64.Text");
-            toolTipInfo43.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem64});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Max_TS_MFP33_increase, toolTipInfo43);
+            toolTipItem159.Text = resources.GetString("toolTipItem159.Text");
+            toolTipInfo104.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem159});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Max_TS_MFP33_increase, toolTipInfo104);
             // 
             // toolTipHotspot_MaxTSDuration
             // 
@@ -3191,11 +3222,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MaxTSDuration.Name = "toolTipHotspot_MaxTSDuration";
             this.toolTipHotspot_MaxTSDuration.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MaxTSDuration.TabIndex = 20;
-            toolTipItem65.Text = "Maximum duration for individual timesteps. Leave blank for no maximum timestep du" +
+            toolTipItem160.Text = "Maximum duration for individual timesteps. Leave blank for no maximum timestep du" +
     "ration.";
-            toolTipInfo44.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem65});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxTSDuration, toolTipInfo44);
+            toolTipInfo105.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem160});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxTSDuration, toolTipInfo105);
             // 
             // toolTipHotspot_No_r_bins
             // 
@@ -3203,10 +3234,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_No_r_bins.Name = "toolTipHotspot_No_r_bins";
             this.toolTipHotspot_No_r_bins.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_No_r_bins.TabIndex = 19;
-            toolTipItem66.Text = resources.GetString("toolTipItem66.Text");
-            toolTipInfo45.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem66});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_No_r_bins, toolTipInfo45);
+            toolTipItem161.Text = resources.GetString("toolTipItem161.Text");
+            toolTipInfo106.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem161});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_No_r_bins, toolTipInfo106);
             // 
             // toolTipHotspot_MinimumImplicitMicrofractureRadius
             // 
@@ -3214,10 +3245,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MinimumImplicitMicrofractureRadius.Name = "toolTipHotspot_MinimumImplicitMicrofractureRadius";
             this.toolTipHotspot_MinimumImplicitMicrofractureRadius.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MinimumImplicitMicrofractureRadius.TabIndex = 18;
-            toolTipItem67.Text = resources.GetString("toolTipItem67.Text");
-            toolTipInfo46.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem67});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumImplicitMicrofractureRadius, toolTipInfo46);
+            toolTipItem162.Text = resources.GetString("toolTipItem162.Text");
+            toolTipInfo107.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem162});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumImplicitMicrofractureRadius, toolTipInfo107);
             // 
             // toolTipHotspot_HorizontalUpscalingFactor
             // 
@@ -3225,10 +3256,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_HorizontalUpscalingFactor.Name = "toolTipHotspot_HorizontalUpscalingFactor";
             this.toolTipHotspot_HorizontalUpscalingFactor.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_HorizontalUpscalingFactor.TabIndex = 16;
-            toolTipItem68.Text = resources.GetString("toolTipItem68.Text");
-            toolTipInfo47.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem68});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_HorizontalUpscalingFactor, toolTipInfo47);
+            toolTipItem163.Text = resources.GetString("toolTipItem163.Text");
+            toolTipInfo108.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem163});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_HorizontalUpscalingFactor, toolTipInfo108);
             // 
             // toolTipHotspot_FractureMode
             // 
@@ -3236,12 +3267,12 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FractureMode.Name = "toolTipHotspot_FractureMode";
             this.toolTipHotspot_FractureMode.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FractureMode.TabIndex = 15;
-            toolTipItem69.Text = "Use this control to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures" +
+            toolTipItem164.Text = "Use this control to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures" +
     "; otherwise the model will include both, depending on which is energetically opt" +
     "imal.";
-            toolTipInfo48.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem69});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureMode, toolTipInfo48);
+            toolTipInfo109.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem164});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureMode, toolTipInfo109);
             // 
             // numericUpDown_HorizontalUpscalingFactor
             // 
@@ -3304,22 +3335,22 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FractureNucleationPosition.Name = "toolTipHotspot_FractureNucleationPosition";
             this.toolTipHotspot_FractureNucleationPosition.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FractureNucleationPosition.TabIndex = 44;
-            toolTipItem70.Text = "Position of fracture nucleation within the layer:";
-            toolTipItem71.ShowBullet = true;
-            toolTipItem71.Text = "Set to 0 to force fractures to nucleate at the base of the layer";
-            toolTipItem72.ShowBullet = true;
-            toolTipItem72.Text = "Set to 0.5 to force fractures to nucleate in the middle of the layer";
-            toolTipItem73.ShowBullet = true;
-            toolTipItem73.Text = "Set to 1 to force fractures to nucleate at the top of the layer";
-            toolTipItem74.ShowBullet = true;
-            toolTipItem74.Text = "Leave blank to nucleate fractures at random depths within the layer";
-            toolTipInfo49.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem70,
-            toolTipItem71,
-            toolTipItem72,
-            toolTipItem73,
-            toolTipItem74});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureNucleationPosition, toolTipInfo49);
+            toolTipItem165.Text = "Position of fracture nucleation within the layer:";
+            toolTipItem166.ShowBullet = true;
+            toolTipItem166.Text = "Set to 0 to force fractures to nucleate at the base of the layer";
+            toolTipItem167.ShowBullet = true;
+            toolTipItem167.Text = "Set to 0.5 to force fractures to nucleate in the middle of the layer";
+            toolTipItem168.ShowBullet = true;
+            toolTipItem168.Text = "Set to 1 to force fractures to nucleate at the top of the layer";
+            toolTipItem169.ShowBullet = true;
+            toolTipItem169.Text = "Leave blank to nucleate fractures at random depths within the layer";
+            toolTipInfo110.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem165,
+            toolTipItem166,
+            toolTipItem167,
+            toolTipItem168,
+            toolTipItem169});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureNucleationPosition, toolTipInfo110);
             // 
             // label_FractureNucleationPosition
             // 
@@ -3389,13 +3420,13 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_SearchAdjacentGridblocks.DisableMouseWheelScrolling = false;
             this.comboBox_SearchAdjacentGridblocks.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem21.Text = "None";
-            comboBoxItem22.Text = "All";
-            comboBoxItem23.Text = "Automatic";
+            comboBoxItem44.Text = "None";
+            comboBoxItem45.Text = "All";
+            comboBoxItem46.Text = "Automatic";
             this.comboBox_SearchAdjacentGridblocks.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
-            comboBoxItem21,
-            comboBoxItem22,
-            comboBoxItem23});
+            comboBoxItem44,
+            comboBoxItem45,
+            comboBoxItem46});
             this.comboBox_SearchAdjacentGridblocks.Location = new System.Drawing.Point(212, 201);
             this.comboBox_SearchAdjacentGridblocks.Name = "comboBox_SearchAdjacentGridblocks";
             this.comboBox_SearchAdjacentGridblocks.Size = new System.Drawing.Size(88, 22);
@@ -3408,11 +3439,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_NoMicrofractureCornerpoints.Name = "toolTipHotspot_NoMicrofractureCornerpoints";
             this.toolTipHotspot_NoMicrofractureCornerpoints.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_NoMicrofractureCornerpoints.TabIndex = 31;
-            toolTipItem75.Text = "Number of cornerpoints defining the microfracture polygons. Minimum is 3 - it is " +
+            toolTipItem170.Text = "Number of cornerpoints defining the microfracture polygons. Minimum is 3 - it is " +
     "not possible to generate a polygon with less than 3 points.";
-            toolTipInfo50.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem75});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoMicrofractureCornerpoints, toolTipInfo50);
+            toolTipInfo111.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem170});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoMicrofractureCornerpoints, toolTipInfo111);
             // 
             // toolTipHotspot_CreateTriangularFractureSegments
             // 
@@ -3420,12 +3451,12 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CreateTriangularFractureSegments.Name = "toolTipHotspot_CreateTriangularFractureSegments";
             this.toolTipHotspot_CreateTriangularFractureSegments.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CreateTriangularFractureSegments.TabIndex = 30;
-            toolTipItem76.Text = "Check this to create triangular instead of quadrilateral macrofracture segments. " +
+            toolTipItem171.Text = "Check this to create triangular instead of quadrilateral macrofracture segments. " +
     "Microfractures will comprise a series of coplanar triangles with vertices at the" +
     " centre, rather than a single polygon.";
-            toolTipInfo51.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem76});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CreateTriangularFractureSegments, toolTipInfo51);
+            toolTipInfo112.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem171});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CreateTriangularFractureSegments, toolTipInfo112);
             // 
             // toolTipHotspot_LinkParallelFractures
             // 
@@ -3433,11 +3464,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_LinkParallelFractures.Name = "toolTipHotspot_LinkParallelFractures";
             this.toolTipHotspot_LinkParallelFractures.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_LinkParallelFractures.TabIndex = 29;
-            toolTipItem77.Text = "Check this to link fractures that terminate due to stress shadow interaction with" +
+            toolTipItem172.Text = "Check this to link fractures that terminate due to stress shadow interaction with" +
     " a relay segment.";
-            toolTipInfo52.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem77});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_LinkParallelFractures, toolTipInfo52);
+            toolTipInfo113.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem172});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_LinkParallelFractures, toolTipInfo113);
             // 
             // toolTipHotspot_CropAtGridBoundary
             // 
@@ -3445,11 +3476,11 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CropAtGridBoundary.Name = "toolTipHotspot_CropAtGridBoundary";
             this.toolTipHotspot_CropAtGridBoundary.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CropAtGridBoundary.TabIndex = 28;
-            toolTipItem78.Text = "Uncheck this to allow fractures to continue propagating outside of the model limi" +
+            toolTipItem173.Text = "Uncheck this to allow fractures to continue propagating outside of the model limi" +
     "ts specified on the Main Settings tab.";
-            toolTipInfo53.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem78});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CropAtGridBoundary, toolTipInfo53);
+            toolTipInfo114.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem173});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CropAtGridBoundary, toolTipInfo114);
             // 
             // toolTipHotspot_SearchAdjacentGridblocks
             // 
@@ -3457,10 +3488,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_SearchAdjacentGridblocks.Name = "toolTipHotspot_SearchAdjacentGridblocks";
             this.toolTipHotspot_SearchAdjacentGridblocks.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SearchAdjacentGridblocks.TabIndex = 27;
-            toolTipItem79.Text = resources.GetString("toolTipItem79.Text");
-            toolTipInfo54.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem79});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SearchAdjacentGridblocks, toolTipInfo54);
+            toolTipItem174.Text = resources.GetString("toolTipItem174.Text");
+            toolTipInfo115.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem174});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SearchAdjacentGridblocks, toolTipInfo115);
             // 
             // toolTipHotspot_MinimumExplicitMicrofractureRadius
             // 
@@ -3468,12 +3499,12 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MinimumExplicitMicrofractureRadius.Name = "toolTipHotspot_MinimumExplicitMicrofractureRadius";
             this.toolTipHotspot_MinimumExplicitMicrofractureRadius.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MinimumExplicitMicrofractureRadius.TabIndex = 26;
-            toolTipItem80.Text = "Minimum radius for microfractures to be included in explicit DFN. Leave blank to " +
+            toolTipItem175.Text = "Minimum radius for microfractures to be included in explicit DFN. Leave blank to " +
     "exclude microfractures from DFN; set to between 0 and half layer thickness to in" +
     "clude larger microfractures in the DFN.";
-            toolTipInfo55.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem80});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumExplicitMicrofractureRadius, toolTipInfo55);
+            toolTipInfo116.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem175});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumExplicitMicrofractureRadius, toolTipInfo116);
             // 
             // toolTipHotspot_PropagateFracturesInNucleationOrder
             // 
@@ -3481,10 +3512,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_PropagateFracturesInNucleationOrder.Name = "toolTipHotspot_PropagateFracturesInNucleationOrder";
             this.toolTipHotspot_PropagateFracturesInNucleationOrder.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_PropagateFracturesInNucleationOrder.TabIndex = 25;
-            toolTipItem81.Text = resources.GetString("toolTipItem81.Text");
-            toolTipInfo56.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem81});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PropagateFracturesInNucleationOrder, toolTipInfo56);
+            toolTipItem176.Text = resources.GetString("toolTipItem176.Text");
+            toolTipInfo117.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem176});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PropagateFracturesInNucleationOrder, toolTipInfo117);
             // 
             // toolTipHotspot_ProbabilisticFractureNucleationLimit
             // 
@@ -3492,19 +3523,19 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.Name = "toolTipHotspot_ProbabilisticFractureNucleationLimit";
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.TabIndex = 24;
-            toolTipItem82.Text = resources.GetString("toolTipItem82.Text");
-            toolTipItem83.ShowBullet = true;
-            toolTipItem83.Text = "Set to 0 to disable probabilistic fracture nucleation.";
-            toolTipItem84.ShowBullet = true;
-            toolTipItem84.Text = "Leave blank for automatic (probabilistic fracture nucleation will be activated wh" +
+            toolTipItem177.Text = resources.GetString("toolTipItem177.Text");
+            toolTipItem178.ShowBullet = true;
+            toolTipItem178.Text = "Set to 0 to disable probabilistic fracture nucleation.";
+            toolTipItem179.ShowBullet = true;
+            toolTipItem179.Text = "Leave blank for automatic (probabilistic fracture nucleation will be activated wh" +
     "enever searching neighbouring gridblocks is also active).";
-            toolTipItem85.Text = resources.GetString("toolTipItem85.Text");
-            toolTipInfo57.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem82,
-            toolTipItem83,
-            toolTipItem84,
-            toolTipItem85});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_ProbabilisticFractureNucleationLimit, toolTipInfo57);
+            toolTipItem180.Text = resources.GetString("toolTipItem180.Text");
+            toolTipInfo118.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem177,
+            toolTipItem178,
+            toolTipItem179,
+            toolTipItem180});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_ProbabilisticFractureNucleationLimit, toolTipInfo118);
             // 
             // toolTipHotspot_MinimumLayerThickness
             // 
@@ -3512,10 +3543,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MinimumLayerThickness.Name = "toolTipHotspot_MinimumLayerThickness";
             this.toolTipHotspot_MinimumLayerThickness.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MinimumLayerThickness.TabIndex = 23;
-            toolTipItem86.Text = resources.GetString("toolTipItem86.Text");
-            toolTipInfo58.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem86});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumLayerThickness, toolTipInfo58);
+            toolTipItem181.Text = resources.GetString("toolTipItem181.Text");
+            toolTipInfo119.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem181});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumLayerThickness, toolTipInfo119);
             // 
             // toolTipHotspot_MaxConsistencyAngle
             // 
@@ -3523,10 +3554,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MaxConsistencyAngle.Name = "toolTipHotspot_MaxConsistencyAngle";
             this.toolTipHotspot_MaxConsistencyAngle.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MaxConsistencyAngle.TabIndex = 22;
-            toolTipItem87.Text = resources.GetString("toolTipItem87.Text");
-            toolTipInfo59.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem87});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxConsistencyAngle, toolTipInfo59);
+            toolTipItem182.Text = resources.GetString("toolTipItem182.Text");
+            toolTipInfo120.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem182});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxConsistencyAngle, toolTipInfo120);
             // 
             // numericUpDown_NoMicrofractureCornerpoints
             // 
@@ -3683,37 +3714,37 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CalculationTerminationControl.Name = "toolTipHotspot_CalculationTerminationControl";
             this.toolTipHotspot_CalculationTerminationControl.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CalculationTerminationControl.TabIndex = 17;
-            toolTipItem88.Text = "The calculation is designed to stop automatically when all fracture sets have sto" +
+            toolTipItem183.Text = "The calculation is designed to stop automatically when all fracture sets have sto" +
     "pped growing. This can be determined in one of three ways:";
-            toolTipItem89.ShowBullet = true;
-            toolTipItem89.Text = "When the total area of active (propagating) macrofractures (aMFP32) drops below a" +
+            toolTipItem184.ShowBullet = true;
+            toolTipItem184.Text = "When the total area of active (propagating) macrofractures (aMFP32) drops below a" +
     " specified proportion of the peak historic value.";
-            toolTipItem90.ShowBullet = true;
-            toolTipItem90.Text = "When the total volumetric density of active (propagating) macrofractures (aMFP30)" +
+            toolTipItem185.ShowBullet = true;
+            toolTipItem185.Text = "When the total volumetric density of active (propagating) macrofractures (aMFP30)" +
     " drops below a specified proportion of the total (propagating and non-propagatin" +
     "g) volumetric density (MFP30).";
-            toolTipItem91.ShowBullet = true;
-            toolTipItem91.Text = "When the total clear zone volume (the volume in which macrofractures can nucleate" +
+            toolTipItem186.ShowBullet = true;
+            toolTipItem186.Text = "When the total clear zone volume (the volume in which macrofractures can nucleate" +
     " or propagate without overlapping the stress shadow of another macrofracture) dr" +
     "ops below a specified minimum.";
-            toolTipItem92.Text = resources.GetString("toolTipItem92.Text");
-            toolTipItem93.Text = "To stop the calculation while fractures are still growing, set a maximum deformat" +
+            toolTipItem187.Text = resources.GetString("toolTipItem187.Text");
+            toolTipItem188.Text = "To stop the calculation while fractures are still growing, set a maximum deformat" +
     "ion episode duration. If this is blank, there will be no time limit to the defor" +
     "mation episode.";
-            toolTipItem94.Text = "The maximum timestep limit is designed to prevent models hanging if termination c" +
+            toolTipItem189.Text = "The maximum timestep limit is designed to prevent models hanging if termination c" +
     "riteria are not met. If models are failing to run to completion, try increasing " +
     "this limit.";
-            toolTipInfo60.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem88,
-            toolTipItem89,
-            toolTipItem90,
-            toolTipItem91,
-            toolTipItem92,
-            toolTipSeparator2,
-            toolTipItem93,
-            toolTipSeparator3,
-            toolTipItem94});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculationTerminationControl, toolTipInfo60);
+            toolTipInfo121.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem183,
+            toolTipItem184,
+            toolTipItem185,
+            toolTipItem186,
+            toolTipItem187,
+            toolTipSeparator5,
+            toolTipItem188,
+            toolTipSeparator6,
+            toolTipItem189});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculationTerminationControl, toolTipInfo121);
             // 
             // label_Active_MFP30_TerminationRatio
             // 
@@ -3810,6 +3841,266 @@ namespace DFMGenerator_Ocean
             this.label_FractureMode.TabIndex = 0;
             this.label_FractureMode.Text = "Fracture mode:";
             // 
+            // tabGeometry
+            // 
+            this.tabGeometry.Controls.Add(this.checkBox_CalculateImplicitUCFData);
+            this.tabGeometry.Controls.Add(this.numericUpDown_RaysPerUCF);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MaxDeactivationCheckInterval);
+            this.tabGeometry.Controls.Add(this.label_MinPhi);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MinPhi);
+            this.tabGeometry.Controls.Add(this.textBox_StaticDPCullInterval);
+            this.tabGeometry.Controls.Add(this.label_StaticDPCullInterval);
+            this.tabGeometry.Controls.Add(this.label_StaticDPCullInterval_Units);
+            this.tabGeometry.Controls.Add(this.label_MaxUCFRadius);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MaxUCFRadius);
+            this.tabGeometry.Controls.Add(this.label_MaxUCFRadius_Units);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MinStaticDPSizeRatio);
+            this.tabGeometry.Controls.Add(this.label_MinStaticDPSizeRatio);
+            this.tabGeometry.Controls.Add(this.label_MinIDR);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MinIDR);
+            this.tabGeometry.Controls.Add(this.label_MaxUCFRTSIncrease);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MaxUCFRTSIncrease);
+            this.tabGeometry.Controls.Add(this.label_MaxDeactivationCheckInterval);
+            this.tabGeometry.Controls.Add(this.label_MaxDeactivationCheckInterval_Units);
+            this.tabGeometry.Controls.Add(this.label_MaxUCFRTSIncrease_Units);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MinSSDR);
+            this.tabGeometry.Controls.Add(this.checkBox_UseUnconfinedFractures);
+            this.tabGeometry.Controls.Add(this.label_MinSSDR);
+            this.tabGeometry.Controls.Add(this.label_RaysPerUCF);
+            this.tabGeometry.Controls.Add(this.label_MinUCFRadius);
+            this.tabGeometry.Controls.Add(this.unitTextBox_MinUCFRadius);
+            this.tabGeometry.Controls.Add(this.label_MinUCFRadius_Units);
+            this.tabGeometry.Name = "tabGeometry";
+            this.tabGeometry.Size = new System.Drawing.Size(747, 391);
+            this.tabGeometry.Text = "Fracture geometry";
+            // 
+            // checkBox_CalculateImplicitUCFData
+            // 
+            this.checkBox_CalculateImplicitUCFData.AutoSize = true;
+            this.checkBox_CalculateImplicitUCFData.Location = new System.Drawing.Point(22, 330);
+            this.checkBox_CalculateImplicitUCFData.Name = "checkBox_CalculateImplicitUCFData";
+            this.checkBox_CalculateImplicitUCFData.Size = new System.Drawing.Size(249, 17);
+            this.checkBox_CalculateImplicitUCFData.TabIndex = 67;
+            this.checkBox_CalculateImplicitUCFData.Text = "Calculate implicit data for unconfined fractures?";
+            this.checkBox_CalculateImplicitUCFData.UseVisualStyleBackColor = true;
+            // 
+            // numericUpDown_RaysPerUCF
+            // 
+            this.numericUpDown_RaysPerUCF.Location = new System.Drawing.Point(238, 56);
+            this.numericUpDown_RaysPerUCF.Name = "numericUpDown_RaysPerUCF";
+            this.numericUpDown_RaysPerUCF.Size = new System.Drawing.Size(100, 20);
+            this.numericUpDown_RaysPerUCF.TabIndex = 66;
+            // 
+            // unitTextBox_MaxDeactivationCheckInterval
+            // 
+            this.unitTextBox_MaxDeactivationCheckInterval.Location = new System.Drawing.Point(238, 211);
+            this.unitTextBox_MaxDeactivationCheckInterval.Name = "unitTextBox_MaxDeactivationCheckInterval";
+            this.unitTextBox_MaxDeactivationCheckInterval.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MaxDeactivationCheckInterval.TabIndex = 65;
+            // 
+            // label_MinPhi
+            // 
+            this.label_MinPhi.AutoSize = true;
+            this.label_MinPhi.Location = new System.Drawing.Point(19, 240);
+            this.label_MinPhi.Name = "label_MinPhi";
+            this.label_MinPhi.Size = new System.Drawing.Size(167, 13);
+            this.label_MinPhi.TabIndex = 63;
+            this.label_MinPhi.Text = "Minimum ray activation probability:";
+            this.label_MinPhi.Click += new System.EventHandler(this.label1_Click);
+            // 
+            // unitTextBox_MinPhi
+            // 
+            this.unitTextBox_MinPhi.Location = new System.Drawing.Point(238, 237);
+            this.unitTextBox_MinPhi.Name = "unitTextBox_MinPhi";
+            this.unitTextBox_MinPhi.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MinPhi.TabIndex = 64;
+            this.unitTextBox_MinPhi.TextChanged += new System.EventHandler(this.unitTextBox1_TextChanged);
+            // 
+            // textBox_StaticDPCullInterval
+            // 
+            this.textBox_StaticDPCullInterval.Location = new System.Drawing.Point(238, 289);
+            this.textBox_StaticDPCullInterval.Name = "textBox_StaticDPCullInterval";
+            this.textBox_StaticDPCullInterval.Size = new System.Drawing.Size(100, 20);
+            this.textBox_StaticDPCullInterval.TabIndex = 60;
+            // 
+            // label_StaticDPCullInterval
+            // 
+            this.label_StaticDPCullInterval.AutoSize = true;
+            this.label_StaticDPCullInterval.Location = new System.Drawing.Point(19, 292);
+            this.label_StaticDPCullInterval.Name = "label_StaticDPCullInterval";
+            this.label_StaticDPCullInterval.Size = new System.Drawing.Size(140, 13);
+            this.label_StaticDPCullInterval.TabIndex = 61;
+            this.label_StaticDPCullInterval.Text = "Static datapoint cull interval:";
+            // 
+            // label_StaticDPCullInterval_Units
+            // 
+            this.label_StaticDPCullInterval_Units.AutoSize = true;
+            this.label_StaticDPCullInterval_Units.Location = new System.Drawing.Point(340, 292);
+            this.label_StaticDPCullInterval_Units.Name = "label_StaticDPCullInterval_Units";
+            this.label_StaticDPCullInterval_Units.Size = new System.Drawing.Size(55, 13);
+            this.label_StaticDPCullInterval_Units.TabIndex = 62;
+            this.label_StaticDPCullInterval_Units.Text = "Timesteps";
+            // 
+            // label_MaxUCFRadius
+            // 
+            this.label_MaxUCFRadius.AutoSize = true;
+            this.label_MaxUCFRadius.Location = new System.Drawing.Point(20, 110);
+            this.label_MaxUCFRadius.Name = "label_MaxUCFRadius";
+            this.label_MaxUCFRadius.Size = new System.Drawing.Size(180, 13);
+            this.label_MaxUCFRadius.TabIndex = 57;
+            this.label_MaxUCFRadius.Text = "Maximum unconfined fracture radius:";
+            // 
+            // unitTextBox_MaxUCFRadius
+            // 
+            this.unitTextBox_MaxUCFRadius.Location = new System.Drawing.Point(238, 107);
+            this.unitTextBox_MaxUCFRadius.Name = "unitTextBox_MaxUCFRadius";
+            this.unitTextBox_MaxUCFRadius.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MaxUCFRadius.TabIndex = 59;
+            // 
+            // label_MaxUCFRadius_Units
+            // 
+            this.label_MaxUCFRadius_Units.AutoSize = true;
+            this.label_MaxUCFRadius_Units.Location = new System.Drawing.Point(341, 110);
+            this.label_MaxUCFRadius_Units.Name = "label_MaxUCFRadius_Units";
+            this.label_MaxUCFRadius_Units.Size = new System.Drawing.Size(15, 13);
+            this.label_MaxUCFRadius_Units.TabIndex = 58;
+            this.label_MaxUCFRadius_Units.Text = "m";
+            // 
+            // unitTextBox_MinStaticDPSizeRatio
+            // 
+            this.unitTextBox_MinStaticDPSizeRatio.Location = new System.Drawing.Point(238, 263);
+            this.unitTextBox_MinStaticDPSizeRatio.Name = "unitTextBox_MinStaticDPSizeRatio";
+            this.unitTextBox_MinStaticDPSizeRatio.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MinStaticDPSizeRatio.TabIndex = 55;
+            // 
+            // label_MinStaticDPSizeRatio
+            // 
+            this.label_MinStaticDPSizeRatio.AutoSize = true;
+            this.label_MinStaticDPSizeRatio.Location = new System.Drawing.Point(19, 266);
+            this.label_MinStaticDPSizeRatio.Name = "label_MinStaticDPSizeRatio";
+            this.label_MinStaticDPSizeRatio.Size = new System.Drawing.Size(170, 13);
+            this.label_MinStaticDPSizeRatio.TabIndex = 53;
+            this.label_MinStaticDPSizeRatio.Text = "Minimum static datapoint size ratio:";
+            // 
+            // label_MinIDR
+            // 
+            this.label_MinIDR.AutoSize = true;
+            this.label_MinIDR.Location = new System.Drawing.Point(20, 162);
+            this.label_MinIDR.Name = "label_MinIDR";
+            this.label_MinIDR.Size = new System.Drawing.Size(192, 13);
+            this.label_MinIDR.TabIndex = 44;
+            this.label_MinIDR.Text = "Minimum intersection deactivation ratio:";
+            // 
+            // unitTextBox_MinIDR
+            // 
+            this.unitTextBox_MinIDR.Location = new System.Drawing.Point(238, 159);
+            this.unitTextBox_MinIDR.Name = "unitTextBox_MinIDR";
+            this.unitTextBox_MinIDR.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MinIDR.TabIndex = 52;
+            // 
+            // label_MaxUCFRTSIncrease
+            // 
+            this.label_MaxUCFRTSIncrease.AutoSize = true;
+            this.label_MaxUCFRTSIncrease.Location = new System.Drawing.Point(20, 188);
+            this.label_MaxUCFRTSIncrease.Name = "label_MaxUCFRTSIncrease";
+            this.label_MaxUCFRTSIncrease.Size = new System.Drawing.Size(212, 13);
+            this.label_MaxUCFRTSIncrease.TabIndex = 45;
+            this.label_MaxUCFRTSIncrease.Text = "Maximum UCF radius increase per timestep:";
+            // 
+            // unitTextBox_MaxUCFRTSIncrease
+            // 
+            this.unitTextBox_MaxUCFRTSIncrease.Location = new System.Drawing.Point(238, 185);
+            this.unitTextBox_MaxUCFRTSIncrease.Name = "unitTextBox_MaxUCFRTSIncrease";
+            this.unitTextBox_MaxUCFRTSIncrease.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MaxUCFRTSIncrease.TabIndex = 51;
+            // 
+            // label_MaxDeactivationCheckInterval
+            // 
+            this.label_MaxDeactivationCheckInterval.AutoSize = true;
+            this.label_MaxDeactivationCheckInterval.Location = new System.Drawing.Point(20, 214);
+            this.label_MaxDeactivationCheckInterval.Name = "label_MaxDeactivationCheckInterval";
+            this.label_MaxDeactivationCheckInterval.Size = new System.Drawing.Size(222, 13);
+            this.label_MaxDeactivationCheckInterval.TabIndex = 46;
+            this.label_MaxDeactivationCheckInterval.Text = "Maximum deactivation check radius increase:";
+            // 
+            // label_MaxDeactivationCheckInterval_Units
+            // 
+            this.label_MaxDeactivationCheckInterval_Units.AutoSize = true;
+            this.label_MaxDeactivationCheckInterval_Units.Location = new System.Drawing.Point(341, 214);
+            this.label_MaxDeactivationCheckInterval_Units.Name = "label_MaxDeactivationCheckInterval_Units";
+            this.label_MaxDeactivationCheckInterval_Units.Size = new System.Drawing.Size(27, 13);
+            this.label_MaxDeactivationCheckInterval_Units.TabIndex = 49;
+            this.label_MaxDeactivationCheckInterval_Units.Text = "ratio";
+            // 
+            // label_MaxUCFRTSIncrease_Units
+            // 
+            this.label_MaxUCFRTSIncrease_Units.AutoSize = true;
+            this.label_MaxUCFRTSIncrease_Units.Location = new System.Drawing.Point(341, 188);
+            this.label_MaxUCFRTSIncrease_Units.Name = "label_MaxUCFRTSIncrease_Units";
+            this.label_MaxUCFRTSIncrease_Units.Size = new System.Drawing.Size(27, 13);
+            this.label_MaxUCFRTSIncrease_Units.TabIndex = 48;
+            this.label_MaxUCFRTSIncrease_Units.Text = "ratio";
+            // 
+            // unitTextBox_MinSSDR
+            // 
+            this.unitTextBox_MinSSDR.Location = new System.Drawing.Point(238, 133);
+            this.unitTextBox_MinSSDR.Name = "unitTextBox_MinSSDR";
+            this.unitTextBox_MinSSDR.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MinSSDR.TabIndex = 43;
+            // 
+            // checkBox_UseUnconfinedFractures
+            // 
+            this.checkBox_UseUnconfinedFractures.AutoSize = true;
+            this.checkBox_UseUnconfinedFractures.Location = new System.Drawing.Point(26, 18);
+            this.checkBox_UseUnconfinedFractures.Name = "checkBox_UseUnconfinedFractures";
+            this.checkBox_UseUnconfinedFractures.Size = new System.Drawing.Size(151, 17);
+            this.checkBox_UseUnconfinedFractures.TabIndex = 0;
+            this.checkBox_UseUnconfinedFractures.Text = "Use unconfined fractures?";
+            this.checkBox_UseUnconfinedFractures.UseVisualStyleBackColor = true;
+            // 
+            // label_MinSSDR
+            // 
+            this.label_MinSSDR.AutoSize = true;
+            this.label_MinSSDR.Location = new System.Drawing.Point(20, 136);
+            this.label_MinSSDR.Name = "label_MinSSDR";
+            this.label_MinSSDR.Size = new System.Drawing.Size(205, 13);
+            this.label_MinSSDR.TabIndex = 41;
+            this.label_MinSSDR.Text = "Minimum stress shadow deactivation ratio:";
+            // 
+            // label_RaysPerUCF
+            // 
+            this.label_RaysPerUCF.AutoSize = true;
+            this.label_RaysPerUCF.Location = new System.Drawing.Point(20, 58);
+            this.label_RaysPerUCF.Name = "label_RaysPerUCF";
+            this.label_RaysPerUCF.Size = new System.Drawing.Size(194, 13);
+            this.label_RaysPerUCF.TabIndex = 32;
+            this.label_RaysPerUCF.Text = "Number of rays per unconfined fracture:";
+            // 
+            // label_MinUCFRadius
+            // 
+            this.label_MinUCFRadius.AutoSize = true;
+            this.label_MinUCFRadius.Location = new System.Drawing.Point(20, 84);
+            this.label_MinUCFRadius.Name = "label_MinUCFRadius";
+            this.label_MinUCFRadius.Size = new System.Drawing.Size(177, 13);
+            this.label_MinUCFRadius.TabIndex = 33;
+            this.label_MinUCFRadius.Text = "Minimum unconfined fracture radius:";
+            // 
+            // unitTextBox_MinUCFRadius
+            // 
+            this.unitTextBox_MinUCFRadius.Location = new System.Drawing.Point(238, 81);
+            this.unitTextBox_MinUCFRadius.Name = "unitTextBox_MinUCFRadius";
+            this.unitTextBox_MinUCFRadius.Size = new System.Drawing.Size(100, 20);
+            this.unitTextBox_MinUCFRadius.TabIndex = 39;
+            // 
+            // label_MinUCFRadius_Units
+            // 
+            this.label_MinUCFRadius_Units.AutoSize = true;
+            this.label_MinUCFRadius_Units.Location = new System.Drawing.Point(341, 84);
+            this.label_MinUCFRadius_Units.Name = "label_MinUCFRadius_Units";
+            this.label_MinUCFRadius_Units.Size = new System.Drawing.Size(15, 13);
+            this.label_MinUCFRadius_Units.TabIndex = 36;
+            this.label_MinUCFRadius_Units.Text = "m";
+            // 
             // btnRestoreDefaults
             // 
             this.btnRestoreDefaults.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
@@ -3819,10 +4110,10 @@ namespace DFMGenerator_Ocean
             this.btnRestoreDefaults.Size = new System.Drawing.Size(114, 23);
             this.btnRestoreDefaults.TabIndex = 4;
             this.btnRestoreDefaults.Text = "Restore defaults";
-            toolTipItem95.Text = "Reset all input parameters to default values";
-            toolTipInfo61.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem95});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.btnRestoreDefaults, toolTipInfo61);
+            toolTipItem190.Text = "Reset all input parameters to default values";
+            toolTipInfo122.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem190});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.btnRestoreDefaults, toolTipInfo122);
             this.btnRestoreDefaults.UseVisualStyleBackColor = true;
             this.btnRestoreDefaults.Click += new System.EventHandler(this.btnRestoreDefaults_Click);
             // 
@@ -3870,6 +4161,9 @@ namespace DFMGenerator_Ocean
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoMicrofractureCornerpoints)).EndInit();
             this.groupBox_CalculationTerminationControl.ResumeLayout(false);
             this.groupBox_CalculationTerminationControl.PerformLayout();
+            this.tabGeometry.ResumeLayout(false);
+            this.tabGeometry.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_RaysPerUCF)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DFMGenerator)).EndInit();
             this.ResumeLayout(false);
 
@@ -4183,5 +4477,33 @@ namespace DFMGenerator_Ocean
         private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_kh;
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_kh;
         private System.Windows.Forms.Label label_kh;
+        private Slb.Ocean.Petrel.UI.Controls.TabPage tabGeometry;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinStaticDPSizeRatio;
+        private System.Windows.Forms.Label label_MinStaticDPSizeRatio;
+        private System.Windows.Forms.Label label_MinIDR;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinIDR;
+        private System.Windows.Forms.Label label_MaxUCFRTSIncrease;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFRTSIncrease;
+        private System.Windows.Forms.Label label_MaxDeactivationCheckInterval;
+        private System.Windows.Forms.Label label_MaxUCFRTSIncrease_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinSSDR;
+        private System.Windows.Forms.CheckBox checkBox_UseUnconfinedFractures;
+        private System.Windows.Forms.Label label_MinSSDR;
+        private System.Windows.Forms.Label label_RaysPerUCF;
+        private System.Windows.Forms.Label label_MinUCFRadius;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinUCFRadius;
+        private System.Windows.Forms.Label label_MinUCFRadius_Units;
+        private System.Windows.Forms.Label label_MaxUCFRadius;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFRadius;
+        private System.Windows.Forms.Label label_MaxUCFRadius_Units;
+        private System.Windows.Forms.TextBox textBox_StaticDPCullInterval;
+        private System.Windows.Forms.Label label_StaticDPCullInterval;
+        private System.Windows.Forms.Label label_StaticDPCullInterval_Units;
+        private System.Windows.Forms.Label label_MinPhi;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinPhi;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxDeactivationCheckInterval;
+        private System.Windows.Forms.Label label_MaxDeactivationCheckInterval_Units;
+        private System.Windows.Forms.NumericUpDown numericUpDown_RaysPerUCF;
+        private System.Windows.Forms.CheckBox checkBox_CalculateImplicitUCFData;
     }
 }

@@ -716,6 +716,21 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getCumGamma() { return CurrentFractureData.Cum_Gamma_M; }
         /// <summary>
+        /// Return the total linear density of all unconfined fractures during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTotalUCFP32() { return CurrentFractureData.Total_RP32_M; }
+        /// <summary>
+        /// Return the non-overlapping volumetric ratio of all unconfined fractures during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTotalExclusiveUCFP33() { return CurrentFractureData.Total_RP33Exclusive_M; }
+        /// <summary>
+        /// Return the overlapping volumetric ratio of all unconfined fractures during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTotalOverlappingUCFP33() { return CurrentFractureData.Total_RP33Overlapping_M; }
+        /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during the current timestep
         /// </summary>
         /// <returns></returns>
@@ -803,6 +818,70 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getCumGamma(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getCum_Gamma_M(Timestep_M); }
+        /// <summary>
+        /// Return the total linear density of all unconfined fractures at the end of a specified previous timestep (Pa)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalUCFP32(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP32_M(Timestep_M); }
+        /// <summary>
+        /// Return the non-overlapping volumetric ratio of all unconfined fractures at the end of a specified previous timestep (Pa)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalExclusiveUCFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP33Exclusive_M(Timestep_M); }
+        /// <summary>
+        /// Return the overlapping volumetric ratio of all unconfined fractures at the end of a specified previous timestep (Pa)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalOverlappingUCFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP33Overlapping_M(Timestep_M); }
+        /// <summary>
+        /// Return the total porosity of all unconfined fractures that were present at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalUCFPorosity(int Timestep_M)
+        {
+            return getTotalUCFPorosity(gbc.PropControl.FractureApertureControl, Timestep_M);
+        }
+        /// <summary>
+        /// Return the total porosity of all unconfined fractures that were present at the end of a specified previous timestep, based on specified method for determining fracture aperture
+        /// </summary>
+        /// <param name="ApertureControl">Method for determining fracture aperture</param>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalUCFPorosity(FractureApertureType ApertureControl, int Timestep_M)
+        {
+            if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep;
+            double output;
+
+            switch (ApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    output = PreviousFractureData.getTotal_RP32_M(Timestep_M) * UniformAperture;
+                    break;
+                case FractureApertureType.SizeDependent:
+                    output = (PreviousFractureData.getTotal_RP33Exclusive_M(Timestep_M) + PreviousFractureData.getTotal_RP33Overlapping_M(Timestep_M)) * (SizeDependentApertureMultiplier / 2);
+                    break;
+                case FractureApertureType.Dynamic:
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
+                    output = (PreviousFractureData.getTotal_RP33Exclusive_M(Timestep_M) + PreviousFractureData.getTotal_RP33Overlapping_M(Timestep_M)) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    break;
+                case FractureApertureType.BartonBandis:
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
+                    output = PreviousFractureData.getTotal_RP32_M(Timestep_M) * BartonBandisAperture(compressive_sigmaNeff);
+                    break;
+                default:
+                    output = 0;
+                    break;
+            }
+
+            return output;
+        }
+
         /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during a specified previous timestep
         /// </summary>
@@ -996,6 +1075,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double sIJ_RP32_total() { return Fractures.sIJ_RP32_total; }
+        /// <summary>
+        /// Total mean linear density of fractures in the set
+        /// </summary>
+        /// <returns></returns>
+        public double RP32_total() { return Fractures.FP32_total; }
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
         // NB fracture aperture control data for dynamic and Barton-Bandis aperture are independent of dip set, so are contained in the MechanicalProperties object for the gridblock
@@ -1359,7 +1443,51 @@ namespace DFMGenerator_SharedCode
             }
         }
 
-        // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
+        // Fracture porosity values
+        /// <summary>
+        /// Total porosity of all unconfined fractures
+        /// </summary>
+        /// <returns></returns>
+        public double Total_UCF_Porosity()
+        {
+            return Total_UCF_Porosity(gbc.PropControl.FractureApertureControl);
+        }
+        /// <summary>
+        /// Total porosity of all unconfined fractures, based on specified method for determining fracture aperture
+        /// </summary>
+        /// <param name="ApertureControl">Method for determining fracture aperture</param>
+        /// <returns></returns>
+        public double Total_UCF_Porosity(FractureApertureType ApertureControl)
+        {
+            double output;
+
+            switch (ApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    output = Fractures.FP32_total * UniformAperture;
+                    break;
+                case FractureApertureType.SizeDependent:
+                    output = (Fractures.FP33_exclusive_total + Fractures.FP33_overlapping_total) * (SizeDependentApertureMultiplier / 2);
+                    break;
+                case FractureApertureType.Dynamic:
+                    double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
+                    output = (Fractures.FP33_exclusive_total + Fractures.FP33_overlapping_total) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    break;
+                case FractureApertureType.BartonBandis:
+                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
+                    output = Fractures.FP32_total * BartonBandisAperture(compressive_sigmaNeff);
+                    break;
+                default:
+                    output = 0;
+                    break;
+            }
+
+            return output;
+        }
+
+                // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
         // In this case we will use a supplied effective stress tensor to calculate the present day stress on the fracture
         /// <summary>
         /// Present day effective normal stress acting on the fracture
@@ -2586,7 +2714,13 @@ namespace DFMGenerator_SharedCode
             Fractures.CullArray(RayPropagationStatus.StaticStressShadow, minDatapointSizeRatio);
             Fractures.CullArray(RayPropagationStatus.StaticIntersection, minDatapointSizeRatio);
         }
-
+        /// <summary>
+        /// Set the unconfined fracture density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, RP32, RP33Exclusive and RP33Overlapping in the CurrentFractureData object
+        /// </summary>
+        public void setFractureDensityData()
+        {
+            CurrentFractureData.SetFractureDensityData(Fractures.a_RP30_total, Fractures.r_RP30_total, Fractures.sII_RP30_total, Fractures.sIJ_RP30_total, Fractures.sMR_RP30_total, Fractures.FP32_total, Fractures.FP33_exclusive_total, Fractures.FP33_overlapping_total);
+        }
         /// <summary>
         /// Update the values describing the inverse stress shadow and clear zone volumes for this fracture set
         /// </summary>

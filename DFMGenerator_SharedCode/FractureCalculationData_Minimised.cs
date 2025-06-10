@@ -114,9 +114,13 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double sIJ_RP30_M { get; private set; }
         /// <summary>
+        /// Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
+        /// </summary>
+        public double sRMax_RP30_M { get; private set; }
+        /// <summary>
         /// Volumetric density of all rays, static and dynamic, at the end of timestep M
         /// </summary>
-        public double Total_RP30_M { get { return a_RP30_M + r_RP30_M + sII_RP30_M + sIJ_RP30_M; } }
+        public double Total_RP30_M { get { return a_RP30_M + r_RP30_M + sII_RP30_M + sIJ_RP30_M + sRMax_RP30_M; } }
         /*/// <summary>
         /// Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
         /// </summary>
@@ -136,9 +140,13 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Total_RP32_M { get; private set; }
         /// <summary>
-        /// Volumetric ratio of all rays, static and dynamic, at the end of timestep M
+        /// Volumetric ratio of all non-overlapping rays, at the end of timestep M
         /// </summary>
-        public double Total_RP33_M { get; private set; }
+        public double Total_RP33Exclusive_M { get; private set; }
+        /// <summary>
+        /// Volumetric ratio of all overlapping rays, at the end of timestep M
+        /// </summary>
+        public double Total_RP33Overlapping_M { get; private set; }
         /*/// <summary>
         /// P35 value for all rays, static and dynamic, at the end of timestep M
         /// This represents the combined integral of R^3 across the area of every fracture segment, where R is the ray length
@@ -188,23 +196,27 @@ namespace DFMGenerator_SharedCode
             Cum_Gamma_Mminus1 = temp_Cum_Gamma;
         }
         /// <summary>
-        /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, RP32 and RP33 at the end of the timestep
+        /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, RP32, RP33Exclusive and RP33Overlapping at the end of the timestep
         /// </summary>
-        /// <param name="a_RP30_in">Volumetric density of fully active rays (a_RP30) at end of timestep M</param>
-        /// <param name="a_RP30_in">Volumetric density of restricted rays (r_RP30) at end of timestep M</param>
-        /// <param name="sII_RP30_in">Volumetric density of static rays terminated due to stress shadow interaction (sII_RP30) at end of timestep M</param>
-        /// <param name="sIJ_RP30_in">Volumetric density of static rays terminated due to intersection (sIJ_RP30) at end of timestep M</param>
-        /// <param name="Total_RP32_in">Total mean linear density of rays (Total_RP32) at end of timestep M</param>
-        /// <param name="Total_RP33_in">Total volumetric ratio of rays (Total_RP33) at end of timestep M</param>
-        public void SetFractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double Total_RP32_in, double Total_RP33_in)
+        /// <param name="a_RP30_in">Volumetric density of fully active rays (a_RP30), at end of timestep M</param>
+        /// <param name="a_RP30_in">Volumetric density of restricted rays (r_RP30), at end of timestep M</param>
+        /// <param name="sII_RP30_in">Volumetric density of static rays terminated due to stress shadow interaction (sII_RP30), at end of timestep M</param>
+        /// <param name="sIJ_RP30_in">Volumetric density of static rays terminated due to intersection (sIJ_RP30), at end of timestep M</param>
+        /// <param name="sRMax_RP30_in">Volumetric density of static rays terminated due to exceeding the maximum radius (sRMax_RP30), at end of timestep M</param>
+        /// <param name="Total_RP32_in">Total mean linear density of rays (Total_RP32), at end of timestep M</param>
+        /// <param name="Total_RP33Exclusive_in">Volumetric ratio of all non-overlapping rays, at the end of timestep M</param>
+        /// <param name="Total_RP33Overlapping_in">Volumetric ratio of all overlapping rays, at the end of timestep M</param>
+        public void SetFractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double sRMax_RP30_in, double Total_RP32_in, double Total_RP33Exclusive_in, double Total_RP33Overlapping_in)
         {
             // Set the new values for all ray densities at the end of the timestep
             a_RP30_M = a_RP30_in;
             r_RP30_M = r_RP30_in;
             sII_RP30_M = sII_RP30_in;
             sIJ_RP30_M = sIJ_RP30_in;
+            sRMax_RP30_M = sRMax_RP30_in;
             Total_RP32_M = Total_RP32_in;
-            Total_RP33_M = Total_RP33_in;
+            Total_RP33Exclusive_M = Total_RP33Exclusive_in;
+            Total_RP33Overlapping_M = Total_RP33Overlapping_in;
         }
         /*/// <summary>
         /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, RP31, RP32, RP33 and RP35 at the end of the timestep
@@ -372,8 +384,10 @@ namespace DFMGenerator_SharedCode
             // Volumetric density of all restricted rays: does not change
             // Volumetric density of all static rays terminated due to stress shadow interaction: does not change
             // Volumetric density of all static rays terminated due to intersection: does not change
+            // Volumetric density of all static rays terminated due to exceeding the maximum radius: does not change
             // Mean linear density of all rays, static and dynamic: does not change
-            // Volumetric ratio of all rays, static and dynamic: does not change
+            // Volumetric ratio of all non-overlapping rays: does not change
+            // Volumetric ratio of all overlapping rays: does not change
             // Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius: does not change
             // Ratio of the total maximum fracture stress shadow width to effective fracture radius: does not change
 
@@ -424,14 +438,18 @@ namespace DFMGenerator_SharedCode
             sII_RP30_M = 0;
             // Volumetric density of all static rays terminated due to intersection, at the end of timestep M
             sIJ_RP30_M = 0;
+            // Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
+            sRMax_RP30_M = 0;
             // Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
             //TerminatingFractureDensity_M = 0;
             // P31 of all rays, static and dynamic, at the end of timestep M
             //Total_RP31_M = 0;
             // Mean linear density of all rays, static and dynamic, at the end of timestep M
             Total_RP32_M = 0;
-            // Volumetric ratio of all rays, static and dynamic, at the end of timestep M
-            Total_RP33_M = 0;
+            // Volumetric ratio of all non-overlapping rays, at the end of timestep M
+            Total_RP33Exclusive_M = 0;
+            // Volumetric ratio of all overlapping rays, at the end of timestep M
+            Total_RP33Overlapping_M = 0;
             // P35 of all rays, static and dynamic, at the end of timestep M
             //Total_RP35_M = 0;
             // Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M
@@ -498,14 +516,18 @@ namespace DFMGenerator_SharedCode
             sII_RP30_M = fcd_in.sII_RP30_M;
             // Volumetric density of all static rays terminated due to intersection, at the end of timestep M
             sIJ_RP30_M = fcd_in.sIJ_RP30_M;
+            // Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
+            sRMax_RP30_M = fcd_in.sRMax_RP30_M;
             // Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
             //TerminatingFractureDensity_M = fcd_in.TerminatingFractureDensity_M;
             // P31 of all rays, static and dynamic, at the end of timestep M
             //Total_RP31_M = fcd_in.Total_RP31_M;
             // Mean linear density of all rays, static and dynamic, at the end of timestep M
             Total_RP32_M = fcd_in.Total_RP32_M;
-            // Volumetric ratio of all rays, static and dynamic, at the end of timestep M
-            Total_RP33_M = fcd_in.Total_RP33_M;
+            // Volumetric ratio of all non-overlapping rays, at the end of timestep M
+            Total_RP33Exclusive_M = fcd_in.Total_RP33Exclusive_M;
+            // Volumetric ratio of all overlapping rays, at the end of timestep M
+            Total_RP33Overlapping_M = fcd_in.Total_RP33Overlapping_M;
             // P35 of all rays, static and dynamic, at the end of timestep M
             //Total_RP35_M = fcd_in.Total_RP35_M;
             // Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M

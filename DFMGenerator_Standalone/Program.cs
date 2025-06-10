@@ -326,6 +326,8 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% DFN geometry controls");
                 input_file.WriteLine("% Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated");
                 input_file.WriteLine("GenerateExplicitDFN true");
+                input_file.WriteLine("% Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures");
+                input_file.WriteLine("CalculateImplicitUCFData true");
                 input_file.WriteLine("% Set false to allow fractures to propagate outside of the outer grid boundary");
                 input_file.WriteLine("CropAtBoundary true");
                 input_file.WriteLine("% Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment");
@@ -836,6 +838,8 @@ namespace DFMGenerator_Standalone
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
+            // Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures
+            bool CalculateImplicitUCFData = true;
             // Set false to allow fractures to propagate outside of the outer grid boundary
             bool CropAtBoundary = true;
             // Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
@@ -1538,6 +1542,10 @@ namespace DFMGenerator_Standalone
                         // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
                         case "GenerateExplicitDFN":
                             GenerateExplicitDFN = (line_split[1] == "true");
+                            break;
+                        // Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures
+                        case "CalculateImplicitUCFData":
+                            CalculateImplicitUCFData = (line_split[1] == "true");
                             break;
                         // Set false to allow fractures to propagate outside of the outer grid boundary
                         case "CropAtBoundary":
@@ -2665,7 +2673,7 @@ namespace DFMGenerator_Standalone
                     double local_DefaultFractureAzimuth = (EhminAzi_array.Count > 0 ? EhminAzi_array[0][RowNo, ColNo] : EhminAzi);
 
                     // Set the propagation control data for the gridblock
-                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                    gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                          MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
 
                     // Set folder path for output files
@@ -2690,8 +2698,8 @@ namespace DFMGenerator_Standalone
                     Console.WriteLine(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                     Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                     Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, TimeUnits.{26}, {27}, {28}, {29}, {30}, {31}); ",
-                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                    Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, {26}, TimeUnits.{27}, {28}, {29}, {30}, {31}, {32}); ",
+                        CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                         MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 

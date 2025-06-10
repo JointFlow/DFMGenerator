@@ -596,7 +596,22 @@ namespace DFMGenerator_SharedCode
             return noElements;
         }
         /// <summary>
-        /// Function to return a list of the XYZ coordinates of the cornerpoints of each segment of the fractures
+        /// Function to return a list of the XYZ coordinates of the nodes along each ray of the fracture
+        /// </summary>
+        /// <returns>A primary array, each item representing a ray, containing a nested list of nodes as PointXYZ objects</returns>
+        public List<PointXYZ>[] GetRayNodes()
+        {
+            // Get a list of the position of the nodes along each ray
+            List<PointXYZ>[] nodeArray = new List<PointXYZ>[NoRays];
+            for (int rayNo = 0; rayNo < NoRays; rayNo++)
+            {
+                List<PointXYZ> nodeList = rays[rayNo].GetNodesInXYZ();
+                nodeArray[rayNo] = nodeList;
+            }
+            return nodeArray;
+        }
+        /// <summary>
+        /// Function to return a list of the XYZ coordinates of the cornerpoints of each segment of the fracture
         /// </summary>
         /// <returns>A primary list, each item representing a fracture segment, containing nested arrays of cornerpoints as PointXYZ objects</returns>
         public List<PointXYZ[]> GetFractureSegmentsInXYZ()
@@ -606,12 +621,7 @@ namespace DFMGenerator_SharedCode
             List<PointXYZ[]> NewElementList = new List<PointXYZ[]>();
 
             // Get a list of the position of the nodes along each ray
-            List<PointXYZ>[] nodeArray = new List<PointXYZ>[NoRays];
-            for (int rayNo = 0; rayNo < NoRays; rayNo++)
-            {
-                List<PointXYZ> nodeList = rays[rayNo].GetNodesInXYZ();
-                nodeArray[rayNo] = nodeList;
-            }
+            List<PointXYZ>[] nodeArray = GetRayNodes();
 
             // Move outwards from the centre of the fracture along the rays, one point at a time
             // There is only one element representing the central segments

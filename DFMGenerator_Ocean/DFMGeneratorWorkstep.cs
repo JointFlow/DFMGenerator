@@ -1046,7 +1046,7 @@ namespace DFMGenerator_Ocean
                     // Flag to calculate and output fracture permeability tensors
                     bool CalculateFracturePermeabilityTensor = arguments.Argument_CalculateFracturePermeabilityTensor;
                     // Algorithm to use for calculating fracture permeability
-                    PermeabilityCalculationAlgorithm PermeabilityAlgorithm = (PermeabilityCalculationAlgorithm) arguments.Argument_PermeabilityAlgorithm;
+                    PermeabilityCalculationAlgorithm PermeabilityAlgorithm = (PermeabilityCalculationAlgorithm)arguments.Argument_PermeabilityAlgorithm;
                     // Fracture types included in the fracture permeability tensor: Microfractures only; Macrofractures only; All fractures
                     FractureType FractureTypesInPermeabilityTensor = (FractureType)arguments.Argument_FractureTypesInPermeabilityTensor;
                     // Implicit fracture population distribution functions will only be calculated if the implicit data is written to file
@@ -1293,9 +1293,19 @@ namespace DFMGenerator_Ocean
                     // These are useful for modelling fractures in thick geobodies such as igneous plutons
                     // NB Unconfined fracture sets are not subdivided into dipsets; unconfined fractures with the same strike but different dips are counted as different sets
                     // The total number of unconfined fracture sets generates will therefore be given by NoUnconfinedFractureStrikeSets * NoUnconfinedFractureDipSets
-                    NoFractureSets = 0;
-                    int NoUnconfinedFractureStrikeSets = 6;// 0;
-                    int NoUnconfinedFractureDipSets = 3;// 0;
+                    int NoUnconfinedFractureStrikeSets = 0;
+                    int NoUnconfinedFractureDipSets = 0;
+                    if (arguments.Argument_UseUnconfinedFractures)
+                    {
+                        NoUnconfinedFractureStrikeSets = NoFractureSets;
+                        if (arguments.Argument_IncludeObliqueFracs)
+                            NoUnconfinedFractureDipSets = 3;
+                        else
+                            NoUnconfinedFractureDipSets = -arguments.Argument_FractureMode;
+                        // For now, we will not mix layer-bound and unconfined fractures
+                        // Therefore if we are using unconfined fracture sets, we will not include any layer-bound fractures
+                        NoFractureSets = 0;
+                    }
                     // Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer
                     double FractureNucleationPosition = -1;
                     if (!double.IsNaN(arguments.Argument_FractureNucleationPosition))
@@ -1313,17 +1323,17 @@ namespace DFMGenerator_Ocean
                     // Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
                     bool AllowReverseFractures = arguments.Argument_AllowReverseFractures;
                     // Number of rays comprising each unconfined fracture
-                    int NoRaysPerUnconfinedFracture = 8;
+                    int NoRaysPerUnconfinedFracture = arguments.Argument_NoRaysPerUnconfinedFracture;
                     // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
                     // If set to -1, will use 0.01 * layer thickness
-                    double MinUnconfinedFractureRadius = 5;// -1;
-                                                           // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
-                                                           // If set to -1, will use 0.5 * layer thickness
-                    double MaxUnconfinedFractureRadius = 50;// -1;
-                                                            // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-                    double MinStressShadowDeactivationRatio = 0.5;
+                    double MinUnconfinedFractureRadius = arguments.Argument_MinUnconfinedFractureRadius;
+                    // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
+                    // If set to -1, will use 0.5 * layer thickness
+                    double MaxUnconfinedFractureRadius = arguments.Argument_MaxUnconfinedFractureRadius;
+                    // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
+                    double MinStressShadowDeactivationRatio = arguments.Argument_MinStressShadowDeactivationRatio;
                     // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-                    double MinIntersectionDeactivationRatio = 0.5;
+                    double MinIntersectionDeactivationRatio = arguments.Argument_MinIntersectionDeactivationRatio;
                     // Horizontal upscaling factor - used to amalgamate multiple Petrel grid cells into one fracture gridblock
                     int HorizontalUpscalingFactor = 1;
                     if (arguments.Argument_HorizontalUpscalingFactor > 0)
@@ -1338,15 +1348,15 @@ namespace DFMGenerator_Ocean
                     if (!double.IsNaN(arguments.Argument_Max_TS_MFP33_increase))
                         MaxTimestepMFP33Increase = arguments.Argument_Max_TS_MFP33_increase;
                     // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
-                    double Max_R_timestep_increase = 0.2;// 0.05;
-                                                         // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
-                    double Max_R_DeactivationCheck_interval = 0.2;
+                    double Max_R_timestep_increase = arguments.Argument_Max_R_timestep_increase;
+                    // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
+                    double Max_R_DeactivationCheck_interval = arguments.Argument_Max_R_DeactivationCheck_interval;
                     // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
-                    double Min_R_ActivationProbability = 0.8;
+                    double Min_R_ActivationProbability = arguments.Argument_Min_R_ActivationProbability;
                     // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
-                    double Min_R_staticDatapointSizeRatio = 0.02;
+                    double Min_R_staticDatapointSizeRatio = arguments.Argument_Min_R_staticDatapointSizeRatio;
                     // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
-                    int CullTSFrequency = 10;
+                    int CullTSFrequency = arguments.Argument_CullTSFrequency;
                     // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
                     // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
                     // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -1388,6 +1398,8 @@ namespace DFMGenerator_Ocean
                     // DFN geometry controls
                     // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
                     bool GenerateExplicitDFN = arguments.Argument_GenerateExplicitDFN;
+                    // Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures
+                    bool CalculateImplicitUCFData = arguments.Argument_CalculateImplicitUCFData;
                     // Set false to allow fractures to propagate outside of the outer grid boundary
                     bool CropAtBoundary = arguments.Argument_CropAtGridBoundary;
                     // Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
@@ -3778,7 +3790,7 @@ namespace DFMGenerator_Ocean
                                 }
 
                                 // Set the propagation control data for the gridblock
-                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                                     MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
 
                                 // Set folder path for output files
@@ -3794,8 +3806,8 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, TimeUnits.{26}, {27}, {28}, {29}, {30}, {31});",
-                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, {26}, TimeUnits.{27}, {28}, {29}, {30}, {31}, {32});",
+                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
                                     MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 
@@ -5573,7 +5585,7 @@ namespace DFMGenerator_Ocean
 
                                                                 // Write data to Petrel grid
                                                                 if (!double.IsNaN(P32_anisotropy))
-                                                                P32_Anisotropy[index_cell] = (float)P32_anisotropy;
+                                                                    P32_Anisotropy[index_cell] = (float)P32_anisotropy;
                                                                 if (!double.IsNaN(P33_anisotropy))
                                                                     P33_Anisotropy[index_cell] = (float)P33_anisotropy;
                                                                 if (!double.IsNaN(UnconnectedTipRatio))
@@ -5691,16 +5703,24 @@ namespace DFMGenerator_Ocean
                                                 {
                                                     uF_P32_value = fractureGridCell.MicrofractureDensity_P32();
                                                     MF_P32_value = fractureGridCell.LayerBoundFractureDensity_P32();
+                                                    // For now we will include unconfined fracture density with layer-bound fracture density
+                                                    MF_P32_value += fractureGridCell.UnconfinedFractureDensity_P32();
                                                     uF_Porosity_value = fractureGridCell.MicrofracturePorosity();
                                                     MF_Porosity_value = fractureGridCell.LayerBoundFracturePorosity();
+                                                    // For now we will include unconfined fracture porosity with layer-bound fracture density
+                                                    MF_Porosity_value += fractureGridCell.UnconfinedFracturePorosity();
                                                 }
                                                 else
                                                 {
                                                     int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
                                                     uF_P32_value = fractureGridCell.MicrofractureDensity_P32(TSNo);
                                                     MF_P32_value = fractureGridCell.LayerBoundFractureDensity_P32(TSNo);
+                                                    // For now we will include unconfined fracture density with layer-bound fracture density
+                                                    MF_P32_value += fractureGridCell.UnconfinedFractureDensity_P32(TSNo);
                                                     uF_Porosity_value = fractureGridCell.MicrofracturePorosity(TSNo);
                                                     MF_Porosity_value = fractureGridCell.LayerBoundFracturePorosity(TSNo);
+                                                    // For now we will include unconfined fracture porosity with layer-bound fracture density
+                                                    MF_Porosity_value += fractureGridCell.UnconfinedFracturePorosity(TSNo);
                                                 }
                                                 bool writeMacrofractureData = PopulateEmptyGridblocks || (MF_P32_value > 0);
 
@@ -6752,6 +6772,45 @@ namespace DFMGenerator_Ocean
                                                 progressBarWrapper.UpdateProgress(++noFracturesGenerated);
                                             }
 
+                                            // Loop through all the unconfined fractures in the DFN
+                                            foreach (UnconfinedFractureXYZ UCF in DFN.GlobalDFNUnconfinedFractures)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get an array of nodes for each ray comprising this fracture
+                                                List<PointXYZ>[] rayNodeArray = UCF.GetRayNodes();
+
+                                                // Loop through each ray
+                                                foreach (List<PointXYZ> rayNodes in rayNodeArray)
+                                               {
+                                                    // Create a new Petrel polyline from the ray node list and add it to the polyline list
+                                                    try
+                                                    {
+                                                        List<Point3> newpline = new List<Point3>();
+                                                        foreach (PointXYZ grid_Point in rayNodes)
+                                                            newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Z));
+                                                        pline_list.Add(new Polyline3(newpline));
+                                                    }
+                                                    catch (Exception e)
+                                                    {
+                                                        string errorMessage = string.Format("Exception thrown when writing ray nodes:");
+                                                        foreach (PointXYZ grid_Point in rayNodes)
+                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Z);
+                                                        PetrelLogger.InfoOutputWindow(errorMessage);
+                                                        PetrelLogger.InfoOutputWindow(e.Message);
+                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                    }
+                                                }
+
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                            }
+
                                             // Add the polyline list to the polyline set
                                             Centrelines.Polylines = pline_list;
 
@@ -7399,6 +7458,21 @@ namespace DFMGenerator_Ocean
             private int argument_SearchAdjacentGridblocks = 2;
             private double argument_MinimumExplicitMicrofractureRadius = double.NaN;
             private int argument_NoMicrofractureCornerpoints = 8;
+
+            // Fracture geometry
+            private bool argument_UseUnconfinedFractures = false;
+            private int argument_NoRaysPerUnconfinedFracture = 8;
+            private double argument_MinUnconfinedFractureRadius = double.NaN;
+            private double argument_MaxUnconfinedFractureRadius = double.NaN;
+            private double argument_MinStressShadowDeactivationRatio = 0.5;
+            private double argument_MinIntersectionDeactivationRatio = 0.5;
+            private double argument_Max_R_timestep_increase = 0.2;
+            private double argument_Max_R_DeactivationCheck_interval = 0.2;
+            private double argument_Min_R_ActivationProbability = 0.8;
+            private double argument_Min_R_staticDatapointSizeRatio = 0.02;
+            private int argument_CullTSFrequency = 10;
+            private bool argument_CalculateImplicitUCFData = true;
+
 #endif
 
             // Main settings
@@ -11197,6 +11271,93 @@ namespace DFMGenerator_Ocean
                 set { this.argument_kv = (value == null ? null : value.Droid); }
             }
 
+            // Fracture geometry
+            [Description("Use unconfined fractures?", "Use unconfined fractures, instead of microfractures and layer-bound fractures")]
+            public bool Argument_UseUnconfinedFractures
+            {
+                internal get { return this.argument_UseUnconfinedFractures; }
+                set { this.argument_UseUnconfinedFractures = value; }
+            }
+
+            [Description("Number of rays comprising each unconfined fracture", "Number of rays comprising each unconfined fracture")]
+            public int Argument_NoRaysPerUnconfinedFracture
+            {
+                internal get { return this.argument_NoRaysPerUnconfinedFracture; }
+                set { this.argument_NoRaysPerUnconfinedFracture = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Minimum radius for unconfined fractures", "Minimum radius for unconfined fractures; this will be the length of the rays at nucleation; if undefined, will use 0.01 * layer thickness")]
+            public double Argument_MinUnconfinedFractureRadius
+            {
+                internal get { return this.argument_MinUnconfinedFractureRadius; }
+                set { this.argument_MinUnconfinedFractureRadius = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Maximum radius for unconfined fractures", "Maximum radius for unconfined fractures; if undefined, will use 0.5 * layer thickness")]
+            public double Argument_MaxUnconfinedFractureRadius
+            {
+                internal get { return this.argument_MaxUnconfinedFractureRadius; }
+                set { this.argument_MaxUnconfinedFractureRadius = value; }
+            }
+
+            [Description("Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction", "Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius")]
+            public double Argument_MinStressShadowDeactivationRatio
+            {
+                internal get { return this.argument_MinStressShadowDeactivationRatio; }
+                set { this.argument_MinStressShadowDeactivationRatio = value; }
+            }
+
+            [Description("Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection", "Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius")]
+            public double Argument_MinIntersectionDeactivationRatio
+            {
+                internal get { return this.argument_MinIntersectionDeactivationRatio; }
+                set { this.argument_MinIntersectionDeactivationRatio = value; }
+            }
+
+            [Description("Maximum proportional increase in the radius of the unconfined fractures in each timestep", "Maximum proportional increase in the radius of the unconfined fractures in each timestep; controls speed and accuracy of calculation")]
+            public double Argument_Max_R_timestep_increase
+            {
+                internal get { return this.argument_Max_R_timestep_increase; }
+                set { this.argument_Max_R_timestep_increase = value; }
+            }
+
+            [Description("Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation", "Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation; controls number of implicit fracture population datapoints generated")]
+            public double Argument_Max_R_DeactivationCheck_interval
+            {
+                internal get { return this.argument_Max_R_DeactivationCheck_interval; }
+                set { this.argument_Max_R_DeactivationCheck_interval = value; }
+            }
+
+            [Description("Minimum activation probability for unconfined fractures", "Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint")]
+            public double Argument_Min_R_ActivationProbability
+            {
+                internal get { return this.argument_Min_R_ActivationProbability; }
+                set { this.argument_Min_R_ActivationProbability = value; }
+            }
+
+            [Description("Minimum proportional size difference for static unconfined fracture datapoints", "Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point")]
+            public double Argument_Min_R_staticDatapointSizeRatio
+            {
+                internal get { return this.argument_Min_R_staticDatapointSizeRatio; }
+                set { this.argument_Min_R_staticDatapointSizeRatio = value; }
+            }
+
+            [Description("Frequency (in timesteps) with which static unconfined fracture datapoints are culled", "Frequency (in timesteps) with which static unconfined fracture datapoints are culled")]
+            public int Argument_CullTSFrequency
+            {
+                internal get { return this.argument_CullTSFrequency; }
+                set { this.argument_CullTSFrequency = value; }
+            }
+
+            [Description("Calculate implicit data for unconfined fractures?", "Calculate implicit data for unconfined fractures? If false, will only output an explicit DFN")]
+            public bool Argument_CalculateImplicitUCFData
+            {
+                internal get { return this.argument_CalculateImplicitUCFData; }
+                set { this.argument_CalculateImplicitUCFData = value; }
+            }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -11502,6 +11663,20 @@ namespace DFMGenerator_Ocean
                 argument_SearchAdjacentGridblocks = 2;
                 argument_MinimumExplicitMicrofractureRadius = double.NaN;
                 argument_NoMicrofractureCornerpoints = 8;
+
+                // Fracture geometry
+                argument_UseUnconfinedFractures = false;
+                argument_NoRaysPerUnconfinedFracture = 8;
+                argument_MinUnconfinedFractureRadius = double.NaN;
+                argument_MaxUnconfinedFractureRadius = double.NaN;
+                argument_MinStressShadowDeactivationRatio = 0.5;
+                argument_MinIntersectionDeactivationRatio = 0.5;
+                argument_Max_R_timestep_increase = 0.2;
+                argument_Max_R_DeactivationCheck_interval = 0.2;
+                argument_Min_R_ActivationProbability = 0.8;
+                argument_Min_R_staticDatapointSizeRatio = 0.02;
+                argument_CullTSFrequency = 10;
+                argument_CalculateImplicitUCFData = true;
             }
 #if MANAGED_PERSISTENCE
             // IIdentifiable Members
@@ -11519,7 +11694,7 @@ namespace DFMGenerator_Ocean
                     dataSource.RemoveItem(arguments_Droid);
             }
 #endif
-        }
+    }
 #endregion
 
 #region IAppearance Members

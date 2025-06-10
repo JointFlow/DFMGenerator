@@ -311,6 +311,20 @@ namespace DFMGenerator_Ocean
             UpdateComboBox(args.Argument_SearchAdjacentGridblocks, comboBox_SearchAdjacentGridblocks);
             UpdateTextBox(args.Argument_MinimumExplicitMicrofractureRadius, unitTextBox_MinimumExplicitMicrofractureRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumExplicitMicrofractureRadius_Units);
             UpdateNumericBox(args.Argument_NoMicrofractureCornerpoints, numericUpDown_NoMicrofractureCornerpoints);
+
+            // Fracture geometry
+            UpdateCheckBox(args.Argument_UseUnconfinedFractures, checkBox_UseUnconfinedFractures);
+            UpdateNumericBox(args.Argument_NoRaysPerUnconfinedFracture, numericUpDown_RaysPerUCF);
+            UpdateTextBox(args.Argument_MinUnconfinedFractureRadius, unitTextBox_MinUCFRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinUCFRadius_Units);
+            UpdateTextBox(args.Argument_MaxUnconfinedFractureRadius, unitTextBox_MaxUCFRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MaxUCFRadius_Units);
+            UpdateTextBox(args.Argument_MinStressShadowDeactivationRatio, unitTextBox_MinSSDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_MinIntersectionDeactivationRatio, unitTextBox_MinIDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_Max_R_timestep_increase, unitTextBox_MaxUCFRTSIncrease, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_Max_R_DeactivationCheck_interval, unitTextBox_MaxDeactivationCheckInterval, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_Min_R_ActivationProbability, unitTextBox_MinPhi, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_Min_R_staticDatapointSizeRatio, unitTextBox_MinStaticDPSizeRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_CullTSFrequency, textBox_StaticDPCullInterval);
+            UpdateCheckBox(args.Argument_CalculateImplicitUCFData, checkBox_CalculateImplicitUCFData);
         }
 
         private void updateArgsFromUI()
@@ -468,6 +482,20 @@ namespace DFMGenerator_Ocean
             args.Argument_SearchAdjacentGridblocks = comboBox_SearchAdjacentGridblocks.SelectedIndex;
             args.Argument_MinimumExplicitMicrofractureRadius = GetDoubleFromTextBox(unitTextBox_MinimumExplicitMicrofractureRadius);
             args.Argument_NoMicrofractureCornerpoints = GetIntFromNumericBox(numericUpDown_NoMicrofractureCornerpoints);
+
+            // Fracture geometry
+            args.Argument_UseUnconfinedFractures = checkBox_UseUnconfinedFractures.Checked;
+            args.Argument_NoRaysPerUnconfinedFracture = GetIntFromNumericBox(numericUpDown_RaysPerUCF);
+            args.Argument_MinUnconfinedFractureRadius = GetDoubleFromTextBox(unitTextBox_MinUCFRadius);
+            args.Argument_MaxUnconfinedFractureRadius = GetDoubleFromTextBox(unitTextBox_MaxUCFRadius);
+            args.Argument_MinStressShadowDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinSSDR);
+            args.Argument_MinIntersectionDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinIDR);
+            args.Argument_Max_R_timestep_increase = GetDoubleFromTextBox(unitTextBox_MaxUCFRTSIncrease);
+            args.Argument_Max_R_DeactivationCheck_interval = GetDoubleFromTextBox(unitTextBox_MaxDeactivationCheckInterval);
+            args.Argument_Min_R_ActivationProbability = GetDoubleFromTextBox(unitTextBox_MinPhi);
+            args.Argument_Min_R_staticDatapointSizeRatio = GetDoubleFromTextBox(unitTextBox_MinStaticDPSizeRatio);
+            args.Argument_CullTSFrequency = GetIntFromTextBox(textBox_StaticDPCullInterval);
+            args.Argument_CalculateImplicitUCFData = checkBox_CalculateImplicitUCFData.Checked;
 
             // tell fwk to update LineUI:
             context.OnArgumentPackageChanged(this, new WorkflowContext.ArgumentPackageChangedEventArgs());
@@ -1244,6 +1272,16 @@ namespace DFMGenerator_Ocean
             OpenPresentDayStressUI();
         }
         #endregion
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void unitTextBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
     }
     /// <summary>
     /// Event arguments class for passing on event information when a deformation episode is removed from the DFM Generator UI

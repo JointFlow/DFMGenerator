@@ -491,7 +491,7 @@ namespace DFMGenerator_SharedCode
                     return double.NaN;
             }
 
-            // Otherwise we can calculate the distance from the initial point to the intersection point as a mutliple of the propagation vector
+            // Otherwise we can calculate the distance from the initial point to the intersection point as a multiple of the propagation vector
             // First we will select the most advantageous coordinate to use
             double gamma;
             if ((LX > LY) && (LX > LZ))
