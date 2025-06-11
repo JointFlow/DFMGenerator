@@ -456,18 +456,18 @@ namespace DFMGenerator_SharedCode
             return returnPoint;
         }
         /// <summary>
-        /// Calculate the position of the intersection point between a vector and a plane defined by three points
+        /// Calculate the relative position of the intersection point between a vector and a plane defined by three points
         /// </summary>
-        /// <param name="initialPoint">Start point of the vector</param>
-        /// <param name="propagationVector">Vector</param>
+        /// <param name="InitialPoint">Start point of the vector</param>
+        /// <param name="Vector">Vector</param>
         /// <param name="PlanePoint1">Point 1 defining the plane to intersect</param>
         /// <param name="PlanePoint2">Point 2 defining the plane to intersect</param>
         /// <param name="PlanePoint3">Point 3 defining the plane to intersect</param>
         /// <param name="XOType">Controls calculation: Extend will return the location of intersection wherever it occurs on the plane; Restrict will only return the location of intersection if it lies within the triangle defined by the three plane points, otherwise it will return NaN</param>
         /// <returns>Distance from the start point of the vector to the intersection with the plane, along the line of the propagation vector</returns>
-        public static double getIntersectionDistance(PointXYZ initialPoint, VectorXYZ propagationVector, PointXYZ PlanePoint1, PointXYZ PlanePoint2, PointXYZ PlanePoint3, CrossoverType XOType)
+        public static double getIntersectionDistance(PointXYZ InitialPoint, VectorXYZ Vector, PointXYZ PlanePoint1, PointXYZ PlanePoint2, PointXYZ PlanePoint3, CrossoverType XOType)
         {
-            VectorXYZ lineVector = propagationVector.GetNormalisedVector();
+            VectorXYZ lineVector = Vector.GetNormalisedVector();
 
             double LX = lineVector.Component(VectorComponents.X);
             double LY = lineVector.Component(VectorComponents.Y);
@@ -475,13 +475,33 @@ namespace DFMGenerator_SharedCode
 
             double axy = (LY * (PlanePoint1.X - PlanePoint3.X)) - (LX * (PlanePoint1.Y - PlanePoint3.Y));
             double ayz = (LZ * (PlanePoint1.Y - PlanePoint3.Y)) - (LY * (PlanePoint1.Z - PlanePoint3.Z));
-            double bxy = (LY * (PlanePoint1.X - PlanePoint3.X)) - (LX * (PlanePoint2.Y - PlanePoint3.Y));
+            double azx = (LX * (PlanePoint1.Z - PlanePoint3.Z)) - (LZ * (PlanePoint1.X - PlanePoint3.X));
+            double bxy = (LY * (PlanePoint2.X - PlanePoint3.X)) - (LX * (PlanePoint2.Y - PlanePoint3.Y));
             double byz = (LZ * (PlanePoint2.Y - PlanePoint3.Y)) - (LY * (PlanePoint2.Z - PlanePoint3.Z));
-            double cxy = (LY * (PlanePoint3.X - initialPoint.X)) - (LX * (PlanePoint3.Y - initialPoint.Y));
-            double cyz = (LZ * (PlanePoint3.Y - initialPoint.Y)) - (LY * (PlanePoint3.Z - initialPoint.Z));
+            double bzx = (LX * (PlanePoint2.Z - PlanePoint3.Z)) - (LZ * (PlanePoint2.X - PlanePoint3.X));
+            double cxy = (LY * (PlanePoint3.X - InitialPoint.X)) - (LX * (PlanePoint3.Y - InitialPoint.Y));
+            double cyz = (LZ * (PlanePoint3.Y - InitialPoint.Y)) - (LY * (PlanePoint3.Z - InitialPoint.Z));
+            double czx = (LX * (PlanePoint3.Z - InitialPoint.Z)) - (LZ * (PlanePoint3.X - InitialPoint.X));
 
-            double alpha = ((cyz * bxy) - (cxy * byz)) / ((axy * byz) - (ayz * bxy));
-            double beta = ((cyz * axy) - (cxy * ayz)) / ((bxy * ayz) - (byz * axy));
+            double alphabeta_denominator_xyyz = (axy * byz) - (ayz * bxy);
+            double alphabeta_denominator_yzzx = (ayz* bzx) - (azx * byz);
+            double alphabeta_denominator_zxxy = (azx * bxy) - (axy * bzx);
+            double alpha, beta;
+            if ((alphabeta_denominator_xyyz > alphabeta_denominator_yzzx) && (alphabeta_denominator_xyyz > alphabeta_denominator_zxxy))
+            {
+                alpha = ((cyz * bxy) - (cxy * byz)) / alphabeta_denominator_xyyz;
+                beta = ((cxy * ayz) - (cyz * axy)) / alphabeta_denominator_xyyz;
+            }
+            else if (alphabeta_denominator_yzzx > alphabeta_denominator_zxxy)
+            {
+                alpha = ((czx * byz) - (cyz * bzx)) / alphabeta_denominator_yzzx;
+                beta = ((cyz * azx) - (czx * ayz)) / alphabeta_denominator_yzzx;
+            }
+            else
+            {
+                alpha = ((cxy * bzx) - (czx * bxy)) / alphabeta_denominator_zxxy;
+                beta = ((czx * axy) - (cxy * azx)) / alphabeta_denominator_zxxy;
+            }
 
             // If alpha, beta or alpha + beta lie outside the range 0 to 1, the intersection point will not lie within a triangle defiend by the three specified points
             // If the crossover type restrict is selcleted, in this case we should return NaN
@@ -495,11 +515,11 @@ namespace DFMGenerator_SharedCode
             // First we will select the most advantageous coordinate to use
             double gamma;
             if ((LX > LY) && (LX > LZ))
-                gamma = ((alpha * (PlanePoint1.X - PlanePoint3.X)) + (beta * (PlanePoint2.X - PlanePoint3.X)) - (PlanePoint3.X - initialPoint.X)) / LX;
+                gamma = ((alpha * (PlanePoint1.X - PlanePoint3.X)) + (beta * (PlanePoint2.X - PlanePoint3.X)) + (PlanePoint3.X - InitialPoint.X)) / LX;
             else if (LY > LZ)
-                gamma = ((alpha * (PlanePoint1.Y - PlanePoint3.Y)) + (beta * (PlanePoint2.Y - PlanePoint3.Y)) - (PlanePoint3.Y - initialPoint.Y)) / LY;
+                gamma = ((alpha * (PlanePoint1.Y - PlanePoint3.Y)) + (beta * (PlanePoint2.Y - PlanePoint3.Y)) + (PlanePoint3.Y - InitialPoint.Y)) / LY;
             else
-                gamma = ((alpha * (PlanePoint1.Z - PlanePoint3.Z)) + (beta * (PlanePoint2.Z - PlanePoint3.Z)) - (PlanePoint3.Z - initialPoint.Z)) / LZ;
+                gamma = ((alpha * (PlanePoint1.Z - PlanePoint3.Z)) + (beta * (PlanePoint2.Z - PlanePoint3.Z)) + (PlanePoint3.Z - InitialPoint.Z)) / LZ;
 
             return gamma;
         }

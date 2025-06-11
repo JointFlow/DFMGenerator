@@ -6538,7 +6538,7 @@ namespace DFMGenerator_SharedCode
             if (tipDeactivationMechanism == SegmentNodeType.ConnectedGridblockBound)
             {
                 // Check if there is neighbouring gridblock with thickness greater than the minimum cutoff
-                if (NeighbourGridblocks[intersectedBoundary] != null) // There is a neighbouring gridblock
+                if ((intersectedBoundary != GridDirection.None) && (NeighbourGridblocks[intersectedBoundary] != null)) // There is a neighbouring gridblock
                 {
                     if (NeighbourGridblocks[intersectedBoundary].ThicknessAtDeformation <= gd.DFNControl.MinimumLayerThickness) // The neighbouring gridblock is below the minimum thickness cutoff
                     {

@@ -3070,7 +3070,7 @@ namespace DFMGenerator_SharedCode
                 // However since these are coplanar we only need to check one of them if we set crossover type to extend
                 double distanceToIntersection = PointXYZ.getIntersectionDistance(startPoint, propagationVector, boundary.CornerPoints[0], boundary.CornerPoints[1], boundary.CornerPoints[2], CrossoverType.Extend);
 
-                // If the propagating ray segment will never intersect the fracture segment, the function will return negative value
+                // If the propagating ray segment will never intersect the boundary, the function will return a negative value
                 if (distanceToIntersection > 0)
                 {
                     // If it does intersect the fracture segment, check if the distance to the intersection point is less than the current maximum propagation distance
@@ -3081,7 +3081,7 @@ namespace DFMGenerator_SharedCode
 
                         // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
                         boundaryCrossed = boundary.Boundary;
-                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
+                        bool NoNeighbour = ((boundaryCrossed == GridDirection.None) || (gbc.NeighbourGridblocks[boundaryCrossed] == null));
 
                         // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
                         if (!NoNeighbour || terminateIfNoNeighbour)
