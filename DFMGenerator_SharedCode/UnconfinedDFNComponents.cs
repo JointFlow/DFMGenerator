@@ -463,6 +463,17 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private UnconfinedFractureRay[] rays;
         /// <summary>
+        /// Get a list of all rays of this fracture
+        /// </summary>
+        /// <returns>List of UnconfinedFractureRay objects</returns>
+        public List<UnconfinedFractureRay> GetRays()
+        {
+            List<UnconfinedFractureRay> output = new List<UnconfinedFractureRay>();
+            foreach (UnconfinedFractureRay ray in rays)
+                output.Add(new UnconfinedFractureRay(ray));
+            return output;
+        } 
+        /// <summary>
         /// Get a list of all ray segments of this fracture that lie within a specified gridblock
         /// </summary>
         /// <param name="gbc_in">Reference to the Gridblock object to be checked</param>

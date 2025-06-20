@@ -325,7 +325,7 @@ namespace DFMGenerator_SharedCode
                     }
 
                     // Write microfracture data to file
-                    if (latestDFN.GlobalDFNMicrofractures.Count>0)
+                    if (latestDFN.GlobalDFNMicrofractures.Count > 0)
                     {
                         // Create file for microfractures
                         string fileName = "Microfractures_" + outputLabel + fractureFileExtension;
@@ -432,7 +432,7 @@ namespace DFMGenerator_SharedCode
                     }
 
                     // Write macrofracture data to file
-                    if (latestDFN.GlobalDFNMacrofractures.Count>0)
+                    if (latestDFN.GlobalDFNMacrofractures.Count > 0)
                     {
                         // Create output file for macrofractures
                         string fileName = "Macrofractures_" + outputLabel + fractureFileExtension;
@@ -594,23 +594,28 @@ namespace DFMGenerator_SharedCode
                                         string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", frac.UnconfinedFractureID, frac.SetIndex, centroid.X, centroid.Y, centroid.Depth, frac.MeanEffectiveRadius, frac.Dip, frac.Azimuth, !frac.FullyDeactivated);
                                         UCF_outputFile.WriteLine(data);
 
-                                        // Generate a polygon if required
-                                        if (generateuFPolygon)
+                                        // Write output data for each of the fracture rays
+                                        UCF_outputFile.WriteLine("Start Rays");
+                                        string rayHeader = string.Format("Tip X\tTip Y\tTip Depth\tRay Length\tTip Type\tTerminating Fracture\t");
+                                        UCF_outputFile.WriteLine(rayHeader);
+
+                                        // Loop through the rays and write the output data (including tip coordinates) to file
+                                        List<UnconfinedFractureRay> rays = frac.GetRays();
+                                        foreach (UnconfinedFractureRay ray in rays)
                                         {
-                                            // Write cornerpoint coordinates to logfile - one row per point
-                                            UCF_outputFile.WriteLine("Start Points");
-
-                                            // Get a list of cornerpoints using the GetFractureCornerpointsInXYZ function
-                                            List<PointXYZ> cornerPoints = frac.GetCornerpoints();
-                                            // Loop through each point and write the coordinates to file
-                                            foreach (PointXYZ cornerPoint in cornerPoints)
-                                            {
-                                                string pointCoords = string.Format("{0}\t{1}\t{2}\t", cornerPoint.X, cornerPoint.Y, cornerPoint.Depth);
-                                                UCF_outputFile.WriteLine(pointCoords);
-                                            }
-
-                                            UCF_outputFile.WriteLine("End Points");
+                                            string rayOutputData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", ray.OuterTip.X, ray.OuterTip.Y, ray.OuterTip.Depth, ray.Length, ray.TipType, ray.TerminatingFracture);
+                                            UCF_outputFile.WriteLine(rayOutputData);
                                         }
+
+                                        // Add only the tip coordinates for the first ray to the end of the list to close the loop
+                                        if (rays.Count > 0)
+                                        {
+                                            UnconfinedFractureRay ray = rays[0];
+                                            string rayOutputData = string.Format("{0}\t{1}\t{2}\t", ray.OuterTip.X, ray.OuterTip.Y, ray.OuterTip.Depth);
+                                            UCF_outputFile.WriteLine(rayOutputData);
+                                        }
+
+                                        UCF_outputFile.WriteLine("End Rays");
                                     }
                                 }
                                 break;

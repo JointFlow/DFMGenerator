@@ -1,6 +1,6 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-//#define LOGIMPPOP
+#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
@@ -2762,6 +2762,14 @@ namespace DFMGenerator_SharedCode
             return MacrofracturePermeability(-1);
         }
         /// <summary>
+        /// Permeability tensor for all current unconfined fractures in the gridblock - not yet implemented
+        /// </summary>
+        /// <returns>Tensor2S object representing unconfined fracture permeability</returns>
+        public Tensor2S UnconfinedFracturePermeability()
+        {
+            return UnconfinedFracturePermeability(-1);
+        }
+        /// <summary>
         /// Permeability tensor for all current fractures in the gridblock
         /// </summary>
         /// <returns>Tensor2S object representing total fracture permeability</returns>
@@ -2874,13 +2882,47 @@ namespace DFMGenerator_SharedCode
             return macrofracturePermeability;
         }
         /// <summary>
+        /// Permeability tensor for all unconfined fractures in the gridblock, at the end of a specified previous timestep - not yet implemented
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing unconfined fracture permeability</returns>
+        public Tensor2S UnconfinedFracturePermeability(int Timestep_M)
+        {
+            // The network connectivity multiplier reflects the connectivity of the entire fracture network
+            Tensor2S unconfinedFracturePermeability = new Tensor2S();
+            switch (PropControl.PermeabilityAlgorithm)
+            {
+                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                case PermeabilityCalculationAlgorithm.Oda1986:
+                    {
+                        // Get the basic macrofracture permeability tensor
+                    }
+                        break;
+                // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
+                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                    {
+                    }
+                    break;
+                // The size and connectivity correction algorithm takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock
+                // The host rock permeability is required to calculate the latter
+                case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                    {
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            return unconfinedFracturePermeability;
+        }
+        /// <summary>
         /// Permeability tensor for all fractures in the gridblock, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
         /// <returns>Tensor2S object representing the total fracture permeability</returns>
         public Tensor2S TotalFracturePermeability(int Timestep_M)
         {
-            // Return the sum of the microfracture and macrofracture permeability tensors
+            // Return the sum of the microfracture, macrofracture and unconfined fracture permeability tensors
             // For the Oda (1986) algorithm, this gives the same result as if calculated for the combined fracture population
             // For the Oda corrected (1987) algorithm, the microfractures and macrofractures use different correction factors
             //  - the microfractures use a correction factor based on the trace and anisotropy of the fracture connectivity tensor
@@ -2888,7 +2930,7 @@ namespace DFMGenerator_SharedCode
             // For the size and connectivity correction algorithm, the microfractures and macrofractures will use different algorithms
             //  - the microfractures use an algorithm assuming each microfracture is isolated and calculating the distribution of distances between neighbouring microfractures where fluid must flow through the matrix
             //  - the macrofractures use an algorithm that constructs chains of connected macrofractures, and uses the tip type ratios to calculate the mean distances between neighbouring macrofractures and the flow resistance (whether flow is through the host rock or connecting fracture segments)
-            return MicrofracturePermeability(Timestep_M) + MacrofracturePermeability(Timestep_M);
+            return MicrofracturePermeability(Timestep_M) + MacrofracturePermeability(Timestep_M) + UnconfinedFracturePermeability(Timestep_M);
         }
 
         // Functions to return fracture sigma factor (related to the mean block size, as defined by Warren & Root 1963)
@@ -3058,6 +3100,14 @@ namespace DFMGenerator_SharedCode
             return MacrofractureSigmaFactor(-1);
         }
         /// <summary>
+        /// Sigma factor for all current unconfined fractures in the gridblock - not yet implemented
+        /// </summary>
+        /// <returns>Sigma factor for the unconfined in the gridblock</returns>
+        public double UnconfinedFractureSigmaFactor()
+        {
+            return UnconfinedFractureSigmaFactor(-1);
+        }
+        /// <summary>
         /// Sigma factor for all current fractures in the gridblock
         /// </summary>
         /// <returns>Sigma factor for all fractures in the gridblock</returns>
@@ -3090,6 +3140,19 @@ namespace DFMGenerator_SharedCode
 
             // Calculate and return the sigma factor
             return CalculateSigma(MinL, MaxL);
+        }
+        /// Sigma factor for all unconfined fractures in the gridblock, at the end of a specified previous timestep - not yet implemented
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Sigma factor for the unconfined fractures in the gridblock</returns>
+        public double UnconfinedFractureSigmaFactor(int Timestep_M)
+        {
+            // Get the minimum and maximim block dimensions
+            //GetBlockDimensions(FractureType.LayerBoundFractures, Timestep_M, out double MinL, out double MaxL);
+
+
+            // Calculate and return the sigma factor
+            return 0;// CalculateSigma(MinL, MaxL);
         }
         /// <summary>
         /// Sigma factor for all fractures in the gridblock, at the end of a specified previous timestep
@@ -3267,9 +3330,9 @@ namespace DFMGenerator_SharedCode
             {
                 string headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\tElastic ehmin\tElastic ehmax\tTotal ehmin\tTotal ehmax\t", timeUnits);
                 string headerLine2 = "\t\t\t\t\t\t\t";
-                string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
-                string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tClear zone volume\t";
-                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tStress shadow volume\tClear zone volume\t";
+                string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+                string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tMF Stress shadow width\tMF Stress shadow volume\tClear zone volume\t\t";
+                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tStress shadow volume\tClear zone volume\t";
 #if LOGDFNPOP
                 headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\t{1}\t{2}\t{3}\t{4}\t", timeUnits, "Sigma_eff.XX", "Sigma_eff.YY", "Sigma_eff.XY", "Sigma_eff.ZZ");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
@@ -3291,7 +3354,7 @@ namespace DFMGenerator_SharedCode
                     {
                         headerLine1 += string.Format("FS {0} {1}", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex))) + FSheader1;
                         headerLine2 += FSheader2;
-                        TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
+                        TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                     }
                 }
                 for (int ufs_index = 0; ufs_index < NoUnconfinedFractureSets; ufs_index++)
@@ -3300,13 +3363,13 @@ namespace DFMGenerator_SharedCode
                     string setLabel = string.Format("Unconfined set {0}: Strike {1} Dip {2}", ufs_index, (int)(ufs.Strike * 180 / Math.PI), (int)(ufs.Dip * 180 / Math.PI));
                     headerLine1 += setLabel + FSheader1;
                     headerLine2 += FSheader3;
-                    TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
+                    TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                 }
                 if (CalculateFracturePorosity)
                 {
-                    headerLine1 += "uF Porosity: Uniform aperture\tMF Porosity: Uniform aperture\tuF Porosity: Size-dependent aperture\tMF Porosity: Size-dependent aperture\tuF Porosity: Dynamic aperture\tMF Porosity: Dynamic aperture\tuF Porosity: Barton-Bandis aperture\tMF Porosity: Barton-Bandis aperture\t";
-                    headerLine2 += "\t\t\t\t\t\t\t\t";
-                    TS0data += "0\t0\t0\t0\t0\t0\t0\t0\t";
+                    headerLine1 += "uF Porosity: Uniform aperture\tMF Porosity: Uniform aperture\tucF Porosity: Uniform aperture\tuF Porosity: Size-dependent aperture\tMF Porosity: Size-dependent aperture\tUCF Porosity: Size-dependent aperture\tuF Porosity: Dynamic aperture\tMF Porosity: Dynamic aperture\tUCF Porosity: Dynamic aperture\tuF Porosity: Barton-Bandis aperture\tMF Porosity: Barton-Bandis aperture\tUCF Porosity: Barton-Bandis aperture\t";
+                    headerLine2 += "\t\t\t\t\t\t\t\t\t\t\t\t";
+                    TS0data += "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t";
                 }
                 if (CalculateFracturePermeabilityTensor)
                 {
@@ -3322,6 +3385,15 @@ namespace DFMGenerator_SharedCode
                     TS0data += string.Format("0\t");
                     // Header for macrofracture permeability tensor
                     headerLine1 += "MF Permeability tensor\t\t\t\t\t\t\t";
+                    foreach (Tensor2SComponents ij in tensorComponents)
+                    {
+                        headerLine2 += ij + "\t";
+                        TS0data += string.Format("0\t");
+                    }
+                    headerLine2 += "Sigma\t";
+                    TS0data += string.Format("0\t");
+                    // Header for unconfined fracture permeability tensor
+                    headerLine1 += "UCF Permeability tensor\t\t\t\t\t\t\t";
                     foreach (Tensor2SComponents ij in tensorComponents)
                     {
                         headerLine2 += ij + "\t";
@@ -3367,7 +3439,7 @@ namespace DFMGenerator_SharedCode
             }
 
 #if LOGIMPPOP
-            string logFileHeaderLine = string.Format("Timestep\tDuration\tEnd time\tDriving stress\tClear zone volume\tNo datapoints\t");
+            string logFileHeaderLine = string.Format("Timestep\tDuration\tEnd time\tDriving stress\tTotal P33 including overlaps\tClear zone volume\tNo datapoints\t");
             foreach (RayPropagationStatus rayType in rayTypesToLog)
                 rayLogFiles[rayType].WriteLine(logFileHeaderLine);
 #endif
@@ -3990,8 +4062,8 @@ namespace DFMGenerator_SharedCode
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                             {
                                 // Get fracture data and add to timestep log string
-                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
-                                    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
+                                    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getMeanStressShadowWidth(), 1 - fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolumeAllFS());
 #if LOGDFNPOP
                                 //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
                                 //    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
@@ -4010,8 +4082,8 @@ namespace DFMGenerator_SharedCode
                         foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         {
                             // Get fracture data and add to timestep log string
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP30_total(), ufs.r_RP30_total(), ufs.sII_RP30_total(), ufs.sIJ_RP30_total(),
-                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP30_total(), ufs.r_RP30_total(), ufs.sII_RP30_total(), ufs.sIJ_RP30_total(), ufs.sMR_RP30_total(),
+                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 
                             timestepData = timestepData + fractureSetData;
                         }
@@ -4022,15 +4094,20 @@ namespace DFMGenerator_SharedCode
                         {
                             Dictionary<FractureApertureType, double> uFPorosity = new Dictionary<FractureApertureType, double>();
                             Dictionary<FractureApertureType, double> MFPorosity = new Dictionary<FractureApertureType, double>();
+                            Dictionary<FractureApertureType, double> UCFPorosity = new Dictionary<FractureApertureType, double>();
 
                             uFPorosity.Add(FractureApertureType.Uniform, 0);
                             MFPorosity.Add(FractureApertureType.Uniform, 0);
+                            UCFPorosity.Add(FractureApertureType.Uniform, 0);
                             uFPorosity.Add(FractureApertureType.SizeDependent, 0);
                             MFPorosity.Add(FractureApertureType.SizeDependent, 0);
+                            UCFPorosity.Add(FractureApertureType.SizeDependent, 0);
                             uFPorosity.Add(FractureApertureType.Dynamic, 0);
                             MFPorosity.Add(FractureApertureType.Dynamic, 0);
+                            UCFPorosity.Add(FractureApertureType.Dynamic, 0);
                             uFPorosity.Add(FractureApertureType.BartonBandis, 0);
                             MFPorosity.Add(FractureApertureType.BartonBandis, 0);
+                            UCFPorosity.Add(FractureApertureType.BartonBandis, 0);
 
                             foreach (FractureApertureType apertureType in Enum.GetValues(typeof(FractureApertureType)).Cast<FractureApertureType>())
                             {
@@ -4039,18 +4116,24 @@ namespace DFMGenerator_SharedCode
                                     uFPorosity[apertureType] += fs.combined_uF_Porosity(apertureType);
                                     MFPorosity[apertureType] += fs.combined_MF_Porosity(apertureType);
                                 }
+                                foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                                {
+                                    UCFPorosity[apertureType] += ufs.Total_UCF_Porosity(apertureType);
+                                }
                             }
 
-                            string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis]);
+                            string porosityData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t", uFPorosity[FractureApertureType.Uniform], MFPorosity[FractureApertureType.Uniform], UCFPorosity[FractureApertureType.Uniform], uFPorosity[FractureApertureType.SizeDependent], MFPorosity[FractureApertureType.SizeDependent], UCFPorosity[FractureApertureType.SizeDependent], uFPorosity[FractureApertureType.Dynamic], MFPorosity[FractureApertureType.Dynamic], UCFPorosity[FractureApertureType.Dynamic], uFPorosity[FractureApertureType.BartonBandis], MFPorosity[FractureApertureType.BartonBandis], UCFPorosity[FractureApertureType.BartonBandis]);
                             timestepData += porosityData;
                         }
                         if (CalculateFracturePermeabilityTensor)
                         {
                             string uFPermeabilityTensorComponents = "";
                             string MFPermeabilityTensorComponents = "";
+                            string UCFPermeabilityTensorComponents = "";
                             string TFPermeabilityTensorComponents = "";
                             Tensor2S uFPermeabilityTensor = MicrofracturePermeability();
                             Tensor2S MFPermeabilityTensor = MacrofracturePermeability();
+                            Tensor2S UCFPermeabilityTensor = UnconfinedFracturePermeability();
                             Tensor2S TFPermeabilityTensor = TotalFracturePermeability();
 
                             Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
@@ -4058,14 +4141,17 @@ namespace DFMGenerator_SharedCode
                             {
                                 uFPermeabilityTensorComponents += string.Format("{0}\t", uFPermeabilityTensor.Component(ij));
                                 MFPermeabilityTensorComponents += string.Format("{0}\t", MFPermeabilityTensor.Component(ij));
+                                UCFPermeabilityTensorComponents += string.Format("{0}\t", UCFPermeabilityTensor.Component(ij));
                                 TFPermeabilityTensorComponents += string.Format("{0}\t", TFPermeabilityTensor.Component(ij));
                             }
                             uFPermeabilityTensorComponents += string.Format("{0}\t", MicrofractureSigmaFactor());
                             MFPermeabilityTensorComponents += string.Format("{0}\t", MacrofractureSigmaFactor());
+                            UCFPermeabilityTensorComponents += string.Format("{0}\t", UnconfinedFractureSigmaFactor());
                             TFPermeabilityTensorComponents += string.Format("{0}\t", TotalFractureSigmaFactor());
 
                             timestepData += uFPermeabilityTensorComponents;
                             timestepData += MFPermeabilityTensorComponents;
+                            timestepData += UCFPermeabilityTensorComponents;
                             timestepData += TFPermeabilityTensorComponents;
                         }
                         if (OutputBulkRockElasticTensors)
@@ -4097,11 +4183,11 @@ namespace DFMGenerator_SharedCode
                         UFSToLog.getClearZoneVolume(), UFSToLog.getNoDatapoints(RayPropagationStatus.FullyActive),
                         UFSToLog.getNoDatapoints(RayPropagationStatus.Restricted), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticStressShadow),
                         UFSToLog.getNoDatapoints(RayPropagationStatus.StaticIntersection), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticMaxRadius)));
-                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getClearZoneVolume());
+                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getP33(), UFSToLog.getClearZoneVolume());
                     foreach (RayPropagationStatus rayType in rayTypesToLog)
                     {
                         string rayTypeDatapointOutput = TAdataoutput + string.Format("{0}\t\t", UFSToLog.getNoDatapoints(rayType));
-                        List<double> dataList = UFSToLog.getEffectiveRayLengths(rayType);//UFSToLog.getdP33Factors(rayType);// UFSToLog.getPhiIJValues(rayType);
+                        List<double> dataList = UFSToLog.getEffectiveRayLengths(rayType);//UFSToLog.getPhiValues(rayType);// UFSToLog.getdP33Factors(rayType);// UFSToLog.getPhiIJValues(rayType);
                         foreach (double dataPoint in dataList)
                             rayTypeDatapointOutput += string.Format("{0}\t", dataPoint);
                         rayLogFiles[rayType].WriteLine(rayTypeDatapointOutput);
@@ -4138,6 +4224,7 @@ namespace DFMGenerator_SharedCode
                 double maxHMinLength = PropControl.max_HMin_l_indexPoint_Length;
                 double maxHMaxLength = PropControl.max_HMax_l_indexPoint_Length;
 
+                // Loop through all layer-bound fracture sets
                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
                 {
                     Gridblock_FractureSet fs = FractureSets[fs_index];
@@ -4285,6 +4372,133 @@ namespace DFMGenerator_SharedCode
                         } // End write data to logfile
                     } // End loop through the fracture dip sets
                 } // End loop through the fracture sets
+
+                // Loop through all unconfined fracture sets
+                for (int ufs_index = 0; ufs_index < NoUnconfinedFractureSets; ufs_index++)
+                {
+                    UnconfinedFractureSet ufs = UnconfinedFractureSets[ufs_index];
+
+                    // Write data to logfile
+                    if (writeImplicitDataToFile)
+                    {
+                        // Calculate the maximum radius for the unconfined fracture ray cumulative population distribution function index values based on orientation
+                        // If this has not been specified, calculate this by applying a multiplier to the maximum unconfined fracture radius
+                        double maxIndexRadius;
+                        if ((maxHMinLength <= 0) || (maxHMaxLength <= 0))
+                        {
+                            maxIndexRadius = ufs.MaximumFractureRadius * maxLengthMultiplier;
+                        }
+                        else
+                        {
+                            double relativeAngle = PointXYZ.getAngularDifference(ufs.Azimuth, Hmin_azimuth);
+                            double HMinComponent = Math.Pow(VectorXYZ.Cos_trim(relativeAngle), 2);
+                            double HMaxComponent = Math.Pow(VectorXYZ.Sin_trim(relativeAngle), 2);
+                            maxIndexRadius = (maxHMinLength * HMinComponent) + (maxHMaxLength * HMaxComponent);
+                        }
+
+                        // Create a local unconfined fracture ray index array
+                        // Create a local halflength array
+                        List<double> indexRadii = new List<double>();
+
+                        // Add the required number of intermediate index points on a logarithmic scale
+                        double logMaxRadius = Math.Log(maxIndexRadius + 1d);
+
+                        for (int radius_no = 0; radius_no < no_l_IndexPoints; radius_no++)
+                        {
+                            if (ufs.FractureDistribution == StressDistribution.EvenlyDistributedStress)
+                            {
+                                double logNewValue = ((double)(no_l_IndexPoints - radius_no) / (double)no_l_IndexPoints) * logMaxRadius;
+                                indexRadii.Add(maxIndexRadius + 1d - Math.Exp(logNewValue));
+                            }
+                            else
+                            {
+                                double logNewValue = ((double)radius_no / (double)no_l_IndexPoints) * logMaxRadius;
+                                indexRadii.Add(Math.Exp(logNewValue) - 1);
+                            }
+                        }
+
+                        // Add the final index point
+                        indexRadii.Add(maxIndexRadius);
+
+                        // Call the calculation functions for the P30 and P32 cumulative population distribution function arrays
+                        Dictionary<RayPropagationStatus, List<double>> P30values = new Dictionary<RayPropagationStatus, List<double>>();
+                        Dictionary<RayPropagationStatus, List<double>> P32values = new Dictionary<RayPropagationStatus, List<double>>();
+                        foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                        {
+                            P30values[status] = ufs.GetCumulativeRP30Values(indexRadii, status);
+                            P32values[status] = ufs.GetCumulativeRP32Values(indexRadii, status);
+                        }
+
+                        // Create strings for header data and write to file
+                        string headerData = string.Format("Unconfined set {0}: Strike {1} Dip {2}", ufs_index, (int)(ufs.Strike * 180 / Math.PI), (int)(ufs.Dip * 180 / Math.PI));
+                        outputFile.WriteLine(headerData);
+
+                        // Write unconfined fracture data
+                        {
+                            // Create stings for unconfined fracture data
+                            string indexData = "Radius\t";
+                            string a_RP30_data = "a_RP30\t";
+                            string r_RP30_data = "r_RP30\t";
+                            string sII_RP30_data = "sII_RP30\t";
+                            string sIJ_RP30_data = "sIJ_RP30\t";
+                            string sMR_RP30_data = "sMR_RP30\t";
+                            string Total_RP30_data = "Total_RP30\t";
+                            string a_RP32_data = "a_RP32\t";
+                            string r_RP32_data = "r_RP32\t";
+                            string sII_RP32_data = "sII_RP32\t";
+                            string sIJ_RP32_data = "sIJ_RP32\t";
+                            string sMR_RP32_data = "sMR_RP32\t";
+                            string Total_RP32_data = "Total_RP32\t";
+
+                            // Loop through each point in the index value array and write data for that point
+                            int noIndexPoints = indexRadii.Count;
+                            for (int indexPoint = 0; indexPoint < noIndexPoints; indexPoint++)
+                            {
+                                double a_RP30 = P30values[RayPropagationStatus.FullyActive][indexPoint];
+                                double r_RP30 = P30values[RayPropagationStatus.Restricted][indexPoint];
+                                double sII_RP30 = P30values[RayPropagationStatus.StaticStressShadow][indexPoint];
+                                double sIJ_RP30 = P30values[RayPropagationStatus.StaticIntersection][indexPoint];
+                                double sMR_RP30 = P30values[RayPropagationStatus.StaticMaxRadius][indexPoint];
+                                double Total_RP30 = a_RP30 + r_RP30 + sII_RP30 + sIJ_RP30 + sMR_RP30;
+                                double a_RP32 = P32values[RayPropagationStatus.FullyActive][indexPoint];
+                                double r_RP32 = P32values[RayPropagationStatus.Restricted][indexPoint];
+                                double sII_RP32 = P32values[RayPropagationStatus.StaticStressShadow][indexPoint];
+                                double sIJ_RP32 = P32values[RayPropagationStatus.StaticIntersection][indexPoint];
+                                double sMR_RP32 = P32values[RayPropagationStatus.StaticMaxRadius][indexPoint];
+                                double Total_RP32 = a_RP32 + r_RP32 + sII_RP32 + sIJ_RP32 + sMR_RP32;
+
+                                indexData += string.Format("{0}\t", indexRadii[indexPoint]);
+                                a_RP30_data += string.Format("{0}\t", a_RP30);
+                                r_RP30_data += string.Format("{0}\t", r_RP30);
+                                sII_RP30_data += string.Format("{0}\t", sII_RP30);
+                                sIJ_RP30_data += string.Format("{0}\t", sIJ_RP30);
+                                sMR_RP30_data += string.Format("{0}\t", sMR_RP30);
+                                Total_RP30_data += string.Format("{0}\t", Total_RP30);
+                                a_RP32_data += string.Format("{0}\t", a_RP32);
+                                r_RP32_data += string.Format("{0}\t", r_RP32);
+                                sII_RP32_data += string.Format("{0}\t", sII_RP32);
+                                sIJ_RP32_data += string.Format("{0}\t", sIJ_RP32);
+                                sMR_RP32_data += string.Format("{0}\t", sMR_RP32);
+                                Total_RP32_data += string.Format("{0}\t", Total_RP32);
+                            }
+
+                            // Write all array data to log file
+                            outputFile.WriteLine(indexData);
+                            outputFile.WriteLine(a_RP30_data);
+                            outputFile.WriteLine(r_RP30_data);
+                            outputFile.WriteLine(sII_RP30_data);
+                            outputFile.WriteLine(sIJ_RP30_data);
+                            outputFile.WriteLine(sMR_RP30_data);
+                            outputFile.WriteLine(Total_RP30_data);
+                            outputFile.WriteLine(a_RP32_data);
+                            outputFile.WriteLine(r_RP32_data);
+                            outputFile.WriteLine(sII_RP32_data);
+                            outputFile.WriteLine(sIJ_RP32_data);
+                            outputFile.WriteLine(sMR_RP32_data);
+                            outputFile.WriteLine(Total_RP32_data);
+                        }
+                    } // End write data to logfile
+                } // End loop through the unconfined fracture sets
             } // End calculate cumulative population distribution function arrays
 
             if (writeImplicitDataToFile)

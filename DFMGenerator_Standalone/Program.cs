@@ -802,7 +802,7 @@ namespace DFMGenerator_Standalone
             // Increase this to run calculation faster, with fewer but longer timesteps
             double MaxTimestepMFP33Increase = 0.2;// 0.005;
             // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
-            double Max_R_timestep_increase = 0.2;// 0.05;
+            double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
