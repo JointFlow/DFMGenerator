@@ -487,12 +487,12 @@ namespace DFMGenerator_SharedCode
             double alphabeta_denominator_yzzx = (ayz* bzx) - (azx * byz);
             double alphabeta_denominator_zxxy = (azx * bxy) - (axy * bzx);
             double alpha, beta;
-            if ((alphabeta_denominator_xyyz > alphabeta_denominator_yzzx) && (alphabeta_denominator_xyyz > alphabeta_denominator_zxxy))
+            if ((Math.Abs(alphabeta_denominator_xyyz) > Math.Abs(alphabeta_denominator_yzzx)) && (Math.Abs(alphabeta_denominator_xyyz) > Math.Abs(alphabeta_denominator_zxxy)))
             {
                 alpha = ((cyz * bxy) - (cxy * byz)) / alphabeta_denominator_xyyz;
                 beta = ((cxy * ayz) - (cyz * axy)) / alphabeta_denominator_xyyz;
             }
-            else if (alphabeta_denominator_yzzx > alphabeta_denominator_zxxy)
+            else if (Math.Abs(alphabeta_denominator_yzzx) > Math.Abs(alphabeta_denominator_zxxy))
             {
                 alpha = ((czx * byz) - (cyz * bzx)) / alphabeta_denominator_yzzx;
                 beta = ((cyz * azx) - (czx * ayz)) / alphabeta_denominator_yzzx;
@@ -514,9 +514,9 @@ namespace DFMGenerator_SharedCode
             // Otherwise we can calculate the distance from the initial point to the intersection point as a multiple of the propagation vector
             // First we will select the most advantageous coordinate to use
             double gamma;
-            if ((LX > LY) && (LX > LZ))
+            if ((Math.Abs(LX) > Math.Abs(LY)) && (Math.Abs(LX) > Math.Abs(LZ)))
                 gamma = ((alpha * (PlanePoint1.X - PlanePoint3.X)) + (beta * (PlanePoint2.X - PlanePoint3.X)) + (PlanePoint3.X - InitialPoint.X)) / LX;
-            else if (LY > LZ)
+            else if (Math.Abs(LY) > Math.Abs(LZ))
                 gamma = ((alpha * (PlanePoint1.Y - PlanePoint3.Y)) + (beta * (PlanePoint2.Y - PlanePoint3.Y)) + (PlanePoint3.Y - InitialPoint.Y)) / LY;
             else
                 gamma = ((alpha * (PlanePoint1.Z - PlanePoint3.Z)) + (beta * (PlanePoint2.Z - PlanePoint3.Z)) + (PlanePoint3.Z - InitialPoint.Z)) / LZ;

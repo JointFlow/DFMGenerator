@@ -3278,6 +3278,7 @@ namespace DFMGenerator_SharedCode
                 // Each boundary can be split into two triangular segments to check for intersection
                 // However since these are coplanar we only need to check one of them if we set crossover type to extend
                 double distanceToIntersection = PointXYZ.getIntersectionDistance(startPoint, propagationVector, boundary.CornerPoints[0], boundary.CornerPoints[1], boundary.CornerPoints[2], CrossoverType.Extend);
+                double distanceToIntersection2 = PointXYZ.getIntersectionDistance(startPoint, propagationVector, boundary.CornerPoints[0], boundary.CornerPoints[1], boundary.CornerPoints[2], CrossoverType.Extend);
 
                 // If the propagating ray segment will never intersect the boundary, the function will return a negative value
                 if (distanceToIntersection > 0)

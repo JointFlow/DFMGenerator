@@ -355,10 +355,10 @@ namespace DFMGenerator_SharedCode
         /// Ray tip state - true if the ray tip is still propagating
         /// </summary>
         public bool Active { get { if (segments.Count > 0) return (segments[segments.Count - 1].PropNodeType == SegmentNodeType.Propagating); else return false; } }
-        /// <summary>
+        /*/// <summary>
         /// Reference to the ray segment that terminates this ray, by intersection or stress shadow interaction; initially set to null
         /// </summary>
-        public UnconfinedFractureRaySegment TerminatingRaySegment { get; private set; }
+        public UnconfinedFractureRaySegment TerminatingRaySegment { get; private set; }*/
         /// <summary>
         /// ID number of the fracture that terminates the specified tip of this macrofracture, by intersection or stress shadow interaction; 0 if there is no terminating fracture
         /// </summary>
@@ -391,6 +391,80 @@ namespace DFMGenerator_SharedCode
         public PointXYZ OuterTip { get { if (segments.Count > 0) return (new PointXYZ(segments[segments.Count - 1].PropNode)); else return null; } }
 
         // Reset and data input functions
+        /// <summary>
+        /// Set the tip tyupe and terminating fracture for the ray
+        /// </summary>
+        public void SetRayTipData()
+        {
+            if (NoSegments > 0)
+            {
+                UnconfinedFractureRaySegment outerSegment = segments[NoSegments - 1];
+                switch (outerSegment.PropNodeType)
+                {
+                    // NB The nucleation point cannot be the outermost node
+                    case SegmentNodeType.Propagating:
+                        {
+                            TipType = FractureTipType.Propagating;
+                            // Still propagating so no terminating fracture
+                        }
+                        break;
+                    case SegmentNodeType.ConnectedStressShadow:
+                        {
+                            TipType = FractureTipType.StressShadow;
+                            // With a connected stress shadow, the fracture tip interacts directly with the stress shadow of a similar sized fracture propagating in the opposite direction
+                            if (!(outerSegment.TerminatingFracture is null))
+                                TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
+                        }
+                        break;
+                    case SegmentNodeType.NonconnectedStressShadow:
+                        {
+                            TipType = FractureTipType.StressShadow;
+                            // With a nonconnected stress shadow, the fracture tip becomes enveloped in the stress shadow of a larger fracture
+                            // There is no direct connection to the larger fracture 
+                        }
+                        break;
+                    case SegmentNodeType.Intersection:
+                        {
+                            TipType = FractureTipType.Intersection;
+                            if (!(outerSegment.TerminatingFracture is null))
+                                TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
+                        }
+                        break;
+                    case SegmentNodeType.Convergence:
+                        {
+                            TipType = FractureTipType.Convergence;
+                        }
+                        break;
+                    // NB A connected gridblock boundary cannot be the outermost node
+                    case SegmentNodeType.NonconnectedGridblockBound:
+                        {
+                            TipType = FractureTipType.OutOfBounds;
+                            // Still propagating so no terminating fracture
+                        }
+                        break;
+                    // NB The outermost segment can be a relay segment, if the fracture interacts with the stress shadow of an inactive fracture segment
+                    case SegmentNodeType.Relay:
+                        {
+                            TipType = FractureTipType.StressShadow;
+                            if (!(outerSegment.TerminatingFracture is null))
+                                TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
+                        }
+                        break;
+                    case SegmentNodeType.Pinchout:
+                        {
+                            TipType = FractureTipType.Pinchout;
+                            // No terminating fracture
+                        }
+                        break;
+                    default:
+                        {
+                            TipType = FractureTipType.OutOfBounds;
+                            // No terminating fracture
+                        }
+                        break;
+                }
+            }
+        }
 
         // Constructors
         /// <summary>
@@ -416,7 +490,7 @@ namespace DFMGenerator_SharedCode
 
             // Set the tip data
             TipType = FractureTipType.Propagating;
-            TerminatingRaySegment = null;
+            //TerminatingRaySegment = null;
             TerminatingFracture = -1;
         }
         /// <summary>
@@ -435,7 +509,7 @@ namespace DFMGenerator_SharedCode
 
             // Set the tip data
             TipType = ray_in.TipType;
-            TerminatingRaySegment = ray_in.TerminatingRaySegment;
+            //TerminatingRaySegment = ray_in.TerminatingRaySegment;
             TerminatingFracture = ray_in.TerminatingFracture;
         }
     }
@@ -566,7 +640,10 @@ namespace DFMGenerator_SharedCode
         // Reset, data input, control and implementation functions
         public void PopulateData()
         {
-            // Add code to create and tidy up fractures prior to populating the DFN, if needed
+            // Set the ray tip data
+            foreach (UnconfinedFractureRay ray in rays)
+                ray.SetRayTipData();
+
         }
         /// <summary>
         /// Criterion to use when sorting unconfined fractures

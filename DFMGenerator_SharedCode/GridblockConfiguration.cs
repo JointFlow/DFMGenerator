@@ -1,6 +1,6 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-#define LOGIMPPOP
+//#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
@@ -5568,8 +5568,9 @@ namespace DFMGenerator_SharedCode
 
                         while (no_UCF_toAdd > 0)
                         {
-                            // Initial unconfined fractures will all be assigned the mininum unconfined fracture radius
-                            double next_UCF_radius = UCF_minRadius;
+                            // Fractures will all be assigned zero initial radius and then allowed to grow to the mininum unconfined fracture radius
+                            // This will ensure boundary intersections and other interactions are correctly modelled
+                            double next_UCF_radius = 0;
 
                             // Get random location for the new fracture
                             PointXYZ new_UCF_centrepointXYZ = getRandomPoint(false);
@@ -5587,8 +5588,24 @@ namespace DFMGenerator_SharedCode
                                 global_DFN.GlobalDFNUnconfinedFractures.Add(new_UCF);
 
                                 // Add the new fracture ray segments to the list of all unconfined fracture ray segments in the gridblock
-                                foreach (UnconfinedFractureRaySegment segment in new_UCF.GetRaySegmentsInGridblock(this))
-                                    UnconfinedFractureRaySegments.Add(new UnconfinedFractureRaySegmentHolder(segment, ufs_index));
+                                // Then extend them to the mininum unconfined fracture radius
+                                foreach (UnconfinedFractureRaySegment UCRSegment in new_UCF.GetRaySegmentsInGridblock(this))
+                                {
+                                    UnconfinedFractureRaySegments.Add(new UnconfinedFractureRaySegmentHolder(UCRSegment, ufs_index));
+                                    double maxPropLength = UCF_minRadius;
+
+#if LOGDFNPOP
+                                    int NoStressShadowInteractions = Dict_NoStressShadowInteractions[ufs_index];
+                                    int NoIntersections = Dict_NoIntersections[ufs_index];
+                                    int NoPropagatingOut = Dict_NoPropagatingOut[ufs_index];
+                                    ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                                    Dict_NoStressShadowInteractions[ufs_index] = NoStressShadowInteractions;
+                                    Dict_NoIntersections[ufs_index] = NoIntersections;
+                                    Dict_NoPropagatingOut[ufs_index] = NoPropagatingOut;
+#else
+                                    ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
+#endif
+                                }
                             }
 
                             // Update the number of microfractures that we need to add - if there are no more to add we can break out of the loop
@@ -5684,14 +5701,31 @@ namespace DFMGenerator_SharedCode
                         if (addThisFracture)
                         {
                             // Create a new UnconfinedFractureXYZ object and add it to the list of unconfined fractures in the local fracture set - this is used to check for fracture intersection
-                            UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, UCF_minRadius, NucleationWTime, CurrentExplicitTimestep);
+                            // Fractures will all be assigned zero initial radius and then allowed to grow to the mininum unconfined fracture radius
+                            // This will ensure boundary intersections and other interactions are correctly modelled
+                            double next_UCF_radius = 0;
+                            UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, next_UCF_radius, NucleationWTime, CurrentExplicitTimestep);
                             ufs.LocalDFNUnconfinedFractures.Add(new_UCF);
                             // Also add it to the list of unconfined fractures in the global DFN - this is used to generate the DFN
                             global_DFN.GlobalDFNUnconfinedFractures.Add(new_UCF);
 
                             // Add the new fracture ray segments to the list of all unconfined fracture ray segments in the gridblock
-                            foreach (UnconfinedFractureRaySegment segment in new_UCF.GetRaySegmentsInGridblock(this))
-                                UnconfinedFractureRaySegments.Add(new UnconfinedFractureRaySegmentHolder(segment, ufs_index));
+                            foreach (UnconfinedFractureRaySegment UCRSegment in new_UCF.GetRaySegmentsInGridblock(this))
+                            {
+                                UnconfinedFractureRaySegments.Add(new UnconfinedFractureRaySegmentHolder(UCRSegment, ufs_index));
+                                double maxPropLength = UCF_minRadius;
+#if LOGDFNPOP
+                                int NoStressShadowInteractions = Dict_NoStressShadowInteractions[ufs_index];
+                                int NoIntersections = Dict_NoIntersections[ufs_index];
+                                int NoPropagatingOut = Dict_NoPropagatingOut[ufs_index];
+                                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                                Dict_NoStressShadowInteractions[ufs_index] = NoStressShadowInteractions;
+                                Dict_NoIntersections[ufs_index] = NoIntersections;
+                                Dict_NoPropagatingOut[ufs_index] = NoPropagatingOut;
+#else
+                                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
+#endif
+                            }
                         }
 
                         // Update the weighted time (RTime) when the next unconfined fracture will nucleate
@@ -6831,6 +6865,7 @@ namespace DFMGenerator_SharedCode
                 {
                     // Update the flag for fracture deactivation mechanism
                     tipDeactivationMechanism = SegmentNodeType.NonconnectedGridblockBound;
+
                 } // End check if there is neighbouring gridblock
             } // End if the segment propagated into a neighbouring gridblock
 

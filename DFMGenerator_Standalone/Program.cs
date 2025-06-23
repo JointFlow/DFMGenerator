@@ -834,7 +834,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 1000;
+            int MaxTimesteps = 200;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
