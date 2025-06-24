@@ -159,12 +159,14 @@ namespace DFMGenerator_SharedCode
             VectorXYZ vectorToTest = InputVector.GetNormalisedVector();
 
             // Loop through all ray vectors, checking the cosine of the angle between them and the input vector
-            // The closest match in orientation will have an absolute value of cosine nearest to 1
+            // The closest match in orientation will have a value of cosine nearest to 1
+            // In this case we must match the direction as well as the orientation of the vectors, so we should not take the absolute value of the cosine
+            // A cosine of -1 indicates an opposite vector direction thus a poor match
             VectorXYZ closestRayOrientation = null;
             double bestMatch = 0;
             foreach (VectorXYZ rayVector in RayVectors)
             {
-                double orientationMatch = Math.Abs(rayVector & vectorToTest);
+                double orientationMatch = rayVector & vectorToTest;
                 if (orientationMatch > bestMatch)
                 {
                     bestMatch = orientationMatch;
@@ -186,13 +188,15 @@ namespace DFMGenerator_SharedCode
             VectorXYZ vectorToTest = InputVector.GetNormalisedVector();
 
             // Loop through all ray vectors, checking the cosine of the angle between them and the input vector
-            // The closest match in orientation will have an absolute value of cosine nearest to 1
+            // The closest match in orientation will have a value of cosine nearest to 1
+            // In this case we must match the direction as well as the orientation of the vectors, so we should not take the absolute value of the cosine
+            // A cosine of -1 indicates an opposite vector direction thus a poor match
             int closestRayIndex = -1;
             double bestMatch = 0;
             for (int ray_index = 0; ray_index < RaysPerFracture; ray_index++)
             {
                 VectorXYZ rayVector = rayVectors[ray_index];
-                double orientationMatch = Math.Abs(rayVector & vectorToTest);
+                double orientationMatch = rayVector & vectorToTest;
                 if (orientationMatch > bestMatch)
                 {
                     bestMatch = orientationMatch;
