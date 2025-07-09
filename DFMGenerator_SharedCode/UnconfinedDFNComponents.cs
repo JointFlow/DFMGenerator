@@ -392,7 +392,7 @@ namespace DFMGenerator_SharedCode
 
         // Reset and data input functions
         /// <summary>
-        /// Set the tip tyupe and terminating fracture for the ray
+        /// Set the tip type and terminating fracture for the ray
         /// </summary>
         public void SetRayTipData()
         {
@@ -568,15 +568,15 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Length of the shortest ray; this will control the fracture aperture and propagation rate
         /// </summary>
-        public double MinimumRayLength { get { double minLength = double.PositiveInfinity; foreach (UnconfinedFractureRay ray in rays) { double rayLength = ray.Length; if (minLength > rayLength) minLength = rayLength; } return minLength; }  }
+        public double MinimumRayLength { get; private set; }
         /// <summary>
         /// Length of the longest ray
         /// </summary>
-        public double MaximumRayLength { get { double maxLength = 0; foreach (UnconfinedFractureRay ray in rays) { double rayLength = ray.Length; if (maxLength < rayLength) maxLength = rayLength; } return maxLength; } }
+        public double MaximumRayLength { get; private set; }
         /// <summary>
         /// Mean ray length
         /// </summary>
-        public double MeanRayLength { get { double totalLength = 0; foreach (UnconfinedFractureRay ray in rays) totalLength += ray.Length; return totalLength / NoRays; } }
+        public double MeanRayLength { get; private set; }
         /// <summary>
         /// The mean effective fracture radius, used for calculating whole fracture stress shadow width, is the average of the minimum (or propagation contolling) ray length and the mean ray length
         /// </summary>
@@ -584,7 +584,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Total area of the fracture
         /// </summary>
-        public double Area { get { double area = 0; foreach (UnconfinedFractureRay ray in rays) area += ray.Area; return area; } }
+        public double Area { get; private set; }
         /// <summary>
         /// Fracture set index number - this will not change after fracture is initiated
         /// </summary>
@@ -612,15 +612,35 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Get the centroid of the fracture - this is defined as the mean of the position of all nodes on all rays
         /// </summary>
-        public PointXYZ Centroid
+        public PointXYZ Centroid { get; private set; }
+        /// <summary>
+        /// Recalculate the minimum, maximum and mean ray lengths, total fracture area and location of centroid
+        /// This should be done after all fracture growth has been calculated for the timestep, as these values will be used to calculate effective radii and fracture growth rates in the next timestep
+        /// </summary>
+        public void RecalculateGeometry()
         {
-            get
-            {
+            double minLength = double.PositiveInfinity; 
+            double maxLength = 0; 
+            double totalLength = 0; 
+            double area = 0; 
                 List<PointXYZ> outerTips = new List<PointXYZ>();
-                foreach (UnconfinedFractureRay ray in rays)
+            foreach (UnconfinedFractureRay ray in rays) 
+            { 
+                double rayLength = ray.Length; 
+                if (minLength > rayLength) 
+                    minLength = rayLength; 
+                if (maxLength < rayLength) 
+                    maxLength = rayLength; 
+                totalLength += rayLength; 
+                area += ray.Area; 
                     outerTips.AddRange(ray.GetNodesInXYZ());
-                return PointXYZ.getCentroid(outerTips);
             }
+
+            MinimumRayLength = minLength;
+            MaximumRayLength = maxLength;
+            MeanRayLength =  totalLength / NoRays;
+            Area = area;
+            Centroid = PointXYZ.getCentroid(outerTips);
         }
 
         // Dynamic data
@@ -1022,6 +1042,16 @@ namespace DFMGenerator_SharedCode
                 UnconfinedFractureRay nextRay = new UnconfinedFractureRay(this, ufs_in, gbc_in, NucleationPoint_in, nextRayVector, InitialRadius, NucleationTime, NucleationWTime_in, NucleationTimestep_in);
                 rays[rayNo] = nextRay;
             }
+
+            // Set the fracture geometry data (minimum, maximum and mean ray lengths and total area)
+            // If the specified initial radius is smaller than the minimum radius defined for the set, then use the minimum radius for this
+            // This will be the case if we are "growing" the fracture to the minimum radius (to account for fracture and boundary intersections and stress shadow interactions)
+            double initialGeometryRadius = Math.Max(InitialRadius, ufs_in.MinimumFractureRadius);
+            MinimumRayLength = initialGeometryRadius;
+            MaximumRayLength = initialGeometryRadius;
+            MeanRayLength = initialGeometryRadius;
+            Area = Math.PI * initialGeometryRadius * initialGeometryRadius;
+            Centroid = new PointXYZ(NucleationPoint_in);
         }
         /// <summary>
         /// Copy constructor: copy all data from an existing UnconfinedFractureXYZ object
@@ -1050,6 +1080,13 @@ namespace DFMGenerator_SharedCode
 
             // Set the nucleation time
             NucleationTime = fracture_in.NucleationTime;
+
+            // Set the fracture geometry data (minimum, maximum and mean ray lengths and total area)
+            MinimumRayLength = fracture_in.MinimumRayLength;
+            MaximumRayLength = fracture_in.MaximumRayLength;
+            MeanRayLength = fracture_in.MeanRayLength;
+            Area = fracture_in.Area;
+            Centroid = new PointXYZ(fracture_in.Centroid);
         }
     }
 

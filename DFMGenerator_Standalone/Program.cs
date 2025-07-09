@@ -474,8 +474,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 1;// 3;
-            int NoCols = 1;// 3;
+            int NoRows = 3;
+            int NoCols = 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 50;
             double Length_NS = 50;
@@ -570,9 +570,9 @@ namespace DFMGenerator_Standalone
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.ma;
             DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
-            // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
+            /*// Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.01);
+            EhminRate_list.Add(-0.001);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
@@ -581,7 +581,7 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(1);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
-            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);*/
             /*// Add an uplift episode, with uplift of 1800m over 18ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -600,7 +600,6 @@ namespace DFMGenerator_Standalone
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(1E+12);
             AppliedTemperatureChange_list.Add(-5E+6);
-            AppliedTemperatureChange_list.Add(0);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(1);
             DeformationEpisodeDuration_list.Add(1E-5);
@@ -621,10 +620,21 @@ namespace DFMGenerator_Standalone
             InitialFluidPressure_list.Add(15000000);
             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
             BiazimuthalConjugate = false;*/
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
+            AppliedTemperatureChange_list.Add(-2);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(1);
+            DeformationEpisodeDuration_list.Add(-1);
+            AbsoluteStressRate_list.Add(AbsoluteStressRate);
+            InitialFluidPressure_list.Add(InitialFluidPressure);
+            InitialAbsoluteStress_list.Add(InitialAbsoluteStress);
 #endif
 
-            // Mechanical properties
-            double YoungsMod = 1E+10;
+             // Mechanical properties
+             double YoungsMod = 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
             bool VariableYoungsMod = false;
             double VariableYoungsModSmoothingFactor = 2;
@@ -834,7 +844,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 200;// 1000;
+            int MaxTimesteps = 10;// 200;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;

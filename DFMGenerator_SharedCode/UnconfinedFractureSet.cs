@@ -1854,7 +1854,7 @@ namespace DFMGenerator_SharedCode
             return stressShadowWidthChanged;
         }
 
-        // Functions to convert between fracture growth weighted time (RTime, proportional to CumGamma) and real time
+        // Functions to convert between fracture growth weighted time (WTime, proportional to CumGamma) and real time
         /// <summary>
         /// Convert from fracture growth weighted time (WTime) since start of timestep to real time; for constant driving stress these are proportional but for variable driving stress they are not
         /// </summary>
@@ -3279,10 +3279,13 @@ namespace DFMGenerator_SharedCode
             // Loop through the six gridblock boundaries checking for intersection
             foreach (BoundaryCornerpoints boundary in boundaries)
             {
+                // Check if the ray segment nucleated on this boundary - if so move onto the next boundary
+                if (boundary.Boundary == propagatingSegment.NonPropNodeBoundary)
+                    continue;
+
                 // Each boundary can be split into two triangular segments to check for intersection
                 // However since these are coplanar we only need to check one of them if we set crossover type to extend
                 double distanceToIntersection = PointXYZ.getIntersectionDistance(startPoint, propagationVector, boundary.CornerPoints[0], boundary.CornerPoints[1], boundary.CornerPoints[2], CrossoverType.Extend);
-                double distanceToIntersection2 = PointXYZ.getIntersectionDistance(startPoint, propagationVector, boundary.CornerPoints[0], boundary.CornerPoints[1], boundary.CornerPoints[2], CrossoverType.Extend);
 
                 // If the propagating ray segment will never intersect the boundary, the function will return a negative value
                 if (distanceToIntersection > 0)

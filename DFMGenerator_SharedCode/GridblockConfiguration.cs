@@ -1517,6 +1517,25 @@ namespace DFMGenerator_SharedCode
             return name;
         }
         /// <summary>
+        /// Get a name for a specified unconfined fracture set in this gridblock, indicating its orientation
+        /// </summary>
+        /// <param name="ufs_index">Index number of the unconfined fracture set</param>
+        /// <returns>String representing the unconfined fracture set name</returns>
+        public string getUnconfinedFractureSetName(int ufs_index)
+        {
+            string setName;
+            if (ufs_index < NoUnconfinedFractureSets)
+            {
+                UnconfinedFractureSet ufs = UnconfinedFractureSets[ufs_index];
+                setName = string.Format("Unconfined set {0}: Azimuth {1} Dip {2}", ufs_index, (int)(ufs.Azimuth * 180 / Math.PI), (int)(ufs.Dip * 180 / Math.PI));
+            }
+            else
+            {
+                setName = string.Format("Invalid set");
+            }
+            return setName;
+        }
+        /// <summary>
         /// Array of azimuthal stress shadow multipliers relating stress shadows for different fracture sets
         /// </summary>
         private double[,] FaaIJ;
@@ -2897,7 +2916,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // Get the basic macrofracture permeability tensor
                     }
-                        break;
+                    break;
                 // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     {
@@ -3317,6 +3336,7 @@ namespace DFMGenerator_SharedCode
             }
             bool useSetNames = false;
             bool useDipSetNames = true;
+            bool useUnconfinedSetNames = true;
 #if LOGIMPPOP
             RayPropagationStatus[] rayTypesToLog = new RayPropagationStatus[5] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted, RayPropagationStatus.StaticStressShadow, RayPropagationStatus.StaticIntersection, RayPropagationStatus.StaticMaxRadius };
             Dictionary<RayPropagationStatus, StreamWriter> rayLogFiles = new Dictionary<RayPropagationStatus, StreamWriter>();
@@ -3360,7 +3380,7 @@ namespace DFMGenerator_SharedCode
                 for (int ufs_index = 0; ufs_index < NoUnconfinedFractureSets; ufs_index++)
                 {
                     UnconfinedFractureSet ufs = UnconfinedFractureSets[ufs_index];
-                    string setLabel = string.Format("Unconfined set {0}: Strike {1} Dip {2}", ufs_index, (int)(ufs.Strike * 180 / Math.PI), (int)(ufs.Dip * 180 / Math.PI));
+                    string setLabel = useUnconfinedSetNames ? getUnconfinedFractureSetName(ufs_index) : string.Format("UFS {0}", ufs_index);
                     headerLine1 += setLabel + FSheader1;
                     headerLine2 += FSheader3;
                     TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
@@ -3922,10 +3942,10 @@ namespace DFMGenerator_SharedCode
                         }
                     }
                     if (CalculateImplicitUCFData)
-                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                    {
-                        ufs.setFractureDeactivationRate();
-                    }
+                        foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        {
+                            ufs.setFractureDeactivationRate();
+                        }
 
                     // Calculate the total half-macrofracture population data for this timestep for each fracture dip set
                     foreach (Gridblock_FractureSet fs in FractureSets)
@@ -4219,7 +4239,7 @@ namespace DFMGenerator_SharedCode
                 int no_l_IndexPoints = PropControl.no_l_indexPoints;
                 if (no_l_IndexPoints > 0)
                     cullValue = CurrentImplicitTimestep / no_l_IndexPoints;
-                double maxLengthMultiplier = 4;
+                double maxMFLengthMultiplier = 4;
 
                 double maxHMinLength = PropControl.max_HMin_l_indexPoint_Length;
                 double maxHMaxLength = PropControl.max_HMax_l_indexPoint_Length;
@@ -4236,7 +4256,7 @@ namespace DFMGenerator_SharedCode
                     {
                         double denominator = fs.combined_T_MFP30_total() * ThicknessAtDeformation;
                         maxIndexLength = (denominator > 0 ? fs.combined_T_MFP32_total() / denominator : 0);
-                        maxIndexLength *= maxLengthMultiplier;
+                        maxIndexLength *= maxMFLengthMultiplier;
                         // If the maximum possible macrofracture length is less than this, reduce the maximum index length to the maximum possible macrofracture length
                         // This will be the case if there is no fracture deactivation (uniaxial or anisotropic evenly distributed stress models)
                         double maxMFlength = 0;
@@ -4382,11 +4402,11 @@ namespace DFMGenerator_SharedCode
                     if (writeImplicitDataToFile)
                     {
                         // Calculate the maximum radius for the unconfined fracture ray cumulative population distribution function index values based on orientation
-                        // If this has not been specified, calculate this by applying a multiplier to the maximum unconfined fracture radius
+                        // If this has not been specified, use the maximum unconfined fracture radius
                         double maxIndexRadius;
                         if ((maxHMinLength <= 0) || (maxHMaxLength <= 0))
                         {
-                            maxIndexRadius = ufs.MaximumFractureRadius * maxLengthMultiplier;
+                            maxIndexRadius = ufs.MaximumFractureRadius;
                         }
                         else
                         {
@@ -5606,6 +5626,9 @@ namespace DFMGenerator_SharedCode
                                     ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
 #endif
                                 }
+
+                                // Recalculate the fracture geometry
+                                new_UCF.RecalculateGeometry();
                             }
 
                             // Update the number of microfractures that we need to add - if there are no more to add we can break out of the loop
@@ -5726,6 +5749,9 @@ namespace DFMGenerator_SharedCode
                                 ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
 #endif
                             }
+
+                            // Recalculate the fracture geometry
+                            new_UCF.RecalculateGeometry();
                         }
 
                         // Update the weighted time (RTime) when the next unconfined fracture will nucleate
@@ -5929,9 +5955,18 @@ namespace DFMGenerator_SharedCode
                             ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
 #endif
                         } // End if the maximum propagation length is zero
-                    } // End if macrofracture segment is active
-                } /// Loop to next macrofracture segment
-            } // End propagate macrofractures
+                    } // End if unconfined fracture ray segment is active
+                } /// Loop to next unconfined fracture ray segment
+
+                // Update the geometry for all fractures
+                // This recalculates the minimum, maximum and mean ray lengths, total area and location of centroid for each fracture
+                // This is only done after all fracture growth has been calculated for the timestep, as these values will be used to calculate effective radii and fracture growth rates in the next timestep
+                // Loop through each unconfined fracture set
+                foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    foreach (UnconfinedFractureXYZ ucf in ufs.LocalDFNUnconfinedFractures)
+                        ucf.RecalculateGeometry();
+
+            } // End propagate unconfined fracture rays
 
 #if LOGDFNPOP
             // Write fracture counts to logfiles and close them
@@ -6223,8 +6258,9 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="initiatorSegment">Initiator UnconfinedFractureRaySegment object in an adjacent gridblock that has propagated into this gridblock</param>
         /// <param name="initiatorSegment_ufs">Reference to the UnconfinedFractureSet object containing the initiator UnconfinedFractureRaySegment</param>
-        /// <param name="FromBoundary">Boundary from which the fracture has crossed into this gridblock</param>
+        /// <param name="FromBoundary">Boundary from which the ray has crossed into this gridblock</param>
         /// <param name="insertionPoint">Point at which it crosses the gridblock boundary, in global (XYZ) coordinates</param>
+        /// <param name="initialPropagationDistance">Distance that the new ray should be extended into the new gridblock; this should only be used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays</param>
         /// <param name="newSegmentNucleationTime">Real time at which it crosses the gridblock boundary (s)</param>
         /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
         /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
@@ -6235,7 +6271,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
         public void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double newSegmentNucleationTime, bool checkStressShadow, bool TerminateAtGridBoundary, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
-        private void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double newSegmentNucleationTime, bool checkStressShadow, bool TerminateAtGridBoundary)
+        private void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double initialPropagationDistance, double newSegmentNucleationTime, bool checkStressShadow, bool TerminateAtGridBoundary)
 #endif
         {
             // Find the fracture set in this gridblock with the closest orientation to the incoming fracture
@@ -6255,7 +6291,18 @@ namespace DFMGenerator_SharedCode
             // Add the new ray segment to the list of all unconfined fracture ray segments in this gridblock
             UnconfinedFractureRaySegments.Add(new UnconfinedFractureRaySegmentHolder(newSegment, newSegment_UFSIndex));
 
-            // If the new ray segment nucleated before the end of the last timestep calculated for this fracture set, we will need to propagate the ray up until that time 
+            // If this is a newly nucleating ray, it will be necessary to extend the ray instantaneously so that it reaches the minimum radius for a nucleating fracture
+            // NB this is independent of any additional extension that may be required if the new ray segment nucleated before the end of the last timestep calculated for this gridblock
+            if (initialPropagationDistance > 0)
+            {
+#if LOGDFNPOP
+                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref propagationLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+#else
+                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref initialPropagationDistance);
+#endif
+            }
+
+            // If the new ray segment nucleated before the end of the last timestep calculated for this gridblock, we will need to propagate the ray up until that time 
             if (newSegment_NucleationTimestep <= CurrentExplicitTimestep)
             {
                 // Roll back the current timestep to the timestep of nucleation
@@ -6266,7 +6313,7 @@ namespace DFMGenerator_SharedCode
 
                 // Calculate the required propagation length
                 // This is controlled by the integral of the PropRateCoefficient * t for duration of growth, which is equal to the GrowthFactor if the ray is propagating for the entire timestep
-                double propagatingTime= LastTimeCalculated - newSegmentNucleationTime;
+                double propagatingTime = LastTimeCalculated - newSegmentNucleationTime;
                 double growthFactor = newSegment_ufs.getCumulativeFractureGrowthFactor(LastTimestepCalculated, Math.Max(newSegment_NucleationTimestep - 1, 0)) + (newSegment.NucleationWTime / MechProps.beta);
                 double initialDrivingStress = newSegment_ufs.getConstantDrivingStressU(newSegment_NucleationTimestep) + ((newSegmentNucleationTime - (newSegment_NucleationTimestep > 0 ? TimestepEndTimes[newSegment_NucleationTimestep - 1] : 0)) * newSegment_ufs.getVariableDrivingStressV(newSegment_NucleationTimestep));
                 double propagationLength = calculateUnconfinedFractureRayGrowth(newSegment, propagatingTime, growthFactor, initialDrivingStress, newSegment_ufs.MaximumFractureRadius, double.NaN);
@@ -6283,17 +6330,18 @@ namespace DFMGenerator_SharedCode
                 // Reset the current timestep to the last timestep calculated
                 CurrentExplicitTimestep = LastTimestepCalculated;
             }
-        }        /// <summary>
-                 /// Extend an explicit macrofracture segment by a specified maximum amount, checking for intersection or stress shadow interactions with other fracture segments and whether it crosses the gridblock boundary
-                 /// </summary>
-                 /// <param name="use_MF_min_length_cutoff">Flag specifying whether a minimum cutoff length is defined</param>
-                 /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
-                 /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
-                 /// <param name="fsIndex">Index number of parent fracture set</param>
-                 /// <param name="fs">Reference to parent fracture set</param>
-                 /// <param name="MFSegment">Reference to MacrofractureSegmentIJK object</param>
-                 /// <param name="dipsetIndex">Dip set index</param>
-                 /// <param name="maxPropLength">Maximum propagation length - will be truncated if fracture terminates early</param>
+        }
+        /// <summary>
+        /// Extend an explicit macrofracture segment by a specified maximum amount, checking for intersection or stress shadow interactions with other fracture segments and whether it crosses the gridblock boundary
+        /// </summary>
+        /// <param name="use_MF_min_length_cutoff">Flag specifying whether a minimum cutoff length is defined</param>
+        /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
+        /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
+        /// <param name="fsIndex">Index number of parent fracture set</param>
+        /// <param name="fs">Reference to parent fracture set</param>
+        /// <param name="MFSegment">Reference to MacrofractureSegmentIJK object</param>
+        /// <param name="dipsetIndex">Dip set index</param>
+        /// <param name="maxPropLength">Maximum propagation length - will be truncated if fracture terminates early</param>
 #if LOGDFNPOP
         /// <param name="fromPreviousTS">Flag specifying whether fracture nucleated in this timestep or a previous timestep - used for debugging only</param>
         /// <param name="NoStressShadowInteractions">Counter for fracture stress shadow interactions - used for debugging only</param>
@@ -6754,6 +6802,8 @@ namespace DFMGenerator_SharedCode
 #endif
 
             // Increment the propagating ray segment by the calculated propagation length
+            double r_init = UCRSegment.Length;
+            double reff_init = UCRSegment.EffectiveRayLength;
             UCRSegment.Length += maxPropLength;
 
             /*// If the segment terminated due to interaction with another macrofracture stress shadow, we also need to deactivate that segment
@@ -6785,7 +6835,7 @@ namespace DFMGenerator_SharedCode
             // If the segment propagated into a neighbouring gridblock we need to create a new unconfined fracture segment in the neighbouring gridblock
             if (tipDeactivationMechanism == SegmentNodeType.ConnectedGridblockBound)
             {
-                // Check if there is neighbouring gridblock with thickness greater than the minimum cutoff
+                // Check if there is neighbouring gridblock with thickness greater than the minimum cutoff to propagate into
                 if ((intersectedBoundary != GridDirection.None) && (NeighbourGridblocks[intersectedBoundary] != null)) // There is a neighbouring gridblock
                 {
                     if (NeighbourGridblocks[intersectedBoundary].ThicknessAtDeformation <= gd.DFNControl.MinimumLayerThickness) // The neighbouring gridblock is below the minimum thickness cutoff
@@ -6797,13 +6847,33 @@ namespace DFMGenerator_SharedCode
                     {
                         // If so, deactivate the segment
                         UCRSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
-                        maxPropLength = initial_maxPropLength - maxPropLength;
                     }
-                    else // The ray segment can propagate into the neighbouring gridblock
+                    else if (r_init == 0) // Newly nucleating fracture rays must be extended to the minimum radius for a new fracture
                     {
                         // Get the boundary intersection point (in global XYZ coordinates) and the real intersection time
                         PointXYZ intersectionPoint = UCRSegment.PropNode;
-                        // Get the time that the ray segment started propagating
+
+                        // Get the time that the ray segment crosses the boundary - this is the nucleation time
+                        double intersectionRealTime = UCRSegment.NucleationTime;
+
+                        // Determine the distance that the new ray should be extended into the new gridblock
+                        double initialPropagationDistance = ufs.MinimumFractureRadius - maxPropLength;
+
+                        // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock
+                        GridDirection oppositeBoundary = GetOppositeBoundary(intersectedBoundary);
+
+                        // Call function to create an unconfined fracture segment in the neighbouring gridblock
+#if LOGDFNPOP
+                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+#else
+                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary);
+#endif
+                    }
+                    else // The propagating ray can propagate into the neighbouring gridblock
+                    {
+                        // Get the boundary intersection point (in global XYZ coordinates) and the real intersection time
+                        PointXYZ intersectionPoint = UCRSegment.PropNode;
+                        // Get the time that the ray segment crosses the boundary
                         double intersectionRealTime;
                         switch (UCRSegment.PropagationRateControl)
                         {
@@ -6816,32 +6886,28 @@ namespace DFMGenerator_SharedCode
                             case RaySegmentPropagationRateControl.SubcriticalFullyActive:
                                 {
                                     double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
-                                    double r_init = UCRSegment.RayLength;
-                                    double r_final = r_init + maxPropLength;
+                                    double r_final = UCRSegment.RayLength;
                                     bool bis2 = (MechProps.GetbType() == bType.Equals2);
                                     double beta = MechProps.beta;
                                     double dWt;
                                     if (bis2)
-                                        dWt = -Math.Log(r_final / r_init) * beta;
+                                        dWt = Math.Log(r_final) - Math.Log(r_init);
                                     else
-                                        dWt = (Math.Pow(r_init, 1/beta) - Math.Pow(r_final, 1 / beta)) * beta;
+                                        dWt = (Math.Pow(r_final, 1 / beta) - Math.Pow(r_init, 1 / beta)) * beta;
                                     intersectionRealTime = ufs.ConvertWeightedTimeToTime(Wt0 + dWt, currentExplicitTimestep);
                                 }
                                 break;
                             case RaySegmentPropagationRateControl.SubcriticalRestricted:
                                 {
                                     double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
-                                    double r_init = UCRSegment.RayLength;
-                                    double reff_init = UCRSegment.EffectiveRayLength;
-                                    double r_c = UCRSegment.PropagationControllingRayLength;
-                                    double reff_final = (r_init + maxPropLength + r_c) / 2;
+                                    double reff_final = UCRSegment.EffectiveRayLength;
                                     bool bis2 = (MechProps.GetbType() == bType.Equals2);
                                     double beta = MechProps.beta;
                                     double dWt;
                                     if (bis2)
-                                        dWt = -Math.Log(reff_final / reff_init) * beta;
+                                        dWt = Math.Log(reff_final) - Math.Log(reff_init);
                                     else
-                                        dWt = (Math.Pow(reff_init, 1 / beta) - Math.Pow(reff_final, 1 / beta)) * beta;
+                                        dWt = (Math.Pow(reff_final, 1 / beta) - Math.Pow(reff_init, 1 / beta)) * beta;
                                     intersectionRealTime = ufs.ConvertWeightedTimeToTime(Wt0 + dWt, currentExplicitTimestep);
                                 }
                                 break;
@@ -6850,14 +6916,17 @@ namespace DFMGenerator_SharedCode
                                 break;
                         }
 
+                        // The initial propagation distance is only used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays
+                        double initialPropagationDistance = 0;
+
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock
                         GridDirection oppositeBoundary = GetOppositeBoundary(intersectedBoundary);
 
                         // Call function to create an unconfined fracture segment in the neighbouring gridblock
 #if LOGDFNPOP
-                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary);
+                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary);
 #endif
                     }
                 }
@@ -7313,21 +7382,27 @@ namespace DFMGenerator_SharedCode
             List<double> dips = new List<double>();
 
             // Add dips
-            // If the specified number of dip sets is 0, add two sets, a vertical set and an inclined set in the optimal orientation
+            // If the specified number of dip sets is 0, add three sets, a vertical set and two conjugate inclined sets in the optimal dip slip shear orientation
             if (NoDipSets_in == 0)
             {
-                dips.Add(Math.PI / 2);
-                dips.Add(((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2);
+                double verticalDip = Math.PI / 2;
+                double inclinedDip = ((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2;
+                dips.Add(verticalDip);
+                dips.Add(inclinedDip);
+                dips.Add(-inclinedDip);
             }
             // If the specified number of dip sets is -1, add a single vertical set
             else if (NoDipSets_in == -1)
             {
-                dips.Add(Math.PI / 2);
+                double verticalDip = Math.PI / 2;
+                dips.Add(verticalDip);
             }
-            // If the specified number of dip sets is -2, add a single inclined set in the optimal orientation
+            // If the specified number of dip sets is -2, add two conjugate inclined sets in the optimal dip slip shear orientation
             else if (NoDipSets_in < -1)
             {
-                dips.Add(((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2);
+                double inclinedDip = ((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2;
+                dips.Add(inclinedDip);
+                dips.Add(-inclinedDip);
             }
             // Otherwise add the specified number of sets at equal increments of dip
             else
@@ -7344,11 +7419,11 @@ namespace DFMGenerator_SharedCode
             }
 
             // Create new fracture sets
-            for (int fs_index = 0; fs_index < NoStrikeSets_in; fs_index++)
+            for (int ufs_index = 0; ufs_index < NoStrikeSets_in; ufs_index++)
             {
-                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoStrikeSets_in));
+                double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)ufs_index / (double)NoStrikeSets_in));
 
-                foreach(double dip in dips)
+                foreach (double dip in dips)
                 {
                     UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialFractureDistribution.PowerLaw, B_in, c_in);
                     UnconfinedFractureSets.Add(new_FractureSet);
@@ -7488,7 +7563,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="InitialThickness_in">Layer thickness at time of deformation (m)</param>
         /// <param name="InitialDepth_in">Depth at time of deformation (m)</param>
-        public GridblockConfiguration(double InitialThickness_in, double InitialDepth_in) 
+        public GridblockConfiguration(double InitialThickness_in, double InitialDepth_in)
         {
             // Set layer thickness and depth at the start of deformation
             SetInitialThicknessAndDepth(InitialThickness_in, InitialDepth_in);

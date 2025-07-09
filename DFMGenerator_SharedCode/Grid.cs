@@ -707,54 +707,58 @@ namespace DFMGenerator_SharedCode
                                 break;
                         }
 
-                        // Create output file for macrofracture centrepoints
-                        string fileName = "MFCentrepoints_" + outputLabel + centrepointFileExtension;
-                        String namecomb = DFNControl.FolderPath + fileName;
-                        StreamWriter CP_outputFile = new StreamWriter(namecomb);
-
-                        switch (DFNControl.OutputFileType)
+                        // Write macrofracture data to file
+                        if (latestDFN.GlobalDFNMacrofractures.Count > 0)
                         {
-                            case DFNFileType.ASCII:
-                                {
-                                    // Write header data
-                                    string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
-                                    CP_outputFile.WriteLine(FSheader1);
+                            // Create output file for macrofracture centrepoints
+                            string fileName = "MFCentrepoints_" + outputLabel + centrepointFileExtension;
+                            String namecomb = DFNControl.FolderPath + fileName;
+                            StreamWriter CP_outputFile = new StreamWriter(namecomb);
 
-                                    // Loop through each macrofracture and write data to logfile
-                                    foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
+                            switch (DFNControl.OutputFileType)
+                            {
+                                case DFNFileType.ASCII:
                                     {
-                                        // Generate a list of fracture cornerpoints
-                                        List<PointXYZ> CentrePoints = frac.SegmentCentrePoints;
-                                        int NoPoints = CentrePoints.Count();
+                                        // Write header data
+                                        string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
+                                        CP_outputFile.WriteLine(FSheader1);
 
-                                        // Write general fracture data to logfile
-                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
-                                        CP_outputFile.WriteLine(data);
-
-                                        // Write cornerpoint coordinates to logfile - one row per point
-                                        CP_outputFile.WriteLine("Start Points");
-                                        // Loop through each point and write the coordinates to file
-                                        // NB Z coordinates are output as positive downwards
-                                        foreach (PointXYZ nextPoint in CentrePoints)
+                                        // Loop through each macrofracture and write data to logfile
+                                        foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
                                         {
-                                            string pointCoords = string.Format("{0}\t{1}\t{2}\t", nextPoint.X, nextPoint.Y, nextPoint.Depth);
-                                            CP_outputFile.WriteLine(pointCoords);
-                                        }
-                                        CP_outputFile.WriteLine("End Points");
-                                    }
-                                }
-                                break;
-                            case DFNFileType.FAB:
-                                {
-                                    // Add code to write output in a format that can be read by Petrel as a polyline
-                                }
-                                break;
-                            default:
-                                break;
-                        }
+                                            // Generate a list of fracture cornerpoints
+                                            List<PointXYZ> CentrePoints = frac.SegmentCentrePoints;
+                                            int NoPoints = CentrePoints.Count();
 
-                        // Close macrofracture centrepoint output file
-                        CP_outputFile.Close();
+                                            // Write general fracture data to logfile
+                                            string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
+                                            CP_outputFile.WriteLine(data);
+
+                                            // Write cornerpoint coordinates to logfile - one row per point
+                                            CP_outputFile.WriteLine("Start Points");
+                                            // Loop through each point and write the coordinates to file
+                                            // NB Z coordinates are output as positive downwards
+                                            foreach (PointXYZ nextPoint in CentrePoints)
+                                            {
+                                                string pointCoords = string.Format("{0}\t{1}\t{2}\t", nextPoint.X, nextPoint.Y, nextPoint.Depth);
+                                                CP_outputFile.WriteLine(pointCoords);
+                                            }
+                                            CP_outputFile.WriteLine("End Points");
+                                        }
+                                    }
+                                    break;
+                                case DFNFileType.FAB:
+                                    {
+                                        // Add code to write output in a format that can be read by Petrel as a polyline
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            // Close macrofracture centrepoint output file
+                            CP_outputFile.Close();
+                        }
                     }
                 } // End write fracture data to file
 
