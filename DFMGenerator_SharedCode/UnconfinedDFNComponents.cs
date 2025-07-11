@@ -168,8 +168,9 @@ namespace DFMGenerator_SharedCode
             // Create a new unconfined fracture ray segment and add it to the parent ray
             UnconfinedFractureRaySegment newSegment = ufr.AddSegment(this, ufs_in, gbc_in, Orientation, NucleationTime_in, NucleationTimestep_in);
 
-            // Add a reference to the entire fracture to the new fracture set
-            ufs_in.LocalDFNUnconfinedFractures.Add(ucf);
+            // Add a reference to the entire fracture to the new fracture set, if it is not already there
+            if (!ufs_in.LocalDFNUnconfinedFractures.Contains(ucf))
+                ufs_in.LocalDFNUnconfinedFractures.Add(ucf);
 
             // Return the new UnconfinedFractureRaySegment object
             return newSegment;

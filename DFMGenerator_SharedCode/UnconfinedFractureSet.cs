@@ -3046,6 +3046,12 @@ namespace DFMGenerator_SharedCode
             // However we will assume the mismatch in alignments is small
             bool sameSet = (interacting_ufs == this);
 
+            // Get the current stress shadow width ratio
+            // If this is zero, there will be no stress shadow interaction so we can return false
+            double stressShadowWidthRatio = getStressShadowWidthRatio(-1);
+            if (stressShadowWidthRatio <= 0)
+                return false;
+
             // Cache useful data locally
             VectorXYZ fractureNormalVector = NormalVector;
             VectorXYZ propagationDirection = propagatingSegment.UnitVector;
@@ -3056,9 +3062,10 @@ namespace DFMGenerator_SharedCode
             PointXYZ rayTip = propagatingSegment.PropNode;
             PointXYZ effectiveRayOrigin = propagatingSegment.PropNode;
             effectiveRayOrigin.SubtractVector(finalEffectiveRayLength * propagationDirection);
-            double stressShadowHalfWidthRatio = getStressShadowWidthRatio(-1) * StressShadowWidthMultiplier / 2;
+            double stressShadowHalfWidthRatio = stressShadowWidthRatio * StressShadowWidthMultiplier / 2;
             PointXYZ edgeOfRayStressShadow = new PointXYZ(effectiveRayOrigin);
             edgeOfRayStressShadow.AddVector((finalEffectiveRayLength * stressShadowHalfWidthRatio) * fractureNormalVector);
+
 
             // Loop through all the fractures in the intersecting fracture set
             foreach (UnconfinedFractureXYZ UCF in LocalDFNUnconfinedFractures)
@@ -3079,8 +3086,8 @@ namespace DFMGenerator_SharedCode
                 PointXYZ axis_rayStressShadow_intersection = new PointXYZ(fractureCentrepoint);
                 axis_rayStressShadow_intersection.AddVector(distanceToAxisIntersection * segmentAxis);
 
-                // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +-90degrees) of the propagation direction
-                // THis will be the case if the scalar product of the two vectors is positive
+                // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +/-90degrees) of the propagation direction
+                // This will be the case if the scalar product of the two vectors is positive
                 // If not, the ray is propagating in the wrong direction to interact with the fracture so we can move on to the next fracture
                 VectorXYZ rayOriginToIntersection = new VectorXYZ(effectiveRayOrigin, axis_rayStressShadow_intersection);
                 if ((rayOriginToIntersection & propagationDirection) < 0)
@@ -3124,16 +3131,12 @@ namespace DFMGenerator_SharedCode
                 // We can check this by a geometric calculation
                 // If the two stress shadows do not overlap, move onto the next fracture
                 double fractureStressShadowRadius_projectedOntoRaySegmentPlane = Math.Sqrt((fractureEffectiveRadius * fractureEffectiveRadius) - (distanceToAxisIntersection * distanceToAxisIntersection));
-                if (adjustedIntersectionPointDistanceFromRayOrigin > finalEffectiveRayLength)
-                {
-                    if ((finalEffectiveRayLength - adjustedIntersectionPointDistanceFromRayOrigin) > fractureStressShadowRadius_projectedOntoRaySegmentPlane)
-                        continue;
-                }
+                if ((adjustedIntersectionPointDistanceFromRayOrigin) > (finalEffectiveRayLength + fractureStressShadowRadius_projectedOntoRaySegmentPlane))
+                    continue;
 
                 // The two stress shadows do overlap
                 // We can easily find the ray length at which they first touch
-                double proportional_IntersectionPointDistanceFromRayOrigin = adjustedIntersectionPointDistanceFromRayOrigin / finalEffectiveRayLength;
-                double rayLengthForStressShadowInteraction = fractureStressShadowRadius_projectedOntoRaySegmentPlane / (1 - proportional_IntersectionPointDistanceFromRayOrigin);
+                double rayLengthForStressShadowInteraction = adjustedIntersectionPointDistanceFromRayOrigin - fractureStressShadowRadius_projectedOntoRaySegmentPlane;
                 // If the ray length at which they first touch is greater than the initial effective ray length, then two stress shadows already overlap before any propagation
                 // In this case we will set the propagation distance to zero
                 double propagationLengthToStressShadowInteraction = (rayLengthForStressShadowInteraction > initialEffectiveRayLength) ? (rayLengthForStressShadowInteraction - initialEffectiveRayLength) : 0;
@@ -3142,7 +3145,10 @@ namespace DFMGenerator_SharedCode
                 interacts = true;
 
                 // Reduce the maximum propagation distance accordingly
-                propagationLength = propagationLengthToStressShadowInteraction;
+                if (propagationLength > propagationLengthToStressShadowInteraction)
+                    propagationLength = propagationLengthToStressShadowInteraction;
+                //else
+                //    propagationLength = propagationLength;
 
                 // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
                 if (terminateIfInteracts)
@@ -3280,7 +3286,7 @@ namespace DFMGenerator_SharedCode
             foreach (BoundaryCornerpoints boundary in boundaries)
             {
                 // Check if the ray segment nucleated on this boundary - if so move onto the next boundary
-                if (boundary.Boundary == propagatingSegment.NonPropNodeBoundary)
+                if ((boundary.Boundary != GridDirection.None) && (boundary.Boundary == propagatingSegment.NonPropNodeBoundary))
                     continue;
 
                 // Each boundary can be split into two triangular segments to check for intersection
