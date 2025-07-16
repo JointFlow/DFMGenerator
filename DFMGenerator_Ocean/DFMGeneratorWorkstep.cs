@@ -1,6 +1,7 @@
-// Set this flag to output detailed information on input parameters and properties for each gridblock
+// Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-//#define DEBUG_FRACS
+//#define DEBUG_FRAC_INPUT
+//#define DEBUG_FRAC_OUTPUT
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -161,7 +162,7 @@ namespace DFMGenerator_Ocean
                     if (PetrelGrid_StartCellJ > maxJ) PetrelGrid_StartCellJ = maxJ;
                     if (NoPetrelGridCols > (maxI - PetrelGrid_StartCellI + 1)) NoPetrelGridCols = (maxI - PetrelGrid_StartCellI + 1);
                     if (NoPetrelGridRows > (maxJ - PetrelGrid_StartCellJ + 1)) NoPetrelGridRows = (maxJ - PetrelGrid_StartCellJ + 1);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                     PetrelLogger.InfoOutputWindow("");
                     PetrelLogger.InfoOutputWindow(string.Format("StartCellI {0}, maxI {1}, NoPetrelGridCols {2}", PetrelGrid_StartCellI, maxI, NoPetrelGridCols));
                     PetrelLogger.InfoOutputWindow(string.Format("StartCellJ {0}, maxJ {1}, NoPetrelGridRows {2}", PetrelGrid_StartCellJ, maxJ, NoPetrelGridRows));
@@ -179,7 +180,7 @@ namespace DFMGenerator_Ocean
                     int PetrelGrid_BaseCellK = arguments.Argument_BottomLayerK - 1;
                     if (PetrelGrid_BaseCellK < PetrelGrid_TopCellK) PetrelGrid_BaseCellK = PetrelGrid_TopCellK;
                     if (PetrelGrid_BaseCellK > maxK) PetrelGrid_BaseCellK = maxK;
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                     PetrelLogger.InfoOutputWindow(string.Format("TopCellK {0}, BaseCellK {1}", PetrelGrid_TopCellK, PetrelGrid_BaseCellK));
 #endif
                     // Time units set to seconds - unit conversion from geological time units is carried out automatically by the Petrel unit conversion functionality
@@ -626,7 +627,7 @@ namespace DFMGenerator_Ocean
                         }
                     }
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                     /*// Add an initial episode with uniaxial extension of -0.01/ma over 1ma
                     EhminAzi_list.Add(EhminAzi);
                     EhminRate_GeologicalTimeUnits_list.Add(-0.01);
@@ -1017,7 +1018,7 @@ namespace DFMGenerator_Ocean
                     // Outputs
                     // Output to file
                     // These must be set to true for stand-alone version or no output will be generated
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                     bool WriteImplicitDataFiles = true;
                     bool WriteDFNFiles = true;
 #else
@@ -2086,7 +2087,7 @@ namespace DFMGenerator_Ocean
                         {
                             for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
                             {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 PetrelLogger.InfoOutputWindow("");
                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock Col(I) {0}, Row(J) {1}", FractureGrid_ColNo, FractureGrid_RowNo));
 #endif
@@ -2103,16 +2104,33 @@ namespace DFMGenerator_Ocean
                                 int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                 int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
                                 int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_FirstCellI {0}, PetrelGrid_FirstCellJ {1}, PetrelGrid_TopCellK {2}", PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK));
                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_LastCellI {0}, PetrelGrid_LastCellJ {1}, PetrelGrid_BaseCellK {2}", PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_BaseCellK));
 #endif
 
                                 // Initialise variables for mean depth and thickness
+                                // If the top of the grid is above MSL we will also take this into account when calculating depth
+                                // However if it is below MSL we will calculate depth from MSL (Z=0)
                                 double local_Current_Depth = 0;
                                 double local_LayerThickness = 0;
+                                double local_Current_SurfaceHeight = 0;
 
                                 // Find SW cornerpoints; if the top or bottom cells in the SW corner are undefined, use the highest and lowest defined cells
+                                Index3 SW_topgrid = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, 0);
+                                Point3 SW_topgrid_corner = PetrelGrid.GetPointAtCell(SW_topgrid, Corner.SouthWest, TopOrBase.Top);
+                                // If the top cell in the grid is not defined, find the uppermost cell that is
+                                if (Point3.IsNull(SW_topgrid_corner))
+                                {
+                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
+                                    {
+                                        SW_topgrid.K = PetrelGrid_DataCellK;
+                                        SW_topgrid_corner = PetrelGrid.GetPointAtCell(SW_topgrid, Corner.SouthWest, TopOrBase.Top);
+                                        if (!Point3.IsNull(SW_topgrid_corner))
+                                            break;
+                                    }
+                                }
                                 Index3 SW_top = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK);
                                 Point3 SW_top_corner = PetrelGrid.GetPointAtCell(SW_top, Corner.SouthWest, TopOrBase.Top);
                                 // If the top cell is not defined, find the uppermost cell that is
@@ -2145,10 +2163,25 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);
                                 PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);
                                 // Update mean depth and thickness variables
+                                local_Current_SurfaceHeight += SW_topgrid_corner.Z;
                                 local_Current_Depth -= SW_top_corner.Z;
                                 local_LayerThickness += (SW_top_corner.Z - SW_bottom_corner.Z);
 
                                 // Find NW cornerpoints; if the top or bottom cells in the NW corner are undefined, use the highest and lowest defined cells
+                                Index3 NW_topgrid = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, 0);
+                                Point3 NW_topgrid_corner = PetrelGrid.GetPointAtCell(NW_topgrid, Corner.NorthWest, TopOrBase.Top);
+                                // If the top cell is not defined, find the uppermost cell that is
+                                if (Point3.IsNull(NW_topgrid_corner))
+                                {
+                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
+                                    {
+                                        NW_topgrid.K = PetrelGrid_DataCellK;
+                                        NW_topgrid_corner = PetrelGrid.GetPointAtCell(NW_topgrid, Corner.NorthWest, TopOrBase.Top);
+                                        if (!Point3.IsNull(NW_topgrid_corner))
+                                            break;
+                                    }
+                                }
                                 Index3 NW_top = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, PetrelGrid_TopCellK);
                                 Point3 NW_top_corner = PetrelGrid.GetPointAtCell(NW_top, Corner.NorthWest, TopOrBase.Top);
                                 // If the top cell is not defined, find the uppermost cell that is
@@ -2181,10 +2214,25 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);
                                 PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);
                                 // Update mean depth and thickness variables
+                                local_Current_SurfaceHeight += NW_topgrid_corner.Z;
                                 local_Current_Depth -= NW_top_corner.Z;
                                 local_LayerThickness += (NW_top_corner.Z - NW_bottom_corner.Z);
 
                                 // Find NE cornerpoints; if the top or bottom cells in the NE corner are undefined, use the highest and lowest defined cells
+                                Index3 NE_topgrid = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, 0);
+                                Point3 NE_topgrid_corner = PetrelGrid.GetPointAtCell(NE_topgrid, Corner.NorthEast, TopOrBase.Top);
+                                // If the top cell is not defined, find the uppermost cell that is
+                                if (Point3.IsNull(NE_topgrid_corner))
+                                {
+                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
+                                    {
+                                        NE_topgrid.K = PetrelGrid_DataCellK;
+                                        NE_topgrid_corner = PetrelGrid.GetPointAtCell(NE_topgrid, Corner.NorthEast, TopOrBase.Top);
+                                        if (!Point3.IsNull(NE_topgrid_corner))
+                                            break;
+                                    }
+                                }
                                 Index3 NE_top = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_TopCellK);
                                 Point3 NE_top_corner = PetrelGrid.GetPointAtCell(NE_top, Corner.NorthEast, TopOrBase.Top);
                                 // If the top cell is not defined, find the uppermost cell that is
@@ -2217,10 +2265,25 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);
                                 PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);
                                 // Update mean depth and thickness variables
+                                local_Current_SurfaceHeight += NE_topgrid_corner.Z;
                                 local_Current_Depth -= NE_top_corner.Z;
                                 local_LayerThickness += (NE_top_corner.Z - NE_bottom_corner.Z);
 
                                 // Find SE cornerpoints; if the top or bottom cells in the SE corner are undefined, use the highest and lowest defined cells
+                                Index3 SE_topgrid = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, 0);
+                                Point3 SE_topgrid_corner = PetrelGrid.GetPointAtCell(SE_topgrid, Corner.SouthEast, TopOrBase.Top);
+                                // If the top cell is not defined, find the uppermost cell that is
+                                if (Point3.IsNull(SE_topgrid_corner))
+                                {
+                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
+                                    {
+                                        SE_topgrid.K = PetrelGrid_DataCellK;
+                                        SE_topgrid_corner = PetrelGrid.GetPointAtCell(SE_topgrid, Corner.SouthEast, TopOrBase.Top);
+                                        if (!Point3.IsNull(SE_topgrid_corner))
+                                            break;
+                                    }
+                                }
                                 Index3 SE_top = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK);
                                 Point3 SE_top_corner = PetrelGrid.GetPointAtCell(SE_top, Corner.SouthEast, TopOrBase.Top);
                                 // If the top cell is not defined, find the uppermost cell that is
@@ -2253,12 +2316,19 @@ namespace DFMGenerator_Ocean
                                 PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);
                                 PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);
                                 // Update mean depth and thickness variables
+                                local_Current_SurfaceHeight += SE_topgrid_corner.Z;
                                 local_Current_Depth -= SE_top_corner.Z;
                                 local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
 
                                 // Calculate the mean current depth of top surface and layer thickness
+                                local_Current_SurfaceHeight /= 4;
                                 local_Current_Depth /= 4;
                                 local_LayerThickness /= 4;
+                                // If the top of the grid is above MSL, add this height to the current depth
+                                // NB If the grid does not extend to the current surface height, this adjustment will need to be made manually by defining a depth of deformation property
+                                if (local_Current_SurfaceHeight > 0)
+                                    local_Current_Depth += local_Current_SurfaceHeight;
+
                                 // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
                                 // In this case we will abort this gridblock and move onto the next
                                 if (double.IsNaN(local_Current_Depth) || double.IsNaN(local_LayerThickness))
@@ -3515,7 +3585,7 @@ namespace DFMGenerator_Ocean
                                             else
                                                 local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                             string strainLoadText = "";
                                             if (overideStressRate && overideShvComponents)
                                                 strainLoadText = string.Format("Initial stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({0}, {1}, {2}, {3}, {4}, {5}), Final stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({6}, {7}, {8}, {9}, {10}, {11})", initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx, finalSxx, finalSyy, finalSzz, finalSxy, finalSyz, finalSzx);
@@ -3547,7 +3617,7 @@ namespace DFMGenerator_Ocean
                                         local_InitialFluidPressure_list.Add(double.NaN);
                                         local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                         PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
 #endif
                                     }
@@ -3672,7 +3742,7 @@ namespace DFMGenerator_Ocean
                                         faultToSouth = true;
                                 }
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 foreach (PointXYZ point in new PointXYZ[] { FractureGrid_SWtop, FractureGrid_NWtop, FractureGrid_NEtop, FractureGrid_SEtop, FractureGrid_SWbottom, FractureGrid_NWbottom, FractureGrid_NEbottom, FractureGrid_SEbottom })
                                 {
                                     if (minX > point.X) minX = point.X;
@@ -3684,6 +3754,10 @@ namespace DFMGenerator_Ocean
                                 }
 
                                 PetrelLogger.InfoOutputWindow("Geometry");
+                                PetrelLogger.InfoOutputWindow(string.Format("SW top of FractureGrid: ({0}, {1}, {2});", SW_topgrid_corner.X, SW_topgrid_corner.Y, SW_topgrid_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("NW top of FractureGrid: ({0}, {1}, {2});", NW_topgrid_corner.X, NW_topgrid_corner.Y, NW_topgrid_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("NE top of FractureGrid: ({0}, {1}, {2});", NE_topgrid_corner.X, NE_topgrid_corner.Y, NE_topgrid_corner.Z));
+                                PetrelLogger.InfoOutputWindow(string.Format("SE top of FractureGrid: ({0}, {1}, {2});", SE_topgrid_corner.X, SE_topgrid_corner.Y, SE_topgrid_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWtop = new PointXYZ({0}, {1}, {2});", SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWbottom = new PointXYZ({0}, {1}, {2});", SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWtop = new PointXYZ({0}, {1}, {2});", NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z));
@@ -3692,7 +3766,7 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ({0}, {1}, {2});", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ({0}, {1}, {2});", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
                                 PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ({0}, {1}, {2});", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Current_Depth));
+                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1}; Surface height = {2}", local_LayerThickness, local_Current_Depth, Math.Max(local_Current_SurfaceHeight, 0)));
 #endif
 
                                 // Set the gridblock cornerpoints
@@ -3751,10 +3825,11 @@ namespace DFMGenerator_Ocean
                                 // Set folder path for output files
                                 gc.PropControl.FolderPath = folderPath;
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 PetrelLogger.InfoOutputWindow("Properties");
                                 PetrelLogger.InfoOutputWindow(string.Format("sv': {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
                                 PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient: {2}, Crack surface energy: {3}, Friction coefficient: {4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
+                                PetrelLogger.InfoOutputWindow("Create gridblock");
                                 PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
@@ -3786,7 +3861,7 @@ namespace DFMGenerator_Ocean
                                     else
                                         gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                     if (local_AbsoluteStressRate is null)
                                     {
                                         string local_EhRate_info;
@@ -3817,7 +3892,7 @@ namespace DFMGenerator_Ocean
                                 else
                                     gc.resetFractures(local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 if (Mode1Only)
                                     PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
                                 else if (Mode2Only)
@@ -4183,7 +4258,7 @@ namespace DFMGenerator_Ocean
 
                                                 // Now we can set the present day stress
                                                 gc.SetPresentDayStressFromStrain(local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
 #endif
@@ -4459,7 +4534,7 @@ namespace DFMGenerator_Ocean
 
                                                 // Now we can set the present day stress
                                                 gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
 #endif
@@ -4773,7 +4848,7 @@ namespace DFMGenerator_Ocean
 
                                                 // Now we can set the present day stress
                                                 gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
 #endif
@@ -4786,14 +4861,14 @@ namespace DFMGenerator_Ocean
 
                                 // Set the fracture aperture control data
                                 gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
 #endif
 
                                 // Add the gridblock to the grid
                                 ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                                 PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
 #endif
 
@@ -4809,7 +4884,7 @@ namespace DFMGenerator_Ocean
                         // Set the DFN generation data
                         DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                         PetrelLogger.InfoOutputWindow("");
                         PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, DFNFileType.{13}, {14}, {15}, {16}, {18}, TimeUnits.{18});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
 #endif
@@ -4857,7 +4932,7 @@ namespace DFMGenerator_Ocean
                             }
                             dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_SITimeUnits_list;
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                             string setIntermediateTimes = "dfn_control.IntermediateOutputTimes = {";
                             foreach (double nextEndTime in DeformationEpisodeEndTimes_SITimeUnits_list)
                                 setIntermediateTimes += string.Format(" {0},", nextEndTime);
@@ -4873,7 +4948,7 @@ namespace DFMGenerator_Ocean
                         // Add the DFNGenerationControl object to the grid
                         ModelGrid.DFNControl = dfn_control;
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_INPUT
                         PetrelLogger.InfoOutputWindow(string.Format("dfn_control.FolderPath = {0};", folderPath));
                         PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.DFNControl = dfn_control;"));
 #endif
@@ -4987,7 +5062,7 @@ namespace DFMGenerator_Ocean
                                     else
                                         outputLabel = "_" + stageNameOverride;
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                     PetrelLogger.InfoOutputWindow("");
                                     PetrelLogger.InfoOutputWindow("Stage" + outputLabel);
 #endif
@@ -5082,8 +5157,9 @@ namespace DFMGenerator_Ocean
                                                     }
                                                     bool writeMacrofractureData = PopulateEmptyGridblocks || (cell_MF_P32_tot > 0);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                     PetrelLogger.InfoOutputWindow("");
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
                                                     PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5094,7 +5170,7 @@ namespace DFMGenerator_Ocean
                                                             for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                 for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                                 {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                     PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5213,8 +5289,9 @@ namespace DFMGenerator_Ocean
                                                             EndTime = stageEndTime;
                                                         }
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5225,7 +5302,7 @@ namespace DFMGenerator_Ocean
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                     for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                                     {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5309,8 +5386,9 @@ namespace DFMGenerator_Ocean
                                                         double ReactivationPotential = fds.PresentDayReactivationPotential;
                                                         double SlipTendency = fds.PresentDaySlipTendency;
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Set {0} dipset {1}", FractureSetNo, DipSetNo));
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5321,7 +5399,7 @@ namespace DFMGenerator_Ocean
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                     for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                                     {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5518,8 +5596,9 @@ namespace DFMGenerator_Ocean
                                                     EndTime = stageEndTime;
                                                 }
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                 PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow("Connectivity data: all sets");
                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5530,7 +5609,7 @@ namespace DFMGenerator_Ocean
                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                             for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                             {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5670,8 +5749,9 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 bool writeMacrofractureData = PopulateEmptyGridblocks || (MF_P32_value > 0);
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                 PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow("Porosity data: all sets");
                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5682,7 +5762,7 @@ namespace DFMGenerator_Ocean
                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                             for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                             {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5859,8 +5939,9 @@ namespace DFMGenerator_Ocean
                                                     }
                                                 }
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                 PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow("Permability tensor: all sets");
                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5873,7 +5954,7 @@ namespace DFMGenerator_Ocean
                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                             for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                             {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5967,8 +6048,9 @@ namespace DFMGenerator_Ocean
                                                 Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
                                                 Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
 
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                 PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow("Stiffness and compliance tensors: all sets");
                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5982,7 +6064,7 @@ namespace DFMGenerator_Ocean
                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                             for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
                                                             {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6031,18 +6113,18 @@ namespace DFMGenerator_Ocean
                             {
                                 // Get the total number of fractures to write and update the progress bar
                                 int totalNoFractures = 0;
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                 int stage = 1;
 #endif
                                 foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                 {
                                     totalNoFractures += (DFN.GlobalDFNMicrofractures.Count + DFN.GlobalDFNMacrofractures.Count);
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                     PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} microfractures", stage, DFN.GlobalDFNMicrofractures.Count));
                                     PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} macrofractures", stage++, DFN.GlobalDFNMacrofractures.Count));
 #endif
                                 }
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                 PetrelLogger.InfoOutputWindow(string.Format("Total {0} fractures", totalNoFractures));
 #endif
 
@@ -6231,7 +6313,7 @@ namespace DFMGenerator_Ocean
                                                             PointXYZ CP2 = segment[1];
                                                             PointXYZ CP3 = segment[2];
                                                             PointXYZ CP4 = segment[3];
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                             foreach (PointXYZ point in new PointXYZ[] { CP1, CP2, CP3, CP4 })
                                                             {
                                                                 if (point.X < minX) point.X = minX;
@@ -6280,7 +6362,7 @@ namespace DFMGenerator_Ocean
                                                             // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
                                                             foreach (PointXYZ CornerPoint in segment)
                                                             {
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                                                                 {
                                                                     if (CornerPoint.X < minX) CornerPoint.X = minX;
                                                                     if (CornerPoint.Y < minY) CornerPoint.Y = minY;
@@ -6640,7 +6722,7 @@ namespace DFMGenerator_Ocean
                                     }
                                 }
                             }
-#if DEBUG_FRACS
+#if DEBUG_FRAC_OUTPUT
                             // Write cornerpoints of each fracture in the explicit DFN to Petrel project
                             using (ITransaction trans = DataManager.NewTransaction())
                             {
