@@ -7299,18 +7299,56 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
-        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, reset the number of fracture sets and create new sets each containing two dip sets (Mode 1 and Mode 2)
+        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new layer-bound and unconfined fracture sets
+        /// </summary>
+        /// <param name="NoLayerBoundFractureSets_in">Number of layer-bound fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax</param>
+        /// <param name="MF_B_in">Initial microfracture density coefficient B for layer-bound fracture sets (/m3)</param>
+        /// <param name="MF_c_in">Initial microfracture distribution coefficient c for layer-bound fracture sets</param>
+        /// <param name="SpecifyMode">Flag to specify fracture mode for layer-bound sets; if true, layer-bound fracture sets will only contain fracture dipsets of the specified mode, otherwise they will contain fracture dipsets for all modes</param>
+        /// <param name="FractureMode_in">Fracture mode; Fracture sets will contain only 1 dip set of specified mode</param>
+        /// <param name="BiazimuthalConjugate_in">Flag to specify biazimuthal conjugate layer-bound fracture dipsets: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions; only valid if SpecifyFractureMode flag is false</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        /// <param name="NoUnconfinedFractureStrikeSets_in">Number of different strike orientations used to create new unconfined fracture sets</param>
+        /// <param name="NoUnconfinedFractureDipSets_in">Number of different dip orientations used to create new unconfined fracture sets</param>
+        /// <param name="NoRaysPerUnconfinedFracture_in">Number of rays comprising each unconfined fracture</param>
+        /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
+        /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
+        /// <param name="UCF_B_in">Initial microfracture density coefficient B for unconfined fracture sets (/m3)</param>
+        /// <param name="UCF_c_in">Initial microfracture distribution coefficient c for unconfined fracture sets</param>
+        private void resetFractures(int NoLayerBoundFractureSets_in, double MF_B_in, double MF_c_in, bool SpecifyMode, FractureMode FractureMode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in,
+            int NoUnconfinedFractureStrikeSets_in, int NoUnconfinedFractureDipSets_in, int NoRaysPerUnconfinedFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double UCF_B_in, double UCF_c_in)
+        {
+            // Clear all existing data
+            ClearFractureData();
+
+            // Create layer-bound fracture sets
+            if (NoLayerBoundFractureSets_in > 0)
+            {
+                if (SpecifyMode)
+                    createSingleModeLayerBoundFractures(NoLayerBoundFractureSets_in, MF_B_in, MF_c_in, FractureMode_in, IncludeReverseFractures_in);
+                else
+                    createMultimodeLayerBoundFractures(NoLayerBoundFractureSets_in, MF_B_in, MF_c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
+            }
+
+            // Create the unconfined fracture sets
+            if (NoUnconfinedFractureStrikeSets_in > 0)
+            {
+                createUnconfinedFractures(NoUnconfinedFractureStrikeSets_in, NoUnconfinedFractureDipSets_in, NoRaysPerUnconfinedFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, UCF_B_in, UCF_c_in);
+            }
+
+            // Repopulate the fracture set arrays
+            ResetFractureSetArrays();
+        }
+        /// <summary>
+        /// Create new layer-bound fracture sets each containing two dip sets (Mode 1 and Mode 2)
         /// </summary>
         /// <param name="NoFractureSets_in">Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public void resetFractures(int NoFractureSets_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
+        private void createMultimodeLayerBoundFractures(int NoFractureSets_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
         {
-            // Clear all existing data
-            ClearFractureData();
-
             // Create new fracture sets
             for (int fs_index = 0; fs_index < NoFractureSets_in; fs_index++)
             {
@@ -7318,30 +7356,29 @@ namespace DFMGenerator_SharedCode
                 Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
                 FractureSets.Add(new_FractureSet);
             }
-
-            // Repopulate the macrofracture termination array
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
-                {
-                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
-                    MFTerminations[I, J] = new double[NoDipsetsJ];
-                    for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
-                        MFTerminations[I, J][fdsJ] = 0;
-                }
         }
         /// <summary>
-        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, reset the number of fracture sets and create new sets each containing only one dip set of specified mode
+        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new layer-bound fracture sets each containing two dip sets (Mode 1 and Mode 2)
+        /// </summary>
+        /// <param name="NoFractureSets_in">Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax</param>
+        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
+        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
+        /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        public void resetLayerBoundFractures(int NoFractureSets_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
+        {
+            resetFractures(NoFractureSets_in, B_in, c_in, false, FractureMode.Mode1, BiazimuthalConjugate_in, IncludeReverseFractures_in, 0, 0, 0, 0, 0, 0, 0);
+        }
+        /// <summary>
+        /// Create new layer-bound fracture sets each containing only one dip set of specified mode
         /// </summary>
         /// <param name="NoFractureSets_in">Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="FractureMode_in">Fracture mode; Fracture sets will contain only 1 dip set of specified mode</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public void resetFractures(int NoFractureSets_in, double B_in, double c_in, FractureMode FractureMode_in, bool IncludeReverseFractures_in)
+        private void createSingleModeLayerBoundFractures(int NoFractureSets_in, double B_in, double c_in, FractureMode FractureMode_in, bool IncludeReverseFractures_in)
         {
-            // Clear all existing data
-            ClearFractureData();
-
             // Fracture dip is vertical for Mode 1 or Mode 3 fractures, inclined (dependent on friction coefficient) for Mode 2 fractures
             double opt_dip = (FractureMode_in == FractureMode.Mode2) ? ((Math.PI / 2) + Math.Atan(MechProps.MuFr)) / 2 : Math.PI / 2;
 
@@ -7352,19 +7389,21 @@ namespace DFMGenerator_SharedCode
                 Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, FractureMode_in, opt_dip, B_in, c_in, IncludeReverseFractures_in);
                 FractureSets.Add(new_FractureSet);
             }
-
-            // Repopulate the macrofracture termination array
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
-                {
-                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
-                    MFTerminations[I, J] = new double[NoDipsetsJ];
-                    for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
-                        MFTerminations[I, J][fdsJ] = 0;
-                }
         }
         /// <summary>
-        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new unconfined fracture sets
+        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new layer-bound fracture sets each containing only one dip set of specified mode
+        /// </summary>
+        /// <param name="NoFractureSets_in">Number of fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax</param>
+        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
+        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
+        /// <param name="FractureMode_in">Fracture mode; Fracture sets will contain only 1 dip set of specified mode</param>
+        /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
+        public void resetLayerBoundFractures(int NoFractureSets_in, double B_in, double c_in, FractureMode FractureMode_in, bool IncludeReverseFractures_in)
+        {
+            resetFractures(NoFractureSets_in, B_in, c_in, true, FractureMode_in, true, IncludeReverseFractures_in, 0, 0, 0, 0, 0, 0, 0);
+        }
+        /// <summary>
+        /// Create new unconfined fracture sets
         /// </summary>
         /// <param name="NoStrikeSets_in">Number of different strike orientations used to create new fracture sets</param>
         /// <param name="NoDipSets_in">Number of different dip orientations used to create new fracture sets</param>
@@ -7373,12 +7412,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double B_in, double c_in)
+        private void createUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double B_in, double c_in)
         {
-            // Clear all existing data
-            ClearFractureData();
-
-            // Create a list of fracture dips
             List<double> dips = new List<double>();
 
             // Add dips
@@ -7437,6 +7472,54 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
+        /// Remove all fractures, explicit and implicit, reset the stress and strain tensors, and create new unconfined fracture sets
+        /// </summary>
+        /// <param name="NoStrikeSets_in">Number of different strike orientations used to create new fracture sets</param>
+        /// <param name="NoDipSets_in">Number of different dip orientations used to create new fracture sets</param>
+        /// <param name="NoRaysPerFracture_in">Number of rays comprising each unconfined fracture</param>
+        /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
+        /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
+        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
+        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
+        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double B_in, double c_in)
+        {
+            resetFractures(0, 0, 0, false, FractureMode.Mode1, false, true, NoStrikeSets_in, NoDipSets_in, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, B_in, c_in);
+        }
+        /// <summary>
+        /// Reset the arrays containing fracture set information, e.g. termination arrays, stress shadow multiplier arrays, etc
+        /// </summary>
+        private void ResetFractureSetArrays()
+        {
+            // Create the azimuthal and strike-slip shear stress shadow multiplier arrays
+            FaaIJ = new double[NoFractureSets, NoFractureSets];
+            FasIJ = new double[NoFractureSets, NoFractureSets];
+            for (int I = 0; I < NoFractureSets; I++)
+                for (int J = 0; J < NoFractureSets; J++)
+                {
+                    if (I == J)
+                    {
+                        FaaIJ[I, J] = 1;
+                        FasIJ[I, J] = 1;
+                    }
+                    else
+                    {
+                        FaaIJ[I, J] = 0;
+                        FasIJ[I, J] = 0;
+                    }
+                }
+
+            // Create the macrofracture termination array
+            MFTerminations = new double[NoFractureSets, NoFractureSets][];
+            for (int I = 0; I < NoFractureSets; I++)
+                for (int J = 0; J < NoFractureSets; J++)
+                {
+                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
+                    MFTerminations[I, J] = new double[NoDipsetsJ];
+                    for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
+                        MFTerminations[I, J][fdsJ] = 0;
+                }
+        }
+        /// <summary>
         /// Clear any existing fracture data in the gridblock
         /// </summary>
         private void ClearFractureData()
@@ -7459,27 +7542,8 @@ namespace DFMGenerator_SharedCode
             FractureSets.Clear();
             UnconfinedFractureSets.Clear();
 
-            // Reset the azimuthal and strike-slip shear stress shadow multiplier arrays, and populate with default values
-            FaaIJ = new double[NoFractureSets, NoFractureSets];
-            FasIJ = new double[NoFractureSets, NoFractureSets];
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
-                {
-                    if (I == J)
-                    {
-                        FaaIJ[I, J] = 1;
-                        FasIJ[I, J] = 1;
-                    }
-                    else
-                    {
-                        FaaIJ[I, J] = 0;
-                        FasIJ[I, J] = 0;
-                    }
-                }
-
-            // Reset the macrofracture termination array
-            // NB we cannot populate this until we have regenerated the fracture sets
-            MFTerminations = new double[NoFractureSets, NoFractureSets][];
+            // Repopulate the fracture set arrays - these will be empty as we have not yet created any fracture sets
+            ResetFractureSetArrays();
         }
         /// <summary>
         /// Set the uniform aperture and size-dependent aperture multipliers for each fracture set
@@ -7594,34 +7658,8 @@ namespace DFMGenerator_SharedCode
             FractureSets = new List<Gridblock_FractureSet>();
             UnconfinedFractureSets = new List<UnconfinedFractureSet>();
 
-            // Create the azimuthal and strike-slip shear stress shadow multiplier arrays
-            FaaIJ = new double[NoFractureSets, NoFractureSets];
-            FasIJ = new double[NoFractureSets, NoFractureSets];
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
-                {
-                    if (I == J)
-                    {
-                        FaaIJ[I, J] = 1;
-                        FasIJ[I, J] = 1;
-                    }
-                    else
-                    {
-                        FaaIJ[I, J] = 0;
-                        FasIJ[I, J] = 0;
-                    }
-                }
-
-            // Create the macrofracture termination array
-            MFTerminations = new double[NoFractureSets, NoFractureSets][];
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
-                {
-                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
-                    MFTerminations[I, J] = new double[NoDipsetsJ];
-                    for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
-                        MFTerminations[I, J][fdsJ] = 0;
-                }
+            // Repopulate the fracture set arrays - these will be empty as we have not yet created any fracture sets
+            ResetFractureSetArrays();
 
             // Create empty lists for the references to all macrofracture segments and unconfined fracture ray segments
             MacrofractureSegments = new List<MacrofractureSegmentHolder>();

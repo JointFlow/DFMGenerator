@@ -3856,20 +3856,23 @@ namespace DFMGenerator_Ocean
 
                                 // Create the fracture sets
                                 if (Mode1Only)
-                                    gc.resetFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
+                                    gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
                                 else if (Mode2Only)
-                                    gc.resetFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
+                                    gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
                                 else
-                                    gc.resetFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
-                                gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
+                                    gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
+                                if (NoUnconfinedFractureStrikeSets > 0)
+                                    gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
 
 #if DEBUG_FRACS
                                 if (Mode1Only)
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
                                 else if (Mode2Only)
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, FractureMode.{2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
                                 else
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetFractures({0}, {1}, {2}, {3});", local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
+                                if (NoUnconfinedFractureStrikeSets > 0)
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, {5}, {6});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution));
 #endif
                                 // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
 
