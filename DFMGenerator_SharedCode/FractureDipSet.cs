@@ -2197,7 +2197,7 @@ namespace DFMGenerator_SharedCode
         // Corrections for fracture length and connectivity must take into account other fracture sets and the host rock, so are made at the gridblock level
         /// <summary>
         /// Get the uncorrected permeability tensor for all current microfractures in this dipset
-        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
+        /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity
         /// </summary>
         /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
         public Tensor2S Total_uF_Permeability()
@@ -2206,7 +2206,7 @@ namespace DFMGenerator_SharedCode
         }
         /// <summary>
         /// Get the uncorrected permeability tensor for all microfractures in this dipset, at the end of a specified previous timestep
-        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
+        /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
         /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
@@ -2289,7 +2289,7 @@ namespace DFMGenerator_SharedCode
             return (powerCoefficient * Math.Pow(fracPermRatio, exponent)) - (logCoefficient * Math.Log(fracPermRatio + Math.Exp((constantFactor - 1) / logCoefficient))) + constantFactor;
         }
         /// <summary>
-        /// Get the corrected permeability tensor for all current microfractures in this dipset
+        /// Get the permebaility tensor for all current microfractures in this dipset, assuming all microfractures are isolated
         /// This assumes microfractures are unconnected and takes into account microfracture size distribution
         /// </summary>
         /// <returns>Tensor2S object representing the uncorrected microfracture permeability</returns>
@@ -2298,7 +2298,7 @@ namespace DFMGenerator_SharedCode
             return Total_uF_Permeability_Corrected(-1);
         }
         /// <summary>
-        /// Get the corrected permeability tensor for all microfractures in this dipset, at the end of a specified previous timestep
+        /// Get the permebaility tensor for all microfractures in this dipset, at the end of a specified previous timestep, assuming all microfractures are isolated 
         /// This assumes microfractures are unconnected and takes into account microfracture size distribution
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
@@ -2412,7 +2412,7 @@ namespace DFMGenerator_SharedCode
         }
         /// <summary>
         /// Get the uncorrected permeability tensor for all current half-macrofractures in this dipset
-        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
+        /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity
         /// </summary>
         /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
         public Tensor2S Total_MF_Permeability()
@@ -2421,7 +2421,7 @@ namespace DFMGenerator_SharedCode
         }
         /// <summary>
         /// Get the uncorrected permeability tensor for all half-macrofractures in this dipset, at the end of a specified previous timestep
-        /// This is based on the Oda (1986) model and assumes fractures of infinite size and connectivity
+        /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
         /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
@@ -2464,7 +2464,7 @@ namespace DFMGenerator_SharedCode
             return permTensor;
         }
         /// <summary>
-        /// Get the corrected permeability tensor for all current half-macrofractures in this dipset
+        /// Get the permeability tensor for all current half-macrofractures in this dipset, corrected for fracture length and connectivity
         /// This takes into account half-macrofracture connectivity and size distribution
         /// </summary>
         /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
@@ -2473,11 +2473,11 @@ namespace DFMGenerator_SharedCode
             return Total_MF_Permeability_Corrected(-1);
         }
         /// <summary>
-        /// Get the corrected permeability tensor for all half-macrofractures in this dipset, at the end of a specified previous timestep
+        /// Get the permeability tensor for all half-macrofractures in this dipset, at the end of a specified previous timestep, corrected for fracture length and connectivity
         /// This takes into account half-macrofracture connectivity and size distribution
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
-        /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
+        /// <returns>Tensor2S object representing the corrected macrofracture permeability</returns>
         public Tensor2S Total_MF_Permeability_Corrected(int Timestep_M)
         {
             bool useCurrentDensityData = (Timestep_M < 0);
@@ -2590,7 +2590,7 @@ namespace DFMGenerator_SharedCode
             // Calculate the length multipliers for different fracture node types
             double LIT_xx = (meanLength * sinStrike * sinStrike) + (meanNonRelayOffset * sinStrike * cosStrike);
             double LIT_yy = (meanLength * cosStrike * cosStrike) + (meanNonRelayOffset * sinStrike * cosStrike);
-            double LIT_xy = (meanLength - meanNonRelayOffset) * sinStrike * cosStrike;
+            double LIT_xy = (meanLength * sinStrike * cosStrike) - (meanNonRelayOffset / 2);
             double LRN_xx = meanLength * sinStrike * sinStrike;
             double LRN_yy = meanLength * cosStrike * cosStrike;
             double LRN_xy = meanLength * sinStrike * cosStrike;

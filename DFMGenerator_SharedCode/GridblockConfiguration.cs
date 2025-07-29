@@ -2809,7 +2809,7 @@ namespace DFMGenerator_SharedCode
             // The network connectivity correction reflects the connectivity and size distribution of the entire fracture network
             switch (PropControl.PermeabilityAlgorithm)
             {
-                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                // The Oda 1985 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
                 // There is therefore no network connectivity correction required, and we can just use the sum of the uncorrected microfracture permeability tensors
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
@@ -2861,7 +2861,7 @@ namespace DFMGenerator_SharedCode
             Tensor2S macrofracturePermeability = new Tensor2S();
             switch (PropControl.PermeabilityAlgorithm)
             {
-                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                // The Oda 1985 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
                         // Get the basic macrofracture permeability tensor
@@ -2911,7 +2911,7 @@ namespace DFMGenerator_SharedCode
             Tensor2S unconfinedFracturePermeability = new Tensor2S();
             switch (PropControl.PermeabilityAlgorithm)
             {
-                // The Oda 1986 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
+                // The Oda 1985 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
                         // Get the basic macrofracture permeability tensor
@@ -2942,7 +2942,7 @@ namespace DFMGenerator_SharedCode
         public Tensor2S TotalFracturePermeability(int Timestep_M)
         {
             // Return the sum of the microfracture, macrofracture and unconfined fracture permeability tensors
-            // For the Oda (1986) algorithm, this gives the same result as if calculated for the combined fracture population
+            // For the Oda (1985) algorithm, this gives the same result as if calculated for the combined fracture population
             // For the Oda corrected (1987) algorithm, the microfractures and macrofractures use different correction factors
             //  - the microfractures use a correction factor based on the trace and anisotropy of the fracture connectivity tensor
             //  - the macrofractures use a correction factor based on the mean number of connections per macrofracture
