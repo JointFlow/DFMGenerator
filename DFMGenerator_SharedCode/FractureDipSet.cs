@@ -2263,11 +2263,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         private double DiscFracturePermeabilityMultiplier(double fracPermRatio)
         {
-            const double exponent = 0.97;
-            const double powerCoefficient = 0.75;
-            //const double logCoefficient = 0.2;
-            const double constantFactor = 1;
-            return (powerCoefficient * Math.Pow(fracPermRatio, exponent)) + constantFactor;
+            return ((2 / 3) * fracPermRatio) + 1;
         }
         /// <summary>
         /// Calculate the ratio of mean permeability of the fracture-controlled fault block to host rock permeability for a spheroidal fracture with maximum aperture in the centre
@@ -2276,11 +2272,9 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         private double SpheroidalFracturePermeabilityMultiplier(double fracPermRatio)
         {
-            const double exponent = 0.505;
-            const double powerCoefficient = 1.2;
-            const double logCoefficient = 0.2;
-            const double constantFactor = 0.25;
-            return (powerCoefficient * Math.Pow(fracPermRatio, exponent)) - (logCoefficient * Math.Log(fracPermRatio + Math.Exp((constantFactor - 1) / logCoefficient))) + constantFactor;
+            const double powerCoefficient = 0.95;
+            const double constantFactor = 1 / (powerCoefficient * powerCoefficient);
+            return powerCoefficient * Math.Sqrt(fracPermRatio * constantFactor);
         }
         /// <summary>
         /// Get the corrected permeability tensor for all current microfractures in this dipset
@@ -2315,12 +2309,11 @@ namespace DFMGenerator_SharedCode
             // Get the fracture multipliers
             // For now this calculation assumes square fractures of uniform (although potentially size-dependent) aperture
             double geometryMultiplier = 1d / 12d;
-            // If the fracture aperture is uniform and independent of fracture size, calculate the fracture permeability now
-            // Otherwise we will get the fracture permeability within each size bin
-            double apertureMultiplier = 0;
+            // Get the fracture aperture type and permeability
+            // If the fracture aperture is uniform and independent of fracture size, the fracture permeability will be a constant kf
+            // Otherwise we will get the permeability in the centre of a fracture of unit radius kf'
             FractureApertureType apertureType = gbc.PropControl.FractureApertureControl;
-            if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
-                apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
+            double apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
             double k_fmax = geometryMultiplier * apertureMultiplier;
             // Host rock permeability
             // For now we will assume host rock permeability is isotropic and ignore host rock kv
@@ -2348,21 +2341,19 @@ namespace DFMGenerator_SharedCode
                 double fracDiameter = 2 * radius;
                 double DP32_bin = DuFP30[r_bin] * Math.PI * radius * radius;
 
-                // If the fracture aperture is size dependent, we will first need to recalculate the maximum fracture permeability for this size bin
-                if ((apertureType == FractureApertureType.SizeDependent) || (apertureType == FractureApertureType.Dynamic))
-                {
-                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(radius) : getMeanMicrofractureAperture(radius, Timestep_M), 3);
-                    k_fmax = geometryMultiplier * apertureMultiplier;
-                }
-
                 // Get the fracture permeability multiplier for this size bin
                 // This represents the ratio of mean permeability of the fracture-controlled fault block to host rock permeability
-                double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
                 double fracPermeabilityMultiplier;
                 if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
+                {
+                    double fracPermRatio = k_fmax / (flowPipeWidthMultiplier * fracDiameter * k_h);
                     fracPermeabilityMultiplier = DiscFracturePermeabilityMultiplier(fracPermRatio);
+                }
                 else
+                {
+                    double fracPermRatio = (k_fmax * fracDiameter * fracDiameter) / (flowPipeWidthMultiplier * k_h);
                     fracPermeabilityMultiplier = SpheroidalFracturePermeabilityMultiplier(fracPermRatio);
+                }
 
                 // If the fracture diameter is shorter than the flow pipe length, calculate permeability of series flow through the fracture and the unfractured pipe
                 double cum_perm_increment;
@@ -2458,7 +2449,7 @@ namespace DFMGenerator_SharedCode
             return permTensor;
         }
         /// <summary>
-        /// Get the corrected permeability tensor for all current half-macrofractures in this dipset
+        /// Get the corrected permeability tensor for all current half-macrofractures in this dipset, taking into account the mean length and connectivity of macrofracture segments
         /// This takes into account half-macrofracture connectivity and size distribution
         /// </summary>
         /// <returns>Tensor2S object representing the uncorrected macrofracture permeability</returns>
@@ -2467,7 +2458,7 @@ namespace DFMGenerator_SharedCode
             return Total_MF_Permeability_Corrected(-1);
         }
         /// <summary>
-        /// Get the corrected permeability tensor for all half-macrofractures in this dipset, at the end of a specified previous timestep
+        /// Get the corrected permeability tensor for all half-macrofractures in this dipset, taking into account the mean length and connectivity of macrofracture segments, at the end of a specified previous timestep
         /// This takes into account half-macrofracture connectivity and size distribution
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep</param>
@@ -2582,12 +2573,12 @@ namespace DFMGenerator_SharedCode
             }
 
             // Calculate the length multipliers for different fracture node types
-            double LIT_xx = (meanLength * sinStrike * sinStrike) + (meanNonRelayOffset * sinStrike * cosStrike);
-            double LIT_yy = (meanLength * cosStrike * cosStrike) + (meanNonRelayOffset * sinStrike * cosStrike);
-            double LIT_xy = (meanLength - meanNonRelayOffset) * sinStrike * cosStrike;
             double LRN_xx = meanLength * sinStrike * sinStrike;
             double LRN_yy = meanLength * cosStrike * cosStrike;
             double LRN_xy = meanLength * sinStrike * cosStrike;
+            double LIT_xx = LRN_xx + Math.Abs(meanNonRelayOffset * sinStrike * cosStrike);
+            double LIT_yy = LRN_yy + Math.Abs(meanNonRelayOffset * sinStrike * cosStrike);
+            double LIT_xy = LRN_xy - (Math.Sign(sinStrike * cosStrike) * meanNonRelayOffset);
 
             // Calculate the resistivity multipliers for different fracture node types
             double RI;
