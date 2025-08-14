@@ -2583,14 +2583,14 @@ namespace DFMGenerator_SharedCode
             // Calculate the resistivity multipliers for different fracture node types
             double RI;
             if (meanNonRelayOffset >= kf_kh)
-                RI = meanLength;
+                RI = double.PositiveInfinity;
             else if ((meanNonRelayOffset / Math.Sqrt(1 - (meanNonRelayOffset / kf_kh))) < meanLength)
                 RI = meanLength + (2 * kf_kh * Math.Sqrt(1 - (meanNonRelayOffset / kf_kh)));
             else
                 RI = kf_kh * ((meanNonRelayOffset / meanLength) + (meanLength / meanNonRelayOffset));
             double RRs;
             if (meanRelayOffset >= kf_kh)
-                RRs = meanLength;
+                RRs = double.PositiveInfinity;
             else if ((meanRelayOffset / Math.Sqrt(1 - (meanRelayOffset / kf_kh))) < meanLength)
                 RRs = meanLength + (2 * kf_kh * Math.Sqrt(1 - (meanRelayOffset / kf_kh)));
             else

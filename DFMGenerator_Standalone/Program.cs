@@ -671,9 +671,9 @@ namespace DFMGenerator_Standalone
             // Flag to calculate and output fracture porosity
             bool CalculateFracturePorosity = true;
             // Flag to calculate and output fracture permeability tensors
-            bool CalculateFracturePermeabilityTensor = false;
+            bool CalculateFracturePermeabilityTensor = true;
             // Algorithm to use for calculating fracture permeability
-            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.Oda1986;
+            PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;
             // Flag to calculate implicit fracture population distribution functions
             bool CalculatePopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
@@ -2651,8 +2651,8 @@ namespace DFMGenerator_Standalone
                     {
                         Tensor2S local_PresentDayEffectiveStress = new Tensor2S(PresentDayEffectiveStress_XX_array[RowNo, ColNo], PresentDayEffectiveStress_YY_array[RowNo, ColNo], PresentDayEffectiveStress_ZZ_array[RowNo, ColNo],
                             PresentDayEffectiveStress_XY_array[RowNo, ColNo], PresentDayEffectiveStress_YZ_array[RowNo, ColNo], PresentDayEffectiveStress_ZX_array[RowNo, ColNo]);
-                        //gc.SetPresentDayStress(local_PresentDayEffectiveStress);
-                        gc.SetPresentDayStressFromStrain(-0.001, 0, 45, 0, double.NaN, double.NaN, double.NaN, double.NaN);
+                        gc.SetPresentDayStress(local_PresentDayEffectiveStress);
+                        //gc.SetPresentDayStressFromStrain(0, 0, 0, 0, double.NaN, double.NaN, double.NaN, double.NaN);
                     }
 
                     // Set the fracture aperture control data

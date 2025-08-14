@@ -3903,6 +3903,11 @@ namespace DFMGenerator_Ocean
                                 // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
 
                                 // If required, define the present day stress
+#if DEBUG_FRAC_INPUT
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
+                                                PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
+#endif
                                 if (UsePresentDayStress)
                                 {
                                     switch (PresentDayStressInput)
@@ -4261,6 +4266,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
+                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
                                             }
                                             break;
@@ -4537,6 +4543,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
+                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
                                             }
                                             break;
@@ -4851,10 +4858,15 @@ namespace DFMGenerator_Ocean
 #if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
+                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
                                             }
                                             break;
                                         default:
+#if DEBUG_FRAC_INPUT
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("Not setting present day stress"));
+#endif
                                             break;
                                     }
                                 }
