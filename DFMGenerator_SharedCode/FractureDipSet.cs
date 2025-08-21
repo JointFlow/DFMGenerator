@@ -2263,7 +2263,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         private double DiscFracturePermeabilityMultiplier(double fracPermRatio)
         {
-            return ((2 / 3) * fracPermRatio) + 1;
+            return ((2d / 3d) * fracPermRatio) + 1;
         }
         /// <summary>
         /// Calculate the ratio of mean permeability of the fracture-controlled fault block to host rock permeability for a spheroidal fracture with maximum aperture in the centre
@@ -2313,7 +2313,11 @@ namespace DFMGenerator_SharedCode
             // If the fracture aperture is uniform and independent of fracture size, the fracture permeability will be a constant kf
             // Otherwise we will get the permeability in the centre of a fracture of unit radius kf'
             FractureApertureType apertureType = gbc.PropControl.FractureApertureControl;
-            double apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
+            double apertureMultiplier;
+            if ((apertureType == FractureApertureType.Uniform) || (apertureType == FractureApertureType.BartonBandis))
+                apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanMicrofractureAperture(1) : getMeanMicrofractureAperture(1, Timestep_M), 3);
+            else
+                apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumMicrofractureAperture(1) : getMaximumMicrofractureAperture(1, Timestep_M), 3);
             double k_fmax = geometryMultiplier * apertureMultiplier;
             // Host rock permeability
             // For now we will assume host rock permeability is isotropic and ignore host rock kv
