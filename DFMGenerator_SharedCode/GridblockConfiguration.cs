@@ -1381,7 +1381,7 @@ namespace DFMGenerator_SharedCode
             bool E_supplied = (E_r > 0);
             if (!E_supplied)
                 E_r = MechProps.E_r;
-            bool Nu_supplied = (Math.Abs(Nu_r) < 1) || (Math.Abs(Nu_r) > 1);
+            bool Nu_supplied = (Nu_r >= 0) && (Nu_r <= 0.5);
             if (!Nu_supplied)
                 Nu_r = MechProps.Nu_r;
             double E_eff = E_r / (1 - Math.Pow(Nu_r, 2));
@@ -7560,6 +7560,8 @@ namespace DFMGenerator_SharedCode
         {
             // The uniform aperture and size-dependent aperture multipliers will be determined by the orientation of the fracture set relative to the minimum horizontal strain azimuth at the present day or at the time of deformation
             double hMinAzi = UsePresentDayStress ? PresentDayStress.GetMinimumHorizontalAzimuth() : Hmin_azimuth;
+            if (double.IsNaN(hMinAzi))
+                hMinAzi = Hmin_azimuth;
 
             foreach (Gridblock_FractureSet fs in FractureSets)
             {
