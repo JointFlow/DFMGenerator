@@ -39,9 +39,9 @@ namespace DFMGenerator_SharedCode
     /// </summary>
     public enum PermeabilityCalculationAlgorithm { Oda1986, OdaCorrected1987, SizeConnectivityCorrected }
     /// <summary>
-    /// Enumerator for the data used to calculate present day effective stress
+    /// Enumerator for the data used to define a stress state
     /// </summary>
-    public enum PresentDayStressFrom { Strain, EffectiveStress, AbsoluteStress }
+    public enum StressStateDefinition { Strain, AbsoluteStress, TerzaghiEffectiveStress, BiotEffectiveStress }
 
     /// <summary>
     /// Class representing an entire gridblock
@@ -1374,7 +1374,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="SigmaEffXY">XY component of Terzaghi effective stress tensor (Pa)</param>
         /// <param name="SigmaEffYZ">YZ component of Terzaghi effective stress tensor (Pa)</param>
         /// <param name="SigmaEffZX">ZX component of Terzaghi effective stress tensor (Pa)</param>
-        public void SetPresentDayStress(double SigmaEffXX, double SigmaEffYY, double SigmaEffZZ, double SigmaEffXY, double SigmaEffYZ, double SigmaEffZX)
+        public void SetPresentDayTerzaghiStress(double SigmaEffXX, double SigmaEffYY, double SigmaEffZZ, double SigmaEffXY, double SigmaEffYZ, double SigmaEffZX)
         {
             SetPresentDayStress(new Tensor2S(SigmaEffXX, SigmaEffYY, SigmaEffZZ, SigmaEffXY, SigmaEffYZ, SigmaEffZX));
         }
@@ -1388,9 +1388,25 @@ namespace DFMGenerator_SharedCode
         /// <param name="SigmaYZ">YZ component of absolute stress tensor (Pa)</param>
         /// <param name="SigmaZX">ZX component of absolute stress tensor (Pa)</param>
         /// <param name="FP">Fluid pressure</param>
-        public void SetPresentDayStress(double SigmaXX, double SigmaYY, double SigmaZZ, double SigmaXY, double SigmaYZ, double SigmaZX, double FP)
+        public void SetPresentDayAbsoluteStress(double SigmaXX, double SigmaYY, double SigmaZZ, double SigmaXY, double SigmaYZ, double SigmaZX, double FP)
         {
             SetPresentDayStress(new Tensor2S(SigmaXX - FP, SigmaYY - FP, SigmaZZ - FP, SigmaXY, SigmaYZ, SigmaZX));
+        }
+        /// <summary>
+        /// Specify the present day Biot effective stress and fluid pressure, to calculate a Terzaghi effective stress tensor to be used when calculating fracture aperture and permeability
+        /// </summary>
+        /// <param name="SigmaXX">XX component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaYY">YY component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaZZ">ZZ component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaXY">XY component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaYZ">YZ component of absolute stress tensor (Pa)</param>
+        /// <param name="SigmaZX">ZX component of absolute stress tensor (Pa)</param>
+        /// <param name="FP">Fluid pressure</param>
+        /// <param name="BiotCoefficient">Biot coefficient</param>
+        public void SetPresentDayBiotStress(double SigmaXX, double SigmaYY, double SigmaZZ, double SigmaXY, double SigmaYZ, double SigmaZX, double FP, double BiotCoefficient)
+        {
+            double stressAdjustment = FP * (1 - BiotCoefficient);
+            SetPresentDayStress(new Tensor2S(SigmaXX - stressAdjustment, SigmaYY - stressAdjustment, SigmaZZ - stressAdjustment, SigmaXY, SigmaYZ, SigmaZX));
         }
         /// <summary>
         /// Specify the present day strain and fluid overpressure, to calculate an effective stress tensor to be used when calculating fracture aperture and permeability
@@ -3592,6 +3608,25 @@ namespace DFMGenerator_SharedCode
                             break;
                     }
                     appliedStrainRate = StressStrain.el_Epsilon_dashed;
+
+                    // Set the compactional strain rate tensor
+                    // NB this will only include thermal effects and stress arching if these are specified in the strain load parameters
+                    double internalFPStressRate = (OneMinusBiot * fluidPressureRate);
+                    double internalTempStressRate = -(ThermalExpansionCoefficient * Kb_r * tempChangeRate);
+                    if (double.IsNaN(internalTempStressRate))
+                        internalTempStressRate = 0;
+                    double internalStressRate = internalFPStressRate + internalTempStressRate;
+                    double internalStressRate_StressArchSupported = stressArchingFactor * ((OneMinusBiot * overpressureRate) - (ThermalExpansionCoefficient * Kb_r * tempChangeRate));
+                    if (double.IsNaN(internalStressRate_StressArchSupported))
+                        internalStressRate_StressArchSupported = 0;
+                    double horizontalCompactionalStrainRate = ((1 - (2 * Nu_r)) / E_r) * internalStressRate;
+                    double verticalCompactionalStrainRate = ((1 - (2 * Nu_r)) / E_r) * internalStressRate_StressArchSupported;
+                    compactionalStrainRate.ComponentAdd(Tensor2SComponents.XX, -horizontalCompactionalStrainRate);
+                    compactionalStrainRate.ComponentAdd(Tensor2SComponents.YY, -horizontalCompactionalStrainRate);
+                    compactionalStrainRate.ComponentAdd(Tensor2SComponents.ZZ, -verticalCompactionalStrainRate);
+
+                    // Set the compactional strain rate tensors in the StressStrain object
+                    StressStrain.el_Epsilon_compactional_dashed = compactionalStrainRate;
                 }
                 else
                 {

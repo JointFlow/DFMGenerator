@@ -87,6 +87,8 @@ namespace DFMGenerator_Ocean
         private void updateUIFromArgs()
         {
             this.Text = args.DeformationEpisode(deformationEpisodeIndex);
+
+            // Static load tab
             UpdateTextBox(args.DeformationEpisodeDuration(deformationEpisodeIndex), unitTextBox_DE_DeformationDuration);
             UpdateComboBox(args.DeformationEpisodeTimeUnits(deformationEpisodeIndex), comboBox_DE_TimeUnits);
             UpdatePropertyPresentationBox(args.EhminAzi(deformationEpisodeIndex), presentationBox_DE_EhminAzi);
@@ -106,19 +108,45 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.AppliedUpliftRate_default(deformationEpisodeIndex), unitTextBox_DE_UpliftRate_default, PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth); // Units contain a time component; label will be set by SetLoadRateUnits()
             UpdateTextBox(args.StressArchingFactor(deformationEpisodeIndex), unitTextBox_DE_StressArchingFactor);
             SetLoadRateUnits();
+
+            // Dynamic load tab
             UpdateCasePresentationBox(args.SimulationCase(deformationEpisodeIndex), presentationBox_DE_SimCase);
-            UpdateGridResultPresentationBox(args.AbsoluteStressXXTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXX);
-            UpdateGridResultPresentationBox(args.AbsoluteStressYYTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYY);
-            UpdateGridResultPresentationBox(args.AbsoluteStressXYTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXY);
-            UpdateGridResultPresentationBox(args.AbsoluteStressZXTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZX);
-            UpdateGridResultPresentationBox(args.AbsoluteStressYZTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYZ);
-            UpdateGridResultPresentationBox(args.AbsoluteStressZZTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZZ);
-            UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_FP);
+            UpdateComboBoxExcludingOption1(args.GetStressStateDefinition(deformationEpisodeIndex), comboBox_DE_StressStateDefinition);
+            // NB either standard grid properties or simulation case results can be input for the dynamic load stress and fluid pressure
+            if (args.AbsoluteStressXXProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.AbsoluteStressXXProperty(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXX);
+            else
+                UpdateGridResultPresentationBox(args.AbsoluteStressXXTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXX);
+            if (args.AbsoluteStressYYProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.AbsoluteStressYYProperty(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYY);
+            else
+                UpdateGridResultPresentationBox(args.AbsoluteStressYYTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYY);
+            if (args.AbsoluteStressXYProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.AbsoluteStressXYProperty(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXY);
+            else
+                UpdateGridResultPresentationBox(args.AbsoluteStressXYTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressXY);
+            if (args.AbsoluteStressZXProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.AbsoluteStressZXProperty(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZX);
+            else
+                UpdateGridResultPresentationBox(args.AbsoluteStressZXTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZX);
+            if (args.AbsoluteStressYZProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.AbsoluteStressYZProperty(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYZ);
+            else
+                UpdateGridResultPresentationBox(args.AbsoluteStressYZTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressYZ);
+            if (args.AbsoluteStressZZProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.AbsoluteStressZZProperty(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZZ);
+            else
+                UpdateGridResultPresentationBox(args.AbsoluteStressZZTimeSeries(deformationEpisodeIndex), presentationBox_DE_AbsoluteStressZZ);
+            if (args.FluidPressureProperty(deformationEpisodeIndex) != null)
+                UpdatePropertyPresentationBox(args.FluidPressureProperty(deformationEpisodeIndex), presentationBox_DE_FP);
+            else
+                UpdateGridResultPresentationBox(args.FluidPressureTimeSeries(deformationEpisodeIndex), presentationBox_DE_FP);
         }
 
         private void updateArgsFromUI()
         {
             // Write data to the argument package
+            // Static load tab
             args.DeformationEpisodeDuration(GetDoubleFromTextBox(unitTextBox_DE_DeformationDuration), deformationEpisodeIndex);
             args.DeformationEpisodeTimeUnits(comboBox_DE_TimeUnits.SelectedIndex, deformationEpisodeIndex);
             args.EhminAzi(presentationBox_DE_EhminAzi.Tag as Property, deformationEpisodeIndex);
@@ -134,14 +162,61 @@ namespace DFMGenerator_Ocean
             args.AppliedTemperatureChange_default(GetDoubleFromTextBox(unitTextBox_DE_TempChange_default), deformationEpisodeIndex);
             args.AppliedUpliftRate_default(GetDoubleFromTextBox(unitTextBox_DE_UpliftRate_default), deformationEpisodeIndex);
             args.StressArchingFactor(GetDoubleFromTextBox(unitTextBox_DE_StressArchingFactor), deformationEpisodeIndex);
+
+            // Dynamic load tab
             args.SimulationCase(presentationBox_DE_SimCase.Tag as Case, deformationEpisodeIndex);
-            args.AbsoluteStressXXTimeSeries(presentationBox_DE_AbsoluteStressXX.Tag as GridResult, deformationEpisodeIndex);
-            args.AbsoluteStressYYTimeSeries(presentationBox_DE_AbsoluteStressYY.Tag as GridResult, deformationEpisodeIndex);
-            args.AbsoluteStressXYTimeSeries(presentationBox_DE_AbsoluteStressXY.Tag as GridResult, deformationEpisodeIndex);
-            args.AbsoluteStressZXTimeSeries(presentationBox_DE_AbsoluteStressZX.Tag as GridResult, deformationEpisodeIndex);
-            args.AbsoluteStressYZTimeSeries(presentationBox_DE_AbsoluteStressYZ.Tag as GridResult, deformationEpisodeIndex);
-            args.AbsoluteStressZZTimeSeries(presentationBox_DE_AbsoluteStressZZ.Tag as GridResult, deformationEpisodeIndex);
-            args.FluidPressureTimeSeries(presentationBox_DE_FP.Tag as GridResult, deformationEpisodeIndex);
+            args.SetStressStateDefinition(comboBox_DE_StressStateDefinition.SelectedIndex + 1, deformationEpisodeIndex);
+            // NB either standard grid properties or simulation case results can be input for the standard elastic and plastic parameters
+            try
+            {
+                Property stressXX = presentationBox_DE_AbsoluteStressXX.Tag as Property;
+                args.AbsoluteStressXXProperty(stressXX, deformationEpisodeIndex);
+                if (stressXX != Property.NullObject)
+                    args.AbsoluteStressXXTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.AbsoluteStressXXTimeSeries(presentationBox_DE_AbsoluteStressXX.Tag as GridResult, deformationEpisodeIndex);
+                Property stressYY = presentationBox_DE_AbsoluteStressYY.Tag as Property;
+                args.AbsoluteStressYYProperty(stressYY, deformationEpisodeIndex);
+                if (stressYY != Property.NullObject)
+                    args.AbsoluteStressYYTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.AbsoluteStressYYTimeSeries(presentationBox_DE_AbsoluteStressYY.Tag as GridResult, deformationEpisodeIndex);
+                Property stressXY = presentationBox_DE_AbsoluteStressXY.Tag as Property;
+                args.AbsoluteStressXYProperty(stressXY, deformationEpisodeIndex);
+                if (stressXY != Property.NullObject)
+                    args.AbsoluteStressXYTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.AbsoluteStressXYTimeSeries(presentationBox_DE_AbsoluteStressXY.Tag as GridResult, deformationEpisodeIndex);
+                Property stressZX = presentationBox_DE_AbsoluteStressZX.Tag as Property;
+                args.AbsoluteStressZXProperty(stressZX, deformationEpisodeIndex);
+                if (stressZX != Property.NullObject)
+                    args.AbsoluteStressZXTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.AbsoluteStressZXTimeSeries(presentationBox_DE_AbsoluteStressZX.Tag as GridResult, deformationEpisodeIndex);
+                Property stressYZ = presentationBox_DE_AbsoluteStressYZ.Tag as Property;
+                args.AbsoluteStressYZProperty(stressYZ, deformationEpisodeIndex);
+                if (stressYZ != Property.NullObject)
+                    args.AbsoluteStressYZTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.AbsoluteStressYZTimeSeries(presentationBox_DE_AbsoluteStressYZ.Tag as GridResult, deformationEpisodeIndex);
+                Property stressZZ = presentationBox_DE_AbsoluteStressZZ.Tag as Property;
+                args.AbsoluteStressZZProperty(stressZZ, deformationEpisodeIndex);
+                if (stressZZ != Property.NullObject)
+                    args.AbsoluteStressZZTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.AbsoluteStressZZTimeSeries(presentationBox_DE_AbsoluteStressZZ.Tag as GridResult, deformationEpisodeIndex);
+                Property FP = presentationBox_DE_FP.Tag as Property;
+                args.FluidPressureProperty(FP, deformationEpisodeIndex);
+                if (FP != Property.NullObject)
+                    args.FluidPressureTimeSeries(null, deformationEpisodeIndex);
+                else
+                    args.FluidPressureTimeSeries(presentationBox_DE_FP.Tag as GridResult, deformationEpisodeIndex);
+            }
+            catch (Exception e)
+            {
+                PetrelLogger.InfoOutputWindow(e.Message);
+                PetrelLogger.InfoOutputWindow(e.StackTrace);
+            }
 
             // Update the deformation episode name
             args.GenerateDeformationEpisodeName(deformationEpisodeIndex, true);
@@ -277,6 +352,12 @@ namespace DFMGenerator_Ocean
             if (index >= cBox.Items.Count) index = cBox.Items.Count - 1;
             cBox.SelectedIndex = index;
         }
+        private void UpdateComboBoxExcludingOption1(int index, Slb.Ocean.Petrel.UI.Controls.ComboBox cBox)
+        {
+            if (index < 1) index = 1;
+            if (index > cBox.Items.Count) index = cBox.Items.Count;
+            cBox.SelectedIndex = index - 1;
+        }
         private double GetDoubleFromTextBox(Slb.Ocean.Petrel.UI.Controls.UnitTextBox tBox)
         {
             try
@@ -311,6 +392,13 @@ namespace DFMGenerator_Ocean
             {
                 return double.NaN;
             }
+        }
+        private bool GetBoolFromComboBox(Slb.Ocean.Petrel.UI.Controls.ComboBox cBox)
+        {
+            if (cBox.SelectedIndex == 0)
+                return false;
+            else
+                return true;
         }
 
         private void SetLoadRateUnits()
@@ -380,44 +468,65 @@ namespace DFMGenerator_Ocean
 
         private void dropTarget_DE_AbsoluteStressXX_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressXX);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_AbsoluteStressXX);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_AbsoluteStressXX);
         }
 
         private void dropTarget_DE_AbsoluteStressYY_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressYY);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_AbsoluteStressYY);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_AbsoluteStressYY);
         }
 
         private void dropTarget_DE_AbsoluteStressXY_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressXY);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_AbsoluteStressXY);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_AbsoluteStressXY);
         }
 
         private void dropTarget_DE_AbsoluteStressZX_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressZX);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_AbsoluteStressZX);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_AbsoluteStressZX);
         }
 
         private void dropTarget_DE_AbsoluteStressYZ_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressYZ);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_AbsoluteStressYZ);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_AbsoluteStressYZ);
         }
 
         private void dropTarget_DE_AbsoluteStressZZ_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_AbsoluteStressZZ);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_AbsoluteStressZZ);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_AbsoluteStressZZ);
         }
 
         private void dropTarget_DE_FP_DragDrop(object sender, DragEventArgs e)
         {
-            GridResult droppedGridResult = e.Data.GetData(typeof(object)) as GridResult;
-            UpdateGridResultPresentationBox(droppedGridResult, presentationBox_DE_FP);
+            object droppedObject = e.Data.GetData(typeof(object));
+            if ((droppedObject != null) && (droppedObject.GetType() == typeof(GridResult)))
+                UpdateGridResultPresentationBox(droppedObject as GridResult, presentationBox_DE_FP);
+            else
+                UpdatePropertyPresentationBox(droppedObject as Property, presentationBox_DE_FP);
         }
 
         private void presentationBox_DE_EhminAzi_KeyDown(object sender, KeyEventArgs e)

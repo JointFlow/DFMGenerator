@@ -130,21 +130,24 @@
     <value>With a static load, fracturing is driven by an applied horizontal strain (specified as a minimum and maximum strain rate and an orientation), fluid overpressure, thermal contraction and/or uplift. Specify the strain orientation and rate, fluid pressure, temperature change or uplift rate as grid properties to model lateral variations in the load data. If no grid property is specified, the model will apply the specified default values to all cells.</value>
   </data>
   <data name="toolTipItem11.Text" xml:space="preserve">
-    <value>With a dynamic load, DFM Generator uses results from a geomechanical simulation to define the load for a deformation episode. To do this, specify a simulation case and the grid property results from that simulation case for the components of the absolute (total) stress tensor and the fluid pressure.</value>
+    <value>With a dynamic load, DFM Generator uses results from a geomechanical simulation to define the load for a deformation episode. This can be in the form of grid property results from a simulation case or standard properties describing the components of the stress tensor and the fluid pressure.</value>
   </data>
-  <data name="toolTipItem12.Text" xml:space="preserve">
-    <value>If only the fluid pressure and ZZ component of the total stress are specified, the static fluid overpressure load and uplift rate will be overridden but the horizontal strain load will be used to calculate the horizontal stress components.</value>
+  <data name="toolTipItem13.Text" xml:space="preserve">
+    <value>Specifying grid property results from a simulation case will also override the specified deformation episode duration, and the deformation episode will be subdivided based on the number of timesteps in the simulation.</value>
   </data>
   <data name="toolTipItem14.Text" xml:space="preserve">
+    <value>If only the fluid pressure and ZZ component of the total stress are specified, the static fluid overpressure load and uplift rate will be overridden but the horizontal strain load will be used to calculate the horizontal stress components.</value>
+  </data>
+  <data name="toolTipItem16.Text" xml:space="preserve">
     <value>If the vertical shear stress components (YZ and ZX) are unspecified, they will be taken as zero and the fracture set will be horizontally symmetrical. If they are specifed, the fracture set will not be horizontally symmetrical.</value>
   </data>
-  <data name="toolTipItem17.Text" xml:space="preserve">
-    <value>Enter the XX, YY, XY, ZX, YZ and ZZ elements of the absolute (total) stress tensor here to override the static horizontal strain load. The effective stress will be adjusted at the start of the deformation episode to match the initial stress in the specified results, and the subsequent effective stress rate will be calculated from the specified result data.</value>
+  <data name="toolTipItem19.Text" xml:space="preserve">
+    <value>Enter the XX, YY, XY, ZX, YZ and ZZ elements of the stress tensor here to override the static horizontal strain load. The stress will be adjusted at the start of the deformation episode to match the initial stress in the specified results, and the subsequent stress rate will be calculated from the specified result data.</value>
   </data>
-  <data name="toolTipItem18.Text" xml:space="preserve">
+  <data name="toolTipItem21.Text" xml:space="preserve">
     <value>NB If only the ZZ component is specified, the static horizontal strain load will be used to calculate horizontal stress. At a minimum the XX, YY and XY components are required to override the static horizontal strain load. The YZ and ZX components will be set to 0 if not specified.</value>
   </data>
-  <data name="toolTipItem19.Text" xml:space="preserve">
+  <data name="toolTipItem22.Text" xml:space="preserve">
     <value>Enter the fluid pressure grid property result here to override the static fluid overpressure rate. The fluid will be adjusted at the start of the deformation episode to match the initial pressure in the specified result, and the subsequent fluid overpressure rate will be taken from the specified result data.</value>
   </data>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
