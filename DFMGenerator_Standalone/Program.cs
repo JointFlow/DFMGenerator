@@ -2610,14 +2610,14 @@ namespace DFMGenerator_Standalone
                         // Add the deformation episode to the deformation episode list in the PropControl object
                         if (local_AbsoluteStressRate is null)
                         {
-                            gc.PropControl.AddDeformationEpisode(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
+                            gc.PropControl.AddDeformationEpisode_StrainLoad(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
 #if DEBUG_FRACS
                             Console.WriteLine(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
 #endif
                         }
                         else
                         {
-                            gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
+                            gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
 #if DEBUG_FRACS
                             string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
                             string local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));

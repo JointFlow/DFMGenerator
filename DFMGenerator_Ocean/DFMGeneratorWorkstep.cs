@@ -215,6 +215,7 @@ namespace DFMGenerator_Ocean
                     double StressArchingFactor = 0;
                     // Duration of the deformation episode; set to -1 to continue until fracture saturation is reached
                     double DeformationEpisodeDuration_GeologicalTimeUnits = -1;
+
                     // Global deformation load parameter lists
                     // These contain one entry for each deformation episode, in order
                     // They will be copied to all gridblocks
@@ -229,7 +230,7 @@ namespace DFMGenerator_Ocean
                     // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
                     List<TimeUnits> DeformationEpisodeTimeUnits_list = new List<TimeUnits>();
                     List<double> TimeUnitConverter_list = new List<double>();
-                    // Load data
+                    // Static load data
                     List<double> EhminAzi_list = new List<double>();
                     List<double> EhminRate_GeologicalTimeUnits_list = new List<double>();
                     List<double> EhmaxRate_GeologicalTimeUnits_list = new List<double>();
@@ -250,7 +251,21 @@ namespace DFMGenerator_Ocean
                     List<bool> UseGridFor_AppliedOverpressureRate_list = new List<bool>();
                     List<bool> UseGridFor_AppliedTemperatureChange_list = new List<bool>();
                     List<bool> UseGridFor_AppliedUpliftRate_list = new List<bool>();
-                    // Sub episode data; used if one of the supplied grid property arguments is a GridPropertyResult object
+                    // Dynamic load data as standard properties
+                    List<StressStateDefinition> StressStateDefinition_list = new List<StressStateDefinition>();
+                    List<bool> UsePropertyFor_Szz_list = new List<bool>();
+                    List<bool> UsePropertyFor_StressTensor_list = new List<bool>();
+                    List<bool> UsePropertyFor_ShvComponents_list = new List<bool>();
+                    List<bool> UsePropertyFor_FluidPressure_list = new List<bool>();
+                    List<Property> Sxx_property_list = new List<Property>();
+                    List<Property> Syy_property_list = new List<Property>();
+                    List<Property> Sxy_property_list = new List<Property>();
+                    List<Property> Szx_property_list = new List<Property>();
+                    List<Property> Syz_property_list = new List<Property>();
+                    List<Property> Szz_property_list = new List<Property>();
+                    List<Property> FluidPressure_property_list = new List<Property>();
+                    // Dynamic load data as simulation results; used if one of the supplied grid property arguments is a GridPropertyResult object
+                    // In this case the deformation episode is split into sub-episodes
                     Case activeCase = null;
                     List<Case> Case_list = new List<Case>();
                     List<bool> SubEpisodesDefined_list = new List<bool>();
@@ -274,8 +289,10 @@ namespace DFMGenerator_Ocean
                     List<List<GridProperty>> Syz_grid_list = new List<List<GridProperty>>();
                     List<List<GridProperty>> Szz_grid_list = new List<List<GridProperty>>();
                     List<List<GridProperty>> FluidPressure_grid_list = new List<List<GridProperty>>();
+                    // Loop through all deformation episodes populating the data arrays
                     for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                     {
+                        // Common data
                         TimeUnits currentEpisodeTimeUnit = (TimeUnits)arguments.DeformationEpisodeTimeUnits(deformationEpisodeNo);
                         double currentEpisodeTimeUnitConverter = 1;
                         DeformationEpisodeTimeUnits_list.Add(currentEpisodeTimeUnit);
@@ -297,11 +314,16 @@ namespace DFMGenerator_Ocean
                         }
                         TimeUnitConverter_list.Add(currentEpisodeTimeUnitConverter);
 
+                        double next_DeformationEpisodeDuration_GeologicalTimeUnits = arguments.DeformationEpisodeDuration(deformationEpisodeNo);
+                        if (double.IsNaN(next_DeformationEpisodeDuration_GeologicalTimeUnits))
+                            next_DeformationEpisodeDuration_GeologicalTimeUnits = DeformationEpisodeDuration_GeologicalTimeUnits;
+                        DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(next_DeformationEpisodeDuration_GeologicalTimeUnits);
+
+                        // Static load data
                         double next_EhminAzi = arguments.EhminAzi_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_EhminAzi))
+                        if (double.IsNaN(next_EhminAzi))
+                            next_EhminAzi = EhminAzi;
                             EhminAzi_list.Add(next_EhminAzi);
-                        else
-                            EhminAzi_list.Add(EhminAzi);
                         Property next_EhminAzi_grid = arguments.EhminAzi(deformationEpisodeNo);
                         if ((next_EhminAzi_grid != null) && (next_EhminAzi_grid.Grid != PetrelGrid))
                         {
@@ -312,10 +334,9 @@ namespace DFMGenerator_Ocean
                         UseGridFor_EhminAzi_list.Add(next_EhminAzi_grid != null);
 
                         double next_EhminRate_GeologicalTimeUnits = arguments.EhminRate_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_EhminRate_GeologicalTimeUnits))
+                        if (double.IsNaN(next_EhminRate_GeologicalTimeUnits))
+                            next_EhminRate_GeologicalTimeUnits = EhminRate_GeologicalTimeUnits;
                             EhminRate_GeologicalTimeUnits_list.Add(next_EhminRate_GeologicalTimeUnits);
-                        else
-                            EhminRate_GeologicalTimeUnits_list.Add(EhminRate_GeologicalTimeUnits);
                         Property next_EhminRate_grid = arguments.EhminRate(deformationEpisodeNo);
                         if ((next_EhminRate_grid != null) && (next_EhminRate_grid.Grid != PetrelGrid))
                         {
@@ -326,10 +347,9 @@ namespace DFMGenerator_Ocean
                         UseGridFor_EhminRate_list.Add(next_EhminRate_grid != null);
 
                         double next_EhmaxRate_GeologicalTimeUnits = arguments.EhmaxRate_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_EhmaxRate_GeologicalTimeUnits))
+                        if (double.IsNaN(next_EhmaxRate_GeologicalTimeUnits))
+                            next_EhmaxRate_GeologicalTimeUnits = EhmaxRate_GeologicalTimeUnits;
                             EhmaxRate_GeologicalTimeUnits_list.Add(next_EhmaxRate_GeologicalTimeUnits);
-                        else
-                            EhmaxRate_GeologicalTimeUnits_list.Add(EhmaxRate_GeologicalTimeUnits);
                         Property next_EhmaxRate_grid = arguments.EhmaxRate(deformationEpisodeNo);
                         if ((next_EhmaxRate_grid != null) && (next_EhmaxRate_grid.Grid != PetrelGrid))
                         {
@@ -340,10 +360,9 @@ namespace DFMGenerator_Ocean
                         UseGridFor_EhmaxRate_list.Add(next_EhmaxRate_grid != null);
 
                         double next_AppliedOverpressureRate_GeologicalTimeUnits = arguments.AppliedOverpressureRate_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_AppliedOverpressureRate_GeologicalTimeUnits))
+                        if (double.IsNaN(next_AppliedOverpressureRate_GeologicalTimeUnits))
+                            next_AppliedOverpressureRate_GeologicalTimeUnits = AppliedOverpressureRate_GeologicalTimeUnits;
                             AppliedOverpressureRate_GeologicalTimeUnits_list.Add(next_AppliedOverpressureRate_GeologicalTimeUnits);
-                        else
-                            AppliedOverpressureRate_GeologicalTimeUnits_list.Add(AppliedOverpressureRate_GeologicalTimeUnits);
                         Property next_AppliedOverpressureRate_grid = arguments.AppliedOverpressureRate(deformationEpisodeNo);
                         if ((next_AppliedOverpressureRate_grid != null) && (next_AppliedOverpressureRate_grid.Grid != PetrelGrid))
                         {
@@ -354,10 +373,9 @@ namespace DFMGenerator_Ocean
                         UseGridFor_AppliedOverpressureRate_list.Add(next_AppliedOverpressureRate_grid != null);
 
                         double next_AppliedTemperatureChange_GeologicalTimeUnits = arguments.AppliedTemperatureChange_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_AppliedTemperatureChange_GeologicalTimeUnits))
+                        if (double.IsNaN(next_AppliedTemperatureChange_GeologicalTimeUnits))
+                            next_AppliedTemperatureChange_GeologicalTimeUnits = AppliedTemperatureChange_GeologicalTimeUnits;
                             AppliedTemperatureChange_GeologicalTimeUnits_list.Add(next_AppliedTemperatureChange_GeologicalTimeUnits);
-                        else
-                            AppliedTemperatureChange_GeologicalTimeUnits_list.Add(AppliedTemperatureChange_GeologicalTimeUnits);
                         Property next_AppliedTemperatureChange_grid = arguments.AppliedTemperatureChange(deformationEpisodeNo);
                         if ((next_AppliedTemperatureChange_grid != null) && (next_AppliedTemperatureChange_grid.Grid != PetrelGrid))
                         {
@@ -368,10 +386,9 @@ namespace DFMGenerator_Ocean
                         UseGridFor_AppliedTemperatureChange_list.Add(next_AppliedTemperatureChange_grid != null);
 
                         double next_AppliedUpliftRate_GeologicalTimeUnits = arguments.AppliedUpliftRate_default(deformationEpisodeNo);
-                        if (!double.IsNaN(next_AppliedUpliftRate_GeologicalTimeUnits))
+                        if (double.IsNaN(next_AppliedUpliftRate_GeologicalTimeUnits))
+                            next_AppliedUpliftRate_GeologicalTimeUnits = AppliedUpliftRate_GeologicalTimeUnits;
                             AppliedUpliftRate_GeologicalTimeUnits_list.Add(next_AppliedUpliftRate_GeologicalTimeUnits);
-                        else
-                            AppliedUpliftRate_GeologicalTimeUnits_list.Add(AppliedUpliftRate_GeologicalTimeUnits);
                         Property next_AppliedUpliftRate_grid = arguments.AppliedUpliftRate(deformationEpisodeNo);
                         if ((next_AppliedUpliftRate_grid != null) && (next_AppliedUpliftRate_grid.Grid != PetrelGrid))
                         {
@@ -382,22 +399,110 @@ namespace DFMGenerator_Ocean
                         UseGridFor_AppliedUpliftRate_list.Add(next_AppliedUpliftRate_grid != null);
 
                         double next_StressArchingFactor_GeologicalTimeUnits = arguments.StressArchingFactor(deformationEpisodeNo);
-                        if (!double.IsNaN(next_StressArchingFactor_GeologicalTimeUnits))
+                        if (double.IsNaN(next_StressArchingFactor_GeologicalTimeUnits))
+                            next_StressArchingFactor_GeologicalTimeUnits = StressArchingFactor;
                             StressArchingFactor_list.Add(next_StressArchingFactor_GeologicalTimeUnits);
-                        else
-                            StressArchingFactor_list.Add(StressArchingFactor);
 
-                        double next_DeformationEpisodeDuration_GeologicalTimeUnits = arguments.DeformationEpisodeDuration(deformationEpisodeNo);
-                        if (!double.IsNaN(next_DeformationEpisodeDuration_GeologicalTimeUnits))
-                            DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(next_DeformationEpisodeDuration_GeologicalTimeUnits);
-                        else
-                            DeformationEpisodeDuration_GeologicalTimeUnits_list.Add(DeformationEpisodeDuration_GeologicalTimeUnits);
+                        // Dynamic load data as standard properties
+                        // Check if the supplied Fluid Pressure or ZZ stress grid property argument is a standard Property object, and the deformation epsidoe duration has been specified
+                        // If so we can use the stress tensor specified by the supplied properties to define the deformation load
+                        bool dynamicLoadFromProperties = arguments.DynamicLoadDefinedFromStandardProperties(deformationEpisodeNo);
+                        if (dynamicLoadFromProperties && !(next_DeformationEpisodeDuration_GeologicalTimeUnits > 0))
+                        {
+                            dynamicLoadFromProperties = false;
+                            PetrelLogger.InfoOutputWindow(string.Format("Deformation episode {0}: the deformation episode duration must be specified in order to define the stress state or fluid pressure at the end of the timestep. Dynamic load data will be ignored.", deformationEpisodeNo + 1));
+                        }
+                        StressStateDefinition currentEpisodeStressStateDefinition = (StressStateDefinition)arguments.GetStressStateDefinition(deformationEpisodeNo);
+                        StressStateDefinition_list.Add(currentEpisodeStressStateDefinition);
+                        if (dynamicLoadFromProperties)
+                        {
+                            // First check if the fluid pressure is defined - this can be used on its own
+                            Property next_FluidPressure_property = arguments.FluidPressureProperty(deformationEpisodeNo);
+                            if ((next_FluidPressure_property != null) && (next_FluidPressure_property.Grid != PetrelGrid))
+                            {
+                                next_FluidPressure_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Fluid pressure property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            bool UsePropertyFor_FluidPressure = (next_FluidPressure_property != null);
+                            FluidPressure_property_list.Add(next_FluidPressure_property);
+                            UsePropertyFor_FluidPressure_list.Add(UsePropertyFor_FluidPressure);
 
+                            // Then check if the vertical stress is defined - this can be used on its own
+                            Property next_Szz_property = arguments.AbsoluteStressZZProperty(deformationEpisodeNo);
+                            if ((next_Szz_property != null) && (next_Szz_property.Grid != PetrelGrid))
+                            {
+                                next_Szz_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Stress tensor ZZ property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            bool UsePropertyFor_Szz = (next_Szz_property != null);
+                            Szz_property_list.Add(next_Szz_property);
+                            UsePropertyFor_Szz_list.Add(UsePropertyFor_Szz);
+
+                            // The full stress tensor will only be used if Szz and all three horizontal tensor components are specified
+                            Property next_Sxx_property = arguments.AbsoluteStressXXProperty(deformationEpisodeNo);
+                            if ((next_Sxx_property != null) && (next_Sxx_property.Grid != PetrelGrid))
+                            {
+                                next_Sxx_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Stress tensor XX property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            Property next_Syy_property = arguments.AbsoluteStressYYProperty(deformationEpisodeNo);
+                            if ((next_Syy_property != null) && (next_Syy_property.Grid != PetrelGrid))
+                            {
+                                next_Syy_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Stress tensor YY property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            Property next_Sxy_property = arguments.AbsoluteStressXYProperty(deformationEpisodeNo);
+                            if ((next_Sxy_property != null) && (next_Sxy_property.Grid != PetrelGrid))
+                            {
+                                next_Sxy_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Stress tensor XY property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            bool UsePropertyFor_StressTensor = UsePropertyFor_Szz && (next_Sxx_property != null) && (next_Syy_property != null) && (next_Sxy_property != null);
+                            Sxx_property_list.Add(next_Sxx_property);
+                            Syy_property_list.Add(next_Syy_property);
+                            Sxy_property_list.Add(next_Sxy_property);
+                            UsePropertyFor_StressTensor_list.Add(UsePropertyFor_StressTensor);
+
+                            // The vertical shear components ZX and YZ will only be used if both are defined; otherwise they will be set to zero
+                            Property next_Szx_property = arguments.AbsoluteStressZXProperty(deformationEpisodeNo);
+                            if ((next_Szx_property != null) && (next_Szx_property.Grid != PetrelGrid))
+                            {
+                                next_Szx_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Stress tensor ZX property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            Property next_Syz_property = arguments.AbsoluteStressYZProperty(deformationEpisodeNo);
+                            if ((next_Syz_property != null) && (next_Syz_property.Grid != PetrelGrid))
+                            {
+                                next_Syz_property = null;
+                                PetrelLogger.InfoOutputWindow(string.Format("Stress tensor YZ property data for deformation episode {0} is defined on a different grid; will use default value instead", deformationEpisodeNo + 1));
+                            }
+                            bool UsePropertyFor_ShvComponents = UsePropertyFor_StressTensor && (next_Szx_property != null) && (next_Syz_property != null);
+                            Szx_property_list.Add(next_Szx_property);
+                            Syz_property_list.Add(next_Syz_property);
+                            UsePropertyFor_ShvComponents_list.Add(UsePropertyFor_ShvComponents);
+                        }
+                        else
+                        {
+                            // Add nulls to the lists of dynamic load properties
+                            Sxx_property_list.Add(null);
+                            Syy_property_list.Add(null);
+                            Sxy_property_list.Add(null);
+                            Szx_property_list.Add(null);
+                            Syz_property_list.Add(null);
+                            Szz_property_list.Add(null);
+                            FluidPressure_property_list.Add(null);
+                            UsePropertyFor_Szz_list.Add(false);
+                            UsePropertyFor_StressTensor_list.Add(false);
+                            UsePropertyFor_ShvComponents_list.Add(false);
+                            UsePropertyFor_FluidPressure_list.Add(false);
+                        }
+
+                        // Dynamic load data as simulation results
                         // Check if one of the supplied grid property arguments is a GridResult object, and if a corresponding simulation case can be found
                         // If so we will subdivide the deformation episode into sub episodes according to the number of elements in the corresponding GridPropertyTimeSeries object
                         bool subEpisodesDefined = false;
                         Case selectedCase = null;
-                        if (arguments.SubdivideDeformationEpisode(deformationEpisodeNo))
+                        if (arguments.DynamicLoadDefinedFromSimulationResults(deformationEpisodeNo))
                         {
                             // Create an output message to specify which simulation case will be used
                             string simCaseMessage = "";
@@ -607,13 +712,6 @@ namespace DFMGenerator_Ocean
                             UseGridPropertyTimeSeriesFor_StressTensor_list.Add(false);
                             UseGridPropertyTimeSeriesFor_ShvComponents_list.Add(false);
                             UseGridPropertyTimeSeriesFor_FluidPressure_list.Add(false);
-                            Szz_result_list.Add(null);
-                            Sxx_result_list.Add(null);
-                            Syy_result_list.Add(null);
-                            Sxy_result_list.Add(null);
-                            Szx_result_list.Add(null);
-                            Syz_result_list.Add(null);
-                            FluidPressure_result_list.Add(null);
                             Szz_grid_list.Add(null);
                             Sxx_grid_list.Add(null);
                             Syy_grid_list.Add(null);
@@ -1130,7 +1228,7 @@ namespace DFMGenerator_Ocean
                     // Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
                     bool UsePresentDayStress = arguments.Argument_UsePresentDayStress;
                     // Flag for the data used to calculate present day effective stress
-                    PresentDayStressFrom PresentDayStressInput = (PresentDayStressFrom)arguments.Argument_PresentDayStressInput;
+                    StressStateDefinition PresentDayStressInput = (StressStateDefinition)arguments.Argument_PresentDayStressInput;
                     // Inputs for calculating stress from strain
                     // Present day minimum horizontal strain
                     double Ehmin_PresentDay = 0;
@@ -1624,6 +1722,7 @@ namespace DFMGenerator_Ocean
                     // Strain orientation and rate
                     for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                     {
+                        string episodeDataContainer = "";
                         generalInputParams += arguments.DeformationEpisode(deformationEpisodeNo) + "\n";
                         if (DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] >= 0)
                             generalInputParams += string.Format(" - Deformation episode duration: {0}{1}\n", DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
@@ -1631,14 +1730,60 @@ namespace DFMGenerator_Ocean
                             generalInputParams += string.Format(" - Episode uses dynamic load data and is subdivided into {0} sub episodes\n", SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo].Count);
                         if (UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo])
                         {
-                            generalInputParams += string.Format(" - Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", Case_list[deformationEpisodeNo].Name, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
+                            episodeDataContainer = Case_list[deformationEpisodeNo].Name;
+                            generalInputParams += string.Format(" - Dynamic stress data from case {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", episodeDataContainer, Sxx_result_list[deformationEpisodeNo].Name, Syy_result_list[deformationEpisodeNo].Name, Szz_result_list[deformationEpisodeNo].Name, Sxy_result_list[deformationEpisodeNo].Name);
                             if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
                                 generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", Syz_result_list[deformationEpisodeNo].Name, Szx_result_list[deformationEpisodeNo].Name);
                             else
                                 generalInputParams += "\n";
                         }
+                        else if (UsePropertyFor_StressTensor_list[deformationEpisodeNo])
+                        {
+                            PropertyCollection TopParent = Szz_property_list[deformationEpisodeNo].PropertyCollection;
+                            while ((TopParent.ParentPropertyCollection != PropertyCollection.NullObject) && (TopParent.ParentPropertyCollection.ParentPropertyCollection != PropertyCollection.NullObject))
+                                TopParent = TopParent.ParentPropertyCollection;
+                            if (TopParent != PropertyCollection.NullObject)
+                                episodeDataContainer = TopParent.Name;
+                            generalInputParams += string.Format(" - Dynamic stress data");
+                            if (episodeDataContainer.Length > 0)
+                                generalInputParams += string.Format(" from {0}", episodeDataContainer);
+                            generalInputParams += string.Format(" as {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", StressStateDefinition_list[deformationEpisodeNo], Sxx_property_list[deformationEpisodeNo].Name, Syy_property_list[deformationEpisodeNo].Name, Szz_property_list[deformationEpisodeNo].Name, Sxy_property_list[deformationEpisodeNo].Name);
+                            if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
+                                generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", Syz_property_list[deformationEpisodeNo].Name, Szx_property_list[deformationEpisodeNo].Name);
+                            else
+                                generalInputParams += "\n";
+                        }
                         else
                         {
+                            if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
+                            {
+                                PropertyCollection TopParent = EhminAzi_grid_list[deformationEpisodeNo].PropertyCollection;
+                                while ((TopParent.ParentPropertyCollection != PropertyCollection.NullObject) && (TopParent.ParentPropertyCollection.ParentPropertyCollection != PropertyCollection.NullObject))
+                                    TopParent = TopParent.ParentPropertyCollection;
+                                if (TopParent != PropertyCollection.NullObject)
+                                    episodeDataContainer = TopParent.Name;
+                            }
+                            else if (UseGridFor_EhminRate_list[deformationEpisodeNo])
+                            {
+                                PropertyCollection TopParent = EhminRate_grid_list[deformationEpisodeNo].PropertyCollection;
+                                while ((TopParent.ParentPropertyCollection != PropertyCollection.NullObject) && (TopParent.ParentPropertyCollection.ParentPropertyCollection != PropertyCollection.NullObject))
+                                    TopParent = TopParent.ParentPropertyCollection;
+                                if (TopParent != PropertyCollection.NullObject)
+                                    episodeDataContainer = TopParent.Name;
+                            }
+                            else if (UseGridFor_EhmaxRate_list[deformationEpisodeNo])
+                            {
+                                PropertyCollection TopParent = EhmaxRate_grid_list[deformationEpisodeNo].PropertyCollection;
+                                while ((TopParent.ParentPropertyCollection != PropertyCollection.NullObject) && (TopParent.ParentPropertyCollection.ParentPropertyCollection != PropertyCollection.NullObject))
+                                    TopParent = TopParent.ParentPropertyCollection;
+                                if (TopParent != PropertyCollection.NullObject)
+                                    episodeDataContainer = TopParent.Name;
+                            }
+                            generalInputParams += string.Format(" - Static load data");
+                            if (episodeDataContainer.Length > 0)
+                                generalInputParams += string.Format(" from {0}\n", episodeDataContainer);
+                            else
+                                generalInputParams += "\n";
                             if (UseGridFor_EhminAzi_list[deformationEpisodeNo])
                                 generalInputParams += string.Format(" - Minimum horizontal strain orientation: {0}, default {1}{2}\n", EhminAzi_grid_list[deformationEpisodeNo].Name, toProjectAzimuthUnits.Convert(EhminAzi_list[deformationEpisodeNo]), AzimuthUnits);
                             else
@@ -1653,6 +1798,8 @@ namespace DFMGenerator_Ocean
                                 generalInputParams += string.Format(" - Maximum horizontal strain rate: {0}/{1}\n", EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo], ProjectTimeUnits_list[deformationEpisodeNo]);
                         }
                         if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
+                            generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                        else if (UsePropertyFor_FluidPressure_list[deformationEpisodeNo])
                             generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format(" - Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
@@ -1681,7 +1828,11 @@ namespace DFMGenerator_Ocean
                         generalInputParams += "Strain data taken from top middle cell in each stack\n";
 
                     // Intermediate outputs
-                    if (NoIntermediateOutputs > 0)
+                    if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
+                    {
+                        generalInputParams += string.Format("Output intermediate DFMs at the end of each deformation episode\n");
+                    }
+                    else if (NoIntermediateOutputs > 0)
                     {
                         generalInputParams += string.Format("Output {0} intermediate DFMs ", NoIntermediateOutputs);
                         if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualTime)
@@ -1689,7 +1840,7 @@ namespace DFMGenerator_Ocean
                         else if (IntermediateOutputIntervalControl == IntermediateOutputInterval.EqualArea)
                             generalInputParams += "at approximately equal stages of fracture growth\n";
                         else
-                            generalInputParams += "at the end of each deformation episode\n";
+                            generalInputParams += "\n";
                     }
 
                     // Mechanical properties
@@ -1793,7 +1944,7 @@ namespace DFMGenerator_Ocean
                         string presentDayStressLabel = "Use present day stress to calculate fracture aperture and reactivation potential, defined from ";
                         switch (PresentDayStressInput)
                         {
-                            case PresentDayStressFrom.Strain:
+                            case StressStateDefinition.Strain:
                                 presentDayStressLabel += string.Format("lithostatic stress and elastic strain:\n");
                                 if (UseGridFor_EhminAzi_PresentDay)
                                     presentDayStressLabel += string.Format(" - Minimum horizontal strain orientation: {0}, default {1}{2}\n", EhminAzi_PresentDay_grid.Name, toProjectAzimuthUnits.Convert(EhminAzi_PresentDay), AzimuthUnits);
@@ -1826,7 +1977,8 @@ namespace DFMGenerator_Ocean
                                 if (!double.IsNaN(InitialStressRelaxation_PresentDay))
                                     presentDayStressLabel += string.Format(" - Override stress relaxation factor with: {0}\n", InitialStressRelaxation_PresentDay);
                                 break;
-                            case PresentDayStressFrom.EffectiveStress:
+                            case StressStateDefinition.TerzaghiEffectiveStress:
+                            case StressStateDefinition.BiotEffectiveStress:
                                 presentDayStressLabel += string.Format("effective stress tensor:\n");
                                 presentDayStressLabel += " - ";
                                 if (UseGridFor_Sxx_PresentDay)
@@ -1859,7 +2011,7 @@ namespace DFMGenerator_Ocean
                                 else
                                     presentDayStressLabel += " - Fluid pressure 0\n";
                                 break;
-                            case PresentDayStressFrom.AbsoluteStress:
+                            case StressStateDefinition.AbsoluteStress:
                                 presentDayStressLabel += string.Format("absolute (total) stress tensor and fluid pressure:\n");
                                 presentDayStressLabel += " - ";
                                 if (UseGridFor_Sxx_PresentDay)
@@ -2901,10 +3053,28 @@ namespace DFMGenerator_Ocean
                                 List<double> local_AppliedUpliftRate_list = new List<double>();
                                 List<double> local_StressArchingFactor_list = new List<double>();
                                 List<double> local_DeformationEpisodeDuration_list = new List<double>();
-                                List<double> local_InitialAbsoluteVerticalStress_list = new List<double>();
-                                List<Tensor2S> local_AbsoluteStressRate_list = new List<Tensor2S>();
-                                List<Tensor2S> local_InitialAbsoluteStress_list = new List<Tensor2S>();
+                                List<StressStateDefinition> local_StressStateDefinition_list = new List<StressStateDefinition>();
+                                List<double> local_InitialVerticalStress_list = new List<double>();
+                                List<Tensor2S> local_StressRateTensor_list = new List<Tensor2S>();
+                                List<Tensor2S> local_InitialStressTensor_list = new List<Tensor2S>();
                                 List<double> local_InitialFluidPressure_list = new List<double>();
+
+                                // Create variables for the initial and final dynamic load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
+                                double initialSzz = double.NaN;
+                                double finalSzz = double.NaN;
+                                double initialSxx = double.NaN;
+                                double finalSxx = double.NaN;
+                                double initialSyy = double.NaN;
+                                double finalSyy = double.NaN;
+                                double initialSxy = double.NaN;
+                                double finalSxy = double.NaN;
+                                double initialSzx = double.NaN;
+                                double finalSzx = double.NaN;
+                                double initialSyz = double.NaN;
+                                double finalSyz = double.NaN;
+                                double initialFluidPressure = double.NaN;
+                                double finalFluidPressure = double.NaN;
+
                                 // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
                                 // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to zero
                                 double local_DefaultFractureAzimuth = 0;
@@ -2916,7 +3086,7 @@ namespace DFMGenerator_Ocean
                                     // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
                                     double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
 
-                                    // Get the deformation load data from the grid as required
+                                    // Get the static deformation load data from the grid as required
                                     // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
                                     // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
                                     double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
@@ -2928,7 +3098,7 @@ namespace DFMGenerator_Ocean
                                     double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
                                     double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
 
-                                    // Get local handles for the properties and flags
+                                    // Get local handles for the static load properties and flags
                                     bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
                                     Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
                                     bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
@@ -3239,8 +3409,354 @@ namespace DFMGenerator_Ocean
                                     if (deformationEpisodeNo == 0)
                                         local_DefaultFractureAzimuth = local_EhminAzi;
 
+                                    // Get the dynamic deformation load data as grid properties if required
+                                    // Get local handles for the Property objects and flags defining the load data for this deformation episode
+                                    bool UsePropertyFor_FluidPressure = UsePropertyFor_FluidPressure_list[deformationEpisodeNo];
+                                    Property local_FluidPressure_property = FluidPressure_property_list[deformationEpisodeNo];
+                                    bool UsePropertyFor_Szz = UsePropertyFor_Szz_list[deformationEpisodeNo];
+                                    Property local_Szz_property = Szz_property_list[deformationEpisodeNo];
+                                    bool UsePropertyFor_StressTensor = UsePropertyFor_StressTensor_list[deformationEpisodeNo];
+                                    Property local_Sxx_property = Sxx_property_list[deformationEpisodeNo];
+                                    Property local_Syy_property = Syy_property_list[deformationEpisodeNo];
+                                    Property local_Sxy_property = Sxy_property_list[deformationEpisodeNo];
+                                    bool UsePropertyFor_ShvComponents = UsePropertyFor_ShvComponents_list[deformationEpisodeNo];
+                                    Property local_Syz_property = Syz_property_list[deformationEpisodeNo];
+                                    Property local_Szx_property = Szx_property_list[deformationEpisodeNo];
+
+                                    // Update the initial load values with the final load values from the previous deformation episode, if defined
+                                    // If these are not defined, we will use the final values (i.e. assume constant stress during the deformation episode)
+                                    initialSzz = finalSzz;
+                                    initialSxx = finalSxx;
+                                    initialSyy = finalSyy;
+                                    initialSxy = finalSxy;
+                                    initialSzx = finalSzx;
+                                    initialSyz = finalSyz;
+                                    initialFluidPressure = finalFluidPressure;
+
+                                    // Get the final stress values
+                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                    {
+                                        // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                        double szz_total = 0;
+                                        int szz_novalues = 0;
+                                        double sxx_total = 0;
+                                        int sxx_novalues = 0;
+                                        double syy_total = 0;
+                                        int syy_novalues = 0;
+                                        double sxy_total = 0;
+                                        int sxy_novalues = 0;
+                                        double szx_total = 0;
+                                        int szx_novalues = 0;
+                                        double syz_total = 0;
+                                        int syz_novalues = 0;
+                                        double fluidPressure_total = 0;
+                                        int fluidPressure_novalues = 0;
+
+                                        // Loop through all the Petrel cells in the gridblock
+                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                {
+                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                    // Update final absolute vertical stress total if defined
+                                                    if (UsePropertyFor_Szz)
+                                                    {
+                                                        double cell_szz = (double)local_Szz_property[cellRef];
+                                                        if (!double.IsNaN(cell_szz))
+                                                        {
+                                                            szz_total += cell_szz;
+                                                            szz_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update final horizontal stress tensor components total if defined
+                                                    if (UsePropertyFor_StressTensor)
+                                                    {
+                                                        double cell_sxx = (double)local_Sxx_property[cellRef];
+                                                        if (!double.IsNaN(cell_sxx))
+                                                        {
+                                                            sxx_total += cell_sxx;
+                                                            sxx_novalues++;
+                                                        }
+                                                        double cell_syy = (double)local_Syy_property[cellRef];
+                                                        if (!double.IsNaN(cell_syy))
+                                                        {
+                                                            syy_total += cell_syy;
+                                                            syy_novalues++;
+                                                        }
+                                                        double cell_sxy = (double)local_Sxy_property[cellRef];
+                                                        if (!double.IsNaN(cell_sxy))
+                                                        {
+                                                            sxy_total += cell_sxy;
+                                                            sxy_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update final vertical shear stress tensor components total if defined
+                                                    if (UsePropertyFor_ShvComponents)
+                                                    {
+                                                        double cell_szx = (double)local_Szx_property[cellRef];
+                                                        if (!double.IsNaN(cell_szx))
+                                                        {
+                                                            szx_total += cell_szx;
+                                                            szx_novalues++;
+                                                        }
+                                                        double cell_syz = (double)local_Syz_property[cellRef];
+                                                        if (!double.IsNaN(cell_syz))
+                                                        {
+                                                            syz_total += cell_syz;
+                                                            syz_novalues++;
+                                                        }
+                                                    }
+
+                                                    // Update final fluid pressure total if defined
+                                                    if (UsePropertyFor_FluidPressure)
+                                                    {
+                                                        double cell_fluidpressure = (double)local_FluidPressure_property[cellRef];
+                                                        if (!double.IsNaN(cell_fluidpressure))
+                                                        {
+                                                            fluidPressure_total += cell_fluidpressure;
+                                                            fluidPressure_novalues++;
+                                                        }
+                                                    }
+                                                }
+
+                                        // Update the gridblock values with the averages - if there is any data to calculate them from
+                                        if (szz_novalues > 0)
+                                            finalSzz = szz_total / (double)szz_novalues;
+                                        if (sxx_novalues > 0)
+                                            finalSxx = sxx_total / (double)sxx_novalues;
+                                        if (syy_novalues > 0)
+                                            finalSyy = syy_total / (double)syy_novalues;
+                                        if (sxy_novalues > 0)
+                                            finalSxy = sxy_total / (double)sxy_novalues;
+                                        if (szx_novalues > 0)
+                                            finalSzx = szx_total / (double)szx_novalues;
+                                        if (syz_novalues > 0)
+                                            finalSyz = syz_total / (double)syz_novalues;
+                                        if (fluidPressure_novalues > 0)
+                                            finalFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
+                                    }
+                                    else // We are taking data from a single cell
+                                    {
+                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                        if (HorizontalUpscalingFactor > 1)
+                                        {
+                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                        }
+
+                                        // Create a reference to the cell from which we will read the data
+                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                        // Update final absolute vertical stress total if defined
+                                        if (UsePropertyFor_Szz)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                double cell_szz = (double)local_Szz_property[cellRef];
+                                                if (!double.IsNaN(cell_szz))
+                                                {
+                                                    finalSzz = cell_szz;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update final horizontal stress totals if defined
+                                        if (UsePropertyFor_StressTensor)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            // We need valid data for all three horizontal components of the strain tensor
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                double cell_sxx = (double)local_Sxx_property[cellRef];
+                                                double cell_syy = (double)local_Syy_property[cellRef];
+                                                double cell_sxy = (double)local_Sxy_property[cellRef];
+                                                if (!double.IsNaN(cell_sxx) && !double.IsNaN(cell_syy) && !double.IsNaN(cell_sxy))
+                                                {
+                                                    finalSxx = cell_sxx;
+                                                    finalSyy = cell_syy;
+                                                    finalSxy = cell_sxy;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update final vertical shear stress totals if defined
+                                        if (UsePropertyFor_ShvComponents)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            // We need valid data for all three horizontal components of the strain tensor
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                double cell_szx = (double)local_Szx_property[cellRef];
+                                                double cell_syz = (double)local_Syz_property[cellRef];
+                                                if (!double.IsNaN(cell_szx) && !double.IsNaN(cell_syz))
+                                                {
+                                                    finalSzx = cell_szx;
+                                                    finalSyz = cell_syz;
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        // Update final fluid pressure total if defined
+                                        if (UsePropertyFor_FluidPressure)
+                                        {
+                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                cellRef.K = PetrelGrid_DataCellK;
+                                                double cell_fluidpressure = (double)local_FluidPressure_property[cellRef];
+                                                if (!double.IsNaN(cell_fluidpressure))
+                                                {
+                                                    finalFluidPressure = cell_fluidpressure;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Calculate the dynamic load rates from standard properties
+                                    // First define null/NaN values for initial vertical stress, fluid pressure and stress tensor, and stress rate tensor
+                                    double local_InitialVerticalStress = double.NaN;
+                                    double local_InitialFluidPressure = double.NaN;
+                                    Tensor2S local_InitialStressTensor = null;
+                                    Tensor2S local_StressRateTensor = null;
+                                    // Next determine if there is sufficient data to calculate the stress rate tensor
+                                    // This can only be done if a timestep duration is defined
+                                    bool overideStressRate = UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz) && !double.IsNaN(finalSxx) && !double.IsNaN(finalSyy) && !double.IsNaN(finalSxy);
+                                    bool overideShvComponents = UsePropertyFor_ShvComponents && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzx) && !double.IsNaN(finalSyz);
+                                    if (overideStressRate)
+                                    {
+                                        double local_szzRate = 0;
+                                        double local_sxxRate = 0;
+                                        double local_syyRate = 0;
+                                        double local_sxyRate = 0;
+                                        double local_szxRate = 0;
+                                        double local_syzRate = 0;
+
+                                        // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
+                                        if (double.IsNaN(initialSzz))
+                                            initialSzz = finalSzz;
+                                        else
+                                            local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSxx))
+                                            initialSxx = finalSxx;
+                                        else
+                                            local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSyy))
+                                            initialSyy = finalSyy;
+                                        else
+                                            local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSxy))
+                                            initialSxy = finalSxy;
+                                        else
+                                            local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                        if (overideShvComponents)
+                                        {
+                                            if (double.IsNaN(initialSzx))
+                                                initialSzx = finalSzx;
+                                            else
+                                                local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                            if (double.IsNaN(initialSyz))
+                                                initialSyz = finalSyz;
+                                            else
+                                                local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                        }
+                                        local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
+                                        local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                    }
+                                    bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
+                                    if (overrideFluidPressure)
+                                    {
+                                        double local_FluidPressureRate = 0;
+                                        if (double.IsNaN(initialFluidPressure))
+                                            initialFluidPressure = finalFluidPressure;
+                                        else
+                                            local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                        local_InitialFluidPressure = initialFluidPressure;
+                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
+                                    }
+                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
+                                    // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
+                                    bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
+                                    if (overrideStressArchingFactor)
+                                    {
+                                        double dSigmazz_dt = 0;
+                                        if (double.IsNaN(initialSzz))
+                                            initialSzz = finalSzz;
+                                        else
+                                            dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                        local_InitialVerticalStress = initialSzz;
+                                        local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                                        // Trim the result so it lies between 0 and 1 inclusive
+                                        if (local_StressArchingFactor < 0)
+                                            local_StressArchingFactor = 0;
+                                        if (local_StressArchingFactor > 1)
+                                            local_StressArchingFactor = 1;
+                                    }
+
+                                    // If the final stress tensor and fluid pressure values are not defined, reset them to NaN so they will not be picked up by the next deformation episode
+                                    if (!overideStressRate)
+                                    {
+                                        finalSxx = double.NaN;
+                                        finalSyy = double.NaN;
+                                        finalSxy = double.NaN;
+                                        finalSzx = double.NaN;
+                                        finalSyz = double.NaN;
+                                        if (!overrideStressArchingFactor)
+                                            finalSzz = double.NaN;
+                                    }
+                                    if (!overrideFluidPressure)
+                                    {
+                                        finalFluidPressure = double.NaN;
+                                    }
+
                                     // Check if the deformation episode is subdivided into sub episodes
-                                    if (SubEpisodesDefined_list[deformationEpisodeNo])
+                                    // If it is not, add the load data for this deformation episode to the deformation episode lists
+                                    if (!SubEpisodesDefined_list[deformationEpisodeNo])
+                                    {
+                                        // Add the strain load data
+                                        local_EhRate_list.Add(Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi));
+                                        local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                        local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                        local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                        local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                        local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+                                        local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
+
+                                        // Add the stress load tensor - this will be null if not defined
+                                        local_StressRateTensor_list.Add(local_StressRateTensor);
+
+                                        // Add values for the inital data - these will be null if not defined
+                                        local_InitialStressTensor_list.Add(local_InitialStressTensor);
+                                        local_InitialFluidPressure_list.Add(local_InitialFluidPressure);
+                                        local_InitialVerticalStress_list.Add(local_InitialVerticalStress);
+
+#if DEBUG_FRAC_INPUT
+                                        if (local_StressRateTensor is null)
+                                            PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
+                                        else
+                                            PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, Initial stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({1}, {2}, {3}, {4}, {5}, {6}), Initial FP {7}, Final stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({8}, {9}, {10}, {11}, {12}, {13}), Final FP {14}", local_DeformationEpisodeDuration, initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx, initialFluidPressure, finalSxx, finalSyy, finalSzz, finalSxy, finalSyz, finalSzx, finalFluidPressure));
+#endif
+                                    }
+                                    // If the deformation episode is subdivided into sub episodes, the dynamic load data takes the form of simulation results
+                                    else
                                     {
                                         // Get the number and durations of the sub episodes
                                         List<double> subEpisodeDuration_list = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
@@ -3259,36 +3775,10 @@ namespace DFMGenerator_Ocean
                                         List<GridProperty> local_Syz_grid_list = Syz_grid_list[deformationEpisodeNo];
                                         bool UseGridFor_ShvComponents = UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo] && (local_Szx_grid_list.Count >= noSubEpisodes + 1) && (local_Syz_grid_list.Count >= noSubEpisodes + 1);
 
-                                        // Create variables for the initial and final load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
-                                        double initialSzz = double.NaN;
-                                        double finalSzz = double.NaN;
-                                        double initialSxx = double.NaN;
-                                        double finalSxx = double.NaN;
-                                        double initialSyy = double.NaN;
-                                        double finalSyy = double.NaN;
-                                        double initialSxy = double.NaN;
-                                        double finalSxy = double.NaN;
-                                        double initialSzx = double.NaN;
-                                        double finalSzx = double.NaN;
-                                        double initialSyz = double.NaN;
-                                        double finalSyz = double.NaN;
-                                        double initialFluidPressure = double.NaN;
-                                        double finalFluidPressure = double.NaN;
-
-                                        // Get local handles for the initial grid properties
-                                        GridProperty local_Szz_grid_initial = (UseGridFor_Szz ? local_Szz_grid_list[0] : null);
-                                        GridProperty local_Sxx_grid_initial = (UseGridFor_StressTensor ? local_Sxx_grid_list[0] : null);
-                                        GridProperty local_Syy_grid_initial = (UseGridFor_StressTensor ? local_Syy_grid_list[0] : null);
-                                        GridProperty local_Sxy_grid_initial = (UseGridFor_StressTensor ? local_Sxy_grid_list[0] : null);
-                                        GridProperty local_Szx_grid_initial = (UseGridFor_ShvComponents ? local_Szx_grid_list[0] : null);
-                                        GridProperty local_Syz_grid_initial = (UseGridFor_ShvComponents ? local_Syz_grid_list[0] : null);
-                                        GridProperty local_FluidPressure_grid_initial = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[0] : null);
-
                                         // Loop through each sub episode; if the deformation episode is not subdivided, we must still go through the loop once to add the deformation episode data to the lists
                                         // NB in the -1 iteration the initial values for the first timestep will be loaded into the final value local variables; these will then be copied into the initial values variables in iteration 0
                                         for (int subEpisodeNo = -1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
                                         {
-
                                             // Update the initial load values with the final load values from the previous sub episode, except for iteration -1
                                             if (subEpisodeNo >= 0)
                                             {
@@ -3518,10 +4008,10 @@ namespace DFMGenerator_Ocean
                                             // Create a tensor for the horizontal strain rate load
                                             Tensor2S local_EhRate = Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi);
                                             // NB This will be overridden if a stress load is defined
-                                            bool overideStressRate = UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz) && !double.IsNaN(initialSxx) && !double.IsNaN(finalSxx) && !double.IsNaN(initialSyy) && !double.IsNaN(finalSyy) && !double.IsNaN(initialSxy) && !double.IsNaN(finalSxy);
-                                            bool overideShvComponents = UseGridFor_ShvComponents && !double.IsNaN(initialSzx) && !double.IsNaN(finalSzx) && !double.IsNaN(initialSyz) && !double.IsNaN(finalSyz);
-                                            Tensor2S local_AbsoluteStressRate = null;
-                                            if (overideStressRate)
+                                            bool overideStressRateForSubEpisode = UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz) && !double.IsNaN(initialSxx) && !double.IsNaN(finalSxx) && !double.IsNaN(initialSyy) && !double.IsNaN(finalSyy) && !double.IsNaN(initialSxy) && !double.IsNaN(finalSxy);
+                                            bool overideShvComponentsForSubEpisode = UseGridFor_ShvComponents && !double.IsNaN(initialSzx) && !double.IsNaN(finalSzx) && !double.IsNaN(initialSyz) && !double.IsNaN(finalSyz);
+                                            Tensor2S local_StressRateForSubEpisode = null;
+                                            if (overideStressRateForSubEpisode)
                                             {
                                                 double local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
                                                 double local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
@@ -3529,15 +4019,15 @@ namespace DFMGenerator_Ocean
                                                 double local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
                                                 double local_szxRate = 0;
                                                 double local_syzRate = 0;
-                                                if (overideShvComponents)
+                                                if (overideShvComponentsForSubEpisode)
                                                 {
                                                     local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
                                                     local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
                                                 }
-                                                local_AbsoluteStressRate = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                                local_StressRateForSubEpisode = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
                                             }
-                                            bool overrideFluidPressure = UseGridFor_FluidPressure && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
-                                            if (overrideFluidPressure)
+                                            bool overrideFluidPressureForSubEpisode = UseGridFor_FluidPressure && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
+                                            if (overrideFluidPressureForSubEpisode)
                                             {
                                                 double local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
                                                 double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
@@ -3545,8 +4035,8 @@ namespace DFMGenerator_Ocean
                                             }
                                             // If the stress tensor is not defined, then changes in the absolute vertical stress within each sub episode will be accounted for through the stress arching factor
                                             // NB The absolute vertical stress will also be reset at the start of each sub episode, so will remain synchronised with the specified input load
-                                            bool overrideStressArchingFactor = UseGridFor_Szz && !UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz);
-                                            if (overrideStressArchingFactor)
+                                            bool overrideStressArchingFactorForSubEpisode = UseGridFor_Szz && !UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz);
+                                            if (overrideStressArchingFactorForSubEpisode)
                                             {
                                                 double dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
                                                 double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
@@ -3567,23 +4057,24 @@ namespace DFMGenerator_Ocean
                                             local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
                                             local_StressArchingFactor_list.Add(local_StressArchingFactor);
                                             local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
-                                            local_AbsoluteStressRate_list.Add(local_AbsoluteStressRate);
+                                            local_StressRateTensor_list.Add(local_StressRateForSubEpisode);
+                                            local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
 
                                             // Add data for the inital data lists
-                                            if (overideStressRate && overideShvComponents)
-                                                local_InitialAbsoluteStress_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx));
-                                            else if (overideStressRate)
-                                                local_InitialAbsoluteStress_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, 0, 0));
+                                            if (overideStressRateForSubEpisode && overideShvComponentsForSubEpisode)
+                                                local_InitialStressTensor_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx));
+                                            else if (overideStressRateForSubEpisode)
+                                                local_InitialStressTensor_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, 0, 0));
                                             else
-                                                local_InitialAbsoluteStress_list.Add(null);
-                                            if (overrideFluidPressure)
+                                                local_InitialStressTensor_list.Add(null);
+                                            if (overrideFluidPressureForSubEpisode)
                                                 local_InitialFluidPressure_list.Add(initialFluidPressure);
                                             else
                                                 local_InitialFluidPressure_list.Add(double.NaN);
-                                            if (overrideStressArchingFactor)
-                                                local_InitialAbsoluteVerticalStress_list.Add(initialSzz);
+                                            if (overrideStressArchingFactorForSubEpisode)
+                                                local_InitialVerticalStress_list.Add(initialSzz);
                                             else
-                                                local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
+                                                local_InitialVerticalStress_list.Add(double.NaN);
 
 #if DEBUG_FRAC_INPUT
                                             string strainLoadText = "";
@@ -3598,29 +4089,7 @@ namespace DFMGenerator_Ocean
                                             PetrelLogger.InfoOutputWindow(string.Format("New deformation sub episode: Duration {0}, {1}, {2}, {3});", local_DeformationEpisodeDuration, strainLoadText, fluidPressureLoadText, safText));
 #endif
                                         }// End get the deformation load data for each sub episode
-                                    }
-                                    else
-                                    {
-                                        // Add the data for this deformation episode to the deformation episode lists
-                                        local_EhRate_list.Add(Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi));
-                                        local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
-                                        local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
-                                        local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
-                                        local_StressArchingFactor_list.Add(local_StressArchingFactor);
-                                        local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
-
-                                        // Add a null value for the absolute stress load tensor
-                                        local_AbsoluteStressRate_list.Add(null);
-
-                                        // Add null values for the inital data lists
-                                        local_InitialAbsoluteStress_list.Add(null);
-                                        local_InitialFluidPressure_list.Add(double.NaN);
-                                        local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
-
-#if DEBUG_FRAC_INPUT
-                                        PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
-#endif
-                                    }
+                                    }// End check if the deformation episode is subdivided into sub episodes
                                 }// End get the deformation load data for each deformation episode
 
                                 // Get the depth at the start of deformation from the grid as required
@@ -3842,46 +4311,95 @@ namespace DFMGenerator_Ocean
 #endif
 
                                 // Add the deformation load data 
+                                // Keep a record of the initial fluid pressure at the start of each timestep in case it is not defined for a stress load
+                                double initialFP = gc.StressStrain.P_f;
                                 for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
                                 {
+                                    // Get load data for this deformation episode from the deformation episode lists
                                     Tensor2S local_EhRate = local_EhRate_list[deformationEpisodeNo];
                                     double local_AppliedOverpressureRate = local_AppliedOverpressureRate_list[deformationEpisodeNo];
                                     double local_AppliedTemperatureChange = local_AppliedTemperatureChange_list[deformationEpisodeNo];
                                     double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
                                     double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
                                     double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
-                                    Tensor2S local_AbsoluteStressRate = local_AbsoluteStressRate_list[deformationEpisodeNo];
-                                    double local_InitialAbsoluteVerticalStress = local_InitialAbsoluteVerticalStress_list[deformationEpisodeNo];
-                                    Tensor2S local_InitialAbsoluteStress = local_InitialAbsoluteStress_list[deformationEpisodeNo];
+                                    Tensor2S local_StressRateTensor = local_StressRateTensor_list[deformationEpisodeNo];
+                                    double local_InitialVerticalStress = local_InitialVerticalStress_list[deformationEpisodeNo];
+                                    Tensor2S local_InitialStressTensor = local_InitialStressTensor_list[deformationEpisodeNo];
                                     double local_InitialFluidPressure = local_InitialFluidPressure_list[deformationEpisodeNo];
+                                    if (local_InitialFluidPressure >= 0)
+                                        initialFP = local_InitialFluidPressure;
 
-                                    // Add the deformation episode to the deformation episode list in the PropControl object
-                                    if (local_AbsoluteStressRate is null)
-                                        gc.PropControl.AddDeformationEpisode(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure);
-                                    else
-                                        gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
+                                    // Get the type of data used to define this deformation episode load
+                                    StressStateDefinition local_StressStateDefinition = local_StressStateDefinition_list[deformationEpisodeNo];
+                                    if (local_StressRateTensor is null)
+                                        local_StressStateDefinition = StressStateDefinition.Strain;
 
+                                    // Add the deformation episode to the deformation episode list in the PropControl object, using the function appropriate to the data type
+                                    switch (local_StressStateDefinition)
+                                    {
+                                        case StressStateDefinition.Strain:
+                                            {
+                                                gc.PropControl.AddDeformationEpisode_StrainLoad(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialVerticalStress, local_InitialFluidPressure);
 #if DEBUG_FRAC_INPUT
-                                    if (local_AbsoluteStressRate is null)
-                                    {
-                                        string local_EhRate_info;
-                                        if (local_EhRate is null)
-                                            local_EhRate_info = "null";
-                                        else
-                                            local_EhRate_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY));
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhRate_info, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure));
-                                    }
-                                    else
-                                    {
-                                        string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
-                                        string local_InitialAbsoluteStress_info;
-                                        if (local_InitialAbsoluteStress is null)
-                                            local_InitialAbsoluteStress_info = "null";
-                                        else
-                                            local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
-                                    }
+                                                string local_EhRate_info;
+                                                if (local_EhRate is null)
+                                                    local_EhRate_info = "null";
+                                                else
+                                                    local_EhRate_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY));
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_StrainLoad({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhRate_info, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialVerticalStress, local_InitialFluidPressure));
 #endif
+                                            }
+                                            break;
+                                        case StressStateDefinition.AbsoluteStress:
+                                            {
+                                                gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP);
+#if DEBUG_FRAC_INPUT
+                                                string local_StressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_StressRateTensor.Component(Tensor2SComponents.XX), local_StressRateTensor.Component(Tensor2SComponents.YY), local_StressRateTensor.Component(Tensor2SComponents.ZZ), local_StressRateTensor.Component(Tensor2SComponents.XY), local_StressRateTensor.Component(Tensor2SComponents.YZ), local_StressRateTensor.Component(Tensor2SComponents.ZX));
+                                                string local_InitialStress_info;
+                                                if (local_InitialStressTensor is null)
+                                                    local_InitialStress_info = "null";
+                                                else
+                                                    local_InitialStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialStressTensor.Component(Tensor2SComponents.XX), local_InitialStressTensor.Component(Tensor2SComponents.YY), local_InitialStressTensor.Component(Tensor2SComponents.ZZ), local_InitialStressTensor.Component(Tensor2SComponents.XY), local_InitialStressTensor.Component(Tensor2SComponents.YZ), local_InitialStressTensor.Component(Tensor2SComponents.ZX));
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad({0}, {1}, {2}, {3}, {4});", local_StressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStress_info, initialFP));
+#endif
+                                            }
+                                            break;
+                                        case StressStateDefinition.TerzaghiEffectiveStress:
+                                            {
+                                                gc.PropControl.AddDeformationEpisode_TerzaghiStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP);
+#if DEBUG_FRAC_INPUT
+                                                string local_StressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_StressRateTensor.Component(Tensor2SComponents.XX), local_StressRateTensor.Component(Tensor2SComponents.YY), local_StressRateTensor.Component(Tensor2SComponents.ZZ), local_StressRateTensor.Component(Tensor2SComponents.XY), local_StressRateTensor.Component(Tensor2SComponents.YZ), local_StressRateTensor.Component(Tensor2SComponents.ZX));
+                                                string local_InitialStress_info;
+                                                if (local_InitialStressTensor is null)
+                                                    local_InitialStress_info = "null";
+                                                else
+                                                    local_InitialStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialStressTensor.Component(Tensor2SComponents.XX), local_InitialStressTensor.Component(Tensor2SComponents.YY), local_InitialStressTensor.Component(Tensor2SComponents.ZZ), local_InitialStressTensor.Component(Tensor2SComponents.XY), local_InitialStressTensor.Component(Tensor2SComponents.YZ), local_InitialStressTensor.Component(Tensor2SComponents.ZX));
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_TerzaghiStressLoad({0}, {1}, {2}, {3}, {4});", local_StressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStress_info, initialFP));
+#endif
+                                            }
+                                            break;
+                                        case StressStateDefinition.BiotEffectiveStress:
+                                            {
+                                                gc.PropControl.AddDeformationEpisode_BiotStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP, local_BiotCoefficient);
+#if DEBUG_FRAC_INPUT
+                                                string local_StressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_StressRateTensor.Component(Tensor2SComponents.XX), local_StressRateTensor.Component(Tensor2SComponents.YY), local_StressRateTensor.Component(Tensor2SComponents.ZZ), local_StressRateTensor.Component(Tensor2SComponents.XY), local_StressRateTensor.Component(Tensor2SComponents.YZ), local_StressRateTensor.Component(Tensor2SComponents.ZX));
+                                                string local_InitialStress_info;
+                                                if (local_InitialStressTensor is null)
+                                                    local_InitialStress_info = "null";
+                                                else
+                                                    local_InitialStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialStressTensor.Component(Tensor2SComponents.XX), local_InitialStressTensor.Component(Tensor2SComponents.YY), local_InitialStressTensor.Component(Tensor2SComponents.ZZ), local_InitialStressTensor.Component(Tensor2SComponents.XY), local_InitialStressTensor.Component(Tensor2SComponents.YZ), local_InitialStressTensor.Component(Tensor2SComponents.ZX));
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_BiotStressLoad({0}, {1}, {2}, {3}, {4}, {5});", local_StressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStress_info, initialFP, local_BiotCoefficient));
+#endif
+                                            }
+                                            break;
+                                        default:
+                                            PetrelLogger.InfoOutputWindow(string.Format("No load defined for deformation episode {0}", deformationEpisodeNo));
+                                            break;
+                                    }
+
+                                    // Update the record of the initial fluid pressure
+                                    initialFP += (local_AppliedOverpressureRate * ((local_DeformationEpisodeDuration > 0) ? local_DeformationEpisodeDuration : 0));
+
                                 }// End add the deformation load data
 
                                 // Create the fracture sets
@@ -3912,7 +4430,7 @@ namespace DFMGenerator_Ocean
                                 {
                                     switch (PresentDayStressInput)
                                     {
-                                        case PresentDayStressFrom.Strain:
+                                        case StressStateDefinition.Strain:
                                             {
                                                 // Get the present day strain and fluid overpressure from the grid as required
                                                 // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
@@ -4270,284 +4788,9 @@ namespace DFMGenerator_Ocean
 #endif
                                             }
                                             break;
-                                        case PresentDayStressFrom.EffectiveStress:
-                                            {
-                                                // Get the present day effective stress from the grid as required
-                                                // This will depend on whether we are averaging the stress properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock
-                                                // By default these will be set to zero, since default values are not specified by the user 
-                                                double local_Sxx_PresentDay = 0;
-                                                double local_Syy_PresentDay = 0;
-                                                double local_Szz_PresentDay = 0;
-                                                double local_Sxy_PresentDay = 0;
-                                                double local_Syz_PresentDay = 0;
-                                                double local_Szx_PresentDay = 0;
-
-                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                                {
-                                                    // Create local variables for running total and number of datapoints for each property
-                                                    double Sxx_PresentDay_total = 0;
-                                                    int Sxx_PresentDay_novalues = 0;
-                                                    double Syy_PresentDay_total = 0;
-                                                    int Syy_PresentDay_novalues = 0;
-                                                    double Szz_PresentDay_total = 0;
-                                                    int Szz_PresentDay_novalues = 0;
-                                                    double Sxy_PresentDay_total = 0;
-                                                    int Sxy_PresentDay_novalues = 0;
-                                                    double Syz_PresentDay_total = 0;
-                                                    int Syz_PresentDay_novalues = 0;
-                                                    double Szx_PresentDay_total = 0;
-                                                    int Szx_PresentDay_novalues = 0;
-
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                            {
-                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Update XX stress component total if defined
-                                                                if (UseGridFor_Sxx_PresentDay)
-                                                                {
-                                                                    double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
-                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                                    if (convertFromGeneral_Sxx_PresentDay)
-                                                                        cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
-                                                                    if (!double.IsNaN(cell_Sxx_PresentDay))
-                                                                    {
-                                                                        Sxx_PresentDay_total += cell_Sxx_PresentDay;
-                                                                        Sxx_PresentDay_novalues++;
-                                                                    }
-                                                                }
-
-                                                                // Update YY stress component total if defined
-                                                                if (UseGridFor_Syy_PresentDay)
-                                                                {
-                                                                    double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
-                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                                    if (convertFromGeneral_Syy_PresentDay)
-                                                                        cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
-                                                                    if (!double.IsNaN(cell_Syy_PresentDay))
-                                                                    {
-                                                                        Syy_PresentDay_total += cell_Syy_PresentDay;
-                                                                        Syy_PresentDay_novalues++;
-                                                                    }
-                                                                }
-
-                                                                // Update ZZ stress component total if defined
-                                                                if (UseGridFor_Szz_PresentDay)
-                                                                {
-                                                                    double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
-                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                                    if (convertFromGeneral_Szz_PresentDay)
-                                                                        cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
-                                                                    if (!double.IsNaN(cell_Szz_PresentDay))
-                                                                    {
-                                                                        Szz_PresentDay_total += cell_Szz_PresentDay;
-                                                                        Szz_PresentDay_novalues++;
-                                                                    }
-                                                                }
-
-                                                                // Update XY stress component total if defined
-                                                                if (UseGridFor_Sxy_PresentDay)
-                                                                {
-                                                                    double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
-                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                                    if (convertFromGeneral_Sxy_PresentDay)
-                                                                        cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
-                                                                    if (!double.IsNaN(cell_Sxy_PresentDay))
-                                                                    {
-                                                                        Sxy_PresentDay_total += cell_Sxy_PresentDay;
-                                                                        Sxy_PresentDay_novalues++;
-                                                                    }
-                                                                }
-
-                                                                // Update YZ stress component total if defined
-                                                                if (UseGridFor_Syz_PresentDay)
-                                                                {
-                                                                    double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
-                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                                    if (convertFromGeneral_Syz_PresentDay)
-                                                                        cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
-                                                                    if (!double.IsNaN(cell_Syz_PresentDay))
-                                                                    {
-                                                                        Syz_PresentDay_total += cell_Syz_PresentDay;
-                                                                        Syz_PresentDay_novalues++;
-                                                                    }
-                                                                }
-
-                                                                // Update ZX stress component total if defined
-                                                                if (UseGridFor_Szx_PresentDay)
-                                                                {
-                                                                    double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
-                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                                    if (convertFromGeneral_Szx_PresentDay)
-                                                                        cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
-                                                                    if (!double.IsNaN(cell_Szx_PresentDay))
-                                                                    {
-                                                                        Szx_PresentDay_total += cell_Szx_PresentDay;
-                                                                        Szx_PresentDay_novalues++;
-                                                                    }
-                                                                }
-
-                                                            }
-
-                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                                    if (Sxx_PresentDay_novalues > 0)
-                                                        local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
-                                                    if (Syy_PresentDay_novalues > 0)
-                                                        local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
-                                                    if (Szz_PresentDay_novalues > 0)
-                                                        local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
-                                                    if (Sxy_PresentDay_novalues > 0)
-                                                        local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
-                                                    if (Syz_PresentDay_novalues > 0)
-                                                        local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
-                                                    if (Szx_PresentDay_novalues > 0)
-                                                        local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
-                                                }
-                                                else // We are taking data from a single cell
-                                                {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
-                                                    // Create a reference to the cell from which we will read the data
-                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                                    // Update XX stress component total if defined
-                                                    if (UseGridFor_Sxx_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Sxx_PresentDay)
-                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
-                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
-                                                            {
-                                                                local_Sxx_PresentDay = cell_Sxx_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update YY stress component total if defined
-                                                    if (UseGridFor_Syy_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Syy_PresentDay)
-                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
-                                                            if (!double.IsNaN(cell_Syy_PresentDay))
-                                                            {
-                                                                local_Syy_PresentDay = cell_Syy_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update ZZ stress component total if defined
-                                                    if (UseGridFor_Szz_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Szz_PresentDay)
-                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
-                                                            if (!double.IsNaN(cell_Szz_PresentDay))
-                                                            {
-                                                                local_Szz_PresentDay = cell_Szz_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update XY stress component total if defined
-                                                    if (UseGridFor_Sxy_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Sxy_PresentDay)
-                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
-                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
-                                                            {
-                                                                local_Sxy_PresentDay = cell_Sxy_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update YZ stress component total if defined
-                                                    if (UseGridFor_Syz_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Syz_PresentDay)
-                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
-                                                            if (!double.IsNaN(cell_Syz_PresentDay))
-                                                            {
-                                                                local_Syz_PresentDay = cell_Syz_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update ZX stress component total if defined
-                                                    if (UseGridFor_Szx_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Szx_PresentDay)
-                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
-                                                            if (!double.IsNaN(cell_Szx_PresentDay))
-                                                            {
-                                                                local_Szx_PresentDay = cell_Szx_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                // End get the present day effective stress from the grid as required
-
-                                                // Now we can set the present day stress
-                                                gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
-#if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
-#endif
-                                            }
-                                            break;
-                                        case PresentDayStressFrom.AbsoluteStress:
+                                        case StressStateDefinition.AbsoluteStress:
+                                        case StressStateDefinition.TerzaghiEffectiveStress:
+                                        case StressStateDefinition.BiotEffectiveStress:
                                             {
                                                 // Get the present day absolute stress and fluid pressure from the grid as required
                                                 // This will depend on whether we are averaging the stress and fluid pressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
@@ -4853,20 +5096,43 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 // End get the present day absolute stress and fluid pressure from the grid as required
 
-                                                // Now we can set the present day stress
-                                                gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
+                                                // Now we can set the present day stress, depending on the stress type selected
+                                                if (PresentDayStressInput == StressStateDefinition.AbsoluteStress)
+                                                {
+                                                    gc.SetPresentDayAbsoluteStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
 #if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+                                                    PetrelLogger.InfoOutputWindow("");
+                                                    PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayAbsoluteStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
+                                                }
+                                                else if (PresentDayStressInput == StressStateDefinition.TerzaghiEffectiveStress)
+                                                {
+                                                    gc.SetPresentDayTerzaghiStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
+#if DEBUG_FRAC_INPUT
+                                                    PetrelLogger.InfoOutputWindow("");
+                                                    PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayTerzaghiStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+#endif
+                                                }
+                                                else if (PresentDayStressInput == StressStateDefinition.BiotEffectiveStress)
+                                                {
+                                                    gc.SetPresentDayBiotStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient);
+#if DEBUG_FRAC_INPUT
+                                                    PetrelLogger.InfoOutputWindow("");
+                                                    PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayBiotStress({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient));
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+#endif
+                                                }
                                             }
                                             break;
                                         default:
+                                            {
 #if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("Not setting present day stress"));
 #endif
+                                            }
                                             break;
                                     }
                                 }
@@ -7087,13 +7353,21 @@ namespace DFMGenerator_Ocean
             private Droid argument_AppliedUpliftRate;
             private double argument_StressArchingFactor = 0;
             private Case argument_SimulationCase;
-            private GridResult argument_AbsoluteStressXXTimeSeries;
-            private GridResult argument_AbsoluteStressYYTimeSeries;
-            private GridResult argument_AbsoluteStressXYTimeSeries;
-            private GridResult argument_AbsoluteStressZXTimeSeries;
-            private GridResult argument_AbsoluteStressYZTimeSeries;
-            private GridResult argument_AbsoluteStressZZTimeSeries;
+            private GridResult argument_StressXXTimeSeries;
+            private GridResult argument_StressYYTimeSeries;
+            private GridResult argument_StressXYTimeSeries;
+            private GridResult argument_StressZXTimeSeries;
+            private GridResult argument_StressYZTimeSeries;
+            private GridResult argument_StressZZTimeSeries;
             private GridResult argument_FluidPressureTimeSeries;
+            private Droid argument_StressXXProperty;
+            private Droid argument_StressYYProperty;
+            private Droid argument_StressXYProperty;
+            private Droid argument_StressZXProperty;
+            private Droid argument_StressYZProperty;
+            private Droid argument_StressZZProperty;
+            private Droid argument_FluidPressureProperty;
+            private int argument_StressStateDefinition = 1;
             // The argument variables for the second deformation episode are set to default values
             private string argument_DeformationEpisode1 = "";
             private double argument_DeformationEpisodeDuration1 = double.NaN;
@@ -7112,13 +7386,21 @@ namespace DFMGenerator_Ocean
             private Droid argument_AppliedUpliftRate1;
             private double argument_StressArchingFactor1 = 0;
             private Case argument_SimulationCase1;
-            private GridResult argument_AbsoluteStressXXTimeSeries1;
-            private GridResult argument_AbsoluteStressYYTimeSeries1;
-            private GridResult argument_AbsoluteStressXYTimeSeries1;
-            private GridResult argument_AbsoluteStressZXTimeSeries1;
-            private GridResult argument_AbsoluteStressYZTimeSeries1;
-            private GridResult argument_AbsoluteStressZZTimeSeries1;
+            private GridResult argument_StressXXTimeSeries1;
+            private GridResult argument_StressYYTimeSeries1;
+            private GridResult argument_StressXYTimeSeries1;
+            private GridResult argument_StressZXTimeSeries1;
+            private GridResult argument_StressYZTimeSeries1;
+            private GridResult argument_StressZZTimeSeries1;
             private GridResult argument_FluidPressureTimeSeries1;
+            private Droid argument_StressXXProperty1;
+            private Droid argument_StressYYProperty1;
+            private Droid argument_StressXYProperty1;
+            private Droid argument_StressZXProperty1;
+            private Droid argument_StressYZProperty1;
+            private Droid argument_StressZZProperty1;
+            private Droid argument_FluidPressureProperty1;
+            private int argument_StressStateDefinition1 = 1;
             // The argument variables for the third deformation episode are set to default values
             private string argument_DeformationEpisode2 = "";
             private double argument_DeformationEpisodeDuration2 = double.NaN;
@@ -7137,13 +7419,21 @@ namespace DFMGenerator_Ocean
             private Droid argument_AppliedUpliftRate2;
             private double argument_StressArchingFactor2 = 0;
             private Case argument_SimulationCase2;
-            private GridResult argument_AbsoluteStressXXTimeSeries2;
-            private GridResult argument_AbsoluteStressYYTimeSeries2;
-            private GridResult argument_AbsoluteStressXYTimeSeries2;
-            private GridResult argument_AbsoluteStressZXTimeSeries2;
-            private GridResult argument_AbsoluteStressYZTimeSeries2;
-            private GridResult argument_AbsoluteStressZZTimeSeries2;
+            private GridResult argument_StressXXTimeSeries2;
+            private GridResult argument_StressYYTimeSeries2;
+            private GridResult argument_StressXYTimeSeries2;
+            private GridResult argument_StressZXTimeSeries2;
+            private GridResult argument_StressYZTimeSeries2;
+            private GridResult argument_StressZZTimeSeries2;
             private GridResult argument_FluidPressureTimeSeries2;
+            private Droid argument_StressXXProperty2;
+            private Droid argument_StressYYProperty2;
+            private Droid argument_StressXYProperty2;
+            private Droid argument_StressZXProperty2;
+            private Droid argument_StressYZProperty2;
+            private Droid argument_StressZZProperty2;
+            private Droid argument_FluidPressureProperty2;
+            private int argument_StressStateDefinition2 = 1;
             // The argument variables for the fourth deformation episode are set to default values
             private string argument_DeformationEpisode3 = "";
             private double argument_DeformationEpisodeDuration3 = double.NaN;
@@ -7162,13 +7452,21 @@ namespace DFMGenerator_Ocean
             private Droid argument_AppliedUpliftRate3;
             private double argument_StressArchingFactor3 = 0;
             private Case argument_SimulationCase3;
-            private GridResult argument_AbsoluteStressXXTimeSeries3;
-            private GridResult argument_AbsoluteStressYYTimeSeries3;
-            private GridResult argument_AbsoluteStressXYTimeSeries3;
-            private GridResult argument_AbsoluteStressZXTimeSeries3;
-            private GridResult argument_AbsoluteStressYZTimeSeries3;
-            private GridResult argument_AbsoluteStressZZTimeSeries3;
+            private GridResult argument_StressXXTimeSeries3;
+            private GridResult argument_StressYYTimeSeries3;
+            private GridResult argument_StressXYTimeSeries3;
+            private GridResult argument_StressZXTimeSeries3;
+            private GridResult argument_StressYZTimeSeries3;
+            private GridResult argument_StressZZTimeSeries3;
             private GridResult argument_FluidPressureTimeSeries3;
+            private Droid argument_StressXXProperty3;
+            private Droid argument_StressYYProperty3;
+            private Droid argument_StressXYProperty3;
+            private Droid argument_StressZXProperty3;
+            private Droid argument_StressYZProperty3;
+            private Droid argument_StressZZProperty3;
+            private Droid argument_FluidPressureProperty3;
+            private int argument_StressStateDefinition3 = 1;
             // The argument variables for the fifth deformation episode are set to default values
             private string argument_DeformationEpisode4 = "";
             private double argument_DeformationEpisodeDuration4 = double.NaN;
@@ -7187,13 +7485,21 @@ namespace DFMGenerator_Ocean
             private Droid argument_AppliedUpliftRate4;
             private double argument_StressArchingFactor4 = 0;
             private Case argument_SimulationCase4;
-            private GridResult argument_AbsoluteStressXXTimeSeries4;
-            private GridResult argument_AbsoluteStressYYTimeSeries4;
-            private GridResult argument_AbsoluteStressXYTimeSeries4;
-            private GridResult argument_AbsoluteStressZXTimeSeries4;
-            private GridResult argument_AbsoluteStressYZTimeSeries4;
-            private GridResult argument_AbsoluteStressZZTimeSeries4;
+            private GridResult argument_StressXXTimeSeries4;
+            private GridResult argument_StressYYTimeSeries4;
+            private GridResult argument_StressXYTimeSeries4;
+            private GridResult argument_StressZXTimeSeries4;
+            private GridResult argument_StressYZTimeSeries4;
+            private GridResult argument_StressZZTimeSeries4;
             private GridResult argument_FluidPressureTimeSeries4;
+            private Droid argument_StressXXProperty4;
+            private Droid argument_StressYYProperty4;
+            private Droid argument_StressXYProperty4;
+            private Droid argument_StressZXProperty4;
+            private Droid argument_StressYZProperty4;
+            private Droid argument_StressZZProperty4;
+            private Droid argument_FluidPressureProperty4;
+            private int argument_StressStateDefinition4 = 1;
             // Subsequent deformation episodes will be stored in List objects - these will not be saved if they are part of a workflow
             private List<string> argument_DeformationEpisode_extras = new List<string>();
             private List<double> argument_DeformationEpisodeDuration_extras = new List<double>();
@@ -7212,13 +7518,21 @@ namespace DFMGenerator_Ocean
             private List<Droid> argument_AppliedUpliftRate_extras = new List<Droid>();
             private List<double> argument_StressArchingFactor_extras = new List<double>();
             private List<Case> argument_SimulationCase_extras = new List<Case>();
-            private List<GridResult> argument_AbsoluteStressXXTimeSeries_extras = new List<GridResult>();
-            private List<GridResult> argument_AbsoluteStressYYTimeSeries_extras = new List<GridResult>();
-            private List<GridResult> argument_AbsoluteStressXYTimeSeries_extras = new List<GridResult>();
-            private List<GridResult> argument_AbsoluteStressZXTimeSeries_extras = new List<GridResult>();
-            private List<GridResult> argument_AbsoluteStressYZTimeSeries_extras = new List<GridResult>();
-            private List<GridResult> argument_AbsoluteStressZZTimeSeries_extras = new List<GridResult>();
+            private List<GridResult> argument_StressXXTimeSeries_extras = new List<GridResult>();
+            private List<GridResult> argument_StressYYTimeSeries_extras = new List<GridResult>();
+            private List<GridResult> argument_StressXYTimeSeries_extras = new List<GridResult>();
+            private List<GridResult> argument_StressZXTimeSeries_extras = new List<GridResult>();
+            private List<GridResult> argument_StressYZTimeSeries_extras = new List<GridResult>();
+            private List<GridResult> argument_StressZZTimeSeries_extras = new List<GridResult>();
             private List<GridResult> argument_FluidPressureTimeSeries_extras = new List<GridResult>();
+            private List<Droid> argument_StressXXProperty_extras = new List<Droid>();
+            private List<Droid> argument_StressYYProperty_extras = new List<Droid>();
+            private List<Droid> argument_StressXYProperty_extras = new List<Droid>();
+            private List<Droid> argument_StressZXProperty_extras = new List<Droid>();
+            private List<Droid> argument_StressYZProperty_extras = new List<Droid>();
+            private List<Droid> argument_StressZZProperty_extras = new List<Droid>();
+            private List<Droid> argument_FluidPressureProperty_extras = new List<Droid>();
+            private List<int> argument_StressStateDefinition_extras = new List<int>();
             private bool argument_GenerateExplicitDFN = true;
             private int argument_NoIntermediateOutputs = 0;
             private bool argument_IncludeObliqueFracs = false;
@@ -9214,13 +9528,21 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate_extras.Add(null);
                     this.argument_StressArchingFactor_extras.Add(0);
                     this.argument_SimulationCase_extras.Add(null);
-                    this.argument_AbsoluteStressXXTimeSeries_extras.Add(null);
-                    this.argument_AbsoluteStressYYTimeSeries_extras.Add(null);
-                    this.argument_AbsoluteStressXYTimeSeries_extras.Add(null);
-                    this.argument_AbsoluteStressZXTimeSeries_extras.Add(null);
-                    this.argument_AbsoluteStressYZTimeSeries_extras.Add(null);
-                    this.argument_AbsoluteStressZZTimeSeries_extras.Add(null);
+                    this.argument_StressXXTimeSeries_extras.Add(null);
+                    this.argument_StressYYTimeSeries_extras.Add(null);
+                    this.argument_StressXYTimeSeries_extras.Add(null);
+                    this.argument_StressZXTimeSeries_extras.Add(null);
+                    this.argument_StressYZTimeSeries_extras.Add(null);
+                    this.argument_StressZZTimeSeries_extras.Add(null);
                     this.argument_FluidPressureTimeSeries_extras.Add(null);
+                    this.argument_StressXXProperty_extras.Add(null);
+                    this.argument_StressYYProperty_extras.Add(null);
+                    this.argument_StressXYProperty_extras.Add(null);
+                    this.argument_StressZXProperty_extras.Add(null);
+                    this.argument_StressYZProperty_extras.Add(null);
+                    this.argument_StressZZProperty_extras.Add(null);
+                    this.argument_FluidPressureProperty_extras.Add(null);
+                    this.argument_StressStateDefinition_extras.Add(1);
                 }
 
                 return episodeIndex;
@@ -9255,13 +9577,21 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate = this.argument_AppliedUpliftRate1;
                     this.argument_StressArchingFactor = this.argument_StressArchingFactor1;
                     this.argument_SimulationCase = this.argument_SimulationCase1;
-                    this.argument_AbsoluteStressXXTimeSeries = this.argument_AbsoluteStressXXTimeSeries1;
-                    this.argument_AbsoluteStressYYTimeSeries = this.argument_AbsoluteStressYYTimeSeries1;
-                    this.argument_AbsoluteStressXYTimeSeries = this.argument_AbsoluteStressXYTimeSeries1;
-                    this.argument_AbsoluteStressZXTimeSeries = this.argument_AbsoluteStressZXTimeSeries1;
-                    this.argument_AbsoluteStressYZTimeSeries = this.argument_AbsoluteStressYZTimeSeries1;
-                    this.argument_AbsoluteStressZZTimeSeries = this.argument_AbsoluteStressZZTimeSeries1;
+                    this.argument_StressXXTimeSeries = this.argument_StressXXTimeSeries1;
+                    this.argument_StressYYTimeSeries = this.argument_StressYYTimeSeries1;
+                    this.argument_StressXYTimeSeries = this.argument_StressXYTimeSeries1;
+                    this.argument_StressZXTimeSeries = this.argument_StressZXTimeSeries1;
+                    this.argument_StressYZTimeSeries = this.argument_StressYZTimeSeries1;
+                    this.argument_StressZZTimeSeries = this.argument_StressZZTimeSeries1;
                     this.argument_FluidPressureTimeSeries = this.argument_FluidPressureTimeSeries1;
+                    this.argument_StressXXProperty = this.argument_StressXXProperty1;
+                    this.argument_StressYYProperty = this.argument_StressYYProperty1;
+                    this.argument_StressXYProperty = this.argument_StressXYProperty1;
+                    this.argument_StressZXProperty = this.argument_StressZXProperty1;
+                    this.argument_StressYZProperty = this.argument_StressYZProperty1;
+                    this.argument_StressZZProperty = this.argument_StressZZProperty1;
+                    this.argument_FluidPressureProperty = this.argument_FluidPressureProperty1;
+                    this.argument_StressStateDefinition = this.argument_StressStateDefinition1;
                     if (noDeformationEpisodes > 1)
                         GenerateDeformationEpisodeName(0, true);
                     else
@@ -9285,13 +9615,21 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate1 = this.argument_AppliedUpliftRate2;
                     this.argument_StressArchingFactor1 = this.argument_StressArchingFactor2;
                     this.argument_SimulationCase1 = this.argument_SimulationCase2;
-                    this.argument_AbsoluteStressXXTimeSeries1 = this.argument_AbsoluteStressXXTimeSeries2;
-                    this.argument_AbsoluteStressYYTimeSeries1 = this.argument_AbsoluteStressYYTimeSeries2;
-                    this.argument_AbsoluteStressXYTimeSeries1 = this.argument_AbsoluteStressXYTimeSeries2;
-                    this.argument_AbsoluteStressZXTimeSeries1 = this.argument_AbsoluteStressZXTimeSeries2;
-                    this.argument_AbsoluteStressYZTimeSeries1 = this.argument_AbsoluteStressYZTimeSeries2;
-                    this.argument_AbsoluteStressZZTimeSeries1 = this.argument_AbsoluteStressZZTimeSeries2;
+                    this.argument_StressXXTimeSeries1 = this.argument_StressXXTimeSeries2;
+                    this.argument_StressYYTimeSeries1 = this.argument_StressYYTimeSeries2;
+                    this.argument_StressXYTimeSeries1 = this.argument_StressXYTimeSeries2;
+                    this.argument_StressZXTimeSeries1 = this.argument_StressZXTimeSeries2;
+                    this.argument_StressYZTimeSeries1 = this.argument_StressYZTimeSeries2;
+                    this.argument_StressZZTimeSeries1 = this.argument_StressZZTimeSeries2;
                     this.argument_FluidPressureTimeSeries1 = this.argument_FluidPressureTimeSeries2;
+                    this.argument_StressXXProperty1 = this.argument_StressXXProperty2;
+                    this.argument_StressYYProperty1 = this.argument_StressYYProperty2;
+                    this.argument_StressXYProperty1 = this.argument_StressXYProperty2;
+                    this.argument_StressZXProperty1 = this.argument_StressZXProperty2;
+                    this.argument_StressYZProperty1 = this.argument_StressYZProperty2;
+                    this.argument_StressZZProperty1 = this.argument_StressZZProperty2;
+                    this.argument_FluidPressureProperty1 = this.argument_FluidPressureProperty2;
+                    this.argument_StressStateDefinition1 = this.argument_StressStateDefinition2;
                     if (noDeformationEpisodes > 2)
                         GenerateDeformationEpisodeName(1, true);
                     else
@@ -9315,13 +9653,21 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate2 = this.argument_AppliedUpliftRate3;
                     this.argument_StressArchingFactor2 = this.argument_StressArchingFactor3;
                     this.argument_SimulationCase2 = this.argument_SimulationCase3;
-                    this.argument_AbsoluteStressXXTimeSeries2 = this.argument_AbsoluteStressXXTimeSeries3;
-                    this.argument_AbsoluteStressYYTimeSeries2 = this.argument_AbsoluteStressYYTimeSeries3;
-                    this.argument_AbsoluteStressXYTimeSeries2 = this.argument_AbsoluteStressXYTimeSeries3;
-                    this.argument_AbsoluteStressZXTimeSeries2 = this.argument_AbsoluteStressZXTimeSeries3;
-                    this.argument_AbsoluteStressYZTimeSeries2 = this.argument_AbsoluteStressYZTimeSeries3;
-                    this.argument_AbsoluteStressZZTimeSeries2 = this.argument_AbsoluteStressZZTimeSeries3;
+                    this.argument_StressXXTimeSeries2 = this.argument_StressXXTimeSeries3;
+                    this.argument_StressYYTimeSeries2 = this.argument_StressYYTimeSeries3;
+                    this.argument_StressXYTimeSeries2 = this.argument_StressXYTimeSeries3;
+                    this.argument_StressZXTimeSeries2 = this.argument_StressZXTimeSeries3;
+                    this.argument_StressYZTimeSeries2 = this.argument_StressYZTimeSeries3;
+                    this.argument_StressZZTimeSeries2 = this.argument_StressZZTimeSeries3;
                     this.argument_FluidPressureTimeSeries2 = this.argument_FluidPressureTimeSeries3;
+                    this.argument_StressXXProperty2 = this.argument_StressXXProperty3;
+                    this.argument_StressYYProperty2 = this.argument_StressYYProperty3;
+                    this.argument_StressXYProperty2 = this.argument_StressXYProperty3;
+                    this.argument_StressZXProperty2 = this.argument_StressZXProperty3;
+                    this.argument_StressYZProperty2 = this.argument_StressYZProperty3;
+                    this.argument_StressZZProperty2 = this.argument_StressZZProperty3;
+                    this.argument_FluidPressureProperty2 = this.argument_FluidPressureProperty3;
+                    this.argument_StressStateDefinition2 = this.argument_StressStateDefinition3;
                     if (noDeformationEpisodes > 3)
                         GenerateDeformationEpisodeName(2, true);
                     else
@@ -9345,13 +9691,21 @@ namespace DFMGenerator_Ocean
                     this.argument_AppliedUpliftRate3 = this.argument_AppliedUpliftRate4;
                     this.argument_StressArchingFactor3 = this.argument_StressArchingFactor4;
                     this.argument_SimulationCase3 = this.argument_SimulationCase4;
-                    this.argument_AbsoluteStressXXTimeSeries3 = this.argument_AbsoluteStressXXTimeSeries4;
-                    this.argument_AbsoluteStressYYTimeSeries3 = this.argument_AbsoluteStressYYTimeSeries4;
-                    this.argument_AbsoluteStressXYTimeSeries3 = this.argument_AbsoluteStressXYTimeSeries4;
-                    this.argument_AbsoluteStressZXTimeSeries3 = this.argument_AbsoluteStressZXTimeSeries4;
-                    this.argument_AbsoluteStressYZTimeSeries3 = this.argument_AbsoluteStressYZTimeSeries4;
-                    this.argument_AbsoluteStressZZTimeSeries3 = this.argument_AbsoluteStressZZTimeSeries4;
+                    this.argument_StressXXTimeSeries3 = this.argument_StressXXTimeSeries4;
+                    this.argument_StressYYTimeSeries3 = this.argument_StressYYTimeSeries4;
+                    this.argument_StressXYTimeSeries3 = this.argument_StressXYTimeSeries4;
+                    this.argument_StressZXTimeSeries3 = this.argument_StressZXTimeSeries4;
+                    this.argument_StressYZTimeSeries3 = this.argument_StressYZTimeSeries4;
+                    this.argument_StressZZTimeSeries3 = this.argument_StressZZTimeSeries4;
                     this.argument_FluidPressureTimeSeries3 = this.argument_FluidPressureTimeSeries4;
+                    this.argument_StressXXProperty3 = this.argument_StressXXProperty4;
+                    this.argument_StressYYProperty3 = this.argument_StressYYProperty4;
+                    this.argument_StressXYProperty3 = this.argument_StressXYProperty4;
+                    this.argument_StressZXProperty3 = this.argument_StressZXProperty4;
+                    this.argument_StressYZProperty3 = this.argument_StressYZProperty4;
+                    this.argument_StressZZProperty3 = this.argument_StressZZProperty4;
+                    this.argument_FluidPressureProperty3 = this.argument_FluidPressureProperty4;
+                    this.argument_StressStateDefinition3 = this.argument_StressStateDefinition4;
                     if (noDeformationEpisodes > 4)
                         GenerateDeformationEpisodeName(3, true);
                     else
@@ -9379,13 +9733,21 @@ namespace DFMGenerator_Ocean
                             this.argument_AppliedUpliftRate4 = this.argument_AppliedUpliftRate_extras[0];
                             this.argument_StressArchingFactor4 = this.argument_StressArchingFactor_extras[0];
                             this.argument_SimulationCase4 = this.argument_SimulationCase_extras[0];
-                            this.argument_AbsoluteStressXXTimeSeries4 = this.argument_AbsoluteStressXXTimeSeries_extras[0];
-                            this.argument_AbsoluteStressYYTimeSeries4 = this.argument_AbsoluteStressYYTimeSeries_extras[0];
-                            this.argument_AbsoluteStressXYTimeSeries4 = this.argument_AbsoluteStressXYTimeSeries_extras[0];
-                            this.argument_AbsoluteStressZXTimeSeries4 = this.argument_AbsoluteStressZXTimeSeries_extras[0];
-                            this.argument_AbsoluteStressYZTimeSeries4 = this.argument_AbsoluteStressYZTimeSeries_extras[0];
-                            this.argument_AbsoluteStressZZTimeSeries4 = this.argument_AbsoluteStressZZTimeSeries_extras[0];
+                            this.argument_StressXXTimeSeries4 = this.argument_StressXXTimeSeries_extras[0];
+                            this.argument_StressYYTimeSeries4 = this.argument_StressYYTimeSeries_extras[0];
+                            this.argument_StressXYTimeSeries4 = this.argument_StressXYTimeSeries_extras[0];
+                            this.argument_StressZXTimeSeries4 = this.argument_StressZXTimeSeries_extras[0];
+                            this.argument_StressYZTimeSeries4 = this.argument_StressYZTimeSeries_extras[0];
+                            this.argument_StressZZTimeSeries4 = this.argument_StressZZTimeSeries_extras[0];
                             this.argument_FluidPressureTimeSeries4 = this.argument_FluidPressureTimeSeries_extras[0];
+                            this.argument_StressXXProperty4 = this.argument_StressXXProperty_extras[0];
+                            this.argument_StressYYProperty4 = this.argument_StressYYProperty_extras[0];
+                            this.argument_StressXYProperty4 = this.argument_StressXYProperty_extras[0];
+                            this.argument_StressZXProperty4 = this.argument_StressZXProperty_extras[0];
+                            this.argument_StressYZProperty4 = this.argument_StressYZProperty_extras[0];
+                            this.argument_StressZZProperty4 = this.argument_StressZZProperty_extras[0];
+                            this.argument_FluidPressureProperty4 = this.argument_FluidPressureProperty_extras[0];
+                            this.argument_StressStateDefinition4 = this.argument_StressStateDefinition_extras[0];
 
                             GenerateDeformationEpisodeName(4, true);
 
@@ -9406,13 +9768,21 @@ namespace DFMGenerator_Ocean
                             this.argument_AppliedUpliftRate_extras.RemoveAt(0);
                             this.argument_StressArchingFactor_extras.RemoveAt(0);
                             this.argument_SimulationCase_extras.RemoveAt(0);
-                            this.argument_AbsoluteStressXXTimeSeries_extras.RemoveAt(0);
-                            this.argument_AbsoluteStressYYTimeSeries_extras.RemoveAt(0);
-                            this.argument_AbsoluteStressXYTimeSeries_extras.RemoveAt(0);
-                            this.argument_AbsoluteStressZXTimeSeries_extras.RemoveAt(0);
-                            this.argument_AbsoluteStressYZTimeSeries_extras.RemoveAt(0);
-                            this.argument_AbsoluteStressZZTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressXXTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressYYTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressXYTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressZXTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressYZTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressZZTimeSeries_extras.RemoveAt(0);
                             this.argument_FluidPressureTimeSeries_extras.RemoveAt(0);
+                            this.argument_StressXXProperty_extras.RemoveAt(0);
+                            this.argument_StressYYProperty_extras.RemoveAt(0);
+                            this.argument_StressXYProperty_extras.RemoveAt(0);
+                            this.argument_StressZXProperty_extras.RemoveAt(0);
+                            this.argument_StressYZProperty_extras.RemoveAt(0);
+                            this.argument_StressZZProperty_extras.RemoveAt(0);
+                            this.argument_FluidPressureProperty_extras.RemoveAt(0);
+                            this.argument_StressStateDefinition_extras.RemoveAt(0);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -9450,13 +9820,21 @@ namespace DFMGenerator_Ocean
                         this.argument_AppliedUpliftRate4 = null;
                         this.argument_StressArchingFactor4 = 0;
                         this.argument_SimulationCase4 = null;
-                        this.argument_AbsoluteStressXXTimeSeries4 = null;
-                        this.argument_AbsoluteStressYYTimeSeries4 = null;
-                        this.argument_AbsoluteStressXYTimeSeries4 = null;
-                        this.argument_AbsoluteStressZXTimeSeries4 = null;
-                        this.argument_AbsoluteStressYZTimeSeries4 = null;
-                        this.argument_AbsoluteStressZZTimeSeries4 = null;
+                        this.argument_StressXXTimeSeries4 = null;
+                        this.argument_StressYYTimeSeries4 = null;
+                        this.argument_StressXYTimeSeries4 = null;
+                        this.argument_StressZXTimeSeries4 = null;
+                        this.argument_StressYZTimeSeries4 = null;
+                        this.argument_StressZZTimeSeries4 = null;
                         this.argument_FluidPressureTimeSeries4 = null;
+                        this.argument_StressXXProperty4 = null;
+                        this.argument_StressYYProperty4 = null;
+                        this.argument_StressXYProperty4 = null;
+                        this.argument_StressZXProperty4 = null;
+                        this.argument_StressYZProperty4 = null;
+                        this.argument_StressZZProperty4 = null;
+                        this.argument_FluidPressureProperty4 = null;
+                        this.argument_StressStateDefinition4 = 1;
                     }
                 }
                 else
@@ -9480,13 +9858,21 @@ namespace DFMGenerator_Ocean
                         this.argument_AppliedUpliftRate_extras.RemoveAt(episodeIndex - 5);
                         this.argument_StressArchingFactor_extras.RemoveAt(episodeIndex - 5);
                         this.argument_SimulationCase_extras.RemoveAt(episodeIndex - 5);
-                        this.argument_AbsoluteStressXXTimeSeries_extras.RemoveAt(episodeIndex - 5);
-                        this.argument_AbsoluteStressYYTimeSeries_extras.RemoveAt(episodeIndex - 5);
-                        this.argument_AbsoluteStressXYTimeSeries_extras.RemoveAt(episodeIndex - 5);
-                        this.argument_AbsoluteStressZXTimeSeries_extras.RemoveAt(episodeIndex - 5);
-                        this.argument_AbsoluteStressYZTimeSeries_extras.RemoveAt(episodeIndex - 5);
-                        this.argument_AbsoluteStressZZTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressXXTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressYYTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressXYTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressZXTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressYZTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressZZTimeSeries_extras.RemoveAt(episodeIndex - 5);
                         this.argument_FluidPressureTimeSeries_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressXXProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressYYProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressXYProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressZXProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressYZProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressZZProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_FluidPressureProperty_extras.RemoveAt(episodeIndex - 5);
+                        this.argument_StressStateDefinition_extras.RemoveAt(episodeIndex - 5);
                     }
                     catch (System.ArgumentOutOfRangeException)
                     {
@@ -9513,10 +9899,10 @@ namespace DFMGenerator_Ocean
             /// <returns></returns>
             public string GenerateDeformationEpisodeName(int deformationEpisodeIndex, bool assignName)
             {
-
                 // The name should start with the deformation episode index number
                 string deformationEpisodeName = string.Format("Deformation episode {0}:", deformationEpisodeIndex + 1);
-                if (SubdivideDeformationEpisode(deformationEpisodeIndex))
+                string episodeDataContainer = "";
+                if (DynamicLoadDefinedFromSimulationResults(deformationEpisodeIndex))
                 {
                     // For a dynamic deformation episode, create a name based on the simulation case
 
@@ -9526,18 +9912,28 @@ namespace DFMGenerator_Ocean
                     //GridResult fluidPressure = FluidPressureTimeSeries(deformationEpisodeIndex);
 
                     if (simCase != null)
-                        deformationEpisodeName += string.Format(" Simulation case {0}", simCase.Name);
+                        episodeDataContainer = string.Format(" Simulation case {0}", simCase.Name);
                     else
-                        deformationEpisodeName += string.Format(" Selected simulation case");
+                        episodeDataContainer = string.Format(" Selected simulation case");
+                    deformationEpisodeName += episodeDataContainer;
                     /*if (sZZ != null)
                         deformationEpisodeName += string.Format(" Absolute vertical stress {0}", szz.Name);
                     if (fluidPressure != null)
                         deformationEpisodeName += string.Format(" Fluid Pressure {0}", fluidPressure.Name);*/
                 }
+                else if ((AbsoluteStressZZProperty(deformationEpisodeIndex) != null) && (AbsoluteStressXXProperty(deformationEpisodeIndex) != null) && (AbsoluteStressYYProperty(deformationEpisodeIndex) != null) && (AbsoluteStressXYProperty(deformationEpisodeIndex) != null))
+                {
+                    PropertyCollection TopParent = AbsoluteStressZZProperty(deformationEpisodeIndex).PropertyCollection;
+                    while ((TopParent.ParentPropertyCollection != PropertyCollection.NullObject) && (TopParent.ParentPropertyCollection.ParentPropertyCollection != PropertyCollection.NullObject))
+                        TopParent = TopParent.ParentPropertyCollection;
+                    if (TopParent != PropertyCollection.NullObject)
+                        episodeDataContainer = TopParent.Name;
+                    if (episodeDataContainer.Length > 0)
+                        deformationEpisodeName += string.Format(" {0}", episodeDataContainer);
+                    deformationEpisodeName += string.Format(" Final stress tensor");
+                }
                 else
                 {
-                    // Otherwise create a name based on deformation episode duration and specified load
-
                     // Get data from the dialog box
                     double duration = DeformationEpisodeDuration(deformationEpisodeIndex);
                     int timeUnits = DeformationEpisodeTimeUnits(deformationEpisodeIndex);
@@ -9554,7 +9950,12 @@ namespace DFMGenerator_Ocean
                     double upliftRate_default = AppliedUpliftRate_default(deformationEpisodeIndex);
                     Property upliftRate = AppliedUpliftRate(deformationEpisodeIndex);
                     //double stressArchingFactor = StressArchingFactor(deformationEpisodeIndex);
+                    Property stressZZproperty = AbsoluteStressZZProperty(deformationEpisodeIndex);
+                    Property stressXXproperty = AbsoluteStressXXProperty(deformationEpisodeIndex);
+                    Property stressYYproperty = AbsoluteStressYYProperty(deformationEpisodeIndex);
+                    Property stressXYproperty = AbsoluteStressXYProperty(deformationEpisodeIndex);
 
+                    // Add load data
                     string timeUnitText = string.Format("{0}", (DFMGenerator_SharedCode.TimeUnits)timeUnits);
                     if (duration >= 0)
                         deformationEpisodeName += string.Format(" Duration {0}{1}", duration, timeUnitText);
@@ -9594,6 +9995,8 @@ namespace DFMGenerator_Ocean
                         deformationEpisodeName += string.Format(" Uplift {0}", upliftRate.Name);
                     else if (upliftRate_default != 0)
                         deformationEpisodeName += string.Format(" Uplift {0}m/{1}", Math.Round(upliftRate_default), timeUnitText);
+                    if (OPRate != null)
+                        deformationEpisodeName += string.Format(" Overpressure {0}", OPRate.Name);
                 }
 
                 // If required, set the deformation episode name and then return it
@@ -10114,7 +10517,7 @@ namespace DFMGenerator_Ocean
             // The following functions and properties will return information if any deformation episodes have one or more GridResult objects specified in place of Property objects
             // This allows the output from geomechanical or reservoir simulations to be used directly as input load data for the DFM Generator
             // In this case, the deformation episode will be subdivided, according to the number of points in the corresponding GridPropertyTimeSeries
-            internal bool SubdivideDeformationEpisode(int episodeIndex)
+            internal bool DynamicLoadDefinedFromSimulationResults(int episodeIndex)
             {
                 return (FluidPressureTimeSeries(episodeIndex) != null) || (AbsoluteStressZZTimeSeries(episodeIndex) != null);
                 //return (FluidPressureTimeSeries(episodeIndex) != null) || (AbsoluteStressZZTimeSeries(episodeIndex) != null) || ((AbsoluteStressXXTimeSeries(episodeIndex) != null) && (AbsoluteStressYYTimeSeries(episodeIndex) != null) && (AbsoluteStressXYTimeSeries(episodeIndex) != null));
@@ -10212,34 +10615,35 @@ namespace DFMGenerator_Ocean
                 internal get { return this.argument_SimulationCase4; }
                 set { this.argument_SimulationCase4 = (value == null ? null : value); }
             }
-            // Absolute (total) stress can also be specified as a time series from a simulation case - this must be specified in the form of the 6 components from a total stress tensor (as separate time series)
+            // Stress can also be specified as a time series from a simulation case - this must be specified in the form of the 6 components from a total stress tensor (as separate time series)
+            // These can be absolute (total) stress or effective stress (total stress - Biot coefficient * fluid pressure)
             // This will overwrite the EhminRate, EhmaxRate and EhminAzi and UpliftRate properties to define horizontal applied strain in the model
             // At a minimum the ZZ component must be supplied to overwrite the static load; other components will be assumed to be zero if not supplied
             [OptionalInWorkflow]
-            [Description("XX component of absolute (total) stress tensor as a time series from a simulation case result", "XX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XX component of stress tensor as a time series from a simulation case result", "XX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXXTimeSeries
             {
-                internal get { return this.argument_AbsoluteStressXXTimeSeries; }
-                set { this.argument_AbsoluteStressXXTimeSeries = (value == null ? null : value); }
+                internal get { return this.argument_StressXXTimeSeries; }
+                set { this.argument_StressXXTimeSeries = (value == null ? null : value); }
             }
             internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult AbsoluteStressXXTimeSeries(int episodeIndex)
             {
                 switch (episodeIndex)
                 {
                     case 0:
-                        return this.argument_AbsoluteStressXXTimeSeries;
+                        return this.argument_StressXXTimeSeries;
                     case 1:
-                        return this.argument_AbsoluteStressXXTimeSeries1;
+                        return this.argument_StressXXTimeSeries1;
                     case 2:
-                        return this.argument_AbsoluteStressXXTimeSeries2;
+                        return this.argument_StressXXTimeSeries2;
                     case 3:
-                        return this.argument_AbsoluteStressXXTimeSeries3;
+                        return this.argument_StressXXTimeSeries3;
                     case 4:
-                        return this.argument_AbsoluteStressXXTimeSeries4;
+                        return this.argument_StressXXTimeSeries4;
                     default:
                         try
                         {
-                            return this.argument_AbsoluteStressXXTimeSeries_extras[episodeIndex - 5];
+                            return this.argument_StressXXTimeSeries_extras[episodeIndex - 5];
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10253,24 +10657,24 @@ namespace DFMGenerator_Ocean
                 switch (episodeIndex)
                 {
                     case 0:
-                        this.argument_AbsoluteStressXXTimeSeries = (value == null ? null : value);
+                        this.argument_StressXXTimeSeries = (value == null ? null : value);
                         break;
                     case 1:
-                        this.argument_AbsoluteStressXXTimeSeries1 = (value == null ? null : value);
+                        this.argument_StressXXTimeSeries1 = (value == null ? null : value);
                         break;
                     case 2:
-                        this.argument_AbsoluteStressXXTimeSeries2 = (value == null ? null : value);
+                        this.argument_StressXXTimeSeries2 = (value == null ? null : value);
                         break;
                     case 3:
-                        this.argument_AbsoluteStressXXTimeSeries3 = (value == null ? null : value);
+                        this.argument_StressXXTimeSeries3 = (value == null ? null : value);
                         break;
                     case 4:
-                        this.argument_AbsoluteStressXXTimeSeries4 = (value == null ? null : value);
+                        this.argument_StressXXTimeSeries4 = (value == null ? null : value);
                         break;
                     default:
                         try
                         {
-                            this.argument_AbsoluteStressXXTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                            this.argument_StressXXTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10280,58 +10684,58 @@ namespace DFMGenerator_Ocean
                 }
             }
             [OptionalInWorkflow]
-            [Description("XX component of absolute (total) stress tensor as a time series from a simulation case result", "XX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XX component of stress tensor as a time series from a simulation case result", "XX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXXTimeSeries1
             {
-                internal get { return this.argument_AbsoluteStressXXTimeSeries1; }
-                set { this.argument_AbsoluteStressXXTimeSeries1 = (value == null ? null : value); }
+                internal get { return this.argument_StressXXTimeSeries1; }
+                set { this.argument_StressXXTimeSeries1 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XX component of absolute (total) stress tensor as a time series from a simulation case result", "XX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XX component of stress tensor as a time series from a simulation case result", "XX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXXTimeSeries2
             {
-                internal get { return this.argument_AbsoluteStressXXTimeSeries2; }
-                set { this.argument_AbsoluteStressXXTimeSeries2 = (value == null ? null : value); }
+                internal get { return this.argument_StressXXTimeSeries2; }
+                set { this.argument_StressXXTimeSeries2 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XX component of absolute (total) stress tensor as a time series from a simulation case result", "XX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XX component of stress tensor as a time series from a simulation case result", "XX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXXTimeSeries3
             {
-                internal get { return this.argument_AbsoluteStressXXTimeSeries3; }
-                set { this.argument_AbsoluteStressXXTimeSeries3 = (value == null ? null : value); }
+                internal get { return this.argument_StressXXTimeSeries3; }
+                set { this.argument_StressXXTimeSeries3 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XX component of absolute (total) stress tensor as a time series from a simulation case result", "XX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XX component of stress tensor as a time series from a simulation case result", "XX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXXTimeSeries4
             {
-                internal get { return this.argument_AbsoluteStressXXTimeSeries4; }
-                set { this.argument_AbsoluteStressXXTimeSeries4 = (value == null ? null : value); }
+                internal get { return this.argument_StressXXTimeSeries4; }
+                set { this.argument_StressXXTimeSeries4 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YY component of absolute (total) stress tensor as a time series from a simulation case result", "YY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YY component of stress tensor as a time series from a simulation case result", "YY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYYTimeSeries
             {
-                internal get { return this.argument_AbsoluteStressYYTimeSeries; }
-                set { this.argument_AbsoluteStressYYTimeSeries = (value == null ? null : value); }
+                internal get { return this.argument_StressYYTimeSeries; }
+                set { this.argument_StressYYTimeSeries = (value == null ? null : value); }
             }
             internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult AbsoluteStressYYTimeSeries(int episodeIndex)
             {
                 switch (episodeIndex)
                 {
                     case 0:
-                        return this.argument_AbsoluteStressYYTimeSeries;
+                        return this.argument_StressYYTimeSeries;
                     case 1:
-                        return this.argument_AbsoluteStressYYTimeSeries1;
+                        return this.argument_StressYYTimeSeries1;
                     case 2:
-                        return this.argument_AbsoluteStressYYTimeSeries2;
+                        return this.argument_StressYYTimeSeries2;
                     case 3:
-                        return this.argument_AbsoluteStressYYTimeSeries3;
+                        return this.argument_StressYYTimeSeries3;
                     case 4:
-                        return this.argument_AbsoluteStressYYTimeSeries4;
+                        return this.argument_StressYYTimeSeries4;
                     default:
                         try
                         {
-                            return this.argument_AbsoluteStressYYTimeSeries_extras[episodeIndex - 5];
+                            return this.argument_StressYYTimeSeries_extras[episodeIndex - 5];
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10345,24 +10749,24 @@ namespace DFMGenerator_Ocean
                 switch (episodeIndex)
                 {
                     case 0:
-                        this.argument_AbsoluteStressYYTimeSeries = (value == null ? null : value);
+                        this.argument_StressYYTimeSeries = (value == null ? null : value);
                         break;
                     case 1:
-                        this.argument_AbsoluteStressYYTimeSeries1 = (value == null ? null : value);
+                        this.argument_StressYYTimeSeries1 = (value == null ? null : value);
                         break;
                     case 2:
-                        this.argument_AbsoluteStressYYTimeSeries2 = (value == null ? null : value);
+                        this.argument_StressYYTimeSeries2 = (value == null ? null : value);
                         break;
                     case 3:
-                        this.argument_AbsoluteStressYYTimeSeries3 = (value == null ? null : value);
+                        this.argument_StressYYTimeSeries3 = (value == null ? null : value);
                         break;
                     case 4:
-                        this.argument_AbsoluteStressYYTimeSeries4 = (value == null ? null : value);
+                        this.argument_StressYYTimeSeries4 = (value == null ? null : value);
                         break;
                     default:
                         try
                         {
-                            this.argument_AbsoluteStressYYTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                            this.argument_StressYYTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10372,58 +10776,58 @@ namespace DFMGenerator_Ocean
                 }
             }
             [OptionalInWorkflow]
-            [Description("YY component of absolute (total) stress tensor as a time series from a simulation case result", "YY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YY component of stress tensor as a time series from a simulation case result", "YY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYYTimeSeries1
             {
-                internal get { return this.argument_AbsoluteStressYYTimeSeries1; }
-                set { this.argument_AbsoluteStressYYTimeSeries1 = (value == null ? null : value); }
+                internal get { return this.argument_StressYYTimeSeries1; }
+                set { this.argument_StressYYTimeSeries1 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YY component of absolute (total) stress tensor as a time series from a simulation case result", "YY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YY component of stress tensor as a time series from a simulation case result", "YY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYYTimeSeries2
             {
-                internal get { return this.argument_AbsoluteStressYYTimeSeries2; }
-                set { this.argument_AbsoluteStressYYTimeSeries2 = (value == null ? null : value); }
+                internal get { return this.argument_StressYYTimeSeries2; }
+                set { this.argument_StressYYTimeSeries2 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YY component of absolute (total) stress tensor as a time series from a simulation case result", "YY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YY component of stress tensor as a time series from a simulation case result", "YY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYYTimeSeries3
             {
-                internal get { return this.argument_AbsoluteStressYYTimeSeries3; }
-                set { this.argument_AbsoluteStressYYTimeSeries3 = (value == null ? null : value); }
+                internal get { return this.argument_StressYYTimeSeries3; }
+                set { this.argument_StressYYTimeSeries3 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YY component of absolute (total) stress tensor as a time series from a simulation case result", "YY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YY component of stress tensor as a time series from a simulation case result", "YY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYYTimeSeries4
             {
-                internal get { return this.argument_AbsoluteStressYYTimeSeries4; }
-                set { this.argument_AbsoluteStressYYTimeSeries4 = (value == null ? null : value); }
+                internal get { return this.argument_StressYYTimeSeries4; }
+                set { this.argument_StressYYTimeSeries4 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XY component of absolute (total) stress tensor as a time series from a simulation case result", "XY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XY component of stress tensor as a time series from a simulation case result", "XY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXYTimeSeries
             {
-                internal get { return this.argument_AbsoluteStressXYTimeSeries; }
-                set { this.argument_AbsoluteStressXYTimeSeries = (value == null ? null : value); }
+                internal get { return this.argument_StressXYTimeSeries; }
+                set { this.argument_StressXYTimeSeries = (value == null ? null : value); }
             }
             internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult AbsoluteStressXYTimeSeries(int episodeIndex)
             {
                 switch (episodeIndex)
                 {
                     case 0:
-                        return this.argument_AbsoluteStressXYTimeSeries;
+                        return this.argument_StressXYTimeSeries;
                     case 1:
-                        return this.argument_AbsoluteStressXYTimeSeries1;
+                        return this.argument_StressXYTimeSeries1;
                     case 2:
-                        return this.argument_AbsoluteStressXYTimeSeries2;
+                        return this.argument_StressXYTimeSeries2;
                     case 3:
-                        return this.argument_AbsoluteStressXYTimeSeries3;
+                        return this.argument_StressXYTimeSeries3;
                     case 4:
-                        return this.argument_AbsoluteStressXYTimeSeries4;
+                        return this.argument_StressXYTimeSeries4;
                     default:
                         try
                         {
-                            return this.argument_AbsoluteStressXYTimeSeries_extras[episodeIndex - 5];
+                            return this.argument_StressXYTimeSeries_extras[episodeIndex - 5];
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10437,24 +10841,24 @@ namespace DFMGenerator_Ocean
                 switch (episodeIndex)
                 {
                     case 0:
-                        this.argument_AbsoluteStressXYTimeSeries = (value == null ? null : value);
+                        this.argument_StressXYTimeSeries = (value == null ? null : value);
                         break;
                     case 1:
-                        this.argument_AbsoluteStressXYTimeSeries1 = (value == null ? null : value);
+                        this.argument_StressXYTimeSeries1 = (value == null ? null : value);
                         break;
                     case 2:
-                        this.argument_AbsoluteStressXYTimeSeries2 = (value == null ? null : value);
+                        this.argument_StressXYTimeSeries2 = (value == null ? null : value);
                         break;
                     case 3:
-                        this.argument_AbsoluteStressXYTimeSeries3 = (value == null ? null : value);
+                        this.argument_StressXYTimeSeries3 = (value == null ? null : value);
                         break;
                     case 4:
-                        this.argument_AbsoluteStressXYTimeSeries4 = (value == null ? null : value);
+                        this.argument_StressXYTimeSeries4 = (value == null ? null : value);
                         break;
                     default:
                         try
                         {
-                            this.argument_AbsoluteStressXYTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                            this.argument_StressXYTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10464,58 +10868,58 @@ namespace DFMGenerator_Ocean
                 }
             }
             [OptionalInWorkflow]
-            [Description("XY component of absolute (total) stress tensor as a time series from a simulation case result", "XY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XY component of stress tensor as a time series from a simulation case result", "XY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXYTimeSeries1
             {
-                internal get { return this.argument_AbsoluteStressXYTimeSeries1; }
-                set { this.argument_AbsoluteStressXYTimeSeries1 = (value == null ? null : value); }
+                internal get { return this.argument_StressXYTimeSeries1; }
+                set { this.argument_StressXYTimeSeries1 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XY component of absolute (total) stress tensor as a time series from a simulation case result", "XY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XY component of stress tensor as a time series from a simulation case result", "XY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXYTimeSeries2
             {
-                internal get { return this.argument_AbsoluteStressXYTimeSeries2; }
-                set { this.argument_AbsoluteStressXYTimeSeries2 = (value == null ? null : value); }
+                internal get { return this.argument_StressXYTimeSeries2; }
+                set { this.argument_StressXYTimeSeries2 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XY component of absolute (total) stress tensor as a time series from a simulation case result", "XY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XY component of stress tensor as a time series from a simulation case result", "XY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXYTimeSeries3
             {
-                internal get { return this.argument_AbsoluteStressXYTimeSeries3; }
-                set { this.argument_AbsoluteStressXYTimeSeries3 = (value == null ? null : value); }
+                internal get { return this.argument_StressXYTimeSeries3; }
+                set { this.argument_StressXYTimeSeries3 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("XY component of absolute (total) stresstensor as a time series from a simulation case result", "XY component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("XY component of stresstensor as a time series from a simulation case result", "XY component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressXYTimeSeries4
             {
-                internal get { return this.argument_AbsoluteStressXYTimeSeries4; }
-                set { this.argument_AbsoluteStressXYTimeSeries4 = (value == null ? null : value); }
+                internal get { return this.argument_StressXYTimeSeries4; }
+                set { this.argument_StressXYTimeSeries4 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZX component of absolute (total) stress tensor as a time series from a simulation case result", "ZX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZX component of stress tensor as a time series from a simulation case result", "ZX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZXTimeSeries
             {
-                internal get { return this.argument_AbsoluteStressZXTimeSeries; }
-                set { this.argument_AbsoluteStressZXTimeSeries = (value == null ? null : value); }
+                internal get { return this.argument_StressZXTimeSeries; }
+                set { this.argument_StressZXTimeSeries = (value == null ? null : value); }
             }
             internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult AbsoluteStressZXTimeSeries(int episodeIndex)
             {
                 switch (episodeIndex)
                 {
                     case 0:
-                        return this.argument_AbsoluteStressZXTimeSeries;
+                        return this.argument_StressZXTimeSeries;
                     case 1:
-                        return this.argument_AbsoluteStressZXTimeSeries1;
+                        return this.argument_StressZXTimeSeries1;
                     case 2:
-                        return this.argument_AbsoluteStressZXTimeSeries2;
+                        return this.argument_StressZXTimeSeries2;
                     case 3:
-                        return this.argument_AbsoluteStressZXTimeSeries3;
+                        return this.argument_StressZXTimeSeries3;
                     case 4:
-                        return this.argument_AbsoluteStressZXTimeSeries4;
+                        return this.argument_StressZXTimeSeries4;
                     default:
                         try
                         {
-                            return this.argument_AbsoluteStressZXTimeSeries_extras[episodeIndex - 5];
+                            return this.argument_StressZXTimeSeries_extras[episodeIndex - 5];
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10529,24 +10933,24 @@ namespace DFMGenerator_Ocean
                 switch (episodeIndex)
                 {
                     case 0:
-                        this.argument_AbsoluteStressZXTimeSeries = (value == null ? null : value);
+                        this.argument_StressZXTimeSeries = (value == null ? null : value);
                         break;
                     case 1:
-                        this.argument_AbsoluteStressZXTimeSeries1 = (value == null ? null : value);
+                        this.argument_StressZXTimeSeries1 = (value == null ? null : value);
                         break;
                     case 2:
-                        this.argument_AbsoluteStressZXTimeSeries2 = (value == null ? null : value);
+                        this.argument_StressZXTimeSeries2 = (value == null ? null : value);
                         break;
                     case 3:
-                        this.argument_AbsoluteStressZXTimeSeries3 = (value == null ? null : value);
+                        this.argument_StressZXTimeSeries3 = (value == null ? null : value);
                         break;
                     case 4:
-                        this.argument_AbsoluteStressZXTimeSeries4 = (value == null ? null : value);
+                        this.argument_StressZXTimeSeries4 = (value == null ? null : value);
                         break;
                     default:
                         try
                         {
-                            this.argument_AbsoluteStressZXTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                            this.argument_StressZXTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10556,58 +10960,58 @@ namespace DFMGenerator_Ocean
                 }
             }
             [OptionalInWorkflow]
-            [Description("ZX component of absolute (total) stress tensor as a time series from a simulation case result", "ZX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZX component of stress tensor as a time series from a simulation case result", "ZX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZXTimeSeries1
             {
-                internal get { return this.argument_AbsoluteStressZXTimeSeries1; }
-                set { this.argument_AbsoluteStressZXTimeSeries1 = (value == null ? null : value); }
+                internal get { return this.argument_StressZXTimeSeries1; }
+                set { this.argument_StressZXTimeSeries1 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZX component of absolute (total) stress tensor as a time series from a simulation case result", "ZX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZX component of stress tensor as a time series from a simulation case result", "ZX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZXTimeSeries2
             {
-                internal get { return this.argument_AbsoluteStressZXTimeSeries2; }
-                set { this.argument_AbsoluteStressZXTimeSeries2 = (value == null ? null : value); }
+                internal get { return this.argument_StressZXTimeSeries2; }
+                set { this.argument_StressZXTimeSeries2 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZX component of absolute (total) stress tensor as a time series from a simulation case result", "ZX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZX component of stress tensor as a time series from a simulation case result", "ZX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZXTimeSeries3
             {
-                internal get { return this.argument_AbsoluteStressZXTimeSeries3; }
-                set { this.argument_AbsoluteStressZXTimeSeries3 = (value == null ? null : value); }
+                internal get { return this.argument_StressZXTimeSeries3; }
+                set { this.argument_StressZXTimeSeries3 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZX component of absolute (total) stresstensor as a time series from a simulation case result", "ZX component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZX component of stresstensor as a time series from a simulation case result", "ZX component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZXTimeSeries4
             {
-                internal get { return this.argument_AbsoluteStressZXTimeSeries4; }
-                set { this.argument_AbsoluteStressZXTimeSeries4 = (value == null ? null : value); }
+                internal get { return this.argument_StressZXTimeSeries4; }
+                set { this.argument_StressZXTimeSeries4 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YZ component of absolute (total) stress tensor as a time series from a simulation case result", "YZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YZ component of stress tensor as a time series from a simulation case result", "YZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYZTimeSeries
             {
-                internal get { return this.argument_AbsoluteStressYZTimeSeries; }
-                set { this.argument_AbsoluteStressYZTimeSeries = (value == null ? null : value); }
+                internal get { return this.argument_StressYZTimeSeries; }
+                set { this.argument_StressYZTimeSeries = (value == null ? null : value); }
             }
             internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult AbsoluteStressYZTimeSeries(int episodeIndex)
             {
                 switch (episodeIndex)
                 {
                     case 0:
-                        return this.argument_AbsoluteStressYZTimeSeries;
+                        return this.argument_StressYZTimeSeries;
                     case 1:
-                        return this.argument_AbsoluteStressYZTimeSeries1;
+                        return this.argument_StressYZTimeSeries1;
                     case 2:
-                        return this.argument_AbsoluteStressYZTimeSeries2;
+                        return this.argument_StressYZTimeSeries2;
                     case 3:
-                        return this.argument_AbsoluteStressYZTimeSeries3;
+                        return this.argument_StressYZTimeSeries3;
                     case 4:
-                        return this.argument_AbsoluteStressYZTimeSeries4;
+                        return this.argument_StressYZTimeSeries4;
                     default:
                         try
                         {
-                            return this.argument_AbsoluteStressYZTimeSeries_extras[episodeIndex - 5];
+                            return this.argument_StressYZTimeSeries_extras[episodeIndex - 5];
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10621,24 +11025,24 @@ namespace DFMGenerator_Ocean
                 switch (episodeIndex)
                 {
                     case 0:
-                        this.argument_AbsoluteStressYZTimeSeries = (value == null ? null : value);
+                        this.argument_StressYZTimeSeries = (value == null ? null : value);
                         break;
                     case 1:
-                        this.argument_AbsoluteStressYZTimeSeries1 = (value == null ? null : value);
+                        this.argument_StressYZTimeSeries1 = (value == null ? null : value);
                         break;
                     case 2:
-                        this.argument_AbsoluteStressYZTimeSeries2 = (value == null ? null : value);
+                        this.argument_StressYZTimeSeries2 = (value == null ? null : value);
                         break;
                     case 3:
-                        this.argument_AbsoluteStressYZTimeSeries3 = (value == null ? null : value);
+                        this.argument_StressYZTimeSeries3 = (value == null ? null : value);
                         break;
                     case 4:
-                        this.argument_AbsoluteStressYZTimeSeries4 = (value == null ? null : value);
+                        this.argument_StressYZTimeSeries4 = (value == null ? null : value);
                         break;
                     default:
                         try
                         {
-                            this.argument_AbsoluteStressYZTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                            this.argument_StressYZTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10648,58 +11052,58 @@ namespace DFMGenerator_Ocean
                 }
             }
             [OptionalInWorkflow]
-            [Description("YZ component of absolute (total) stress tensor as a time series from a simulation case result", "YZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YZ component of stress tensor as a time series from a simulation case result", "YZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYZTimeSeries1
             {
-                internal get { return this.argument_AbsoluteStressYZTimeSeries1; }
-                set { this.argument_AbsoluteStressYZTimeSeries1 = (value == null ? null : value); }
+                internal get { return this.argument_StressYZTimeSeries1; }
+                set { this.argument_StressYZTimeSeries1 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YZ component of absolute (total) stress tensor as a time series from a simulation case result", "YZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YZ component of stress tensor as a time series from a simulation case result", "YZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYZTimeSeries2
             {
-                internal get { return this.argument_AbsoluteStressYZTimeSeries2; }
-                set { this.argument_AbsoluteStressYZTimeSeries2 = (value == null ? null : value); }
+                internal get { return this.argument_StressYZTimeSeries2; }
+                set { this.argument_StressYZTimeSeries2 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YZ component of absolute (total) stress tensor as a time series from a simulation case result", "YZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YZ component of stress tensor as a time series from a simulation case result", "YZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYZTimeSeries3
             {
-                internal get { return this.argument_AbsoluteStressYZTimeSeries3; }
-                set { this.argument_AbsoluteStressYZTimeSeries3 = (value == null ? null : value); }
+                internal get { return this.argument_StressYZTimeSeries3; }
+                set { this.argument_StressYZTimeSeries3 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("YZ component of absolute (total) stresstensor as a time series from a simulation case result", "YZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("YZ component of stress tensor as a time series from a simulation case result", "YZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressYZTimeSeries4
             {
-                internal get { return this.argument_AbsoluteStressYZTimeSeries4; }
-                set { this.argument_AbsoluteStressYZTimeSeries4 = (value == null ? null : value); }
+                internal get { return this.argument_StressYZTimeSeries4; }
+                set { this.argument_StressYZTimeSeries4 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZZ component of absolute (total) stress tensor as a time series from a simulation case result", "ZZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZZ component of stress tensor as a time series from a simulation case result", "ZZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZZTimeSeries
             {
-                internal get { return this.argument_AbsoluteStressZZTimeSeries; }
-                set { this.argument_AbsoluteStressZZTimeSeries = (value == null ? null : value); }
+                internal get { return this.argument_StressZZTimeSeries; }
+                set { this.argument_StressZZTimeSeries = (value == null ? null : value); }
             }
             internal Slb.Ocean.Petrel.DomainObject.Simulation.GridResult AbsoluteStressZZTimeSeries(int episodeIndex)
             {
                 switch (episodeIndex)
                 {
                     case 0:
-                        return this.argument_AbsoluteStressZZTimeSeries;
+                        return this.argument_StressZZTimeSeries;
                     case 1:
-                        return this.argument_AbsoluteStressZZTimeSeries1;
+                        return this.argument_StressZZTimeSeries1;
                     case 2:
-                        return this.argument_AbsoluteStressZZTimeSeries2;
+                        return this.argument_StressZZTimeSeries2;
                     case 3:
-                        return this.argument_AbsoluteStressZZTimeSeries3;
+                        return this.argument_StressZZTimeSeries3;
                     case 4:
-                        return this.argument_AbsoluteStressZZTimeSeries4;
+                        return this.argument_StressZZTimeSeries4;
                     default:
                         try
                         {
-                            return this.argument_AbsoluteStressZZTimeSeries_extras[episodeIndex - 5];
+                            return this.argument_StressZZTimeSeries_extras[episodeIndex - 5];
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10713,24 +11117,24 @@ namespace DFMGenerator_Ocean
                 switch (episodeIndex)
                 {
                     case 0:
-                        this.argument_AbsoluteStressZZTimeSeries = (value == null ? null : value);
+                        this.argument_StressZZTimeSeries = (value == null ? null : value);
                         break;
                     case 1:
-                        this.argument_AbsoluteStressZZTimeSeries1 = (value == null ? null : value);
+                        this.argument_StressZZTimeSeries1 = (value == null ? null : value);
                         break;
                     case 2:
-                        this.argument_AbsoluteStressZZTimeSeries2 = (value == null ? null : value);
+                        this.argument_StressZZTimeSeries2 = (value == null ? null : value);
                         break;
                     case 3:
-                        this.argument_AbsoluteStressZZTimeSeries3 = (value == null ? null : value);
+                        this.argument_StressZZTimeSeries3 = (value == null ? null : value);
                         break;
                     case 4:
-                        this.argument_AbsoluteStressZZTimeSeries4 = (value == null ? null : value);
+                        this.argument_StressZZTimeSeries4 = (value == null ? null : value);
                         break;
                     default:
                         try
                         {
-                            this.argument_AbsoluteStressZZTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
+                            this.argument_StressZZTimeSeries_extras[episodeIndex - 5] = (value == null ? null : value);
                         }
                         catch (System.ArgumentOutOfRangeException)
                         {
@@ -10740,32 +11144,32 @@ namespace DFMGenerator_Ocean
                 }
             }
             [OptionalInWorkflow]
-            [Description("ZZ component of absolute (total) stress tensor as a time series from a simulation case result", "ZZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZZ component of stress tensor as a time series from a simulation case result", "ZZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZZTimeSeries1
             {
-                internal get { return this.argument_AbsoluteStressZZTimeSeries1; }
-                set { this.argument_AbsoluteStressZZTimeSeries1 = (value == null ? null : value); }
+                internal get { return this.argument_StressZZTimeSeries1; }
+                set { this.argument_StressZZTimeSeries1 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZZ component of absolute (total) stress tensor as a time series from a simulation case result", "ZZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZZ component of stress tensor as a time series from a simulation case result", "ZZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZZTimeSeries2
             {
-                internal get { return this.argument_AbsoluteStressZZTimeSeries2; }
-                set { this.argument_AbsoluteStressZZTimeSeries2 = (value == null ? null : value); }
+                internal get { return this.argument_StressZZTimeSeries2; }
+                set { this.argument_StressZZTimeSeries2 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZZ component of absolute (total) stress tensor as a time series from a simulation case result", "ZZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZZ component of stress tensor as a time series from a simulation case result", "ZZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZZTimeSeries3
             {
-                internal get { return this.argument_AbsoluteStressZZTimeSeries3; }
-                set { this.argument_AbsoluteStressZZTimeSeries3 = (value == null ? null : value); }
+                internal get { return this.argument_StressZZTimeSeries3; }
+                set { this.argument_StressZZTimeSeries3 = (value == null ? null : value); }
             }
             [OptionalInWorkflow]
-            [Description("ZZ component of absolute (total) stress tensor as a time series from a simulation case result", "ZZ component of absolute (total) stress tensor as a time series from a simulation case result")]
+            [Description("ZZ component of stress tensor as a time series from a simulation case result", "ZZ component of stress tensor as a time series from a simulation case result")]
             public Slb.Ocean.Petrel.DomainObject.Simulation.GridResult Argument_AbsoluteStressZZTimeSeries4
             {
-                internal get { return this.argument_AbsoluteStressZZTimeSeries4; }
-                set { this.argument_AbsoluteStressZZTimeSeries4 = (value == null ? null : value); }
+                internal get { return this.argument_StressZZTimeSeries4; }
+                set { this.argument_StressZZTimeSeries4 = (value == null ? null : value); }
             }
             // Fluid pressure can also be specified as a time series from a simulation case - this will overwrite the AppliedOverpressureRate property to define fluid overpressure in the model
             // This allows the output from geomechanical or reservoir models to be used directly
@@ -11167,6 +11571,750 @@ namespace DFMGenerator_Ocean
                 set { this.argument_kv = (value == null ? null : value.Droid); }
             }
 
+            // Stress tensor components and fluid pressure for dynamic load as standard properties
+            [OptionalInWorkflow]
+            [Description("XX component of stress tensor as a standard property", "XX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXXProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXXProperty) as Property; }
+                set { this.argument_StressXXProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AbsoluteStressXXProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_StressXXProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_StressXXProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_StressXXProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_StressXXProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_StressXXProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_StressXXProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AbsoluteStressXXProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AbsoluteStressXXProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressXXProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_StressXXProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_StressXXProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_StressXXProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_StressXXProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressXXProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AbsoluteStressXXProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("XX component of stress tensor as a standard property", "XX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXXProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXXProperty1) as Property; }
+                set { this.argument_StressXXProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XX component of stress tensor as a standard property", "XX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXXProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXXProperty2) as Property; }
+                set { this.argument_StressXXProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XX component of stress tensor as a standard property", "XX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXXProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXXProperty3) as Property; }
+                set { this.argument_StressXXProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XX component of stress tensor as a standard property", "XX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXXProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXXProperty4) as Property; }
+                set { this.argument_StressXXProperty4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YY component of stress tensor as a standard property", "YY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYYProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYYProperty) as Property; }
+                set { this.argument_StressYYProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AbsoluteStressYYProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_StressYYProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_StressYYProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_StressYYProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_StressYYProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_StressYYProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_StressYYProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AbsoluteStressYYProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AbsoluteStressYYProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressYYProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_StressYYProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_StressYYProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_StressYYProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_StressYYProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressYYProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AbsoluteStressYYProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("YY component of stress tensor as a standard property", "YY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYYProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYYProperty1) as Property; }
+                set { this.argument_StressYYProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YY component of stress tensor as a standard property", "YY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYYProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYYProperty2) as Property; }
+                set { this.argument_StressYYProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YY component of stress tensor as a standard property", "YY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYYProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYYProperty3) as Property; }
+                set { this.argument_StressYYProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YY component of stress tensor as a standard property", "YY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYYProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYYProperty4) as Property; }
+                set { this.argument_StressYYProperty4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XY component of stress tensor as a standard property", "XY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXYProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXYProperty) as Property; }
+                set { this.argument_StressXYProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AbsoluteStressXYProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_StressXYProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_StressXYProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_StressXYProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_StressXYProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_StressXYProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_StressXYProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AbsoluteStressXYProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AbsoluteStressXYProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressXYProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_StressXYProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_StressXYProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_StressXYProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_StressXYProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressXYProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AbsoluteStressXYProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("XY component of stress tensor as a standard property", "XY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXYProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXYProperty1) as Property; }
+                set { this.argument_StressXYProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XY component of stress tensor as a standard property", "XY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXYProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXYProperty2) as Property; }
+                set { this.argument_StressXYProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XY component of stress tensor as a standard property", "XY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXYProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXYProperty3) as Property; }
+                set { this.argument_StressXYProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("XY component of stresstensor as a standard property", "XY component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressXYProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_StressXYProperty4) as Property; }
+                set { this.argument_StressXYProperty4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZX component of stress tensor as a standard property", "ZX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZXProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZXProperty) as Property; }
+                set { this.argument_StressZXProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AbsoluteStressZXProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_StressZXProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_StressZXProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_StressZXProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_StressZXProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_StressZXProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_StressZXProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AbsoluteStressZXProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AbsoluteStressZXProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressZXProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_StressZXProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_StressZXProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_StressZXProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_StressZXProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressZXProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AbsoluteStressZXProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("ZX component of stress tensor as a standard property", "ZX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZXProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZXProperty1) as Property; }
+                set { this.argument_StressZXProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZX component of stress tensor as a standard property", "ZX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZXProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZXProperty2) as Property; }
+                set { this.argument_StressZXProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZX component of stress tensor as a standard property", "ZX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZXProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZXProperty3) as Property; }
+                set { this.argument_StressZXProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZX component of stresstensor as a standard property", "ZX component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZXProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZXProperty4) as Property; }
+                set { this.argument_StressZXProperty4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YZ component of stress tensor as a standard property", "YZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYZProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYZProperty) as Property; }
+                set { this.argument_StressYZProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AbsoluteStressYZProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_StressYZProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_StressYZProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_StressYZProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_StressYZProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_StressYZProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_StressYZProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AbsoluteStressYZProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AbsoluteStressYZProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressYZProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_StressYZProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_StressYZProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_StressYZProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_StressYZProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressYZProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AbsoluteStressYZProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("YZ component of stress tensor as a standard property", "YZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYZProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYZProperty1) as Property; }
+                set { this.argument_StressYZProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YZ component of stress tensor as a standard property", "YZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYZProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYZProperty2) as Property; }
+                set { this.argument_StressYZProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YZ component of stress tensor as a standard property", "YZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYZProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYZProperty3) as Property; }
+                set { this.argument_StressYZProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("YZ component of stress tensor as a standard property", "YZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressYZProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_StressYZProperty4) as Property; }
+                set { this.argument_StressYZProperty4 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZZ component of stress tensor as a standard property", "ZZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZZProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZZProperty) as Property; }
+                set { this.argument_StressZZProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property AbsoluteStressZZProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_StressZZProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_StressZZProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_StressZZProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_StressZZProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_StressZZProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_StressZZProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_AbsoluteStressZZProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void AbsoluteStressZZProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressZZProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_StressZZProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_StressZZProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_StressZZProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_StressZZProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressZZProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_AbsoluteStressZZProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("ZZ component of stress tensor as a standard property", "ZZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZZProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZZProperty1) as Property; }
+                set { this.argument_StressZZProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZZ component of stress tensor as a standard property", "ZZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZZProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZZProperty2) as Property; }
+                set { this.argument_StressZZProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZZ component of stress tensor as a standard property", "ZZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZZProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZZProperty3) as Property; }
+                set { this.argument_StressZZProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("ZZ component of stress tensor as a standard property", "ZZ component of stress tensor as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_AbsoluteStressZZProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_StressZZProperty4) as Property; }
+                set { this.argument_StressZZProperty4 = (value == null ? null : value.Droid); }
+            }
+            // Fluid pressure can also be specified as a time series from a simulation case - this will overwrite the AppliedOverpressureRate property to define fluid overpressure in the model
+            // This allows the output from geomechanical or reservoir models to be used directly
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a standard property", "Fluid pressure as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_FluidPressureProperty
+            {
+                internal get { return DataManager.Resolve(this.argument_FluidPressureProperty) as Property; }
+                set { this.argument_FluidPressureProperty = (value == null ? null : value.Droid); }
+            }
+            internal Slb.Ocean.Petrel.DomainObject.PillarGrid.Property FluidPressureProperty(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return DataManager.Resolve(this.argument_FluidPressureProperty) as Property;
+                    case 1:
+                        return DataManager.Resolve(this.argument_FluidPressureProperty1) as Property;
+                    case 2:
+                        return DataManager.Resolve(this.argument_FluidPressureProperty2) as Property;
+                    case 3:
+                        return DataManager.Resolve(this.argument_FluidPressureProperty3) as Property;
+                    case 4:
+                        return DataManager.Resolve(this.argument_FluidPressureProperty4) as Property;
+                    default:
+                        try
+                        {
+                            return DataManager.Resolve(this.argument_FluidPressureProperty_extras[episodeIndex - 5]) as Property;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_FluidPressureProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return null;
+                        }
+                }
+            }
+            public void FluidPressureProperty(Slb.Ocean.Petrel.DomainObject.PillarGrid.Property value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_FluidPressureProperty = (value == null ? null : value.Droid);
+                        break;
+                    case 1:
+                        this.argument_FluidPressureProperty1 = (value == null ? null : value.Droid);
+                        break;
+                    case 2:
+                        this.argument_FluidPressureProperty2 = (value == null ? null : value.Droid);
+                        break;
+                    case 3:
+                        this.argument_FluidPressureProperty3 = (value == null ? null : value.Droid);
+                        break;
+                    case 4:
+                        this.argument_FluidPressureProperty4 = (value == null ? null : value.Droid);
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_FluidPressureProperty_extras[episodeIndex - 5] = (value == null ? null : value.Droid);
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_FluidPressureProperty_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a standard property", "Fluid pressure as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_FluidPressureProperty1
+            {
+                internal get { return DataManager.Resolve(this.argument_FluidPressureProperty1) as Property; }
+                set { this.argument_FluidPressureProperty1 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a standard property", "Fluid pressure as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_FluidPressureProperty2
+            {
+                internal get { return DataManager.Resolve(this.argument_FluidPressureProperty2) as Property; }
+                set { this.argument_FluidPressureProperty2 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a standard property", "Fluid pressure as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_FluidPressureProperty3
+            {
+                internal get { return DataManager.Resolve(this.argument_FluidPressureProperty3) as Property; }
+                set { this.argument_FluidPressureProperty3 = (value == null ? null : value.Droid); }
+            }
+            [OptionalInWorkflow]
+            [Description("Fluid pressure as a standard property", "Fluid pressure as a standard property")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_FluidPressureProperty4
+            {
+                internal get { return DataManager.Resolve(this.argument_FluidPressureProperty4) as Property; }
+                set { this.argument_FluidPressureProperty4 = (value == null ? null : value.Droid); }
+            }
+
+            // Flag to specify whether a dynamic load has been defined using standard properties
+            internal bool DynamicLoadDefinedFromStandardProperties(int episodeIndex)
+            {
+                //return (AbsoluteStressZZProperty(episodeIndex) != null);
+                return (FluidPressureProperty(episodeIndex) != null) || (AbsoluteStressZZProperty(episodeIndex) != null);
+                //return (FluidPressureProperty(episodeIndex) != null) || (AbsoluteStressZZProperty(episodeIndex) != null) || ((AbsoluteStressXXProperty(episodeIndex) != null) && (AbsoluteStressYYProperty(episodeIndex) != null) && (AbsoluteStressXYProperty(episodeIndex) != null));
+            }
+
+            [Description("Flag for stress type used to define dynamic load", "Flag for stress type used to define dynamic load: should be set to absolute (total) stress, Terzaghi effective stress or Biot effective stress; strain loads will be recognised automatically from the lack of a supplied stress tensor")]
+            public int Argument_StressStateDefinition
+            {
+                internal get { return this.argument_StressStateDefinition; }
+                set { this.argument_StressStateDefinition = value; }
+            }
+            internal int GetStressStateDefinition(int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        return this.argument_StressStateDefinition;
+                    case 1:
+                        return this.argument_StressStateDefinition1;
+                    case 2:
+                        return this.argument_StressStateDefinition2;
+                    case 3:
+                        return this.argument_StressStateDefinition3;
+                    case 4:
+                        return this.argument_StressStateDefinition4;
+                    default:
+                        try
+                        {
+                            return this.argument_StressStateDefinition_extras[episodeIndex - 5];
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to read from argument_DefineEffectiveStress_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                            return 1;
+                        }
+                }
+            }
+            public void SetStressStateDefinition(int value, int episodeIndex)
+            {
+                switch (episodeIndex)
+                {
+                    case 0:
+                        this.argument_StressStateDefinition = value;
+                        break;
+                    case 1:
+                        this.argument_StressStateDefinition1 = value;
+                        break;
+                    case 2:
+                        this.argument_StressStateDefinition2 = value;
+                        break;
+                    case 3:
+                        this.argument_StressStateDefinition3 = value;
+                        break;
+                    case 4:
+                        this.argument_StressStateDefinition4 = value;
+                        break;
+                    default:
+                        try
+                        {
+                            this.argument_StressStateDefinition_extras[episodeIndex - 5] = value;
+                        }
+                        catch (System.ArgumentOutOfRangeException)
+                        {
+                            PetrelLogger.InfoOutputWindow(string.Format("Tried to write to argument_DefineEffectiveStress_extras[{0}] (deformation episode {1}) when there are only {2} deformation episodes", episodeIndex - 5, episodeIndex, Argument_NoDeformationEpisodes));
+                        }
+                        break;
+                }
+            }
+            [Description("Flag for stress type used to define dynamic load", "Flag for stress type used to define dynamic load: should be set to absolute (total) stress, Terzaghi effective stress or Biot effective stress; strain loads will be recognised automatically from the lack of a supplied stress tensor")]
+            public int Argument_DefineEffectiveStress1
+            {
+                internal get { return this.argument_StressStateDefinition1; }
+                set { this.argument_StressStateDefinition1 = value; }
+            }
+            [Description("Flag for stress type used to define dynamic load", "Flag for stress type used to define dynamic load: should be set to absolute (total) stress, Terzaghi effective stress or Biot effective stress; strain loads will be recognised automatically from the lack of a supplied stress tensor")]
+            public int Argument_DefineEffectiveStress2
+            {
+                internal get { return this.argument_StressStateDefinition2; }
+                set { this.argument_StressStateDefinition2 = value; }
+            }
+            [Description("Flag for stress type used to define dynamic load", "Flag for stress type used to define dynamic load: should be set to absolute (total) stress, Terzaghi effective stress or Biot effective stress; strain loads will be recognised automatically from the lack of a supplied stress tensor")]
+            public int Argument_DefineEffectiveStress3
+            {
+                internal get { return this.argument_StressStateDefinition3; }
+                set { this.argument_StressStateDefinition3 = value; }
+            }
+            [Description("Flag for stress type used to define dynamic load", "Flag for stress type used to define dynamic load: should be set to absolute (total) stress, Terzaghi effective stress or Biot effective stress; strain loads will be recognised automatically from the lack of a supplied stress tensor")]
+            public int Argument_DefineEffectiveStress4
+            {
+                internal get { return this.argument_StressStateDefinition4; }
+                set { this.argument_StressStateDefinition4 = value; }
+            }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -11204,13 +12352,21 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate = null;
                 argument_StressArchingFactor = 0;
                 argument_SimulationCase = null;
-                argument_AbsoluteStressXXTimeSeries = null;
-                argument_AbsoluteStressYYTimeSeries = null;
-                argument_AbsoluteStressXYTimeSeries = null;
-                argument_AbsoluteStressZXTimeSeries = null;
-                argument_AbsoluteStressYZTimeSeries = null;
-                argument_AbsoluteStressZZTimeSeries = null;
+                argument_StressXXTimeSeries = null;
+                argument_StressYYTimeSeries = null;
+                argument_StressXYTimeSeries = null;
+                argument_StressZXTimeSeries = null;
+                argument_StressYZTimeSeries = null;
+                argument_StressZZTimeSeries = null;
                 argument_FluidPressureTimeSeries = null;
+                argument_StressXXProperty = null;
+                argument_StressYYProperty = null;
+                argument_StressXYProperty = null;
+                argument_StressZXProperty = null;
+                argument_StressYZProperty = null;
+                argument_StressZZProperty = null;
+                argument_FluidPressureProperty = null;
+                argument_StressStateDefinition = 1;
                 // The argument variables for the second deformation episode are set to default values
                 argument_DeformationEpisode1 = "";
                 argument_DeformationEpisodeDuration1 = double.NaN;
@@ -11229,13 +12385,21 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate1 = null;
                 argument_StressArchingFactor1 = 0;
                 argument_SimulationCase1 = null;
-                argument_AbsoluteStressXXTimeSeries1 = null;
-                argument_AbsoluteStressYYTimeSeries1 = null;
-                argument_AbsoluteStressXYTimeSeries1 = null;
-                argument_AbsoluteStressZXTimeSeries1 = null;
-                argument_AbsoluteStressYZTimeSeries1 = null;
-                argument_AbsoluteStressZZTimeSeries1 = null;
+                argument_StressXXTimeSeries1 = null;
+                argument_StressYYTimeSeries1 = null;
+                argument_StressXYTimeSeries1 = null;
+                argument_StressZXTimeSeries1 = null;
+                argument_StressYZTimeSeries1 = null;
+                argument_StressZZTimeSeries1 = null;
                 argument_FluidPressureTimeSeries1 = null;
+                argument_StressXXProperty1 = null;
+                argument_StressYYProperty1 = null;
+                argument_StressXYProperty1 = null;
+                argument_StressZXProperty1 = null;
+                argument_StressYZProperty1 = null;
+                argument_StressZZProperty1 = null;
+                argument_FluidPressureProperty1 = null;
+                argument_StressStateDefinition1 = 1;
                 // The argument variables for the third deformation episode are set to default values
                 argument_DeformationEpisode2 = "";
                 argument_DeformationEpisodeDuration2 = double.NaN;
@@ -11254,13 +12418,21 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate2 = null;
                 argument_StressArchingFactor2 = 0;
                 argument_SimulationCase2 = null;
-                argument_AbsoluteStressXXTimeSeries2 = null;
-                argument_AbsoluteStressYYTimeSeries2 = null;
-                argument_AbsoluteStressXYTimeSeries2 = null;
-                argument_AbsoluteStressZXTimeSeries2 = null;
-                argument_AbsoluteStressYZTimeSeries2 = null;
-                argument_AbsoluteStressZZTimeSeries2 = null;
+                argument_StressXXTimeSeries2 = null;
+                argument_StressYYTimeSeries2 = null;
+                argument_StressXYTimeSeries2 = null;
+                argument_StressZXTimeSeries2 = null;
+                argument_StressYZTimeSeries2 = null;
+                argument_StressZZTimeSeries2 = null;
                 argument_FluidPressureTimeSeries2 = null;
+                argument_StressXXProperty2 = null;
+                argument_StressYYProperty2 = null;
+                argument_StressXYProperty2 = null;
+                argument_StressZXProperty2 = null;
+                argument_StressYZProperty2 = null;
+                argument_StressZZProperty2 = null;
+                argument_FluidPressureProperty2 = null;
+                argument_StressStateDefinition2 = 1;
                 // The argument variables for the fourth deformation episode are set to default values
                 argument_DeformationEpisode3 = "";
                 argument_DeformationEpisodeDuration3 = double.NaN;
@@ -11279,13 +12451,21 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate3 = null;
                 argument_StressArchingFactor3 = 0;
                 argument_SimulationCase3 = null;
-                argument_AbsoluteStressXXTimeSeries3 = null;
-                argument_AbsoluteStressYYTimeSeries3 = null;
-                argument_AbsoluteStressXYTimeSeries3 = null;
-                argument_AbsoluteStressZXTimeSeries3 = null;
-                argument_AbsoluteStressYZTimeSeries3 = null;
-                argument_AbsoluteStressZZTimeSeries3 = null;
+                argument_StressXXTimeSeries3 = null;
+                argument_StressYYTimeSeries3 = null;
+                argument_StressXYTimeSeries3 = null;
+                argument_StressZXTimeSeries3 = null;
+                argument_StressYZTimeSeries3 = null;
+                argument_StressZZTimeSeries3 = null;
                 argument_FluidPressureTimeSeries3 = null;
+                argument_StressXXProperty3 = null;
+                argument_StressYYProperty3 = null;
+                argument_StressXYProperty3 = null;
+                argument_StressZXProperty3 = null;
+                argument_StressYZProperty3 = null;
+                argument_StressZZProperty3 = null;
+                argument_FluidPressureProperty3 = null;
+                argument_StressStateDefinition3 = 1;
                 // The argument variables for the fifth deformation episode are set to default values
                 argument_DeformationEpisode4 = "";
                 argument_DeformationEpisodeDuration4 = double.NaN;
@@ -11304,13 +12484,21 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate4 = null;
                 argument_StressArchingFactor4 = 0;
                 argument_SimulationCase4 = null;
-                argument_AbsoluteStressXXTimeSeries4 = null;
-                argument_AbsoluteStressYYTimeSeries4 = null;
-                argument_AbsoluteStressXYTimeSeries4 = null;
-                argument_AbsoluteStressZXTimeSeries4 = null;
-                argument_AbsoluteStressYZTimeSeries4 = null;
-                argument_AbsoluteStressZZTimeSeries4 = null;
+                argument_StressXXTimeSeries4 = null;
+                argument_StressYYTimeSeries4 = null;
+                argument_StressXYTimeSeries4 = null;
+                argument_StressZXTimeSeries4 = null;
+                argument_StressYZTimeSeries4 = null;
+                argument_StressZZTimeSeries4 = null;
                 argument_FluidPressureTimeSeries4 = null;
+                argument_StressXXProperty4 = null;
+                argument_StressYYProperty4 = null;
+                argument_StressXYProperty4 = null;
+                argument_StressZXProperty4 = null;
+                argument_StressYZProperty4 = null;
+                argument_StressZZProperty4 = null;
+                argument_FluidPressureProperty4 = null;
+                argument_StressStateDefinition4 = 1;
                 // Subsequent deformation episodes will be stored in List objects - these will not be saved if they are part of a workflow
                 argument_DeformationEpisode_extras.Clear();
                 argument_DeformationEpisodeDuration_extras.Clear();
@@ -11329,13 +12517,21 @@ namespace DFMGenerator_Ocean
                 argument_AppliedUpliftRate_extras.Clear();
                 argument_StressArchingFactor_extras.Clear();
                 argument_SimulationCase_extras.Clear();
-                argument_AbsoluteStressXXTimeSeries_extras.Clear();
-                argument_AbsoluteStressYYTimeSeries_extras.Clear();
-                argument_AbsoluteStressXYTimeSeries_extras.Clear();
-                argument_AbsoluteStressZXTimeSeries_extras.Clear();
-                argument_AbsoluteStressYZTimeSeries_extras.Clear();
-                argument_AbsoluteStressZZTimeSeries_extras.Clear();
+                argument_StressXXTimeSeries_extras.Clear();
+                argument_StressYYTimeSeries_extras.Clear();
+                argument_StressXYTimeSeries_extras.Clear();
+                argument_StressZXTimeSeries_extras.Clear();
+                argument_StressYZTimeSeries_extras.Clear();
+                argument_StressZZTimeSeries_extras.Clear();
                 argument_FluidPressureTimeSeries_extras.Clear();
+                argument_StressXXProperty_extras.Clear();
+                argument_StressYYProperty_extras.Clear();
+                argument_StressXYProperty_extras.Clear();
+                argument_StressZXProperty_extras.Clear();
+                argument_StressYZProperty_extras.Clear();
+                argument_StressZZProperty_extras.Clear();
+                argument_FluidPressureProperty_extras.Clear();
+                argument_StressStateDefinition_extras.Clear();
                 argument_GenerateExplicitDFN = true;
                 argument_NoIntermediateOutputs = 0;
                 argument_IncludeObliqueFracs = false;

@@ -68,7 +68,7 @@ namespace DFMGenerator_Ocean
         /// </summary>
         private void updateUIFromArgs()
         {
-            UpdateComboBox(args.Argument_PresentDayStressInput, comboBox_PDS_DefinedFrom);
+            UpdateComboBox(args.Argument_PresentDayStressInput, comboBox_PDS_StressStateDefinition);
             UpdatePropertyPresentationBox(args.Argument_EhminAzi_PresentDay, presentationBox_PDS_EhminAzi);
             UpdatePropertyPresentationBox(args.Argument_Ehmin_PresentDay, presentationBox_PDS_Ehmin);
             UpdatePropertyPresentationBox(args.Argument_Ehmax_PresentDay, presentationBox_PDS_Ehmax);
@@ -96,7 +96,7 @@ namespace DFMGenerator_Ocean
         private void updateArgsFromUI()
         {
             // Write data to the argument package
-            args.Argument_PresentDayStressInput = comboBox_PDS_DefinedFrom.SelectedIndex;
+            args.Argument_PresentDayStressInput = comboBox_PDS_StressStateDefinition.SelectedIndex;
             args.Argument_EhminAzi_PresentDay = presentationBox_PDS_EhminAzi.Tag as Property;
             args.Argument_Ehmin_PresentDay = presentationBox_PDS_Ehmin.Tag as Property;
             args.Argument_Ehmax_PresentDay = presentationBox_PDS_Ehmax.Tag as Property;
@@ -321,19 +321,19 @@ namespace DFMGenerator_Ocean
 
         private void comboBox_PDS_DefinedFrom_SelectedIndexChanged(object sender, EventArgs e)
         {
-            switch (comboBox_PDS_DefinedFrom.SelectedIndex)
+            switch (comboBox_PDS_StressStateDefinition.SelectedIndex)
             {
                 case 0: // From lithostatic stress and horizontal strain
                     tabControl1.SelectedPage = tabStrain;
                     switchTab(true, false, false);
                     break;
-                case 1: // From effective stress
-                    tabControl1.SelectedPage = tabStress;
-                    switchTab(false, true, false);
-                    break;
-                case 2: // From absolute (total) stress and fluid pressure
+                case 1: // From absolute (total) stress and fluid pressure
                     tabControl1.SelectedPage = tabStress;
                     switchTab(false, true, true);
+                    break;
+                case 2: // From Terzaghi effective stress
+                    tabControl1.SelectedPage = tabStress;
+                    switchTab(false, true, false);
                     break;
                 default: // Enable everything
                     switchTab(true, true, true);
