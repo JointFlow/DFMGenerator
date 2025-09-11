@@ -23,9 +23,9 @@ namespace DFMGenerator_SharedCode
     /// </summary>
     public enum TimeUnits { second, year, ma }
     /// <summary>
-    /// Enumerator for global grid directions (N = Y+, E = X+, S = Y-, W = X-)
+    /// Enumerator for global grid directions (N = Y+, E = X+, S = Y-, W = X-, U = Z+, D = Z-)
     /// </summary>
-    public enum GridDirection { N, E, S, W, None }
+    public enum GridDirection { N, E, S, W, U, D, None }
     /// <summary>
     /// Enumerator for return codes for the CalculateFractureData function: 0 if the calculation runs to completion without errors; 1 if the timestep limit is hit
     /// </summary>
@@ -414,29 +414,6 @@ namespace DFMGenerator_SharedCode
 
         // Public geometric properties and functions - for internal or external use
         // NB these functions all assume vertical pillars (i.e. cell cornerpoints are vertically aligned)
-        /// <summary>
-        /// Return the opposite to a specified direction 
-        /// </summary>
-        /// <param name="gridDirection_in">GridDirection object to find the opposite for</param>
-        /// <returns></returns>
-        public static GridDirection GetOppositeBoundary(GridDirection gridDirection_in)
-        {
-            switch (gridDirection_in)
-            {
-                case GridDirection.N:
-                    return GridDirection.S;
-                case GridDirection.E:
-                    return GridDirection.W;
-                case GridDirection.S:
-                    return GridDirection.N;
-                case GridDirection.W:
-                    return GridDirection.E;
-                case GridDirection.None:
-                    return GridDirection.None;
-                default:
-                    return GridDirection.None;
-            }
-        }
         /// <summary>
         /// Area of the middle surface of the gridblock, projected onto the horizontal; recalculated whenever gridblock cornerpoints are changed
         /// </summary>
@@ -1214,6 +1191,23 @@ namespace DFMGenerator_SharedCode
             return null;
         }
         /// <summary>
+        /// Get a reference to a diagonal neighbouring gridblock in 3D (i.e. to upper or lower SW, NW, NE or SE), if it exists
+        /// </summary>
+        /// <param name="Direction1">First part of diagonal direction</param>
+        /// <param name="Direction2">Second part of diagonal direction</param>
+        /// <param name="Direction3">Third part of diagonal direction</param>
+        /// <returns>Reference to the specified diagonal neighbouring gridblock (or null if it does not exist)</returns>
+        public GridblockConfiguration getDiagonalNeighbour(GridDirection Direction1, GridDirection Direction2, GridDirection Direction3)
+        {
+            if (NeighbourGridblocks[Direction1] != null)
+                return NeighbourGridblocks[Direction1].getDiagonalNeighbour(Direction2, Direction3);
+            else if (NeighbourGridblocks[Direction2] != null)
+                return NeighbourGridblocks[Direction2].getDiagonalNeighbour(Direction1, Direction3);
+            else if (NeighbourGridblocks[Direction3] != null)
+                return NeighbourGridblocks[Direction3].getDiagonalNeighbour(Direction1, Direction2);
+            return null;
+        }
+        /// <summary>
         /// Flag to determine whether to search neighbouring gridblocks for stress shadow interaction; dependent on gridblock geometry
         /// Only applies if the flag in the DFNControl object is set to Automatic
         /// </summary>
@@ -1252,42 +1246,82 @@ namespace DFMGenerator_SharedCode
             List<GridblockConfiguration> neighbourGridblocks = new List<GridblockConfiguration>();
 
             // Add the neighbouring gridblocks in clockwise order from SW, including diagonal neighbours if required
-            if (includeDiagonalNeighbours)
             {
-                GridblockConfiguration gb_southwest = getDiagonalNeighbour(GridDirection.S, GridDirection.W);
-                if (gb_southwest != null)
-                    neighbourGridblocks.Add(gb_southwest);
+                if (includeDiagonalNeighbours)
+                {
+                    GridblockConfiguration gb_southwest = getDiagonalNeighbour(GridDirection.S, GridDirection.W);
+                    if (gb_southwest != null)
+                        neighbourGridblocks.Add(gb_southwest);
+                }
+                GridblockConfiguration gb_west = NeighbourGridblocks[GridDirection.W];
+                if (gb_west != null)
+                    neighbourGridblocks.Add(gb_west);
+                if (includeDiagonalNeighbours)
+                {
+                    GridblockConfiguration gb_northwest = getDiagonalNeighbour(GridDirection.N, GridDirection.W);
+                    if (gb_northwest != null)
+                        neighbourGridblocks.Add(gb_northwest);
+                }
+                GridblockConfiguration gb_north = NeighbourGridblocks[GridDirection.N];
+                if (gb_north != null)
+                    neighbourGridblocks.Add(gb_north);
+                if (includeDiagonalNeighbours)
+                {
+                    GridblockConfiguration gb_northeast = getDiagonalNeighbour(GridDirection.N, GridDirection.E);
+                    if (gb_northeast != null)
+                        neighbourGridblocks.Add(gb_northeast);
+                }
+                GridblockConfiguration gb_east = NeighbourGridblocks[GridDirection.E];
+                if (gb_east != null)
+                    neighbourGridblocks.Add(gb_east);
+                if (includeDiagonalNeighbours)
+                {
+                    GridblockConfiguration gb_southeast = getDiagonalNeighbour(GridDirection.S, GridDirection.E);
+                    if (gb_southeast != null)
+                        neighbourGridblocks.Add(gb_southeast);
+                }
+                GridblockConfiguration gb_south = NeighbourGridblocks[GridDirection.S];
+                if (gb_south != null)
+                    neighbourGridblocks.Add(gb_south);
             }
-            GridblockConfiguration gb_west = NeighbourGridblocks[GridDirection.W];
-            if (gb_west != null)
-                neighbourGridblocks.Add(gb_west);
-            if (includeDiagonalNeighbours)
+
+            // Add gridblocks from the overlying and underlying layers
+            // NB to save time in single layer grids, we will only add gridblocks from the overlying and underlying layers if the gridblocks immediately overlying and underlying the current gridblock are defined
+            foreach (GridDirection verticalDirection in new GridDirection[2] { GridDirection.D, GridDirection.U })
             {
-                GridblockConfiguration gb_northwest = getDiagonalNeighbour(GridDirection.N, GridDirection.W);
-                if (gb_northwest != null)
-                    neighbourGridblocks.Add(gb_northwest);
+                GridblockConfiguration gb_vertical = NeighbourGridblocks[verticalDirection];
+                if (gb_vertical != null)
+                {
+                    neighbourGridblocks.Add(gb_vertical);
+                    if (includeDiagonalNeighbours)
+                    {
+                        GridblockConfiguration gb_southwest = getDiagonalNeighbour(verticalDirection, GridDirection.S, GridDirection.W);
+                        if (gb_southwest != null)
+                            neighbourGridblocks.Add(gb_southwest);
+                        GridblockConfiguration gb_west = getDiagonalNeighbour(verticalDirection, GridDirection.W);
+                        if (gb_west != null)
+                            neighbourGridblocks.Add(gb_west);
+                        GridblockConfiguration gb_northwest = getDiagonalNeighbour(verticalDirection, GridDirection.N, GridDirection.W);
+                        if (gb_northwest != null)
+                            neighbourGridblocks.Add(gb_northwest);
+                        GridblockConfiguration gb_north = getDiagonalNeighbour(verticalDirection, GridDirection.N);
+                        if (gb_north != null)
+                            neighbourGridblocks.Add(gb_north);
+                        GridblockConfiguration gb_northeast = getDiagonalNeighbour(verticalDirection, GridDirection.N, GridDirection.E);
+                        if (gb_northeast != null)
+                            neighbourGridblocks.Add(gb_northeast);
+                        GridblockConfiguration gb_east = getDiagonalNeighbour(verticalDirection, GridDirection.E);
+                        if (gb_east != null)
+                            neighbourGridblocks.Add(gb_east);
+                        GridblockConfiguration gb_southeast = getDiagonalNeighbour(verticalDirection, GridDirection.S, GridDirection.E);
+                        if (gb_southeast != null)
+                            neighbourGridblocks.Add(gb_southeast);
+                        GridblockConfiguration gb_south = getDiagonalNeighbour(verticalDirection, GridDirection.S);
+                        if (gb_south != null)
+                            neighbourGridblocks.Add(gb_south);
+                    }
+                }
             }
-            GridblockConfiguration gb_north = NeighbourGridblocks[GridDirection.N];
-            if (gb_north != null)
-                neighbourGridblocks.Add(gb_north);
-            if (includeDiagonalNeighbours)
-            {
-                GridblockConfiguration gb_northeast = getDiagonalNeighbour(GridDirection.N, GridDirection.E);
-                if (gb_northeast != null)
-                    neighbourGridblocks.Add(gb_northeast);
-            }
-            GridblockConfiguration gb_east = NeighbourGridblocks[GridDirection.E];
-            if (gb_east != null)
-                neighbourGridblocks.Add(gb_east);
-            if (includeDiagonalNeighbours)
-            {
-                GridblockConfiguration gb_southeast = getDiagonalNeighbour(GridDirection.S, GridDirection.E);
-                if (gb_southeast != null)
-                    neighbourGridblocks.Add(gb_southeast);
-            }
-            GridblockConfiguration gb_south = NeighbourGridblocks[GridDirection.S];
-            if (gb_south != null)
-                neighbourGridblocks.Add(gb_south);
 
             // Return the list
             return neighbourGridblocks;
@@ -3330,7 +3364,7 @@ namespace DFMGenerator_SharedCode
             StreamWriter outputFile = null;
             if (writeImplicitDataToFile)
             {
-                string fileName = string.Format("ImplicitData_X{0}_Y{1}.txt", SWtop.X, SWtop.Y);
+                string fileName = string.Format("ImplicitData_X{0}_Y{1}_Depth{2}.txt", SWtop.X, SWtop.Y, SWtop.Depth);
                 String namecomb = PropControl.FolderPath + fileName;
                 outputFile = new StreamWriter(namecomb);
             }
@@ -6538,7 +6572,7 @@ namespace DFMGenerator_SharedCode
                         double intersectionRealTime = fs.FractureDipSets[dipsetIndex].ConvertLengthToTime(intersectionLTime, CurrentExplicitTimestep);
 
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it progates into in this gridblock
-                        GridDirection oppositeBoundary = GetOppositeBoundary(intersectedBoundary);
+                        GridDirection oppositeBoundary = PointXYZ.GetOppositeDirection(intersectedBoundary);
 
                         // Call function to create a macrofracture segment in the neighbouring gridblock
 #if LOGDFNPOP
@@ -6693,7 +6727,7 @@ namespace DFMGenerator_SharedCode
                         double intersectionRealTime = fs.FractureDipSets[dipsetIndex].ConvertLengthToTime(intersectionLTime, CurrentExplicitTimestep);
 
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it progates into in this gridblock
-                        GridDirection oppositeBoundary = GetOppositeBoundary(intersectedBoundary);
+                        GridDirection oppositeBoundary = PointXYZ.GetOppositeDirection(intersectedBoundary);
 
                         // Call function to create a macrofracture segment in the neighbouring gridblock
 #if LOGDFNPOP
@@ -6806,7 +6840,7 @@ namespace DFMGenerator_SharedCode
             double reff_init = UCRSegment.EffectiveRayLength;
             UCRSegment.Length += maxPropLength;
 
-            /*// If the segment terminated due to interaction with another macrofracture stress shadow, we also need to deactivate that segment
+            /*// If the segment terminated due to interaction with another fracture stress shadow, we also need to deactivate that segment
             if (tipDeactivationMechanism == SegmentNodeType.ConnectedStressShadow)
             {
                 // Get reference to the terminating segment from this segment - this will have been set by the checkStressShadowInteraction function
@@ -6836,7 +6870,7 @@ namespace DFMGenerator_SharedCode
             if (tipDeactivationMechanism == SegmentNodeType.ConnectedGridblockBound)
             {
                 // Check if there is neighbouring gridblock with thickness greater than the minimum cutoff to propagate into
-                if ((intersectedBoundary != GridDirection.None) && (NeighbourGridblocks[intersectedBoundary] != null)) // There is a neighbouring gridblock
+                if (NeighbourGridblocks[intersectedBoundary] != null) // There is a neighbouring gridblock
                 {
                     if (NeighbourGridblocks[intersectedBoundary].ThicknessAtDeformation <= gd.DFNControl.MinimumLayerThickness) // The neighbouring gridblock is below the minimum thickness cutoff
                     {
@@ -6860,7 +6894,7 @@ namespace DFMGenerator_SharedCode
                         double initialPropagationDistance = ufs.MinimumFractureRadius - maxPropLength;
 
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock
-                        GridDirection oppositeBoundary = GetOppositeBoundary(intersectedBoundary);
+                        GridDirection oppositeBoundary = PointXYZ.GetOppositeDirection(intersectedBoundary);
 
                         // Call function to create an unconfined fracture segment in the neighbouring gridblock
 #if LOGDFNPOP
@@ -6920,7 +6954,7 @@ namespace DFMGenerator_SharedCode
                         double initialPropagationDistance = 0;
 
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock
-                        GridDirection oppositeBoundary = GetOppositeBoundary(intersectedBoundary);
+                        GridDirection oppositeBoundary = PointXYZ.GetOppositeDirection(intersectedBoundary);
 
                         // Call function to create an unconfined fracture segment in the neighbouring gridblock
 #if LOGDFNPOP
@@ -7283,6 +7317,22 @@ namespace DFMGenerator_SharedCode
                         NWbottom = rightBottomCornerPoint;
                     }
                     break;
+                case GridDirection.U:
+                    {
+                        NEtop = leftTopCornerPoint;
+                        SEtop = leftBottomCornerPoint;
+                        NWtop = rightTopCornerPoint;
+                        SWtop = rightBottomCornerPoint;
+                    }
+                    break;
+                case GridDirection.D:
+                    {
+                        NWbottom = leftTopCornerPoint;
+                        SWbottom = leftBottomCornerPoint;
+                        NEbottom = rightTopCornerPoint;
+                        SEbottom = rightBottomCornerPoint;
+                    }
+                    break;
                 case GridDirection.None:
                     break;
                 default:
@@ -7640,6 +7690,8 @@ namespace DFMGenerator_SharedCode
             NeighbourGridblocks.Add(GridDirection.E, null);
             NeighbourGridblocks.Add(GridDirection.S, null);
             NeighbourGridblocks.Add(GridDirection.W, null);
+            NeighbourGridblocks.Add(GridDirection.D, null);
+            NeighbourGridblocks.Add(GridDirection.U, null);
             NeighbourGridblocks.Add(GridDirection.None, this);
 
             // Set the flag to search neighbouring gridblocks for stress shadow interaction to false

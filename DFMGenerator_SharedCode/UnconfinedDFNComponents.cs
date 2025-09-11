@@ -238,7 +238,7 @@ namespace DFMGenerator_SharedCode
             // Set the geometric data
             // Make copies of the non prop node and unit vector objects supplied
             nonPropNode = new PointXYZ(initiatorRaySegment.PropNode);
-            NonPropNodeBoundary = GridblockConfiguration.GetOppositeBoundary(initiatorRaySegment.PropNodeBoundary);
+            NonPropNodeBoundary = PointXYZ.GetOppositeDirection(initiatorRaySegment.PropNodeBoundary);
             PropNodeBoundary = GridDirection.None;
             unitVector = Orientation.GetNormalisedVector();
             // The ray segment initially has zero length

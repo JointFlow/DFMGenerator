@@ -38,7 +38,7 @@ namespace DFMGenerator_Ocean
     /// </summary>
     class DFMGeneratorWorkstep : Workstep<DFMGeneratorWorkstep.Arguments>, IExecutorSource, IAppearance, IDescriptionSource
     {
-#region Overridden Workstep methods
+        #region Overridden Workstep methods
 
         /// <summary>
         /// Creates an empty Argument instance
@@ -72,9 +72,9 @@ namespace DFMGenerator_Ocean
                 return "JointFlow.DFMGenerator_Code.DFMGenerator_Ocean.DFMGenerator";
             }
         }
-#endregion
+        #endregion
 
-#region IExecutorSource Members and Executor class
+        #region IExecutorSource Members and Executor class
 
         /// <summary>
         /// Creates the Executor instance for this workstep. This class will do the work of the Workstep.
@@ -162,10 +162,13 @@ namespace DFMGenerator_Ocean
                     if (PetrelGrid_StartCellJ > maxJ) PetrelGrid_StartCellJ = maxJ;
                     if (NoPetrelGridCols > (maxI - PetrelGrid_StartCellI + 1)) NoPetrelGridCols = (maxI - PetrelGrid_StartCellI + 1);
                     if (NoPetrelGridRows > (maxJ - PetrelGrid_StartCellJ + 1)) NoPetrelGridRows = (maxJ - PetrelGrid_StartCellJ + 1);
+                    // Index of end cell (upper right hand corner)
+                    int PetrelGrid_EndCellI = PetrelGrid_StartCellI + NoPetrelGridCols - 1;
+                    int PetrelGrid_EndCellJ = PetrelGrid_StartCellJ + NoPetrelGridRows - 1;
 #if DEBUG_FRAC_INPUT
                     PetrelLogger.InfoOutputWindow("");
-                    PetrelLogger.InfoOutputWindow(string.Format("StartCellI {0}, maxI {1}, NoPetrelGridCols {2}", PetrelGrid_StartCellI, maxI, NoPetrelGridCols));
-                    PetrelLogger.InfoOutputWindow(string.Format("StartCellJ {0}, maxJ {1}, NoPetrelGridRows {2}", PetrelGrid_StartCellJ, maxJ, NoPetrelGridRows));
+                    PetrelLogger.InfoOutputWindow(string.Format("StartCellI {0}, EndCellI {1}, maxI {2}, NoPetrelGridCols {3}", PetrelGrid_StartCellI, PetrelGrid_EndCellI, maxI, NoPetrelGridCols));
+                    PetrelLogger.InfoOutputWindow(string.Format("StartCellJ {0}, EndCellJ {1}, maxJ {2}, NoPetrelGridRows {3}", PetrelGrid_StartCellJ, PetrelGrid_EndCellJ, maxJ, NoPetrelGridRows));
                     double minX = double.NegativeInfinity;
                     double minY = double.NegativeInfinity;
                     double minZ = double.NegativeInfinity;
@@ -180,6 +183,7 @@ namespace DFMGenerator_Ocean
                     int PetrelGrid_BaseCellK = arguments.Argument_BottomLayerK - 1;
                     if (PetrelGrid_BaseCellK < PetrelGrid_TopCellK) PetrelGrid_BaseCellK = PetrelGrid_TopCellK;
                     if (PetrelGrid_BaseCellK > maxK) PetrelGrid_BaseCellK = maxK;
+                    int NoPetrelGridLayers = PetrelGrid_BaseCellK - PetrelGrid_TopCellK + 1;
 #if DEBUG_FRAC_INPUT
                     PetrelLogger.InfoOutputWindow(string.Format("TopCellK {0}, BaseCellK {1}", PetrelGrid_TopCellK, PetrelGrid_BaseCellK));
 #endif
@@ -1339,6 +1343,10 @@ namespace DFMGenerator_Ocean
                     int HorizontalUpscalingFactor = 1;
                     if (arguments.Argument_HorizontalUpscalingFactor > 0)
                         HorizontalUpscalingFactor = arguments.Argument_HorizontalUpscalingFactor;
+                    // Vertical upscaling factor - used to amalgamate multiple Petrel grid layers into one fracture gridblock layer
+                    int VerticalUpscalingFactor = NoPetrelGridLayers;
+                    if (arguments.Argument_VerticalUpscalingFactor > 0)
+                        VerticalUpscalingFactor = arguments.Argument_VerticalUpscalingFactor;
                     // Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
                     double MaxTimestepDuration = -1;
                     if (!double.IsNaN(arguments.Argument_MaxTSDuration))
@@ -2030,30 +2038,61 @@ namespace DFMGenerator_Ocean
 
                     // Calculation control parameters
                     // Number of fracture sets
-                    generalInputParams += string.Format("Fracture network comprises {0} fracture sets\n", NoFractureSets);
-                    // Fracture mode
-                    if (Mode1Only)
-                        generalInputParams += "Mode 1 fractures only\n";
-                    else if (Mode2Only)
-                        generalInputParams += "Mode 2 fractures only\n";
-                    else
-                        generalInputParams += "Optimal fracture mode\n";
-                    if (FractureNucleationPosition >= 0)
-                        generalInputParams += string.Format("Fractures nucleate at relative height {0} within the layer (0=base, 1=top)\n", FractureNucleationPosition);
-                    if (CheckAlluFStressShadows == AutomaticFlag.All)
-                        generalInputParams += "Include stress shadow interaction between different fracture sets\n";
-                    generalInputParams += string.Format("Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes: {0}\n", AnisotropyCutoff);
-                    if (AllowReverseFractures)
-                        generalInputParams += "Include reverse fractures\n";
-                    else
-                        generalInputParams += "Do not include reverse fractures\n";
+                    generalInputParams += string.Format("Fracture network comprises ");
+                    if (NoFractureSets > 0)
+                    {
+                        generalInputParams += string.Format("{0} layer-bound fracture sets with ", NoFractureSets);
+                        // Fracture mode
+                        if (Mode1Only)
+                            generalInputParams += "Mode 1 fractures only\n";
+                        else if (Mode2Only)
+                            generalInputParams += "Mode 2 fractures only\n";
+                        else
+                            generalInputParams += "Optimal fracture mode\n";
+                    }
+                    if (NoUnconfinedFractureStrikeSets > 0)
+                    {
+                        generalInputParams += string.Format("{0} unconfined fracture sets with {1} rays per fracture\n", NoUnconfinedFractureStrikeSets * NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture);
+                    }
+                    if (NoFractureSets > 0)
+                    {
+                        if (FractureNucleationPosition >= 0)
+                            generalInputParams += string.Format("Fractures nucleate at relative height {0} within the layer (0=base, 1=top)\n", FractureNucleationPosition);
+                        if (CheckAlluFStressShadows == AutomaticFlag.All)
+                            generalInputParams += "Include stress shadow interaction between different fracture sets\n";
+                        generalInputParams += string.Format("Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes: {0}\n", AnisotropyCutoff);
+                        if (AllowReverseFractures)
+                            generalInputParams += "Include reverse fractures\n";
+                        else
+                            generalInputParams += "Do not include reverse fractures\n";
+                    }
+                    generalInputParams += string.Format("Minimum microfracture radius for implicit population data: {0}{1}\n", toProjectFractureRadiusUnits.Convert(MinImplicitMicrofractureRadius), FractureRadiusUnits);
+                    generalInputParams += string.Format("Number of radius bins for numerical calculation of microfracture P32: {0}\n", No_r_bins);
+                    if (NoUnconfinedFractureStrikeSets > 0)
+                    {
+                        generalInputParams += string.Format("Unconfined fractures have minimum radius {0}{2} and maximum radius {1}{2}\n", MinUnconfinedFractureRadius, MaxUnconfinedFractureRadius, FractureRadiusUnits);
+                    }
                     if (HorizontalUpscalingFactor > 1)
                         generalInputParams += string.Format("Horizontal upscaling factor: {0}\n", HorizontalUpscalingFactor);
+                    if (VerticalUpscalingFactor > 1)
+                        generalInputParams += string.Format("Vertical upscaling factor: {0} - create 1 fracture layer per {0} grid layers\n", VerticalUpscalingFactor);
+                    else
+                        generalInputParams += string.Format("Amalgamate all grid layers into 1 fracture layer\n");
                     if (MaxTimestepDuration > 0)
                         generalInputParams += string.Format("Maximum duration for individual timesteps: {0}{1}\n", MaxTimestepDuration, ProjectTimeUnits);
                     generalInputParams += string.Format("Maximum MFP33 increase per timestep (controls accuracy of calculation): {0}\n", MaxTimestepMFP33Increase);
-                    generalInputParams += string.Format("Minimum microfracture radius for implicit population data: {0}{1}\n", toProjectFractureRadiusUnits.Convert(MinImplicitMicrofractureRadius), FractureRadiusUnits);
-                    generalInputParams += string.Format("Number of radius bins for numerical calculation of microfracture P32: {0}\n", No_r_bins);
+                    if (NoUnconfinedFractureStrikeSets > 0)
+                    {
+                        generalInputParams += string.Format("Maximum unconfined fracture radius increase per timestep (controls accuracy of calculation): {0}\n", Max_R_timestep_increase);
+                        generalInputParams += string.Format("Minimum fracture size ratio for deactivation by stress shadow interaction: {0}\n", MinStressShadowDeactivationRatio);
+                        generalInputParams += string.Format("Minimum fracture size ratio for deactivation by intersection: {0}\n", MinIntersectionDeactivationRatio);
+                        generalInputParams += string.Format("Maximum proportional increase in unconfined fracture radius before checking for deactivation: {0}\n", Max_R_DeactivationCheck_interval);
+                        generalInputParams += string.Format("Minimum activation probability: {0} (a new implicit unconfined fracture datapoint will be spawned if the unconfined fracture activation probability falls below this level)\n", Min_R_ActivationProbability);
+                        generalInputParams += string.Format("Minimum static implicit unconfined fracture size ratio: {0} (datapoints for static unconfined fractures will be amalgamated every {1} timesteps if their size ratio is below this cutoff)\n", Min_R_staticDatapointSizeRatio, CullTSFrequency);
+                        if (!CalculateImplicitUCFData)
+                            generalInputParams += "Do not calculate implicit fracture data\n";
+                    }
+
                     // Calculation termination controls
                     generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumClearZoneVolume);
                     if (Current_HistoricMFP33TerminationRatio > 0)
@@ -2108,981 +2147,1129 @@ namespace DFMGenerator_Ocean
                     //int hmin_index = 0;
                     //int hmax_index = NoFractureSets / 2;
 
-                    // Progress Bar
-                    using (IProgress progressBar = PetrelLogger.NewProgress(0, 100, ProgressType.Cancelable, System.Windows.Forms.Cursors.WaitCursor))
+                    // Create fracture grid
+                    int NoFractureGridRows = NoPetrelGridRows / HorizontalUpscalingFactor;
+                    if ((NoPetrelGridRows % HorizontalUpscalingFactor) > 0)
+                        NoFractureGridRows++;
+                    int NoFractureGridCols = NoPetrelGridCols / HorizontalUpscalingFactor;
+                    if ((NoPetrelGridCols % HorizontalUpscalingFactor) > 0)
+                        NoFractureGridCols++;
+                    int NoFractureGridLayers = NoPetrelGridLayers / VerticalUpscalingFactor;
+                    if ((NoPetrelGridLayers % VerticalUpscalingFactor) > 0)
+                        NoFractureGridLayers++;
+                    FractureGrid ModelGrid = new FractureGrid(NoFractureGridRows, NoFractureGridCols, NoFractureGridLayers);
+#if DEBUG_FRAC_INPUT
+                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid ModelGrid = new FractureGrid({0}, {1}, {2});", NoFractureGridRows, NoFractureGridCols, NoFractureGridLayers));
+#endif
                     {
-                        PetrelProgressReporter progressBarWrapper = new PetrelProgressReporter(progressBar);
-
-                        // Create fracture grid
-                        PetrelLogger.InfoOutputWindow("Start building grid");
-                        progressBar.SetProgressText("Building grid");
-                        int NoFractureGridRows = NoPetrelGridRows / HorizontalUpscalingFactor;
-                        int NoFractureGridCols = NoPetrelGridCols / HorizontalUpscalingFactor;
-                        FractureGrid ModelGrid = new FractureGrid(NoFractureGridRows, NoFractureGridCols);
-
-                        // Populate fracture grid
-                        // Loop through all columns and rows in the Fracture Grid
-                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                        progressBarWrapper.SetNumberOfElements(NoFractureGridCols * NoFractureGridRows);
-                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                        // Progress Bar
+                        using (IProgress progressBar = PetrelLogger.NewProgress(0, 100, ProgressType.Cancelable, System.Windows.Forms.Cursors.WaitCursor))
                         {
-                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
-                            {
+                            PetrelProgressReporter progressBarWrapper = new PetrelProgressReporter(progressBar);
+                            PetrelLogger.InfoOutputWindow("Start building grid");
+                            progressBar.SetProgressText("Building grid");
+                            progressBarWrapper.SetNumberOfElements(NoFractureGridCols * NoFractureGridRows * NoFractureGridLayers);
+
+                            // Populate fracture grid
+                            // Loop through all gridblocks in the Fracture Grid
+                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                    {
 #if DEBUG_FRAC_INPUT
-                                PetrelLogger.InfoOutputWindow("");
-                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock Col(I) {0}, Row(J) {1}", FractureGrid_ColNo, FractureGrid_RowNo));
+                                        PetrelLogger.InfoOutputWindow("");
+                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock Col(I) {0}, Row(J) {1}, Layer(K) {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
-                                // Check if calculation has been aborted
-                                if (progressBarWrapper.abortCalculation())
-                                {
-                                    // Clean up any resources or data
-                                    break;
-                                }
+                                        // Check if calculation has been aborted
+                                        if (progressBarWrapper.abortCalculation())
+                                        {
+                                            // Clean up any resources or data
+                                            break;
+                                        }
 
-                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                        // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                        int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                        int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                        int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                        if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                            PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                        int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                        if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                            PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                        int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                        int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                        if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                            PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+                                        // The DataCell indices indicate the cells from which to take data when we are taking data from a single cell
+                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                        if (HorizontalUpscalingFactor > 1)
+                                        {
+                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                            if (PetrelGrid_DataCellI > PetrelGrid_LastCellI)
+                                                PetrelGrid_DataCellI = PetrelGrid_LastCellI;
+                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                            if (PetrelGrid_DataCellJ > PetrelGrid_LastCellJ)
+                                                PetrelGrid_DataCellJ = PetrelGrid_LastCellJ;
+                                        }
+
+
 #if DEBUG_FRAC_INPUT
-                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_FirstCellI {0}, PetrelGrid_FirstCellJ {1}, PetrelGrid_TopCellK {2}", PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK));
-                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_LastCellI {0}, PetrelGrid_LastCellJ {1}, PetrelGrid_BaseCellK {2}", PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_BaseCellK));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_FirstCellI {0}, PetrelGrid_FirstCellJ {1}, PetrelGrid_HighestCellK {2}", PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_HighestCellK));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid_LastCellI {0}, PetrelGrid_LastCellJ {1}, PetrelGrid_LowestCellK {2}", PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_LowestCellK));
 #endif
 
-                                // Initialise variables for mean depth and thickness
-                                // If the top of the grid is above MSL we will also take this into account when calculating depth
-                                // However if it is below MSL we will calculate depth from MSL (Z=0)
-                                double local_Current_Depth = 0;
-                                double local_LayerThickness = 0;
-                                double local_Current_SurfaceHeight = 0;
+                                        // Initialise variables for mean depth and thickness
+                                        // If the top of the grid is above MSL we will also take this into account when calculating depth
+                                        // However if it is below MSL we will calculate depth from MSL (Z=0)
+                                        double local_Current_Depth = 0;
+                                        double local_LayerThickness = 0;
+                                        double local_Current_SurfaceHeight = 0;
 
-                                // Find SW cornerpoints; if the top or bottom cells in the SW corner are undefined, use the highest and lowest defined cells
-                                Index3 SW_topgrid = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, 0);
-                                Point3 SW_topgrid_corner = PetrelGrid.GetPointAtCell(SW_topgrid, Corner.SouthWest, TopOrBase.Top);
-                                // If the top cell in the grid is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(SW_topgrid_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        SW_topgrid.K = PetrelGrid_DataCellK;
-                                        SW_topgrid_corner = PetrelGrid.GetPointAtCell(SW_topgrid, Corner.SouthWest, TopOrBase.Top);
-                                        if (!Point3.IsNull(SW_topgrid_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 SW_top = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK);
-                                Point3 SW_top_corner = PetrelGrid.GetPointAtCell(SW_top, Corner.SouthWest, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(SW_top_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        SW_top.K = PetrelGrid_DataCellK;
-                                        SW_top_corner = PetrelGrid.GetPointAtCell(SW_top, Corner.SouthWest, TopOrBase.Top);
-                                        if (!Point3.IsNull(SW_top_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 SW_base = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_BaseCellK);
-                                Point3 SW_bottom_corner = PetrelGrid.GetPointAtCell(SW_base, Corner.SouthWest, TopOrBase.Base);
-                                // If the bottom cell is not defined, find the lowermost cell that is
-                                if (Point3.IsNull(SW_bottom_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_BaseCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_TopCellK; PetrelGrid_DataCellK--)
-                                    {
-                                        SW_base.K = PetrelGrid_DataCellK;
-                                        SW_bottom_corner = PetrelGrid.GetPointAtCell(SW_base, Corner.SouthWest, TopOrBase.Base);
-                                        if (!Point3.IsNull(SW_bottom_corner))
-                                            break;
-                                    }
-                                }
-                                // Create FractureGrid points corresponding to the SW Petrel gridblock corners
-                                PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);
-                                PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);
-                                // Update mean depth and thickness variables
-                                local_Current_SurfaceHeight += SW_topgrid_corner.Z;
-                                local_Current_Depth -= SW_top_corner.Z;
-                                local_LayerThickness += (SW_top_corner.Z - SW_bottom_corner.Z);
-
-                                // Find NW cornerpoints; if the top or bottom cells in the NW corner are undefined, use the highest and lowest defined cells
-                                Index3 NW_topgrid = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, 0);
-                                Point3 NW_topgrid_corner = PetrelGrid.GetPointAtCell(NW_topgrid, Corner.NorthWest, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(NW_topgrid_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        NW_topgrid.K = PetrelGrid_DataCellK;
-                                        NW_topgrid_corner = PetrelGrid.GetPointAtCell(NW_topgrid, Corner.NorthWest, TopOrBase.Top);
-                                        if (!Point3.IsNull(NW_topgrid_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 NW_top = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, PetrelGrid_TopCellK);
-                                Point3 NW_top_corner = PetrelGrid.GetPointAtCell(NW_top, Corner.NorthWest, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(NW_top_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        NW_top.K = PetrelGrid_DataCellK;
-                                        NW_top_corner = PetrelGrid.GetPointAtCell(NW_top, Corner.NorthWest, TopOrBase.Top);
-                                        if (!Point3.IsNull(NW_top_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 NW_base = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, PetrelGrid_BaseCellK);
-                                Point3 NW_bottom_corner = PetrelGrid.GetPointAtCell(NW_base, Corner.NorthWest, TopOrBase.Base);
-                                // If the bottom cell is not defined, find the lowermost cell that is
-                                if (Point3.IsNull(NW_bottom_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_BaseCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_TopCellK; PetrelGrid_DataCellK--)
-                                    {
-                                        NW_base.K = PetrelGrid_DataCellK;
-                                        NW_bottom_corner = PetrelGrid.GetPointAtCell(NW_base, Corner.NorthWest, TopOrBase.Base);
-                                        if (!Point3.IsNull(NW_bottom_corner))
-                                            break;
-                                    }
-                                }
-                                // Create FractureGrid points corresponding to the NW Petrel gridblock corners
-                                PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);
-                                PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);
-                                // Update mean depth and thickness variables
-                                local_Current_SurfaceHeight += NW_topgrid_corner.Z;
-                                local_Current_Depth -= NW_top_corner.Z;
-                                local_LayerThickness += (NW_top_corner.Z - NW_bottom_corner.Z);
-
-                                // Find NE cornerpoints; if the top or bottom cells in the NE corner are undefined, use the highest and lowest defined cells
-                                Index3 NE_topgrid = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, 0);
-                                Point3 NE_topgrid_corner = PetrelGrid.GetPointAtCell(NE_topgrid, Corner.NorthEast, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(NE_topgrid_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        NE_topgrid.K = PetrelGrid_DataCellK;
-                                        NE_topgrid_corner = PetrelGrid.GetPointAtCell(NE_topgrid, Corner.NorthEast, TopOrBase.Top);
-                                        if (!Point3.IsNull(NE_topgrid_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 NE_top = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_TopCellK);
-                                Point3 NE_top_corner = PetrelGrid.GetPointAtCell(NE_top, Corner.NorthEast, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(NE_top_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        NE_top.K = PetrelGrid_DataCellK;
-                                        NE_top_corner = PetrelGrid.GetPointAtCell(NE_top, Corner.NorthEast, TopOrBase.Top);
-                                        if (!Point3.IsNull(NE_top_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 NE_base = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_BaseCellK);
-                                Point3 NE_bottom_corner = PetrelGrid.GetPointAtCell(NE_base, Corner.NorthEast, TopOrBase.Base);
-                                // If the bottom cell is not defined, find the lowermost cell that is
-                                if (Point3.IsNull(NE_bottom_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_BaseCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_TopCellK; PetrelGrid_DataCellK--)
-                                    {
-                                        NE_base.K = PetrelGrid_DataCellK;
-                                        NE_bottom_corner = PetrelGrid.GetPointAtCell(NE_base, Corner.NorthEast, TopOrBase.Base);
-                                        if (!Point3.IsNull(NE_bottom_corner))
-                                            break;
-                                    }
-                                }
-                                // Create FractureGrid points corresponding to the NE Petrel gridblock corners
-                                PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);
-                                PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);
-                                // Update mean depth and thickness variables
-                                local_Current_SurfaceHeight += NE_topgrid_corner.Z;
-                                local_Current_Depth -= NE_top_corner.Z;
-                                local_LayerThickness += (NE_top_corner.Z - NE_bottom_corner.Z);
-
-                                // Find SE cornerpoints; if the top or bottom cells in the SE corner are undefined, use the highest and lowest defined cells
-                                Index3 SE_topgrid = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, 0);
-                                Point3 SE_topgrid_corner = PetrelGrid.GetPointAtCell(SE_topgrid, Corner.SouthEast, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(SE_topgrid_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_TopCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        SE_topgrid.K = PetrelGrid_DataCellK;
-                                        SE_topgrid_corner = PetrelGrid.GetPointAtCell(SE_topgrid, Corner.SouthEast, TopOrBase.Top);
-                                        if (!Point3.IsNull(SE_topgrid_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 SE_top = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, PetrelGrid_TopCellK);
-                                Point3 SE_top_corner = PetrelGrid.GetPointAtCell(SE_top, Corner.SouthEast, TopOrBase.Top);
-                                // If the top cell is not defined, find the uppermost cell that is
-                                if (Point3.IsNull(SE_top_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                    {
-                                        SE_top.K = PetrelGrid_DataCellK;
-                                        SE_top_corner = PetrelGrid.GetPointAtCell(SE_top, Corner.SouthEast, TopOrBase.Top);
-                                        if (!Point3.IsNull(SE_top_corner))
-                                            break;
-                                    }
-                                }
-                                Index3 SE_base = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, PetrelGrid_BaseCellK);
-                                Point3 SE_bottom_corner = PetrelGrid.GetPointAtCell(SE_base, Corner.SouthEast, TopOrBase.Base);
-                                // If the bottom cell is not defined, find the lowermost cell that is
-                                if (Point3.IsNull(SE_bottom_corner))
-                                {
-                                    // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                                    for (int PetrelGrid_DataCellK = PetrelGrid_BaseCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_TopCellK; PetrelGrid_DataCellK--)
-                                    {
-                                        SE_base.K = PetrelGrid_DataCellK;
-                                        SE_bottom_corner = PetrelGrid.GetPointAtCell(SE_base, Corner.SouthEast, TopOrBase.Base);
-                                        if (!Point3.IsNull(SE_bottom_corner))
-                                            break;
-                                    }
-                                }
-                                // Create FractureGrid points corresponding to the SE Petrel gridblock corners
-                                PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);
-                                PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);
-                                // Update mean depth and thickness variables
-                                local_Current_SurfaceHeight += SE_topgrid_corner.Z;
-                                local_Current_Depth -= SE_top_corner.Z;
-                                local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
-
-                                // Calculate the mean current depth of top surface and layer thickness
-                                local_Current_SurfaceHeight /= 4;
-                                local_Current_Depth /= 4;
-                                local_LayerThickness /= 4;
-                                // If the top of the grid is above MSL, add this height to the current depth
-                                // NB If the grid does not extend to the current surface height, this adjustment will need to be made manually by defining a depth of deformation property
-                                if (local_Current_SurfaceHeight > 0)
-                                    local_Current_Depth += local_Current_SurfaceHeight;
-
-                                // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
-                                // In this case we will abort this gridblock and move onto the next
-                                if (double.IsNaN(local_Current_Depth) || double.IsNaN(local_LayerThickness))
-                                    continue;
-
-                                // Get the mechanical properties from the grid as required
-                                // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                double local_InitialMicrofractureDensity = InitialMicrofractureDensity;
-                                double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution;
-                                double local_SubcriticalPropIndex = SubcriticalPropIndex;
-                                double local_YoungsMod = YoungsMod;
-                                double local_PoissonsRatio = PoissonsRatio;
-                                double local_Porosity = Porosity;
-                                double local_BiotCoefficient = BiotCoefficient;
-                                double local_ThermalExpansionCoefficient = ThermalExpansionCoefficient;
-                                double local_CrackSurfaceEnergy = CrackSurfaceEnergy;
-                                double local_FrictionCoefficient = FrictionCoefficient;
-                                double local_RockStrainRelaxation = RockStrainRelaxation;
-                                double local_FractureRelaxation = FractureRelaxation;
-                                double local_HostRock_kh = HostRock_kh;
-                                double local_HostRock_kv = HostRock_kv;
-
-                                if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
-                                {
-                                    // Create local variables for running total and number of datapoints for each mechanical property
-                                    double InitialMicrofractureDensity_total = 0;
-                                    int InitialMicrofractureDensity_novalues = 0;
-                                    double InitialMicrofractureSizeDistribution_total = 0;
-                                    int InitialMicrofractureSizeDistribution_novalues = 0;
-                                    double SubcriticalPropIndex_total = 0;
-                                    int SubcriticalPropIndex_novalues = 0;
-                                    double YoungsMod_total = 0;
-                                    int YoungsMod_novalues = 0;
-                                    double PoissonsRatio_total = 0;
-                                    int PoissonsRatio_novalues = 0;
-                                    double Porosity_total = 0;
-                                    int Porosity_novalues = 0;
-                                    double BiotCoeff_total = 0;
-                                    int BiotCoeff_novalues = 0;
-                                    double ThermalExpansionCoefficient_total = 0;
-                                    int ThermalExpansionCoefficient_novalues = 0;
-                                    double CrackSurfaceEnergy_total = 0;
-                                    int CrackSurfaceEnergy_novalues = 0;
-                                    double FrictionCoeff_total = 0;
-                                    int FrictionCoeff_novalues = 0;
-                                    double RockStrainRelaxation_total = 0;
-                                    int RockStrainRelaxation_novalues = 0;
-                                    double FractureRelaxation_total = 0;
-                                    int FractureRelaxation_novalues = 0;
-                                    double HostRock_kh_total = 0;
-                                    int HostRock_kh_novalues = 0;
-                                    double HostRock_kv_total = 0;
-                                    int HostRock_kv_novalues = 0;
-
-                                    // Loop through all the Petrel cells in the gridblock
-                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                        // Find SW cornerpoints; if the top or bottom cells in the SW corner are undefined, use the highest and lowest defined cells
+                                        Index3 SW_topgrid = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, 0);
+                                        Point3 SW_topgrid_corner = PetrelGrid.GetPointAtCell(SW_topgrid, Corner.SouthWest, TopOrBase.Top);
+                                        // If the top cell in the grid is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(SW_topgrid_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_HighestCellK; PetrelGrid_DataCellK++)
                                             {
-                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+                                                SW_topgrid.K = PetrelGrid_DataCellK;
+                                                SW_topgrid_corner = PetrelGrid.GetPointAtCell(SW_topgrid, Corner.SouthWest, TopOrBase.Top);
+                                                if (!Point3.IsNull(SW_topgrid_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 SW_top = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_HighestCellK);
+                                        Point3 SW_top_corner = PetrelGrid.GetPointAtCell(SW_top, Corner.SouthWest, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(SW_top_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                SW_top.K = PetrelGrid_DataCellK;
+                                                SW_top_corner = PetrelGrid.GetPointAtCell(SW_top, Corner.SouthWest, TopOrBase.Top);
+                                                if (!Point3.IsNull(SW_top_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 SW_base = new Index3(PetrelGrid_FirstCellI, PetrelGrid_FirstCellJ, PetrelGrid_LowestCellK);
+                                        Point3 SW_bottom_corner = PetrelGrid.GetPointAtCell(SW_base, Corner.SouthWest, TopOrBase.Base);
+                                        // If the bottom cell is not defined, find the lowermost cell that is
+                                        if (Point3.IsNull(SW_bottom_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_LowestCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_HighestCellK; PetrelGrid_DataCellK--)
+                                            {
+                                                SW_base.K = PetrelGrid_DataCellK;
+                                                SW_bottom_corner = PetrelGrid.GetPointAtCell(SW_base, Corner.SouthWest, TopOrBase.Base);
+                                                if (!Point3.IsNull(SW_bottom_corner))
+                                                    break;
+                                            }
+                                        }
+                                        // Create FractureGrid points corresponding to the SW Petrel gridblock corners
+                                        PointXYZ FractureGrid_SWtop = new PointXYZ(SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z);
+                                        PointXYZ FractureGrid_SWbottom = new PointXYZ(SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z);
+                                        // Update mean depth and thickness variables
+                                        local_Current_SurfaceHeight += SW_topgrid_corner.Z;
+                                        local_Current_Depth -= SW_top_corner.Z;
+                                        local_LayerThickness += (SW_top_corner.Z - SW_bottom_corner.Z);
 
-                                                // Update initial microfracture density total if defined
-                                                if (UseGridFor_InitialMicrofractureDensity)
-                                                {
-                                                    double cell_CapB = (double)InitialMicrofractureDensity_grid[cellRef];
-                                                    if (!double.IsNaN(cell_CapB))
+                                        // Find NW cornerpoints; if the top or bottom cells in the NW corner are undefined, use the highest and lowest defined cells
+                                        Index3 NW_topgrid = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, 0);
+                                        Point3 NW_topgrid_corner = PetrelGrid.GetPointAtCell(NW_topgrid, Corner.NorthWest, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(NW_topgrid_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_HighestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                NW_topgrid.K = PetrelGrid_DataCellK;
+                                                NW_topgrid_corner = PetrelGrid.GetPointAtCell(NW_topgrid, Corner.NorthWest, TopOrBase.Top);
+                                                if (!Point3.IsNull(NW_topgrid_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 NW_top = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, PetrelGrid_HighestCellK);
+                                        Point3 NW_top_corner = PetrelGrid.GetPointAtCell(NW_top, Corner.NorthWest, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(NW_top_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                NW_top.K = PetrelGrid_DataCellK;
+                                                NW_top_corner = PetrelGrid.GetPointAtCell(NW_top, Corner.NorthWest, TopOrBase.Top);
+                                                if (!Point3.IsNull(NW_top_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 NW_base = new Index3(PetrelGrid_FirstCellI, PetrelGrid_LastCellJ, PetrelGrid_LowestCellK);
+                                        Point3 NW_bottom_corner = PetrelGrid.GetPointAtCell(NW_base, Corner.NorthWest, TopOrBase.Base);
+                                        // If the bottom cell is not defined, find the lowermost cell that is
+                                        if (Point3.IsNull(NW_bottom_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_LowestCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_HighestCellK; PetrelGrid_DataCellK--)
+                                            {
+                                                NW_base.K = PetrelGrid_DataCellK;
+                                                NW_bottom_corner = PetrelGrid.GetPointAtCell(NW_base, Corner.NorthWest, TopOrBase.Base);
+                                                if (!Point3.IsNull(NW_bottom_corner))
+                                                    break;
+                                            }
+                                        }
+                                        // Create FractureGrid points corresponding to the NW Petrel gridblock corners
+                                        PointXYZ FractureGrid_NWtop = new PointXYZ(NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z);
+                                        PointXYZ FractureGrid_NWbottom = new PointXYZ(NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z);
+                                        // Update mean depth and thickness variables
+                                        local_Current_SurfaceHeight += NW_topgrid_corner.Z;
+                                        local_Current_Depth -= NW_top_corner.Z;
+                                        local_LayerThickness += (NW_top_corner.Z - NW_bottom_corner.Z);
+
+                                        // Find NE cornerpoints; if the top or bottom cells in the NE corner are undefined, use the highest and lowest defined cells
+                                        Index3 NE_topgrid = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, 0);
+                                        Point3 NE_topgrid_corner = PetrelGrid.GetPointAtCell(NE_topgrid, Corner.NorthEast, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(NE_topgrid_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_HighestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                NE_topgrid.K = PetrelGrid_DataCellK;
+                                                NE_topgrid_corner = PetrelGrid.GetPointAtCell(NE_topgrid, Corner.NorthEast, TopOrBase.Top);
+                                                if (!Point3.IsNull(NE_topgrid_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 NE_top = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_HighestCellK);
+                                        Point3 NE_top_corner = PetrelGrid.GetPointAtCell(NE_top, Corner.NorthEast, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(NE_top_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                NE_top.K = PetrelGrid_DataCellK;
+                                                NE_top_corner = PetrelGrid.GetPointAtCell(NE_top, Corner.NorthEast, TopOrBase.Top);
+                                                if (!Point3.IsNull(NE_top_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 NE_base = new Index3(PetrelGrid_LastCellI, PetrelGrid_LastCellJ, PetrelGrid_LowestCellK);
+                                        Point3 NE_bottom_corner = PetrelGrid.GetPointAtCell(NE_base, Corner.NorthEast, TopOrBase.Base);
+                                        // If the bottom cell is not defined, find the lowermost cell that is
+                                        if (Point3.IsNull(NE_bottom_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_LowestCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_HighestCellK; PetrelGrid_DataCellK--)
+                                            {
+                                                NE_base.K = PetrelGrid_DataCellK;
+                                                NE_bottom_corner = PetrelGrid.GetPointAtCell(NE_base, Corner.NorthEast, TopOrBase.Base);
+                                                if (!Point3.IsNull(NE_bottom_corner))
+                                                    break;
+                                            }
+                                        }
+                                        // Create FractureGrid points corresponding to the NE Petrel gridblock corners
+                                        PointXYZ FractureGrid_NEtop = new PointXYZ(NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z);
+                                        PointXYZ FractureGrid_NEbottom = new PointXYZ(NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z);
+                                        // Update mean depth and thickness variables
+                                        local_Current_SurfaceHeight += NE_topgrid_corner.Z;
+                                        local_Current_Depth -= NE_top_corner.Z;
+                                        local_LayerThickness += (NE_top_corner.Z - NE_bottom_corner.Z);
+
+                                        // Find SE cornerpoints; if the top or bottom cells in the SE corner are undefined, use the highest and lowest defined cells
+                                        Index3 SE_topgrid = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, 0);
+                                        Point3 SE_topgrid_corner = PetrelGrid.GetPointAtCell(SE_topgrid, Corner.SouthEast, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(SE_topgrid_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = 1; PetrelGrid_DataCellK <= PetrelGrid_HighestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                SE_topgrid.K = PetrelGrid_DataCellK;
+                                                SE_topgrid_corner = PetrelGrid.GetPointAtCell(SE_topgrid, Corner.SouthEast, TopOrBase.Top);
+                                                if (!Point3.IsNull(SE_topgrid_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 SE_top = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, PetrelGrid_HighestCellK);
+                                        Point3 SE_top_corner = PetrelGrid.GetPointAtCell(SE_top, Corner.SouthEast, TopOrBase.Top);
+                                        // If the top cell is not defined, find the uppermost cell that is
+                                        if (Point3.IsNull(SE_top_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK + 1; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                            {
+                                                SE_top.K = PetrelGrid_DataCellK;
+                                                SE_top_corner = PetrelGrid.GetPointAtCell(SE_top, Corner.SouthEast, TopOrBase.Top);
+                                                if (!Point3.IsNull(SE_top_corner))
+                                                    break;
+                                            }
+                                        }
+                                        Index3 SE_base = new Index3(PetrelGrid_LastCellI, PetrelGrid_FirstCellJ, PetrelGrid_LowestCellK);
+                                        Point3 SE_bottom_corner = PetrelGrid.GetPointAtCell(SE_base, Corner.SouthEast, TopOrBase.Base);
+                                        // If the bottom cell is not defined, find the lowermost cell that is
+                                        if (Point3.IsNull(SE_bottom_corner))
+                                        {
+                                            // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
+                                            for (int PetrelGrid_DataCellK = PetrelGrid_LowestCellK - 1; PetrelGrid_DataCellK >= PetrelGrid_HighestCellK; PetrelGrid_DataCellK--)
+                                            {
+                                                SE_base.K = PetrelGrid_DataCellK;
+                                                SE_bottom_corner = PetrelGrid.GetPointAtCell(SE_base, Corner.SouthEast, TopOrBase.Base);
+                                                if (!Point3.IsNull(SE_bottom_corner))
+                                                    break;
+                                            }
+                                        }
+                                        // Create FractureGrid points corresponding to the SE Petrel gridblock corners
+                                        PointXYZ FractureGrid_SEtop = new PointXYZ(SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z);
+                                        PointXYZ FractureGrid_SEbottom = new PointXYZ(SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z);
+                                        // Update mean depth and thickness variables
+                                        local_Current_SurfaceHeight += SE_topgrid_corner.Z;
+                                        local_Current_Depth -= SE_top_corner.Z;
+                                        local_LayerThickness += (SE_top_corner.Z - SE_bottom_corner.Z);
+
+                                        // Calculate the mean current depth of top surface and layer thickness
+                                        local_Current_SurfaceHeight /= 4;
+                                        local_Current_Depth /= 4;
+                                        local_LayerThickness /= 4;
+                                        // If the top of the grid is above MSL, add this height to the current depth
+                                        // NB If the grid does not extend to the current surface height, this adjustment will need to be made manually by defining a depth of deformation property
+                                        if (local_Current_SurfaceHeight > 0)
+                                            local_Current_Depth += local_Current_SurfaceHeight;
+
+                                        // If either the mean depth or the layer thickness are undefined, then one or more of the corners lies outside the grid
+                                        // In this case we will abort this gridblock and move onto the next
+                                        if (double.IsNaN(local_Current_Depth) || double.IsNaN(local_LayerThickness))
+                                            continue;
+
+                                        // Get the mechanical properties from the grid as required
+                                        // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                        // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                        double local_InitialMicrofractureDensity = InitialMicrofractureDensity;
+                                        double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution;
+                                        double local_SubcriticalPropIndex = SubcriticalPropIndex;
+                                        double local_YoungsMod = YoungsMod;
+                                        double local_PoissonsRatio = PoissonsRatio;
+                                        double local_Porosity = Porosity;
+                                        double local_BiotCoefficient = BiotCoefficient;
+                                        double local_ThermalExpansionCoefficient = ThermalExpansionCoefficient;
+                                        double local_CrackSurfaceEnergy = CrackSurfaceEnergy;
+                                        double local_FrictionCoefficient = FrictionCoefficient;
+                                        double local_RockStrainRelaxation = RockStrainRelaxation;
+                                        double local_FractureRelaxation = FractureRelaxation;
+                                        double local_HostRock_kh = HostRock_kh;
+                                        double local_HostRock_kv = HostRock_kv;
+
+                                        if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
+                                        {
+                                            // Create local variables for running total and number of datapoints for each mechanical property
+                                            double InitialMicrofractureDensity_total = 0;
+                                            int InitialMicrofractureDensity_novalues = 0;
+                                            double InitialMicrofractureSizeDistribution_total = 0;
+                                            int InitialMicrofractureSizeDistribution_novalues = 0;
+                                            double SubcriticalPropIndex_total = 0;
+                                            int SubcriticalPropIndex_novalues = 0;
+                                            double YoungsMod_total = 0;
+                                            int YoungsMod_novalues = 0;
+                                            double PoissonsRatio_total = 0;
+                                            int PoissonsRatio_novalues = 0;
+                                            double Porosity_total = 0;
+                                            int Porosity_novalues = 0;
+                                            double BiotCoeff_total = 0;
+                                            int BiotCoeff_novalues = 0;
+                                            double ThermalExpansionCoefficient_total = 0;
+                                            int ThermalExpansionCoefficient_novalues = 0;
+                                            double CrackSurfaceEnergy_total = 0;
+                                            int CrackSurfaceEnergy_novalues = 0;
+                                            double FrictionCoeff_total = 0;
+                                            int FrictionCoeff_novalues = 0;
+                                            double RockStrainRelaxation_total = 0;
+                                            int RockStrainRelaxation_novalues = 0;
+                                            double FractureRelaxation_total = 0;
+                                            int FractureRelaxation_novalues = 0;
+                                            double HostRock_kh_total = 0;
+                                            int HostRock_kh_novalues = 0;
+                                            double HostRock_kv_total = 0;
+                                            int HostRock_kv_novalues = 0;
+
+                                            // Loop through all the Petrel cells in the gridblock
+                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                     {
-                                                        InitialMicrofractureDensity_total += cell_CapB;
-                                                        InitialMicrofractureDensity_novalues++;
+                                                        Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                        // Update initial microfracture density total if defined
+                                                        if (UseGridFor_InitialMicrofractureDensity)
+                                                        {
+                                                            double cell_CapB = (double)InitialMicrofractureDensity_grid[cellRef];
+                                                            if (!double.IsNaN(cell_CapB))
+                                                            {
+                                                                InitialMicrofractureDensity_total += cell_CapB;
+                                                                InitialMicrofractureDensity_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update initial microfracture size distribution total if defined
+                                                        if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                                        {
+                                                            double cell_smallc = (double)InitialMicrofractureSizeDistribution_grid[cellRef];
+                                                            if (!double.IsNaN(cell_smallc))
+                                                            {
+                                                                InitialMicrofractureSizeDistribution_total += cell_smallc;
+                                                                InitialMicrofractureSizeDistribution_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update subcritical propagation index total if defined
+                                                        if (UseGridFor_SubcriticalPropIndex)
+                                                        {
+                                                            double cell_smallb = (double)SubcriticalPropIndex_grid[cellRef];
+                                                            if (!double.IsNaN(cell_smallb))
+                                                            {
+                                                                SubcriticalPropIndex_total += cell_smallb;
+                                                                SubcriticalPropIndex_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update Young's Modulus total if defined
+                                                        if (UseGridPropertyFor_YoungsMod || UseGridFor_YoungsMod)
+                                                        {
+                                                            double cell_YoungsMod = UseGridPropertyFor_YoungsMod ? (double)YoungsMod_gridProperty[cellRef] : (double)YoungsMod_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_YoungsMod)
+                                                                cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
+                                                            if (!double.IsNaN(cell_YoungsMod))
+                                                            {
+                                                                YoungsMod_total += cell_YoungsMod;
+                                                                YoungsMod_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update Poisson's ratio total if defined
+                                                        if (UseGridPropertyFor_PoissonsRatio || UseGridFor_PoissonsRatio)
+                                                        {
+                                                            double cell_PoissonsRatio = UseGridPropertyFor_PoissonsRatio ? (double)PoissonsRatio_gridProperty[cellRef] : (double)PoissonsRatio_grid[cellRef];
+                                                            if (!double.IsNaN(cell_PoissonsRatio))
+                                                            {
+                                                                PoissonsRatio_total += cell_PoissonsRatio;
+                                                                PoissonsRatio_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update porosity total if defined
+                                                        if (UseGridPropertyFor_Porosity || UseGridFor_Porosity)
+                                                        {
+                                                            double cell_Porosity = UseGridPropertyFor_Porosity ? (double)Porosity_gridProperty[cellRef] : (double)Porosity_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Porosity)
+                                                                cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
+                                                            if (!double.IsNaN(cell_Porosity))
+                                                            {
+                                                                Porosity_total += cell_Porosity;
+                                                                Porosity_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update Biot coefficient total if defined
+                                                        if (UseGridPropertyFor_BiotCoefficient || UseGridFor_BiotCoefficient)
+                                                        {
+                                                            double cell_BiotCoeff = UseGridPropertyFor_BiotCoefficient ? (double)BiotCoefficient_gridProperty[cellRef] : (double)BiotCoefficient_grid[cellRef];
+                                                            if (!double.IsNaN(cell_BiotCoeff))
+                                                            {
+                                                                BiotCoeff_total += cell_BiotCoeff;
+                                                                BiotCoeff_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update thermal expansion coefficient total if defined
+                                                        if (UseGridPropertyFor_ThermalExpansionCoefficient || UseGridFor_ThermalExpansionCoefficient)
+                                                        {
+                                                            double cell_ThermalExpansionCoefficient = UseGridPropertyFor_ThermalExpansionCoefficient ? (double)ThermalExpansionCoefficient_gridProperty[cellRef] : (double)ThermalExpansionCoefficient_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_ThermalExpansionCoefficient)
+                                                                cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
+                                                            if (!double.IsNaN(cell_ThermalExpansionCoefficient))
+                                                            {
+                                                                ThermalExpansionCoefficient_total += cell_ThermalExpansionCoefficient;
+                                                                ThermalExpansionCoefficient_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update crack surface energy total if defined
+                                                        if (UseGridPropertyFor_CrackSurfaceEnergy || UseGridFor_CrackSurfaceEnergy)
+                                                        {
+                                                            double cell_CrackSurfaceEnergy = UseGridPropertyFor_CrackSurfaceEnergy ? (double)CrackSurfaceEnergy_gridProperty[cellRef] : (double)CrackSurfaceEnergy_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_CrackSurfaceEnergy)
+                                                                cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
+                                                            if (!double.IsNaN(cell_CrackSurfaceEnergy))
+                                                            {
+                                                                CrackSurfaceEnergy_total += cell_CrackSurfaceEnergy;
+                                                                CrackSurfaceEnergy_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update friction coefficient total if defined
+                                                        if (UseGridPropertyFor_FrictionCoefficient || UseGridFor_FrictionCoefficient)
+                                                        {
+                                                            double cell_FrictionCoeff = UseGridPropertyFor_FrictionCoefficient ? (double)FrictionCoefficient_gridProperty[cellRef] : (double)FrictionCoefficient_grid[cellRef];
+                                                            // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                                            if (convertFromFrictionAngle_FrictionCoefficient)
+                                                                cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
+                                                            if (!double.IsNaN(cell_FrictionCoeff))
+                                                            {
+                                                                FrictionCoeff_total += cell_FrictionCoeff;
+                                                                FrictionCoeff_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update rock strain relaxation total if defined
+                                                        if (UseGridFor_RockStrainRelaxation)
+                                                        {
+                                                            double cell_RockStrainRelaxation = (double)RockStrainRelaxation_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_RockStrainRelaxation)
+                                                                cell_RockStrainRelaxation = toSITimeUnits.Convert(cell_RockStrainRelaxation);
+                                                            if (!double.IsNaN(cell_RockStrainRelaxation))
+                                                            {
+                                                                if (cell_RockStrainRelaxation > 0)
+                                                                {
+                                                                    RockStrainRelaxation_total += cell_RockStrainRelaxation;
+                                                                    RockStrainRelaxation_novalues++;
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Update fracture strain relaxation total if defined
+                                                        if (UseGridFor_FractureRelaxation)
+                                                        {
+                                                            double cell_FractureRelaxation = (double)FractureRelaxation_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_FractureRelaxation)
+                                                                cell_FractureRelaxation = toSITimeUnits.Convert(cell_FractureRelaxation);
+                                                            if (!double.IsNaN(cell_FractureRelaxation))
+                                                            {
+                                                                if (cell_FractureRelaxation > 0)
+                                                                {
+                                                                    FractureRelaxation_total += cell_FractureRelaxation;
+                                                                    FractureRelaxation_novalues++;
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Update host rock horizontal permeability total if defined
+                                                        if (UseGridFor_HostRock_kh)
+                                                        {
+                                                            double cell_HostRock_kh = (double)HostRock_kh_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_HostRock_kh)
+                                                                cell_HostRock_kh = toSIPermeabilityUnits.Convert(cell_HostRock_kh);
+                                                            if (!double.IsNaN(cell_HostRock_kh))
+                                                            {
+                                                                HostRock_kh_total += cell_HostRock_kh;
+                                                                HostRock_kh_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update host rock vertical permeability total if defined
+                                                        if (UseGridFor_HostRock_kv)
+                                                        {
+                                                            double cell_HostRock_kv = (double)HostRock_kv_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_HostRock_kv)
+                                                                cell_HostRock_kv = toSIPermeabilityUnits.Convert(cell_HostRock_kv);
+                                                            if (!double.IsNaN(cell_HostRock_kv))
+                                                            {
+                                                                HostRock_kv_total += cell_HostRock_kv;
+                                                                HostRock_kv_novalues++;
+                                                            }
+                                                        }
+                                                    }
+
+                                            // Update the gridblock values with the averages - if there is any data to calculate them from
+                                            if (InitialMicrofractureDensity_novalues > 0)
+                                                local_InitialMicrofractureDensity = InitialMicrofractureDensity_total / (double)InitialMicrofractureDensity_novalues;
+                                            if (InitialMicrofractureSizeDistribution_novalues > 0)
+                                                local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_total / (double)InitialMicrofractureSizeDistribution_novalues;
+                                            if (SubcriticalPropIndex_novalues > 0)
+                                                local_SubcriticalPropIndex = SubcriticalPropIndex_total / (double)SubcriticalPropIndex_novalues;
+                                            if (YoungsMod_novalues > 0)
+                                                local_YoungsMod = YoungsMod_total / (double)YoungsMod_novalues;
+                                            if (PoissonsRatio_novalues > 0)
+                                                local_PoissonsRatio = PoissonsRatio_total / (double)PoissonsRatio_novalues;
+                                            if (Porosity_novalues > 0)
+                                                local_Porosity = Porosity_total / (double)Porosity_novalues;
+                                            if (BiotCoeff_novalues > 0)
+                                                local_BiotCoefficient = BiotCoeff_total / (double)BiotCoeff_novalues;
+                                            if (ThermalExpansionCoefficient_novalues > 0)
+                                                local_ThermalExpansionCoefficient = ThermalExpansionCoefficient_total / (double)ThermalExpansionCoefficient_novalues;
+                                            if (CrackSurfaceEnergy_novalues > 0)
+                                                local_CrackSurfaceEnergy = CrackSurfaceEnergy_total / (double)CrackSurfaceEnergy_novalues;
+                                            if (FrictionCoeff_novalues > 0)
+                                                local_FrictionCoefficient = FrictionCoeff_total / (double)FrictionCoeff_novalues;
+                                            if (RockStrainRelaxation_novalues > 0)
+                                                local_RockStrainRelaxation = RockStrainRelaxation_total / (double)RockStrainRelaxation_novalues;
+                                            if (FractureRelaxation_novalues > 0)
+                                                local_FractureRelaxation = FractureRelaxation_total / (double)FractureRelaxation_novalues;
+                                            if (HostRock_kh_novalues > 0)
+                                                local_HostRock_kh = HostRock_kh_total / (double)HostRock_kh_novalues;
+                                            if (HostRock_kv_novalues > 0)
+                                                local_HostRock_kv = HostRock_kv_total / (double)HostRock_kv_novalues;
+                                        }
+                                        else // We are taking data from a single cell
+                                        {
+                                            // Create a reference to the cell from which we will read the data
+                                            Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                            // Update initial microfracture density total if defined
+                                            if (UseGridFor_InitialMicrofractureDensity)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                                {
+                                                    cellRef.K = PetrelGrid_DataCellK;
+                                                    double cell_InitialMicrofractureDensity = (double)InitialMicrofractureDensity_grid[cellRef];
+                                                    if (!double.IsNaN(cell_InitialMicrofractureDensity))
+                                                    {
+                                                        local_InitialMicrofractureDensity = cell_InitialMicrofractureDensity;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update initial microfracture size distribution total if defined
-                                                if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                            // Update initial microfracture size distribution total if defined
+                                            if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
-                                                    double cell_smallc = (double)InitialMicrofractureSizeDistribution_grid[cellRef];
-                                                    if (!double.IsNaN(cell_smallc))
+                                                    cellRef.K = PetrelGrid_DataCellK;
+                                                    double cell_InitialMicrofractureSizeDistribution = (double)InitialMicrofractureSizeDistribution_grid[cellRef];
+                                                    if (!double.IsNaN(cell_InitialMicrofractureSizeDistribution))
                                                     {
-                                                        InitialMicrofractureSizeDistribution_total += cell_smallc;
-                                                        InitialMicrofractureSizeDistribution_novalues++;
+                                                        local_InitialMicrofractureSizeDistribution = cell_InitialMicrofractureSizeDistribution;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update subcritical propagation index total if defined
-                                                if (UseGridFor_SubcriticalPropIndex)
+                                            // Update subcritical propagation index total if defined
+                                            if (UseGridFor_SubcriticalPropIndex)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
-                                                    double cell_smallb = (double)SubcriticalPropIndex_grid[cellRef];
-                                                    if (!double.IsNaN(cell_smallb))
+                                                    cellRef.K = PetrelGrid_DataCellK;
+                                                    double cell_SubcriticalPropIndex = (double)SubcriticalPropIndex_grid[cellRef];
+                                                    if (!double.IsNaN(cell_SubcriticalPropIndex))
                                                     {
-                                                        SubcriticalPropIndex_total += cell_smallb;
-                                                        SubcriticalPropIndex_novalues++;
+                                                        local_SubcriticalPropIndex = cell_SubcriticalPropIndex;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update Young's Modulus total if defined
-                                                if (UseGridPropertyFor_YoungsMod || UseGridFor_YoungsMod)
+                                            // Update Young's Modulus total if defined
+                                            if (UseGridPropertyFor_YoungsMod || UseGridFor_YoungsMod)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_YoungsMod = UseGridPropertyFor_YoungsMod ? (double)YoungsMod_gridProperty[cellRef] : (double)YoungsMod_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_YoungsMod)
                                                         cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
                                                     if (!double.IsNaN(cell_YoungsMod))
                                                     {
-                                                        YoungsMod_total += cell_YoungsMod;
-                                                        YoungsMod_novalues++;
+                                                        local_YoungsMod = cell_YoungsMod;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update Poisson's ratio total if defined
-                                                if (UseGridPropertyFor_PoissonsRatio || UseGridFor_PoissonsRatio)
+                                            // Update Poisson's ratio total if defined
+                                            if (UseGridPropertyFor_PoissonsRatio || UseGridFor_PoissonsRatio)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_PoissonsRatio = UseGridPropertyFor_PoissonsRatio ? (double)PoissonsRatio_gridProperty[cellRef] : (double)PoissonsRatio_grid[cellRef];
                                                     if (!double.IsNaN(cell_PoissonsRatio))
                                                     {
-                                                        PoissonsRatio_total += cell_PoissonsRatio;
-                                                        PoissonsRatio_novalues++;
+                                                        local_PoissonsRatio = cell_PoissonsRatio;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update porosity total if defined
-                                                if (UseGridPropertyFor_Porosity || UseGridFor_Porosity)
+                                            // Update porosity total if defined
+                                            if (UseGridPropertyFor_Porosity || UseGridFor_Porosity)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_Porosity = UseGridPropertyFor_Porosity ? (double)Porosity_gridProperty[cellRef] : (double)Porosity_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_Porosity)
                                                         cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
                                                     if (!double.IsNaN(cell_Porosity))
                                                     {
-                                                        Porosity_total += cell_Porosity;
-                                                        Porosity_novalues++;
+                                                        local_Porosity = cell_Porosity;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update Biot coefficient total if defined
-                                                if (UseGridPropertyFor_BiotCoefficient || UseGridFor_BiotCoefficient)
+                                            // Update Biot coefficient total if defined
+                                            if (UseGridPropertyFor_BiotCoefficient || UseGridFor_BiotCoefficient)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_BiotCoeff = UseGridPropertyFor_BiotCoefficient ? (double)BiotCoefficient_gridProperty[cellRef] : (double)BiotCoefficient_grid[cellRef];
                                                     if (!double.IsNaN(cell_BiotCoeff))
                                                     {
-                                                        BiotCoeff_total += cell_BiotCoeff;
-                                                        BiotCoeff_novalues++;
+                                                        local_BiotCoefficient = cell_BiotCoeff;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update thermal expansion coefficient total if defined
-                                                if (UseGridPropertyFor_ThermalExpansionCoefficient || UseGridFor_ThermalExpansionCoefficient)
+                                            // Update thermal expansion coefficient total if defined
+                                            if (UseGridPropertyFor_ThermalExpansionCoefficient || UseGridFor_ThermalExpansionCoefficient)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_ThermalExpansionCoefficient = UseGridPropertyFor_ThermalExpansionCoefficient ? (double)ThermalExpansionCoefficient_gridProperty[cellRef] : (double)ThermalExpansionCoefficient_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_ThermalExpansionCoefficient)
                                                         cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
                                                     if (!double.IsNaN(cell_ThermalExpansionCoefficient))
                                                     {
-                                                        ThermalExpansionCoefficient_total += cell_ThermalExpansionCoefficient;
-                                                        ThermalExpansionCoefficient_novalues++;
+                                                        local_ThermalExpansionCoefficient = cell_ThermalExpansionCoefficient;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update crack surface energy total if defined
-                                                if (UseGridPropertyFor_CrackSurfaceEnergy || UseGridFor_CrackSurfaceEnergy)
+                                            // Update crack surface energy total if defined
+                                            if (UseGridPropertyFor_CrackSurfaceEnergy || UseGridFor_CrackSurfaceEnergy)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_CrackSurfaceEnergy = UseGridPropertyFor_CrackSurfaceEnergy ? (double)CrackSurfaceEnergy_gridProperty[cellRef] : (double)CrackSurfaceEnergy_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_CrackSurfaceEnergy)
                                                         cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
                                                     if (!double.IsNaN(cell_CrackSurfaceEnergy))
                                                     {
-                                                        CrackSurfaceEnergy_total += cell_CrackSurfaceEnergy;
-                                                        CrackSurfaceEnergy_novalues++;
+                                                        local_CrackSurfaceEnergy = cell_CrackSurfaceEnergy;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update friction coefficient total if defined
-                                                if (UseGridPropertyFor_FrictionCoefficient || UseGridFor_FrictionCoefficient)
+                                            // Update friction coefficient total if defined
+                                            if (UseGridPropertyFor_FrictionCoefficient || UseGridFor_FrictionCoefficient)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_FrictionCoeff = UseGridPropertyFor_FrictionCoefficient ? (double)FrictionCoefficient_gridProperty[cellRef] : (double)FrictionCoefficient_grid[cellRef];
                                                     // If the property has a FrictionAngle template, convert this to a friction coefficient
                                                     if (convertFromFrictionAngle_FrictionCoefficient)
                                                         cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
                                                     if (!double.IsNaN(cell_FrictionCoeff))
                                                     {
-                                                        FrictionCoeff_total += cell_FrictionCoeff;
-                                                        FrictionCoeff_novalues++;
+                                                        local_FrictionCoefficient = cell_FrictionCoeff;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update rock strain relaxation total if defined
-                                                if (UseGridFor_RockStrainRelaxation)
+                                            // Update rock strain relaxation total if defined
+                                            if (UseGridFor_RockStrainRelaxation)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_RockStrainRelaxation = (double)RockStrainRelaxation_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_RockStrainRelaxation)
                                                         cell_RockStrainRelaxation = toSITimeUnits.Convert(cell_RockStrainRelaxation);
                                                     if (!double.IsNaN(cell_RockStrainRelaxation))
                                                     {
-                                                        if (cell_RockStrainRelaxation > 0)
-                                                        {
-                                                            RockStrainRelaxation_total += cell_RockStrainRelaxation;
-                                                            RockStrainRelaxation_novalues++;
-                                                        }
+                                                        local_RockStrainRelaxation = cell_RockStrainRelaxation;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update fracture strain relaxation total if defined
-                                                if (UseGridFor_FractureRelaxation)
+                                            // Update fracture strain relaxation total if defined
+                                            if (UseGridFor_FractureRelaxation)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_FractureRelaxation = (double)FractureRelaxation_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_FractureRelaxation)
                                                         cell_FractureRelaxation = toSITimeUnits.Convert(cell_FractureRelaxation);
                                                     if (!double.IsNaN(cell_FractureRelaxation))
                                                     {
-                                                        if (cell_FractureRelaxation > 0)
-                                                        {
-                                                            FractureRelaxation_total += cell_FractureRelaxation;
-                                                            FractureRelaxation_novalues++;
-                                                        }
+                                                        local_FractureRelaxation = cell_FractureRelaxation;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update host rock horizontal permeability total if defined
-                                                if (UseGridFor_HostRock_kh)
+                                            // Update host rock horizontal permeability total if defined
+                                            if (UseGridFor_HostRock_kh)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_HostRock_kh = (double)HostRock_kh_grid[cellRef];
-                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                    if (convertFromGeneral_HostRock_kh)
-                                                        cell_HostRock_kh = toSIPermeabilityUnits.Convert(cell_HostRock_kh);
                                                     if (!double.IsNaN(cell_HostRock_kh))
                                                     {
-                                                        HostRock_kh_total += cell_HostRock_kh;
-                                                        HostRock_kh_novalues++;
+                                                        local_HostRock_kh = cell_HostRock_kh;
+                                                        break;
                                                     }
                                                 }
+                                            }
 
-                                                // Update host rock vertical permeability total if defined
-                                                if (UseGridFor_HostRock_kv)
+                                            // Update host rock vertical permeability total if defined
+                                            if (UseGridFor_HostRock_kv)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_HostRock_kv = (double)HostRock_kv_grid[cellRef];
-                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                    if (convertFromGeneral_HostRock_kv)
-                                                        cell_HostRock_kv = toSIPermeabilityUnits.Convert(cell_HostRock_kv);
                                                     if (!double.IsNaN(cell_HostRock_kv))
                                                     {
-                                                        HostRock_kv_total += cell_HostRock_kv;
-                                                        HostRock_kv_novalues++;
+                                                        local_HostRock_kv = cell_HostRock_kv;
+                                                        break;
                                                     }
                                                 }
                                             }
-
-                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                    if (InitialMicrofractureDensity_novalues > 0)
-                                        local_InitialMicrofractureDensity = InitialMicrofractureDensity_total / (double)InitialMicrofractureDensity_novalues;
-                                    if (InitialMicrofractureSizeDistribution_novalues > 0)
-                                        local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_total / (double)InitialMicrofractureSizeDistribution_novalues;
-                                    if (SubcriticalPropIndex_novalues > 0)
-                                        local_SubcriticalPropIndex = SubcriticalPropIndex_total / (double)SubcriticalPropIndex_novalues;
-                                    if (YoungsMod_novalues > 0)
-                                        local_YoungsMod = YoungsMod_total / (double)YoungsMod_novalues;
-                                    if (PoissonsRatio_novalues > 0)
-                                        local_PoissonsRatio = PoissonsRatio_total / (double)PoissonsRatio_novalues;
-                                    if (Porosity_novalues > 0)
-                                        local_Porosity = Porosity_total / (double)Porosity_novalues;
-                                    if (BiotCoeff_novalues > 0)
-                                        local_BiotCoefficient = BiotCoeff_total / (double)BiotCoeff_novalues;
-                                    if (ThermalExpansionCoefficient_novalues > 0)
-                                        local_ThermalExpansionCoefficient = ThermalExpansionCoefficient_total / (double)ThermalExpansionCoefficient_novalues;
-                                    if (CrackSurfaceEnergy_novalues > 0)
-                                        local_CrackSurfaceEnergy = CrackSurfaceEnergy_total / (double)CrackSurfaceEnergy_novalues;
-                                    if (FrictionCoeff_novalues > 0)
-                                        local_FrictionCoefficient = FrictionCoeff_total / (double)FrictionCoeff_novalues;
-                                    if (RockStrainRelaxation_novalues > 0)
-                                        local_RockStrainRelaxation = RockStrainRelaxation_total / (double)RockStrainRelaxation_novalues;
-                                    if (FractureRelaxation_novalues > 0)
-                                        local_FractureRelaxation = FractureRelaxation_total / (double)FractureRelaxation_novalues;
-                                    if (HostRock_kh_novalues > 0)
-                                        local_HostRock_kh = HostRock_kh_total / (double)HostRock_kh_novalues;
-                                    if (HostRock_kv_novalues > 0)
-                                        local_HostRock_kv = HostRock_kv_total / (double)HostRock_kv_novalues;
-                                }
-                                else // We are taking data from a single cell
-                                {
-                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                    if (HorizontalUpscalingFactor > 1)
-                                    {
-                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                    }
-
-                                    // Create a reference to the cell from which we will read the data
-                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                    // Update initial microfracture density total if defined
-                                    if (UseGridFor_InitialMicrofractureDensity)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_InitialMicrofractureDensity = (double)InitialMicrofractureDensity_grid[cellRef];
-                                            if (!double.IsNaN(cell_InitialMicrofractureDensity))
-                                            {
-                                                local_InitialMicrofractureDensity = cell_InitialMicrofractureDensity;
-                                                break;
-                                            }
                                         }
-                                    }
 
-                                    // Update initial microfracture size distribution total if defined
-                                    if (UseGridFor_InitialMicrofractureSizeDistribution)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                                        // Therefore unit conversion for InitialMicrofractureDensity A must be carried out now
+                                        // Unit conversion must be done on a cell by cell basis, since the values of InitialMicrofractureSizeDistribution may vary between cells
+                                        if (!lengthUnitMetres)
                                         {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_InitialMicrofractureSizeDistribution = (double)InitialMicrofractureSizeDistribution_grid[cellRef];
-                                            if (!double.IsNaN(cell_InitialMicrofractureSizeDistribution))
-                                            {
-                                                local_InitialMicrofractureSizeDistribution = cell_InitialMicrofractureSizeDistribution;
-                                                break;
-                                            }
+                                            double toSIUnits_InitialMicrofractureDensity = Math.Pow(toSIUnits_Length, local_InitialMicrofractureSizeDistribution - 3);
+                                            local_InitialMicrofractureDensity *= toSIUnits_InitialMicrofractureDensity;
                                         }
-                                    }
 
-                                    // Update subcritical propagation index total if defined
-                                    if (UseGridFor_SubcriticalPropIndex)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        // Check the elastic properties for physically unrealistic values, and if so warn the user
+                                        // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+                                        // and these values will automatically be corrected by the MechanicalProperties object
+                                        if (local_YoungsMod <= 0)
                                         {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_SubcriticalPropIndex = (double)SubcriticalPropIndex_grid[cellRef];
-                                            if (!double.IsNaN(cell_SubcriticalPropIndex))
-                                            {
-                                                local_SubcriticalPropIndex = cell_SubcriticalPropIndex;
-                                                break;
-                                            }
+                                            PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Young's Modulus ({0}Pa) in cell {1},{2}. This will create errors in the calculation.", local_YoungsMod, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
                                         }
-                                    }
-
-                                    // Update Young's Modulus total if defined
-                                    if (UseGridPropertyFor_YoungsMod || UseGridFor_YoungsMod)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        if ((local_PoissonsRatio < 0) || (local_PoissonsRatio > 0.5))
                                         {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_YoungsMod = UseGridPropertyFor_YoungsMod ? (double)YoungsMod_gridProperty[cellRef] : (double)YoungsMod_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_YoungsMod)
-                                                cell_YoungsMod = toSIYoungsModUnits.Convert(cell_YoungsMod);
-                                            if (!double.IsNaN(cell_YoungsMod))
-                                            {
-                                                local_YoungsMod = cell_YoungsMod;
-                                                break;
-                                            }
+                                            PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
                                         }
-                                    }
+                                        // End get the mechanical properties from the grid as required
 
-                                    // Update Poisson's ratio total if defined
-                                    if (UseGridPropertyFor_PoissonsRatio || UseGridFor_PoissonsRatio)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                        // Get the deformation load data for each deformation episode
+                                        // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
+                                        List<Tensor2S> local_EhRate_list = new List<Tensor2S>();
+                                        List<double> local_AppliedOverpressureRate_list = new List<double>();
+                                        List<double> local_AppliedTemperatureChange_list = new List<double>();
+                                        List<double> local_AppliedUpliftRate_list = new List<double>();
+                                        List<double> local_StressArchingFactor_list = new List<double>();
+                                        List<double> local_DeformationEpisodeDuration_list = new List<double>();
+                                        List<double> local_InitialAbsoluteVerticalStress_list = new List<double>();
+                                        List<Tensor2S> local_AbsoluteStressRate_list = new List<Tensor2S>();
+                                        List<Tensor2S> local_InitialAbsoluteStress_list = new List<Tensor2S>();
+                                        List<double> local_InitialFluidPressure_list = new List<double>();
+                                        // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
+                                        // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to zero
+                                        double local_DefaultFractureAzimuth = 0;
+                                        for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                                         {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_PoissonsRatio = UseGridPropertyFor_PoissonsRatio ? (double)PoissonsRatio_gridProperty[cellRef] : (double)PoissonsRatio_grid[cellRef];
-                                            if (!double.IsNaN(cell_PoissonsRatio))
+                                            // Get the time converter for this episode
+                                            // This can vary between episodes as the time units may be different for each deformation episode
+                                            // NB Times in project units must be divided by the converter to convert to SI units (s)
+                                            // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
+                                            double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
+
+                                            // Get the deformation load data from the grid as required
+                                            // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                            // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                            double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
+                                            double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
+                                            double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+
+                                            // Get local handles for the properties and flags
+                                            bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
+                                            Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
+                                            bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
+                                            Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
+                                            bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
+                                            Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
+                                            bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                            Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                            bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                            Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                            bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
+                                            Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
+
+                                            if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                                             {
-                                                local_PoissonsRatio = cell_PoissonsRatio;
-                                                break;
-                                            }
-                                        }
-                                    }
+                                                // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                                double ehmin_orient_x_total = 0;
+                                                double ehmin_orient_y_total = 0;
+                                                int ehmin_orient_novalues = 0;
+                                                double ehmin_rate_total = 0;
+                                                int ehmin_rate_novalues = 0;
+                                                double ehmax_rate_total = 0;
+                                                int ehmax_rate_novalues = 0;
+                                                double OP_rate_total = 0;
+                                                int OP_rate_novalues = 0;
+                                                double temp_rate_total = 0;
+                                                int temp_rate_novalues = 0;
+                                                double uplift_rate_total = 0;
+                                                int uplift_rate_novalues = 0;
 
-                                    // Update porosity total if defined
-                                    if (UseGridPropertyFor_Porosity || UseGridFor_Porosity)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_Porosity = UseGridPropertyFor_Porosity ? (double)Porosity_gridProperty[cellRef] : (double)Porosity_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_Porosity)
-                                                cell_Porosity = toSIPorosityUnits.Convert(cell_Porosity);
-                                            if (!double.IsNaN(cell_Porosity))
+                                                // Loop through all the Petrel cells in the gridblock
+                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                        for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                        {
+                                                            Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                            // Update ehmin orientation total if defined
+                                                            if (UseGridFor_EhminAzi)
+                                                            {
+                                                                double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
+                                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                if (convertFromGeneral_EhminAzi)
+                                                                    cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
+                                                                if (!double.IsNaN(cell_ehmin_orient))
+                                                                {
+                                                                    // Trim the ehmin orientation values so they lie within a semicircular range
+                                                                    // To try to get a more meaningful average, the range will depend on the previous values
+                                                                    // If previous values have tended towards an EW orientation (so total x > total y), the range will be between 0 and pi to better average near EW vectors
+                                                                    if (Math.Abs(ehmin_orient_x_total) > 1.2 * Math.Abs(ehmin_orient_y_total))
+                                                                    {
+                                                                        // Trim the ehmin orientation values so they lie between 0 and pi
+                                                                        while (cell_ehmin_orient < 0)
+                                                                            cell_ehmin_orient += Math.PI;
+                                                                        while (cell_ehmin_orient >= Math.PI)
+                                                                            cell_ehmin_orient -= Math.PI;
+                                                                    }
+                                                                    // If previous values have tended towards an NS orientation (so total x < total y), the range will be between -pi/2 and pi/2 to better average near NS vectors
+                                                                    else if (Math.Abs(ehmin_orient_y_total) > 1.2 * Math.Abs(ehmin_orient_x_total))
+                                                                    {
+                                                                        // Trim the ehmin orientation values so they lie between 0 and pi
+                                                                        while (cell_ehmin_orient < -(Math.PI / 2))
+                                                                            cell_ehmin_orient += Math.PI;
+                                                                        while (cell_ehmin_orient >= (Math.PI / 2))
+                                                                            cell_ehmin_orient -= Math.PI;
+                                                                    }
+                                                                    // If previous values have no preferred orientation, or this is the first value (so total x = total y), the range will be between -pi/4 and 3*pi/4 to better average near NS vectors
+                                                                    else
+                                                                    {
+                                                                        // Trim the ehmin orientation values so they lie between -pi/4 and 3*pi/4
+                                                                        while (cell_ehmin_orient < -(Math.PI / 4))
+                                                                            cell_ehmin_orient += Math.PI;
+                                                                        while (cell_ehmin_orient >= (3 * Math.PI / 4))
+                                                                            cell_ehmin_orient -= Math.PI;
+                                                                    }
+
+                                                                    ehmin_orient_x_total += Math.Sin(cell_ehmin_orient);
+                                                                    ehmin_orient_y_total += Math.Cos(cell_ehmin_orient);
+                                                                    ehmin_orient_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update ehmin rate total if defined
+                                                            if (UseGridFor_EhminRate)
+                                                            {
+                                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] / TimeUnitConverter;
+                                                                if (!double.IsNaN(cell_ehmin_rate))
+                                                                {
+                                                                    ehmin_rate_total += cell_ehmin_rate;
+                                                                    ehmin_rate_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update ehmax rate total if defined
+                                                            if (UseGridFor_EhmaxRate)
+                                                            {
+                                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] / TimeUnitConverter;
+                                                                if (!double.IsNaN(cell_ehmax_rate))
+                                                                {
+                                                                    ehmax_rate_total += cell_ehmax_rate;
+                                                                    ehmax_rate_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update overpressure rate total if defined
+                                                            if (UseGridFor_AppliedOverpressureRate)
+                                                            {
+                                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
+                                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] / TimeUnitConverter;
+                                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                if (convertFromGeneral_AppliedOverpressureRate)
+                                                                    cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
+                                                                if (!double.IsNaN(cell_OP_rate))
+                                                                {
+                                                                    OP_rate_total += cell_OP_rate;
+                                                                    OP_rate_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update temperature change total if defined
+                                                            if (UseGridFor_AppliedTemperatureChange)
+                                                            {
+                                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
+                                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] / TimeUnitConverter;
+                                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                if (convertFromGeneral_AppliedTemperatureChange)
+                                                                    cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
+                                                                if (!double.IsNaN(cell_temp_rate))
+                                                                {
+                                                                    temp_rate_total += cell_temp_rate;
+                                                                    temp_rate_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update uplift rate total if defined
+                                                            if (UseGridFor_AppliedUpliftRate)
+                                                            {
+                                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
+                                                                // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
+                                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] / TimeUnitConverter;
+                                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                if (convertFromGeneral_AppliedUpliftRate)
+                                                                    cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
+                                                                if (!double.IsNaN(cell_uplift_rate))
+                                                                {
+                                                                    uplift_rate_total += cell_uplift_rate;
+                                                                    uplift_rate_novalues++;
+                                                                }
+                                                            }
+                                                        }
+
+                                                // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                if (ehmin_orient_novalues > 0)
+                                                    local_EhminAzi = Math.Atan(ehmin_orient_x_total / ehmin_orient_y_total);
+                                                if (ehmin_rate_novalues > 0)
+                                                    local_EhminRate = ehmin_rate_total / (double)ehmin_rate_novalues;
+                                                if (ehmax_rate_novalues > 0)
+                                                    local_EhmaxRate = ehmax_rate_total / (double)ehmax_rate_novalues;
+                                                if (OP_rate_novalues > 0)
+                                                    local_AppliedOverpressureRate = OP_rate_total / (double)OP_rate_novalues;
+                                                if (temp_rate_novalues > 0)
+                                                    local_AppliedTemperatureChange = temp_rate_total / (double)temp_rate_novalues;
+                                                if (uplift_rate_novalues > 0)
+                                                    local_AppliedUpliftRate = uplift_rate_total / (double)uplift_rate_novalues;
+                                            }
+                                            else // We are taking data from a single cell
                                             {
-                                                local_Porosity = cell_Porosity;
-                                                break;
-                                            }
-                                        }
-                                    }
+                                                // Create a reference to the cell from which we will read the data
+                                                Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
 
-                                    // Update Biot coefficient total if defined
-                                    if (UseGridPropertyFor_BiotCoefficient || UseGridFor_BiotCoefficient)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_BiotCoeff = UseGridPropertyFor_BiotCoefficient ? (double)BiotCoefficient_gridProperty[cellRef] : (double)BiotCoefficient_grid[cellRef];
-                                            if (!double.IsNaN(cell_BiotCoeff))
-                                            {
-                                                local_BiotCoefficient = cell_BiotCoeff;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update thermal expansion coefficient total if defined
-                                    if (UseGridPropertyFor_ThermalExpansionCoefficient || UseGridFor_ThermalExpansionCoefficient)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_ThermalExpansionCoefficient = UseGridPropertyFor_ThermalExpansionCoefficient ? (double)ThermalExpansionCoefficient_gridProperty[cellRef] : (double)ThermalExpansionCoefficient_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_ThermalExpansionCoefficient)
-                                                cell_ThermalExpansionCoefficient = toSIThermalExpansionCoefficientUnits.Convert(cell_ThermalExpansionCoefficient);
-                                            if (!double.IsNaN(cell_ThermalExpansionCoefficient))
-                                            {
-                                                local_ThermalExpansionCoefficient = cell_ThermalExpansionCoefficient;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update crack surface energy total if defined
-                                    if (UseGridPropertyFor_CrackSurfaceEnergy || UseGridFor_CrackSurfaceEnergy)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_CrackSurfaceEnergy = UseGridPropertyFor_CrackSurfaceEnergy ? (double)CrackSurfaceEnergy_gridProperty[cellRef] : (double)CrackSurfaceEnergy_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_CrackSurfaceEnergy)
-                                                cell_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_CrackSurfaceEnergy);
-                                            if (!double.IsNaN(cell_CrackSurfaceEnergy))
-                                            {
-                                                local_CrackSurfaceEnergy = cell_CrackSurfaceEnergy;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update friction coefficient total if defined
-                                    if (UseGridPropertyFor_FrictionCoefficient || UseGridFor_FrictionCoefficient)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_FrictionCoeff = UseGridPropertyFor_FrictionCoefficient ? (double)FrictionCoefficient_gridProperty[cellRef] : (double)FrictionCoefficient_grid[cellRef];
-                                            // If the property has a FrictionAngle template, convert this to a friction coefficient
-                                            if (convertFromFrictionAngle_FrictionCoefficient)
-                                                cell_FrictionCoeff = Math.Tan(cell_FrictionCoeff);
-                                            if (!double.IsNaN(cell_FrictionCoeff))
-                                            {
-                                                local_FrictionCoefficient = cell_FrictionCoeff;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update rock strain relaxation total if defined
-                                    if (UseGridFor_RockStrainRelaxation)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_RockStrainRelaxation = (double)RockStrainRelaxation_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_RockStrainRelaxation)
-                                                cell_RockStrainRelaxation = toSITimeUnits.Convert(cell_RockStrainRelaxation);
-                                            if (!double.IsNaN(cell_RockStrainRelaxation))
-                                            {
-                                                local_RockStrainRelaxation = cell_RockStrainRelaxation;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update fracture strain relaxation total if defined
-                                    if (UseGridFor_FractureRelaxation)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_FractureRelaxation = (double)FractureRelaxation_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_FractureRelaxation)
-                                                cell_FractureRelaxation = toSITimeUnits.Convert(cell_FractureRelaxation);
-                                            if (!double.IsNaN(cell_FractureRelaxation))
-                                            {
-                                                local_FractureRelaxation = cell_FractureRelaxation;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update host rock horizontal permeability total if defined
-                                    if (UseGridFor_HostRock_kh)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_HostRock_kh = (double)HostRock_kh_grid[cellRef];
-                                            if (!double.IsNaN(cell_HostRock_kh))
-                                            {
-                                                local_HostRock_kh = cell_HostRock_kh;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    // Update host rock vertical permeability total if defined
-                                    if (UseGridFor_HostRock_kv)
-                                    {
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_HostRock_kv = (double)HostRock_kv_grid[cellRef];
-                                            if (!double.IsNaN(cell_HostRock_kv))
-                                            {
-                                                local_HostRock_kv = cell_HostRock_kv;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
-                                // Therefore unit conversion for InitialMicrofractureDensity A must be carried out now
-                                // Unit conversion must be done on a cell by cell basis, since the values of InitialMicrofractureSizeDistribution may vary between cells
-                                if (!lengthUnitMetres)
-                                {
-                                    double toSIUnits_InitialMicrofractureDensity = Math.Pow(toSIUnits_Length, local_InitialMicrofractureSizeDistribution - 3);
-                                    local_InitialMicrofractureDensity *= toSIUnits_InitialMicrofractureDensity;
-                                }
-
-                                // Check the elastic properties for physically unrealistic values, and if so warn the user
-                                // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
-                                // and these values will automatically be corrected by the MechanicalProperties object
-                                if (local_YoungsMod <= 0)
-                                {
-                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Young's Modulus ({0}Pa) in cell {1},{2}. This will create errors in the calculation.", local_YoungsMod, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
-                                }
-                                if ((local_PoissonsRatio < 0) || (local_PoissonsRatio > 0.5))
-                                {
-                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
-                                }
-                                // End get the mechanical properties from the grid as required
-
-                                // Get the deformation load data for each deformation episode
-                                // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
-                                List<Tensor2S> local_EhRate_list = new List<Tensor2S>();
-                                List<double> local_AppliedOverpressureRate_list = new List<double>();
-                                List<double> local_AppliedTemperatureChange_list = new List<double>();
-                                List<double> local_AppliedUpliftRate_list = new List<double>();
-                                List<double> local_StressArchingFactor_list = new List<double>();
-                                List<double> local_DeformationEpisodeDuration_list = new List<double>();
-                                List<double> local_InitialAbsoluteVerticalStress_list = new List<double>();
-                                List<Tensor2S> local_AbsoluteStressRate_list = new List<Tensor2S>();
-                                List<Tensor2S> local_InitialAbsoluteStress_list = new List<Tensor2S>();
-                                List<double> local_InitialFluidPressure_list = new List<double>();
-                                // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
-                                // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to zero
-                                double local_DefaultFractureAzimuth = 0;
-                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
-                                {
-                                    // Get the time converter for this episode
-                                    // This can vary between episodes as the time units may be different for each deformation episode
-                                    // NB Times in project units must be divided by the converter to convert to SI units (s)
-                                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
-                                    double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
-
-                                    // Get the deformation load data from the grid as required
-                                    // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                    // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                    double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
-                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
-
-                                    // Get local handles for the properties and flags
-                                    bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
-                                    Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
-                                    bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
-                                    Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
-                                    bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
-                                    Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
-                                    Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
-
-                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                    {
-                                        // Create local variables for running total and number of datapoints for each stress/strain state parameter
-                                        double ehmin_orient_x_total = 0;
-                                        double ehmin_orient_y_total = 0;
-                                        int ehmin_orient_novalues = 0;
-                                        double ehmin_rate_total = 0;
-                                        int ehmin_rate_novalues = 0;
-                                        double ehmax_rate_total = 0;
-                                        int ehmax_rate_novalues = 0;
-                                        double OP_rate_total = 0;
-                                        int OP_rate_novalues = 0;
-                                        double temp_rate_total = 0;
-                                        int temp_rate_novalues = 0;
-                                        double uplift_rate_total = 0;
-                                        int uplift_rate_novalues = 0;
-
-                                        // Loop through all the Petrel cells in the gridblock
-                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                // Update ehmin orientation total if defined
+                                                if (UseGridFor_EhminAzi)
                                                 {
-                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                    // Update ehmin orientation total if defined
-                                                    if (UseGridFor_EhminAzi)
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
                                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                         if (convertFromGeneral_EhminAzi)
                                                             cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
                                                         if (!double.IsNaN(cell_ehmin_orient))
                                                         {
-                                                            // Trim the ehmin orientation values so they lie within a semicircular range
-                                                            // To try to get a more meaningful average, the range will depend on the previous values
-                                                            // If previous values have tended towards an EW orientation (so total x > total y), the range will be between 0 and pi to better average near EW vectors
-                                                            if (Math.Abs(ehmin_orient_x_total) > 1.2 * Math.Abs(ehmin_orient_y_total))
-                                                            {
-                                                                // Trim the ehmin orientation values so they lie between 0 and pi
-                                                                while (cell_ehmin_orient < 0)
-                                                                    cell_ehmin_orient += Math.PI;
-                                                                while (cell_ehmin_orient >= Math.PI)
-                                                                    cell_ehmin_orient -= Math.PI;
-                                                            }
-                                                            // If previous values have tended towards an NS orientation (so total x < total y), the range will be between -pi/2 and pi/2 to better average near NS vectors
-                                                            else if (Math.Abs(ehmin_orient_y_total) > 1.2 * Math.Abs(ehmin_orient_x_total))
-                                                            {
-                                                                // Trim the ehmin orientation values so they lie between 0 and pi
-                                                                while (cell_ehmin_orient < -(Math.PI / 2))
-                                                                    cell_ehmin_orient += Math.PI;
-                                                                while (cell_ehmin_orient >= (Math.PI / 2))
-                                                                    cell_ehmin_orient -= Math.PI;
-                                                            }
-                                                            // If previous values have no preferred orientation, or this is the first value (so total x = total y), the range will be between -pi/4 and 3*pi/4 to better average near NS vectors
-                                                            else
-                                                            {
-                                                                // Trim the ehmin orientation values so they lie between -pi/4 and 3*pi/4
-                                                                while (cell_ehmin_orient < -(Math.PI / 4))
-                                                                    cell_ehmin_orient += Math.PI;
-                                                                while (cell_ehmin_orient >= (3 * Math.PI / 4))
-                                                                    cell_ehmin_orient -= Math.PI;
-                                                            }
-
-                                                            ehmin_orient_x_total += Math.Sin(cell_ehmin_orient);
-                                                            ehmin_orient_y_total += Math.Cos(cell_ehmin_orient);
-                                                            ehmin_orient_novalues++;
+                                                            local_EhminAzi = cell_ehmin_orient;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update ehmin rate total if defined
-                                                    if (UseGridFor_EhminRate)
+                                                // Update ehmin rate total if defined
+                                                if (UseGridFor_EhminRate)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         double cell_ehmin_rate = (double)EhminRate_grid[cellRef] / TimeUnitConverter;
                                                         if (!double.IsNaN(cell_ehmin_rate))
                                                         {
-                                                            ehmin_rate_total += cell_ehmin_rate;
-                                                            ehmin_rate_novalues++;
+                                                            local_EhminRate = cell_ehmin_rate;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update ehmax rate total if defined
-                                                    if (UseGridFor_EhmaxRate)
+                                                // Update ehmax rate total if defined
+                                                if (UseGridFor_EhmaxRate)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] / TimeUnitConverter;
                                                         if (!double.IsNaN(cell_ehmax_rate))
                                                         {
-                                                            ehmax_rate_total += cell_ehmax_rate;
-                                                            ehmax_rate_novalues++;
+                                                            local_EhmaxRate = cell_ehmax_rate;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update overpressure rate total if defined
-                                                    if (UseGridFor_AppliedOverpressureRate)
+                                                // Update overpressure rate total if defined
+                                                if (UseGridFor_AppliedOverpressureRate)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
                                                         double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] / TimeUnitConverter;
@@ -3091,14 +3278,19 @@ namespace DFMGenerator_Ocean
                                                             cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
                                                         if (!double.IsNaN(cell_OP_rate))
                                                         {
-                                                            OP_rate_total += cell_OP_rate;
-                                                            OP_rate_novalues++;
+                                                            local_AppliedOverpressureRate = cell_OP_rate;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update temperature change total if defined
-                                                    if (UseGridFor_AppliedTemperatureChange)
+                                                // Update temperature change total if defined
+                                                if (UseGridFor_AppliedTemperatureChange)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
                                                         double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] / TimeUnitConverter;
@@ -3107,14 +3299,19 @@ namespace DFMGenerator_Ocean
                                                             cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
                                                         if (!double.IsNaN(cell_temp_rate))
                                                         {
-                                                            temp_rate_total += cell_temp_rate;
-                                                            temp_rate_novalues++;
+                                                            local_AppliedTemperatureChange = cell_temp_rate;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update uplift rate total if defined
-                                                    if (UseGridFor_AppliedUpliftRate)
+                                                // Update uplift rate total if defined
+                                                if (UseGridFor_AppliedUpliftRate)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
                                                         // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
                                                         double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] / TimeUnitConverter;
@@ -3123,2180 +3320,2236 @@ namespace DFMGenerator_Ocean
                                                             cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
                                                         if (!double.IsNaN(cell_uplift_rate))
                                                         {
-                                                            uplift_rate_total += cell_uplift_rate;
-                                                            uplift_rate_novalues++;
+                                                            local_AppliedUpliftRate = cell_uplift_rate;
+                                                            break;
                                                         }
                                                     }
                                                 }
-
-                                        // Update the gridblock values with the averages - if there is any data to calculate them from
-                                        if (ehmin_orient_novalues > 0)
-                                            local_EhminAzi = Math.Atan(ehmin_orient_x_total / ehmin_orient_y_total);
-                                        if (ehmin_rate_novalues > 0)
-                                            local_EhminRate = ehmin_rate_total / (double)ehmin_rate_novalues;
-                                        if (ehmax_rate_novalues > 0)
-                                            local_EhmaxRate = ehmax_rate_total / (double)ehmax_rate_novalues;
-                                        if (OP_rate_novalues > 0)
-                                            local_AppliedOverpressureRate = OP_rate_total / (double)OP_rate_novalues;
-                                        if (temp_rate_novalues > 0)
-                                            local_AppliedTemperatureChange = temp_rate_total / (double)temp_rate_novalues;
-                                        if (uplift_rate_novalues > 0)
-                                            local_AppliedUpliftRate = uplift_rate_total / (double)uplift_rate_novalues;
-                                    }
-                                    else // We are taking data from a single cell
-                                    {
-                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                        if (HorizontalUpscalingFactor > 1)
-                                        {
-                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                        }
-
-                                        // Create a reference to the cell from which we will read the data
-                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                        // Update ehmin orientation total if defined
-                                        if (UseGridFor_EhminAzi)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                double cell_ehmin_orient = (double)EhminAzi_grid[cellRef];
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_EhminAzi)
-                                                    cell_ehmin_orient = toSIAzimuthUnits.Convert(cell_ehmin_orient);
-                                                if (!double.IsNaN(cell_ehmin_orient))
-                                                {
-                                                    local_EhminAzi = cell_ehmin_orient;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update ehmin rate total if defined
-                                        if (UseGridFor_EhminRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                double cell_ehmin_rate = (double)EhminRate_grid[cellRef] / TimeUnitConverter;
-                                                if (!double.IsNaN(cell_ehmin_rate))
-                                                {
-                                                    local_EhminRate = cell_ehmin_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update ehmax rate total if defined
-                                        if (UseGridFor_EhmaxRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                double cell_ehmax_rate = (double)EhmaxRate_grid[cellRef] / TimeUnitConverter;
-                                                if (!double.IsNaN(cell_ehmax_rate))
-                                                {
-                                                    local_EhmaxRate = cell_ehmax_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update overpressure rate total if defined
-                                        if (UseGridFor_AppliedOverpressureRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                // However unit conversion for the load quantity itself (in this case, pressure) will be done automatically
-                                                double cell_OP_rate = (double)AppliedOverpressureRate_grid[cellRef] / TimeUnitConverter;
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_AppliedOverpressureRate)
-                                                    cell_OP_rate = toSIPressureUnits.Convert(cell_OP_rate);
-                                                if (!double.IsNaN(cell_OP_rate))
-                                                {
-                                                    local_AppliedOverpressureRate = cell_OP_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update temperature change total if defined
-                                        if (UseGridFor_AppliedTemperatureChange)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                // However unit conversion for the load quantity itself (in this case, temperature) will be done automatically
-                                                double cell_temp_rate = (double)AppliedTemperatureChange_grid[cellRef] / TimeUnitConverter;
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_AppliedTemperatureChange)
-                                                    cell_temp_rate = toSITemperatureUnits.Convert(cell_temp_rate);
-                                                if (!double.IsNaN(cell_temp_rate))
-                                                {
-                                                    local_AppliedTemperatureChange = cell_temp_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-
-                                        // Update uplift rate total if defined
-                                        if (UseGridFor_AppliedUpliftRate)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                // Time conversion for the load rate properties must be carried out manually, as there are no inbuilt Petrel units for inverse time
-                                                // However unit conversion for the load quantity itself (in this case, uplift) will be done automatically
-                                                double cell_uplift_rate = (double)AppliedUpliftRate_grid[cellRef] / TimeUnitConverter;
-                                                // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                if (convertFromGeneral_AppliedUpliftRate)
-                                                    cell_uplift_rate = toSIDepthUnits.Convert(cell_uplift_rate);
-                                                if (!double.IsNaN(cell_uplift_rate))
-                                                {
-                                                    local_AppliedUpliftRate = cell_uplift_rate;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // If this is the first deformation episode, set the default fracture azimuth for the gridblock
-                                    if (deformationEpisodeNo == 0)
-                                        local_DefaultFractureAzimuth = local_EhminAzi;
-
-                                    // Check if the deformation episode is subdivided into sub episodes
-                                    if (SubEpisodesDefined_list[deformationEpisodeNo])
-                                    {
-                                        // Get the number and durations of the sub episodes
-                                        List<double> subEpisodeDuration_list = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
-                                        int noSubEpisodes = subEpisodeDuration_list.Count;
-
-                                        // Get lists of GridProperty objects defining the load data for each sub episode
-                                        List<GridProperty> local_FluidPressure_grid_list = FluidPressure_grid_list[deformationEpisodeNo];
-                                        bool UseGridFor_FluidPressure = UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo] && (local_FluidPressure_grid_list.Count >= noSubEpisodes + 1);
-                                        List<GridProperty> local_Szz_grid_list = Szz_grid_list[deformationEpisodeNo];
-                                        bool UseGridFor_Szz = UseGridPropertyTimeSeriesFor_Szz_list[deformationEpisodeNo] && (local_Szz_grid_list.Count >= noSubEpisodes + 1);
-                                        List<GridProperty> local_Sxx_grid_list = Sxx_grid_list[deformationEpisodeNo];
-                                        List<GridProperty> local_Syy_grid_list = Syy_grid_list[deformationEpisodeNo];
-                                        List<GridProperty> local_Sxy_grid_list = Sxy_grid_list[deformationEpisodeNo];
-                                        bool UseGridFor_StressTensor = UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo] && (local_Sxx_grid_list.Count >= noSubEpisodes + 1) && (local_Syy_grid_list.Count >= noSubEpisodes + 1) && (local_Sxy_grid_list.Count >= noSubEpisodes + 1);
-                                        List<GridProperty> local_Szx_grid_list = Szx_grid_list[deformationEpisodeNo];
-                                        List<GridProperty> local_Syz_grid_list = Syz_grid_list[deformationEpisodeNo];
-                                        bool UseGridFor_ShvComponents = UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo] && (local_Szx_grid_list.Count >= noSubEpisodes + 1) && (local_Syz_grid_list.Count >= noSubEpisodes + 1);
-
-                                        // Create variables for the initial and final load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
-                                        double initialSzz = double.NaN;
-                                        double finalSzz = double.NaN;
-                                        double initialSxx = double.NaN;
-                                        double finalSxx = double.NaN;
-                                        double initialSyy = double.NaN;
-                                        double finalSyy = double.NaN;
-                                        double initialSxy = double.NaN;
-                                        double finalSxy = double.NaN;
-                                        double initialSzx = double.NaN;
-                                        double finalSzx = double.NaN;
-                                        double initialSyz = double.NaN;
-                                        double finalSyz = double.NaN;
-                                        double initialFluidPressure = double.NaN;
-                                        double finalFluidPressure = double.NaN;
-
-                                        // Get local handles for the initial grid properties
-                                        GridProperty local_Szz_grid_initial = (UseGridFor_Szz ? local_Szz_grid_list[0] : null);
-                                        GridProperty local_Sxx_grid_initial = (UseGridFor_StressTensor ? local_Sxx_grid_list[0] : null);
-                                        GridProperty local_Syy_grid_initial = (UseGridFor_StressTensor ? local_Syy_grid_list[0] : null);
-                                        GridProperty local_Sxy_grid_initial = (UseGridFor_StressTensor ? local_Sxy_grid_list[0] : null);
-                                        GridProperty local_Szx_grid_initial = (UseGridFor_ShvComponents ? local_Szx_grid_list[0] : null);
-                                        GridProperty local_Syz_grid_initial = (UseGridFor_ShvComponents ? local_Syz_grid_list[0] : null);
-                                        GridProperty local_FluidPressure_grid_initial = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[0] : null);
-
-                                        // Loop through each sub episode; if the deformation episode is not subdivided, we must still go through the loop once to add the deformation episode data to the lists
-                                        // NB in the -1 iteration the initial values for the first timestep will be loaded into the final value local variables; these will then be copied into the initial values variables in iteration 0
-                                        for (int subEpisodeNo = -1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
-                                        {
-
-                                            // Update the initial load values with the final load values from the previous sub episode, except for iteration -1
-                                            if (subEpisodeNo >= 0)
-                                            {
-                                                initialSzz = finalSzz;
-                                                initialSxx = finalSxx;
-                                                initialSyy = finalSyy;
-                                                initialSxy = finalSxy;
-                                                initialSzx = finalSzx;
-                                                initialSyz = finalSyz;
-                                                initialFluidPressure = finalFluidPressure;
                                             }
 
-                                            // Get the final load values from the grid properties
-                                            // In iteration -1, these will be the initial load values for the first episode
+                                            // If this is the first deformation episode, set the default fracture azimuth for the gridblock
+                                            if (deformationEpisodeNo == 0)
+                                                local_DefaultFractureAzimuth = local_EhminAzi;
+
+                                            // Check if the deformation episode is subdivided into sub episodes
+                                            if (SubEpisodesDefined_list[deformationEpisodeNo])
                                             {
-                                                // Get local handles for the final grid properties
-                                                GridProperty local_Szz_grid = (UseGridFor_Szz ? local_Szz_grid_list[subEpisodeNo + 1] : null);
-                                                GridProperty local_Sxx_grid = (UseGridFor_StressTensor ? local_Sxx_grid_list[subEpisodeNo + 1] : null);
-                                                GridProperty local_Syy_grid = (UseGridFor_StressTensor ? local_Syy_grid_list[subEpisodeNo + 1] : null);
-                                                GridProperty local_Sxy_grid = (UseGridFor_StressTensor ? local_Sxy_grid_list[subEpisodeNo + 1] : null);
-                                                GridProperty local_Szx_grid = (UseGridFor_ShvComponents ? local_Szx_grid_list[subEpisodeNo + 1] : null);
-                                                GridProperty local_Syz_grid = (UseGridFor_ShvComponents ? local_Syz_grid_list[subEpisodeNo + 1] : null);
-                                                GridProperty local_FluidPressure_grid = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[subEpisodeNo + 1] : null);
+                                                // Get the number and durations of the sub episodes
+                                                List<double> subEpisodeDuration_list = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                                int noSubEpisodes = subEpisodeDuration_list.Count;
 
-                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                // Get lists of GridProperty objects defining the load data for each sub episode
+                                                List<GridProperty> local_FluidPressure_grid_list = FluidPressure_grid_list[deformationEpisodeNo];
+                                                bool UseGridFor_FluidPressure = UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo] && (local_FluidPressure_grid_list.Count >= noSubEpisodes + 1);
+                                                List<GridProperty> local_Szz_grid_list = Szz_grid_list[deformationEpisodeNo];
+                                                bool UseGridFor_Szz = UseGridPropertyTimeSeriesFor_Szz_list[deformationEpisodeNo] && (local_Szz_grid_list.Count >= noSubEpisodes + 1);
+                                                List<GridProperty> local_Sxx_grid_list = Sxx_grid_list[deformationEpisodeNo];
+                                                List<GridProperty> local_Syy_grid_list = Syy_grid_list[deformationEpisodeNo];
+                                                List<GridProperty> local_Sxy_grid_list = Sxy_grid_list[deformationEpisodeNo];
+                                                bool UseGridFor_StressTensor = UseGridPropertyTimeSeriesFor_StressTensor_list[deformationEpisodeNo] && (local_Sxx_grid_list.Count >= noSubEpisodes + 1) && (local_Syy_grid_list.Count >= noSubEpisodes + 1) && (local_Sxy_grid_list.Count >= noSubEpisodes + 1);
+                                                List<GridProperty> local_Szx_grid_list = Szx_grid_list[deformationEpisodeNo];
+                                                List<GridProperty> local_Syz_grid_list = Syz_grid_list[deformationEpisodeNo];
+                                                bool UseGridFor_ShvComponents = UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo] && (local_Szx_grid_list.Count >= noSubEpisodes + 1) && (local_Syz_grid_list.Count >= noSubEpisodes + 1);
+
+                                                // Create variables for the initial and final load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
+                                                double initialSzz = double.NaN;
+                                                double finalSzz = double.NaN;
+                                                double initialSxx = double.NaN;
+                                                double finalSxx = double.NaN;
+                                                double initialSyy = double.NaN;
+                                                double finalSyy = double.NaN;
+                                                double initialSxy = double.NaN;
+                                                double finalSxy = double.NaN;
+                                                double initialSzx = double.NaN;
+                                                double finalSzx = double.NaN;
+                                                double initialSyz = double.NaN;
+                                                double finalSyz = double.NaN;
+                                                double initialFluidPressure = double.NaN;
+                                                double finalFluidPressure = double.NaN;
+
+                                                // Get local handles for the initial grid properties
+                                                GridProperty local_Szz_grid_initial = (UseGridFor_Szz ? local_Szz_grid_list[0] : null);
+                                                GridProperty local_Sxx_grid_initial = (UseGridFor_StressTensor ? local_Sxx_grid_list[0] : null);
+                                                GridProperty local_Syy_grid_initial = (UseGridFor_StressTensor ? local_Syy_grid_list[0] : null);
+                                                GridProperty local_Sxy_grid_initial = (UseGridFor_StressTensor ? local_Sxy_grid_list[0] : null);
+                                                GridProperty local_Szx_grid_initial = (UseGridFor_ShvComponents ? local_Szx_grid_list[0] : null);
+                                                GridProperty local_Syz_grid_initial = (UseGridFor_ShvComponents ? local_Syz_grid_list[0] : null);
+                                                GridProperty local_FluidPressure_grid_initial = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[0] : null);
+
+                                                // Loop through each sub episode; if the deformation episode is not subdivided, we must still go through the loop once to add the deformation episode data to the lists
+                                                // NB in the -1 iteration the initial values for the first timestep will be loaded into the final value local variables; these will then be copied into the initial values variables in iteration 0
+                                                for (int subEpisodeNo = -1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
                                                 {
-                                                    // Create local variables for running total and number of datapoints for each stress/strain state parameter
-                                                    double szz_total = 0;
-                                                    int szz_novalues = 0;
-                                                    double sxx_total = 0;
-                                                    int sxx_novalues = 0;
-                                                    double syy_total = 0;
-                                                    int syy_novalues = 0;
-                                                    double sxy_total = 0;
-                                                    int sxy_novalues = 0;
-                                                    double szx_total = 0;
-                                                    int szx_novalues = 0;
-                                                    double syz_total = 0;
-                                                    int syz_novalues = 0;
-                                                    double fluidPressure_total = 0;
-                                                    int fluidPressure_novalues = 0;
 
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                    // Update the initial load values with the final load values from the previous sub episode, except for iteration -1
+                                                    if (subEpisodeNo >= 0)
+                                                    {
+                                                        initialSzz = finalSzz;
+                                                        initialSxx = finalSxx;
+                                                        initialSyy = finalSyy;
+                                                        initialSxy = finalSxy;
+                                                        initialSzx = finalSzx;
+                                                        initialSyz = finalSyz;
+                                                        initialFluidPressure = finalFluidPressure;
+                                                    }
+
+                                                    // Get the final load values from the grid properties
+                                                    // In iteration -1, these will be the initial load values for the first episode
+                                                    {
+                                                        // Get local handles for the final grid properties
+                                                        GridProperty local_Szz_grid = (UseGridFor_Szz ? local_Szz_grid_list[subEpisodeNo + 1] : null);
+                                                        GridProperty local_Sxx_grid = (UseGridFor_StressTensor ? local_Sxx_grid_list[subEpisodeNo + 1] : null);
+                                                        GridProperty local_Syy_grid = (UseGridFor_StressTensor ? local_Syy_grid_list[subEpisodeNo + 1] : null);
+                                                        GridProperty local_Sxy_grid = (UseGridFor_StressTensor ? local_Sxy_grid_list[subEpisodeNo + 1] : null);
+                                                        GridProperty local_Szx_grid = (UseGridFor_ShvComponents ? local_Szx_grid_list[subEpisodeNo + 1] : null);
+                                                        GridProperty local_Syz_grid = (UseGridFor_ShvComponents ? local_Syz_grid_list[subEpisodeNo + 1] : null);
+                                                        GridProperty local_FluidPressure_grid = (UseGridFor_FluidPressure ? local_FluidPressure_grid_list[subEpisodeNo + 1] : null);
+
+                                                        if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                        {
+                                                            // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                                            double szz_total = 0;
+                                                            int szz_novalues = 0;
+                                                            double sxx_total = 0;
+                                                            int sxx_novalues = 0;
+                                                            double syy_total = 0;
+                                                            int syy_novalues = 0;
+                                                            double sxy_total = 0;
+                                                            int sxy_novalues = 0;
+                                                            double szx_total = 0;
+                                                            int szx_novalues = 0;
+                                                            double syz_total = 0;
+                                                            int syz_novalues = 0;
+                                                            double fluidPressure_total = 0;
+                                                            int fluidPressure_novalues = 0;
+
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                    {
+                                                                        Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Update final absolute vertical stress total if defined
+                                                                        if (UseGridFor_Szz)
+                                                                        {
+                                                                            double cell_szz = (double)local_Szz_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_szz))
+                                                                            {
+                                                                                szz_total += cell_szz;
+                                                                                szz_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update final horizontal stress tensor components total if defined
+                                                                        if (UseGridFor_StressTensor)
+                                                                        {
+                                                                            double cell_sxx = (double)local_Sxx_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_sxx))
+                                                                            {
+                                                                                sxx_total += cell_sxx;
+                                                                                sxx_novalues++;
+                                                                            }
+                                                                            double cell_syy = (double)local_Syy_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_syy))
+                                                                            {
+                                                                                syy_total += cell_syy;
+                                                                                syy_novalues++;
+                                                                            }
+                                                                            double cell_sxy = (double)local_Sxy_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_sxy))
+                                                                            {
+                                                                                sxy_total += cell_sxy;
+                                                                                sxy_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update final vertical shear stress tensor components total if defined
+                                                                        if (UseGridFor_ShvComponents)
+                                                                        {
+                                                                            double cell_szx = (double)local_Szx_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_szx))
+                                                                            {
+                                                                                szx_total += cell_szx;
+                                                                                szx_novalues++;
+                                                                            }
+                                                                            double cell_syz = (double)local_Syz_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_syz))
+                                                                            {
+                                                                                syz_total += cell_syz;
+                                                                                syz_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update final fluid pressure total if defined
+                                                                        if (UseGridFor_FluidPressure)
+                                                                        {
+                                                                            double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_fluidpressure))
+                                                                            {
+                                                                                fluidPressure_total += cell_fluidpressure;
+                                                                                fluidPressure_novalues++;
+                                                                            }
+                                                                        }
+                                                                    }
+
+                                                            // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                            if (szz_novalues > 0)
+                                                                finalSzz = szz_total / (double)szz_novalues;
+                                                            if (sxx_novalues > 0)
+                                                                finalSxx = sxx_total / (double)sxx_novalues;
+                                                            if (syy_novalues > 0)
+                                                                finalSyy = syy_total / (double)syy_novalues;
+                                                            if (sxy_novalues > 0)
+                                                                finalSxy = sxy_total / (double)sxy_novalues;
+                                                            if (szx_novalues > 0)
+                                                                finalSzx = szx_total / (double)szx_novalues;
+                                                            if (syz_novalues > 0)
+                                                                finalSyz = syz_total / (double)syz_novalues;
+                                                            if (fluidPressure_novalues > 0)
+                                                                finalFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
+                                                        }
+                                                        else // We are taking data from a single cell
+                                                        {
+                                                            // Create a reference to the cell from which we will read the data
+                                                            Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                            // Update final absolute vertical stress total if defined
+                                                            if (UseGridFor_Szz)
                                                             {
-                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Update final absolute vertical stress total if defined
-                                                                if (UseGridFor_Szz)
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_szz = (double)local_Szz_grid[cellRef];
                                                                     if (!double.IsNaN(cell_szz))
                                                                     {
-                                                                        szz_total += cell_szz;
-                                                                        szz_novalues++;
+                                                                        finalSzz = cell_szz;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update final horizontal stress tensor components total if defined
-                                                                if (UseGridFor_StressTensor)
+                                                            // Update final horizontal stress totals if defined
+                                                            if (UseGridFor_StressTensor)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                // We need valid data for all three horizontal components of the strain tensor
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_sxx = (double)local_Sxx_grid[cellRef];
-                                                                    if (!double.IsNaN(cell_sxx))
-                                                                    {
-                                                                        sxx_total += cell_sxx;
-                                                                        sxx_novalues++;
-                                                                    }
                                                                     double cell_syy = (double)local_Syy_grid[cellRef];
-                                                                    if (!double.IsNaN(cell_syy))
-                                                                    {
-                                                                        syy_total += cell_syy;
-                                                                        syy_novalues++;
-                                                                    }
                                                                     double cell_sxy = (double)local_Sxy_grid[cellRef];
-                                                                    if (!double.IsNaN(cell_sxy))
+                                                                    if (!double.IsNaN(cell_sxx) && !double.IsNaN(cell_syy) && !double.IsNaN(cell_sxy))
                                                                     {
-                                                                        sxy_total += cell_sxy;
-                                                                        sxy_novalues++;
+                                                                        finalSxx = cell_sxx;
+                                                                        finalSyy = cell_syy;
+                                                                        finalSxy = cell_sxy;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update final vertical shear stress tensor components total if defined
-                                                                if (UseGridFor_ShvComponents)
+                                                            // Update final vertical shear stress totals if defined
+                                                            if (UseGridFor_ShvComponents)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                // We need valid data for all three horizontal components of the strain tensor
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_szx = (double)local_Szx_grid[cellRef];
-                                                                    if (!double.IsNaN(cell_szx))
-                                                                    {
-                                                                        szx_total += cell_szx;
-                                                                        szx_novalues++;
-                                                                    }
                                                                     double cell_syz = (double)local_Syz_grid[cellRef];
-                                                                    if (!double.IsNaN(cell_syz))
+                                                                    if (!double.IsNaN(cell_szx) && !double.IsNaN(cell_syz))
                                                                     {
-                                                                        syz_total += cell_syz;
-                                                                        syz_novalues++;
+                                                                        finalSzx = cell_szx;
+                                                                        finalSyz = cell_syz;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update final fluid pressure total if defined
-                                                                if (UseGridFor_FluidPressure)
+                                                            // Update final fluid pressure total if defined
+                                                            if (UseGridFor_FluidPressure)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
                                                                     if (!double.IsNaN(cell_fluidpressure))
                                                                     {
-                                                                        fluidPressure_total += cell_fluidpressure;
-                                                                        fluidPressure_novalues++;
+                                                                        finalFluidPressure = cell_fluidpressure;
+                                                                        break;
                                                                     }
                                                                 }
                                                             }
-
-                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                                    if (szz_novalues > 0)
-                                                        finalSzz = szz_total / (double)szz_novalues;
-                                                    if (sxx_novalues > 0)
-                                                        finalSxx = sxx_total / (double)sxx_novalues;
-                                                    if (syy_novalues > 0)
-                                                        finalSyy = syy_total / (double)syy_novalues;
-                                                    if (sxy_novalues > 0)
-                                                        finalSxy = sxy_total / (double)sxy_novalues;
-                                                    if (szx_novalues > 0)
-                                                        finalSzx = szx_total / (double)szx_novalues;
-                                                    if (syz_novalues > 0)
-                                                        finalSyz = syz_total / (double)syz_novalues;
-                                                    if (fluidPressure_novalues > 0)
-                                                        finalFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
-                                                }
-                                                else // We are taking data from a single cell
-                                                {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
-                                                    // Create a reference to the cell from which we will read the data
-                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                                    // Update final absolute vertical stress total if defined
-                                                    if (UseGridFor_Szz)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_szz = (double)local_Szz_grid[cellRef];
-                                                            if (!double.IsNaN(cell_szz))
-                                                            {
-                                                                finalSzz = cell_szz;
-                                                                break;
-                                                            }
                                                         }
-                                                    }
+                                                    } // End get the final load values from the grid properties
 
-                                                    // Update final horizontal stress totals if defined
-                                                    if (UseGridFor_StressTensor)
+                                                    // If this is the -1 iteration, skip straight on to the next iteration
+                                                    if (subEpisodeNo < 0)
+                                                        continue;
+
+                                                    // Get the sub episode duration
+                                                    local_DeformationEpisodeDuration = subEpisodeDuration_list[subEpisodeNo] * TimeUnitConverter;
+
+                                                    // Get the load rates for the sub episode
+                                                    // Create a tensor for the horizontal strain rate load
+                                                    Tensor2S local_EhRate = Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi);
+                                                    // NB This will be overridden if a stress load is defined
+                                                    bool overideStressRate = UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz) && !double.IsNaN(initialSxx) && !double.IsNaN(finalSxx) && !double.IsNaN(initialSyy) && !double.IsNaN(finalSyy) && !double.IsNaN(initialSxy) && !double.IsNaN(finalSxy);
+                                                    bool overideShvComponents = UseGridFor_ShvComponents && !double.IsNaN(initialSzx) && !double.IsNaN(finalSzx) && !double.IsNaN(initialSyz) && !double.IsNaN(finalSyz);
+                                                    Tensor2S local_AbsoluteStressRate = null;
+                                                    if (overideStressRate)
                                                     {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        // We need valid data for all three horizontal components of the strain tensor
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        double local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                        double local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                                        double local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                                        double local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                                        double local_szxRate = 0;
+                                                        double local_syzRate = 0;
+                                                        if (overideShvComponents)
                                                         {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_sxx = (double)local_Sxx_grid[cellRef];
-                                                            double cell_syy = (double)local_Syy_grid[cellRef];
-                                                            double cell_sxy = (double)local_Sxy_grid[cellRef];
-                                                            if (!double.IsNaN(cell_sxx) && !double.IsNaN(cell_syy) && !double.IsNaN(cell_sxy))
-                                                            {
-                                                                finalSxx = cell_sxx;
-                                                                finalSyy = cell_syy;
-                                                                finalSxy = cell_sxy;
-                                                                break;
-                                                            }
+                                                            local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                                            local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
                                                         }
+                                                        local_AbsoluteStressRate = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
                                                     }
-
-                                                    // Update final vertical shear stress totals if defined
-                                                    if (UseGridFor_ShvComponents)
+                                                    bool overrideFluidPressure = UseGridFor_FluidPressure && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
+                                                    if (overrideFluidPressure)
                                                     {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        // We need valid data for all three horizontal components of the strain tensor
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_szx = (double)local_Szx_grid[cellRef];
-                                                            double cell_syz = (double)local_Syz_grid[cellRef];
-                                                            if (!double.IsNaN(cell_szx) && !double.IsNaN(cell_syz))
-                                                            {
-                                                                finalSzx = cell_szx;
-                                                                finalSyz = cell_syz;
-                                                                break;
-                                                            }
-                                                        }
+                                                        double local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
                                                     }
-
-                                                    // Update final fluid pressure total if defined
-                                                    if (UseGridFor_FluidPressure)
+                                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each sub episode will be accounted for through the stress arching factor
+                                                    // NB The absolute vertical stress will also be reset at the start of each sub episode, so will remain synchronised with the specified input load
+                                                    bool overrideStressArchingFactor = UseGridFor_Szz && !UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz);
+                                                    if (overrideStressArchingFactor)
                                                     {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_fluidpressure = (double)local_FluidPressure_grid[cellRef];
-                                                            if (!double.IsNaN(cell_fluidpressure))
-                                                            {
-                                                                finalFluidPressure = cell_fluidpressure;
-                                                                break;
-                                                            }
-                                                        }
+                                                        double dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                                        local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                                                        // Trim the result so it lies between 0 and 1 inclusive
+                                                        if (local_StressArchingFactor < 0)
+                                                            local_StressArchingFactor = 0;
+                                                        if (local_StressArchingFactor > 1)
+                                                            local_StressArchingFactor = 1;
                                                     }
-                                                }
-                                            } // End get the final load values from the grid properties
 
-                                            // If this is the -1 iteration, skip straight on to the next iteration
-                                            if (subEpisodeNo < 0)
-                                                continue;
+                                                    // Add the data for this sub episode to the deformation episode lists
+                                                    local_EhRate_list.Add(local_EhRate);
+                                                    local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                                    local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                                    local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                                    local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                                    local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+                                                    local_AbsoluteStressRate_list.Add(local_AbsoluteStressRate);
 
-                                            // Get the sub episode duration
-                                            local_DeformationEpisodeDuration = subEpisodeDuration_list[subEpisodeNo] * TimeUnitConverter;
+                                                    // Add data for the inital data lists
+                                                    if (overideStressRate && overideShvComponents)
+                                                        local_InitialAbsoluteStress_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx));
+                                                    else if (overideStressRate)
+                                                        local_InitialAbsoluteStress_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, 0, 0));
+                                                    else
+                                                        local_InitialAbsoluteStress_list.Add(null);
+                                                    if (overrideFluidPressure)
+                                                        local_InitialFluidPressure_list.Add(initialFluidPressure);
+                                                    else
+                                                        local_InitialFluidPressure_list.Add(double.NaN);
+                                                    if (overrideStressArchingFactor)
+                                                        local_InitialAbsoluteVerticalStress_list.Add(initialSzz);
+                                                    else
+                                                        local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
 
-                                            // Get the load rates for the sub episode
-                                            // Create a tensor for the horizontal strain rate load
-                                            Tensor2S local_EhRate = Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi);
-                                            // NB This will be overridden if a stress load is defined
-                                            bool overideStressRate = UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz) && !double.IsNaN(initialSxx) && !double.IsNaN(finalSxx) && !double.IsNaN(initialSyy) && !double.IsNaN(finalSyy) && !double.IsNaN(initialSxy) && !double.IsNaN(finalSxy);
-                                            bool overideShvComponents = UseGridFor_ShvComponents && !double.IsNaN(initialSzx) && !double.IsNaN(finalSzx) && !double.IsNaN(initialSyz) && !double.IsNaN(finalSyz);
-                                            Tensor2S local_AbsoluteStressRate = null;
-                                            if (overideStressRate)
-                                            {
-                                                double local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                double local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
-                                                double local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
-                                                double local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
-                                                double local_szxRate = 0;
-                                                double local_syzRate = 0;
-                                                if (overideShvComponents)
-                                                {
-                                                    local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
-                                                    local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
-                                                }
-                                                local_AbsoluteStressRate = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+#if DEBUG_FRAC_INPUT
+                                                    string strainLoadText = "";
+                                                    if (overideStressRate && overideShvComponents)
+                                                        strainLoadText = string.Format("Initial stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({0}, {1}, {2}, {3}, {4}, {5}), Final stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({6}, {7}, {8}, {9}, {10}, {11})", initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx, finalSxx, finalSyy, finalSzz, finalSxy, finalSyz, finalSzx);
+                                                    else if (overideStressRate)
+                                                        strainLoadText = string.Format("Initial stress (Sxx, Syy, Sxy, Szz) = ({0}, {1}, {2}, {3}), Final stress (Sxx, Syy, Sxy, Szz) = ({4}, {5}, {6}, {7})", initialSxx, initialSyy, initialSxy, initialSzz, finalSxx, finalSyy, finalSxy, finalSzz);
+                                                    else
+                                                        strainLoadText = string.Format("EhminAzi {0}, EhminRate {1}, EhmaxRate {2}", local_EhminAzi, local_EhminRate, local_EhmaxRate);
+                                                    string fluidPressureLoadText = (overrideFluidPressure ? string.Format("Initial fluid pressure {0}, Final fluid pressure {1}, OP rate {2}", initialFluidPressure, finalFluidPressure, local_AppliedOverpressureRate) : string.Format("OP rate {0}", local_AppliedOverpressureRate));
+                                                    string safText = (overrideStressArchingFactor ? string.Format("Initial Sv {0}, Final Sv {1}, implied stress arching factor {2}", initialSzz, finalSzz, local_StressArchingFactor) : string.Format("Stress arching factor {0}", local_StressArchingFactor));
+                                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation sub episode: Duration {0}, {1}, {2}, {3});", local_DeformationEpisodeDuration, strainLoadText, fluidPressureLoadText, safText));
+#endif
+                                                }// End get the deformation load data for each sub episode
                                             }
-                                            bool overrideFluidPressure = UseGridFor_FluidPressure && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
-                                            if (overrideFluidPressure)
-                                            {
-                                                double local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
-                                                double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
-                                                local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
-                                            }
-                                            // If the stress tensor is not defined, then changes in the absolute vertical stress within each sub episode will be accounted for through the stress arching factor
-                                            // NB The absolute vertical stress will also be reset at the start of each sub episode, so will remain synchronised with the specified input load
-                                            bool overrideStressArchingFactor = UseGridFor_Szz && !UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz);
-                                            if (overrideStressArchingFactor)
-                                            {
-                                                double dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
-                                                double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
-                                                double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
-                                                local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
-                                                // Trim the result so it lies between 0 and 1 inclusive
-                                                if (local_StressArchingFactor < 0)
-                                                    local_StressArchingFactor = 0;
-                                                if (local_StressArchingFactor > 1)
-                                                    local_StressArchingFactor = 1;
-                                            }
-
-                                            // Add the data for this sub episode to the deformation episode lists
-                                            local_EhRate_list.Add(local_EhRate);
-                                            local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
-                                            local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
-                                            local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
-                                            local_StressArchingFactor_list.Add(local_StressArchingFactor);
-                                            local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
-                                            local_AbsoluteStressRate_list.Add(local_AbsoluteStressRate);
-
-                                            // Add data for the inital data lists
-                                            if (overideStressRate && overideShvComponents)
-                                                local_InitialAbsoluteStress_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx));
-                                            else if (overideStressRate)
-                                                local_InitialAbsoluteStress_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, 0, 0));
                                             else
+                                            {
+                                                // Add the data for this deformation episode to the deformation episode lists
+                                                local_EhRate_list.Add(Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi));
+                                                local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                                local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                                local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                                local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                                local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+
+                                                // Add a null value for the absolute stress load tensor
+                                                local_AbsoluteStressRate_list.Add(null);
+
+                                                // Add null values for the inital data lists
                                                 local_InitialAbsoluteStress_list.Add(null);
-                                            if (overrideFluidPressure)
-                                                local_InitialFluidPressure_list.Add(initialFluidPressure);
-                                            else
                                                 local_InitialFluidPressure_list.Add(double.NaN);
-                                            if (overrideStressArchingFactor)
-                                                local_InitialAbsoluteVerticalStress_list.Add(initialSzz);
-                                            else
                                                 local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
 
 #if DEBUG_FRAC_INPUT
-                                            string strainLoadText = "";
-                                            if (overideStressRate && overideShvComponents)
-                                                strainLoadText = string.Format("Initial stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({0}, {1}, {2}, {3}, {4}, {5}), Final stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({6}, {7}, {8}, {9}, {10}, {11})", initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx, finalSxx, finalSyy, finalSzz, finalSxy, finalSyz, finalSzx);
-                                            else if (overideStressRate)
-                                                strainLoadText = string.Format("Initial stress (Sxx, Syy, Sxy, Szz) = ({0}, {1}, {2}, {3}), Final stress (Sxx, Syy, Sxy, Szz) = ({4}, {5}, {6}, {7})", initialSxx, initialSyy, initialSxy, initialSzz, finalSxx, finalSyy, finalSxy, finalSzz);
-                                            else
-                                                strainLoadText = string.Format("EhminAzi {0}, EhminRate {1}, EhmaxRate {2}", local_EhminAzi, local_EhminRate, local_EhmaxRate);
-                                            string fluidPressureLoadText = (overrideFluidPressure ? string.Format("Initial fluid pressure {0}, Final fluid pressure {1}, OP rate {2}", initialFluidPressure, finalFluidPressure, local_AppliedOverpressureRate) : string.Format("OP rate {0}", local_AppliedOverpressureRate));
-                                            string safText = (overrideStressArchingFactor ? string.Format("Initial Sv {0}, Final Sv {1}, implied stress arching factor {2}", initialSzz, finalSzz, local_StressArchingFactor) : string.Format("Stress arching factor {0}", local_StressArchingFactor));
-                                            PetrelLogger.InfoOutputWindow(string.Format("New deformation sub episode: Duration {0}, {1}, {2}, {3});", local_DeformationEpisodeDuration, strainLoadText, fluidPressureLoadText, safText));
+                                                PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
 #endif
-                                        }// End get the deformation load data for each sub episode
-                                    }
-                                    else
-                                    {
-                                        // Add the data for this deformation episode to the deformation episode lists
-                                        local_EhRate_list.Add(Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi));
-                                        local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
-                                        local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
-                                        local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
-                                        local_StressArchingFactor_list.Add(local_StressArchingFactor);
-                                        local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+                                            }
+                                        }// End get the deformation load data for each deformation episode
 
-                                        // Add a null value for the absolute stress load tensor
-                                        local_AbsoluteStressRate_list.Add(null);
+                                        // Get the depth at the start of deformation from the grid as required
+                                        // This will depend on whether we are averaging the stress and strain data over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                        // First we will create a local variable for the property value in this gridblock; we can then recalculate this without altering the global default value
+                                        double local_DepthAtDeformation = DepthAtDeformation;
+                                        if (UseGridFor_DepthAtDeformation)
+                                        {
+                                            if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                            {
+                                                // Create local variables for running total and number of datapoints
+                                                double DepthAtDeformation_total = 0;
+                                                int DepthAtDeformation_novalues = 0;
 
-                                        // Add null values for the inital data lists
-                                        local_InitialAbsoluteStress_list.Add(null);
-                                        local_InitialFluidPressure_list.Add(double.NaN);
-                                        local_InitialAbsoluteVerticalStress_list.Add(double.NaN);
+                                                // Loop through all the Petrel cells in the gridblock
+                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                        for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                        {
+                                                            Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
 
-#if DEBUG_FRAC_INPUT
-                                        PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
-#endif
-                                    }
-                                }// End get the deformation load data for each deformation episode
+                                                            // Update depth at deformation total if defined
+                                                            double cell_depthatdeformation = (double)DepthAtDeformation_grid[cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_DepthAtDeformation)
+                                                                cell_depthatdeformation = toSIDepthUnits.Convert(cell_depthatdeformation);
+                                                            // If the cell value is undefined, it will not be included in the average; if all cell values are undefined, the default value for depth at deformation will be used
+                                                            // If the cell value is <=0 it will be included in the average; if the average <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
+                                                            if (!double.IsNaN(cell_depthatdeformation))
+                                                            {
+                                                                DepthAtDeformation_total += cell_depthatdeformation;
+                                                                DepthAtDeformation_novalues++;
+                                                            }
+                                                        }
 
-                                // Get the depth at the start of deformation from the grid as required
-                                // This will depend on whether we are averaging the stress and strain data over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                // First we will create a local variable for the property value in this gridblock; we can then recalculate this without altering the global default value
-                                double local_DepthAtDeformation = DepthAtDeformation;
-                                if (UseGridFor_DepthAtDeformation)
-                                {
-                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                    {
-                                        // Create local variables for running total and number of datapoints
-                                        double DepthAtDeformation_total = 0;
-                                        int DepthAtDeformation_novalues = 0;
+                                                // Update the gridblock value with the average - if there is any data to calculate it from
+                                                if (DepthAtDeformation_novalues > 0)
+                                                    local_DepthAtDeformation = DepthAtDeformation_total / (double)DepthAtDeformation_novalues;
+                                            }
+                                            else // We are taking data from a single cell
+                                            {
+                                                // Create a reference to the cell from which we will read the data
+                                                Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
 
-                                        // Loop through all the Petrel cells in the gridblock
-                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                // Update depth at deformation total if defined
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                 {
-                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                    // Update depth at deformation total if defined
+                                                    cellRef.K = PetrelGrid_DataCellK;
                                                     double cell_depthatdeformation = (double)DepthAtDeformation_grid[cellRef];
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                     if (convertFromGeneral_DepthAtDeformation)
                                                         cell_depthatdeformation = toSIDepthUnits.Convert(cell_depthatdeformation);
-                                                    // If the cell value is undefined, it will not be included in the average; if all cell values are undefined, the default value for depth at deformation will be used
-                                                    // If the cell value is <=0 it will be included in the average; if the average <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
+                                                    // If all cell values are undefined, the default value for depth at deformation will be used
+                                                    // If the top cell value is <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
                                                     if (!double.IsNaN(cell_depthatdeformation))
                                                     {
-                                                        DepthAtDeformation_total += cell_depthatdeformation;
-                                                        DepthAtDeformation_novalues++;
+                                                        local_DepthAtDeformation = cell_depthatdeformation;
+                                                        break;
                                                     }
                                                 }
-
-                                        // Update the gridblock value with the average - if there is any data to calculate it from
-                                        if (DepthAtDeformation_novalues > 0)
-                                            local_DepthAtDeformation = DepthAtDeformation_total / (double)DepthAtDeformation_novalues;
-                                    }
-                                    else // We are taking data from a single cell
-                                    {
-                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                        if (HorizontalUpscalingFactor > 1)
-                                        {
-                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                        }
-
-                                        // Create a reference to the cell from which we will read the data
-                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                        // Update depth at deformation total if defined
-                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                        {
-                                            cellRef.K = PetrelGrid_DataCellK;
-                                            double cell_depthatdeformation = (double)DepthAtDeformation_grid[cellRef];
-                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                            if (convertFromGeneral_DepthAtDeformation)
-                                                cell_depthatdeformation = toSIDepthUnits.Convert(cell_depthatdeformation);
-                                            // If all cell values are undefined, the default value for depth at deformation will be used
-                                            // If the top cell value is <=0, the depth at deformation will be set to current burial depth, even if a default value has been specified 
-                                            if (!double.IsNaN(cell_depthatdeformation))
-                                            {
-                                                local_DepthAtDeformation = cell_depthatdeformation;
-                                                break;
                                             }
                                         }
-                                    }
-                                }
 
-                                // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
-                                double local_Depth;
-                                if (local_DepthAtDeformation >= 0)
-                                {
-                                    // If the initial depth  has been specified, use this 
-                                    local_Depth = local_DepthAtDeformation;
-                                }
-                                else
-                                {
-                                    // Otherwise, calculate the current mean depth of the gridblock minus the total specified uplift
-                                    // NB Uplift will not be counted for deformation episodes with indefinite duration
-                                    local_Depth = local_Current_Depth;
-                                    for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
-                                    {
-                                        double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
-                                        double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
-                                        if (local_DeformationEpisodeDuration > 0)
-                                            local_Depth += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
-                                    }
-                                }
-
-                                // Create a new gridblock object with the required layer thickness and depth
-                                GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth);
-
-                                // Check if the western boundary if faulted
-                                // This will be the case if any of the Petrel cells on the southern boundary are faulted
-                                bool faultToWest = false;
-                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                {
-                                    Index2 SWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J);
-                                    Index2 NWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J + 1);
-                                    if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(NWpillar))
-                                        faultToWest = true;
-                                }
-
-                                // Check if the southern boundary is faulted
-                                // This will be the case if any of the Petrel cells on the southern boundary are faulted
-                                bool faultToSouth = false;
-                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                {
-                                    Index2 SWpillar = new Index2(PetrelGrid_I, PetrelGrid_FirstCellJ);
-                                    Index2 SEpillar = new Index2(PetrelGrid_I + 1, PetrelGrid_FirstCellJ);
-                                    if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(SEpillar))
-                                        faultToSouth = true;
-                                }
-
-#if DEBUG_FRAC_INPUT
-                                foreach (PointXYZ point in new PointXYZ[] { FractureGrid_SWtop, FractureGrid_NWtop, FractureGrid_NEtop, FractureGrid_SEtop, FractureGrid_SWbottom, FractureGrid_NWbottom, FractureGrid_NEbottom, FractureGrid_SEbottom })
-                                {
-                                    if (minX > point.X) minX = point.X;
-                                    if (minY > point.Y) minY = point.Y;
-                                    if (minZ > point.Z) minZ = point.Z;
-                                    if (maxX < point.X) maxX = point.X;
-                                    if (maxY < point.Y) maxY = point.Y;
-                                    if (maxZ < point.Z) maxZ = point.Z;
-                                }
-
-                                PetrelLogger.InfoOutputWindow("Geometry");
-                                PetrelLogger.InfoOutputWindow(string.Format("SW top of FractureGrid: ({0}, {1}, {2});", SW_topgrid_corner.X, SW_topgrid_corner.Y, SW_topgrid_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("NW top of FractureGrid: ({0}, {1}, {2});", NW_topgrid_corner.X, NW_topgrid_corner.Y, NW_topgrid_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("NE top of FractureGrid: ({0}, {1}, {2});", NE_topgrid_corner.X, NE_topgrid_corner.Y, NE_topgrid_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("SE top of FractureGrid: ({0}, {1}, {2});", SE_topgrid_corner.X, SE_topgrid_corner.Y, SE_topgrid_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWtop = new PointXYZ({0}, {1}, {2});", SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWbottom = new PointXYZ({0}, {1}, {2});", SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWtop = new PointXYZ({0}, {1}, {2});", NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWbottom = new PointXYZ({0}, {1}, {2});", NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEtop = new PointXYZ({0}, {1}, {2});", NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ({0}, {1}, {2});", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ({0}, {1}, {2});", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ({0}, {1}, {2});", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
-                                PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1}; Surface height = {2}", local_LayerThickness, local_Current_Depth, Math.Max(local_Current_SurfaceHeight, 0)));
-#endif
-
-                                // Set the gridblock cornerpoints
-                                gc.setGridblockCorners(FractureGrid_SWtop, FractureGrid_SWbottom, FractureGrid_NWtop, FractureGrid_NWbottom, FractureGrid_NEtop, FractureGrid_NEbottom, FractureGrid_SEtop, FractureGrid_SEbottom);
-
-                                // Set the mechanical properties for the gridblock
-                                gc.MechProps.setMechanicalProperties(local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits);
-
-                                // Set the fracture aperture control properties
-                                gc.MechProps.setFractureApertureControlData(DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure);
-
-                                // Set the host rock permeability
-                                gc.MechProps.setHostRockPermeability(local_HostRock_kh, local_HostRock_kv);
-
-                                // Set the initial stress and strain
-                                // If the initial stress relaxation value is negative, set it to the required value for a critical initial stress state
-                                double local_InitialStressRelaxation = InitialStressRelaxation;
-                                if (InitialStressRelaxation < 0)
-                                    gc.StressStrain.SetCriticalInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure);
-                                else
-                                    gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
-
-                                // Set the geothermal gradient
-                                gc.StressStrain.GeothermalGradient = GeothermalGradient;
-
-                                // Calculate the minimum microfracture radius from the layer thickness, if required
-                                double local_minImplicitMicrofractureRadius = MinImplicitMicrofractureRadius;
-                                if (MinImplicitMicrofractureRadius < 0)
-                                {
-                                    double maxMicrofractureRadius = local_LayerThickness * (0.5 + (FractureNucleationPosition >= 0 ? Math.Abs(FractureNucleationPosition - 0.5) : 0));
-                                    local_minImplicitMicrofractureRadius = maxMicrofractureRadius / (double)No_r_bins;
-                                }
-
-                                // Calculate the minimum and maximum unconfined fracture radius from the layer thickness, if required
-                                double local_minUnconfinedFractureRadius = (MinUnconfinedFractureRadius > 0) ? MinUnconfinedFractureRadius : 0.01 * local_LayerThickness;
-                                double local_maxUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : 0.5 * local_LayerThickness;
-
-                                // Determine whether to check for stress shadows from other fracture sets
-                                bool local_checkAlluFStressShadows;
-                                switch (CheckAlluFStressShadows)
-                                {
-                                    case AutomaticFlag.None:
-                                        local_checkAlluFStressShadows = false;
-                                        break;
-                                    case AutomaticFlag.All:
-                                        local_checkAlluFStressShadows = true;
-                                        break;
-                                    case AutomaticFlag.Automatic:
-                                        local_checkAlluFStressShadows = (NoFractureSets > 2);
-                                        break;
-                                    default:
-                                        local_checkAlluFStressShadows = false;
-                                        break;
-                                }
-
-                                // Set the propagation control data for the gridblock
-                                gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
-
-                                // Set folder path for output files
-                                gc.PropControl.FolderPath = folderPath;
-
-#if DEBUG_FRAC_INPUT
-                                PetrelLogger.InfoOutputWindow("Properties");
-                                PetrelLogger.InfoOutputWindow(string.Format("sv': {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
-                                PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient: {2}, Crack surface energy: {3}, Friction coefficient: {4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
-                                PetrelLogger.InfoOutputWindow("Create gridblock");
-                                PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, {26}, TimeUnits.{27}, {28}, {29}, {30}, {31}, {32});",
-                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
-#endif
-
-                                // Add the deformation load data 
-                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
-                                {
-                                    Tensor2S local_EhRate = local_EhRate_list[deformationEpisodeNo];
-                                    double local_AppliedOverpressureRate = local_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    double local_AppliedTemperatureChange = local_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
-                                    double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
-                                    Tensor2S local_AbsoluteStressRate = local_AbsoluteStressRate_list[deformationEpisodeNo];
-                                    double local_InitialAbsoluteVerticalStress = local_InitialAbsoluteVerticalStress_list[deformationEpisodeNo];
-                                    Tensor2S local_InitialAbsoluteStress = local_InitialAbsoluteStress_list[deformationEpisodeNo];
-                                    double local_InitialFluidPressure = local_InitialFluidPressure_list[deformationEpisodeNo];
-
-                                    // Add the deformation episode to the deformation episode list in the PropControl object
-                                    if (local_AbsoluteStressRate is null)
-                                        gc.PropControl.AddDeformationEpisode(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure);
-                                    else
-                                        gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
-
-#if DEBUG_FRAC_INPUT
-                                    if (local_AbsoluteStressRate is null)
-                                    {
-                                        string local_EhRate_info;
-                                        if (local_EhRate is null)
-                                            local_EhRate_info = "null";
+                                        // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
+                                        double local_Depth;
+                                        if (local_DepthAtDeformation >= 0)
+                                        {
+                                            // If the initial depth  has been specified, use this 
+                                            local_Depth = local_DepthAtDeformation;
+                                        }
                                         else
-                                            local_EhRate_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY));
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhRate_info, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure));
-                                    }
-                                    else
-                                    {
-                                        string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
-                                        string local_InitialAbsoluteStress_info;
-                                        if (local_InitialAbsoluteStress is null)
-                                            local_InitialAbsoluteStress_info = "null";
-                                        else
-                                            local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
-                                    }
-#endif
-                                }// End add the deformation load data
-
-                                // Create the fracture sets
-                                if (Mode1Only)
-                                    gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
-                                else if (Mode2Only)
-                                    gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
-                                else
-                                    gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
-                                if (NoUnconfinedFractureStrikeSets > 0)
-                                    gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
-
-#if DEBUG_FRAC_INPUT
-                                if (Mode1Only)
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
-                                else if (Mode2Only)
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
-                                else
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
-                                if (NoUnconfinedFractureStrikeSets > 0)
-                                    PetrelLogger.InfoOutputWindow(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, {5}, {6});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution));
-#endif
-                                // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
-
-                                // If required, define the present day stress
-#if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
-#endif
-                                if (UsePresentDayStress)
-                                {
-                                    switch (PresentDayStressInput)
-                                    {
-                                        case PresentDayStressFrom.Strain:
+                                        {
+                                            // Otherwise, calculate the current mean depth of the gridblock minus the total specified uplift
+                                            // NB Uplift will not be counted for deformation episodes with indefinite duration
+                                            local_Depth = local_Current_Depth;
+                                            for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
                                             {
-                                                // Get the present day strain and fluid overpressure from the grid as required
-                                                // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                                double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
-                                                double local_Ehmin_PresentDay = Ehmax_PresentDay;
-                                                double local_Ehmax_PresentDay = Ehmax_PresentDay;
-                                                double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
+                                                double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
+                                                double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
+                                                if (local_DeformationEpisodeDuration > 0)
+                                                    local_Depth += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
+                                            }
+                                        }
 
-                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                                {
-                                                    // Create local variables for running total and number of datapoints for each property
-                                                    double EhminAzi_PresentDay_total = 0;
-                                                    int EhminAzi_PresentDay_novalues = 0;
-                                                    double Ehmin_PresentDay_total = 0;
-                                                    int Ehmin_PresentDay_novalues = 0;
-                                                    double Ehmax_PresentDay_total = 0;
-                                                    int Ehmax_PresentDay_novalues = 0;
-                                                    double AppliedOverpressure_total = 0;
-                                                    int AppliedOverpressure_novalues = 0;
+                                        // Create a new gridblock object with the required layer thickness and depth
+                                        GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth);
 
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                        // Check if the western boundary if faulted
+                                        // This will be the case if any of the Petrel cells on the southern boundary are faulted
+                                        bool faultToWest = false;
+                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                        {
+                                            Index2 SWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J);
+                                            Index2 NWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J + 1);
+                                            if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(NWpillar))
+                                                faultToWest = true;
+                                        }
+
+                                        // Check if the southern boundary is faulted
+                                        // This will be the case if any of the Petrel cells on the southern boundary are faulted
+                                        bool faultToSouth = false;
+                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                        {
+                                            Index2 SWpillar = new Index2(PetrelGrid_I, PetrelGrid_FirstCellJ);
+                                            Index2 SEpillar = new Index2(PetrelGrid_I + 1, PetrelGrid_FirstCellJ);
+                                            if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(SEpillar))
+                                                faultToSouth = true;
+                                        }
+
+#if DEBUG_FRAC_INPUT
+                                        foreach (PointXYZ point in new PointXYZ[] { FractureGrid_SWtop, FractureGrid_NWtop, FractureGrid_NEtop, FractureGrid_SEtop, FractureGrid_SWbottom, FractureGrid_NWbottom, FractureGrid_NEbottom, FractureGrid_SEbottom })
+                                        {
+                                            if (minX > point.X) minX = point.X;
+                                            if (minY > point.Y) minY = point.Y;
+                                            if (minZ > point.Z) minZ = point.Z;
+                                            if (maxX < point.X) maxX = point.X;
+                                            if (maxY < point.Y) maxY = point.Y;
+                                            if (maxZ < point.Z) maxZ = point.Z;
+                                        }
+
+                                        PetrelLogger.InfoOutputWindow("Geometry");
+                                        PetrelLogger.InfoOutputWindow(string.Format("SW top of FractureGrid: ({0}, {1}, {2});", SW_topgrid_corner.X, SW_topgrid_corner.Y, SW_topgrid_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("NW top of FractureGrid: ({0}, {1}, {2});", NW_topgrid_corner.X, NW_topgrid_corner.Y, NW_topgrid_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("NE top of FractureGrid: ({0}, {1}, {2});", NE_topgrid_corner.X, NE_topgrid_corner.Y, NE_topgrid_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("SE top of FractureGrid: ({0}, {1}, {2});", SE_topgrid_corner.X, SE_topgrid_corner.Y, SE_topgrid_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWtop = new PointXYZ({0}, {1}, {2});", SW_top_corner.X, SW_top_corner.Y, SW_top_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SWbottom = new PointXYZ({0}, {1}, {2});", SW_bottom_corner.X, SW_bottom_corner.Y, SW_bottom_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWtop = new PointXYZ({0}, {1}, {2});", NW_top_corner.X, NW_top_corner.Y, NW_top_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NWbottom = new PointXYZ({0}, {1}, {2});", NW_bottom_corner.X, NW_bottom_corner.Y, NW_bottom_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEtop = new PointXYZ({0}, {1}, {2});", NE_top_corner.X, NE_top_corner.Y, NE_top_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_NEbottom = new PointXYZ({0}, {1}, {2});", NE_bottom_corner.X, NE_bottom_corner.Y, NE_bottom_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEtop = new PointXYZ({0}, {1}, {2});", SE_top_corner.X, SE_top_corner.Y, SE_top_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("PointXYZ FractureGrid_SEbottom = new PointXYZ({0}, {1}, {2});", SE_bottom_corner.X, SE_bottom_corner.Y, SE_bottom_corner.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("LayerThickness = {0}; Depth = {1}; Surface height = {2}", local_LayerThickness, local_Current_Depth, Math.Max(local_Current_SurfaceHeight, 0)));
+#endif
+
+                                        // Set the gridblock cornerpoints
+                                        gc.setGridblockCorners(FractureGrid_SWtop, FractureGrid_SWbottom, FractureGrid_NWtop, FractureGrid_NWbottom, FractureGrid_NEtop, FractureGrid_NEbottom, FractureGrid_SEtop, FractureGrid_SEbottom);
+
+                                        // Set the mechanical properties for the gridblock
+                                        gc.MechProps.setMechanicalProperties(local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits);
+
+                                        // Set the fracture aperture control properties
+                                        gc.MechProps.setFractureApertureControlData(DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure);
+
+                                        // Set the host rock permeability
+                                        gc.MechProps.setHostRockPermeability(local_HostRock_kh, local_HostRock_kv);
+
+                                        // Set the initial stress and strain
+                                        // If the initial stress relaxation value is negative, set it to the required value for a critical initial stress state
+                                        double local_InitialStressRelaxation = InitialStressRelaxation;
+                                        if (InitialStressRelaxation < 0)
+                                            gc.StressStrain.SetCriticalInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure);
+                                        else
+                                            gc.StressStrain.SetInitialStressStrainState(MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation);
+
+                                        // Set the geothermal gradient
+                                        gc.StressStrain.GeothermalGradient = GeothermalGradient;
+
+                                        // Calculate the minimum microfracture radius from the layer thickness, if required
+                                        double local_minImplicitMicrofractureRadius = MinImplicitMicrofractureRadius;
+                                        if (MinImplicitMicrofractureRadius < 0)
+                                        {
+                                            double maxMicrofractureRadius = local_LayerThickness * (0.5 + (FractureNucleationPosition >= 0 ? Math.Abs(FractureNucleationPosition - 0.5) : 0));
+                                            local_minImplicitMicrofractureRadius = maxMicrofractureRadius / (double)No_r_bins;
+                                        }
+
+                                        // Calculate the minimum and maximum unconfined fracture radius from the layer thickness, if required
+                                        double local_minUnconfinedFractureRadius = (MinUnconfinedFractureRadius > 0) ? MinUnconfinedFractureRadius : 0.01 * local_LayerThickness;
+                                        double local_maxUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : 0.5 * local_LayerThickness;
+
+                                        // Determine whether to check for stress shadows from other fracture sets
+                                        bool local_checkAlluFStressShadows;
+                                        switch (CheckAlluFStressShadows)
+                                        {
+                                            case AutomaticFlag.None:
+                                                local_checkAlluFStressShadows = false;
+                                                break;
+                                            case AutomaticFlag.All:
+                                                local_checkAlluFStressShadows = true;
+                                                break;
+                                            case AutomaticFlag.Automatic:
+                                                local_checkAlluFStressShadows = (NoFractureSets > 2);
+                                                break;
+                                            default:
+                                                local_checkAlluFStressShadows = false;
+                                                break;
+                                        }
+
+                                        // Set the propagation control data for the gridblock
+                                        gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                            MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
+
+                                        // Set folder path for output files
+                                        gc.PropControl.FolderPath = folderPath;
+
+#if DEBUG_FRAC_INPUT
+                                        PetrelLogger.InfoOutputWindow("Properties");
+                                        PetrelLogger.InfoOutputWindow(string.Format("sv': {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
+                                        PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient: {2}, Crack surface energy: {3}, Friction coefficient: {4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
+                                        PetrelLogger.InfoOutputWindow("Create gridblock");
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23}, {24}, {25}, {26}, TimeUnits.{27}, {28}, {29}, {30}, {31}, {32});",
+                                            CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                            MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
+#endif
+
+                                        // Add the deformation load data 
+                                        for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
+                                        {
+                                            Tensor2S local_EhRate = local_EhRate_list[deformationEpisodeNo];
+                                            double local_AppliedOverpressureRate = local_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                            double local_AppliedTemperatureChange = local_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                            double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
+                                            double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
+                                            double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
+                                            Tensor2S local_AbsoluteStressRate = local_AbsoluteStressRate_list[deformationEpisodeNo];
+                                            double local_InitialAbsoluteVerticalStress = local_InitialAbsoluteVerticalStress_list[deformationEpisodeNo];
+                                            Tensor2S local_InitialAbsoluteStress = local_InitialAbsoluteStress_list[deformationEpisodeNo];
+                                            double local_InitialFluidPressure = local_InitialFluidPressure_list[deformationEpisodeNo];
+
+                                            // Add the deformation episode to the deformation episode list in the PropControl object
+                                            if (local_AbsoluteStressRate is null)
+                                                gc.PropControl.AddDeformationEpisode(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure);
+                                            else
+                                                gc.PropControl.AddDeformationEpisode(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
+
+#if DEBUG_FRAC_INPUT
+                                            if (local_AbsoluteStressRate is null)
+                                            {
+                                                string local_EhRate_info;
+                                                if (local_EhRate is null)
+                                                    local_EhRate_info = "null";
+                                                else
+                                                    local_EhRate_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY));
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhRate_info, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialAbsoluteVerticalStress, local_InitialFluidPressure));
+                                            }
+                                            else
+                                            {
+                                                string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
+                                                string local_InitialAbsoluteStress_info;
+                                                if (local_InitialAbsoluteStress is null)
+                                                    local_InitialAbsoluteStress_info = "null";
+                                                else
+                                                    local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4});", local_AbsoluteStressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress_info, local_InitialFluidPressure));
+                                            }
+#endif
+                                        }// End add the deformation load data
+
+                                        // Create the fracture sets
+                                        if (Mode1Only)
+                                            gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
+                                        else if (Mode2Only)
+                                            gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
+                                        else
+                                            gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
+                                        if (NoUnconfinedFractureStrikeSets > 0)
+                                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
+
+#if DEBUG_FRAC_INPUT
+                                        if (Mode1Only)
+                                            PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
+                                        else if (Mode2Only)
+                                            PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
+                                        else
+                                            PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
+                                        if (NoUnconfinedFractureStrikeSets > 0)
+                                            PetrelLogger.InfoOutputWindow(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, {5}, {6});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution));
+#endif
+                                        // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
+
+                                        // If required, define the present day stress
+#if DEBUG_FRAC_INPUT
+                                        PetrelLogger.InfoOutputWindow("");
+                                        PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
+                                        PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
+#endif
+                                        if (UsePresentDayStress)
+                                        {
+                                            switch (PresentDayStressInput)
+                                            {
+                                                case PresentDayStressFrom.Strain:
+                                                    {
+                                                        // Get the present day strain and fluid overpressure from the grid as required
+                                                        // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                        // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                        double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
+                                                        double local_Ehmin_PresentDay = Ehmax_PresentDay;
+                                                        double local_Ehmax_PresentDay = Ehmax_PresentDay;
+                                                        double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
+
+                                                        if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                        {
+                                                            // Create local variables for running total and number of datapoints for each property
+                                                            double EhminAzi_PresentDay_total = 0;
+                                                            int EhminAzi_PresentDay_novalues = 0;
+                                                            double Ehmin_PresentDay_total = 0;
+                                                            int Ehmin_PresentDay_novalues = 0;
+                                                            double Ehmax_PresentDay_total = 0;
+                                                            int Ehmax_PresentDay_novalues = 0;
+                                                            double AppliedOverpressure_total = 0;
+                                                            int AppliedOverpressure_novalues = 0;
+
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                    {
+                                                                        Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Update minimum horizontal strain azimuth total if defined
+                                                                        if (UseGridFor_EhminAzi_PresentDay)
+                                                                        {
+                                                                            double cell_EhminAzi_PresentDay = (double)EhminAzi_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_EhminAzi_PresentDay)
+                                                                                cell_EhminAzi_PresentDay = toSIAzimuthUnits.Convert(cell_EhminAzi_PresentDay);
+                                                                            if (!double.IsNaN(cell_EhminAzi_PresentDay))
+                                                                            {
+                                                                                EhminAzi_PresentDay_total += cell_EhminAzi_PresentDay;
+                                                                                EhminAzi_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update minimum horizontal strain total if defined
+                                                                        if (UseGridFor_Ehmin_PresentDay)
+                                                                        {
+                                                                            double cell_Ehmin_PresentDay = (double)Ehmin_PresentDay_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_Ehmin_PresentDay))
+                                                                            {
+                                                                                Ehmin_PresentDay_total += cell_Ehmin_PresentDay;
+                                                                                Ehmin_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update maximum horizontal strain total if defined
+                                                                        if (UseGridFor_Ehmax_PresentDay)
+                                                                        {
+                                                                            double cell_Ehmax_PresentDay = (double)Ehmax_PresentDay_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_Ehmax_PresentDay))
+                                                                            {
+                                                                                Ehmax_PresentDay_total += cell_Ehmax_PresentDay;
+                                                                                Ehmax_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update fluid overpressure total if defined
+                                                                        if (UseGridFor_AppliedOverpressure_PresentDay)
+                                                                        {
+                                                                            double cell_AppliedOverpressure = (double)AppliedOverpressure_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_AppliedOverpressure_PresentDay)
+                                                                                cell_AppliedOverpressure = toSIPressureUnits.Convert(cell_AppliedOverpressure);
+                                                                            if (!double.IsNaN(cell_AppliedOverpressure))
+                                                                            {
+                                                                                AppliedOverpressure_total += cell_AppliedOverpressure;
+                                                                                AppliedOverpressure_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                    }
+
+                                                            // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                            if (EhminAzi_PresentDay_novalues > 0)
+                                                                local_EhminAzi_PresentDay = EhminAzi_PresentDay_total / (double)EhminAzi_PresentDay_novalues;
+                                                            if (Ehmin_PresentDay_novalues > 0)
+                                                                local_Ehmin_PresentDay = Ehmin_PresentDay_total / (double)Ehmin_PresentDay_novalues;
+                                                            if (Ehmax_PresentDay_novalues > 0)
+                                                                local_Ehmax_PresentDay = Ehmax_PresentDay_total / (double)Ehmax_PresentDay_novalues;
+                                                            if (AppliedOverpressure_novalues > 0)
+                                                                local_AppliedOverpressure_PresentDay = AppliedOverpressure_total / (double)AppliedOverpressure_novalues;
+                                                        }
+                                                        else // We are taking data from a single cell
+                                                        {
+                                                            // Create a reference to the cell from which we will read the data
+                                                            Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                            // Update minimum horizontal strain azimuth total if defined
+                                                            if (UseGridFor_EhminAzi_PresentDay)
                                                             {
-                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Update minimum horizontal strain azimuth total if defined
-                                                                if (UseGridFor_EhminAzi_PresentDay)
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_EhminAzi_PresentDay = (double)EhminAzi_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_EhminAzi_PresentDay)
                                                                         cell_EhminAzi_PresentDay = toSIAzimuthUnits.Convert(cell_EhminAzi_PresentDay);
                                                                     if (!double.IsNaN(cell_EhminAzi_PresentDay))
                                                                     {
-                                                                        EhminAzi_PresentDay_total += cell_EhminAzi_PresentDay;
-                                                                        EhminAzi_PresentDay_novalues++;
+                                                                        local_EhminAzi_PresentDay = cell_EhminAzi_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update minimum horizontal strain total if defined
-                                                                if (UseGridFor_Ehmin_PresentDay)
+                                                            // Update minimum horizontal strain total if defined
+                                                            if (UseGridFor_Ehmin_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Ehmin_PresentDay = (double)Ehmin_PresentDay_grid[cellRef];
                                                                     if (!double.IsNaN(cell_Ehmin_PresentDay))
                                                                     {
-                                                                        Ehmin_PresentDay_total += cell_Ehmin_PresentDay;
-                                                                        Ehmin_PresentDay_novalues++;
+                                                                        local_Ehmin_PresentDay = cell_Ehmin_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update maximum horizontal strain total if defined
-                                                                if (UseGridFor_Ehmax_PresentDay)
+                                                            // Update maximum horizontal strain total if defined
+                                                            if (UseGridFor_Ehmax_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Ehmax_PresentDay = (double)Ehmax_PresentDay_grid[cellRef];
                                                                     if (!double.IsNaN(cell_Ehmax_PresentDay))
                                                                     {
-                                                                        Ehmax_PresentDay_total += cell_Ehmax_PresentDay;
-                                                                        Ehmax_PresentDay_novalues++;
+                                                                        local_Ehmax_PresentDay = cell_Ehmax_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update fluid overpressure total if defined
-                                                                if (UseGridFor_AppliedOverpressure_PresentDay)
+                                                            // Update fluid overpressure total if defined
+                                                            if (UseGridFor_AppliedOverpressure_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_AppliedOverpressure = (double)AppliedOverpressure_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_AppliedOverpressure_PresentDay)
                                                                         cell_AppliedOverpressure = toSIPressureUnits.Convert(cell_AppliedOverpressure);
                                                                     if (!double.IsNaN(cell_AppliedOverpressure))
                                                                     {
-                                                                        AppliedOverpressure_total += cell_AppliedOverpressure;
-                                                                        AppliedOverpressure_novalues++;
+                                                                        local_AppliedOverpressure_PresentDay = cell_AppliedOverpressure;
+                                                                        break;
                                                                     }
                                                                 }
-
                                                             }
 
-                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                                    if (EhminAzi_PresentDay_novalues > 0)
-                                                        local_EhminAzi_PresentDay = EhminAzi_PresentDay_total / (double)EhminAzi_PresentDay_novalues;
-                                                    if (Ehmin_PresentDay_novalues > 0)
-                                                        local_Ehmin_PresentDay = Ehmin_PresentDay_total / (double)Ehmin_PresentDay_novalues;
-                                                    if (Ehmax_PresentDay_novalues > 0)
-                                                        local_Ehmax_PresentDay = Ehmax_PresentDay_total / (double)Ehmax_PresentDay_novalues;
-                                                    if (AppliedOverpressure_novalues > 0)
-                                                        local_AppliedOverpressure_PresentDay = AppliedOverpressure_total / (double)AppliedOverpressure_novalues;
-                                                }
-                                                else // We are taking data from a single cell
-                                                {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
-                                                    // Create a reference to the cell from which we will read the data
-                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                                    // Update minimum horizontal strain azimuth total if defined
-                                                    if (UseGridFor_EhminAzi_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_EhminAzi_PresentDay = (double)EhminAzi_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_EhminAzi_PresentDay)
-                                                                cell_EhminAzi_PresentDay = toSIAzimuthUnits.Convert(cell_EhminAzi_PresentDay);
-                                                            if (!double.IsNaN(cell_EhminAzi_PresentDay))
-                                                            {
-                                                                local_EhminAzi_PresentDay = cell_EhminAzi_PresentDay;
-                                                                break;
-                                                            }
                                                         }
-                                                    }
+                                                        // End get the present day strain and fluid overpressure from the grid as required
 
-                                                    // Update minimum horizontal strain total if defined
-                                                    if (UseGridFor_Ehmin_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        // Get the present day mechanical properties from the grid as required
+                                                        // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                        // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                        double local_YoungsMod_PresentDay = YoungsMod_PresentDay;
+                                                        double local_PoissonsRatio_PresentDay = PoissonsRatio_PresentDay;
+                                                        double local_BiotCoefficient_PresentDay = BiotCoefficient_PresentDay;
+
+                                                        if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
                                                         {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Ehmin_PresentDay = (double)Ehmin_PresentDay_grid[cellRef];
-                                                            if (!double.IsNaN(cell_Ehmin_PresentDay))
-                                                            {
-                                                                local_Ehmin_PresentDay = cell_Ehmin_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
+                                                            // Create local variables for running total and number of datapoints for each mechanical property
+                                                            double YoungsMod_PresentDay_total = 0;
+                                                            int YoungsMod_PresentDay_novalues = 0;
+                                                            double PoissonsRatio_PresentDay_total = 0;
+                                                            int PoissonsRatio_PresentDay_novalues = 0;
+                                                            double BiotCoeff_total = 0;
+                                                            int BiotCoeff_novalues = 0;
 
-                                                    // Update maximum horizontal strain total if defined
-                                                    if (UseGridFor_Ehmax_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                    {
+                                                                        Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Update Young's Modulus total if defined
+                                                                        if (UseGridFor_YoungsMod_PresentDay)
+                                                                        {
+                                                                            double cell_YoungsMod_PresentDay = (double)YoungsMod_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_YoungsMod_PresentDay)
+                                                                                cell_YoungsMod_PresentDay = toSIYoungsModUnits.Convert(cell_YoungsMod_PresentDay);
+                                                                            if (!double.IsNaN(cell_YoungsMod_PresentDay))
+                                                                            {
+                                                                                YoungsMod_PresentDay_total += cell_YoungsMod_PresentDay;
+                                                                                YoungsMod_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update Poisson's ratio total if defined
+                                                                        if (UseGridFor_PoissonsRatio_PresentDay)
+                                                                        {
+                                                                            double cell_PoissonsRatio_PresentDay = (double)PoissonsRatio_PresentDay_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_PoissonsRatio_PresentDay))
+                                                                            {
+                                                                                PoissonsRatio_PresentDay_total += cell_PoissonsRatio_PresentDay;
+                                                                                PoissonsRatio_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update Biot coefficient total if defined
+                                                                        if (UseGridFor_BiotCoefficient_PresentDay)
+                                                                        {
+                                                                            double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
+                                                                            if (!double.IsNaN(cell_BiotCoeff))
+                                                                            {
+                                                                                BiotCoeff_total += cell_BiotCoeff;
+                                                                                BiotCoeff_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                    }
+
+                                                            // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                            if (YoungsMod_PresentDay_novalues > 0)
+                                                                local_YoungsMod_PresentDay = YoungsMod_PresentDay_total / (double)YoungsMod_PresentDay_novalues;
+                                                            if (PoissonsRatio_PresentDay_novalues > 0)
+                                                                local_PoissonsRatio_PresentDay = PoissonsRatio_PresentDay_total / (double)PoissonsRatio_PresentDay_novalues;
+                                                            if (BiotCoeff_novalues > 0)
+                                                                local_BiotCoefficient_PresentDay = BiotCoeff_total / (double)BiotCoeff_novalues;
+                                                        }
+                                                        else // We are taking data from a single cell
                                                         {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Ehmax_PresentDay = (double)Ehmax_PresentDay_grid[cellRef];
-                                                            if (!double.IsNaN(cell_Ehmax_PresentDay))
+                                                            // Create a reference to the cell from which we will read the data
+                                                            Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                            // Update Young's Modulus total if defined
+                                                            if (UseGridFor_YoungsMod_PresentDay)
                                                             {
-                                                                local_Ehmax_PresentDay = cell_Ehmax_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update fluid overpressure total if defined
-                                                    if (UseGridFor_AppliedOverpressure_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_AppliedOverpressure = (double)AppliedOverpressure_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_AppliedOverpressure_PresentDay)
-                                                                cell_AppliedOverpressure = toSIPressureUnits.Convert(cell_AppliedOverpressure);
-                                                            if (!double.IsNaN(cell_AppliedOverpressure))
-                                                            {
-                                                                local_AppliedOverpressure_PresentDay = cell_AppliedOverpressure;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                }
-                                                // End get the present day strain and fluid overpressure from the grid as required
-
-                                                // Get the present day mechanical properties from the grid as required
-                                                // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                                double local_YoungsMod_PresentDay = YoungsMod_PresentDay;
-                                                double local_PoissonsRatio_PresentDay = PoissonsRatio_PresentDay;
-                                                double local_BiotCoefficient_PresentDay = BiotCoefficient_PresentDay;
-
-                                                if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
-                                                {
-                                                    // Create local variables for running total and number of datapoints for each mechanical property
-                                                    double YoungsMod_PresentDay_total = 0;
-                                                    int YoungsMod_PresentDay_novalues = 0;
-                                                    double PoissonsRatio_PresentDay_total = 0;
-                                                    int PoissonsRatio_PresentDay_novalues = 0;
-                                                    double BiotCoeff_total = 0;
-                                                    int BiotCoeff_novalues = 0;
-
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                            {
-                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Update Young's Modulus total if defined
-                                                                if (UseGridFor_YoungsMod_PresentDay)
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_YoungsMod_PresentDay = (double)YoungsMod_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_YoungsMod_PresentDay)
                                                                         cell_YoungsMod_PresentDay = toSIYoungsModUnits.Convert(cell_YoungsMod_PresentDay);
                                                                     if (!double.IsNaN(cell_YoungsMod_PresentDay))
                                                                     {
-                                                                        YoungsMod_PresentDay_total += cell_YoungsMod_PresentDay;
-                                                                        YoungsMod_PresentDay_novalues++;
+                                                                        local_YoungsMod_PresentDay = cell_YoungsMod_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update Poisson's ratio total if defined
-                                                                if (UseGridFor_PoissonsRatio_PresentDay)
+                                                            // Update Poisson's ratio total if defined
+                                                            if (UseGridFor_PoissonsRatio_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_PoissonsRatio_PresentDay = (double)PoissonsRatio_PresentDay_grid[cellRef];
                                                                     if (!double.IsNaN(cell_PoissonsRatio_PresentDay))
                                                                     {
-                                                                        PoissonsRatio_PresentDay_total += cell_PoissonsRatio_PresentDay;
-                                                                        PoissonsRatio_PresentDay_novalues++;
+                                                                        local_PoissonsRatio_PresentDay = cell_PoissonsRatio_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update Biot coefficient total if defined
-                                                                if (UseGridFor_BiotCoefficient_PresentDay)
+                                                            // Update Biot coefficient total if defined
+                                                            if (UseGridFor_BiotCoefficient_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
                                                                     if (!double.IsNaN(cell_BiotCoeff))
                                                                     {
-                                                                        BiotCoeff_total += cell_BiotCoeff;
-                                                                        BiotCoeff_novalues++;
+                                                                        local_BiotCoefficient_PresentDay = cell_BiotCoeff;
+                                                                        break;
                                                                     }
                                                                 }
-
                                                             }
 
-                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                                    if (YoungsMod_PresentDay_novalues > 0)
-                                                        local_YoungsMod_PresentDay = YoungsMod_PresentDay_total / (double)YoungsMod_PresentDay_novalues;
-                                                    if (PoissonsRatio_PresentDay_novalues > 0)
-                                                        local_PoissonsRatio_PresentDay = PoissonsRatio_PresentDay_total / (double)PoissonsRatio_PresentDay_novalues;
-                                                    if (BiotCoeff_novalues > 0)
-                                                        local_BiotCoefficient_PresentDay = BiotCoeff_total / (double)BiotCoeff_novalues;
-                                                }
-                                                else // We are taking data from a single cell
-                                                {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
-                                                    // Create a reference to the cell from which we will read the data
-                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                                    // Update Young's Modulus total if defined
-                                                    if (UseGridFor_YoungsMod_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_YoungsMod_PresentDay = (double)YoungsMod_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_YoungsMod_PresentDay)
-                                                                cell_YoungsMod_PresentDay = toSIYoungsModUnits.Convert(cell_YoungsMod_PresentDay);
-                                                            if (!double.IsNaN(cell_YoungsMod_PresentDay))
-                                                            {
-                                                                local_YoungsMod_PresentDay = cell_YoungsMod_PresentDay;
-                                                                break;
-                                                            }
                                                         }
-                                                    }
-
-                                                    // Update Poisson's ratio total if defined
-                                                    if (UseGridFor_PoissonsRatio_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        // Check the elastic properties for physically unrealistic values, and if so warn the user
+                                                        // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
+                                                        // and these values will automatically be corrected by the MechanicalProperties object
+                                                        if (local_YoungsMod_PresentDay <= 0)
                                                         {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_PoissonsRatio_PresentDay = (double)PoissonsRatio_PresentDay_grid[cellRef];
-                                                            if (!double.IsNaN(cell_PoissonsRatio_PresentDay))
-                                                            {
-                                                                local_PoissonsRatio_PresentDay = cell_PoissonsRatio_PresentDay;
-                                                                break;
-                                                            }
+                                                            PetrelLogger.InfoOutputWindow(string.Format("Invalid value for present day Young's Modulus ({0}Pa) in cell {1},{2}. This will create errors in the calculation.", local_YoungsMod_PresentDay, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
                                                         }
-                                                    }
-
-                                                    // Update Biot coefficient total if defined
-                                                    if (UseGridFor_BiotCoefficient_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        if ((local_PoissonsRatio_PresentDay < 0) || (local_PoissonsRatio_PresentDay > 0.5))
                                                         {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
-                                                            if (!double.IsNaN(cell_BiotCoeff))
-                                                            {
-                                                                local_BiotCoefficient_PresentDay = cell_BiotCoeff;
-                                                                break;
-                                                            }
+                                                            PetrelLogger.InfoOutputWindow(string.Format("Invalid value for present day Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio_PresentDay, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
                                                         }
-                                                    }
+                                                        // End get the present day mechanical properties from the grid as required
 
-                                                }
-                                                // Check the elastic properties for physically unrealistic values, and if so warn the user
-                                                // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
-                                                // and these values will automatically be corrected by the MechanicalProperties object
-                                                if (local_YoungsMod_PresentDay <= 0)
-                                                {
-                                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for present day Young's Modulus ({0}Pa) in cell {1},{2}. This will create errors in the calculation.", local_YoungsMod_PresentDay, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
-                                                }
-                                                if ((local_PoissonsRatio_PresentDay < 0) || (local_PoissonsRatio_PresentDay > 0.5))
-                                                {
-                                                    PetrelLogger.InfoOutputWindow(string.Format("Invalid value for present day Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio_PresentDay, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
-                                                }
-                                                // End get the present day mechanical properties from the grid as required
-
-                                                // If the present day mechanical properties are not defined, use the mechanical properties at the time of deformation
-                                                // This is not required as the SetPresentDayStressFromStrain will automatically substitute mechanical properties at the time of deformation if NaNs are supplied
-                                                /*if (double.IsNaN(local_YoungsMod_PresentDay))
-                                                    local_YoungsMod_PresentDay = local_YoungsMod;
-                                                if (double.IsNaN(local_PoissonsRatio_PresentDay))
-                                                    local_PoissonsRatio_PresentDay = local_PoissonsRatio;
-                                                if (double.IsNaN(local_BiotCoefficient_PresentDay))
-                                                    local_BiotCoefficient_PresentDay = local_BiotCoefficient;*/
+                                                        // If the present day mechanical properties are not defined, use the mechanical properties at the time of deformation
+                                                        // This is not required as the SetPresentDayStressFromStrain will automatically substitute mechanical properties at the time of deformation if NaNs are supplied
+                                                        /*if (double.IsNaN(local_YoungsMod_PresentDay))
+                                                            local_YoungsMod_PresentDay = local_YoungsMod;
+                                                        if (double.IsNaN(local_PoissonsRatio_PresentDay))
+                                                            local_PoissonsRatio_PresentDay = local_PoissonsRatio;
+                                                        if (double.IsNaN(local_BiotCoefficient_PresentDay))
+                                                            local_BiotCoefficient_PresentDay = local_BiotCoefficient;*/
 
 
-                                                // Get the present day stress relaxation factor
-                                                // This is a uniform constant across the grid
-                                                double local_InitialStressRelaxation_PresentDay = InitialStressRelaxation_PresentDay;
-                                                // If it is not defined, use the initial stress relaxation at the time of deformation
-                                                // This is not required as the SetPresentDayStressFromStrain will automatically substitute initial stress relaxation at the time of deformation if NaNs are supplied
-                                                /*if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
-                                                    local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;*/
+                                                        // Get the present day stress relaxation factor
+                                                        // This is a uniform constant across the grid
+                                                        double local_InitialStressRelaxation_PresentDay = InitialStressRelaxation_PresentDay;
+                                                        // If it is not defined, use the initial stress relaxation at the time of deformation
+                                                        // This is not required as the SetPresentDayStressFromStrain will automatically substitute initial stress relaxation at the time of deformation if NaNs are supplied
+                                                        /*if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
+                                                            local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;*/
 
-                                                // Now we can set the present day stress
-                                                gc.SetPresentDayStressFromStrain(local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay);
+                                                        // Now we can set the present day stress
+                                                        gc.SetPresentDayStressFromStrain(local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay);
 #if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+                                                        PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
+                                                        PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
-                                            }
-                                            break;
-                                        case PresentDayStressFrom.EffectiveStress:
-                                            {
-                                                // Get the present day effective stress from the grid as required
-                                                // This will depend on whether we are averaging the stress properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock
-                                                // By default these will be set to zero, since default values are not specified by the user 
-                                                double local_Sxx_PresentDay = 0;
-                                                double local_Syy_PresentDay = 0;
-                                                double local_Szz_PresentDay = 0;
-                                                double local_Sxy_PresentDay = 0;
-                                                double local_Syz_PresentDay = 0;
-                                                double local_Szx_PresentDay = 0;
+                                                    }
+                                                    break;
+                                                case PresentDayStressFrom.EffectiveStress:
+                                                    {
+                                                        // Get the present day effective stress from the grid as required
+                                                        // This will depend on whether we are averaging the stress properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                        // First we will create local variables for the property values in this gridblock
+                                                        // By default these will be set to zero, since default values are not specified by the user 
+                                                        double local_Sxx_PresentDay = 0;
+                                                        double local_Syy_PresentDay = 0;
+                                                        double local_Szz_PresentDay = 0;
+                                                        double local_Sxy_PresentDay = 0;
+                                                        double local_Syz_PresentDay = 0;
+                                                        double local_Szx_PresentDay = 0;
 
-                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                                {
-                                                    // Create local variables for running total and number of datapoints for each property
-                                                    double Sxx_PresentDay_total = 0;
-                                                    int Sxx_PresentDay_novalues = 0;
-                                                    double Syy_PresentDay_total = 0;
-                                                    int Syy_PresentDay_novalues = 0;
-                                                    double Szz_PresentDay_total = 0;
-                                                    int Szz_PresentDay_novalues = 0;
-                                                    double Sxy_PresentDay_total = 0;
-                                                    int Sxy_PresentDay_novalues = 0;
-                                                    double Syz_PresentDay_total = 0;
-                                                    int Syz_PresentDay_novalues = 0;
-                                                    double Szx_PresentDay_total = 0;
-                                                    int Szx_PresentDay_novalues = 0;
+                                                        if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                        {
+                                                            // Create local variables for running total and number of datapoints for each property
+                                                            double Sxx_PresentDay_total = 0;
+                                                            int Sxx_PresentDay_novalues = 0;
+                                                            double Syy_PresentDay_total = 0;
+                                                            int Syy_PresentDay_novalues = 0;
+                                                            double Szz_PresentDay_total = 0;
+                                                            int Szz_PresentDay_novalues = 0;
+                                                            double Sxy_PresentDay_total = 0;
+                                                            int Sxy_PresentDay_novalues = 0;
+                                                            double Syz_PresentDay_total = 0;
+                                                            int Syz_PresentDay_novalues = 0;
+                                                            double Szx_PresentDay_total = 0;
+                                                            int Szx_PresentDay_novalues = 0;
 
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                    {
+                                                                        Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Update XX stress component total if defined
+                                                                        if (UseGridFor_Sxx_PresentDay)
+                                                                        {
+                                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Sxx_PresentDay)
+                                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
+                                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
+                                                                            {
+                                                                                Sxx_PresentDay_total += cell_Sxx_PresentDay;
+                                                                                Sxx_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update YY stress component total if defined
+                                                                        if (UseGridFor_Syy_PresentDay)
+                                                                        {
+                                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Syy_PresentDay)
+                                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
+                                                                            if (!double.IsNaN(cell_Syy_PresentDay))
+                                                                            {
+                                                                                Syy_PresentDay_total += cell_Syy_PresentDay;
+                                                                                Syy_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update ZZ stress component total if defined
+                                                                        if (UseGridFor_Szz_PresentDay)
+                                                                        {
+                                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Szz_PresentDay)
+                                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
+                                                                            if (!double.IsNaN(cell_Szz_PresentDay))
+                                                                            {
+                                                                                Szz_PresentDay_total += cell_Szz_PresentDay;
+                                                                                Szz_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update XY stress component total if defined
+                                                                        if (UseGridFor_Sxy_PresentDay)
+                                                                        {
+                                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Sxy_PresentDay)
+                                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
+                                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
+                                                                            {
+                                                                                Sxy_PresentDay_total += cell_Sxy_PresentDay;
+                                                                                Sxy_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update YZ stress component total if defined
+                                                                        if (UseGridFor_Syz_PresentDay)
+                                                                        {
+                                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Syz_PresentDay)
+                                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
+                                                                            if (!double.IsNaN(cell_Syz_PresentDay))
+                                                                            {
+                                                                                Syz_PresentDay_total += cell_Syz_PresentDay;
+                                                                                Syz_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update ZX stress component total if defined
+                                                                        if (UseGridFor_Szx_PresentDay)
+                                                                        {
+                                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Szx_PresentDay)
+                                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
+                                                                            if (!double.IsNaN(cell_Szx_PresentDay))
+                                                                            {
+                                                                                Szx_PresentDay_total += cell_Szx_PresentDay;
+                                                                                Szx_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                    }
+
+                                                            // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                            if (Sxx_PresentDay_novalues > 0)
+                                                                local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
+                                                            if (Syy_PresentDay_novalues > 0)
+                                                                local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
+                                                            if (Szz_PresentDay_novalues > 0)
+                                                                local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
+                                                            if (Sxy_PresentDay_novalues > 0)
+                                                                local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
+                                                            if (Syz_PresentDay_novalues > 0)
+                                                                local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
+                                                            if (Szx_PresentDay_novalues > 0)
+                                                                local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
+                                                        }
+                                                        else // We are taking data from a single cell
+                                                        {
+                                                            // Create a reference to the cell from which we will read the data
+                                                            Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                            // Update XX stress component total if defined
+                                                            if (UseGridFor_Sxx_PresentDay)
                                                             {
-                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Update XX stress component total if defined
-                                                                if (UseGridFor_Sxx_PresentDay)
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Sxx_PresentDay)
                                                                         cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
                                                                     if (!double.IsNaN(cell_Sxx_PresentDay))
                                                                     {
-                                                                        Sxx_PresentDay_total += cell_Sxx_PresentDay;
-                                                                        Sxx_PresentDay_novalues++;
+                                                                        local_Sxx_PresentDay = cell_Sxx_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update YY stress component total if defined
-                                                                if (UseGridFor_Syy_PresentDay)
+                                                            // Update YY stress component total if defined
+                                                            if (UseGridFor_Syy_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Syy_PresentDay)
                                                                         cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
                                                                     if (!double.IsNaN(cell_Syy_PresentDay))
                                                                     {
-                                                                        Syy_PresentDay_total += cell_Syy_PresentDay;
-                                                                        Syy_PresentDay_novalues++;
+                                                                        local_Syy_PresentDay = cell_Syy_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update ZZ stress component total if defined
-                                                                if (UseGridFor_Szz_PresentDay)
+                                                            // Update ZZ stress component total if defined
+                                                            if (UseGridFor_Szz_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Szz_PresentDay)
                                                                         cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
                                                                     if (!double.IsNaN(cell_Szz_PresentDay))
                                                                     {
-                                                                        Szz_PresentDay_total += cell_Szz_PresentDay;
-                                                                        Szz_PresentDay_novalues++;
+                                                                        local_Szz_PresentDay = cell_Szz_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update XY stress component total if defined
-                                                                if (UseGridFor_Sxy_PresentDay)
+                                                            // Update XY stress component total if defined
+                                                            if (UseGridFor_Sxy_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Sxy_PresentDay)
                                                                         cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
                                                                     if (!double.IsNaN(cell_Sxy_PresentDay))
                                                                     {
-                                                                        Sxy_PresentDay_total += cell_Sxy_PresentDay;
-                                                                        Sxy_PresentDay_novalues++;
+                                                                        local_Sxy_PresentDay = cell_Sxy_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update YZ stress component total if defined
-                                                                if (UseGridFor_Syz_PresentDay)
+                                                            // Update YZ stress component total if defined
+                                                            if (UseGridFor_Syz_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Syz_PresentDay)
                                                                         cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
                                                                     if (!double.IsNaN(cell_Syz_PresentDay))
                                                                     {
-                                                                        Syz_PresentDay_total += cell_Syz_PresentDay;
-                                                                        Syz_PresentDay_novalues++;
+                                                                        local_Syz_PresentDay = cell_Syz_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update ZX stress component total if defined
-                                                                if (UseGridFor_Szx_PresentDay)
+                                                            // Update ZX stress component total if defined
+                                                            if (UseGridFor_Szx_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Szx_PresentDay)
                                                                         cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
                                                                     if (!double.IsNaN(cell_Szx_PresentDay))
                                                                     {
-                                                                        Szx_PresentDay_total += cell_Szx_PresentDay;
-                                                                        Szx_PresentDay_novalues++;
+                                                                        local_Szx_PresentDay = cell_Szx_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
-
-                                                            }
-
-                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                                    if (Sxx_PresentDay_novalues > 0)
-                                                        local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
-                                                    if (Syy_PresentDay_novalues > 0)
-                                                        local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
-                                                    if (Szz_PresentDay_novalues > 0)
-                                                        local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
-                                                    if (Sxy_PresentDay_novalues > 0)
-                                                        local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
-                                                    if (Syz_PresentDay_novalues > 0)
-                                                        local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
-                                                    if (Szx_PresentDay_novalues > 0)
-                                                        local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
-                                                }
-                                                else // We are taking data from a single cell
-                                                {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
-                                                    // Create a reference to the cell from which we will read the data
-                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                                    // Update XX stress component total if defined
-                                                    if (UseGridFor_Sxx_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Sxx_PresentDay)
-                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
-                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
-                                                            {
-                                                                local_Sxx_PresentDay = cell_Sxx_PresentDay;
-                                                                break;
                                                             }
                                                         }
-                                                    }
+                                                        // End get the present day effective stress from the grid as required
 
-                                                    // Update YY stress component total if defined
-                                                    if (UseGridFor_Syy_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Syy_PresentDay)
-                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
-                                                            if (!double.IsNaN(cell_Syy_PresentDay))
-                                                            {
-                                                                local_Syy_PresentDay = cell_Syy_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update ZZ stress component total if defined
-                                                    if (UseGridFor_Szz_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Szz_PresentDay)
-                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
-                                                            if (!double.IsNaN(cell_Szz_PresentDay))
-                                                            {
-                                                                local_Szz_PresentDay = cell_Szz_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update XY stress component total if defined
-                                                    if (UseGridFor_Sxy_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Sxy_PresentDay)
-                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
-                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
-                                                            {
-                                                                local_Sxy_PresentDay = cell_Sxy_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update YZ stress component total if defined
-                                                    if (UseGridFor_Syz_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Syz_PresentDay)
-                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
-                                                            if (!double.IsNaN(cell_Syz_PresentDay))
-                                                            {
-                                                                local_Syz_PresentDay = cell_Syz_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update ZX stress component total if defined
-                                                    if (UseGridFor_Szx_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Szx_PresentDay)
-                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
-                                                            if (!double.IsNaN(cell_Szx_PresentDay))
-                                                            {
-                                                                local_Szx_PresentDay = cell_Szx_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                // End get the present day effective stress from the grid as required
-
-                                                // Now we can set the present day stress
-                                                gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
+                                                        // Now we can set the present day stress
+                                                        gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
 #if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+                                                        PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
+                                                        PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
-                                            }
-                                            break;
-                                        case PresentDayStressFrom.AbsoluteStress:
-                                            {
-                                                // Get the present day absolute stress and fluid pressure from the grid as required
-                                                // This will depend on whether we are averaging the stress and fluid pressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock
-                                                // By default these will be set to zero, since default values are not specified by the user 
-                                                double local_Sxx_PresentDay = 0;
-                                                double local_Syy_PresentDay = 0;
-                                                double local_Szz_PresentDay = 0;
-                                                double local_Sxy_PresentDay = 0;
-                                                double local_Syz_PresentDay = 0;
-                                                double local_Szx_PresentDay = 0;
-                                                double local_FluidPressure_PresentDay = 0;
+                                                    }
+                                                    break;
+                                                case PresentDayStressFrom.AbsoluteStress:
+                                                    {
+                                                        // Get the present day absolute stress and fluid pressure from the grid as required
+                                                        // This will depend on whether we are averaging the stress and fluid pressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                        // First we will create local variables for the property values in this gridblock
+                                                        // By default these will be set to zero, since default values are not specified by the user 
+                                                        double local_Sxx_PresentDay = 0;
+                                                        double local_Syy_PresentDay = 0;
+                                                        double local_Szz_PresentDay = 0;
+                                                        double local_Sxy_PresentDay = 0;
+                                                        double local_Syz_PresentDay = 0;
+                                                        double local_Szx_PresentDay = 0;
+                                                        double local_FluidPressure_PresentDay = 0;
 
-                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                                {
-                                                    // Create local variables for running total and number of datapoints for each property
-                                                    double Sxx_PresentDay_total = 0;
-                                                    int Sxx_PresentDay_novalues = 0;
-                                                    double Syy_PresentDay_total = 0;
-                                                    int Syy_PresentDay_novalues = 0;
-                                                    double Szz_PresentDay_total = 0;
-                                                    int Szz_PresentDay_novalues = 0;
-                                                    double Sxy_PresentDay_total = 0;
-                                                    int Sxy_PresentDay_novalues = 0;
-                                                    double Syz_PresentDay_total = 0;
-                                                    int Syz_PresentDay_novalues = 0;
-                                                    double Szx_PresentDay_total = 0;
-                                                    int Szx_PresentDay_novalues = 0;
-                                                    double FluidPressure_total = 0;
-                                                    int FluidPressure_novalues = 0;
+                                                        if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                        {
+                                                            // Create local variables for running total and number of datapoints for each property
+                                                            double Sxx_PresentDay_total = 0;
+                                                            int Sxx_PresentDay_novalues = 0;
+                                                            double Syy_PresentDay_total = 0;
+                                                            int Syy_PresentDay_novalues = 0;
+                                                            double Szz_PresentDay_total = 0;
+                                                            int Szz_PresentDay_novalues = 0;
+                                                            double Sxy_PresentDay_total = 0;
+                                                            int Sxy_PresentDay_novalues = 0;
+                                                            double Syz_PresentDay_total = 0;
+                                                            int Syz_PresentDay_novalues = 0;
+                                                            double Szx_PresentDay_total = 0;
+                                                            int Szx_PresentDay_novalues = 0;
+                                                            double FluidPressure_total = 0;
+                                                            int FluidPressure_novalues = 0;
 
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                    {
+                                                                        Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Update XX stress component total if defined
+                                                                        if (UseGridFor_Sxx_PresentDay)
+                                                                        {
+                                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Sxx_PresentDay)
+                                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
+                                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
+                                                                            {
+                                                                                Sxx_PresentDay_total += cell_Sxx_PresentDay;
+                                                                                Sxx_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update YY stress component total if defined
+                                                                        if (UseGridFor_Syy_PresentDay)
+                                                                        {
+                                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Syy_PresentDay)
+                                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
+                                                                            if (!double.IsNaN(cell_Syy_PresentDay))
+                                                                            {
+                                                                                Syy_PresentDay_total += cell_Syy_PresentDay;
+                                                                                Syy_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update ZZ stress component total if defined
+                                                                        if (UseGridFor_Szz_PresentDay)
+                                                                        {
+                                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Szz_PresentDay)
+                                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
+                                                                            if (!double.IsNaN(cell_Szz_PresentDay))
+                                                                            {
+                                                                                Szz_PresentDay_total += cell_Szz_PresentDay;
+                                                                                Szz_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update XY stress component total if defined
+                                                                        if (UseGridFor_Sxy_PresentDay)
+                                                                        {
+                                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Sxy_PresentDay)
+                                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
+                                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
+                                                                            {
+                                                                                Sxy_PresentDay_total += cell_Sxy_PresentDay;
+                                                                                Sxy_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update YZ stress component total if defined
+                                                                        if (UseGridFor_Syz_PresentDay)
+                                                                        {
+                                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Syz_PresentDay)
+                                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
+                                                                            if (!double.IsNaN(cell_Syz_PresentDay))
+                                                                            {
+                                                                                Syz_PresentDay_total += cell_Syz_PresentDay;
+                                                                                Syz_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update ZX stress component total if defined
+                                                                        if (UseGridFor_Szx_PresentDay)
+                                                                        {
+                                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_Szx_PresentDay)
+                                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
+                                                                            if (!double.IsNaN(cell_Szx_PresentDay))
+                                                                            {
+                                                                                Szx_PresentDay_total += cell_Szx_PresentDay;
+                                                                                Szx_PresentDay_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                        // Update fluid pressure total if defined
+                                                                        if (UseGridFor_FluidPressure_PresentDay)
+                                                                        {
+                                                                            double cell_FluidPressure = (double)FluidPressure_PresentDay_grid[cellRef];
+                                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                            if (convertFromGeneral_FluidPressure_PresentDay)
+                                                                                cell_FluidPressure = toSIPressureUnits.Convert(cell_FluidPressure);
+                                                                            if (!double.IsNaN(cell_FluidPressure))
+                                                                            {
+                                                                                FluidPressure_total += cell_FluidPressure;
+                                                                                FluidPressure_novalues++;
+                                                                            }
+                                                                        }
+
+                                                                    }
+
+                                                            // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                            if (Sxx_PresentDay_novalues > 0)
+                                                                local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
+                                                            if (Syy_PresentDay_novalues > 0)
+                                                                local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
+                                                            if (Szz_PresentDay_novalues > 0)
+                                                                local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
+                                                            if (Sxy_PresentDay_novalues > 0)
+                                                                local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
+                                                            if (Syz_PresentDay_novalues > 0)
+                                                                local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
+                                                            if (Szx_PresentDay_novalues > 0)
+                                                                local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
+                                                            if (FluidPressure_novalues > 0)
+                                                                local_FluidPressure_PresentDay = FluidPressure_total / (double)FluidPressure_novalues;
+                                                        }
+                                                        else // We are taking data from a single cell
+                                                        {
+                                                            // Create a reference to the cell from which we will read the data
+                                                            Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                            // Update XX stress component total if defined
+                                                            if (UseGridFor_Sxx_PresentDay)
                                                             {
-                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Update XX stress component total if defined
-                                                                if (UseGridFor_Sxx_PresentDay)
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Sxx_PresentDay)
                                                                         cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
                                                                     if (!double.IsNaN(cell_Sxx_PresentDay))
                                                                     {
-                                                                        Sxx_PresentDay_total += cell_Sxx_PresentDay;
-                                                                        Sxx_PresentDay_novalues++;
+                                                                        local_Sxx_PresentDay = cell_Sxx_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update YY stress component total if defined
-                                                                if (UseGridFor_Syy_PresentDay)
+                                                            // Update YY stress component total if defined
+                                                            if (UseGridFor_Syy_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Syy_PresentDay)
                                                                         cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
                                                                     if (!double.IsNaN(cell_Syy_PresentDay))
                                                                     {
-                                                                        Syy_PresentDay_total += cell_Syy_PresentDay;
-                                                                        Syy_PresentDay_novalues++;
+                                                                        local_Syy_PresentDay = cell_Syy_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update ZZ stress component total if defined
-                                                                if (UseGridFor_Szz_PresentDay)
+                                                            // Update ZZ stress component total if defined
+                                                            if (UseGridFor_Szz_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Szz_PresentDay)
                                                                         cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
                                                                     if (!double.IsNaN(cell_Szz_PresentDay))
                                                                     {
-                                                                        Szz_PresentDay_total += cell_Szz_PresentDay;
-                                                                        Szz_PresentDay_novalues++;
+                                                                        local_Szz_PresentDay = cell_Szz_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update XY stress component total if defined
-                                                                if (UseGridFor_Sxy_PresentDay)
+                                                            // Update XY stress component total if defined
+                                                            if (UseGridFor_Sxy_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Sxy_PresentDay)
                                                                         cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
                                                                     if (!double.IsNaN(cell_Sxy_PresentDay))
                                                                     {
-                                                                        Sxy_PresentDay_total += cell_Sxy_PresentDay;
-                                                                        Sxy_PresentDay_novalues++;
+                                                                        local_Sxy_PresentDay = cell_Sxy_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update YZ stress component total if defined
-                                                                if (UseGridFor_Syz_PresentDay)
+                                                            // Update YZ stress component total if defined
+                                                            if (UseGridFor_Syz_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Syz_PresentDay)
                                                                         cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
                                                                     if (!double.IsNaN(cell_Syz_PresentDay))
                                                                     {
-                                                                        Syz_PresentDay_total += cell_Syz_PresentDay;
-                                                                        Syz_PresentDay_novalues++;
+                                                                        local_Syz_PresentDay = cell_Syz_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update ZX stress component total if defined
-                                                                if (UseGridFor_Szx_PresentDay)
+                                                            // Update ZX stress component total if defined
+                                                            if (UseGridFor_Szx_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_Szx_PresentDay)
                                                                         cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
                                                                     if (!double.IsNaN(cell_Szx_PresentDay))
                                                                     {
-                                                                        Szx_PresentDay_total += cell_Szx_PresentDay;
-                                                                        Szx_PresentDay_novalues++;
+                                                                        local_Szx_PresentDay = cell_Szx_PresentDay;
+                                                                        break;
                                                                     }
                                                                 }
+                                                            }
 
-                                                                // Update fluid pressure total if defined
-                                                                if (UseGridFor_FluidPressure_PresentDay)
+                                                            // Update fluid pressure total if defined
+                                                            if (UseGridFor_FluidPressure_PresentDay)
+                                                            {
+                                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                                 {
+                                                                    cellRef.K = PetrelGrid_DataCellK;
                                                                     double cell_FluidPressure = (double)FluidPressure_PresentDay_grid[cellRef];
                                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                                     if (convertFromGeneral_FluidPressure_PresentDay)
                                                                         cell_FluidPressure = toSIPressureUnits.Convert(cell_FluidPressure);
                                                                     if (!double.IsNaN(cell_FluidPressure))
                                                                     {
-                                                                        FluidPressure_total += cell_FluidPressure;
-                                                                        FluidPressure_novalues++;
+                                                                        local_FluidPressure_PresentDay = cell_FluidPressure;
+                                                                        break;
                                                                     }
                                                                 }
-
-                                                            }
-
-                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
-                                                    if (Sxx_PresentDay_novalues > 0)
-                                                        local_Sxx_PresentDay = Sxx_PresentDay_total / (double)Sxx_PresentDay_novalues;
-                                                    if (Syy_PresentDay_novalues > 0)
-                                                        local_Syy_PresentDay = Syy_PresentDay_total / (double)Syy_PresentDay_novalues;
-                                                    if (Szz_PresentDay_novalues > 0)
-                                                        local_Szz_PresentDay = Szz_PresentDay_total / (double)Szz_PresentDay_novalues;
-                                                    if (Sxy_PresentDay_novalues > 0)
-                                                        local_Sxy_PresentDay = Sxy_PresentDay_total / (double)Sxy_PresentDay_novalues;
-                                                    if (Syz_PresentDay_novalues > 0)
-                                                        local_Syz_PresentDay = Syz_PresentDay_total / (double)Syz_PresentDay_novalues;
-                                                    if (Szx_PresentDay_novalues > 0)
-                                                        local_Szx_PresentDay = Szx_PresentDay_total / (double)Szx_PresentDay_novalues;
-                                                    if (FluidPressure_novalues > 0)
-                                                        local_FluidPressure_PresentDay = FluidPressure_total / (double)FluidPressure_novalues;
-                                                }
-                                                else // We are taking data from a single cell
-                                                {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
-                                                    // Create a reference to the cell from which we will read the data
-                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                                    // Update XX stress component total if defined
-                                                    if (UseGridFor_Sxx_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Sxx_PresentDay = (double)Sxx_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Sxx_PresentDay)
-                                                                cell_Sxx_PresentDay = toSIStressUnits.Convert(cell_Sxx_PresentDay);
-                                                            if (!double.IsNaN(cell_Sxx_PresentDay))
-                                                            {
-                                                                local_Sxx_PresentDay = cell_Sxx_PresentDay;
-                                                                break;
                                                             }
                                                         }
-                                                    }
+                                                        // End get the present day absolute stress and fluid pressure from the grid as required
 
-                                                    // Update YY stress component total if defined
-                                                    if (UseGridFor_Syy_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Syy_PresentDay = (double)Syy_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Syy_PresentDay)
-                                                                cell_Syy_PresentDay = toSIStressUnits.Convert(cell_Syy_PresentDay);
-                                                            if (!double.IsNaN(cell_Syy_PresentDay))
-                                                            {
-                                                                local_Syy_PresentDay = cell_Syy_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update ZZ stress component total if defined
-                                                    if (UseGridFor_Szz_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Szz_PresentDay = (double)Szz_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Szz_PresentDay)
-                                                                cell_Szz_PresentDay = toSIStressUnits.Convert(cell_Szz_PresentDay);
-                                                            if (!double.IsNaN(cell_Szz_PresentDay))
-                                                            {
-                                                                local_Szz_PresentDay = cell_Szz_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update XY stress component total if defined
-                                                    if (UseGridFor_Sxy_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Sxy_PresentDay = (double)Sxy_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Sxy_PresentDay)
-                                                                cell_Sxy_PresentDay = toSIStressUnits.Convert(cell_Sxy_PresentDay);
-                                                            if (!double.IsNaN(cell_Sxy_PresentDay))
-                                                            {
-                                                                local_Sxy_PresentDay = cell_Sxy_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update YZ stress component total if defined
-                                                    if (UseGridFor_Syz_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Syz_PresentDay = (double)Syz_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Syz_PresentDay)
-                                                                cell_Syz_PresentDay = toSIStressUnits.Convert(cell_Syz_PresentDay);
-                                                            if (!double.IsNaN(cell_Syz_PresentDay))
-                                                            {
-                                                                local_Syz_PresentDay = cell_Syz_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update ZX stress component total if defined
-                                                    if (UseGridFor_Szx_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Szx_PresentDay = (double)Szx_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_Szx_PresentDay)
-                                                                cell_Szx_PresentDay = toSIStressUnits.Convert(cell_Szx_PresentDay);
-                                                            if (!double.IsNaN(cell_Szx_PresentDay))
-                                                            {
-                                                                local_Szx_PresentDay = cell_Szx_PresentDay;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Update fluid pressure total if defined
-                                                    if (UseGridFor_FluidPressure_PresentDay)
-                                                    {
-                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                                        {
-                                                            cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_FluidPressure = (double)FluidPressure_PresentDay_grid[cellRef];
-                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
-                                                            if (convertFromGeneral_FluidPressure_PresentDay)
-                                                                cell_FluidPressure = toSIPressureUnits.Convert(cell_FluidPressure);
-                                                            if (!double.IsNaN(cell_FluidPressure))
-                                                            {
-                                                                local_FluidPressure_PresentDay = cell_FluidPressure;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                // End get the present day absolute stress and fluid pressure from the grid as required
-
-                                                // Now we can set the present day stress
-                                                gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
+                                                        // Now we can set the present day stress
+                                                        gc.SetPresentDayStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
 #if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+                                                        PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
+                                                        PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
+                                                    }
+                                                    break;
+                                                default:
+#if DEBUG_FRAC_INPUT
+                                                    PetrelLogger.InfoOutputWindow("");
+                                                    PetrelLogger.InfoOutputWindow(string.Format("Not setting present day stress"));
+#endif
+                                                    break;
                                             }
-                                            break;
-                                        default:
-#if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("Not setting present day stress"));
-#endif
-                                            break;
-                                    }
-                                }
+                                        }
 
-                                // Set the fracture aperture control data
-                                gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
+                                        // Set the fracture aperture control data
+                                        gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
 #if DEBUG_FRAC_INPUT
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
 #endif
 
-                                // Add the gridblock to the grid
-                                ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true);
+                                        // Add the gridblock to the grid
+                                        ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo, !faultToWest, !faultToSouth, true, true, true, true);
 
 #if DEBUG_FRAC_INPUT
-                                PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
+                                        PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
 #endif
 
-                                // Update gridblock counter
-                                NoActiveGridblocks++;
+                                        // Update gridblock counter
+                                        NoActiveGridblocks++;
 
-                                //Update status bar
-                                progressBarWrapper.UpdateProgress(NoActiveGridblocks);
+                                        //Update status bar
+                                        progressBarWrapper.UpdateProgress(NoActiveGridblocks);
 
-                            } // End loop through all rows in the Fracture Grid
-                        } // End loop through all columns in the Fracture Grid
+                                    } // End loop through all gridblocks in the Fracture Grid
 
-                        // Set the DFN generation data
-                        DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits);
+                            // Set the DFN generation data
+                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits);
 
 #if DEBUG_FRAC_INPUT
-                        PetrelLogger.InfoOutputWindow("");
-                        PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, TimeUnits.{21});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits));
+                            PetrelLogger.InfoOutputWindow("");
+                            PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, TimeUnits.{21});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits));
 #endif
 
-                        // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
-                        // NB In this case the DFNGenerationControl will ignore the specified NoIntermediateOutputs value; we recalculate it here only for internal use
-                        // Also create a local list of output stage name overrides
-                        List<string> OutputStageNameOverride = new List<string>();
-                        if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
-                        {
-                            List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
-                            double currentEpisodeEndTime = 0;
-                            NoIntermediateOutputs = 0;
-                            for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
+                            // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
+                            // NB In this case the DFNGenerationControl will ignore the specified NoIntermediateOutputs value; we recalculate it here only for internal use
+                            // Also create a local list of output stage name overrides
+                            List<string> OutputStageNameOverride = new List<string>();
+                            if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
                             {
-                                double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
-                                if (SubEpisodesDefined_list[deformationEpisodeNo])
+                                List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
+                                double currentEpisodeEndTime = 0;
+                                NoIntermediateOutputs = 0;
+                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                                 {
-                                    List<double> subEpisodeDurations_GeologicalTime = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
-                                    List<string> subEpisodeNameOverrides = SubEpisodeNameOverride_list[deformationEpisodeNo];
-                                    int noSubEpisodes = subEpisodeDurations_GeologicalTime.Count;
-                                    for (int subEpisodeNo = 0; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
+                                    double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
+                                    if (SubEpisodesDefined_list[deformationEpisodeNo])
                                     {
-                                        double subEpisodeDuration_GeologicalTimeUnit = subEpisodeDurations_GeologicalTime[subEpisodeNo];
-                                        if (subEpisodeDuration_GeologicalTimeUnit > 0)
+                                        List<double> subEpisodeDurations_GeologicalTime = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                        List<string> subEpisodeNameOverrides = SubEpisodeNameOverride_list[deformationEpisodeNo];
+                                        int noSubEpisodes = subEpisodeDurations_GeologicalTime.Count;
+                                        for (int subEpisodeNo = 0; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
                                         {
-                                            currentEpisodeEndTime += (subEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
+                                            double subEpisodeDuration_GeologicalTimeUnit = subEpisodeDurations_GeologicalTime[subEpisodeNo];
+                                            if (subEpisodeDuration_GeologicalTimeUnit > 0)
+                                            {
+                                                currentEpisodeEndTime += (subEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
+                                                DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                                OutputStageNameOverride.Add(subEpisodeNameOverrides[subEpisodeNo]);
+                                                NoIntermediateOutputs++;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        double deformationEpisodeDuration_GeologicalTimeUnit = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                        if (deformationEpisodeDuration_GeologicalTimeUnit > 0)
+                                        {
+                                            currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
                                             DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
-                                            OutputStageNameOverride.Add(subEpisodeNameOverrides[subEpisodeNo]);
+                                            OutputStageNameOverride.Add(null);
                                             NoIntermediateOutputs++;
                                         }
                                     }
                                 }
-                                else
-                                {
-                                    double deformationEpisodeDuration_GeologicalTimeUnit = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo];
-                                    if (deformationEpisodeDuration_GeologicalTimeUnit > 0)
-                                    {
-                                        currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
-                                        DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
-                                        OutputStageNameOverride.Add(null);
-                                        NoIntermediateOutputs++;
-                                    }
-                                }
+                                dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_SITimeUnits_list;
+
+#if DEBUG_FRAC_INPUT
+                                string setIntermediateTimes = "dfn_control.IntermediateOutputTimes = {";
+                                foreach (double nextEndTime in DeformationEpisodeEndTimes_SITimeUnits_list)
+                                    setIntermediateTimes += string.Format(" {0},", nextEndTime);
+                                setIntermediateTimes = setIntermediateTimes.TrimEnd(',');
+                                setIntermediateTimes += " }";
+                                PetrelLogger.InfoOutputWindow(setIntermediateTimes);
+#endif
                             }
-                            dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_SITimeUnits_list;
+
+                            // Set the output folder path
+                            dfn_control.FolderPath = folderPath;
+
+                            // Add the DFNGenerationControl object to the grid
+                            ModelGrid.DFNControl = dfn_control;
 
 #if DEBUG_FRAC_INPUT
-                            string setIntermediateTimes = "dfn_control.IntermediateOutputTimes = {";
-                            foreach (double nextEndTime in DeformationEpisodeEndTimes_SITimeUnits_list)
-                                setIntermediateTimes += string.Format(" {0},", nextEndTime);
-                            setIntermediateTimes = setIntermediateTimes.TrimEnd(',');
-                            setIntermediateTimes += " }";
-                            PetrelLogger.InfoOutputWindow(setIntermediateTimes);
-#endif
-                        }
-
-                        // Set the output folder path
-                        dfn_control.FolderPath = folderPath;
-
-                        // Add the DFNGenerationControl object to the grid
-                        ModelGrid.DFNControl = dfn_control;
-
-#if DEBUG_FRAC_INPUT
-                        PetrelLogger.InfoOutputWindow(string.Format("dfn_control.FolderPath = {0};", folderPath));
-                        PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.DFNControl = dfn_control;"));
+                            PetrelLogger.InfoOutputWindow(string.Format("dfn_control.FolderPath = {0};", folderPath));
+                            PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.DFNControl = dfn_control;"));
 #endif
 
-                        // Calculate implicit fractures for all gridblocks - unless the calculation has already been cancelled
-                        if (!progressBarWrapper.abortCalculation())
-                        {
-                            PetrelLogger.InfoOutputWindow("Start calculating implicit data");
-                            progressBar.SetProgressText("Calculating implicit data");
-                            ModelGrid.CalculateAllFractureData(progressBarWrapper);
-                        }
-
-                        // Calculate explicit DFN - unless the calculation has already been cancelled
-                        if (!progressBarWrapper.abortCalculation())
-                        {
-                            PetrelLogger.InfoOutputWindow("Start generating explicit DFN");
-                            progressBar.SetProgressText("Generating explicit DFN");
-                            ModelGrid.GenerateDFN(progressBarWrapper);
-                        }
-
-                        // If the calculation has already been cancelled, do not write any output data
-                        if (!progressBarWrapper.abortCalculation())
-                        {
-                            PetrelLogger.InfoOutputWindow("Start writing output");
-
-                            // Write implicit fracture property data to Petrel grid
-                            PetrelLogger.InfoOutputWindow("Write implicit data");
-                            progressBar.SetProgressText("Write implicit data");
-
-                            // Get templates for the implicit data
-                            // Where possible, use standard Petrel templates
-                            Template P30Template = DFMGeneratorModule.GetP30Template();
-                            Template P32Template = DFMGeneratorModule.GetP32Template();
-                            Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
-                            Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
-                            Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
-                            Template ConnectionsPerFractureTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
-                            Template AnisotropyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
-                            Template FracturePorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
-                            Template FractureReactivationPotentialTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.StressTotal;
-                            Template SlipTendencyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
-                            Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
-                            Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
-                            Dictionary<Tensor2SComponents, Template> FracturePermeabilityTemplate = new Dictionary<Tensor2SComponents, Template>();
-                            FracturePermeabilityTemplate[Tensor2SComponents.XX] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityX;
-                            FracturePermeabilityTemplate[Tensor2SComponents.YY] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityY;
-                            FracturePermeabilityTemplate[Tensor2SComponents.ZZ] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityZ;
-                            FracturePermeabilityTemplate[Tensor2SComponents.XY] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityXY;
-                            FracturePermeabilityTemplate[Tensor2SComponents.YZ] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityYZ;
-                            FracturePermeabilityTemplate[Tensor2SComponents.ZX] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityXZ;
-                            Template SigmaFactorTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.MatrixFractureCoupling;
-
-                            // Create a transaction to write the property data to the Petrel grid
-                            using (ITransaction transactionWritePropertyData = DataManager.NewTransaction())
+                            // Calculate implicit fractures for all gridblocks - unless the calculation has already been cancelled
+                            if (!progressBarWrapper.abortCalculation())
                             {
-                                // Get handle to parent object and lock database
-                                PropertyCollection root = PetrelGrid.PropertyCollection;
-                                transactionWritePropertyData.Lock(root);
+                                PetrelLogger.InfoOutputWindow("Start calculating implicit data");
+                                progressBar.SetProgressText("Calculating implicit data");
+                                ModelGrid.CalculateAllFractureData(progressBarWrapper);
+                            }
 
-                                // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
-                                int NoStages = NoIntermediateOutputs + 1;
-                                int NoCalculationElementsCompleted = 0;
-                                int NoElements = NoActiveGridblocks * ((NoFractureSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoFractureSets * NoDipSets) + 1 : 0) + (CalculateFractureReactivationPotential ? (NoFractureSets * NoDipSets) : 0) + (CalculateFracturePorosity ? 1 : 0) + (CalculateFracturePermeabilityTensor ? 1 : 0));
-                                NoElements *= NoStages;
-                                // Bulk rock elastic tensors are only output for the final stage
-                                if (OutputBulkRockElasticTensors)
-                                    NoElements += NoActiveGridblocks;
-                                progressBarWrapper.SetNumberOfElements(NoElements);
+                            // Calculate explicit DFN - unless the calculation has already been cancelled
+                            if (!progressBarWrapper.abortCalculation())
+                            {
+                                PetrelLogger.InfoOutputWindow("Start generating explicit DFN");
+                                progressBar.SetProgressText("Generating explicit DFN");
+                                ModelGrid.GenerateDFN(progressBarWrapper);
+                            }
 
-                                // Get a list of end times for each gridblock - this is used to calculate the end times for the intermediate stages
-                                List<double> timestepEndtimes = ModelGrid.GetTimestepEndtimeList();
-                                int NoGridblockTimesteps = timestepEndtimes.Count;
-                                double endTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[NoGridblockTimesteps - 1] : 0);
+                            // If the calculation has already been cancelled, do not write any output data
+                            if (!progressBarWrapper.abortCalculation())
+                            {
+                                PetrelLogger.InfoOutputWindow("Start writing output");
 
-                                // Loop through each stage in the fracture growth
-                                for (int stageNumber = 1; stageNumber <= NoStages; stageNumber++)
+                                // Write implicit fracture property data to Petrel grid
+                                PetrelLogger.InfoOutputWindow("Write implicit data");
+                                progressBar.SetProgressText("Write implicit data");
+
+                                // Get templates for the implicit data
+                                // Where possible, use standard Petrel templates
+                                Template P30Template = DFMGeneratorModule.GetP30Template();
+                                Template P32Template = DFMGeneratorModule.GetP32Template();
+                                Template LengthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.Distance;
+                                Template DeformationTimeTemplate = PetrelProject.WellKnownTemplates.PetroleumGroup.GeologicalTimescale;
+                                Template ConnectivityTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
+                                Template ConnectionsPerFractureTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
+                                Template AnisotropyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.General;
+                                Template FracturePorosityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Porosity;
+                                Template FractureReactivationPotentialTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.StressTotal;
+                                Template SlipTendencyTemplate = PetrelProject.WellKnownTemplates.MiscellaneousGroup.Fraction;
+                                Template StiffnessTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.ModulusCompressional;
+                                Template ComplianceTensorComponentTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.CompressibilityRock;
+                                Dictionary<Tensor2SComponents, Template> FracturePermeabilityTemplate = new Dictionary<Tensor2SComponents, Template>();
+                                FracturePermeabilityTemplate[Tensor2SComponents.XX] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityX;
+                                FracturePermeabilityTemplate[Tensor2SComponents.YY] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityY;
+                                FracturePermeabilityTemplate[Tensor2SComponents.ZZ] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityZ;
+                                FracturePermeabilityTemplate[Tensor2SComponents.XY] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityXY;
+                                FracturePermeabilityTemplate[Tensor2SComponents.YZ] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityYZ;
+                                FracturePermeabilityTemplate[Tensor2SComponents.ZX] = PetrelProject.WellKnownTemplates.PetrophysicalGroup.PermeabilityXZ;
+                                Template SigmaFactorTemplate = PetrelProject.WellKnownTemplates.GeophysicalGroup.MatrixFractureCoupling;
+
+                                // Create a transaction to write the property data to the Petrel grid
+                                using (ITransaction transactionWritePropertyData = DataManager.NewTransaction())
                                 {
-                                    // Set a flag to determine whether this is the final stage - if so we can read the output data directly from the final state of the gridblock objects
-                                    bool finalStage = (stageNumber == NoStages);
+                                    // Get handle to parent object and lock database
+                                    PropertyCollection root = PetrelGrid.PropertyCollection;
+                                    transactionWritePropertyData.Lock(root);
 
-                                    // Get the endtime for the current stage
-                                    // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
-                                    double stageEndTime = 0;
-                                    string stageNameOverride = null;
-                                    switch (IntermediateOutputIntervalControl)
+                                    // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
+                                    int NoStages = NoIntermediateOutputs + 1;
+                                    int NoCalculationElementsCompleted = 0;
+                                    int NoElements = NoActiveGridblocks * ((NoFractureSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoFractureSets * NoDipSets) + 1 : 0) + (CalculateFractureReactivationPotential ? (NoFractureSets * NoDipSets) : 0) + (CalculateFracturePorosity ? 1 : 0) + (CalculateFracturePermeabilityTensor ? 1 : 0));
+                                    NoElements *= NoStages;
+                                    // Bulk rock elastic tensors are only output for the final stage
+                                    if (OutputBulkRockElasticTensors)
+                                        NoElements += NoActiveGridblocks;
+                                    progressBarWrapper.SetNumberOfElements(NoElements);
+
+                                    // Get a list of end times for each gridblock - this is used to calculate the end times for the intermediate stages
+                                    List<double> timestepEndtimes = ModelGrid.GetTimestepEndtimeList();
+                                    int NoGridblockTimesteps = timestepEndtimes.Count;
+                                    double endTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[NoGridblockTimesteps - 1] : 0);
+
+                                    // Loop through each stage in the fracture growth
+                                    for (int stageNumber = 1; stageNumber <= NoStages; stageNumber++)
                                     {
-                                        case IntermediateOutputInterval.SpecifiedTime:
-                                            double nextListValue = dfn_control.GetIntermediateOutputTime(stageNumber - 1); // List of intermediate outputs is zero-based
-                                            stageEndTime = (!double.IsNaN(nextListValue) ? nextListValue : endTime); // If the next list value is NaN (i.e. we have reached the end of the list), used the end time instead
-                                            stageNameOverride = (stageNumber <= OutputStageNameOverride.Count ? OutputStageNameOverride[stageNumber - 1] : "_final");
-                                            break;
-                                        case IntermediateOutputInterval.EqualTime:
-                                            stageEndTime = (stageNumber * endTime) / NoStages;
-                                            break;
-                                        case IntermediateOutputInterval.EqualArea:
-                                            int gridblockTimestepNo = ((stageNumber * NoGridblockTimesteps) / NoStages);
-                                            if (gridblockTimestepNo < 1)
-                                                gridblockTimestepNo = 1;
-                                            if (gridblockTimestepNo > NoGridblockTimesteps)
-                                                gridblockTimestepNo = NoGridblockTimesteps;
-                                            stageEndTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[gridblockTimestepNo - 1] : 0);
-                                            break;
-                                        default:
-                                            break;
-                                    }
+                                        // Set a flag to determine whether this is the final stage - if so we can read the output data directly from the final state of the gridblock objects
+                                        bool finalStage = (stageNumber == NoStages);
 
-                                    // Create a stage-specific label for the output file
-                                    string outputLabel;
-                                    if (stageNameOverride is null)
-                                        outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(stageEndTime), ProjectTimeUnits));
-                                    else
-                                        outputLabel = "_" + stageNameOverride;
-
-#if DEBUG_FRAC_OUTPUT
-                                    PetrelLogger.InfoOutputWindow("");
-                                    PetrelLogger.InfoOutputWindow("Stage" + outputLabel);
-#endif
-
-                                    // Create a property folder for all sets
-                                    PropertyCollection FracData = root.CreatePropertyCollection(ModelName + outputLabel);
-
-                                    // Write the input parameters for the model run to the property folder comments string
-                                    FracData.Comments = generalInputParams + implicitInputParams;
-
-                                    // Loop through each fracture set
-                                    for (int FractureSetNo = 0; FractureSetNo < NoFractureSets; FractureSetNo++)
-                                    {
-                                        // Set a name for the fracture set
-                                        string FractureSetName = GridblockConfiguration.getFractureSetName(FractureSetNo, NoFractureSets);
-
-                                        for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
+                                        // Get the endtime for the current stage
+                                        // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
+                                        double stageEndTime = 0;
+                                        string stageNameOverride = null;
+                                        switch (IntermediateOutputIntervalControl)
                                         {
-                                            // Create a subfolder for the fracture dip set
-                                            string dipsetLabel = (DipSetNo < DipSetLabels.Count ? DipSetLabels[DipSetNo] : "");
-                                            string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
-                                            PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
+                                            case IntermediateOutputInterval.SpecifiedTime:
+                                                double nextListValue = dfn_control.GetIntermediateOutputTime(stageNumber - 1); // List of intermediate outputs is zero-based
+                                                stageEndTime = (!double.IsNaN(nextListValue) ? nextListValue : endTime); // If the next list value is NaN (i.e. we have reached the end of the list), used the end time instead
+                                                stageNameOverride = (stageNumber <= OutputStageNameOverride.Count ? OutputStageNameOverride[stageNumber - 1] : "_final");
+                                                break;
+                                            case IntermediateOutputInterval.EqualTime:
+                                                stageEndTime = (stageNumber * endTime) / NoStages;
+                                                break;
+                                            case IntermediateOutputInterval.EqualArea:
+                                                int gridblockTimestepNo = ((stageNumber * NoGridblockTimesteps) / NoStages);
+                                                if (gridblockTimestepNo < 1)
+                                                    gridblockTimestepNo = 1;
+                                                if (gridblockTimestepNo > NoGridblockTimesteps)
+                                                    gridblockTimestepNo = NoGridblockTimesteps;
+                                                stageEndTime = (NoGridblockTimesteps > 0 ? timestepEndtimes[gridblockTimestepNo - 1] : 0);
+                                                break;
+                                            default:
+                                                break;
+                                        }
 
-                                            // Create properties and set templates for each property
-                                            Property MF_P30_tot = FracSetData.CreateProperty(P30Template);
-                                            MF_P30_tot.Name = "Layer_bound_fracture_P30";
-                                            Property MF_P32_tot = FracSetData.CreateProperty(P32Template);
-                                            MF_P32_tot.Name = "Layer_bound_fracture_P32";
-                                            Property uF_P32_tot = FracSetData.CreateProperty(P32Template);
-                                            uF_P32_tot.Name = "Microfracture_P32";
-                                            Property MF_MeanLength = FracSetData.CreateProperty(LengthTemplate);
-                                            MF_MeanLength.Name = "Mean_fracture_length";
-
-                                            // Add creation event to each property
-                                            IHistoryInfoEditor MF_P30_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P30_tot);
-                                            IHistoryInfoEditor MF_P32_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P32_tot);
-                                            IHistoryInfoEditor uF_P32_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_P32_tot);
-                                            IHistoryInfoEditor MF_MeanLengthHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_MeanLength);
-                                            MF_P30_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            MF_P32_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            uF_P32_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            MF_MeanLengthHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-
-                                            // Loop through all columns and rows in the Fracture Grid
-                                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
-                                                {
-                                                    // Check if calculation has been aborted
-                                                    if (progressBarWrapper.abortCalculation())
-                                                    {
-                                                        // Clean up any resources or data
-                                                        break;
-                                                    }
-
-                                                    // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                    GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
-                                                    if (fractureGridCell == null)
-                                                        continue;
-
-                                                    // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                    if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
-                                                    {
-                                                        progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-                                                        continue;
-                                                    }
-                                                    FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
-
-                                                    // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                                    int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                                    int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                                    int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                                    int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-
-                                                    // Get data from GridblockConfiguration object
-                                                    double cell_MF_P30_tot, cell_MF_P32_tot, cell_uF_P32_tot, cell_MF_MeanLength;
-                                                    if (finalStage)
-                                                    {
-                                                        cell_MF_P30_tot = (fds.a_MFP30_total() + fds.sII_MFP30_total() + fds.sIJ_MFP30_total()) / 2;
-                                                        cell_MF_P32_tot = fds.a_MFP32_total() + fds.s_MFP32_total();
-                                                        cell_uF_P32_tot = fds.a_uFP32_total() + fds.s_uFP32_total();
-                                                        cell_MF_MeanLength = fds.Mean_MF_HalfLength() * 2;
-                                                    }
-                                                    else
-                                                    {
-                                                        int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
-                                                        cell_MF_P30_tot = fds.getTotalMFP30(TSNo);
-                                                        cell_MF_P32_tot = fds.getTotalMFP32(TSNo);
-                                                        cell_uF_P32_tot = fds.getTotaluFP32(TSNo);
-                                                        double MFP30_Thickness = cell_MF_P30_tot * fractureGridCell.ThicknessAtDeformation;
-                                                        cell_MF_MeanLength = (MFP30_Thickness > 0 ? 2 * (cell_MF_P32_tot / MFP30_Thickness) : 0);
-                                                    }
-                                                    bool writeMacrofractureData = PopulateEmptyGridblocks || (cell_MF_P32_tot > 0);
+                                        // Create a stage-specific label for the output file
+                                        string outputLabel;
+                                        if (stageNameOverride is null)
+                                            outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(stageEndTime), ProjectTimeUnits));
+                                        else
+                                            outputLabel = "_" + stageNameOverride;
 
 #if DEBUG_FRAC_OUTPUT
-                                                    PetrelLogger.InfoOutputWindow("");
-                                                    PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
-                                                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                        PetrelLogger.InfoOutputWindow("");
+                                        PetrelLogger.InfoOutputWindow("Stage" + outputLabel);
 #endif
 
-                                                    // Loop through all the Petrel cells in the gridblock
-                                                    try
-                                                    {
-                                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                                {
-#if DEBUG_FRAC_OUTPUT
-                                                                    PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
-#endif
+                                        // Create a property folder for all sets
+                                        PropertyCollection FracData = root.CreatePropertyCollection(ModelName + outputLabel);
 
-                                                                    // Get index for cell in Petrel grid
-                                                                    Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+                                        // Write the input parameters for the model run to the property folder comments string
+                                        FracData.Comments = generalInputParams + implicitInputParams;
 
-                                                                    // Write data to Petrel grid
-                                                                    // If the MFP32 value for the gridblock is 0 and we are not populating empty gridblocks, do not assign the MFP30, MFP32 and Mean MF Length values. This will enable easier visualisation of the fracture distribution.
-                                                                    if (writeMacrofractureData)
-                                                                    {
-                                                                        MF_P30_tot[index_cell] = (float)cell_MF_P30_tot;
-                                                                        MF_P32_tot[index_cell] = (float)cell_MF_P32_tot;
-                                                                        MF_MeanLength[index_cell] = (float)cell_MF_MeanLength;
-                                                                    }
-                                                                    uF_P32_tot[index_cell] = (float)cell_uF_P32_tot;
-                                                                } // End loop through all the Petrel cells in the gridblock
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
-                                                        errorMessage = errorMessage + string.Format(" cell_MF_P30_tot {0}", (float)cell_MF_P30_tot);
-                                                        errorMessage = errorMessage + string.Format(" cell_MF_P32_tot {0}", (float)cell_MF_P32_tot);
-                                                        errorMessage = errorMessage + string.Format(" cell_uF_P32_tot {0}", (float)cell_uF_P32_tot);
-                                                        errorMessage = errorMessage + string.Format(" cell_MF_MeanLength {0}", (float)cell_MF_MeanLength);
-                                                        PetrelLogger.InfoOutputWindow(errorMessage);
-                                                        PetrelLogger.InfoOutputWindow(e.Message);
-                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                    }
+                                        // Loop through each fracture set
+                                        for (int FractureSetNo = 0; FractureSetNo < NoFractureSets; FractureSetNo++)
+                                        {
+                                            // Set a name for the fracture set
+                                            string FractureSetName = GridblockConfiguration.getFractureSetName(FractureSetNo, NoFractureSets);
 
-                                                    // Update progress bar
-                                                    progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-
-                                                } // End loop through all columns and rows in the Fracture Grid
-
-                                            // If required, write fracture connectivity data to Petrel grid
-                                            if (CalculateFractureConnectivityAnisotropy)
+                                            for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                             {
+                                                // Create a subfolder for the fracture dip set
+                                                string dipsetLabel = (DipSetNo < DipSetLabels.Count ? DipSetLabels[DipSetNo] : "");
+                                                string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
+                                                PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
+
                                                 // Create properties and set templates for each property
-                                                Property MF_UnconnectedTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
-                                                MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
-                                                Property MF_RelayTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
-                                                MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
-                                                Property MF_IntersectingTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
-                                                MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
-                                                Property ConnectionsPerMF = FracSetData.CreateProperty(ConnectionsPerFractureTemplate);
-                                                ConnectionsPerMF.Name = "Connections_per_fracture";
-                                                Property EndDeformationTime = FracSetData.CreateProperty(DeformationTimeTemplate);
-                                                EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+                                                Property MF_P30_tot = FracSetData.CreateProperty(P30Template);
+                                                MF_P30_tot.Name = "Layer_bound_fracture_P30";
+                                                Property MF_P32_tot = FracSetData.CreateProperty(P32Template);
+                                                MF_P32_tot.Name = "Layer_bound_fracture_P32";
+                                                Property uF_P32_tot = FracSetData.CreateProperty(P32Template);
+                                                uF_P32_tot.Name = "Microfracture_P32";
+                                                Property MF_MeanLength = FracSetData.CreateProperty(LengthTemplate);
+                                                MF_MeanLength.Name = "Mean_fracture_length";
 
                                                 // Add creation event to each property
-                                                IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
-                                                IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
-                                                IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
-                                                IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
-                                                IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
-                                                MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                IHistoryInfoEditor MF_P30_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P30_tot);
+                                                IHistoryInfoEditor MF_P32_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P32_tot);
+                                                IHistoryInfoEditor uF_P32_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_P32_tot);
+                                                IHistoryInfoEditor MF_MeanLengthHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_MeanLength);
+                                                MF_P30_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_P32_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                uF_P32_totHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_MeanLengthHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
-                                                // Loop through all columns and rows in the Fracture Grid
+                                                // Loop through all gridblocks in the Fracture Grid
                                                 // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
                                                 for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
                                                     for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                                        {
+                                                            // Check if calculation has been aborted
+                                                            if (progressBarWrapper.abortCalculation())
+                                                            {
+                                                                // Clean up any resources or data
+                                                                break;
+                                                            }
+
+                                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                            if (fractureGridCell == null)
+                                                                continue;
+
+                                                            // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
+                                                            if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
+                                                            {
+                                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+                                                                continue;
+                                                            }
+                                                            FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
+                                                            // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                            int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                                PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                            int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                                PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                            int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                            int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                            if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                                PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                            // Get data from GridblockConfiguration object
+                                                            double cell_MF_P30_tot, cell_MF_P32_tot, cell_uF_P32_tot, cell_MF_MeanLength;
+                                                            if (finalStage)
+                                                            {
+                                                                cell_MF_P30_tot = (fds.a_MFP30_total() + fds.sII_MFP30_total() + fds.sIJ_MFP30_total()) / 2;
+                                                                cell_MF_P32_tot = fds.a_MFP32_total() + fds.s_MFP32_total();
+                                                                cell_uF_P32_tot = fds.a_uFP32_total() + fds.s_uFP32_total();
+                                                                cell_MF_MeanLength = fds.Mean_MF_HalfLength() * 2;
+                                                            }
+                                                            else
+                                                            {
+                                                                int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                                cell_MF_P30_tot = fds.getTotalMFP30(TSNo);
+                                                                cell_MF_P32_tot = fds.getTotalMFP32(TSNo);
+                                                                cell_uF_P32_tot = fds.getTotaluFP32(TSNo);
+                                                                double MFP30_Thickness = cell_MF_P30_tot * fractureGridCell.ThicknessAtDeformation;
+                                                                cell_MF_MeanLength = (MFP30_Thickness > 0 ? 2 * (cell_MF_P32_tot / MFP30_Thickness) : 0);
+                                                            }
+                                                            bool writeMacrofractureData = PopulateEmptyGridblocks || (cell_MF_P32_tot > 0);
+
+#if DEBUG_FRAC_OUTPUT
+                                                            PetrelLogger.InfoOutputWindow("");
+                                                            PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+#endif
+
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            try
+                                                            {
+                                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                        for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                        {
+#if DEBUG_FRAC_OUTPUT
+                                                                            PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                            // Get index for cell in Petrel grid
+                                                                            Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                            // Write data to Petrel grid
+                                                                            // If the MFP32 value for the gridblock is 0 and we are not populating empty gridblocks, do not assign the MFP30, MFP32 and Mean MF Length values. This will enable easier visualisation of the fracture distribution.
+                                                                            if (writeMacrofractureData)
+                                                                            {
+                                                                                MF_P30_tot[index_cell] = (float)cell_MF_P30_tot;
+                                                                                MF_P32_tot[index_cell] = (float)cell_MF_P32_tot;
+                                                                                MF_MeanLength[index_cell] = (float)cell_MF_MeanLength;
+                                                                            }
+                                                                            uF_P32_tot[index_cell] = (float)cell_uF_P32_tot;
+                                                                        } // End loop through all the Petrel cells in the gridblock
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                errorMessage = errorMessage + string.Format(" cell_MF_P30_tot {0}", (float)cell_MF_P30_tot);
+                                                                errorMessage = errorMessage + string.Format(" cell_MF_P32_tot {0}", (float)cell_MF_P32_tot);
+                                                                errorMessage = errorMessage + string.Format(" cell_uF_P32_tot {0}", (float)cell_uF_P32_tot);
+                                                                errorMessage = errorMessage + string.Format(" cell_MF_MeanLength {0}", (float)cell_MF_MeanLength);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
+
+                                                            // Update progress bar
+                                                            progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                        } // End loop through all columns and rows in the Fracture Grid
+
+                                                // If required, write fracture connectivity data to Petrel grid
+                                                if (CalculateFractureConnectivityAnisotropy)
+                                                {
+                                                    // Create properties and set templates for each property
+                                                    Property MF_UnconnectedTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
+                                                    MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
+                                                    Property MF_RelayTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
+                                                    MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
+                                                    Property MF_IntersectingTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
+                                                    MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
+                                                    Property ConnectionsPerMF = FracSetData.CreateProperty(ConnectionsPerFractureTemplate);
+                                                    ConnectionsPerMF.Name = "Connections_per_fracture";
+                                                    Property EndDeformationTime = FracSetData.CreateProperty(DeformationTimeTemplate);
+                                                    EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+
+                                                    // Add creation event to each property
+                                                    IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
+                                                    IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
+                                                    IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
+                                                    IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
+                                                    IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
+                                                    MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+
+                                                    // Loop through all gridblocks in the Fracture Grid
+                                                    // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                                    for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                        for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                            for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                                            {
+                                                                // Check if calculation has been aborted
+                                                                if (progressBarWrapper.abortCalculation())
+                                                                {
+                                                                    // Clean up any resources or data
+                                                                    break;
+                                                                }
+
+                                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                if (fractureGridCell == null)
+                                                                    continue;
+
+                                                                // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
+                                                                if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
+                                                                {
+                                                                    progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+                                                                    continue;
+                                                                }
+                                                                FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
+                                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                                if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                                    PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                                if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                                    PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                                int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                                int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                                if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                                    PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                                // Get data from GridblockConfiguration object
+                                                                double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
+                                                                if (finalStage)
+                                                                {
+                                                                    UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
+                                                                    RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
+                                                                    IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
+                                                                    NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
+                                                                    EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                                                }
+                                                                else
+                                                                {
+                                                                    int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                                    double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
+                                                                    double INodes = fds.getActiveMFP30(TSNo);
+                                                                    double RNodes = fds.getStaticRelayMFP30(TSNo);
+                                                                    double YNodes = fds.getStaticIntersectMFP30(TSNo);
+                                                                    double TotalNodes = INodes + RNodes + YNodes;
+                                                                    double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + fds.getTerminatingFractureDensity(TSNo);
+                                                                    UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
+                                                                    RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
+                                                                    IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                                    NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
+                                                                    EndTime = stageEndTime;
+                                                                }
+
+#if DEBUG_FRAC_OUTPUT
+                                                                PetrelLogger.InfoOutputWindow("");
+                                                                PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+#endif
+
+                                                                // Loop through all the Petrel cells in the gridblock
+                                                                try
+                                                                {
+                                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                            for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                            {
+#if DEBUG_FRAC_OUTPUT
+                                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                                // Get index for cell in Petrel grid
+                                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                                // Write data to Petrel grid
+                                                                                MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
+                                                                                MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
+                                                                                MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
+                                                                                ConnectionsPerMF[index_cell] = (float)NodesPerMF;
+                                                                                EndDeformationTime[index_cell] = (float)EndTime;
+                                                                            } // End loop through all the Petrel cells in the gridblock
+                                                                }
+                                                                catch (Exception e)
+                                                                {
+                                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                    errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
+                                                                    errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                                    errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
+                                                                    errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
+                                                                    errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
+                                                                    PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                    PetrelLogger.InfoOutputWindow(e.Message);
+                                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                                }
+
+                                                                // Update progress bar
+                                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                            } // End loop through all columns and rows in the Fracture Grid
+                                                } // End write fracture connectivity data to Petrel grid
+
+                                                // Write fracture reactivity data to Petrel grid
+                                                if (CalculateFractureReactivationPotential)
+                                                {
+                                                    // Create properties and set templates for each property
+                                                    Property FDS_ReactivationPotential = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
+                                                    Property FDS_SlipTendency = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
+                                                    FDS_ReactivationPotential.Name = "Reactivation_Potential";
+                                                    FDS_SlipTendency.Name = "Slip_Tendency";
+
+                                                    // Add creation event to each property
+                                                    IHistoryInfoEditor FDS_ReactivationPotentialInfoEditor = HistoryService.GetHistoryInfoEditor(FDS_ReactivationPotential);
+                                                    IHistoryInfoEditor FDS_SlipTendencyInfoEditor = HistoryService.GetHistoryInfoEditor(FDS_SlipTendency);
+                                                    FDS_ReactivationPotentialInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    FDS_SlipTendencyInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+
+                                                    // Loop through all gridblocks in the Fracture Grid
+                                                    // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                                    for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                        for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                            for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                                            {
+                                                                // Check if calculation has been aborted
+                                                                if (progressBarWrapper.abortCalculation())
+                                                                {
+                                                                    // Clean up any resources or data
+                                                                    break;
+                                                                }
+
+                                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                if (fractureGridCell == null)
+                                                                    continue;
+
+                                                                // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
+                                                                if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
+                                                                {
+                                                                    progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+                                                                    continue;
+                                                                }
+                                                                FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
+                                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                                if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                                    PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                                if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                                    PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                                int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                                int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                                if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                                    PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                                // Get data from GridblockConfiguration object
+                                                                double ReactivationPotential = fds.PresentDayReactivationPotential;
+                                                                double SlipTendency = fds.PresentDaySlipTendency;
+
+#if DEBUG_FRAC_OUTPUT
+                                                                PetrelLogger.InfoOutputWindow("");
+                                                                PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+#endif
+
+                                                                // Loop through all the Petrel cells in the gridblock
+                                                                try
+                                                                {
+                                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                            for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                            {
+#if DEBUG_FRAC_OUTPUT
+                                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                                // Get index for cell in Petrel grid
+                                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                                // Write data to Petrel grid
+                                                                                //if (!double.IsNaN(ReactivationPotential))
+                                                                                FDS_ReactivationPotential[index_cell] = (float)ReactivationPotential;
+                                                                                FDS_SlipTendency[index_cell] = (float)SlipTendency;
+                                                                            } // End loop through all the Petrel cells in the gridblock
+                                                                }
+                                                                catch (Exception e)
+                                                                {
+                                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                    errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
+                                                                    errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
+                                                                    PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                    PetrelLogger.InfoOutputWindow(e.Message);
+                                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                                }
+
+                                                                // Update progress bar
+                                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                            } // End loop through all columns and rows in the Fracture Grid
+                                                } // End write fracture reactivity data to Petrel grid
+
+                                            } // End loop through fracture dip sets
+                                        } // End loop through fracture sets
+
+                                        // If required, write fracture anisotropy data to Petrel grid
+                                        if (CalculateFractureConnectivityAnisotropy)
+                                        {
+                                            // Create a subfolder for the fracture anisotropy data
+                                            string CollectionName = "Fracture_Anisotropy";
+                                            PropertyCollection FracAnisotropyData = FracData.CreatePropertyCollection(CollectionName);
+
+                                            // Create properties and set templates for each property
+                                            Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
+                                            P32_Anisotropy.Name = "P32_anisotropy";
+                                            Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
+                                            if (CalculateFracturePorosity)
+                                                P33_Anisotropy.Name = "FracturePorosity_anisotropy";
+                                            else
+                                                P33_Anisotropy.Name = "P33_anisotropy";
+                                            Property MF_UnconnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                            MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
+                                            Property MF_RelayTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                            MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
+                                            Property MF_IntersectingTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                            MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
+                                            Property ConnectionsPerMF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
+                                            ConnectionsPerMF.Name = "Connections_per_fracture";
+                                            Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
+                                            EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+
+                                            // Add creation event to each property
+                                            IHistoryInfoEditor P32_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P32_Anisotropy);
+                                            IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
+                                            IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
+                                            IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
+                                            IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
+                                            IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
+                                            IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
+                                            P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+
+                                            // Loop through all gridblocks in the Fracture Grid
+                                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
                                                     {
                                                         // Check if calculation has been aborted
                                                         if (progressBarWrapper.abortCalculation())
@@ -5306,53 +5559,127 @@ namespace DFMGenerator_Ocean
                                                         }
 
                                                         // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
                                                         if (fractureGridCell == null)
                                                             continue;
-
-                                                        // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                        if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
-                                                        {
-                                                            progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-                                                            continue;
-                                                        }
-                                                        FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
 
                                                         // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                         int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                                         int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                                         int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                            PetrelGrid_LastCellI = PetrelGrid_EndCellI;
                                                         int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                            PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                        int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                        int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                        if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                            PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
 
-                                                        // Get data from GridblockConfiguration object
+                                                        // Calculate fracture anisotropy and connectivity for the entire fracture network
+                                                        double P32_anisotropy, P33_anisotropy;
                                                         double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
                                                         if (finalStage)
                                                         {
-                                                            UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                                            RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                            IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
+                                                            // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
+                                                            P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                            if (CalculateFracturePorosity)
+                                                                P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                            else
+                                                                P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
+
+                                                            // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
+                                                            UnconnectedTipRatio = fractureGridCell.UnconnectedTipRatio(!PopulateEmptyGridblocks);
+                                                            RelayTipRatio = fractureGridCell.RelayTipRatio(!PopulateEmptyGridblocks);
+                                                            IntersectingTipRatio = fractureGridCell.IntersectingTipRatio(!PopulateEmptyGridblocks);
                                                             NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
-                                                            EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
+
+                                                            // Calculate end deformation time using the function in the GridblockConfiguration object
+                                                            // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
+                                                            EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
                                                         }
                                                         else
                                                         {
                                                             int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
                                                             double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
-                                                            double INodes = fds.getActiveMFP30(TSNo);
-                                                            double RNodes = fds.getStaticRelayMFP30(TSNo);
-                                                            double YNodes = fds.getStaticIntersectMFP30(TSNo);
+
+                                                            // Calculate fracture anisotropy data using the data cached in the FCDList
+                                                            double Min_P32 = 0;
+                                                            double Max_P32 = 0;
+                                                            double Min_P33 = 0;
+                                                            double Max_P33 = 0;
+                                                            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+                                                            if (NoFractureSets < 2)
+                                                            {
+                                                                Max_P32 = 1;
+                                                                Max_P33 = 1;
+                                                            }
+                                                            else
+                                                            {
+                                                                foreach (FractureDipSet fds in fractureGridCell.FractureSets[0].FractureDipSets)
+                                                                {
+                                                                    Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                                    if (CalculateFracturePorosity)
+                                                                        Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                                    else
+                                                                        Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                                }
+                                                                Min_P32 = Max_P32;
+                                                                Min_P33 = Max_P33;
+
+                                                                for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
+                                                                {
+                                                                    double fs_P32 = 0;
+                                                                    double fs_P33 = 0;
+                                                                    foreach (FractureDipSet fds in fractureGridCell.FractureSets[fs_Index].FractureDipSets)
+                                                                    {
+                                                                        fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                                        if (CalculateFracturePorosity)
+                                                                            fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                                        else
+                                                                            fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                                    }
+                                                                    if (fs_P32 > Max_P32)
+                                                                        Max_P32 = fs_P32;
+                                                                    if (fs_P32 < Min_P32)
+                                                                        Min_P32 = fs_P32;
+                                                                    if (fs_P33 > Max_P33)
+                                                                        Max_P33 = fs_P33;
+                                                                    if (fs_P33 < Min_P33)
+                                                                        Min_P33 = fs_P33;
+                                                                }
+                                                            }
+                                                            double Combined_P32 = Min_P32 + Max_P32;
+                                                            P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
+                                                            double Combined_P33 = Min_P33 + Max_P33;
+                                                            P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);
+
+                                                            // Calculate fracture connectivity data using the data cached in the FCDList
+                                                            double INodes = 0;
+                                                            double RNodes = 0;
+                                                            double YNodes = 0;
+                                                            foreach (Gridblock_FractureSet fs in fractureGridCell.FractureSets)
+                                                                foreach (FractureDipSet fds in fs.FractureDipSets)
+                                                                {
+                                                                    INodes += fds.getActiveMFP30(TSNo);
+                                                                    RNodes += fds.getStaticRelayMFP30(TSNo);
+                                                                    YNodes += fds.getStaticIntersectMFP30(TSNo);
+                                                                }
                                                             double TotalNodes = INodes + RNodes + YNodes;
-                                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + fds.getTerminatingFractureDensity(TSNo);
                                                             UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
                                                             RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
                                                             IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
                                                             NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
+
+                                                            // Get the time at the end of this intermediate stage
                                                             EndTime = stageEndTime;
                                                         }
 
 #if DEBUG_FRAC_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                        PetrelLogger.InfoOutputWindow("Connectivity data: all sets");
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5361,7 +5688,7 @@ namespace DFMGenerator_Ocean
                                                         {
                                                             for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                                    for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                     {
 #if DEBUG_FRAC_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
@@ -5371,16 +5698,27 @@ namespace DFMGenerator_Ocean
                                                                         Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
 
                                                                         // Write data to Petrel grid
-                                                                        MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
-                                                                        MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
-                                                                        MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
-                                                                        ConnectionsPerMF[index_cell] = (float)NodesPerMF;
-                                                                        EndDeformationTime[index_cell] = (float)EndTime;
+                                                                        if (!double.IsNaN(P32_anisotropy))
+                                                                            P32_Anisotropy[index_cell] = (float)P32_anisotropy;
+                                                                        if (!double.IsNaN(P33_anisotropy))
+                                                                            P33_Anisotropy[index_cell] = (float)P33_anisotropy;
+                                                                        if (!double.IsNaN(UnconnectedTipRatio))
+                                                                            MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
+                                                                        if (!double.IsNaN(RelayTipRatio))
+                                                                            MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
+                                                                        if (!double.IsNaN(IntersectingTipRatio))
+                                                                            MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
+                                                                        if (!double.IsNaN(NodesPerMF))
+                                                                            ConnectionsPerMF[index_cell] = (float)NodesPerMF;
+                                                                        if (!double.IsNaN(EndTime))
+                                                                            EndDeformationTime[index_cell] = (float)EndTime;
                                                                     } // End loop through all the Petrel cells in the gridblock
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
+                                                            errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
                                                             errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                             errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
                                                             errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
@@ -5395,27 +5733,62 @@ namespace DFMGenerator_Ocean
                                                         progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
 
                                                     } // End loop through all columns and rows in the Fracture Grid
-                                            } // End write fracture connectivity data to Petrel grid
 
-                                            // Write fracture reactivity data to Petrel grid
-                                            if (CalculateFractureReactivationPotential)
+                                        } // End write fracture anisotropy data
+
+                                        // Write fracture porosity data to Petrel grid
+                                        if (CalculateFracturePorosity)
+                                        {
+                                            // Create a subfolder for the fracture porosity data
+                                            string CollectionName = "Fracture_Porosity";
+                                            PropertyCollection FracPorosityData = FracData.CreatePropertyCollection(CollectionName);
+
+                                            // Create properties and set templates for microfracture and macrofracture porosity and combined P32 values
+                                            Property uF_P32combined = FracPorosityData.CreateProperty(P32Template);
+                                            Property MF_P32combined = FracPorosityData.CreateProperty(P32Template);
+                                            Property uF_Porosity = FracPorosityData.CreateProperty(FracturePorosityTemplate);
+                                            Property MF_Porosity = FracPorosityData.CreateProperty(FracturePorosityTemplate);
+
+                                            // Set property template names
+                                            uF_P32combined.Name = "Microfracture_combined_P32";
+                                            MF_P32combined.Name = "Layer_bound_fracture_combined_P32";
+                                            switch (FractureApertureControl)
                                             {
-                                                // Create properties and set templates for each property
-                                                Property FDS_ReactivationPotential = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
-                                                Property FDS_SlipTendency = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
-                                                FDS_ReactivationPotential.Name = "Reactivation_Potential";
-                                                FDS_SlipTendency.Name = "Slip_Tendency";
+                                                case FractureApertureType.Uniform:
+                                                    uF_Porosity.Name = "Microfracture_porosity_UniformAperture";
+                                                    MF_Porosity.Name = "Layer_bound_fracture_porosity_UniformAperture";
+                                                    break;
+                                                case FractureApertureType.SizeDependent:
+                                                    uF_Porosity.Name = "Microfracture_porosity_SizeDependentAperture";
+                                                    MF_Porosity.Name = "Layer_bound_fracture_porosity_SizeDependentAperture";
+                                                    break;
+                                                case FractureApertureType.Dynamic:
+                                                    uF_Porosity.Name = "Microfracture_porosity_DynamicAperture";
+                                                    MF_Porosity.Name = "Layer_bound_fracture_porosity_DynamicAperture";
+                                                    break;
+                                                case FractureApertureType.BartonBandis:
+                                                    uF_Porosity.Name = "Microfracture_porosity_BartonBandisAperture";
+                                                    MF_Porosity.Name = "Layer_bound_fracture_porosity_BartonBandisAperture";
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
 
-                                                // Add creation event to each property
-                                                IHistoryInfoEditor FDS_ReactivationPotentialInfoEditor = HistoryService.GetHistoryInfoEditor(FDS_ReactivationPotential);
-                                                IHistoryInfoEditor FDS_SlipTendencyInfoEditor = HistoryService.GetHistoryInfoEditor(FDS_SlipTendency);
-                                                FDS_ReactivationPotentialInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                FDS_SlipTendencyInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            // Add creation event to each property
+                                            IHistoryInfoEditor uF_P32combinedHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_P32combined);
+                                            IHistoryInfoEditor MF_P32combinedHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P32combined);
+                                            IHistoryInfoEditor uF_PorosityHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_Porosity);
+                                            IHistoryInfoEditor MF_PorosityHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_Porosity);
+                                            uF_P32combinedHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_P32combinedHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            uF_PorosityHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            MF_PorosityHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
-                                                // Loop through all columns and rows in the Fracture Grid
-                                                // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                            // Loop through all gridblocks in the Fracture Grid
+                                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
                                                     {
                                                         // Check if calculation has been aborted
                                                         if (progressBarWrapper.abortCalculation())
@@ -5425,31 +5798,58 @@ namespace DFMGenerator_Ocean
                                                         }
 
                                                         // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
                                                         if (fractureGridCell == null)
                                                             continue;
-
-                                                        // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                        if ((FractureSetNo >= fractureGridCell.NoFractureSets) || (DipSetNo >= fractureGridCell.FractureSets[FractureSetNo].FractureDipSets.Count))
-                                                        {
-                                                            progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-                                                            continue;
-                                                        }
-                                                        FractureDipSet fds = fractureGridCell.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
 
                                                         // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                         int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                                         int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                                         int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                            PetrelGrid_LastCellI = PetrelGrid_EndCellI;
                                                         int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                            PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                        int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                        int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                        if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                            PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
 
-                                                        // Get data from GridblockConfiguration object
-                                                        double ReactivationPotential = fds.PresentDayReactivationPotential;
-                                                        double SlipTendency = fds.PresentDaySlipTendency;
+                                                        // Get combined fracture porosity data from the FractureSet objects in the GridblockConfiguration object and combine them locally
+                                                        double uF_P32_value;
+                                                        double MF_P32_value;
+                                                        double uF_Porosity_value;
+                                                        double MF_Porosity_value;
+
+                                                        if (finalStage)
+                                                        {
+                                                            uF_P32_value = fractureGridCell.MicrofractureDensity_P32();
+                                                            MF_P32_value = fractureGridCell.LayerBoundFractureDensity_P32();
+                                                            // For now we will include unconfined fracture density with layer-bound fracture density
+                                                            MF_P32_value += fractureGridCell.UnconfinedFractureDensity_P32();
+                                                            uF_Porosity_value = fractureGridCell.MicrofracturePorosity();
+                                                            MF_Porosity_value = fractureGridCell.LayerBoundFracturePorosity();
+                                                            // For now we will include unconfined fracture porosity with layer-bound fracture density
+                                                            MF_Porosity_value += fractureGridCell.UnconfinedFracturePorosity();
+                                                        }
+                                                        else
+                                                        {
+                                                            int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                            uF_P32_value = fractureGridCell.MicrofractureDensity_P32(TSNo);
+                                                            MF_P32_value = fractureGridCell.LayerBoundFractureDensity_P32(TSNo);
+                                                            // For now we will include unconfined fracture density with layer-bound fracture density
+                                                            MF_P32_value += fractureGridCell.UnconfinedFractureDensity_P32(TSNo);
+                                                            uF_Porosity_value = fractureGridCell.MicrofracturePorosity(TSNo);
+                                                            MF_Porosity_value = fractureGridCell.LayerBoundFracturePorosity(TSNo);
+                                                            // For now we will include unconfined fracture porosity with layer-bound fracture density
+                                                            MF_Porosity_value += fractureGridCell.UnconfinedFracturePorosity(TSNo);
+                                                        }
+                                                        bool writeMacrofractureData = PopulateEmptyGridblocks || (MF_P32_value > 0);
 
 #if DEBUG_FRAC_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                        PetrelLogger.InfoOutputWindow("Porosity data: all sets");
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
@@ -5458,7 +5858,7 @@ namespace DFMGenerator_Ocean
                                                         {
                                                             for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                                    for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                     {
 #if DEBUG_FRAC_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
@@ -5468,16 +5868,22 @@ namespace DFMGenerator_Ocean
                                                                         Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
 
                                                                         // Write data to Petrel grid
-                                                                        //if (!double.IsNaN(ReactivationPotential))
-                                                                        FDS_ReactivationPotential[index_cell] = (float)ReactivationPotential;
-                                                                        FDS_SlipTendency[index_cell] = (float)SlipTendency;
+                                                                        uF_P32combined[index_cell] = (float)uF_P32_value;
+                                                                        uF_Porosity[index_cell] = (float)uF_Porosity_value;
+                                                                        if (writeMacrofractureData)
+                                                                        {
+                                                                            MF_P32combined[index_cell] = (float)MF_P32_value;
+                                                                            MF_Porosity[index_cell] = (float)MF_Porosity_value;
+                                                                        }
                                                                     } // End loop through all the Petrel cells in the gridblock
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
-                                                            errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
-                                                            errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
+                                                            string errorMessage = string.Format("Exception thrown when writing porosity data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            errorMessage = errorMessage + string.Format(" uF_P32_value {0}", (float)uF_P32_value);
+                                                            errorMessage = errorMessage + string.Format(" MF_P32_value {0}", (float)MF_P32_value);
+                                                            errorMessage = errorMessage + string.Format(" uF_Porosity_value {0}", (float)uF_Porosity_value);
+                                                            errorMessage = errorMessage + string.Format(" MF_Porosity_value {0}", (float)MF_Porosity_value);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
                                                             PetrelLogger.InfoOutputWindow(e.StackTrace);
@@ -5487,807 +5893,478 @@ namespace DFMGenerator_Ocean
                                                         progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
 
                                                     } // End loop through all columns and rows in the Fracture Grid
-                                            } // End write fracture reactivity data to Petrel grid
 
-                                        } // End loop through fracture dip sets
-                                    } // End loop through fracture sets
+                                        } // End write fracture porosity data
 
-                                    // If required, write fracture anisotropy data to Petrel grid
-                                    if (CalculateFractureConnectivityAnisotropy)
-                                    {
-                                        // Create a subfolder for the fracture anisotropy data
-                                        string CollectionName = "Fracture_Anisotropy";
-                                        PropertyCollection FracAnisotropyData = FracData.CreatePropertyCollection(CollectionName);
-
-                                        // Create properties and set templates for each property
-                                        Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
-                                        P32_Anisotropy.Name = "P32_anisotropy";
-                                        Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
-                                        if (CalculateFracturePorosity)
-                                            P33_Anisotropy.Name = "FracturePorosity_anisotropy";
-                                        else
-                                            P33_Anisotropy.Name = "P33_anisotropy";
-                                        Property MF_UnconnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                        MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
-                                        Property MF_RelayTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                        MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
-                                        Property MF_IntersectingTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                        MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
-                                        Property ConnectionsPerMF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
-                                        ConnectionsPerMF.Name = "Connections_per_fracture";
-                                        Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
-                                        EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
-
-                                        // Add creation event to each property
-                                        IHistoryInfoEditor P32_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P32_Anisotropy);
-                                        IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
-                                        IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
-                                        IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
-                                        IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
-                                        IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
-                                        IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
-                                        P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-
-                                        // Loop through all columns and rows in the Fracture Grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                        // Write fracture permeability tensor and sigma factor data to Petrel grid
+                                        if (CalculateFracturePermeabilityTensor)
+                                        {
+                                            // Create a subfolder for the fracture permeability tensor components and sigma factors
+                                            string FracturePermeabilityTensorCollectionName;
+                                            string PermeabilityTensorComponentName_base;
+                                            switch (FractureTypesInPermeabilityTensor)
                                             {
-                                                // Check if calculation has been aborted
-                                                if (progressBarWrapper.abortCalculation())
-                                                {
-                                                    // Clean up any resources or data
+                                                case FractureType.Microfractures:
+                                                    FracturePermeabilityTensorCollectionName = "Microfracture permeability tensor";
+                                                    PermeabilityTensorComponentName_base = "k_uF_";
                                                     break;
-                                                }
-
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
-                                                if (fractureGridCell == null)
-                                                    continue;
-
-                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-
-                                                // Calculate fracture anisotropy and connectivity for the entire fracture network
-                                                double P32_anisotropy, P33_anisotropy;
-                                                double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
-                                                if (finalStage)
-                                                {
-                                                    // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
-                                                    P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                                    if (CalculateFracturePorosity)
-                                                        P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                                    else
-                                                        P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
-
-                                                    // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
-                                                    UnconnectedTipRatio = fractureGridCell.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                                    RelayTipRatio = fractureGridCell.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                    IntersectingTipRatio = fractureGridCell.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                    NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
-
-                                                    // Calculate end deformation time using the function in the GridblockConfiguration object
-                                                    // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
-                                                    EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
-                                                }
-                                                else
-                                                {
-                                                    int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
-                                                    double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
-
-                                                    // Calculate fracture anisotropy data using the data cached in the FCDList
-                                                    double Min_P32 = 0;
-                                                    double Max_P32 = 0;
-                                                    double Min_P33 = 0;
-                                                    double Max_P33 = 0;
-                                                    // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-                                                    if (NoFractureSets < 2)
-                                                    {
-                                                        Max_P32 = 1;
-                                                        Max_P33 = 1;
-                                                    }
-                                                    else
-                                                    {
-                                                        foreach (FractureDipSet fds in fractureGridCell.FractureSets[0].FractureDipSets)
-                                                        {
-                                                            Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                            if (CalculateFracturePorosity)
-                                                                Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
-                                                            else
-                                                                Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
-                                                        }
-                                                        Min_P32 = Max_P32;
-                                                        Min_P33 = Max_P33;
-
-                                                        for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
-                                                        {
-                                                            double fs_P32 = 0;
-                                                            double fs_P33 = 0;
-                                                            foreach (FractureDipSet fds in fractureGridCell.FractureSets[fs_Index].FractureDipSets)
-                                                            {
-                                                                fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                                if (CalculateFracturePorosity)
-                                                                    fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
-                                                                else
-                                                                    fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
-                                                            }
-                                                            if (fs_P32 > Max_P32)
-                                                                Max_P32 = fs_P32;
-                                                            if (fs_P32 < Min_P32)
-                                                                Min_P32 = fs_P32;
-                                                            if (fs_P33 > Max_P33)
-                                                                Max_P33 = fs_P33;
-                                                            if (fs_P33 < Min_P33)
-                                                                Min_P33 = fs_P33;
-                                                        }
-                                                    }
-                                                    double Combined_P32 = Min_P32 + Max_P32;
-                                                    P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
-                                                    double Combined_P33 = Min_P33 + Max_P33;
-                                                    P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);
-
-                                                    // Calculate fracture connectivity data using the data cached in the FCDList
-                                                    double INodes = 0;
-                                                    double RNodes = 0;
-                                                    double YNodes = 0;
-                                                    foreach (Gridblock_FractureSet fs in fractureGridCell.FractureSets)
-                                                        foreach (FractureDipSet fds in fs.FractureDipSets)
-                                                        {
-                                                            INodes += fds.getActiveMFP30(TSNo);
-                                                            RNodes += fds.getStaticRelayMFP30(TSNo);
-                                                            YNodes += fds.getStaticIntersectMFP30(TSNo);
-                                                        }
-                                                    double TotalNodes = INodes + RNodes + YNodes;
-                                                    UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
-                                                    RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
-                                                    IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
-                                                    double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
-                                                    NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
-
-                                                    // Get the time at the end of this intermediate stage
-                                                    EndTime = stageEndTime;
-                                                }
-
-#if DEBUG_FRAC_OUTPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow("Connectivity data: all sets");
-                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
-#endif
-
-                                                // Loop through all the Petrel cells in the gridblock
-                                                try
-                                                {
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                            {
-#if DEBUG_FRAC_OUTPUT
-                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
-#endif
-
-                                                                // Get index for cell in Petrel grid
-                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Write data to Petrel grid
-                                                                if (!double.IsNaN(P32_anisotropy))
-                                                                    P32_Anisotropy[index_cell] = (float)P32_anisotropy;
-                                                                if (!double.IsNaN(P33_anisotropy))
-                                                                    P33_Anisotropy[index_cell] = (float)P33_anisotropy;
-                                                                if (!double.IsNaN(UnconnectedTipRatio))
-                                                                    MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
-                                                                if (!double.IsNaN(RelayTipRatio))
-                                                                    MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
-                                                                if (!double.IsNaN(IntersectingTipRatio))
-                                                                    MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
-                                                                if (!double.IsNaN(NodesPerMF))
-                                                                    ConnectionsPerMF[index_cell] = (float)NodesPerMF;
-                                                                if (!double.IsNaN(EndTime))
-                                                                    EndDeformationTime[index_cell] = (float)EndTime;
-                                                            } // End loop through all the Petrel cells in the gridblock
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
-                                                    errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
-                                                    errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
-                                                    errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
-                                                    errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
-                                                    errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
-                                                    errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
-                                                    errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                }
-
-                                                // Update progress bar
-                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-
-                                            } // End loop through all columns and rows in the Fracture Grid
-
-                                    } // End write fracture anisotropy data
-
-                                    // Write fracture porosity data to Petrel grid
-                                    if (CalculateFracturePorosity)
-                                    {
-                                        // Create a subfolder for the fracture porosity data
-                                        string CollectionName = "Fracture_Porosity";
-                                        PropertyCollection FracPorosityData = FracData.CreatePropertyCollection(CollectionName);
-
-                                        // Create properties and set templates for microfracture and macrofracture porosity and combined P32 values
-                                        Property uF_P32combined = FracPorosityData.CreateProperty(P32Template);
-                                        Property MF_P32combined = FracPorosityData.CreateProperty(P32Template);
-                                        Property uF_Porosity = FracPorosityData.CreateProperty(FracturePorosityTemplate);
-                                        Property MF_Porosity = FracPorosityData.CreateProperty(FracturePorosityTemplate);
-
-                                        // Set property template names
-                                        uF_P32combined.Name = "Microfracture_combined_P32";
-                                        MF_P32combined.Name = "Layer_bound_fracture_combined_P32";
-                                        switch (FractureApertureControl)
-                                        {
-                                            case FractureApertureType.Uniform:
-                                                uF_Porosity.Name = "Microfracture_porosity_UniformAperture";
-                                                MF_Porosity.Name = "Layer_bound_fracture_porosity_UniformAperture";
-                                                break;
-                                            case FractureApertureType.SizeDependent:
-                                                uF_Porosity.Name = "Microfracture_porosity_SizeDependentAperture";
-                                                MF_Porosity.Name = "Layer_bound_fracture_porosity_SizeDependentAperture";
-                                                break;
-                                            case FractureApertureType.Dynamic:
-                                                uF_Porosity.Name = "Microfracture_porosity_DynamicAperture";
-                                                MF_Porosity.Name = "Layer_bound_fracture_porosity_DynamicAperture";
-                                                break;
-                                            case FractureApertureType.BartonBandis:
-                                                uF_Porosity.Name = "Microfracture_porosity_BartonBandisAperture";
-                                                MF_Porosity.Name = "Layer_bound_fracture_porosity_BartonBandisAperture";
-                                                break;
-                                            default:
-                                                break;
-                                        }
-
-                                        // Add creation event to each property
-                                        IHistoryInfoEditor uF_P32combinedHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_P32combined);
-                                        IHistoryInfoEditor MF_P32combinedHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P32combined);
-                                        IHistoryInfoEditor uF_PorosityHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(uF_Porosity);
-                                        IHistoryInfoEditor MF_PorosityHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_Porosity);
-                                        uF_P32combinedHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        MF_P32combinedHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        uF_PorosityHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                        MF_PorosityHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-
-                                        // Loop through all columns and rows in the Fracture Grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
-                                            {
-                                                // Check if calculation has been aborted
-                                                if (progressBarWrapper.abortCalculation())
-                                                {
-                                                    // Clean up any resources or data
+                                                case FractureType.LayerBoundFractures:
+                                                    FracturePermeabilityTensorCollectionName = "Macrofracture permeability tensor";
+                                                    PermeabilityTensorComponentName_base = "k_MF_";
                                                     break;
-                                                }
-
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
-                                                if (fractureGridCell == null)
-                                                    continue;
-
-                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-
-                                                // Get combined fracture porosity data from the FractureSet objects in the GridblockConfiguration object and combine them locally
-                                                double uF_P32_value;
-                                                double MF_P32_value;
-                                                double uF_Porosity_value;
-                                                double MF_Porosity_value;
-
-                                                if (finalStage)
-                                                {
-                                                    uF_P32_value = fractureGridCell.MicrofractureDensity_P32();
-                                                    MF_P32_value = fractureGridCell.LayerBoundFractureDensity_P32();
-                                                    // For now we will include unconfined fracture density with layer-bound fracture density
-                                                    MF_P32_value += fractureGridCell.UnconfinedFractureDensity_P32();
-                                                    uF_Porosity_value = fractureGridCell.MicrofracturePorosity();
-                                                    MF_Porosity_value = fractureGridCell.LayerBoundFracturePorosity();
-                                                    // For now we will include unconfined fracture porosity with layer-bound fracture density
-                                                    MF_Porosity_value += fractureGridCell.UnconfinedFracturePorosity();
-                                                }
-                                                else
-                                                {
-                                                    int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
-                                                    uF_P32_value = fractureGridCell.MicrofractureDensity_P32(TSNo);
-                                                    MF_P32_value = fractureGridCell.LayerBoundFractureDensity_P32(TSNo);
-                                                    // For now we will include unconfined fracture density with layer-bound fracture density
-                                                    MF_P32_value += fractureGridCell.UnconfinedFractureDensity_P32(TSNo);
-                                                    uF_Porosity_value = fractureGridCell.MicrofracturePorosity(TSNo);
-                                                    MF_Porosity_value = fractureGridCell.LayerBoundFracturePorosity(TSNo);
-                                                    // For now we will include unconfined fracture porosity with layer-bound fracture density
-                                                    MF_Porosity_value += fractureGridCell.UnconfinedFracturePorosity(TSNo);
-                                                }
-                                                bool writeMacrofractureData = PopulateEmptyGridblocks || (MF_P32_value > 0);
-
-#if DEBUG_FRAC_OUTPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow("Porosity data: all sets");
-                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
-#endif
-
-                                                // Loop through all the Petrel cells in the gridblock
-                                                try
-                                                {
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                            {
-#if DEBUG_FRAC_OUTPUT
-                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
-#endif
-
-                                                                // Get index for cell in Petrel grid
-                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Write data to Petrel grid
-                                                                uF_P32combined[index_cell] = (float)uF_P32_value;
-                                                                uF_Porosity[index_cell] = (float)uF_Porosity_value;
-                                                                if (writeMacrofractureData)
-                                                                {
-                                                                    MF_P32combined[index_cell] = (float)MF_P32_value;
-                                                                    MF_Porosity[index_cell] = (float)MF_Porosity_value;
-                                                                }
-                                                            } // End loop through all the Petrel cells in the gridblock
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing porosity data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
-                                                    errorMessage = errorMessage + string.Format(" uF_P32_value {0}", (float)uF_P32_value);
-                                                    errorMessage = errorMessage + string.Format(" MF_P32_value {0}", (float)MF_P32_value);
-                                                    errorMessage = errorMessage + string.Format(" uF_Porosity_value {0}", (float)uF_Porosity_value);
-                                                    errorMessage = errorMessage + string.Format(" MF_Porosity_value {0}", (float)MF_Porosity_value);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                }
-
-                                                // Update progress bar
-                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-
-                                            } // End loop through all columns and rows in the Fracture Grid
-
-                                    } // End write fracture porosity data
-
-                                    // Write fracture permeability tensor and sigma factor data to Petrel grid
-                                    if (CalculateFracturePermeabilityTensor)
-                                    {
-                                        // Create a subfolder for the fracture permeability tensor components and sigma factors
-                                        string FracturePermeabilityTensorCollectionName;
-                                        string PermeabilityTensorComponentName_base;
-                                        switch (FractureTypesInPermeabilityTensor)
-                                        {
-                                            case FractureType.Microfractures:
-                                                FracturePermeabilityTensorCollectionName = "Microfracture permeability tensor";
-                                                PermeabilityTensorComponentName_base = "k_uF_";
-                                                break;
-                                            case FractureType.LayerBoundFractures:
-                                                FracturePermeabilityTensorCollectionName = "Macrofracture permeability tensor";
-                                                PermeabilityTensorComponentName_base = "k_MF_";
-                                                break;
-                                            case FractureType.AllFractures:
-                                                FracturePermeabilityTensorCollectionName = "Fracture permeability tensor";
-                                                PermeabilityTensorComponentName_base = "k_F_";
-                                                break;
-                                            default:
-                                                FracturePermeabilityTensorCollectionName = "";
-                                                PermeabilityTensorComponentName_base = "";
-                                                break;
-                                        }
-                                        switch (PermeabilityAlgorithm)
-                                        {
-                                            case PermeabilityCalculationAlgorithm.Oda1986:
-                                                FracturePermeabilityTensorCollectionName += ": Oda (1985)";
-                                                break;
-                                            case PermeabilityCalculationAlgorithm.OdaCorrected1987:
-                                                FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
-                                                break;
-                                            case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
-                                                FracturePermeabilityTensorCollectionName += ": Connectivity and size corrected";
-                                                break;
-                                            default:
-                                                break;
-                                        }
-                                        PropertyCollection FracturePermeabilityTensorData = FracData.CreatePropertyCollection(FracturePermeabilityTensorCollectionName);
-
-                                        // Create properties and set templates for each component of both tensors
-                                        Dictionary<Tensor2SComponents, Property> PermeabilityTensorProperties = new Dictionary<Tensor2SComponents, Property>();
-                                        Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
-                                        foreach (Tensor2SComponents ij in tensorComponents)
-                                        {
-                                            Property PermeabilityTensor_ij = FracturePermeabilityTensorData.CreateProperty(FracturePermeabilityTemplate[ij]);
-                                            PermeabilityTensor_ij.Name = string.Format("{0}{1}", PermeabilityTensorComponentName_base, ij);
-                                            IHistoryInfoEditor PermeabilityTensor_ijHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(PermeabilityTensor_ij);
-                                            PermeabilityTensor_ijHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            PermeabilityTensorProperties[ij] = PermeabilityTensor_ij;
-                                        }
-                                        // Create property for the sigma factor
-                                        Property SigmaFactorProperty = FracturePermeabilityTensorData.CreateProperty(SigmaFactorTemplate);
-                                        SigmaFactorProperty.Name = string.Format("{0}_sigma", PermeabilityTensorComponentName_base);
-                                        IHistoryInfoEditor SigmaFactorHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(SigmaFactorProperty);
-                                        SigmaFactorHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-
-                                        // Loop through all columns and rows in the Fracture Grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
-                                            {
-                                                // Check if calculation has been aborted
-                                                if (progressBarWrapper.abortCalculation())
-                                                {
-                                                    // Clean up any resources or data
+                                                case FractureType.AllFractures:
+                                                    FracturePermeabilityTensorCollectionName = "Fracture permeability tensor";
+                                                    PermeabilityTensorComponentName_base = "k_F_";
                                                     break;
-                                                }
-
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
-                                                if (fractureGridCell == null)
-                                                    continue;
-
-                                                // If we are not populating empty cells, we are outputting the macrofracture permability tensor, and there are no macrofractures in the gridblock, move on to the next gridblock
-                                                if (!PopulateEmptyGridblocks && (FractureTypesInPermeabilityTensor == FractureType.LayerBoundFractures))
-                                                {
-                                                    double MF_P32_value = finalStage ? fractureGridCell.LayerBoundFractureDensity_P32() : fractureGridCell.LayerBoundFractureDensity_P32(fractureGridCell.getTimestepIndex(stageEndTime));
-                                                    if (!(MF_P32_value > 0))
-                                                    {
-                                                        progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-                                                        continue;
-                                                    }
-                                                }
-
-                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-
-                                                // Get the appropriate permeability tensor for this gridblock
-                                                Tensor2S gridblockPermeabilityTensor;
-                                                double gridblockSigmaFactor;
-                                                if (finalStage)
-                                                {
-                                                    switch (FractureTypesInPermeabilityTensor)
-                                                    {
-                                                        case FractureType.Microfractures:
-                                                            gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability();
-                                                            gridblockSigmaFactor = fractureGridCell.MicrofractureSigmaFactor();
-                                                            break;
-                                                        case FractureType.LayerBoundFractures:
-                                                            gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability();
-                                                            gridblockSigmaFactor = fractureGridCell.MacrofractureSigmaFactor();
-                                                            break;
-                                                        case FractureType.AllFractures:
-                                                            gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability();
-                                                            gridblockSigmaFactor = fractureGridCell.TotalFractureSigmaFactor();
-                                                            break;
-                                                        default:
-                                                            gridblockPermeabilityTensor = new Tensor2S();
-                                                            gridblockSigmaFactor = double.NaN;
-                                                            break;
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
-                                                    switch (FractureTypesInPermeabilityTensor)
-                                                    {
-                                                        case FractureType.Microfractures:
-                                                            gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability(TSNo);
-                                                            gridblockSigmaFactor = fractureGridCell.MicrofractureSigmaFactor(TSNo);
-                                                            break;
-                                                        case FractureType.LayerBoundFractures:
-                                                            gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability(TSNo);
-                                                            gridblockSigmaFactor = fractureGridCell.MacrofractureSigmaFactor(TSNo);
-                                                            break;
-                                                        case FractureType.AllFractures:
-                                                            gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability(TSNo);
-                                                            gridblockSigmaFactor = fractureGridCell.TotalFractureSigmaFactor(TSNo);
-                                                            break;
-                                                        default:
-                                                            gridblockPermeabilityTensor = new Tensor2S();
-                                                            gridblockSigmaFactor = double.NaN;
-                                                            break;
-                                                    }
-                                                }
-
-#if DEBUG_FRAC_OUTPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow("Permability tensor: all sets");
-                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
-#endif
-
-                                                // Loop through all the Petrel cells in the gridblock
-                                                // We need to define the last ij and kl components outside the loop so we can identify the tensor component if an exception is thrown
-                                                Tensor2SComponents lastij = Tensor2SComponents.XX;
-                                                try
-                                                {
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
-                                                            {
-#if DEBUG_FRAC_OUTPUT
-                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
-#endif
-
-                                                                // Get index for cell in Petrel grid
-                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Write tensor component data to Petrel grid
-                                                                foreach (Tensor2SComponents ij in tensorComponents)
-                                                                {
-                                                                    lastij = ij;
-                                                                    PermeabilityTensorProperties[ij][index_cell] = (float)gridblockPermeabilityTensor.Component(ij);
-                                                                }
-                                                                SigmaFactorProperty[index_cell] = (float)gridblockSigmaFactor;
-                                                            } // End loop through all the Petrel cells in the gridblock
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing fracture permeability tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
-                                                    errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, lastij, (float)gridblockPermeabilityTensor.Component(lastij));
-                                                    errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, "sigma", (float)gridblockSigmaFactor);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                }
-
-                                                // Update progress bar
-                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
-
-                                            } // End loop through all columns and rows in the Fracture Grid
-
-                                    } // End write fracture permeability tensor data
-
-                                    // Write stiffness and compliance tensor data to Petrel grid
-                                    if (OutputBulkRockElasticTensors && finalStage)
-                                    {
-
-                                        // Create subfolders for the bulk rock compliance and stiffness tensor components
-                                        string ComplianceTensorCollectionName = "Bulk rock compliance tensor";
-                                        PropertyCollection ComplianceTensorData = FracData.CreatePropertyCollection(ComplianceTensorCollectionName);
-                                        string StiffnessTensorCollectionName = "Bulk rock stiffness tensor";
-                                        PropertyCollection StiffnessTensorData = FracData.CreatePropertyCollection(StiffnessTensorCollectionName);
-
-                                        // Create properties and set templates for each component of both tensors
-                                        Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> ComplianceTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
-                                        Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> StiffnessTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
-                                        Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
-                                        foreach (Tensor2SComponents ij in tensorComponents)
-                                        {
-                                            ComplianceTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
-                                            StiffnessTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
-                                            foreach (Tensor2SComponents kl in tensorComponents)
-                                            {
-                                                Property ComplianceTensor_ijkl = ComplianceTensorData.CreateProperty(ComplianceTensorComponentTemplate);
-                                                ComplianceTensor_ijkl.Name = string.Format("S_{0}{1}", ij, kl);
-                                                IHistoryInfoEditor ComplianceTensor_ijklHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(ComplianceTensor_ijkl);
-                                                ComplianceTensor_ijklHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                ComplianceTensorProperties[ij][kl] = ComplianceTensor_ijkl;
-
-                                                Property StiffnessTensor_ijkl = StiffnessTensorData.CreateProperty(StiffnessTensorComponentTemplate);
-                                                StiffnessTensor_ijkl.Name = string.Format("C_{0}{1}", ij, kl);
-                                                IHistoryInfoEditor StiffnessTensor_ijklHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(StiffnessTensor_ijkl);
-                                                StiffnessTensor_ijklHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                StiffnessTensorProperties[ij][kl] = StiffnessTensor_ijkl;
+                                                default:
+                                                    FracturePermeabilityTensorCollectionName = "";
+                                                    PermeabilityTensorComponentName_base = "";
+                                                    break;
                                             }
-                                        }
-
-                                        // Loop through all columns and rows in the Fracture Grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                        for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                            for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                            switch (PermeabilityAlgorithm)
                                             {
-                                                // Check if calculation has been aborted
-                                                if (progressBarWrapper.abortCalculation())
-                                                {
-                                                    // Clean up any resources or data
+                                                case PermeabilityCalculationAlgorithm.Oda1986:
+                                                    FracturePermeabilityTensorCollectionName += ": Oda (1985)";
                                                     break;
-                                                }
+                                                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                                                    FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
+                                                    break;
+                                                case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                                                    FracturePermeabilityTensorCollectionName += ": Connectivity and size corrected";
+                                                    break;
+                                                default:
+                                                    break;
+                                            }
+                                            PropertyCollection FracturePermeabilityTensorData = FracData.CreatePropertyCollection(FracturePermeabilityTensorCollectionName);
 
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo);
-                                                if (fractureGridCell == null)
-                                                    continue;
+                                            // Create properties and set templates for each component of both tensors
+                                            Dictionary<Tensor2SComponents, Property> PermeabilityTensorProperties = new Dictionary<Tensor2SComponents, Property>();
+                                            Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                                            foreach (Tensor2SComponents ij in tensorComponents)
+                                            {
+                                                Property PermeabilityTensor_ij = FracturePermeabilityTensorData.CreateProperty(FracturePermeabilityTemplate[ij]);
+                                                PermeabilityTensor_ij.Name = string.Format("{0}{1}", PermeabilityTensorComponentName_base, ij);
+                                                IHistoryInfoEditor PermeabilityTensor_ijHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(PermeabilityTensor_ij);
+                                                PermeabilityTensor_ijHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                PermeabilityTensorProperties[ij] = PermeabilityTensor_ij;
+                                            }
+                                            // Create property for the sigma factor
+                                            Property SigmaFactorProperty = FracturePermeabilityTensorData.CreateProperty(SigmaFactorTemplate);
+                                            SigmaFactorProperty.Name = string.Format("{0}_sigma", PermeabilityTensorComponentName_base);
+                                            IHistoryInfoEditor SigmaFactorHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(SigmaFactorProperty);
+                                            SigmaFactorHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
-                                                // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                                int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                                int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                                int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                            // Loop through all gridblocks in the Fracture Grid
+                                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                                    {
+                                                        // Check if calculation has been aborted
+                                                        if (progressBarWrapper.abortCalculation())
+                                                        {
+                                                            // Clean up any resources or data
+                                                            break;
+                                                        }
 
-                                                // Get the compliance and stiffness tensors for this gridblock
-                                                Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
-                                                Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
+                                                        // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                        if (fractureGridCell == null)
+                                                            continue;
 
-#if DEBUG_FRAC_OUTPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow("Stiffness and compliance tensors: all sets");
-                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
-#endif
-
-                                                // Loop through all the Petrel cells in the gridblock
-                                                // We need to define the last ij and kl components outside the loop so we can identify the tensor component if an exception is thrown
-                                                Tensor2SComponents lastij = Tensor2SComponents.XX;
-                                                Tensor2SComponents lastkl = Tensor2SComponents.XX;
-                                                try
-                                                {
-                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                        // If we are not populating empty cells, we are outputting the macrofracture permability tensor, and there are no macrofractures in the gridblock, move on to the next gridblock
+                                                        if (!PopulateEmptyGridblocks && (FractureTypesInPermeabilityTensor == FractureType.LayerBoundFractures))
+                                                        {
+                                                            double MF_P32_value = finalStage ? fractureGridCell.LayerBoundFractureDensity_P32() : fractureGridCell.LayerBoundFractureDensity_P32(fractureGridCell.getTimestepIndex(stageEndTime));
+                                                            if (!(MF_P32_value > 0))
                                                             {
+                                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+                                                                continue;
+                                                            }
+                                                        }
+
+                                                        // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                        int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                        int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                        int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                            PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                        int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                            PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                        int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                        int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                        if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                            PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                        // Get the appropriate permeability tensor for this gridblock
+                                                        Tensor2S gridblockPermeabilityTensor;
+                                                        double gridblockSigmaFactor;
+                                                        if (finalStage)
+                                                        {
+                                                            switch (FractureTypesInPermeabilityTensor)
+                                                            {
+                                                                case FractureType.Microfractures:
+                                                                    gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability();
+                                                                    gridblockSigmaFactor = fractureGridCell.MicrofractureSigmaFactor();
+                                                                    break;
+                                                                case FractureType.LayerBoundFractures:
+                                                                    gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability();
+                                                                    gridblockSigmaFactor = fractureGridCell.MacrofractureSigmaFactor();
+                                                                    break;
+                                                                case FractureType.AllFractures:
+                                                                    gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability();
+                                                                    gridblockSigmaFactor = fractureGridCell.TotalFractureSigmaFactor();
+                                                                    break;
+                                                                default:
+                                                                    gridblockPermeabilityTensor = new Tensor2S();
+                                                                    gridblockSigmaFactor = double.NaN;
+                                                                    break;
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                            switch (FractureTypesInPermeabilityTensor)
+                                                            {
+                                                                case FractureType.Microfractures:
+                                                                    gridblockPermeabilityTensor = fractureGridCell.MicrofracturePermeability(TSNo);
+                                                                    gridblockSigmaFactor = fractureGridCell.MicrofractureSigmaFactor(TSNo);
+                                                                    break;
+                                                                case FractureType.LayerBoundFractures:
+                                                                    gridblockPermeabilityTensor = fractureGridCell.MacrofracturePermeability(TSNo);
+                                                                    gridblockSigmaFactor = fractureGridCell.MacrofractureSigmaFactor(TSNo);
+                                                                    break;
+                                                                case FractureType.AllFractures:
+                                                                    gridblockPermeabilityTensor = fractureGridCell.TotalFracturePermeability(TSNo);
+                                                                    gridblockSigmaFactor = fractureGridCell.TotalFractureSigmaFactor(TSNo);
+                                                                    break;
+                                                                default:
+                                                                    gridblockPermeabilityTensor = new Tensor2S();
+                                                                    gridblockSigmaFactor = double.NaN;
+                                                                    break;
+                                                            }
+                                                        }
+
 #if DEBUG_FRAC_OUTPUT
-                                                                PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+                                                        PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow("Permability tensor: all sets");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
 
-                                                                // Get index for cell in Petrel grid
-                                                                Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                                // Write tensor component data to Petrel grid
-                                                                foreach (Tensor2SComponents ij in tensorComponents)
-                                                                {
-                                                                    lastij = ij;
-                                                                    foreach (Tensor2SComponents kl in tensorComponents)
+                                                        // Loop through all the Petrel cells in the gridblock
+                                                        // We need to define the last ij and kl components outside the loop so we can identify the tensor component if an exception is thrown
+                                                        Tensor2SComponents lastij = Tensor2SComponents.XX;
+                                                        try
+                                                        {
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                     {
-                                                                        lastkl = kl;
-                                                                        ComplianceTensorProperties[ij][kl][index_cell] = (float)gridblockComplianceTensor.Component(ij, kl);
-                                                                        StiffnessTensorProperties[ij][kl][index_cell] = (float)gridblockStiffnessTensor.Component(ij, kl);
-                                                                    }
-                                                                }
-                                                            } // End loop through all the Petrel cells in the gridblock
-                                                }
-                                                catch (Exception e)
+#if DEBUG_FRAC_OUTPUT
+                                                                        PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                        // Get index for cell in Petrel grid
+                                                                        Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Write tensor component data to Petrel grid
+                                                                        foreach (Tensor2SComponents ij in tensorComponents)
+                                                                        {
+                                                                            lastij = ij;
+                                                                            PermeabilityTensorProperties[ij][index_cell] = (float)gridblockPermeabilityTensor.Component(ij);
+                                                                        }
+                                                                        SigmaFactorProperty[index_cell] = (float)gridblockSigmaFactor;
+                                                                    } // End loop through all the Petrel cells in the gridblock
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing fracture permeability tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, lastij, (float)gridblockPermeabilityTensor.Component(lastij));
+                                                            errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, "sigma", (float)gridblockSigmaFactor);
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+
+                                                        // Update progress bar
+                                                        progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                    } // End loop through all columns and rows in the Fracture Grid
+
+                                        } // End write fracture permeability tensor data
+
+                                        // Write stiffness and compliance tensor data to Petrel grid
+                                        if (OutputBulkRockElasticTensors && finalStage)
+                                        {
+
+                                            // Create subfolders for the bulk rock compliance and stiffness tensor components
+                                            string ComplianceTensorCollectionName = "Bulk rock compliance tensor";
+                                            PropertyCollection ComplianceTensorData = FracData.CreatePropertyCollection(ComplianceTensorCollectionName);
+                                            string StiffnessTensorCollectionName = "Bulk rock stiffness tensor";
+                                            PropertyCollection StiffnessTensorData = FracData.CreatePropertyCollection(StiffnessTensorCollectionName);
+
+                                            // Create properties and set templates for each component of both tensors
+                                            Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> ComplianceTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
+                                            Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>> StiffnessTensorProperties = new Dictionary<Tensor2SComponents, Dictionary<Tensor2SComponents, Property>>();
+                                            Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                                            foreach (Tensor2SComponents ij in tensorComponents)
+                                            {
+                                                ComplianceTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
+                                                StiffnessTensorProperties[ij] = new Dictionary<Tensor2SComponents, Property>();
+                                                foreach (Tensor2SComponents kl in tensorComponents)
                                                 {
-                                                    string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
-                                                    errorMessage = errorMessage + string.Format(" S_{0}{1} {2}", lastij, lastkl, (float)gridblockComplianceTensor.Component(lastij, lastkl));
-                                                    errorMessage = errorMessage + string.Format(" C_{0}{1} {2}", lastij, lastkl, (float)gridblockStiffnessTensor.Component(lastij, lastkl));
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                    Property ComplianceTensor_ijkl = ComplianceTensorData.CreateProperty(ComplianceTensorComponentTemplate);
+                                                    ComplianceTensor_ijkl.Name = string.Format("S_{0}{1}", ij, kl);
+                                                    IHistoryInfoEditor ComplianceTensor_ijklHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(ComplianceTensor_ijkl);
+                                                    ComplianceTensor_ijklHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    ComplianceTensorProperties[ij][kl] = ComplianceTensor_ijkl;
+
+                                                    Property StiffnessTensor_ijkl = StiffnessTensorData.CreateProperty(StiffnessTensorComponentTemplate);
+                                                    StiffnessTensor_ijkl.Name = string.Format("C_{0}{1}", ij, kl);
+                                                    IHistoryInfoEditor StiffnessTensor_ijklHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(StiffnessTensor_ijkl);
+                                                    StiffnessTensor_ijklHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                    StiffnessTensorProperties[ij][kl] = StiffnessTensor_ijkl;
                                                 }
+                                            }
 
-                                                // Update progress bar
-                                                progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+                                            // Loop through all gridblocks in the Fracture Grid
+                                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                                    {
+                                                        // Check if calculation has been aborted
+                                                        if (progressBarWrapper.abortCalculation())
+                                                        {
+                                                            // Clean up any resources or data
+                                                            break;
+                                                        }
 
-                                            } // End loop through all columns and rows in the Fracture Grid
+                                                        // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                        if (fractureGridCell == null)
+                                                            continue;
 
-                                    } // End write stiffness and compliance tensor data
+                                                        // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                        int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                        int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                        int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                            PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                        int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                        if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                            PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                        int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                        int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                        if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                            PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
 
-                                } // End loop through each stage in the fracture growth
+                                                        // Get the compliance and stiffness tensors for this gridblock
+                                                        Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
+                                                        Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
 
-                                // Commit the changes to the Petrel database
-                                transactionWritePropertyData.Commit();
-                            }
-
-                            // Write explicit DFN to Petrel project
-                            PetrelLogger.InfoOutputWindow("Write explicit DFN");
-                            progressBar.SetProgressText("Write explicit DFN");
-                            {
-                                // Get the total number of fractures to write and update the progress bar
-                                int totalNoFractures = 0;
 #if DEBUG_FRAC_OUTPUT
-                                int stage = 1;
+                                                        PetrelLogger.InfoOutputWindow("");
+                                                        PetrelLogger.InfoOutputWindow("Stiffness and compliance tensors: all sets");
+                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
 #endif
-                                foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
-                                {
-                                    totalNoFractures += (DFN.GlobalDFNMicrofractures.Count + DFN.GlobalDFNMacrofractures.Count + DFN.GlobalDFNUnconfinedFractures.Count);
-#if DEBUG_FRACS
-                                    PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} microfractures", stage, DFN.GlobalDFNMicrofractures.Count));
-                                    PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} macrofractures", stage++, DFN.GlobalDFNMacrofractures.Count));
+
+                                                        // Loop through all the Petrel cells in the gridblock
+                                                        // We need to define the last ij and kl components outside the loop so we can identify the tensor component if an exception is thrown
+                                                        Tensor2SComponents lastij = Tensor2SComponents.XX;
+                                                        Tensor2SComponents lastkl = Tensor2SComponents.XX;
+                                                        try
+                                                        {
+                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                    {
+#if DEBUG_FRAC_OUTPUT
+                                                                        PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
+
+                                                                        // Get index for cell in Petrel grid
+                                                                        Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                        // Write tensor component data to Petrel grid
+                                                                        foreach (Tensor2SComponents ij in tensorComponents)
+                                                                        {
+                                                                            lastij = ij;
+                                                                            foreach (Tensor2SComponents kl in tensorComponents)
+                                                                            {
+                                                                                lastkl = kl;
+                                                                                ComplianceTensorProperties[ij][kl][index_cell] = (float)gridblockComplianceTensor.Component(ij, kl);
+                                                                                StiffnessTensorProperties[ij][kl][index_cell] = (float)gridblockStiffnessTensor.Component(ij, kl);
+                                                                            }
+                                                                        }
+                                                                    } // End loop through all the Petrel cells in the gridblock
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            errorMessage = errorMessage + string.Format(" S_{0}{1} {2}", lastij, lastkl, (float)gridblockComplianceTensor.Component(lastij, lastkl));
+                                                            errorMessage = errorMessage + string.Format(" C_{0}{1} {2}", lastij, lastkl, (float)gridblockStiffnessTensor.Component(lastij, lastkl));
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+
+                                                        // Update progress bar
+                                                        progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                    } // End loop through all columns and rows in the Fracture Grid
+
+                                        } // End write stiffness and compliance tensor data
+
+                                    } // End loop through each stage in the fracture growth
+
+                                    // Commit the changes to the Petrel database
+                                    transactionWritePropertyData.Commit();
                                 }
+
+                                // Write explicit DFN to Petrel project
+                                PetrelLogger.InfoOutputWindow("Write explicit DFN");
+                                progressBar.SetProgressText("Write explicit DFN");
+                                {
+                                    // Get the total number of fractures to write and update the progress bar
+                                    int totalNoFractures = 0;
 #if DEBUG_FRAC_OUTPUT
-                                PetrelLogger.InfoOutputWindow(string.Format("Total {0} fractures", totalNoFractures));
+                                    int stage = 1;
+#endif
+                                    foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
+                                    {
+                                        totalNoFractures += (DFN.GlobalDFNMicrofractures.Count + DFN.GlobalDFNMacrofractures.Count + DFN.GlobalDFNUnconfinedFractures.Count);
+#if DEBUG_FRAC_OUTPUT
+                                        PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} microfractures", stage, DFN.GlobalDFNMicrofractures.Count));
+                                        PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} macrofractures", stage++, DFN.GlobalDFNMacrofractures.Count));
+#endif
+                                    }
+#if DEBUG_FRAC_OUTPUT
+                                    PetrelLogger.InfoOutputWindow(string.Format("Total {0} fractures", totalNoFractures));
 #endif
 
-                                // Set the number of elements in the progress bar to twice the total number of fractures
-                                // We must loop through all the fractures twice - the first time to generate the fracture objects and the second to assign properties to them
-                                // Unless we are generating fracture centrelines in which case we will need to loop through a third time
-                                int numberOfElements = totalNoFractures * 2;
-                                if (OutputCentrepoints) numberOfElements += totalNoFractures;
-                                progressBarWrapper.SetNumberOfElements(numberOfElements);
-                                int noFracturesGenerated = 0;
+                                    // Set the number of elements in the progress bar to twice the total number of fractures
+                                    // We must loop through all the fractures twice - the first time to generate the fracture objects and the second to assign properties to them
+                                    // Unless we are generating fracture centrelines in which case we will need to loop through a third time
+                                    int numberOfElements = totalNoFractures * 2;
+                                    if (OutputCentrepoints) numberOfElements += totalNoFractures;
+                                    progressBarWrapper.SetNumberOfElements(numberOfElements);
+                                    int noFracturesGenerated = 0;
 
-                                // Loop through each stage in the fracture growth
-                                int stageNumber = 1;
-                                int NoStages = ModelGrid.DFNGrowthStages.Count;
-                                foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
-                                {
-                                    string stageNameOverride = null;
-                                    if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
-                                        stageNameOverride = (stageNumber <= OutputStageNameOverride.Count ? OutputStageNameOverride[stageNumber - 1] : "_final");
-
-                                    // Create a stage-specific label for the output file
-                                    string outputLabel;
-                                    if (stageNameOverride is null)
-                                        outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
-                                    else
-                                        outputLabel = "_" + stageNameOverride;
-
-                                    // Create a new fracture network object
-                                    FractureNetwork fractureNetwork;
-                                    using (ITransaction transactionCreateFractureNetwork = DataManager.NewTransaction())
+                                    // Loop through each stage in the fracture growth
+                                    int stageNumber = 1;
+                                    int NoStages = ModelGrid.DFNGrowthStages.Count;
+                                    foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                     {
-                                        // Get handle to parent object and lock database
-                                        ModelCollection GridColl = PetrelGrid.ModelCollection;
-                                        transactionCreateFractureNetwork.Lock(GridColl);
+                                        string stageNameOverride = null;
+                                        if (IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime)
+                                            stageNameOverride = (stageNumber <= OutputStageNameOverride.Count ? OutputStageNameOverride[stageNumber - 1] : "_final");
+
+                                        // Create a stage-specific label for the output file
+                                        string outputLabel;
+                                        if (stageNameOverride is null)
+                                            outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
+                                        else
+                                            outputLabel = "_" + stageNameOverride;
 
                                         // Create a new fracture network object
-                                        fractureNetwork = GridColl.CreateFractureNetwork(ModelName + outputLabel, Domain.ELEVATION_DEPTH);
-
-                                        // Add creation event to the DFN object history
-                                        HistoryEntry dfnCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
-                                        IHistoryInfoEditor dfnHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(fractureNetwork);
-                                        dfnHistoryInfoEditor.AddHistoryEntry(dfnCreationEvent);
-
-                                        // Write the input parameters for the model run to the fracture network object comments string
-                                        fractureNetwork.Comments = generalInputParams + explicitInputParams;
-
-                                        // Commit the changes to the Petrel database
-                                        transactionCreateFractureNetwork.Commit();
-                                    }
-
-                                    // Write the model time of the intermediate DFN to the Petrel log window
-                                    PetrelLogger.InfoOutputWindow(string.Format("DFN realisation {0} at time {1} {2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
-
-                                    // Create the fracture objects
-                                    using (ITransaction transactionCreateFractures = DataManager.NewTransaction())
-                                    {
-                                        // Lock the database
-                                        transactionCreateFractures.Lock(fractureNetwork);
-
-                                        // Loop through all the microfractures in the DFN
-                                        foreach (MicrofractureXYZ uF in DFN.GlobalDFNMicrofractures)
+                                        FractureNetwork fractureNetwork;
+                                        using (ITransaction transactionCreateFractureNetwork = DataManager.NewTransaction())
                                         {
-                                            // Check if calculation has been aborted
-                                            if (progressBarWrapper.abortCalculation())
+                                            // Get handle to parent object and lock database
+                                            ModelCollection GridColl = PetrelGrid.ModelCollection;
+                                            transactionCreateFractureNetwork.Lock(GridColl);
+
+                                            // Create a new fracture network object
+                                            fractureNetwork = GridColl.CreateFractureNetwork(ModelName + outputLabel, Domain.ELEVATION_DEPTH);
+
+                                            // Add creation event to the DFN object history
+                                            HistoryEntry dfnCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
+                                            IHistoryInfoEditor dfnHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(fractureNetwork);
+                                            dfnHistoryInfoEditor.AddHistoryEntry(dfnCreationEvent);
+
+                                            // Write the input parameters for the model run to the fracture network object comments string
+                                            fractureNetwork.Comments = generalInputParams + explicitInputParams;
+
+                                            // Commit the changes to the Petrel database
+                                            transactionCreateFractureNetwork.Commit();
+                                        }
+
+                                        // Write the model time of the intermediate DFN to the Petrel log window
+                                        PetrelLogger.InfoOutputWindow(string.Format("DFN realisation {0} at time {1} {2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
+
+                                        // Create the fracture objects
+                                        using (ITransaction transactionCreateFractures = DataManager.NewTransaction())
+                                        {
+                                            // Lock the database
+                                            transactionCreateFractures.Lock(fractureNetwork);
+
+                                            // Loop through all the microfractures in the DFN
+                                            foreach (MicrofractureXYZ uF in DFN.GlobalDFNMicrofractures)
                                             {
-                                                // Clean up any resources or data
-                                                break;
-                                            }
-
-                                            // Get the microfracture set
-                                            int uF_set = uF.SetIndex;
-
-                                            // Get a list of cornerpoints around the circumference of the fracture, as PointXYZ objects
-                                            List<PointXYZ> CornerPoints = uF.GetFractureCornerpointsInXYZ(Number_uF_Points);
-
-                                            if (CreateTriangularFractureSegments)
-                                            {
-                                                try
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
                                                 {
-                                                    // Get a reference to the centre of the fracture as a PointXYZ object
-                                                    PointXYZ CP1 = uF.CentrePoint;
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
 
-                                                    // Loop through each cornerpoint creating a new triangular element
-                                                    for (int cornerPointNo = 0; cornerPointNo < Number_uF_Points; cornerPointNo++)
+                                                // Get the microfracture set
+                                                int uF_set = uF.SetIndex;
+
+                                                // Get a list of cornerpoints around the circumference of the fracture, as PointXYZ objects
+                                                List<PointXYZ> CornerPoints = uF.GetFractureCornerpointsInXYZ(Number_uF_Points);
+
+                                                if (CreateTriangularFractureSegments)
+                                                {
+                                                    try
+                                                    {
+                                                        // Get a reference to the centre of the fracture as a PointXYZ object
+                                                        PointXYZ CP1 = uF.CentrePoint;
+
+                                                        // Loop through each cornerpoint creating a new triangular element
+                                                        for (int cornerPointNo = 0; cornerPointNo < Number_uF_Points; cornerPointNo++)
+                                                        {
+                                                            // Create a collection of Petrel Point3 objects
+                                                            List<Point3> Petrel_CornerPoints = new List<Point3>();
+
+                                                            // Add the centrepoint, the current cornerpoint and the next cornerpoint to the Petrel point collection
+                                                            PointXYZ CP2 = CornerPoints[cornerPointNo];
+                                                            PointXYZ CP3 = (cornerPointNo < Number_uF_Points - 1 ? CornerPoints[cornerPointNo + 1] : CornerPoints[0]);
+                                                            Petrel_CornerPoints.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
+                                                            Petrel_CornerPoints.Add(new Point3(CP2.X, CP2.Y, CP2.Z));
+                                                            Petrel_CornerPoints.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
+
+                                                            // Create a new fracture patch object
+                                                            FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
+
+                                                            // Assign it to the correct set, if required
+                                                            if (assignOrientationSets)
+                                                                Petrel_FractureSegment.FractureSetValue = (uF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                        }
+                                                    }
+                                                    catch (Exception e)
+                                                    {
+                                                        string errorMessage = string.Format("Exception thrown when writing microfracture:");
+                                                        foreach (PointXYZ CornerPoint in CornerPoints)
+                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                        PetrelLogger.InfoOutputWindow(errorMessage);
+                                                        PetrelLogger.InfoOutputWindow(e.Message);
+                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                    }
+
+                                                }
+                                                else
+                                                {
+                                                    try
                                                     {
                                                         // Create a collection of Petrel Point3 objects
                                                         List<Point3> Petrel_CornerPoints = new List<Point3>();
 
-                                                        // Add the centrepoint, the current cornerpoint and the next cornerpoint to the Petrel point collection
-                                                        PointXYZ CP2 = CornerPoints[cornerPointNo];
-                                                        PointXYZ CP3 = (cornerPointNo < Number_uF_Points - 1 ? CornerPoints[cornerPointNo + 1] : CornerPoints[0]);
-                                                        Petrel_CornerPoints.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
-                                                        Petrel_CornerPoints.Add(new Point3(CP2.X, CP2.Y, CP2.Z));
-                                                        Petrel_CornerPoints.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
+                                                        // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
+                                                        foreach (PointXYZ CornerPoint in CornerPoints)
+                                                            Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
 
                                                         // Create a new fracture patch object
                                                         FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
@@ -6296,165 +6373,227 @@ namespace DFMGenerator_Ocean
                                                         if (assignOrientationSets)
                                                             Petrel_FractureSegment.FractureSetValue = (uF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                     }
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing microfracture:");
-                                                    foreach (PointXYZ CornerPoint in CornerPoints)
-                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                }
-
-                                            }
-                                            else
-                                            {
-                                                try
-                                                {
-                                                    // Create a collection of Petrel Point3 objects
-                                                    List<Point3> Petrel_CornerPoints = new List<Point3>();
-
-                                                    // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
-                                                    foreach (PointXYZ CornerPoint in CornerPoints)
-                                                        Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
-
-                                                    // Create a new fracture patch object
-                                                    FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
-
-                                                    // Assign it to the correct set, if required
-                                                    if (assignOrientationSets)
-                                                        Petrel_FractureSegment.FractureSetValue = (uF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing microfracture:");
-                                                    foreach (PointXYZ CornerPoint in CornerPoints)
-                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                }
-                                            }
-
-                                            // Update progress bar
-                                            progressBarWrapper.UpdateProgress(++noFracturesGenerated);
-                                        }
-
-                                        // Loop through all the macrofractures in the DFN
-                                        foreach (MacrofractureXYZ MF in DFN.GlobalDFNMacrofractures)
-                                        {
-                                            // Check if calculation has been aborted
-                                            if (progressBarWrapper.abortCalculation())
-                                            {
-                                                // Clean up any resources or data
-                                                break;
-                                            }
-
-                                            // Get the macrofracture set
-                                            int MF_set = MF.SetIndex;
-
-                                            // Loop through each macrofracture segment
-                                            foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
-                                            {
-                                                int noSegments = MF.SegmentCornerPoints[dir].Count;
-                                                for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
-                                                {
-                                                    // Check if it is a zero length segment; if so, move on to the next segment
-                                                    if (MF.ZeroLengthSegments[dir][segmentNo])
-                                                        continue;
-
-                                                    // Get a reference to the cornerpoint list for the segment
-                                                    List<PointXYZ> segment = MF.SegmentCornerPoints[dir][segmentNo];
-
-                                                    if (CreateTriangularFractureSegments)
+                                                    catch (Exception e)
                                                     {
-                                                        try
+                                                        string errorMessage = string.Format("Exception thrown when writing microfracture:");
+                                                        foreach (PointXYZ CornerPoint in CornerPoints)
+                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                        PetrelLogger.InfoOutputWindow(errorMessage);
+                                                        PetrelLogger.InfoOutputWindow(e.Message);
+                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                    }
+                                                }
+
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                            }
+
+                                            // Loop through all the macrofractures in the DFN
+                                            foreach (MacrofractureXYZ MF in DFN.GlobalDFNMacrofractures)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get the macrofracture set
+                                                int MF_set = MF.SetIndex;
+
+                                                // Loop through each macrofracture segment
+                                                foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+                                                {
+                                                    int noSegments = MF.SegmentCornerPoints[dir].Count;
+                                                    for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
+                                                    {
+                                                        // Check if it is a zero length segment; if so, move on to the next segment
+                                                        if (MF.ZeroLengthSegments[dir][segmentNo])
+                                                            continue;
+
+                                                        // Get a reference to the cornerpoint list for the segment
+                                                        List<PointXYZ> segment = MF.SegmentCornerPoints[dir][segmentNo];
+
+                                                        if (CreateTriangularFractureSegments)
                                                         {
-                                                            // Create two new collections of Petrel Point3 objects
-                                                            List<Point3> Petrel_CornerPoints1 = new List<Point3>();
-                                                            List<Point3> Petrel_CornerPoints2 = new List<Point3>();
+                                                            try
+                                                            {
+                                                                // Create two new collections of Petrel Point3 objects
+                                                                List<Point3> Petrel_CornerPoints1 = new List<Point3>();
+                                                                List<Point3> Petrel_CornerPoints2 = new List<Point3>();
 
-                                                            // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the correct Petrel point collection
-                                                            // Since the four cornerpoints in the original list are arranged in order moving around the edge of the fracture segment, we will use the first, second and third points for the first triangular element
-                                                            // and the third, fourth and first points for the second triangular element
-                                                            PointXYZ CP1 = segment[0];
-                                                            PointXYZ CP2 = segment[1];
-                                                            PointXYZ CP3 = segment[2];
-                                                            PointXYZ CP4 = segment[3];
+                                                                // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the correct Petrel point collection
+                                                                // Since the four cornerpoints in the original list are arranged in order moving around the edge of the fracture segment, we will use the first, second and third points for the first triangular element
+                                                                // and the third, fourth and first points for the second triangular element
+                                                                PointXYZ CP1 = segment[0];
+                                                                PointXYZ CP2 = segment[1];
+                                                                PointXYZ CP3 = segment[2];
+                                                                PointXYZ CP4 = segment[3];
 #if DEBUG_FRAC_OUTPUT
-                                                            foreach (PointXYZ point in new PointXYZ[] { CP1, CP2, CP3, CP4 })
-                                                            {
-                                                                if (point.X < minX) point.X = minX;
-                                                                if (point.Y < minY) point.Y = minY;
-                                                                if (point.Z < minZ) point.Z = minZ;
-                                                                if (point.X > maxX) point.X = maxX;
-                                                                if (point.Y > maxY) point.Y = maxY;
-                                                                if (point.Z > maxZ) point.Z = maxZ;
-                                                            }
+                                                                foreach (PointXYZ point in new PointXYZ[] { CP1, CP2, CP3, CP4 })
+                                                                {
+                                                                    if (point.X < minX) point.X = minX;
+                                                                    if (point.Y < minY) point.Y = minY;
+                                                                    if (point.Z < minZ) point.Z = minZ;
+                                                                    if (point.X > maxX) point.X = maxX;
+                                                                    if (point.Y > maxY) point.Y = maxY;
+                                                                    if (point.Z > maxZ) point.Z = maxZ;
+                                                                }
 #endif
-                                                            Petrel_CornerPoints1.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
-                                                            Petrel_CornerPoints1.Add(new Point3(CP2.X, CP2.Y, CP2.Z));
-                                                            Petrel_CornerPoints1.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
-                                                            Petrel_CornerPoints2.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
-                                                            Petrel_CornerPoints2.Add(new Point3(CP4.X, CP4.Y, CP4.Z));
-                                                            Petrel_CornerPoints2.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
+                                                                Petrel_CornerPoints1.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
+                                                                Petrel_CornerPoints1.Add(new Point3(CP2.X, CP2.Y, CP2.Z));
+                                                                Petrel_CornerPoints1.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
+                                                                Petrel_CornerPoints2.Add(new Point3(CP3.X, CP3.Y, CP3.Z));
+                                                                Petrel_CornerPoints2.Add(new Point3(CP4.X, CP4.Y, CP4.Z));
+                                                                Petrel_CornerPoints2.Add(new Point3(CP1.X, CP1.Y, CP1.Z));
 
-                                                            // Create two new fracture patch objects
-                                                            FracturePatch Petrel_FractureSegment1 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints1);
-                                                            FracturePatch Petrel_FractureSegment2 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints2);
+                                                                // Create two new fracture patch objects
+                                                                FracturePatch Petrel_FractureSegment1 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints1);
+                                                                FracturePatch Petrel_FractureSegment2 = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints2);
 
-                                                            // Assign them to the correct set, if required
-                                                            if (assignOrientationSets)
+                                                                // Assign them to the correct set, if required
+                                                                if (assignOrientationSets)
+                                                                {
+                                                                    Petrel_FractureSegment1.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                                    Petrel_FractureSegment2.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                                }
+                                                            }
+                                                            catch (Exception e)
                                                             {
-                                                                Petrel_FractureSegment1.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
-                                                                Petrel_FractureSegment2.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                                string errorMessage = string.Format("Exception thrown when writing macrofracture segment:");
+                                                                foreach (PointXYZ CornerPoint in segment)
+                                                                    errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
                                                             }
                                                         }
-                                                        catch (Exception e)
+                                                        else
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing macrofracture segment:");
-                                                            foreach (PointXYZ CornerPoint in segment)
-                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            try
+                                                            {
+                                                                // Create a collection of Petrel Point3 objects
+                                                                List<Point3> Petrel_CornerPoints = new List<Point3>();
+
+                                                                // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
+                                                                foreach (PointXYZ CornerPoint in segment)
+                                                                {
+#if DEBUG_FRAC_OUTPUT
+                                                                    {
+                                                                        if (CornerPoint.X < minX) CornerPoint.X = minX;
+                                                                        if (CornerPoint.Y < minY) CornerPoint.Y = minY;
+                                                                        if (CornerPoint.Z < minZ) CornerPoint.Z = minZ;
+                                                                        if (CornerPoint.X > maxX) CornerPoint.X = maxX;
+                                                                        if (CornerPoint.Y > maxY) CornerPoint.Y = maxY;
+                                                                        if (CornerPoint.Z > maxZ) CornerPoint.Z = maxZ;
+                                                                    }
+#endif
+                                                                    Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
+                                                                }
+
+                                                                // Create a new fracture patch object
+                                                                FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
+
+                                                                // Assign it to the correct set, if required
+                                                                if (assignOrientationSets)
+                                                                    Petrel_FractureSegment.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing macrofracture segment:");
+                                                                foreach (PointXYZ CornerPoint in segment)
+                                                                    errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
                                                         }
                                                     }
-                                                    else
+
+                                                }
+
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                            }
+
+                                            // Loop through all the unconfined fractures in the DFN
+                                            foreach (UnconfinedFractureXYZ UCF in DFN.GlobalDFNUnconfinedFractures)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get the unconfined fracture set
+                                                int UCF_set = UCF.SetIndex;
+
+                                                if (CreateTriangularFractureSegments)
+                                                {
+                                                    // Get a list of triangular elements comprising this fracture
+                                                    List<PointXYZ[]> elements = UCF.GetTriangularFractureSegmentsInXYZ();
+
+                                                    // Loop through each element in the list
+                                                    // Each element will be output as a separate fracture
+                                                    foreach (PointXYZ[] element in elements)
                                                     {
                                                         try
                                                         {
                                                             // Create a collection of Petrel Point3 objects
                                                             List<Point3> Petrel_CornerPoints = new List<Point3>();
 
-                                                            // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
-                                                            foreach (PointXYZ CornerPoint in segment)
-                                                            {
-#if DEBUG_FRAC_OUTPUT
-                                                                {
-                                                                    if (CornerPoint.X < minX) CornerPoint.X = minX;
-                                                                    if (CornerPoint.Y < minY) CornerPoint.Y = minY;
-                                                                    if (CornerPoint.Z < minZ) CornerPoint.Z = minZ;
-                                                                    if (CornerPoint.X > maxX) CornerPoint.X = maxX;
-                                                                    if (CornerPoint.Y > maxY) CornerPoint.Y = maxY;
-                                                                    if (CornerPoint.Z > maxZ) CornerPoint.Z = maxZ;
-                                                                }
-#endif
-                                                                Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
-                                                            }
+                                                            // Add each cornerpoint in the element to the Petrel point collection
+                                                            foreach (PointXYZ CP in element)
+                                                                Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
 
                                                             // Create a new fracture patch object
                                                             FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
 
                                                             // Assign it to the correct set, if required
                                                             if (assignOrientationSets)
-                                                                Petrel_FractureSegment.FractureSetValue = (MF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                                Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing macrofracture segment:");
-                                                            foreach (PointXYZ CornerPoint in segment)
+                                                            string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
+                                                            foreach (PointXYZ CornerPoint in element)
+                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // Get a list of triangular elements comprising this fracture
+                                                    List<PointXYZ[]> elements = UCF.GetFractureSegmentsInXYZ();
+
+                                                    // Loop through each element in the list
+                                                    // Each element will be output as a separate fracture
+                                                    foreach (PointXYZ[] element in elements)
+                                                    {
+                                                        try
+                                                        {
+                                                            // Create a collection of Petrel Point3 objects
+                                                            List<Point3> Petrel_CornerPoints = new List<Point3>();
+
+                                                            // Add each cornerpoint in the element to the Petrel point collection
+                                                            foreach (PointXYZ CP in element)
+                                                                Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
+
+                                                            // Create a new fracture patch object
+                                                            FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
+
+                                                            // Assign it to the correct set, if required
+                                                            if (assignOrientationSets)
+                                                                Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
+                                                            foreach (PointXYZ CornerPoint in element)
                                                                 errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
                                                             PetrelLogger.InfoOutputWindow(e.Message);
@@ -6463,180 +6602,114 @@ namespace DFMGenerator_Ocean
                                                     }
                                                 }
 
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
                                             }
 
-                                            // Update progress bar
-                                            progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                            // Commit the changes to the Petrel database
+                                            transactionCreateFractures.Commit();
                                         }
 
-                                        // Loop through all the unconfined fractures in the DFN
-                                        foreach (UnconfinedFractureXYZ UCF in DFN.GlobalDFNUnconfinedFractures)
+                                        // Assign the fracture properties
+                                        using (ITransaction transactionAssignFractureProperties = DataManager.NewTransaction())
                                         {
-                                            // Check if calculation has been aborted
-                                            if (progressBarWrapper.abortCalculation())
+                                            // Get handle to the appropriate fracture properties
+                                            // At present we will only write fracture aperture, permeability and compressibility data - this could be expanded to include total length (not segment length), connectivity and nucleation time
+                                            FracturePatchProperty fractureAperture = FracturePatchProperty.NullObject;
+                                            FracturePatchProperty fracturePermeability = FracturePatchProperty.NullObject;
+                                            //FracturePatchProperty fractureCompressibility = FracturePatchProperty.NullObject;
+                                            FracturePatchPropertyType aperture = WellKnownFracturePatchPropertyTypes.Aperture;
+                                            FracturePatchPropertyType permeability = WellKnownFracturePatchPropertyTypes.Permeability;
+                                            //FracturePatchPropertyType compressibility = WellKnownFracturePatchPropertyTypes.Compressibility;
+                                            if (fractureNetwork.HasWellKnownProperty(aperture))
                                             {
-                                                // Clean up any resources or data
-                                                break;
-                                            }
-
-                                            // Get the unconfined fracture set
-                                            int UCF_set = UCF.SetIndex;
-
-                                            if (CreateTriangularFractureSegments)
-                                            {
-                                                // Get a list of triangular elements comprising this fracture
-                                                List<PointXYZ[]> elements = UCF.GetTriangularFractureSegmentsInXYZ();
-
-                                                // Loop through each element in the list
-                                                // Each element will be output as a separate fracture
-                                                foreach (PointXYZ[] element in elements)
-                                                {
-                                                    try
-                                                    {
-                                                        // Create a collection of Petrel Point3 objects
-                                                        List<Point3> Petrel_CornerPoints = new List<Point3>();
-
-                                                        // Add each cornerpoint in the element to the Petrel point collection
-                                                        foreach (PointXYZ CP in element)
-                                                            Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
-
-                                                        // Create a new fracture patch object
-                                                        FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
-
-                                                        // Assign it to the correct set, if required
-                                                        if (assignOrientationSets)
-                                                            Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
-                                                        foreach (PointXYZ CornerPoint in element)
-                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                        PetrelLogger.InfoOutputWindow(errorMessage);
-                                                        PetrelLogger.InfoOutputWindow(e.Message);
-                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                    }
-                                                }
+                                                fractureAperture = fractureNetwork.GetWellKnownProperty(aperture);
+                                                // Lock the database
+                                                transactionAssignFractureProperties.Lock(fractureAperture);
                                             }
                                             else
                                             {
-                                                // Get a list of triangular elements comprising this fracture
-                                                List<PointXYZ[]> elements = UCF.GetFractureSegmentsInXYZ();
+                                                // Lock the database
+                                                transactionAssignFractureProperties.Lock(fractureNetwork);
+                                                fractureAperture = fractureNetwork.CreateWellKnownProperty(aperture);
+                                            }
+                                            if (fractureNetwork.HasWellKnownProperty(permeability))
+                                            {
+                                                fracturePermeability = fractureNetwork.GetWellKnownProperty(permeability);
+                                                // Lock the database
+                                                transactionAssignFractureProperties.Lock(fracturePermeability);
+                                            }
+                                            else
+                                            {
+                                                // Lock the database
+                                                transactionAssignFractureProperties.Lock(fractureNetwork);
+                                                fracturePermeability = fractureNetwork.CreateWellKnownProperty(permeability);
+                                            }
+                                            /*if (fractureNetwork.HasWellKnownProperty(compressibility))
+                                            {
+                                                fractureCompressibility = fractureNetwork.GetWellKnownProperty(compressibility);
+                                                // Lock the database
+                                                transactionAssignFractureProperties.Lock(fractureCompressibility);
+                                            }
+                                            else
+                                            {
+                                                // Lock the database
+                                                transactionAssignFractureProperties.Lock(fractureNetwork);
+                                                fractureCompressibility = fractureNetwork.CreateWellKnownProperty(compressibility);
+                                            }*/
 
-                                                // Loop through each element in the list
-                                                // Each element will be output as a separate fracture
-                                                foreach (PointXYZ[] element in elements)
+                                            // Create a counter for the fracture patches
+                                            int PatchNo = 0;
+                                            int NoPatches = fractureNetwork.FracturePatchCount;
+
+                                            // Loop through all the microfractures in the DFN
+                                            foreach (MicrofractureXYZ uF in DFN.GlobalDFNMicrofractures)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
                                                 {
-                                                    try
-                                                    {
-                                                        // Create a collection of Petrel Point3 objects
-                                                        List<Point3> Petrel_CornerPoints = new List<Point3>();
-
-                                                        // Add each cornerpoint in the element to the Petrel point collection
-                                                        foreach (PointXYZ CP in element)
-                                                            Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
-
-                                                        // Create a new fracture patch object
-                                                        FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
-
-                                                        // Assign it to the correct set, if required
-                                                        if (assignOrientationSets)
-                                                            Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
-                                                        foreach (PointXYZ CornerPoint in element)
-                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                        PetrelLogger.InfoOutputWindow(errorMessage);
-                                                        PetrelLogger.InfoOutputWindow(e.Message);
-                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                    }
+                                                    // Clean up any resources or data
+                                                    break;
                                                 }
-                                            }
 
-                                            // Update progress bar
-                                            progressBarWrapper.UpdateProgress(++noFracturesGenerated);
-                                        }
+                                                // Get the fracture aperture, permeability and compressibility
+                                                double uF_Aperture = uF.MeanAperture;
+                                                double uF_Permeability = Math.Pow(uF_Aperture, 2) / 12;
+                                                //double uF_Compressibility = uF.Compressibility;
 
-                                        // Commit the changes to the Petrel database
-                                        transactionCreateFractures.Commit();
-                                    }
+                                                if (CreateTriangularFractureSegments)
+                                                {
+                                                    // Get a reference to the centre of the fracture as a PointXYZ object
+                                                    //PointXYZ CP1 = uF.CentrePoint;
 
-                                    // Assign the fracture properties
-                                    using (ITransaction transactionAssignFractureProperties = DataManager.NewTransaction())
-                                    {
-                                        // Get handle to the appropriate fracture properties
-                                        // At present we will only write fracture aperture, permeability and compressibility data - this could be expanded to include total length (not segment length), connectivity and nucleation time
-                                        FracturePatchProperty fractureAperture = FracturePatchProperty.NullObject;
-                                        FracturePatchProperty fracturePermeability = FracturePatchProperty.NullObject;
-                                        //FracturePatchProperty fractureCompressibility = FracturePatchProperty.NullObject;
-                                        FracturePatchPropertyType aperture = WellKnownFracturePatchPropertyTypes.Aperture;
-                                        FracturePatchPropertyType permeability = WellKnownFracturePatchPropertyTypes.Permeability;
-                                        //FracturePatchPropertyType compressibility = WellKnownFracturePatchPropertyTypes.Compressibility;
-                                        if (fractureNetwork.HasWellKnownProperty(aperture))
-                                        {
-                                            fractureAperture = fractureNetwork.GetWellKnownProperty(aperture);
-                                            // Lock the database
-                                            transactionAssignFractureProperties.Lock(fractureAperture);
-                                        }
-                                        else
-                                        {
-                                            // Lock the database
-                                            transactionAssignFractureProperties.Lock(fractureNetwork);
-                                            fractureAperture = fractureNetwork.CreateWellKnownProperty(aperture);
-                                        }
-                                        if (fractureNetwork.HasWellKnownProperty(permeability))
-                                        {
-                                            fracturePermeability = fractureNetwork.GetWellKnownProperty(permeability);
-                                            // Lock the database
-                                            transactionAssignFractureProperties.Lock(fracturePermeability);
-                                        }
-                                        else
-                                        {
-                                            // Lock the database
-                                            transactionAssignFractureProperties.Lock(fractureNetwork);
-                                            fracturePermeability = fractureNetwork.CreateWellKnownProperty(permeability);
-                                        }
-                                        /*if (fractureNetwork.HasWellKnownProperty(compressibility))
-                                        {
-                                            fractureCompressibility = fractureNetwork.GetWellKnownProperty(compressibility);
-                                            // Lock the database
-                                            transactionAssignFractureProperties.Lock(fractureCompressibility);
-                                        }
-                                        else
-                                        {
-                                            // Lock the database
-                                            transactionAssignFractureProperties.Lock(fractureNetwork);
-                                            fractureCompressibility = fractureNetwork.CreateWellKnownProperty(compressibility);
-                                        }*/
+                                                    // Loop through each cornerpoint creating a new triangular element
+                                                    for (int cornerPointNo = 0; cornerPointNo < Number_uF_Points; cornerPointNo++)
+                                                    {
+                                                        // Assign the appropriate fracture properties to the new patch object
+                                                        try
+                                                        {
+                                                            if (PatchNo < NoPatches)
+                                                            {
+                                                                fractureAperture[PatchNo].Value = uF_Aperture;
+                                                                fracturePermeability[PatchNo].Value = uF_Permeability;
+                                                                //if (!double.IsNaN(uF_Compressibility))
+                                                                //    fractureCompressibility[PatchNo].Value = uF_Compressibility;
+                                                            }
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing properties to microfracture patch {0}:", PatchNo);
+                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", uF_Aperture, uF_Permeability);
+                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", uF_Aperture, uF_Permeability, uF_Compressibility);
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+                                                        PatchNo++;
+                                                    }
 
-                                        // Create a counter for the fracture patches
-                                        int PatchNo = 0;
-                                        int NoPatches = fractureNetwork.FracturePatchCount;
-
-                                        // Loop through all the microfractures in the DFN
-                                        foreach (MicrofractureXYZ uF in DFN.GlobalDFNMicrofractures)
-                                        {
-                                            // Check if calculation has been aborted
-                                            if (progressBarWrapper.abortCalculation())
-                                            {
-                                                // Clean up any resources or data
-                                                break;
-                                            }
-
-                                            // Get the fracture aperture, permeability and compressibility
-                                            double uF_Aperture = uF.MeanAperture;
-                                            double uF_Permeability = Math.Pow(uF_Aperture, 2) / 12;
-                                            //double uF_Compressibility = uF.Compressibility;
-
-                                            if (CreateTriangularFractureSegments)
-                                            {
-                                                // Get a reference to the centre of the fracture as a PointXYZ object
-                                                //PointXYZ CP1 = uF.CentrePoint;
-
-                                                // Loop through each cornerpoint creating a new triangular element
-                                                for (int cornerPointNo = 0; cornerPointNo < Number_uF_Points; cornerPointNo++)
+                                                }
+                                                else
                                                 {
                                                     // Assign the appropriate fracture properties to the new patch object
                                                     try
@@ -6661,178 +6734,9 @@ namespace DFMGenerator_Ocean
                                                     PatchNo++;
                                                 }
 
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
                                             }
-                                            else
-                                            {
-                                                // Assign the appropriate fracture properties to the new patch object
-                                                try
-                                                {
-                                                    if (PatchNo < NoPatches)
-                                                    {
-                                                        fractureAperture[PatchNo].Value = uF_Aperture;
-                                                        fracturePermeability[PatchNo].Value = uF_Permeability;
-                                                        //if (!double.IsNaN(uF_Compressibility))
-                                                        //    fractureCompressibility[PatchNo].Value = uF_Compressibility;
-                                                    }
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing properties to microfracture patch {0}:", PatchNo);
-                                                    errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", uF_Aperture, uF_Permeability);
-                                                    //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", uF_Aperture, uF_Permeability, uF_Compressibility);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                }
-                                                PatchNo++;
-                                            }
-
-                                            // Update progress bar
-                                            progressBarWrapper.UpdateProgress(++noFracturesGenerated);
-                                        }
-
-                                        // Loop through all the macrofractures in the DFN
-                                        foreach (MacrofractureXYZ MF in DFN.GlobalDFNMacrofractures)
-                                        {
-                                            // Check if calculation has been aborted
-                                            if (progressBarWrapper.abortCalculation())
-                                            {
-                                                // Clean up any resources or data
-                                                break;
-                                            }
-
-                                            // Loop through each macrofracture segment
-                                            foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
-                                            {
-                                                int noSegments = MF.SegmentCornerPoints[dir].Count;
-                                                for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
-                                                {
-                                                    // Check if it is a zero length segment; if so, move on to the next segment
-                                                    if (MF.ZeroLengthSegments[dir][segmentNo])
-                                                        continue;
-
-                                                    // Get the aperture, permeability and compressibility of the fracture segment
-                                                    double MF_Aperture = MF.SegmentMeanAperture[dir][segmentNo];
-                                                    double MF_Permeability = Math.Pow(MF_Aperture, 2) / 12;
-                                                    //double MF_Compressibility = MF.SegmentCompressibility[dir][segmentNo];
-
-                                                    if (CreateTriangularFractureSegments)
-                                                    {
-                                                        // Assign the appropriate fracture properties to the two new patch objects
-                                                        try
-                                                        {
-                                                            if (PatchNo < NoPatches)
-                                                            {
-                                                                fractureAperture[PatchNo].Value = MF_Aperture;
-                                                                fracturePermeability[PatchNo].Value = MF_Permeability;
-                                                                //if (!double.IsNaN(MF_Compressibility))
-                                                                //    fractureCompressibility[PatchNo].Value = MF_Compressibility;
-
-                                                            }
-                                                            if (PatchNo + 1 < NoPatches)
-                                                            {
-                                                                fractureAperture[PatchNo + 1].Value = MF_Aperture;
-                                                                fracturePermeability[PatchNo + 1].Value = MF_Permeability;
-                                                                //if (!double.IsNaN(MF_Compressibility))
-                                                                //    fractureCompressibility[PatchNo + 1].Value = MF_Compressibility;
-
-                                                            }
-                                                        }
-                                                        catch (Exception e)
-                                                        {
-                                                            string errorMessage = string.Format("Exception thrown when writing properties to macrofracture patch {0}:", PatchNo);
-                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", MF_Aperture, MF_Permeability);
-                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", MF_Aperture, MF_Permeability, MF_Compressibility);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                        }
-                                                        PatchNo += 2;
-                                                    }
-                                                    else
-                                                    {
-                                                        // Assign the appropriate fracture properties to the new patch object
-                                                        try
-                                                        {
-                                                            if (PatchNo < NoPatches)
-                                                            {
-                                                                fractureAperture[PatchNo].Value = MF_Aperture;
-                                                                fracturePermeability[PatchNo].Value = MF_Permeability;
-                                                                //if (!double.IsNaN(MF_Compressibility))
-                                                                //    fractureCompressibility[PatchNo].Value = MF_Compressibility;
-                                                            }
-                                                        }
-                                                        catch (Exception e)
-                                                        {
-                                                            string errorMessage = string.Format("Exception thrown when writing properties to macrofracture patch {0}:", PatchNo);
-                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", MF_Aperture, MF_Permeability);
-                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", MF_Aperture, MF_Permeability, MF_Compressibility);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                        }
-                                                        PatchNo++;
-                                                    }
-                                                }
-
-                                            }
-
-                                            // Update progress bar
-                                            progressBarWrapper.UpdateProgress(++noFracturesGenerated);
-                                        }
-
-                                        // Commit the changes to the Petrel database
-                                        transactionAssignFractureProperties.Commit();
-                                    }
-
-                                    // Update the stage number
-                                    stageNumber++;
-                                }
-
-                                // If required, create fracture centrelines as polylines
-                                if (OutputCentrepoints)
-                                {
-                                    // Create a new collection for the polyline output
-                                    Collection CentrelineCollection = Collection.NullObject;
-                                    using (ITransaction transactionCreateCentrelineCollection = DataManager.NewTransaction())
-                                    {
-                                        // Get handle to project and lock database
-                                        Project project = PetrelProject.PrimaryProject;
-                                        transactionCreateCentrelineCollection.Lock(project);
-
-                                        // Create a new collection for the polyline set
-                                        CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
-
-                                        // Write the input parameters for the model run to the collection comments string
-                                        CentrelineCollection.Comments = generalInputParams + explicitInputParams;
-
-                                        // Commit the changes to the Petrel database
-                                        transactionCreateCentrelineCollection.Commit();
-                                    }
-
-                                    // Loop through each stage in the fracture growth
-                                    stageNumber = 1;
-                                    foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
-                                    {
-                                        // Create a stage-specific label for the output file
-                                        string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
-
-                                        using (ITransaction transactionCreateCentrelines = DataManager.NewTransaction())
-                                        {
-                                            // Lock database
-                                            transactionCreateCentrelines.Lock(CentrelineCollection);
-
-                                            // Create a new polyline set and set to the depth domain
-                                            PolylineSet Centrelines = CentrelineCollection.CreatePolylineSet("Fracture_Centrelines" + outputLabel);
-                                            Centrelines.Domain = Domain.ELEVATION_DEPTH;
-
-                                            // Add creation event to the polyline set object history
-                                            HistoryEntry centrelinesCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
-                                            IHistoryInfoEditor centrelinesHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(Centrelines);
-                                            centrelinesHistoryInfoEditor.AddHistoryEntry(centrelinesCreationEvent);
-
-                                            // Create a list of Petrel polylines
-                                            List<Polyline3> pline_list = new List<Polyline3>();
 
                                             // Loop through all the macrofractures in the DFN
                                             foreach (MacrofractureXYZ MF in DFN.GlobalDFNMacrofractures)
@@ -6844,136 +6748,279 @@ namespace DFMGenerator_Ocean
                                                     break;
                                                 }
 
-                                                // Get the fracture centreline
-                                                List<PointXYZ> grid_Centreline = MF.SegmentCentrePoints;
+                                                // Loop through each macrofracture segment
+                                                foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+                                                {
+                                                    int noSegments = MF.SegmentCornerPoints[dir].Count;
+                                                    for (int segmentNo = 0; segmentNo < noSegments; segmentNo++)
+                                                    {
+                                                        // Check if it is a zero length segment; if so, move on to the next segment
+                                                        if (MF.ZeroLengthSegments[dir][segmentNo])
+                                                            continue;
 
-                                                // Create a new Petrel polyline from the centreline and add it to the polyline list
-                                                try
-                                                {
-                                                    List<Point3> newpline = new List<Point3>();
-                                                    foreach (PointXYZ grid_Point in grid_Centreline)
-                                                        newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Z));
-                                                    pline_list.Add(new Polyline3(newpline));
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    string errorMessage = string.Format("Exception thrown when writing centreline:");
-                                                    foreach (PointXYZ grid_Point in grid_Centreline)
-                                                        errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Z);
-                                                    PetrelLogger.InfoOutputWindow(errorMessage);
-                                                    PetrelLogger.InfoOutputWindow(e.Message);
-                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        // Get the aperture, permeability and compressibility of the fracture segment
+                                                        double MF_Aperture = MF.SegmentMeanAperture[dir][segmentNo];
+                                                        double MF_Permeability = Math.Pow(MF_Aperture, 2) / 12;
+                                                        //double MF_Compressibility = MF.SegmentCompressibility[dir][segmentNo];
+
+                                                        if (CreateTriangularFractureSegments)
+                                                        {
+                                                            // Assign the appropriate fracture properties to the two new patch objects
+                                                            try
+                                                            {
+                                                                if (PatchNo < NoPatches)
+                                                                {
+                                                                    fractureAperture[PatchNo].Value = MF_Aperture;
+                                                                    fracturePermeability[PatchNo].Value = MF_Permeability;
+                                                                    //if (!double.IsNaN(MF_Compressibility))
+                                                                    //    fractureCompressibility[PatchNo].Value = MF_Compressibility;
+
+                                                                }
+                                                                if (PatchNo + 1 < NoPatches)
+                                                                {
+                                                                    fractureAperture[PatchNo + 1].Value = MF_Aperture;
+                                                                    fracturePermeability[PatchNo + 1].Value = MF_Permeability;
+                                                                    //if (!double.IsNaN(MF_Compressibility))
+                                                                    //    fractureCompressibility[PatchNo + 1].Value = MF_Compressibility;
+
+                                                                }
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing properties to macrofracture patch {0}:", PatchNo);
+                                                                errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", MF_Aperture, MF_Permeability);
+                                                                //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", MF_Aperture, MF_Permeability, MF_Compressibility);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
+                                                            PatchNo += 2;
+                                                        }
+                                                        else
+                                                        {
+                                                            // Assign the appropriate fracture properties to the new patch object
+                                                            try
+                                                            {
+                                                                if (PatchNo < NoPatches)
+                                                                {
+                                                                    fractureAperture[PatchNo].Value = MF_Aperture;
+                                                                    fracturePermeability[PatchNo].Value = MF_Permeability;
+                                                                    //if (!double.IsNaN(MF_Compressibility))
+                                                                    //    fractureCompressibility[PatchNo].Value = MF_Compressibility;
+                                                                }
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing properties to macrofracture patch {0}:", PatchNo);
+                                                                errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", MF_Aperture, MF_Permeability);
+                                                                //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", MF_Aperture, MF_Permeability, MF_Compressibility);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
+                                                            PatchNo++;
+                                                        }
+                                                    }
+
                                                 }
 
                                                 // Update progress bar
                                                 progressBarWrapper.UpdateProgress(++noFracturesGenerated);
                                             }
-
-                                            // Loop through all the unconfined fractures in the DFN
-                                            foreach (UnconfinedFractureXYZ UCF in DFN.GlobalDFNUnconfinedFractures)
-                                            {
-                                                // Check if calculation has been aborted
-                                                if (progressBarWrapper.abortCalculation())
-                                                {
-                                                    // Clean up any resources or data
-                                                    break;
-                                                }
-
-                                                // Get an array of nodes for each ray comprising this fracture
-                                                List<PointXYZ>[] rayNodeArray = UCF.GetRayNodes();
-
-                                                // Loop through each ray
-                                                foreach (List<PointXYZ> rayNodes in rayNodeArray)
-                                               {
-                                                    // Create a new Petrel polyline from the ray node list and add it to the polyline list
-                                                    try
-                                                    {
-                                                        List<Point3> newpline = new List<Point3>();
-                                                        foreach (PointXYZ grid_Point in rayNodes)
-                                                            newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Z));
-                                                        pline_list.Add(new Polyline3(newpline));
-                                                    }
-                                                    catch (Exception e)
-                                                    {
-                                                        string errorMessage = string.Format("Exception thrown when writing ray nodes:");
-                                                        foreach (PointXYZ grid_Point in rayNodes)
-                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Z);
-                                                        PetrelLogger.InfoOutputWindow(errorMessage);
-                                                        PetrelLogger.InfoOutputWindow(e.Message);
-                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                    }
-                                                }
-
-                                                // Update progress bar
-                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
-                                            }
-
-                                            // Add the polyline list to the polyline set
-                                            Centrelines.Polylines = pline_list;
 
                                             // Commit the changes to the Petrel database
-                                            transactionCreateCentrelines.Commit();
+                                            transactionAssignFractureProperties.Commit();
                                         }
 
                                         // Update the stage number
                                         stageNumber++;
                                     }
-                                }
-                            }
-#if DEBUG_FRAC_OUTPUT
-                            // Write cornerpoints of each fracture in the explicit DFN to Petrel project
-                            using (ITransaction trans = DataManager.NewTransaction())
-                            {
-                                // Lock database
-                                Project DFNroot = PetrelProject.PrimaryProject;
-                                trans.Lock(DFNroot);
 
-                                // Create a set of points to compare with the corners of the fracture patches, when debugging
-                                PointSet FractureCorners = DFNroot.CreatePointSet("Fracture corners");
-                                List<Point3> CornersAsPoints = new List<Point3>();
-
-                                // Loop through all the macrofractures in the DFN
-                                foreach (MacrofractureXYZ MF in ModelGrid.CurrentDFN.GlobalDFNMacrofractures)
-                                {
-                                    // Get a nested list of cornerpoints for each segment of the fracture, as PointXYZ objects
-                                    List<List<PointXYZ>> Segments = MF.GetFractureSegmentsInXYZ();
-
-                                    // Loop through each segment in the list supplied
-                                    foreach (List<PointXYZ> Segment in Segments)
+                                    // If required, create fracture centrelines as polylines
+                                    if (OutputCentrepoints)
                                     {
-                                        try
+                                        // Create a new collection for the polyline output
+                                        Collection CentrelineCollection = Collection.NullObject;
+                                        using (ITransaction transactionCreateCentrelineCollection = DataManager.NewTransaction())
                                         {
-                                            // Create a collection of Petrel Point3 objects
-                                            List<Point3> Petrel_CornerPoints = new List<Point3>();
+                                            // Get handle to project and lock database
+                                            Project project = PetrelProject.PrimaryProject;
+                                            transactionCreateCentrelineCollection.Lock(project);
 
-                                            // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
-                                            foreach (PointXYZ CornerPoint in Segment)
-                                                Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
+                                            // Create a new collection for the polyline set
+                                            CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
 
-                                            // Add the cornerpoints to the set of points for comparison with the corners of the fracture patches
-                                            CornersAsPoints.AddRange(Petrel_CornerPoints);
+                                            // Write the input parameters for the model run to the collection comments string
+                                            CentrelineCollection.Comments = generalInputParams + explicitInputParams;
+
+                                            // Commit the changes to the Petrel database
+                                            transactionCreateCentrelineCollection.Commit();
                                         }
-                                        catch (Exception e)
+
+                                        // Loop through each stage in the fracture growth
+                                        stageNumber = 1;
+                                        foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                         {
-                                            string errorMessage = string.Format("Exception thrown when writing fracture cornerpoints:");
-                                            foreach (PointXYZ CornerPoint in Segment)
-                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                            // Create a stage-specific label for the output file
+                                            string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime), ProjectTimeUnits));
+
+                                            using (ITransaction transactionCreateCentrelines = DataManager.NewTransaction())
+                                            {
+                                                // Lock database
+                                                transactionCreateCentrelines.Lock(CentrelineCollection);
+
+                                                // Create a new polyline set and set to the depth domain
+                                                PolylineSet Centrelines = CentrelineCollection.CreatePolylineSet("Fracture_Centrelines" + outputLabel);
+                                                Centrelines.Domain = Domain.ELEVATION_DEPTH;
+
+                                                // Add creation event to the polyline set object history
+                                                HistoryEntry centrelinesCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
+                                                IHistoryInfoEditor centrelinesHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(Centrelines);
+                                                centrelinesHistoryInfoEditor.AddHistoryEntry(centrelinesCreationEvent);
+
+                                                // Create a list of Petrel polylines
+                                                List<Polyline3> pline_list = new List<Polyline3>();
+
+                                                // Loop through all the macrofractures in the DFN
+                                                foreach (MacrofractureXYZ MF in DFN.GlobalDFNMacrofractures)
+                                                {
+                                                    // Check if calculation has been aborted
+                                                    if (progressBarWrapper.abortCalculation())
+                                                    {
+                                                        // Clean up any resources or data
+                                                        break;
+                                                    }
+
+                                                    // Get the fracture centreline
+                                                    List<PointXYZ> grid_Centreline = MF.SegmentCentrePoints;
+
+                                                    // Create a new Petrel polyline from the centreline and add it to the polyline list
+                                                    try
+                                                    {
+                                                        List<Point3> newpline = new List<Point3>();
+                                                        foreach (PointXYZ grid_Point in grid_Centreline)
+                                                            newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Z));
+                                                        pline_list.Add(new Polyline3(newpline));
+                                                    }
+                                                    catch (Exception e)
+                                                    {
+                                                        string errorMessage = string.Format("Exception thrown when writing centreline:");
+                                                        foreach (PointXYZ grid_Point in grid_Centreline)
+                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Z);
+                                                        PetrelLogger.InfoOutputWindow(errorMessage);
+                                                        PetrelLogger.InfoOutputWindow(e.Message);
+                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                    }
+
+                                                    // Update progress bar
+                                                    progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                                }
+
+                                                // Loop through all the unconfined fractures in the DFN
+                                                foreach (UnconfinedFractureXYZ UCF in DFN.GlobalDFNUnconfinedFractures)
+                                                {
+                                                    // Check if calculation has been aborted
+                                                    if (progressBarWrapper.abortCalculation())
+                                                    {
+                                                        // Clean up any resources or data
+                                                        break;
+                                                    }
+
+                                                    // Get an array of nodes for each ray comprising this fracture
+                                                    List<PointXYZ>[] rayNodeArray = UCF.GetRayNodes();
+
+                                                    // Loop through each ray
+                                                    foreach (List<PointXYZ> rayNodes in rayNodeArray)
+                                                    {
+                                                        // Create a new Petrel polyline from the ray node list and add it to the polyline list
+                                                        try
+                                                        {
+                                                            List<Point3> newpline = new List<Point3>();
+                                                            foreach (PointXYZ grid_Point in rayNodes)
+                                                                newpline.Add(new Point3(grid_Point.X, grid_Point.Y, grid_Point.Z));
+                                                            pline_list.Add(new Polyline3(newpline));
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing ray nodes:");
+                                                            foreach (PointXYZ grid_Point in rayNodes)
+                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", grid_Point.X, grid_Point.Y, grid_Point.Z);
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+                                                    }
+
+                                                    // Update progress bar
+                                                    progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                                }
+
+                                                // Add the polyline list to the polyline set
+                                                Centrelines.Polylines = pline_list;
+
+                                                // Commit the changes to the Petrel database
+                                                transactionCreateCentrelines.Commit();
+                                            }
+
+                                            // Update the stage number
+                                            stageNumber++;
                                         }
                                     }
                                 }
+#if DEBUG_FRAC_OUTPUT
+                                // Write cornerpoints of each fracture in the explicit DFN to Petrel project
+                                using (ITransaction trans = DataManager.NewTransaction())
+                                {
+                                    // Lock database
+                                    Project DFNroot = PetrelProject.PrimaryProject;
+                                    trans.Lock(DFNroot);
 
-                                // Add the set of points for comparison with the corners of the fracture patches
-                                FractureCorners.Points = new Point3Set(CornersAsPoints);
+                                    // Create a set of points to compare with the corners of the fracture patches, when debugging
+                                    PointSet FractureCorners = DFNroot.CreatePointSet("Fracture corners");
+                                    List<Point3> CornersAsPoints = new List<Point3>();
 
-                                // Commit the changes to the Petrel database
-                                trans.Commit();
-                            }
+                                    // Loop through all the macrofractures in the DFN
+                                    foreach (MacrofractureXYZ MF in ModelGrid.CurrentDFN.GlobalDFNMacrofractures)
+                                    {
+                                        // Get a nested list of cornerpoints for each segment of the fracture, as PointXYZ objects
+                                        List<List<PointXYZ>> Segments = MF.GetFractureSegmentsInXYZ();
+
+                                        // Loop through each segment in the list supplied
+                                        foreach (List<PointXYZ> Segment in Segments)
+                                        {
+                                            try
+                                            {
+                                                // Create a collection of Petrel Point3 objects
+                                                List<Point3> Petrel_CornerPoints = new List<Point3>();
+
+                                                // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the Petrel point collection
+                                                foreach (PointXYZ CornerPoint in Segment)
+                                                    Petrel_CornerPoints.Add(new Point3(CornerPoint.X, CornerPoint.Y, CornerPoint.Z));
+
+                                                // Add the cornerpoints to the set of points for comparison with the corners of the fracture patches
+                                                CornersAsPoints.AddRange(Petrel_CornerPoints);
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                string errorMessage = string.Format("Exception thrown when writing fracture cornerpoints:");
+                                                foreach (PointXYZ CornerPoint in Segment)
+                                                    errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                            }
+                                        }
+                                    }
+
+                                    // Add the set of points for comparison with the corners of the fracture patches
+                                    FractureCorners.Points = new Point3Set(CornersAsPoints);
+
+                                    // Commit the changes to the Petrel database
+                                    trans.Commit();
+                                }
 #endif
+                            }
                         }
-
                     }
                     // Clean up
                     PetrelLogger.InfoOutputWindow("Calculation completed");
@@ -6988,9 +7035,9 @@ namespace DFMGenerator_Ocean
             }
         }
 
-#endregion
+        #endregion
 
-#region Arguments
+        #region Arguments
         /// <summary>
         /// ArgumentPackage class for DFMGenerator.
         /// Each public property is an argument in the package.  The name, type and
@@ -7569,6 +7616,8 @@ namespace DFMGenerator_Ocean
             private double argument_Min_R_staticDatapointSizeRatio = 0.02;
             private int argument_CullTSFrequency = 10;
             private bool argument_CalculateImplicitUCFData = true;
+            private int argument_VerticalUpscalingFactor = 0;
+
 
 #endif
 
@@ -11455,6 +11504,14 @@ namespace DFMGenerator_Ocean
                 set { this.argument_CalculateImplicitUCFData = value; }
             }
 
+            [Description("Vertical upscaling factor", "Vertical upscaling factor; set to 1 to generate one model layer per grid layer, set to 0 to amalgamate all grid layers into one model layer")]
+            public int Argument_VerticalUpscalingFactor
+            {
+                internal get { return this.argument_VerticalUpscalingFactor; }
+                set { this.argument_VerticalUpscalingFactor = value; }
+            }
+
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -11774,6 +11831,8 @@ namespace DFMGenerator_Ocean
                 argument_Min_R_staticDatapointSizeRatio = 0.02;
                 argument_CullTSFrequency = 10;
                 argument_CalculateImplicitUCFData = true;
+                argument_VerticalUpscalingFactor = 0;
+
             }
 #if MANAGED_PERSISTENCE
             // IIdentifiable Members
@@ -11791,10 +11850,10 @@ namespace DFMGenerator_Ocean
                     dataSource.RemoveItem(arguments_Droid);
             }
 #endif
-    }
-#endregion
+        }
+        #endregion
 
-#region IAppearance Members
+        #region IAppearance Members
         public event EventHandler<TextChangedEventArgs> TextChanged;
         protected void RaiseTextChanged()
         {
@@ -11830,9 +11889,9 @@ namespace DFMGenerator_Ocean
                 this.RaiseImageChanged();
             }
         }
-#endregion
+        #endregion
 
-#region IDescriptionSource Members
+        #region IDescriptionSource Members
 
         /// <summary>
         /// Gets the description of the DFMGenerator
@@ -11860,7 +11919,7 @@ namespace DFMGenerator_Ocean
                 get { return instance; }
             }
 
-#region IDescription Members
+            #region IDescription Members
 
             /// <summary>
             /// Gets the name of DFMGenerator
@@ -11884,9 +11943,9 @@ namespace DFMGenerator_Ocean
                 get { return "Petrel UI for DFM Generator module"; }
             }
 
-#endregion
+            #endregion
         }
-#endregion
+        #endregion
 
         public class UIFactory : WorkflowEditorUIFactory
         {

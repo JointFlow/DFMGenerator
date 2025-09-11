@@ -3276,17 +3276,14 @@ namespace DFMGenerator_SharedCode
             boundaries.Add(new BoundaryCornerpoints(GridDirection.E, gbc.NEtop, gbc.SEtop, gbc.SEbottom, gbc.NEbottom));
             boundaries.Add(new BoundaryCornerpoints(GridDirection.S, gbc.SEtop, gbc.SWtop, gbc.SWbottom, gbc.SEbottom));
             boundaries.Add(new BoundaryCornerpoints(GridDirection.W, gbc.SWtop, gbc.NWtop, gbc.NWbottom, gbc.SWbottom));
-            // Since the GridDirection enum does not yet contain top and bottom directions, we will to set these to GridDirection.None for now
-            // Top
-            boundaries.Add(new BoundaryCornerpoints(GridDirection.None, gbc.SWtop, gbc.SEtop, gbc.NEtop, gbc.NWtop));
-            // Bottom
-            boundaries.Add(new BoundaryCornerpoints(GridDirection.None, gbc.NWbottom, gbc.NEbottom, gbc.SEbottom, gbc.SWbottom));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.D, gbc.NWbottom, gbc.NEbottom, gbc.SEbottom, gbc.SWbottom));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.U, gbc.NWtop, gbc.NEtop, gbc.SEtop, gbc.SWtop));
 
             // Loop through the six gridblock boundaries checking for intersection
             foreach (BoundaryCornerpoints boundary in boundaries)
             {
                 // Check if the ray segment nucleated on this boundary - if so move onto the next boundary
-                if ((boundary.Boundary != GridDirection.None) && (boundary.Boundary == propagatingSegment.NonPropNodeBoundary))
+                if (boundary.Boundary == propagatingSegment.NonPropNodeBoundary)
                     continue;
 
                 // Each boundary can be split into two triangular segments to check for intersection
@@ -3304,7 +3301,7 @@ namespace DFMGenerator_SharedCode
 
                         // Set the reference to the intersecting boundary, and check if neighbouring gridblock is null
                         boundaryCrossed = boundary.Boundary;
-                        bool NoNeighbour = ((boundaryCrossed == GridDirection.None) || (gbc.NeighbourGridblocks[boundaryCrossed] == null));
+                        bool NoNeighbour = (gbc.NeighbourGridblocks[boundaryCrossed] == null);
 
                         // Reduce the maximum propagation distance - if the neighbour is non-null or if we have specified to terminate even if neighbour is null
                         if (!NoNeighbour || terminateIfNoNeighbour)

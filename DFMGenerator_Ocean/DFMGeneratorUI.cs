@@ -325,6 +325,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_Min_R_staticDatapointSizeRatio, unitTextBox_MinStaticDPSizeRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_CullTSFrequency, textBox_StaticDPCullInterval);
             UpdateCheckBox(args.Argument_CalculateImplicitUCFData, checkBox_CalculateImplicitUCFData);
+            UpdateNumericBox(args.Argument_VerticalUpscalingFactor, numericUpDown_VerticalUpscalingFactor);
         }
 
         private void updateArgsFromUI()
@@ -496,6 +497,7 @@ namespace DFMGenerator_Ocean
             args.Argument_Min_R_staticDatapointSizeRatio = GetDoubleFromTextBox(unitTextBox_MinStaticDPSizeRatio);
             args.Argument_CullTSFrequency = GetIntFromTextBox(textBox_StaticDPCullInterval);
             args.Argument_CalculateImplicitUCFData = checkBox_CalculateImplicitUCFData.Checked;
+            args.Argument_VerticalUpscalingFactor = GetIntFromNumericBox(numericUpDown_VerticalUpscalingFactor);
 
             // tell fwk to update LineUI:
             context.OnArgumentPackageChanged(this, new WorkflowContext.ArgumentPackageChangedEventArgs());

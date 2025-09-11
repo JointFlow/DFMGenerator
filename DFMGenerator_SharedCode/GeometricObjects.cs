@@ -147,6 +147,10 @@ namespace DFMGenerator_SharedCode
                     return GridDirection.N;
                 case GridDirection.W:
                     return GridDirection.E;
+                case GridDirection.U:
+                    return GridDirection.D;
+                case GridDirection.D:
+                    return GridDirection.U;
                 case GridDirection.None:
                     return GridDirection.None;
                 default:
