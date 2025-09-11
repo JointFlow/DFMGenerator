@@ -3632,17 +3632,6 @@ namespace DFMGenerator_Ocean
                                     }
                                     else // We are taking data from a single cell
                                     {
-                                        // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                        int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                        int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                        // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                        if (HorizontalUpscalingFactor > 1)
-                                        {
-                                            PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                            PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                        }
-
                                         // Create a reference to the cell from which we will read the data
                                         Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
 
@@ -12574,6 +12563,100 @@ namespace DFMGenerator_Ocean
             {
                 internal get { return this.argument_StressStateDefinition4; }
                 set { this.argument_StressStateDefinition4 = value; }
+            }
+
+            // Fracture geometry
+            [Description("Use unconfined fractures?", "Use unconfined fractures, instead of microfractures and layer-bound fractures")]
+            public bool Argument_UseUnconfinedFractures
+            {
+                internal get { return this.argument_UseUnconfinedFractures; }
+                set { this.argument_UseUnconfinedFractures = value; }
+            }
+
+            [Description("Number of rays comprising each unconfined fracture", "Number of rays comprising each unconfined fracture")]
+            public int Argument_NoRaysPerUnconfinedFracture
+            {
+                internal get { return this.argument_NoRaysPerUnconfinedFracture; }
+                set { this.argument_NoRaysPerUnconfinedFracture = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Minimum radius for unconfined fractures", "Minimum radius for unconfined fractures; this will be the length of the rays at nucleation; if undefined, will use 0.01 * layer thickness")]
+            public double Argument_MinUnconfinedFractureRadius
+            {
+                internal get { return this.argument_MinUnconfinedFractureRadius; }
+                set { this.argument_MinUnconfinedFractureRadius = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Maximum radius for unconfined fractures", "Maximum radius for unconfined fractures; if undefined, will use 0.5 * layer thickness")]
+            public double Argument_MaxUnconfinedFractureRadius
+            {
+                internal get { return this.argument_MaxUnconfinedFractureRadius; }
+                set { this.argument_MaxUnconfinedFractureRadius = value; }
+            }
+
+            [Description("Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction", "Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius")]
+            public double Argument_MinStressShadowDeactivationRatio
+            {
+                internal get { return this.argument_MinStressShadowDeactivationRatio; }
+                set { this.argument_MinStressShadowDeactivationRatio = value; }
+            }
+
+            [Description("Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection", "Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius")]
+            public double Argument_MinIntersectionDeactivationRatio
+            {
+                internal get { return this.argument_MinIntersectionDeactivationRatio; }
+                set { this.argument_MinIntersectionDeactivationRatio = value; }
+            }
+
+            [Description("Maximum proportional increase in the radius of the unconfined fractures in each timestep", "Maximum proportional increase in the radius of the unconfined fractures in each timestep; controls speed and accuracy of calculation")]
+            public double Argument_Max_R_timestep_increase
+            {
+                internal get { return this.argument_Max_R_timestep_increase; }
+                set { this.argument_Max_R_timestep_increase = value; }
+            }
+
+            [Description("Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation", "Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation; controls number of implicit fracture population datapoints generated")]
+            public double Argument_Max_R_DeactivationCheck_interval
+            {
+                internal get { return this.argument_Max_R_DeactivationCheck_interval; }
+                set { this.argument_Max_R_DeactivationCheck_interval = value; }
+            }
+
+            [Description("Minimum activation probability for unconfined fractures", "Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint")]
+            public double Argument_Min_R_ActivationProbability
+            {
+                internal get { return this.argument_Min_R_ActivationProbability; }
+                set { this.argument_Min_R_ActivationProbability = value; }
+            }
+
+            [Description("Minimum proportional size difference for static unconfined fracture datapoints", "Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point")]
+            public double Argument_Min_R_staticDatapointSizeRatio
+            {
+                internal get { return this.argument_Min_R_staticDatapointSizeRatio; }
+                set { this.argument_Min_R_staticDatapointSizeRatio = value; }
+            }
+
+            [Description("Frequency (in timesteps) with which static unconfined fracture datapoints are culled", "Frequency (in timesteps) with which static unconfined fracture datapoints are culled")]
+            public int Argument_CullTSFrequency
+            {
+                internal get { return this.argument_CullTSFrequency; }
+                set { this.argument_CullTSFrequency = value; }
+            }
+
+            [Description("Calculate implicit data for unconfined fractures?", "Calculate implicit data for unconfined fractures? If false, will only output an explicit DFN")]
+            public bool Argument_CalculateImplicitUCFData
+            {
+                internal get { return this.argument_CalculateImplicitUCFData; }
+                set { this.argument_CalculateImplicitUCFData = value; }
+            }
+
+            [Description("Vertical upscaling factor", "Vertical upscaling factor; set to 1 to generate one model layer per grid layer, set to 0 to amalgamate all grid layers into one model layer")]
+            public int Argument_VerticalUpscalingFactor
+            {
+                internal get { return this.argument_VerticalUpscalingFactor; }
+                set { this.argument_VerticalUpscalingFactor = value; }
             }
 
             /// <summary>
