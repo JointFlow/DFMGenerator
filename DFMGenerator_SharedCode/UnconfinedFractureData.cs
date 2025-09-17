@@ -426,32 +426,36 @@ namespace DFMGenerator_SharedCode
         /// Mean linear density of static fracture rays deactivated due to reaching the maximum radius
         /// </summary>
         public double sMR_RP32_total { get { return RP32_total[RayPropagationStatus.StaticMaxRadius]; } }
-        /*/// <summary>
+#if DEBUG
+        /// <summary>
         /// Volumetric ratio of fully active fracture rays (i.e. all rays in the fracture are active)
+        /// NB Stress shadows around fully active fracture rays never overlap
         /// </summary>
-        public double a_RP33_total { get { return RP33_exclusive[RayPropagationStatus.FullyActive]; } }
+        public double a_RP33_total { get { return RP33_exclusive_total[RayPropagationStatus.FullyActive]; } }
         /// <summary>
         /// Volumetric ratio of restricted fracture rays (i.e. at least one other ray in the fracture is deactivated)
+        /// NB Stress shadows around restricted fracture rays never overlap
         /// </summary>
-        public double r_RP33_total { get { return RP33_exclusive[RayPropagationStatus.Restricted]; } }
+        public double r_RP33_total { get { return RP33_exclusive_total[RayPropagationStatus.Restricted]; } }
         /// <summary>
         /// Maximum volumetric ratio of static fracture rays deactivated due to stress shadow interaction
-        /// This value does not take into account that the stress shadows around static fractures may overlap
+        /// This value does not take into account that the stress shadows around static fracture rays may overlap
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
-        public double sII_RP33_total { get { return RP33_exclusive[RayPropagationStatus.StaticStressShadow]; } }
+        public double sII_RP33_total { get { return RP33_exclusive_total[RayPropagationStatus.StaticStressShadow] + RP33_overlapping_total[RayPropagationStatus.StaticStressShadow]; } }
         /// <summary>
         /// Maximum volumetric ratio of static fracture rays deactivated due to intersection
-        /// This value does not take into account that the stress shadows around static fractures may overlap
+        /// This value does not take into account that the stress shadows around static fracture rays may overlap
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
-        public double sIJ_RP33_total { get { return RP33_exclusive[RayPropagationStatus.StaticIntersection]; } }
+        public double sIJ_RP33_total { get { return RP33_exclusive_total[RayPropagationStatus.StaticIntersection] + RP33_overlapping_total[RayPropagationStatus.StaticIntersection]; } }
         /// <summary>
         /// Maximum volumetric ratio of static fracture rays deactivated due to reaching the maximum radius
-        /// This value does not take into account that the stress shadows around static fractures may overlap
+        /// This value does not take into account that the stress shadows around static fracture rays may overlap
         /// It will therefore be an overestimate of the true value and should not be used for calculating total stress shadow volume
         /// </summary>
-        public double sMR_RP33_total { get { return RP33_exclusive[RayPropagationStatus.StaticMaxRadius]; } }*/
+        public double sMR_RP33_total { get { return RP33_exclusive_total[RayPropagationStatus.StaticMaxRadius] + RP33_overlapping_total[RayPropagationStatus.StaticMaxRadius]; } }
+#endif
         /// <summary>
         /// Volumetric density of all fractures
         /// </summary>
@@ -480,7 +484,7 @@ namespace DFMGenerator_SharedCode
         }
         /// Maximum volumetric ratio of all non-overlapping fractures
         /// This includes all fully active and restricted rays, all rays that have reached maximum length, and the largest static rays
-        /// However it does not include static rays with effective ray length shprter than the minimum size that can be deactivated by the largest current fractures
+        /// However it does not include static rays with effective ray length shorter than the minimum size that can be deactivated by the largest current fractures
         /// It should therefore not be used directly for calculating total stress shadow volume
         /// </summary>
         public double FP33_exclusive_total

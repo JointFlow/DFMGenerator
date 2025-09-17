@@ -530,13 +530,13 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 3;
-            int NoCols = 3;
-            int NoLayers = 3;
+            int NoRows = 1;// 3;
+            int NoCols = 1;// 3;
+            int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 50;
             double Length_NS = 50;
-            double LayerThickness = 10;// 1;
+            double LayerThickness = 50;// 1;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
@@ -901,7 +901,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 200;// 1000;
+            int MaxTimesteps = 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;

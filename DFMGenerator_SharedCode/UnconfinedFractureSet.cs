@@ -975,7 +975,7 @@ namespace DFMGenerator_SharedCode
         /// Get a list of the dP33 factors for each datapoint of the ray type specified
         /// </summary>
         /// <param name="rayType">Specified ray type</param>
-        /// <returns>List of the dP33 factors; these values must be multiplied by 4/3 pi/No rays per fracture to get the true P32</returns>
+        /// <returns>List of the dP33 factors; these values must be multiplied by 4/3 pi/No rays per fracture to get the true P33</returns>
         public List<double> getdP33Factors(RayPropagationStatus rayType)
         {
             List<double> output = new List<double>();
@@ -1023,52 +1023,52 @@ namespace DFMGenerator_SharedCode
 
         // Functions to get total population data for all fractures in the dipset
         /// <summary>
-        /// Total volumetric density of fully active fracture segments
+        /// Total volumetric density of fully active fracture rays
         /// </summary>
         /// <returns></returns>
         public double a_RP30_total() { return Fractures.a_RP30_total; }
         /// <summary>
-        /// Total volumetric density of restricted fracture segments
+        /// Total volumetric density of restricted fracture rays
         /// </summary>
         /// <returns></returns>
         public double r_RP30_total() { return Fractures.r_RP30_total; }
         /// <summary>
-        /// Total volumetric density of fracture segments deactivated due to stress shadow interaction
+        /// Total volumetric density of fracture rays deactivated due to stress shadow interaction
         /// </summary>
         /// <returns></returns>
         public double sII_RP30_total() { return Fractures.sII_RP30_total; }
         /// <summary>
-        /// Total volumetric density of fracture segments deactivated due to intersection
+        /// Total volumetric density of fracture rays deactivated due to intersection
         /// </summary>
         /// <returns></returns>
         public double sIJ_RP30_total() { return Fractures.sIJ_RP30_total; }
         /// <summary>
-        /// Total volumetric density of fracture segments deactivated due to reaching the maximum radius
+        /// Total volumetric density of fracture rays deactivated due to reaching the maximum radius
         /// </summary>
         /// <returns></returns>
         public double sMR_RP30_total() { return Fractures.sMR_RP30_total; }
         /// <summary>
-        /// Total mean linear density of fully active fracture segments
+        /// Total mean linear density of fully active fracture rays
         /// </summary>
         /// <returns></returns>
         public double a_RP32_total() { return Fractures.a_RP32_total; }
         /// <summary>
-        /// Total mean linear density of restricted fracture segments
+        /// Total mean linear density of restricted fracture rays
         /// </summary>
         /// <returns></returns>
         public double r_RP32_total() { return Fractures.r_RP32_total; }
         /// <summary>
-        /// Total mean linear density of fracture segments deactivated due to stress shadow interaction
+        /// Total mean linear density of fracture rays deactivated due to stress shadow interaction
         /// </summary>
         /// <returns></returns>
         public double sII_RP32_total() { return Fractures.sII_RP32_total; }
         /// <summary>
-        /// Total mean linear density of fracture segments deactivated due to intersection
+        /// Total mean linear density of fracture rays deactivated due to intersection
         /// </summary>
         /// <returns></returns>
         public double sIJ_RP32_total() { return Fractures.sIJ_RP32_total; }
         /// <summary>
-        /// Total mean linear density of fracture segments deactivated due to reaching the maximum radius
+        /// Total mean linear density of fracture rays deactivated due to reaching the maximum radius
         /// </summary>
         /// <returns></returns>
         public double sMR_RP32_total() { return Fractures.sMR_RP32_total; }
@@ -1154,6 +1154,46 @@ namespace DFMGenerator_SharedCode
             cumP32List.Reverse();
             return cumP32List;
         }
+#if DEBUG
+        /// <summary>
+        /// Total volumetric ratio of fully active fracture rays
+        /// </summary>
+        /// <returns></returns>
+        public double a_RP33_total() { return Fractures.a_RP33_total; }
+        /// <summary>
+        /// Total volumetric ratio of restricted fracture rays
+        /// </summary>
+        /// <returns></returns>
+        public double r_RP33_total() { return Fractures.r_RP33_total; }
+        /// <summary>
+        /// Total volumetric ratio of fracture rays deactivated due to stress shadow interaction
+        /// This value does not take into account that the stress shadows around static fracture rays may overlap; it will therefore be an overestimate of the true value
+        /// </summary>
+        /// <returns></returns>
+        public double sII_RP33_total() { return Fractures.sII_RP33_total; }
+        /// <summary>
+        /// Total volumetric ratio of fracture rays deactivated due to intersection
+        /// This value does not take into account that the stress shadows around static fracture rays may overlap; it will therefore be an overestimate of the true value
+        /// </summary>
+        /// <returns></returns>
+        public double sIJ_RP33_total() { return Fractures.sIJ_RP33_total; }
+        /// <summary>
+        /// Total volumetric ratio of fracture rays deactivated due to reaching the maximum radius
+        /// This value does not take into account that the stress shadows around static fracture rays may overlap; it will therefore be an overestimate of the true value
+        /// </summary>
+        /// <returns></returns>
+        public double sMR_RP33_total() { return Fractures.sMR_RP33_total; }
+        /// <summary>
+        /// Total volumetric ratio of non-overlapping fractures in the set
+        /// </summary>
+        /// <returns></returns>
+        public double RP33_exclusive_total() { return Fractures.FP33_exclusive_total; }
+        /// <summary>
+        /// Total volumetric ratio of overlapping fractures in the set
+        /// </summary>
+        /// <returns></returns>
+        public double RP33_overlapping_total() { return Fractures.FP33_overlapping_total; }
+#endif
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
         // NB fracture aperture control data for dynamic and Barton-Bandis aperture are independent of dip set, so are contained in the MechanicalProperties object for the gridblock
@@ -1561,7 +1601,7 @@ namespace DFMGenerator_SharedCode
             return output;
         }
 
-                // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
+        // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
         // In this case we will use a supplied effective stress tensor to calculate the present day stress on the fracture
         /// <summary>
         /// Present day effective normal stress acting on the fracture
