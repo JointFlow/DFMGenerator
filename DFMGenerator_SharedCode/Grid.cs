@@ -84,7 +84,7 @@ namespace DFMGenerator_SharedCode
 
         // Functions to calculate fracture population data and generate the DFN
         /// <summary>
-        /// Calculate fracture data for each cell in the gridblock based on existing GridblockConfiguration.PropagationControl objects, without updating progress
+        /// Calculate fracture data for each gridblock in the grid based on existing GridblockConfiguration.PropagationControl objects, without updating progress
         /// </summary>
         /// <returns>True if the calculation runs to completion before hitting the timestep limit in all gridblocks; false if the timestep limit is hit in any gridblock</returns>
         public void CalculateAllFractureData()
@@ -92,7 +92,7 @@ namespace DFMGenerator_SharedCode
             CalculateAllFractureData(null);
         }
         /// <summary>
-        /// Calculate fracture data for each cell in the gridblock based on existing GridblockConfiguration.PropagationControl objects 
+        /// Calculate fracture data for each gridblock in the grid based on existing GridblockConfiguration.PropagationControl objects 
         /// </summary>
         /// <param name="progressReporter">Reference to a progress reporter - can be any object implementing the IProgressReporterWrapper interface</param>
         public void CalculateAllFractureData(IProgressReporterWrapper progressReporter)
@@ -241,6 +241,9 @@ namespace DFMGenerator_SharedCode
             DFNFractureLimitErrors = 0;
             ExplicitCalculationException = 0;
 
+            // Create a counter for the number of fractures in the latest DFN
+            int noDFNFractures = 0;
+
             // If the supplied progress reporter is null, create a new DefaultProgressReporter object (this will not actually report any progress)
             // Otherwise set the total number of calculation elements in the progress reporter
             if (progressReporter == null)
@@ -296,6 +299,9 @@ namespace DFMGenerator_SharedCode
                 double minRadius = 0;
                 double minLength = 0;
                 latestDFN.removeShortestFractures(minRadius, minLength, DFNControl.MaxNoFractures);
+
+                // Update the counter for the number of fractures in the DFN
+                noDFNFractures = latestDFN.NoDFNFractures;
 
                 // Check if calculation has been aborted
                 if (progressReporter.abortCalculation())
@@ -649,6 +655,9 @@ namespace DFMGenerator_SharedCode
                 progressReporter.OutputMessage(string.Format("There were errors in determining the fracture driving stress in one or more gridblock"));
             if (DFNFractureLimitErrors > 0)
                 progressReporter.OutputMessage(string.Format("The fracture nucleation limit was exceeded in one or more gridblock"));
+            // Output a message if the model ran to completion but no fractures were generated
+            if (noDFNFractures == 0)
+                progressReporter.OutputMessage(string.Format("The model ran to completion but no explicit DFN fractures were generated"));
         }
         /// <summary>
         /// Generate a global DFN based on user-specified DFNControl object - copy this into the Grid object first

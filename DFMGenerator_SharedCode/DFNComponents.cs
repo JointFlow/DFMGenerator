@@ -2472,6 +2472,8 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double CurrentTime { get; private set; }
 
+        public int NoDFNFractures { get { return GlobalDFNMacrofractures.Count + GlobalDFNMicrofractures.Count; } }
+
         // Functions to populate and sort DFN
         /// <summary>
         /// Repopulate the microfracture and macrofracture collections by calling the respective PopulateData functions

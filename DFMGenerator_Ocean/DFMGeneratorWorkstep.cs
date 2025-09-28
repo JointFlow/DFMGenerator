@@ -1748,7 +1748,7 @@ namespace DFMGenerator_Ocean
                             if (episodeDataContainer.Length > 0)
                                 generalInputParams += string.Format(" from {0}", episodeDataContainer);
                             generalInputParams += string.Format(" as {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", StressStateDefinition_list[deformationEpisodeNo], Sxx_property_list[deformationEpisodeNo].Name, Syy_property_list[deformationEpisodeNo].Name, Szz_property_list[deformationEpisodeNo].Name, Sxy_property_list[deformationEpisodeNo].Name);
-                            if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
+                            if (UsePropertyFor_ShvComponents_list[deformationEpisodeNo])
                                 generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", Syz_property_list[deformationEpisodeNo].Name, Szx_property_list[deformationEpisodeNo].Name);
                             else
                                 generalInputParams += "\n";
@@ -1800,7 +1800,7 @@ namespace DFMGenerator_Ocean
                         if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
                             generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
                         else if (UsePropertyFor_FluidPressure_list[deformationEpisodeNo])
-                            generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format(" - Dynamic fluid pressure data from property {0}\n", FluidPressure_property_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format(" - Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
@@ -3673,6 +3673,11 @@ namespace DFMGenerator_Ocean
                                                 initialSyz = finalSyz;
                                             else
                                                 local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                        }
+                                        else
+                                        {
+                                            initialSzx = 0;
+                                            initialSyz = 0;
                                         }
                                         local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
                                         local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
