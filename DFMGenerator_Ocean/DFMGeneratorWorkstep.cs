@@ -1797,7 +1797,7 @@ namespace DFMGenerator_Ocean
                             if (episodeDataContainer.Length > 0)
                                 generalInputParams += string.Format(" from {0}", episodeDataContainer);
                             generalInputParams += string.Format(" as {0}: XX stress from {1}, YY stress from {2}, ZZ stress from {3}, XY stress from {4}", StressStateDefinition_list[deformationEpisodeNo], Sxx_property_list[deformationEpisodeNo].Name, Syy_property_list[deformationEpisodeNo].Name, Szz_property_list[deformationEpisodeNo].Name, Sxy_property_list[deformationEpisodeNo].Name);
-                            if (UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo])
+                            if (UsePropertyFor_ShvComponents_list[deformationEpisodeNo])
                                 generalInputParams += string.Format(", YZ stress from {0}, ZX stress from {1}\n", Syz_property_list[deformationEpisodeNo].Name, Szx_property_list[deformationEpisodeNo].Name);
                             else
                                 generalInputParams += "\n";
@@ -1849,7 +1849,7 @@ namespace DFMGenerator_Ocean
                         if (UseGridPropertyTimeSeriesFor_FluidPressure_list[deformationEpisodeNo])
                             generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
                         else if (UsePropertyFor_FluidPressure_list[deformationEpisodeNo])
-                            generalInputParams += string.Format(" - Dynamic fluid pressure data from case {0}, property {1}\n", Case_list[deformationEpisodeNo].Name, FluidPressure_result_list[deformationEpisodeNo].Name);
+                            generalInputParams += string.Format(" - Dynamic fluid pressure data from property {0}\n", FluidPressure_property_list[deformationEpisodeNo].Name);
                         else if (UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo])
                             generalInputParams += string.Format(" - Rate of fluid overpressure: {0}, default {1}{2}/{3}\n", AppliedOverpressureRate_grid_list[deformationEpisodeNo].Name, toProjectPressureUnits.Convert(AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo]), PressureUnits, ProjectTimeUnits_list[deformationEpisodeNo]);
                         else if (AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] > 0)
@@ -3727,70 +3727,75 @@ namespace DFMGenerator_Ocean
                                                 double local_szxRate = 0;
                                                 double local_syzRate = 0;
 
-                                                // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
-                                                if (double.IsNaN(initialSzz))
-                                                    initialSzz = finalSzz;
-                                                else
-                                                    local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                if (double.IsNaN(initialSxx))
-                                                    initialSxx = finalSxx;
-                                                else
-                                                    local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
-                                                if (double.IsNaN(initialSyy))
-                                                    initialSyy = finalSyy;
-                                                else
-                                                    local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
-                                                if (double.IsNaN(initialSxy))
-                                                    initialSxy = finalSxy;
-                                                else
-                                                    local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
-                                                if (overideShvComponents)
-                                                {
-                                                    if (double.IsNaN(initialSzx))
-                                                        initialSzx = finalSzx;
-                                                    else
-                                                        local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
-                                                    if (double.IsNaN(initialSyz))
-                                                        initialSyz = finalSyz;
-                                                    else
-                                                        local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
-                                                }
-                                                local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
-                                                local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
-                                            }
-                                            bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
-                                            if (overrideFluidPressure)
-                                            {
-                                                double local_FluidPressureRate = 0;
-                                                if (double.IsNaN(initialFluidPressure))
-                                                    initialFluidPressure = finalFluidPressure;
-                                                else
-                                                    local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
-                                                double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
-                                                local_InitialFluidPressure = initialFluidPressure;
-                                                local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
-                                            }
-                                            // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
-                                            // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
-                                            bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
-                                            if (overrideStressArchingFactor)
-                                            {
-                                                double dSigmazz_dt = 0;
-                                                if (double.IsNaN(initialSzz))
-                                                    initialSzz = finalSzz;
-                                                else
-                                                    dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
-                                                double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
-                                                double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
-                                                local_InitialVerticalStress = initialSzz;
-                                                local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
-                                                // Trim the result so it lies between 0 and 1 inclusive
-                                                if (local_StressArchingFactor < 0)
-                                                    local_StressArchingFactor = 0;
-                                                if (local_StressArchingFactor > 1)
-                                                    local_StressArchingFactor = 1;
-                                            }
+                                        // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
+                                        if (double.IsNaN(initialSzz))
+                                            initialSzz = finalSzz;
+                                        else
+                                            local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSxx))
+                                            initialSxx = finalSxx;
+                                        else
+                                            local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSyy))
+                                            initialSyy = finalSyy;
+                                        else
+                                            local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSxy))
+                                            initialSxy = finalSxy;
+                                        else
+                                            local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                        if (overideShvComponents)
+                                        {
+                                            if (double.IsNaN(initialSzx))
+                                                initialSzx = finalSzx;
+                                            else
+                                                local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                            if (double.IsNaN(initialSyz))
+                                                initialSyz = finalSyz;
+                                            else
+                                                local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                        }
+                                        else
+                                        {
+                                            initialSzx = 0;
+                                            initialSyz = 0;
+                                        }
+                                        local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
+                                        local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                    }
+                                    bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
+                                    if (overrideFluidPressure)
+                                    {
+                                        double local_FluidPressureRate = 0;
+                                        if (double.IsNaN(initialFluidPressure))
+                                            initialFluidPressure = finalFluidPressure;
+                                        else
+                                            local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                        local_InitialFluidPressure = initialFluidPressure;
+                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
+                                    }
+                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
+                                    // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
+                                    bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
+                                    if (overrideStressArchingFactor)
+                                    {
+                                        double dSigmazz_dt = 0;
+                                        if (double.IsNaN(initialSzz))
+                                            initialSzz = finalSzz;
+                                        else
+                                            dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                        local_InitialVerticalStress = initialSzz;
+                                        local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                                        // Trim the result so it lies between 0 and 1 inclusive
+                                        if (local_StressArchingFactor < 0)
+                                            local_StressArchingFactor = 0;
+                                        if (local_StressArchingFactor > 1)
+                                            local_StressArchingFactor = 1;
+                                    }
 
                                             // If the final stress tensor and fluid pressure values are not defined, reset them to NaN so they will not be picked up by the next deformation episode
                                             if (!overideStressRate)

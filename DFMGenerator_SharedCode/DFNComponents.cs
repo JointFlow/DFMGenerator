@@ -2478,6 +2478,10 @@ namespace DFMGenerator_SharedCode
 
         // Functions to get output data
         /// <summary>
+        /// Get the total number of fractures represented in the DFN
+        /// </summary>
+        public int NoDFNFractures { get { return GlobalDFNMacrofractures.Count + GlobalDFNMicrofractures.Count + GlobalDFNUnconfinedFractures.Count; } }
+        /// <summary>
         /// Get the total number of triangular unconfined fracture elements in the DFN
         /// </summary>
         /// <returns></returns>
