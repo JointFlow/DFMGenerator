@@ -1,6 +1,6 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-//#define LOGIMPPOP
+#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
@@ -3400,10 +3400,11 @@ namespace DFMGenerator_SharedCode
             {
                 string headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\tElastic ehmin\tElastic ehmax\tTotal ehmin\tTotal ehmax\t", timeUnits);
                 string headerLine2 = "\t\t\t\t\t\t\t";
-                string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+                string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
                 string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tMF Stress shadow width\tMF Stress shadow volume\tClear zone volume\t\t";
                 //string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tStress shadow volume\tClear zone volume\t\t";
-                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tRP33_exclusive\tRP33_overlapping\tClear zone volume\t";
+                //string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tRP33_exclusive\tRP33_overlapping\tClear zone volume\t";
+                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ttotal_RP32\tAzimuthal stress shadow width ratio\tShear stress shadow width ratio\tCombined stress shadow width ratio\tRP33_exclusive\tRP33_overlapping\tStress shadow volume\tClear zone volume\t";
 #if LOGDFNPOP
                 headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\t{1}\t{2}\t{3}\t{4}\t", timeUnits, "Sigma_eff.XX", "Sigma_eff.YY", "Sigma_eff.XY", "Sigma_eff.ZZ");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
@@ -3425,7 +3426,7 @@ namespace DFMGenerator_SharedCode
                     {
                         headerLine1 += string.Format("FS {0} {1}", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex))) + FSheader1;
                         headerLine2 += FSheader2;
-                        TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
+                        TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                     }
                 }
                 for (int ufs_index = 0; ufs_index < NoUnconfinedFractureSets; ufs_index++)
@@ -3434,7 +3435,7 @@ namespace DFMGenerator_SharedCode
                     string setLabel = useUnconfinedSetNames ? getUnconfinedFractureSetName(ufs_index) : string.Format("UFS {0}", ufs_index);
                     headerLine1 += setLabel + FSheader1;
                     headerLine2 += FSheader3;
-                    TS0data += "NotActivated\t0\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
+                    TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                 }
                 if (CalculateFracturePorosity)
                 {
@@ -4174,8 +4175,10 @@ namespace DFMGenerator_SharedCode
                             // Get fracture data and add to timestep log string
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP30_total(), ufs.r_RP30_total(), ufs.sII_RP30_total(), ufs.sIJ_RP30_total(), ufs.sMR_RP30_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
+                            //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
-                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
+                                ufs.a_RP32_total()+ ufs.r_RP32_total()+ ufs.sII_RP32_total()+ ufs.sIJ_RP32_total()+ ufs.sMR_RP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 
                             timestepData = timestepData + fractureSetData;
                         }
@@ -4279,7 +4282,7 @@ namespace DFMGenerator_SharedCode
                     foreach (RayPropagationStatus rayType in rayTypesToLog)
                     {
                         string rayTypeDatapointOutput = TAdataoutput + string.Format("{0}\t\t", UFSToLog.getNoDatapoints(rayType));
-                        List<double> dataList = UFSToLog.getEffectiveRayLengths(rayType);//UFSToLog.getPhiValues(rayType);// UFSToLog.getdP33Factors(rayType);// UFSToLog.getPhiIJValues(rayType);
+                        List<double> dataList = UFSToLog.getPhiIJValues(rayType);  //UFSToLog.getdP30Values(rayType);// UFSToLog.getRayLengths(rayType);// UFSToLog.getEffectiveRayLengths(rayType);//UFSToLog.getPhiValues(rayType);// UFSToLog.getdP33Factors(rayType);// UFSToLog.getPhiIJValues(rayType);
                         foreach (double dataPoint in dataList)
                             rayTypeDatapointOutput += string.Format("{0}\t", dataPoint);
                         rayLogFiles[rayType].WriteLine(rayTypeDatapointOutput);
@@ -5590,10 +5593,6 @@ namespace DFMGenerator_SharedCode
                 // This will be filled out as required
                 List<double> UCFStressShadowWidthRatios = null;
 
-                // If the dip set is deactivated, skip the rest of this stage and move on to the next dip set
-                if (ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.Deactivated)
-                    continue;
-
                 // If the global minimum unconfined fracture radius is undefined (negative), use the local minimum unconfined fracture radius defined for the unconfined fracture set
                 double UCF_minRadius = (Global_UCF_minRadius > 0) ? Global_UCF_minRadius : ufs.MinimumFractureRadius;
 
@@ -5620,6 +5619,10 @@ namespace DFMGenerator_SharedCode
                 ufsPropRateCoefficients.Add(ufsPropRateCoefficient);
                 ufsGrowthFactors.Add(ufsGrowthFactor);
                 ufsStressShadowWidthRatios.Add(ufsStressShadowWidthRatio);
+
+                // If the dip set is deactivated, skip the rest of this stage and move on to the next dip set
+                if (ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.Deactivated)
+                    continue;
 
                 // Calculate local helper variables
                 double CapB = ufs.CapB;

@@ -327,7 +327,7 @@ namespace DFMGenerator_Ocean
                         double next_EhminAzi = arguments.EhminAzi_default(deformationEpisodeNo);
                         if (double.IsNaN(next_EhminAzi))
                             next_EhminAzi = EhminAzi;
-                            EhminAzi_list.Add(next_EhminAzi);
+                        EhminAzi_list.Add(next_EhminAzi);
                         Property next_EhminAzi_grid = arguments.EhminAzi(deformationEpisodeNo);
                         if ((next_EhminAzi_grid != null) && (next_EhminAzi_grid.Grid != PetrelGrid))
                         {
@@ -340,7 +340,7 @@ namespace DFMGenerator_Ocean
                         double next_EhminRate_GeologicalTimeUnits = arguments.EhminRate_default(deformationEpisodeNo);
                         if (double.IsNaN(next_EhminRate_GeologicalTimeUnits))
                             next_EhminRate_GeologicalTimeUnits = EhminRate_GeologicalTimeUnits;
-                            EhminRate_GeologicalTimeUnits_list.Add(next_EhminRate_GeologicalTimeUnits);
+                        EhminRate_GeologicalTimeUnits_list.Add(next_EhminRate_GeologicalTimeUnits);
                         Property next_EhminRate_grid = arguments.EhminRate(deformationEpisodeNo);
                         if ((next_EhminRate_grid != null) && (next_EhminRate_grid.Grid != PetrelGrid))
                         {
@@ -353,7 +353,7 @@ namespace DFMGenerator_Ocean
                         double next_EhmaxRate_GeologicalTimeUnits = arguments.EhmaxRate_default(deformationEpisodeNo);
                         if (double.IsNaN(next_EhmaxRate_GeologicalTimeUnits))
                             next_EhmaxRate_GeologicalTimeUnits = EhmaxRate_GeologicalTimeUnits;
-                            EhmaxRate_GeologicalTimeUnits_list.Add(next_EhmaxRate_GeologicalTimeUnits);
+                        EhmaxRate_GeologicalTimeUnits_list.Add(next_EhmaxRate_GeologicalTimeUnits);
                         Property next_EhmaxRate_grid = arguments.EhmaxRate(deformationEpisodeNo);
                         if ((next_EhmaxRate_grid != null) && (next_EhmaxRate_grid.Grid != PetrelGrid))
                         {
@@ -366,7 +366,7 @@ namespace DFMGenerator_Ocean
                         double next_AppliedOverpressureRate_GeologicalTimeUnits = arguments.AppliedOverpressureRate_default(deformationEpisodeNo);
                         if (double.IsNaN(next_AppliedOverpressureRate_GeologicalTimeUnits))
                             next_AppliedOverpressureRate_GeologicalTimeUnits = AppliedOverpressureRate_GeologicalTimeUnits;
-                            AppliedOverpressureRate_GeologicalTimeUnits_list.Add(next_AppliedOverpressureRate_GeologicalTimeUnits);
+                        AppliedOverpressureRate_GeologicalTimeUnits_list.Add(next_AppliedOverpressureRate_GeologicalTimeUnits);
                         Property next_AppliedOverpressureRate_grid = arguments.AppliedOverpressureRate(deformationEpisodeNo);
                         if ((next_AppliedOverpressureRate_grid != null) && (next_AppliedOverpressureRate_grid.Grid != PetrelGrid))
                         {
@@ -379,7 +379,7 @@ namespace DFMGenerator_Ocean
                         double next_AppliedTemperatureChange_GeologicalTimeUnits = arguments.AppliedTemperatureChange_default(deformationEpisodeNo);
                         if (double.IsNaN(next_AppliedTemperatureChange_GeologicalTimeUnits))
                             next_AppliedTemperatureChange_GeologicalTimeUnits = AppliedTemperatureChange_GeologicalTimeUnits;
-                            AppliedTemperatureChange_GeologicalTimeUnits_list.Add(next_AppliedTemperatureChange_GeologicalTimeUnits);
+                        AppliedTemperatureChange_GeologicalTimeUnits_list.Add(next_AppliedTemperatureChange_GeologicalTimeUnits);
                         Property next_AppliedTemperatureChange_grid = arguments.AppliedTemperatureChange(deformationEpisodeNo);
                         if ((next_AppliedTemperatureChange_grid != null) && (next_AppliedTemperatureChange_grid.Grid != PetrelGrid))
                         {
@@ -392,7 +392,7 @@ namespace DFMGenerator_Ocean
                         double next_AppliedUpliftRate_GeologicalTimeUnits = arguments.AppliedUpliftRate_default(deformationEpisodeNo);
                         if (double.IsNaN(next_AppliedUpliftRate_GeologicalTimeUnits))
                             next_AppliedUpliftRate_GeologicalTimeUnits = AppliedUpliftRate_GeologicalTimeUnits;
-                            AppliedUpliftRate_GeologicalTimeUnits_list.Add(next_AppliedUpliftRate_GeologicalTimeUnits);
+                        AppliedUpliftRate_GeologicalTimeUnits_list.Add(next_AppliedUpliftRate_GeologicalTimeUnits);
                         Property next_AppliedUpliftRate_grid = arguments.AppliedUpliftRate(deformationEpisodeNo);
                         if ((next_AppliedUpliftRate_grid != null) && (next_AppliedUpliftRate_grid.Grid != PetrelGrid))
                         {
@@ -405,7 +405,7 @@ namespace DFMGenerator_Ocean
                         double next_StressArchingFactor_GeologicalTimeUnits = arguments.StressArchingFactor(deformationEpisodeNo);
                         if (double.IsNaN(next_StressArchingFactor_GeologicalTimeUnits))
                             next_StressArchingFactor_GeologicalTimeUnits = StressArchingFactor;
-                            StressArchingFactor_list.Add(next_StressArchingFactor_GeologicalTimeUnits);
+                        StressArchingFactor_list.Add(next_StressArchingFactor_GeologicalTimeUnits);
 
                         // Dynamic load data as standard properties
                         // Check if the supplied Fluid Pressure or ZZ stress grid property argument is a standard Property object, and the deformation epsidoe duration has been specified
@@ -3148,76 +3148,76 @@ namespace DFMGenerator_Ocean
                                         }
                                         // End get the mechanical properties from the grid as required
 
-                                // Get the deformation load data for each deformation episode
-                                // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
-                                List<Tensor2S> local_EhRate_list = new List<Tensor2S>();
-                                List<double> local_AppliedOverpressureRate_list = new List<double>();
-                                List<double> local_AppliedTemperatureChange_list = new List<double>();
-                                List<double> local_AppliedUpliftRate_list = new List<double>();
-                                List<double> local_StressArchingFactor_list = new List<double>();
-                                List<double> local_DeformationEpisodeDuration_list = new List<double>();
-                                List<StressStateDefinition> local_StressStateDefinition_list = new List<StressStateDefinition>();
-                                List<double> local_InitialVerticalStress_list = new List<double>();
-                                List<Tensor2S> local_StressRateTensor_list = new List<Tensor2S>();
-                                List<Tensor2S> local_InitialStressTensor_list = new List<Tensor2S>();
-                                List<double> local_InitialFluidPressure_list = new List<double>();
+                                        // Get the deformation load data for each deformation episode
+                                        // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
+                                        List<Tensor2S> local_EhRate_list = new List<Tensor2S>();
+                                        List<double> local_AppliedOverpressureRate_list = new List<double>();
+                                        List<double> local_AppliedTemperatureChange_list = new List<double>();
+                                        List<double> local_AppliedUpliftRate_list = new List<double>();
+                                        List<double> local_StressArchingFactor_list = new List<double>();
+                                        List<double> local_DeformationEpisodeDuration_list = new List<double>();
+                                        List<StressStateDefinition> local_StressStateDefinition_list = new List<StressStateDefinition>();
+                                        List<double> local_InitialVerticalStress_list = new List<double>();
+                                        List<Tensor2S> local_StressRateTensor_list = new List<Tensor2S>();
+                                        List<Tensor2S> local_InitialStressTensor_list = new List<Tensor2S>();
+                                        List<double> local_InitialFluidPressure_list = new List<double>();
 
-                                // Create variables for the initial and final dynamic load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
-                                double initialSzz = double.NaN;
-                                double finalSzz = double.NaN;
-                                double initialSxx = double.NaN;
-                                double finalSxx = double.NaN;
-                                double initialSyy = double.NaN;
-                                double finalSyy = double.NaN;
-                                double initialSxy = double.NaN;
-                                double finalSxy = double.NaN;
-                                double initialSzx = double.NaN;
-                                double finalSzx = double.NaN;
-                                double initialSyz = double.NaN;
-                                double finalSyz = double.NaN;
-                                double initialFluidPressure = double.NaN;
-                                double finalFluidPressure = double.NaN;
+                                        // Create variables for the initial and final dynamic load values outside the sub episodes, so the final value for each episode can be used as the initial value for the subsequent episode 
+                                        double initialSzz = double.NaN;
+                                        double finalSzz = double.NaN;
+                                        double initialSxx = double.NaN;
+                                        double finalSxx = double.NaN;
+                                        double initialSyy = double.NaN;
+                                        double finalSyy = double.NaN;
+                                        double initialSxy = double.NaN;
+                                        double finalSxy = double.NaN;
+                                        double initialSzx = double.NaN;
+                                        double finalSzx = double.NaN;
+                                        double initialSyz = double.NaN;
+                                        double finalSyz = double.NaN;
+                                        double initialFluidPressure = double.NaN;
+                                        double finalFluidPressure = double.NaN;
 
-                                // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
-                                // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to zero
-                                double local_DefaultFractureAzimuth = 0;
-                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
-                                {
-                                    // Get the time converter for this episode
-                                    // This can vary between episodes as the time units may be different for each deformation episode
-                                    // NB Times in project units must be divided by the converter to convert to SI units (s)
-                                    // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
-                                    double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
+                                        // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
+                                        // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to zero
+                                        double local_DefaultFractureAzimuth = 0;
+                                        for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
+                                        {
+                                            // Get the time converter for this episode
+                                            // This can vary between episodes as the time units may be different for each deformation episode
+                                            // NB Times in project units must be divided by the converter to convert to SI units (s)
+                                            // NB Load rates in project units must be multiplied by the converter to convert to SI units (/s)
+                                            double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
 
-                                    // Get the static deformation load data from the grid as required
-                                    // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                    // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                    double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
-                                    double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
-                                    double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
+                                            // Get the static deformation load data from the grid as required
+                                            // This will depend on whether we are averaging the stress/strain over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                            // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                            double local_EhminAzi = EhminAzi_list[deformationEpisodeNo];
+                                            double local_EhminRate = EhminRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_EhmaxRate = EhmaxRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_AppliedOverpressureRate = AppliedOverpressureRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_AppliedTemperatureChange = AppliedTemperatureChange_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_AppliedUpliftRate = AppliedUpliftRate_GeologicalTimeUnits_list[deformationEpisodeNo] / TimeUnitConverter;
+                                            double local_StressArchingFactor = StressArchingFactor_list[deformationEpisodeNo];
+                                            double local_DeformationEpisodeDuration = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo] * TimeUnitConverter;
 
-                                    // Get local handles for the static load properties and flags
-                                    bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
-                                    Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
-                                    bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
-                                    Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
-                                    bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
-                                    Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
-                                    Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
-                                    bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
+                                            // Get local handles for the static load properties and flags
+                                            bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
+                                            Property EhminAzi_grid = EhminAzi_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_EhminAzi = convertFromGeneral_EhminAzi_list[deformationEpisodeNo];
+                                            bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
+                                            Property EhminRate_grid = EhminRate_grid_list[deformationEpisodeNo];
+                                            bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
+                                            Property EhmaxRate_grid = EhmaxRate_grid_list[deformationEpisodeNo];
+                                            bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                            Property AppliedOverpressureRate_grid = AppliedOverpressureRate_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_AppliedOverpressureRate = convertFromGeneral_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                            bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                            Property AppliedTemperatureChange_grid = AppliedTemperatureChange_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_AppliedTemperatureChange = convertFromGeneral_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                            bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
+                                            Property AppliedUpliftRate_grid = AppliedUpliftRate_grid_list[deformationEpisodeNo];
+                                            bool convertFromGeneral_AppliedUpliftRate = convertFromGeneral_AppliedUpliftRate_list[deformationEpisodeNo];
 
                                             if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                                             {
@@ -3501,333 +3501,333 @@ namespace DFMGenerator_Ocean
                                             if (deformationEpisodeNo == 0)
                                                 local_DefaultFractureAzimuth = local_EhminAzi;
 
-                                    // Get the dynamic deformation load data as grid properties if required
-                                    // Get local handles for the Property objects and flags defining the load data for this deformation episode
-                                    bool UsePropertyFor_FluidPressure = UsePropertyFor_FluidPressure_list[deformationEpisodeNo];
-                                    Property local_FluidPressure_property = FluidPressure_property_list[deformationEpisodeNo];
-                                    bool UsePropertyFor_Szz = UsePropertyFor_Szz_list[deformationEpisodeNo];
-                                    Property local_Szz_property = Szz_property_list[deformationEpisodeNo];
-                                    bool UsePropertyFor_StressTensor = UsePropertyFor_StressTensor_list[deformationEpisodeNo];
-                                    Property local_Sxx_property = Sxx_property_list[deformationEpisodeNo];
-                                    Property local_Syy_property = Syy_property_list[deformationEpisodeNo];
-                                    Property local_Sxy_property = Sxy_property_list[deformationEpisodeNo];
-                                    bool UsePropertyFor_ShvComponents = UsePropertyFor_ShvComponents_list[deformationEpisodeNo];
-                                    Property local_Syz_property = Syz_property_list[deformationEpisodeNo];
-                                    Property local_Szx_property = Szx_property_list[deformationEpisodeNo];
+                                            // Get the dynamic deformation load data as grid properties if required
+                                            // Get local handles for the Property objects and flags defining the load data for this deformation episode
+                                            bool UsePropertyFor_FluidPressure = UsePropertyFor_FluidPressure_list[deformationEpisodeNo];
+                                            Property local_FluidPressure_property = FluidPressure_property_list[deformationEpisodeNo];
+                                            bool UsePropertyFor_Szz = UsePropertyFor_Szz_list[deformationEpisodeNo];
+                                            Property local_Szz_property = Szz_property_list[deformationEpisodeNo];
+                                            bool UsePropertyFor_StressTensor = UsePropertyFor_StressTensor_list[deformationEpisodeNo];
+                                            Property local_Sxx_property = Sxx_property_list[deformationEpisodeNo];
+                                            Property local_Syy_property = Syy_property_list[deformationEpisodeNo];
+                                            Property local_Sxy_property = Sxy_property_list[deformationEpisodeNo];
+                                            bool UsePropertyFor_ShvComponents = UsePropertyFor_ShvComponents_list[deformationEpisodeNo];
+                                            Property local_Syz_property = Syz_property_list[deformationEpisodeNo];
+                                            Property local_Szx_property = Szx_property_list[deformationEpisodeNo];
 
-                                    // Update the initial load values with the final load values from the previous deformation episode, if defined
-                                    // If these are not defined, we will use the final values (i.e. assume constant stress during the deformation episode)
-                                    initialSzz = finalSzz;
-                                    initialSxx = finalSxx;
-                                    initialSyy = finalSyy;
-                                    initialSxy = finalSxy;
-                                    initialSzx = finalSzx;
-                                    initialSyz = finalSyz;
-                                    initialFluidPressure = finalFluidPressure;
+                                            // Update the initial load values with the final load values from the previous deformation episode, if defined
+                                            // If these are not defined, we will use the final values (i.e. assume constant stress during the deformation episode)
+                                            initialSzz = finalSzz;
+                                            initialSxx = finalSxx;
+                                            initialSyy = finalSyy;
+                                            initialSxy = finalSxy;
+                                            initialSzx = finalSzx;
+                                            initialSyz = finalSyz;
+                                            initialFluidPressure = finalFluidPressure;
 
-                                    // Get the final stress values
-                                    if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
-                                    {
-                                        // Create local variables for running total and number of datapoints for each stress/strain state parameter
-                                        double szz_total = 0;
-                                        int szz_novalues = 0;
-                                        double sxx_total = 0;
-                                        int sxx_novalues = 0;
-                                        double syy_total = 0;
-                                        int syy_novalues = 0;
-                                        double sxy_total = 0;
-                                        int sxy_novalues = 0;
-                                        double szx_total = 0;
-                                        int szx_novalues = 0;
-                                        double syz_total = 0;
-                                        int syz_novalues = 0;
-                                        double fluidPressure_total = 0;
-                                        int fluidPressure_novalues = 0;
+                                            // Get the final stress values
+                                            if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                            {
+                                                // Create local variables for running total and number of datapoints for each stress/strain state parameter
+                                                double szz_total = 0;
+                                                int szz_novalues = 0;
+                                                double sxx_total = 0;
+                                                int sxx_novalues = 0;
+                                                double syy_total = 0;
+                                                int syy_novalues = 0;
+                                                double sxy_total = 0;
+                                                int sxy_novalues = 0;
+                                                double szx_total = 0;
+                                                int szx_novalues = 0;
+                                                double syz_total = 0;
+                                                int syz_novalues = 0;
+                                                double fluidPressure_total = 0;
+                                                int fluidPressure_novalues = 0;
 
-                                        // Loop through all the Petrel cells in the gridblock
-                                        for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                            for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                // Loop through all the Petrel cells in the gridblock
+                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                        for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                        {
+                                                            Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                            // Update final absolute vertical stress total if defined
+                                                            if (UsePropertyFor_Szz)
+                                                            {
+                                                                double cell_szz = (double)local_Szz_property[cellRef];
+                                                                if (!double.IsNaN(cell_szz))
+                                                                {
+                                                                    szz_total += cell_szz;
+                                                                    szz_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update final horizontal stress tensor components total if defined
+                                                            if (UsePropertyFor_StressTensor)
+                                                            {
+                                                                double cell_sxx = (double)local_Sxx_property[cellRef];
+                                                                if (!double.IsNaN(cell_sxx))
+                                                                {
+                                                                    sxx_total += cell_sxx;
+                                                                    sxx_novalues++;
+                                                                }
+                                                                double cell_syy = (double)local_Syy_property[cellRef];
+                                                                if (!double.IsNaN(cell_syy))
+                                                                {
+                                                                    syy_total += cell_syy;
+                                                                    syy_novalues++;
+                                                                }
+                                                                double cell_sxy = (double)local_Sxy_property[cellRef];
+                                                                if (!double.IsNaN(cell_sxy))
+                                                                {
+                                                                    sxy_total += cell_sxy;
+                                                                    sxy_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update final vertical shear stress tensor components total if defined
+                                                            if (UsePropertyFor_ShvComponents)
+                                                            {
+                                                                double cell_szx = (double)local_Szx_property[cellRef];
+                                                                if (!double.IsNaN(cell_szx))
+                                                                {
+                                                                    szx_total += cell_szx;
+                                                                    szx_novalues++;
+                                                                }
+                                                                double cell_syz = (double)local_Syz_property[cellRef];
+                                                                if (!double.IsNaN(cell_syz))
+                                                                {
+                                                                    syz_total += cell_syz;
+                                                                    syz_novalues++;
+                                                                }
+                                                            }
+
+                                                            // Update final fluid pressure total if defined
+                                                            if (UsePropertyFor_FluidPressure)
+                                                            {
+                                                                double cell_fluidpressure = (double)local_FluidPressure_property[cellRef];
+                                                                if (!double.IsNaN(cell_fluidpressure))
+                                                                {
+                                                                    fluidPressure_total += cell_fluidpressure;
+                                                                    fluidPressure_novalues++;
+                                                                }
+                                                            }
+                                                        }
+
+                                                // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                if (szz_novalues > 0)
+                                                    finalSzz = szz_total / (double)szz_novalues;
+                                                if (sxx_novalues > 0)
+                                                    finalSxx = sxx_total / (double)sxx_novalues;
+                                                if (syy_novalues > 0)
+                                                    finalSyy = syy_total / (double)syy_novalues;
+                                                if (sxy_novalues > 0)
+                                                    finalSxy = sxy_total / (double)sxy_novalues;
+                                                if (szx_novalues > 0)
+                                                    finalSzx = szx_total / (double)szx_novalues;
+                                                if (syz_novalues > 0)
+                                                    finalSyz = syz_total / (double)syz_novalues;
+                                                if (fluidPressure_novalues > 0)
+                                                    finalFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
+                                            }
+                                            else // We are taking data from a single cell
+                                            {
+                                                // Create a reference to the cell from which we will read the data
+                                                Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                // Update final absolute vertical stress total if defined
+                                                if (UsePropertyFor_Szz)
                                                 {
-                                                    Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
-
-                                                    // Update final absolute vertical stress total if defined
-                                                    if (UsePropertyFor_Szz)
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         double cell_szz = (double)local_Szz_property[cellRef];
                                                         if (!double.IsNaN(cell_szz))
                                                         {
-                                                            szz_total += cell_szz;
-                                                            szz_novalues++;
+                                                            finalSzz = cell_szz;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update final horizontal stress tensor components total if defined
-                                                    if (UsePropertyFor_StressTensor)
+                                                // Update final horizontal stress totals if defined
+                                                if (UsePropertyFor_StressTensor)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    // We need valid data for all three horizontal components of the strain tensor
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         double cell_sxx = (double)local_Sxx_property[cellRef];
-                                                        if (!double.IsNaN(cell_sxx))
-                                                        {
-                                                            sxx_total += cell_sxx;
-                                                            sxx_novalues++;
-                                                        }
                                                         double cell_syy = (double)local_Syy_property[cellRef];
-                                                        if (!double.IsNaN(cell_syy))
-                                                        {
-                                                            syy_total += cell_syy;
-                                                            syy_novalues++;
-                                                        }
                                                         double cell_sxy = (double)local_Sxy_property[cellRef];
-                                                        if (!double.IsNaN(cell_sxy))
+                                                        if (!double.IsNaN(cell_sxx) && !double.IsNaN(cell_syy) && !double.IsNaN(cell_sxy))
                                                         {
-                                                            sxy_total += cell_sxy;
-                                                            sxy_novalues++;
+                                                            finalSxx = cell_sxx;
+                                                            finalSyy = cell_syy;
+                                                            finalSxy = cell_sxy;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update final vertical shear stress tensor components total if defined
-                                                    if (UsePropertyFor_ShvComponents)
+                                                // Update final vertical shear stress totals if defined
+                                                if (UsePropertyFor_ShvComponents)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    // We need valid data for all three horizontal components of the strain tensor
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         double cell_szx = (double)local_Szx_property[cellRef];
-                                                        if (!double.IsNaN(cell_szx))
-                                                        {
-                                                            szx_total += cell_szx;
-                                                            szx_novalues++;
-                                                        }
                                                         double cell_syz = (double)local_Syz_property[cellRef];
-                                                        if (!double.IsNaN(cell_syz))
+                                                        if (!double.IsNaN(cell_szx) && !double.IsNaN(cell_syz))
                                                         {
-                                                            syz_total += cell_syz;
-                                                            syz_novalues++;
+                                                            finalSzx = cell_szx;
+                                                            finalSyz = cell_syz;
+                                                            break;
                                                         }
                                                     }
+                                                }
 
-                                                    // Update final fluid pressure total if defined
-                                                    if (UsePropertyFor_FluidPressure)
+                                                // Update final fluid pressure total if defined
+                                                if (UsePropertyFor_FluidPressure)
+                                                {
+                                                    // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                    for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
                                                     {
+                                                        cellRef.K = PetrelGrid_DataCellK;
                                                         double cell_fluidpressure = (double)local_FluidPressure_property[cellRef];
                                                         if (!double.IsNaN(cell_fluidpressure))
                                                         {
-                                                            fluidPressure_total += cell_fluidpressure;
-                                                            fluidPressure_novalues++;
+                                                            finalFluidPressure = cell_fluidpressure;
+                                                            break;
                                                         }
                                                     }
                                                 }
-
-                                        // Update the gridblock values with the averages - if there is any data to calculate them from
-                                        if (szz_novalues > 0)
-                                            finalSzz = szz_total / (double)szz_novalues;
-                                        if (sxx_novalues > 0)
-                                            finalSxx = sxx_total / (double)sxx_novalues;
-                                        if (syy_novalues > 0)
-                                            finalSyy = syy_total / (double)syy_novalues;
-                                        if (sxy_novalues > 0)
-                                            finalSxy = sxy_total / (double)sxy_novalues;
-                                        if (szx_novalues > 0)
-                                            finalSzx = szx_total / (double)szx_novalues;
-                                        if (syz_novalues > 0)
-                                            finalSyz = syz_total / (double)syz_novalues;
-                                        if (fluidPressure_novalues > 0)
-                                            finalFluidPressure = fluidPressure_total / (double)fluidPressure_novalues;
-                                    }
-                                    else // We are taking data from a single cell
-                                    {
-                                        // Create a reference to the cell from which we will read the data
-                                        Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
-
-                                        // Update final absolute vertical stress total if defined
-                                        if (UsePropertyFor_Szz)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
-                                            {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                double cell_szz = (double)local_Szz_property[cellRef];
-                                                if (!double.IsNaN(cell_szz))
-                                                {
-                                                    finalSzz = cell_szz;
-                                                    break;
-                                                }
                                             }
-                                        }
 
-                                        // Update final horizontal stress totals if defined
-                                        if (UsePropertyFor_StressTensor)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            // We need valid data for all three horizontal components of the strain tensor
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            // Calculate the dynamic load rates from standard properties
+                                            // First define null/NaN values for initial vertical stress, fluid pressure and stress tensor, and stress rate tensor
+                                            double local_InitialVerticalStress = double.NaN;
+                                            double local_InitialFluidPressure = double.NaN;
+                                            Tensor2S local_InitialStressTensor = null;
+                                            Tensor2S local_StressRateTensor = null;
+                                            // Next determine if there is sufficient data to calculate the stress rate tensor
+                                            // This can only be done if a timestep duration is defined
+                                            bool overideStressRate = UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz) && !double.IsNaN(finalSxx) && !double.IsNaN(finalSyy) && !double.IsNaN(finalSxy);
+                                            bool overideShvComponents = UsePropertyFor_ShvComponents && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzx) && !double.IsNaN(finalSyz);
+                                            if (overideStressRate)
                                             {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                double cell_sxx = (double)local_Sxx_property[cellRef];
-                                                double cell_syy = (double)local_Syy_property[cellRef];
-                                                double cell_sxy = (double)local_Sxy_property[cellRef];
-                                                if (!double.IsNaN(cell_sxx) && !double.IsNaN(cell_syy) && !double.IsNaN(cell_sxy))
-                                                {
-                                                    finalSxx = cell_sxx;
-                                                    finalSyy = cell_syy;
-                                                    finalSxy = cell_sxy;
-                                                    break;
-                                                }
-                                            }
-                                        }
+                                                double local_szzRate = 0;
+                                                double local_sxxRate = 0;
+                                                double local_syyRate = 0;
+                                                double local_sxyRate = 0;
+                                                double local_szxRate = 0;
+                                                double local_syzRate = 0;
 
-                                        // Update final vertical shear stress totals if defined
-                                        if (UsePropertyFor_ShvComponents)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            // We need valid data for all three horizontal components of the strain tensor
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
+                                                if (double.IsNaN(initialSzz))
+                                                    initialSzz = finalSzz;
+                                                else
+                                                    local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                if (double.IsNaN(initialSxx))
+                                                    initialSxx = finalSxx;
+                                                else
+                                                    local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                                if (double.IsNaN(initialSyy))
+                                                    initialSyy = finalSyy;
+                                                else
+                                                    local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                                if (double.IsNaN(initialSxy))
+                                                    initialSxy = finalSxy;
+                                                else
+                                                    local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                                if (overideShvComponents)
+                                                {
+                                                    if (double.IsNaN(initialSzx))
+                                                        initialSzx = finalSzx;
+                                                    else
+                                                        local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                                    if (double.IsNaN(initialSyz))
+                                                        initialSyz = finalSyz;
+                                                    else
+                                                        local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                                }
+                                                local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
+                                                local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                            }
+                                            bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
+                                            if (overrideFluidPressure)
                                             {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                double cell_szx = (double)local_Szx_property[cellRef];
-                                                double cell_syz = (double)local_Syz_property[cellRef];
-                                                if (!double.IsNaN(cell_szx) && !double.IsNaN(cell_syz))
-                                                {
-                                                    finalSzx = cell_szx;
-                                                    finalSyz = cell_syz;
-                                                    break;
-                                                }
+                                                double local_FluidPressureRate = 0;
+                                                if (double.IsNaN(initialFluidPressure))
+                                                    initialFluidPressure = finalFluidPressure;
+                                                else
+                                                    local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                                double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                                local_InitialFluidPressure = initialFluidPressure;
+                                                local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
                                             }
-                                        }
-
-                                        // Update final fluid pressure total if defined
-                                        if (UsePropertyFor_FluidPressure)
-                                        {
-                                            // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                            for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                            // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
+                                            // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
+                                            bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
+                                            if (overrideStressArchingFactor)
                                             {
-                                                cellRef.K = PetrelGrid_DataCellK;
-                                                double cell_fluidpressure = (double)local_FluidPressure_property[cellRef];
-                                                if (!double.IsNaN(cell_fluidpressure))
-                                                {
-                                                    finalFluidPressure = cell_fluidpressure;
-                                                    break;
-                                                }
+                                                double dSigmazz_dt = 0;
+                                                if (double.IsNaN(initialSzz))
+                                                    initialSzz = finalSzz;
+                                                else
+                                                    dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                                double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                                double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                                local_InitialVerticalStress = initialSzz;
+                                                local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                                                // Trim the result so it lies between 0 and 1 inclusive
+                                                if (local_StressArchingFactor < 0)
+                                                    local_StressArchingFactor = 0;
+                                                if (local_StressArchingFactor > 1)
+                                                    local_StressArchingFactor = 1;
                                             }
-                                        }
-                                    }
 
-                                    // Calculate the dynamic load rates from standard properties
-                                    // First define null/NaN values for initial vertical stress, fluid pressure and stress tensor, and stress rate tensor
-                                    double local_InitialVerticalStress = double.NaN;
-                                    double local_InitialFluidPressure = double.NaN;
-                                    Tensor2S local_InitialStressTensor = null;
-                                    Tensor2S local_StressRateTensor = null;
-                                    // Next determine if there is sufficient data to calculate the stress rate tensor
-                                    // This can only be done if a timestep duration is defined
-                                    bool overideStressRate = UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz) && !double.IsNaN(finalSxx) && !double.IsNaN(finalSyy) && !double.IsNaN(finalSxy);
-                                    bool overideShvComponents = UsePropertyFor_ShvComponents && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzx) && !double.IsNaN(finalSyz);
-                                    if (overideStressRate)
-                                    {
-                                        double local_szzRate = 0;
-                                        double local_sxxRate = 0;
-                                        double local_syyRate = 0;
-                                        double local_sxyRate = 0;
-                                        double local_szxRate = 0;
-                                        double local_syzRate = 0;
+                                            // If the final stress tensor and fluid pressure values are not defined, reset them to NaN so they will not be picked up by the next deformation episode
+                                            if (!overideStressRate)
+                                            {
+                                                finalSxx = double.NaN;
+                                                finalSyy = double.NaN;
+                                                finalSxy = double.NaN;
+                                                finalSzx = double.NaN;
+                                                finalSyz = double.NaN;
+                                                if (!overrideStressArchingFactor)
+                                                    finalSzz = double.NaN;
+                                            }
+                                            if (!overrideFluidPressure)
+                                            {
+                                                finalFluidPressure = double.NaN;
+                                            }
 
-                                        // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
-                                        if (double.IsNaN(initialSzz))
-                                            initialSzz = finalSzz;
-                                        else
-                                            local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                        if (double.IsNaN(initialSxx))
-                                            initialSxx = finalSxx;
-                                        else
-                                            local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
-                                        if (double.IsNaN(initialSyy))
-                                            initialSyy = finalSyy;
-                                        else
-                                            local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
-                                        if (double.IsNaN(initialSxy))
-                                            initialSxy = finalSxy;
-                                        else
-                                            local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
-                                        if (overideShvComponents)
-                                        {
-                                            if (double.IsNaN(initialSzx))
-                                                initialSzx = finalSzx;
-                                            else
-                                                local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
-                                            if (double.IsNaN(initialSyz))
-                                                initialSyz = finalSyz;
-                                            else
-                                                local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
-                                        }
-                                        local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
-                                        local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
-                                    }
-                                    bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
-                                    if (overrideFluidPressure)
-                                    {
-                                        double local_FluidPressureRate = 0;
-                                        if (double.IsNaN(initialFluidPressure))
-                                            initialFluidPressure = finalFluidPressure;
-                                        else
-                                            local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
-                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
-                                        local_InitialFluidPressure = initialFluidPressure;
-                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
-                                    }
-                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
-                                    // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
-                                    bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
-                                    if (overrideStressArchingFactor)
-                                    {
-                                        double dSigmazz_dt = 0;
-                                        if (double.IsNaN(initialSzz))
-                                            initialSzz = finalSzz;
-                                        else
-                                            dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
-                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
-                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
-                                        local_InitialVerticalStress = initialSzz;
-                                        local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
-                                        // Trim the result so it lies between 0 and 1 inclusive
-                                        if (local_StressArchingFactor < 0)
-                                            local_StressArchingFactor = 0;
-                                        if (local_StressArchingFactor > 1)
-                                            local_StressArchingFactor = 1;
-                                    }
+                                            // Check if the deformation episode is subdivided into sub episodes
+                                            // If it is not, add the load data for this deformation episode to the deformation episode lists
+                                            if (!SubEpisodesDefined_list[deformationEpisodeNo])
+                                            {
+                                                // Add the strain load data
+                                                local_EhRate_list.Add(Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi));
+                                                local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                                local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                                local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                                local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                                local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+                                                local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
 
-                                    // If the final stress tensor and fluid pressure values are not defined, reset them to NaN so they will not be picked up by the next deformation episode
-                                    if (!overideStressRate)
-                                    {
-                                        finalSxx = double.NaN;
-                                        finalSyy = double.NaN;
-                                        finalSxy = double.NaN;
-                                        finalSzx = double.NaN;
-                                        finalSyz = double.NaN;
-                                        if (!overrideStressArchingFactor)
-                                            finalSzz = double.NaN;
-                                    }
-                                    if (!overrideFluidPressure)
-                                    {
-                                        finalFluidPressure = double.NaN;
-                                    }
+                                                // Add the stress load tensor - this will be null if not defined
+                                                local_StressRateTensor_list.Add(local_StressRateTensor);
 
-                                    // Check if the deformation episode is subdivided into sub episodes
-                                    // If it is not, add the load data for this deformation episode to the deformation episode lists
-                                    if (!SubEpisodesDefined_list[deformationEpisodeNo])
-                                    {
-                                        // Add the strain load data
-                                        local_EhRate_list.Add(Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi));
-                                        local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
-                                        local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
-                                        local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
-                                        local_StressArchingFactor_list.Add(local_StressArchingFactor);
-                                        local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
-                                        local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
-
-                                        // Add the stress load tensor - this will be null if not defined
-                                        local_StressRateTensor_list.Add(local_StressRateTensor);
-
-                                        // Add values for the inital data - these will be null if not defined
-                                        local_InitialStressTensor_list.Add(local_InitialStressTensor);
-                                        local_InitialFluidPressure_list.Add(local_InitialFluidPressure);
-                                        local_InitialVerticalStress_list.Add(local_InitialVerticalStress);
+                                                // Add values for the inital data - these will be null if not defined
+                                                local_InitialStressTensor_list.Add(local_InitialStressTensor);
+                                                local_InitialFluidPressure_list.Add(local_InitialFluidPressure);
+                                                local_InitialVerticalStress_list.Add(local_InitialVerticalStress);
 
 #if DEBUG_FRAC_INPUT
                                         if (local_StressRateTensor is null)
@@ -3835,13 +3835,13 @@ namespace DFMGenerator_Ocean
                                         else
                                             PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, Initial stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({1}, {2}, {3}, {4}, {5}, {6}), Initial FP {7}, Final stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({8}, {9}, {10}, {11}, {12}, {13}), Final FP {14}", local_DeformationEpisodeDuration, initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx, initialFluidPressure, finalSxx, finalSyy, finalSzz, finalSxy, finalSyz, finalSzx, finalFluidPressure));
 #endif
-                                    }
-                                    // If the deformation episode is subdivided into sub episodes, the dynamic load data takes the form of simulation results
-                                    else
-                                    {
-                                        // Get the number and durations of the sub episodes
-                                        List<double> subEpisodeDuration_list = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
-                                        int noSubEpisodes = subEpisodeDuration_list.Count;
+                                            }
+                                            // If the deformation episode is subdivided into sub episodes, the dynamic load data takes the form of simulation results
+                                            else
+                                            {
+                                                // Get the number and durations of the sub episodes
+                                                List<double> subEpisodeDuration_list = SubEpisodeDurations_GeologicalTimeUnits_list[deformationEpisodeNo];
+                                                int noSubEpisodes = subEpisodeDuration_list.Count;
 
                                                 // Get lists of GridProperty objects defining the load data for each sub episode
                                                 List<GridProperty> local_FluidPressure_grid_list = FluidPressure_grid_list[deformationEpisodeNo];
@@ -3856,21 +3856,21 @@ namespace DFMGenerator_Ocean
                                                 List<GridProperty> local_Syz_grid_list = Syz_grid_list[deformationEpisodeNo];
                                                 bool UseGridFor_ShvComponents = UseGridPropertyTimeSeriesFor_ShvComponents_list[deformationEpisodeNo] && (local_Szx_grid_list.Count >= noSubEpisodes + 1) && (local_Syz_grid_list.Count >= noSubEpisodes + 1);
 
-                                        // Loop through each sub episode; if the deformation episode is not subdivided, we must still go through the loop once to add the deformation episode data to the lists
-                                        // NB in the -1 iteration the initial values for the first timestep will be loaded into the final value local variables; these will then be copied into the initial values variables in iteration 0
-                                        for (int subEpisodeNo = -1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
-                                        {
-                                            // Update the initial load values with the final load values from the previous sub episode, except for iteration -1
-                                            if (subEpisodeNo >= 0)
-                                            {
-                                                initialSzz = finalSzz;
-                                                initialSxx = finalSxx;
-                                                initialSyy = finalSyy;
-                                                initialSxy = finalSxy;
-                                                initialSzx = finalSzx;
-                                                initialSyz = finalSyz;
-                                                initialFluidPressure = finalFluidPressure;
-                                            }
+                                                // Loop through each sub episode; if the deformation episode is not subdivided, we must still go through the loop once to add the deformation episode data to the lists
+                                                // NB in the -1 iteration the initial values for the first timestep will be loaded into the final value local variables; these will then be copied into the initial values variables in iteration 0
+                                                for (int subEpisodeNo = -1; subEpisodeNo < noSubEpisodes; subEpisodeNo++)
+                                                {
+                                                    // Update the initial load values with the final load values from the previous sub episode, except for iteration -1
+                                                    if (subEpisodeNo >= 0)
+                                                    {
+                                                        initialSzz = finalSzz;
+                                                        initialSxx = finalSxx;
+                                                        initialSyy = finalSyy;
+                                                        initialSxy = finalSxy;
+                                                        initialSzx = finalSzx;
+                                                        initialSyz = finalSyz;
+                                                        initialFluidPressure = finalFluidPressure;
+                                                    }
 
                                                     // Get the final load values from the grid properties
                                                     // In iteration -1, these will be the initial load values for the first episode
@@ -4074,77 +4074,77 @@ namespace DFMGenerator_Ocean
                                                     // Get the sub episode duration
                                                     local_DeformationEpisodeDuration = subEpisodeDuration_list[subEpisodeNo] * TimeUnitConverter;
 
-                                            // Get the load rates for the sub episode
-                                            // Create a tensor for the horizontal strain rate load
-                                            Tensor2S local_EhRate = Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi);
-                                            // NB This will be overridden if a stress load is defined
-                                            bool overideStressRateForSubEpisode = UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz) && !double.IsNaN(initialSxx) && !double.IsNaN(finalSxx) && !double.IsNaN(initialSyy) && !double.IsNaN(finalSyy) && !double.IsNaN(initialSxy) && !double.IsNaN(finalSxy);
-                                            bool overideShvComponentsForSubEpisode = UseGridFor_ShvComponents && !double.IsNaN(initialSzx) && !double.IsNaN(finalSzx) && !double.IsNaN(initialSyz) && !double.IsNaN(finalSyz);
-                                            Tensor2S local_StressRateForSubEpisode = null;
-                                            if (overideStressRateForSubEpisode)
-                                            {
-                                                double local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                double local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
-                                                double local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
-                                                double local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
-                                                double local_szxRate = 0;
-                                                double local_syzRate = 0;
-                                                if (overideShvComponentsForSubEpisode)
-                                                {
-                                                    local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
-                                                    local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
-                                                }
-                                                local_StressRateForSubEpisode = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
-                                            }
-                                            bool overrideFluidPressureForSubEpisode = UseGridFor_FluidPressure && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
-                                            if (overrideFluidPressureForSubEpisode)
-                                            {
-                                                double local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
-                                                double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
-                                                local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
-                                            }
-                                            // If the stress tensor is not defined, then changes in the absolute vertical stress within each sub episode will be accounted for through the stress arching factor
-                                            // NB The absolute vertical stress will also be reset at the start of each sub episode, so will remain synchronised with the specified input load
-                                            bool overrideStressArchingFactorForSubEpisode = UseGridFor_Szz && !UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz);
-                                            if (overrideStressArchingFactorForSubEpisode)
-                                            {
-                                                double dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
-                                                double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
-                                                double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
-                                                local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
-                                                // Trim the result so it lies between 0 and 1 inclusive
-                                                if (local_StressArchingFactor < 0)
-                                                    local_StressArchingFactor = 0;
-                                                if (local_StressArchingFactor > 1)
-                                                    local_StressArchingFactor = 1;
-                                            }
+                                                    // Get the load rates for the sub episode
+                                                    // Create a tensor for the horizontal strain rate load
+                                                    Tensor2S local_EhRate = Tensor2S.HorizontalStrainTensor(local_EhminRate, local_EhmaxRate, local_EhminAzi);
+                                                    // NB This will be overridden if a stress load is defined
+                                                    bool overideStressRateForSubEpisode = UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz) && !double.IsNaN(initialSxx) && !double.IsNaN(finalSxx) && !double.IsNaN(initialSyy) && !double.IsNaN(finalSyy) && !double.IsNaN(initialSxy) && !double.IsNaN(finalSxy);
+                                                    bool overideShvComponentsForSubEpisode = UseGridFor_ShvComponents && !double.IsNaN(initialSzx) && !double.IsNaN(finalSzx) && !double.IsNaN(initialSyz) && !double.IsNaN(finalSyz);
+                                                    Tensor2S local_StressRateForSubEpisode = null;
+                                                    if (overideStressRateForSubEpisode)
+                                                    {
+                                                        double local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                        double local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                                        double local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                                        double local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                                        double local_szxRate = 0;
+                                                        double local_syzRate = 0;
+                                                        if (overideShvComponentsForSubEpisode)
+                                                        {
+                                                            local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                                            local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                                        }
+                                                        local_StressRateForSubEpisode = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                                    }
+                                                    bool overrideFluidPressureForSubEpisode = UseGridFor_FluidPressure && !double.IsNaN(initialFluidPressure) && !double.IsNaN(finalFluidPressure);
+                                                    if (overrideFluidPressureForSubEpisode)
+                                                    {
+                                                        double local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
+                                                    }
+                                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each sub episode will be accounted for through the stress arching factor
+                                                    // NB The absolute vertical stress will also be reset at the start of each sub episode, so will remain synchronised with the specified input load
+                                                    bool overrideStressArchingFactorForSubEpisode = UseGridFor_Szz && !UseGridFor_StressTensor && !double.IsNaN(initialSzz) && !double.IsNaN(finalSzz);
+                                                    if (overrideStressArchingFactorForSubEpisode)
+                                                    {
+                                                        double dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                                        local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                                                        // Trim the result so it lies between 0 and 1 inclusive
+                                                        if (local_StressArchingFactor < 0)
+                                                            local_StressArchingFactor = 0;
+                                                        if (local_StressArchingFactor > 1)
+                                                            local_StressArchingFactor = 1;
+                                                    }
 
-                                            // Add the data for this sub episode to the deformation episode lists
-                                            local_EhRate_list.Add(local_EhRate);
-                                            local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
-                                            local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
-                                            local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
-                                            local_StressArchingFactor_list.Add(local_StressArchingFactor);
-                                            local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
-                                            local_StressRateTensor_list.Add(local_StressRateForSubEpisode);
-                                            local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
+                                                    // Add the data for this sub episode to the deformation episode lists
+                                                    local_EhRate_list.Add(local_EhRate);
+                                                    local_AppliedOverpressureRate_list.Add(local_AppliedOverpressureRate);
+                                                    local_AppliedTemperatureChange_list.Add(local_AppliedTemperatureChange);
+                                                    local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
+                                                    local_StressArchingFactor_list.Add(local_StressArchingFactor);
+                                                    local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
+                                                    local_StressRateTensor_list.Add(local_StressRateForSubEpisode);
+                                                    local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
 
-                                            // Add data for the inital data lists
-                                            if (overideStressRateForSubEpisode && overideShvComponentsForSubEpisode)
-                                                local_InitialStressTensor_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx));
-                                            else if (overideStressRateForSubEpisode)
-                                                local_InitialStressTensor_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, 0, 0));
-                                            else
-                                                local_InitialStressTensor_list.Add(null);
-                                            if (overrideFluidPressureForSubEpisode)
-                                                local_InitialFluidPressure_list.Add(initialFluidPressure);
-                                            else
-                                                local_InitialFluidPressure_list.Add(double.NaN);
-                                            if (overrideStressArchingFactorForSubEpisode)
-                                                local_InitialVerticalStress_list.Add(initialSzz);
-                                            else
-                                                local_InitialVerticalStress_list.Add(double.NaN);
+                                                    // Add data for the inital data lists
+                                                    if (overideStressRateForSubEpisode && overideShvComponentsForSubEpisode)
+                                                        local_InitialStressTensor_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx));
+                                                    else if (overideStressRateForSubEpisode)
+                                                        local_InitialStressTensor_list.Add(new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, 0, 0));
+                                                    else
+                                                        local_InitialStressTensor_list.Add(null);
+                                                    if (overrideFluidPressureForSubEpisode)
+                                                        local_InitialFluidPressure_list.Add(initialFluidPressure);
+                                                    else
+                                                        local_InitialFluidPressure_list.Add(double.NaN);
+                                                    if (overrideStressArchingFactorForSubEpisode)
+                                                        local_InitialVerticalStress_list.Add(initialSzz);
+                                                    else
+                                                        local_InitialVerticalStress_list.Add(double.NaN);
 
 #if DEBUG_FRAC_INPUT
                                                     string strainLoadText = "";
@@ -4158,9 +4158,9 @@ namespace DFMGenerator_Ocean
                                                     string safText = (overrideStressArchingFactor ? string.Format("Initial Sv {0}, Final Sv {1}, implied stress arching factor {2}", initialSzz, finalSzz, local_StressArchingFactor) : string.Format("Stress arching factor {0}", local_StressArchingFactor));
                                                     PetrelLogger.InfoOutputWindow(string.Format("New deformation sub episode: Duration {0}, {1}, {2}, {3});", local_DeformationEpisodeDuration, strainLoadText, fluidPressureLoadText, safText));
 #endif
-                                        }// End get the deformation load data for each sub episode
-                                    }// End check if the deformation episode is subdivided into sub episodes
-                                }// End get the deformation load data for each deformation episode
+                                                }// End get the deformation load data for each sub episode
+                                            }// End check if the deformation episode is subdivided into sub episodes
+                                        }// End get the deformation load data for each deformation episode
 
                                         // Get the depth at the start of deformation from the grid as required
                                         // This will depend on whether we are averaging the stress and strain data over all Petrel cells that make up the gridblock, or taking the values from a single cell
@@ -4373,36 +4373,36 @@ namespace DFMGenerator_Ocean
                                             MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 
-                                // Add the deformation load data 
-                                // Keep a record of the initial fluid pressure at the start of each timestep in case it is not defined for a stress load
-                                double initialFP = gc.StressStrain.P_f;
-                                for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
-                                {
-                                    // Get load data for this deformation episode from the deformation episode lists
-                                    Tensor2S local_EhRate = local_EhRate_list[deformationEpisodeNo];
-                                    double local_AppliedOverpressureRate = local_AppliedOverpressureRate_list[deformationEpisodeNo];
-                                    double local_AppliedTemperatureChange = local_AppliedTemperatureChange_list[deformationEpisodeNo];
-                                    double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
-                                    double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
-                                    double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
-                                    Tensor2S local_StressRateTensor = local_StressRateTensor_list[deformationEpisodeNo];
-                                    double local_InitialVerticalStress = local_InitialVerticalStress_list[deformationEpisodeNo];
-                                    Tensor2S local_InitialStressTensor = local_InitialStressTensor_list[deformationEpisodeNo];
-                                    double local_InitialFluidPressure = local_InitialFluidPressure_list[deformationEpisodeNo];
-                                    if (local_InitialFluidPressure >= 0)
-                                        initialFP = local_InitialFluidPressure;
+                                        // Add the deformation load data 
+                                        // Keep a record of the initial fluid pressure at the start of each timestep in case it is not defined for a stress load
+                                        double initialFP = gc.StressStrain.P_f;
+                                        for (int deformationEpisodeNo = 0; deformationEpisodeNo < noTotalDeformationEpisodes; deformationEpisodeNo++)
+                                        {
+                                            // Get load data for this deformation episode from the deformation episode lists
+                                            Tensor2S local_EhRate = local_EhRate_list[deformationEpisodeNo];
+                                            double local_AppliedOverpressureRate = local_AppliedOverpressureRate_list[deformationEpisodeNo];
+                                            double local_AppliedTemperatureChange = local_AppliedTemperatureChange_list[deformationEpisodeNo];
+                                            double local_AppliedUpliftRate = local_AppliedUpliftRate_list[deformationEpisodeNo];
+                                            double local_StressArchingFactor = local_StressArchingFactor_list[deformationEpisodeNo];
+                                            double local_DeformationEpisodeDuration = local_DeformationEpisodeDuration_list[deformationEpisodeNo];
+                                            Tensor2S local_StressRateTensor = local_StressRateTensor_list[deformationEpisodeNo];
+                                            double local_InitialVerticalStress = local_InitialVerticalStress_list[deformationEpisodeNo];
+                                            Tensor2S local_InitialStressTensor = local_InitialStressTensor_list[deformationEpisodeNo];
+                                            double local_InitialFluidPressure = local_InitialFluidPressure_list[deformationEpisodeNo];
+                                            if (local_InitialFluidPressure >= 0)
+                                                initialFP = local_InitialFluidPressure;
 
-                                    // Get the type of data used to define this deformation episode load
-                                    StressStateDefinition local_StressStateDefinition = local_StressStateDefinition_list[deformationEpisodeNo];
-                                    if (local_StressRateTensor is null)
-                                        local_StressStateDefinition = StressStateDefinition.Strain;
+                                            // Get the type of data used to define this deformation episode load
+                                            StressStateDefinition local_StressStateDefinition = local_StressStateDefinition_list[deformationEpisodeNo];
+                                            if (local_StressRateTensor is null)
+                                                local_StressStateDefinition = StressStateDefinition.Strain;
 
-                                    // Add the deformation episode to the deformation episode list in the PropControl object, using the function appropriate to the data type
-                                    switch (local_StressStateDefinition)
-                                    {
-                                        case StressStateDefinition.Strain:
+                                            // Add the deformation episode to the deformation episode list in the PropControl object, using the function appropriate to the data type
+                                            switch (local_StressStateDefinition)
                                             {
-                                                gc.PropControl.AddDeformationEpisode_StrainLoad(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialVerticalStress, local_InitialFluidPressure);
+                                                case StressStateDefinition.Strain:
+                                                    {
+                                                        gc.PropControl.AddDeformationEpisode_StrainLoad(local_EhRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialVerticalStress, local_InitialFluidPressure);
 #if DEBUG_FRAC_INPUT
                                                 string local_EhRate_info;
                                                 if (local_EhRate is null)
@@ -4411,11 +4411,11 @@ namespace DFMGenerator_Ocean
                                                     local_EhRate_info = string.Format("Tensor2S({0}, {1}, 0, {2}, 0, 0)", local_EhRate.Component(Tensor2SComponents.XX), local_EhRate.Component(Tensor2SComponents.YY), local_EhRate.Component(Tensor2SComponents.XY));
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_StrainLoad({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhRate_info, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration, local_InitialVerticalStress, local_InitialFluidPressure));
 #endif
-                                            }
-                                            break;
-                                        case StressStateDefinition.AbsoluteStress:
-                                            {
-                                                gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP);
+                                                    }
+                                                    break;
+                                                case StressStateDefinition.AbsoluteStress:
+                                                    {
+                                                        gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP);
 #if DEBUG_FRAC_INPUT
                                                 string local_StressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_StressRateTensor.Component(Tensor2SComponents.XX), local_StressRateTensor.Component(Tensor2SComponents.YY), local_StressRateTensor.Component(Tensor2SComponents.ZZ), local_StressRateTensor.Component(Tensor2SComponents.XY), local_StressRateTensor.Component(Tensor2SComponents.YZ), local_StressRateTensor.Component(Tensor2SComponents.ZX));
                                                 string local_InitialStress_info;
@@ -4425,11 +4425,11 @@ namespace DFMGenerator_Ocean
                                                     local_InitialStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialStressTensor.Component(Tensor2SComponents.XX), local_InitialStressTensor.Component(Tensor2SComponents.YY), local_InitialStressTensor.Component(Tensor2SComponents.ZZ), local_InitialStressTensor.Component(Tensor2SComponents.XY), local_InitialStressTensor.Component(Tensor2SComponents.YZ), local_InitialStressTensor.Component(Tensor2SComponents.ZX));
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad({0}, {1}, {2}, {3}, {4});", local_StressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStress_info, initialFP));
 #endif
-                                            }
-                                            break;
-                                        case StressStateDefinition.TerzaghiEffectiveStress:
-                                            {
-                                                gc.PropControl.AddDeformationEpisode_TerzaghiStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP);
+                                                    }
+                                                    break;
+                                                case StressStateDefinition.TerzaghiEffectiveStress:
+                                                    {
+                                                        gc.PropControl.AddDeformationEpisode_TerzaghiStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP);
 #if DEBUG_FRAC_INPUT
                                                 string local_StressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_StressRateTensor.Component(Tensor2SComponents.XX), local_StressRateTensor.Component(Tensor2SComponents.YY), local_StressRateTensor.Component(Tensor2SComponents.ZZ), local_StressRateTensor.Component(Tensor2SComponents.XY), local_StressRateTensor.Component(Tensor2SComponents.YZ), local_StressRateTensor.Component(Tensor2SComponents.ZX));
                                                 string local_InitialStress_info;
@@ -4439,11 +4439,11 @@ namespace DFMGenerator_Ocean
                                                     local_InitialStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialStressTensor.Component(Tensor2SComponents.XX), local_InitialStressTensor.Component(Tensor2SComponents.YY), local_InitialStressTensor.Component(Tensor2SComponents.ZZ), local_InitialStressTensor.Component(Tensor2SComponents.XY), local_InitialStressTensor.Component(Tensor2SComponents.YZ), local_InitialStressTensor.Component(Tensor2SComponents.ZX));
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_TerzaghiStressLoad({0}, {1}, {2}, {3}, {4});", local_StressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStress_info, initialFP));
 #endif
-                                            }
-                                            break;
-                                        case StressStateDefinition.BiotEffectiveStress:
-                                            {
-                                                gc.PropControl.AddDeformationEpisode_BiotStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP, local_BiotCoefficient);
+                                                    }
+                                                    break;
+                                                case StressStateDefinition.BiotEffectiveStress:
+                                                    {
+                                                        gc.PropControl.AddDeformationEpisode_BiotStressLoad(local_StressRateTensor, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStressTensor, initialFP, local_BiotCoefficient);
 #if DEBUG_FRAC_INPUT
                                                 string local_StressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_StressRateTensor.Component(Tensor2SComponents.XX), local_StressRateTensor.Component(Tensor2SComponents.YY), local_StressRateTensor.Component(Tensor2SComponents.ZZ), local_StressRateTensor.Component(Tensor2SComponents.XY), local_StressRateTensor.Component(Tensor2SComponents.YZ), local_StressRateTensor.Component(Tensor2SComponents.ZX));
                                                 string local_InitialStress_info;
@@ -4453,17 +4453,17 @@ namespace DFMGenerator_Ocean
                                                     local_InitialStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialStressTensor.Component(Tensor2SComponents.XX), local_InitialStressTensor.Component(Tensor2SComponents.YY), local_InitialStressTensor.Component(Tensor2SComponents.ZZ), local_InitialStressTensor.Component(Tensor2SComponents.XY), local_InitialStressTensor.Component(Tensor2SComponents.YZ), local_InitialStressTensor.Component(Tensor2SComponents.ZX));
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.AddDeformationEpisode_BiotStressLoad({0}, {1}, {2}, {3}, {4}, {5});", local_StressRate_info, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialStress_info, initialFP, local_BiotCoefficient));
 #endif
+                                                    }
+                                                    break;
+                                                default:
+                                                    PetrelLogger.InfoOutputWindow(string.Format("No load defined for deformation episode {0}", deformationEpisodeNo));
+                                                    break;
                                             }
-                                            break;
-                                        default:
-                                            PetrelLogger.InfoOutputWindow(string.Format("No load defined for deformation episode {0}", deformationEpisodeNo));
-                                            break;
-                                    }
 
-                                    // Update the record of the initial fluid pressure
-                                    initialFP += (local_AppliedOverpressureRate * ((local_DeformationEpisodeDuration > 0) ? local_DeformationEpisodeDuration : 0));
+                                            // Update the record of the initial fluid pressure
+                                            initialFP += (local_AppliedOverpressureRate * ((local_DeformationEpisodeDuration > 0) ? local_DeformationEpisodeDuration : 0));
 
-                                }// End add the deformation load data
+                                        }// End add the deformation load data
 
                                         // Create the fracture sets
                                         if (Mode1Only)
@@ -4493,19 +4493,19 @@ namespace DFMGenerator_Ocean
                                         PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
                                         PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
 #endif
-                                if (UsePresentDayStress)
-                                {
-                                    switch (PresentDayStressInput)
-                                    {
-                                        case StressStateDefinition.Strain:
+                                        if (UsePresentDayStress)
+                                        {
+                                            switch (PresentDayStressInput)
                                             {
-                                                // Get the present day strain and fluid overpressure from the grid as required
-                                                // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                                double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
-                                                double local_Ehmin_PresentDay = Ehmax_PresentDay;
-                                                double local_Ehmax_PresentDay = Ehmax_PresentDay;
-                                                double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
+                                                case StressStateDefinition.Strain:
+                                                    {
+                                                        // Get the present day strain and fluid overpressure from the grid as required
+                                                        // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                        // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                        double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
+                                                        double local_Ehmin_PresentDay = Ehmax_PresentDay;
+                                                        double local_Ehmax_PresentDay = Ehmax_PresentDay;
+                                                        double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
 
                                                         if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                                                         {
@@ -4831,23 +4831,23 @@ namespace DFMGenerator_Ocean
                                                         PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
                                                         PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
-                                            }
-                                            break;
-                                        case StressStateDefinition.AbsoluteStress:
-                                        case StressStateDefinition.TerzaghiEffectiveStress:
-                                        case StressStateDefinition.BiotEffectiveStress:
-                                            {
-                                                // Get the present day absolute stress and fluid pressure from the grid as required
-                                                // This will depend on whether we are averaging the stress and fluid pressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                // First we will create local variables for the property values in this gridblock
-                                                // By default these will be set to zero, since default values are not specified by the user 
-                                                double local_Sxx_PresentDay = 0;
-                                                double local_Syy_PresentDay = 0;
-                                                double local_Szz_PresentDay = 0;
-                                                double local_Sxy_PresentDay = 0;
-                                                double local_Syz_PresentDay = 0;
-                                                double local_Szx_PresentDay = 0;
-                                                double local_FluidPressure_PresentDay = 0;
+                                                    }
+                                                    break;
+                                                case StressStateDefinition.AbsoluteStress:
+                                                case StressStateDefinition.TerzaghiEffectiveStress:
+                                                case StressStateDefinition.BiotEffectiveStress:
+                                                    {
+                                                        // Get the present day absolute stress and fluid pressure from the grid as required
+                                                        // This will depend on whether we are averaging the stress and fluid pressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                        // First we will create local variables for the property values in this gridblock
+                                                        // By default these will be set to zero, since default values are not specified by the user 
+                                                        double local_Sxx_PresentDay = 0;
+                                                        double local_Syy_PresentDay = 0;
+                                                        double local_Szz_PresentDay = 0;
+                                                        double local_Sxy_PresentDay = 0;
+                                                        double local_Syz_PresentDay = 0;
+                                                        double local_Szx_PresentDay = 0;
+                                                        double local_FluidPressure_PresentDay = 0;
 
                                                         if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                                                         {
@@ -5130,46 +5130,46 @@ namespace DFMGenerator_Ocean
                                                         }
                                                         // End get the present day absolute stress and fluid pressure from the grid as required
 
-                                                // Now we can set the present day stress, depending on the stress type selected
-                                                if (PresentDayStressInput == StressStateDefinition.AbsoluteStress)
-                                                {
-                                                    gc.SetPresentDayAbsoluteStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
+                                                        // Now we can set the present day stress, depending on the stress type selected
+                                                        if (PresentDayStressInput == StressStateDefinition.AbsoluteStress)
+                                                        {
+                                                            gc.SetPresentDayAbsoluteStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay);
 #if DEBUG_FRAC_INPUT
                                                     PetrelLogger.InfoOutputWindow("");
                                                     PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayAbsoluteStress({0}, {1}, {2}, {3}, {4}, {5}, {6});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay));
                                                     PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
-                                                }
-                                                else if (PresentDayStressInput == StressStateDefinition.TerzaghiEffectiveStress)
-                                                {
-                                                    gc.SetPresentDayTerzaghiStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
+                                                        }
+                                                        else if (PresentDayStressInput == StressStateDefinition.TerzaghiEffectiveStress)
+                                                        {
+                                                            gc.SetPresentDayTerzaghiStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay);
 #if DEBUG_FRAC_INPUT
                                                     PetrelLogger.InfoOutputWindow("");
                                                     PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayTerzaghiStress({0}, {1}, {2}, {3}, {4}, {5});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay));
                                                     PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
-                                                }
-                                                else if (PresentDayStressInput == StressStateDefinition.BiotEffectiveStress)
-                                                {
-                                                    gc.SetPresentDayBiotStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient);
+                                                        }
+                                                        else if (PresentDayStressInput == StressStateDefinition.BiotEffectiveStress)
+                                                        {
+                                                            gc.SetPresentDayBiotStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient);
 #if DEBUG_FRAC_INPUT
                                                     PetrelLogger.InfoOutputWindow("");
                                                     PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayBiotStress({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient));
                                                     PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
-                                                }
-                                            }
-                                            break;
-                                        default:
-                                            {
+                                                        }
+                                                    }
+                                                    break;
+                                                default:
+                                                    {
 #if DEBUG_FRAC_INPUT
                                                     PetrelLogger.InfoOutputWindow("");
                                                     PetrelLogger.InfoOutputWindow(string.Format("Not setting present day stress"));
 #endif
+                                                    }
+                                                    break;
                                             }
-                                            break;
-                                    }
-                                }
+                                        }
 
                                         // Set the fracture aperture control data
                                         gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);

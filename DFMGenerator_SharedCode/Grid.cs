@@ -1,6 +1,6 @@
 ﻿// Set this flag to output a list of gridblocks when calculating the implicit and explicit fracture populations
 // Use for debugging only; will significantly increase runtime
-#define LOGGRIDBLOCKS
+//#define LOGGRIDBLOCKS
 
 using System;
 using System.Collections.Generic;
@@ -1156,8 +1156,9 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private class GridblockTimestepControl : IComparable<GridblockTimestepControl>
         {
+            // Data
             /// <summary>
-            /// Reference to relevant GridblockConfiguration object
+            /// Reference to the relevant GridblockConfiguration object
             /// </summary>
             public GridblockConfiguration Gridblock;
             /// <summary>

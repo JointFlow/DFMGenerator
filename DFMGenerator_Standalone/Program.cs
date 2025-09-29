@@ -860,9 +860,9 @@ namespace DFMGenerator_Standalone
             // If set to -1, will use 0.5 * layer thickness
             double MaxUnconfinedFractureRadius = 50;// -1;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-            double MinStressShadowDeactivationRatio = 0.5;
+            double MinStressShadowDeactivationRatio = 0;// 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-            double MinIntersectionDeactivationRatio = 0.5;
+            double MinIntersectionDeactivationRatio = 1000000;// 0.5;
             // Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration

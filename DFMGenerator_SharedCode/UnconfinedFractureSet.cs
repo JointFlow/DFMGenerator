@@ -2020,7 +2020,7 @@ namespace DFMGenerator_SharedCode
 
             // If the flag is set to deactivate the fracture set at the start of the next timestep, do this now
             if (DeactivateNextTimestep)
-                CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
+                deactivateFractures();
         }
         /// <summary>
         /// Check if the fracture set meets the specified deactivation criteria, and if so set the fracture evolution stage to Deactivated
@@ -2394,150 +2394,177 @@ namespace DFMGenerator_SharedCode
                     }
                 }
 
-                // If a P33 growth limit is specified, calculate the time taken for this to be exceeded,
-                // taking into account it may require multiple datapoints to exceed the value
+                // If a P33 growth limit is specified, calculate the time taken for this to be exceeded
+                // NB it may require multiple datapoints to exceed the value
                 if (d_P33max > 0)
                 {
-                    // Loop through all the fully active and restricted datapoints in order of decreasing size
-                    double dP33_to_accommodate = d_P33max;
-                    double timeTodP33max = 0;
-                    int FADatapointNo = 0;
-                    int RDatapointNo = 0;
-                    bool moreValidFADatapoints = (FADatapointNo < Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count);
-                    double nextFADatapointEffR = moreValidFADatapoints ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].EffectiveRayLength : 0;
-                    bool moreValidRDatapoints = (RDatapointNo < Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Count);
-                    double nextRDatapointEffR = moreValidRDatapoints ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].EffectiveRayLength : 0;
+                    // Create a list to compare the expected growth in P33 volumetric density represented by each datapoint
+                    List<FractureGrowthControl> datapointP33Increments = new List<FractureGrowthControl>();
 
-                    while (((float)dP33_to_accommodate > 0f) && (moreValidFADatapoints || moreValidRDatapoints))
-                    {
-                        if (nextFADatapointEffR > nextRDatapointEffR)
+                    // Loop through all the fully active and restricted datapoints and add them to the list
+                    foreach (RayPropagationStatus status in new RayPropagationStatus[2] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted })
+                        foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[status])
                         {
-                            double timeTodRmax;
+                            // Create variables for the dP33 increment that can be achieved by this datapoint, the time required to grow by this amount, and a flag to indicate whether the dP33 increment of this datapoint alone is sufficient to reach the specified dP33 growth target
+                            double growthDurationRequired, dP33_increment;
+                            bool requiredGrowthAchieved;
 
                             // Get the current radius
-                            double datapoint_currentR = Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].RayLength;
+                            double datapoint_currentR = datapoint.RayLength;
 
                             // Find the radius the current fracture would need to grow to to increment dP33 by the required amount
-                            double datapoint_current_dP33 = (4 / 3) * Math.PI * Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dP33factor;
-                            double datapoint_drmax = Math.Pow((dP33_to_accommodate / datapoint_current_dP33) + 1, 1d / 3d) - 1;
-                            // If this is greater than the maximum allowable fracture radius, reduce the radius increase accordingly
+                            double datapoint_current_dP33 = (4d / 3d) * (Math.PI / (double)RaysPerFracture) * datapoint.dP33factor;
+                            double datapoint_drmax = Math.Pow((d_P33max / datapoint_current_dP33) + 1, 1d / 3d) - 1;
+                            // If this is greater than the maximum allowable fracture radius, reduce the radius increase accordingly, calculate the actual dP33 growth achieved and set the flag to indicate that the required dP33 growth cannot be achieved by this datapoint alone
                             double max_drmax = (MaximumFractureRadius / datapoint_currentR) - 1;
                             if (datapoint_drmax > max_drmax)
-                                datapoint_drmax = max_drmax;
-
-                            // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
-                            double criticalRadius = Math.Pow(sqrtpi_Kc_factor * U, -2);
-                            if (datapoint_currentR > criticalRadius)
                             {
-                                // Critical fracture propagation occurs at a constant rate
-                                // The time taken to grow by a specified amount can thus be calculated by division
-                                timeTodRmax = (datapoint_drmax * datapoint_currentR) / CapA;
+                                datapoint_drmax = max_drmax;
+                                dP33_increment = datapoint_current_dP33 * (Math.Pow(datapoint_drmax + 1, 3) - 1);
+                                requiredGrowthAchieved = false;
+                            }
+                            else // Otherwise set the actual dP33 growth achieved to the required dP33 growth and set the flag to indicate that the required dP33 growth can be achieved by this datapoint alone
+                            {
+                                dP33_increment = d_P33max;
+                                requiredGrowthAchieved = true;
+                            }
+
+                            // Now calculate the time taken to achieve this growth
+                            // This calculation will be different for fully active and restricted datapoints
+                            if (status == RayPropagationStatus.FullyActive)
+                            {
+                                // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
+                                double criticalRadius = Math.Pow(sqrtpi_Kc_factor * U, -2);
+                                if (datapoint_currentR > criticalRadius)
+                                {
+                                    // Critical fracture propagation occurs at a constant rate
+                                    // The time taken to grow by a specified amount can thus be calculated by division
+                                    growthDurationRequired = (datapoint_drmax * datapoint_currentR) / CapA;
+                                }
+                                else
+                                {
+                                    // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
+                                    double drmax_term = bis2 ? Math.Log(1 + datapoint_drmax) : (1 - Math.Pow(1 + datapoint_drmax, 1 / beta));
+                                    double U_term = U * Math.Pow(U * sqrtpi_Kc_factor, b);
+                                    double V_term1 = bis2 ? drmax_term : -beta * (drmax_term * Math.Pow(datapoint_currentR, 1 / beta));
+                                    double V_term2 = ((b + 1) * (V / CapA) * V_term1);
+                                    double UV_term = U_term + V_term2;
+
+                                    // If U>>V then the exact equation for optimal duration may give zero because (U_component + V_component2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
+                                    if ((float)(UV_term / U_term) > 1f)
+                                    {
+                                        // Use the formula for increasing stress to calculate optimal duration
+                                        growthDurationRequired = (Math.Pow(UV_term, 1 / (b + 1)) / (V * Math.Pow(sqrtpi_Kc_factor, b / (b + 1)))) - (U / V);
+                                    }
+                                    else // In this case we can approximate V=0 and use the constant driving stress formula
+                                    {
+                                        // Use the formula for constant stress to calculate optimal duration, and set V to zero
+                                        growthDurationRequired = V_term1 / (CapA * Math.Pow(U * sqrtpi_Kc_factor, b));
+                                        setVto0 = true;
+                                    }
+                                }
                             }
                             else
                             {
-                                // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
-                                double drmax_term = bis2 ? Math.Log(1 + datapoint_drmax) : (1 - Math.Pow(1 + datapoint_drmax, 1 / beta));
-                                double U_term = U * Math.Pow(U * sqrtpi_Kc_factor, b);
-                                double V_term1 = bis2 ? drmax_term : -beta * (drmax_term * Math.Pow(datapoint_currentR, 1 / beta));
-                                double V_term2 = ((b + 1) * (V / CapA) * V_term1);
-                                double UV_term = U_term + V_term2;
+                                // Get the controlling radius of the restricted fracture ray
+                                double datapoint_R0 = datapoint.PropagationControllingLength;
 
-                                // If U>>V then the exact equation for optimal duration may give zero because (U_component + V_component2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
-                                if ((float)(UV_term / U_term) > 1f)
+                                // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
+                                double criticalRadius = (2 * Math.Pow(sqrtpi_Kc_factor * U, -2)) - datapoint_R0;
+                                if (datapoint_currentR > criticalRadius)
                                 {
-                                    // Use the formula for increasing stress to calculate optimal duration
-                                    timeTodRmax = (Math.Pow(UV_term, 1 / (b + 1)) / (V * Math.Pow(sqrtpi_Kc_factor, b / (b + 1)))) - (U / V);
+                                    // Critical fracture propagation occurs at a constant rate
+                                    // The time taken to grow by a specified amount can thus be calculated by division
+                                    growthDurationRequired = (datapoint_drmax * datapoint_currentR) / CapA;
                                 }
-                                else // In this case we can approximate V=0 and use the constant driving stress formula
+                                else
                                 {
-                                    // Use the formula for constant stress to calculate optimal duration, and set V to zero
-                                    timeTodRmax = V_term1 / (CapA * Math.Pow(U * sqrtpi_Kc_factor, b));
-                                    setVto0 = true;
+                                    // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
+                                    double drmax_r0_term = ((1 + datapoint_drmax) + (datapoint_R0 / datapoint_currentR)) / 2;
+                                    double rmax_r0_term = (datapoint_currentR + datapoint_R0) / (2 * datapoint_currentR);
+                                    double drmax_term = 2 * (bis2 ? Math.Log(drmax_r0_term) - Math.Log(rmax_r0_term) : Math.Pow(rmax_r0_term, 1 / beta) - Math.Pow(drmax_r0_term, 1 / beta));
+                                    double U_term = U * Math.Pow(U * sqrtpi_Kc_factor, b);
+                                    double V_term1 = bis2 ? drmax_term : -beta * (drmax_term * Math.Pow(datapoint_currentR, 1 / beta));
+                                    double V_term2 = ((b + 1) * (V / CapA) * V_term1);
+                                    double UV_term = U_term + V_term2;
+
+                                    // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
+                                    if ((float)(UV_term / U_term) > 1f)
+                                    {
+                                        // Use the formula for increasing stress to calculate optimal duration
+                                        growthDurationRequired = (Math.Pow(UV_term, 1 / (b + 1)) / (V * Math.Pow(sqrtpi_Kc_factor, b / (b + 1)))) - (U / V);
+                                    }
+                                    else // In this case we can approximate V=0 and use the constant driving stress formula
+                                    {
+                                        // Use the formula for constant stress to calculate optimal duration, and set V to zero
+                                        growthDurationRequired = V_term1 / (CapA * Math.Pow(U * sqrtpi_Kc_factor, b));
+                                        setVto0 = true;
+                                    }
                                 }
                             }
 
-                            // If the time taken to increment dP33 is greater than the current required timestep duration, increase the current required timestep duration
-                            if (timeTodP33max < timeTodRmax)
-                                timeTodP33max = timeTodRmax;
-
-                            // Update the dP33 to accommodate value with the dP33 increment for this datapoint
-                            double dP33_increment = datapoint_current_dP33 * (Math.Pow(datapoint_drmax + 1, 3) - 1);
-                            dP33_to_accommodate -= dP33_increment;
-
-                            // Get the effective radius of the next fully active datapoint
-                            FADatapointNo++;
-                            moreValidFADatapoints = (FADatapointNo < Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count);
-                            nextFADatapointEffR = moreValidFADatapoints ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].EffectiveRayLength : 0;
+                            // Create a new FractureGrowthControl object for this datapoint and add it to the list
+                            datapointP33Increments.Add(new FractureGrowthControl(datapoint, dP33_increment, growthDurationRequired, requiredGrowthAchieved));
                         }
-                        else
-                        {
 
-                            double timeTodRmax;
-
-                            // Get the current radius and controlling radius of the largest restricted fracture ray
-                            double datapoint_currentR = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].RayLength;
-                            double datapoint_R0 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].PropagationControllingLength;
-
-                            // Find the radius the current fracture would need to grow to to increment dP33 by the required amount
-                            double datapoint_current_dP33 = (4 / 3) * Math.PI * Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dP33factor;
-                            double datapoint_drmax = Math.Pow((dP33_to_accommodate / datapoint_current_dP33) + 1, 1d / 3d) - 1;
-                            // If this is greater than the maximum allowable fracture radius, reduce the radius increase accordingly
-                            double max_drmax = (MaximumFractureRadius / datapoint_currentR) - 1;
-                            if (datapoint_drmax > max_drmax)
-                                datapoint_drmax = max_drmax;
-
-                            // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
-                            double criticalRadius = (2 * Math.Pow(sqrtpi_Kc_factor * U, -2)) - datapoint_R0;
-                            if (datapoint_currentR > criticalRadius)
-                            {
-                                // Critical fracture propagation occurs at a constant rate
-                                // The time taken to grow by a specified amount can thus be calculated by division
-                                timeTodRmax = (datapoint_drmax * datapoint_currentR) / CapA;
-                            }
-                            else
-                            {
-                                // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
-                                double drmax_r0_term = ((1 + datapoint_drmax) + (datapoint_R0 / datapoint_currentR)) / 2;
-                                double rmax_r0_term = (datapoint_currentR + datapoint_R0) / (2 * datapoint_currentR);
-                                double drmax_term = 2 * (bis2 ? Math.Log(drmax_r0_term) - Math.Log(rmax_r0_term) : Math.Pow(rmax_r0_term, 1 / beta) - Math.Pow(drmax_r0_term, 1 / beta));
-                                double U_term = U * Math.Pow(U * sqrtpi_Kc_factor, b);
-                                double V_term1 = bis2 ? drmax_term : -beta * (drmax_term * Math.Pow(datapoint_currentR, 1 / beta));
-                                double V_term2 = ((b + 1) * (V / CapA) * V_term1);
-                                double UV_term = U_term + V_term2;
-
-                                // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
-                                if ((float)(UV_term / U_term) > 1f)
-                                {
-                                    // Use the formula for increasing stress to calculate optimal duration
-                                    timeTodRmax = (Math.Pow(UV_term, 1 / (b + 1)) / (V * Math.Pow(sqrtpi_Kc_factor, b / (b + 1)))) - (U / V);
-                                }
-                                else // In this case we can approximate V=0 and use the constant driving stress formula
-                                {
-                                    // Use the formula for constant stress to calculate optimal duration, and set V to zero
-                                    timeTodRmax = V_term1 / (CapA * Math.Pow(U * sqrtpi_Kc_factor, b));
-                                    setVto0 = true;
-                                }
-                            }
-
-                            // If the time taken to increment dP33 is greater than the current required timestep duration, increase the current required timestep duration
-                            if (timeTodP33max < timeTodRmax)
-                                timeTodP33max = timeTodRmax;
-
-                            // Update the dP33 to accommodate value with the dP33 increment for this datapoint
-                            double dP33_increment = datapoint_current_dP33 * (Math.Pow(datapoint_drmax + 1, 3) - 1);
-                            dP33_to_accommodate -= dP33_increment;
-
-                            // Get the effective radius of the next restricted datapoint
-                            RDatapointNo++;
-                            moreValidRDatapoints = (RDatapointNo < Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Count);
-                            nextRDatapointEffR = moreValidRDatapoints ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].EffectiveRayLength : 0;
-                        }
+                    // Sort the list by duration, from shortest to longest
+                    datapointP33Increments.Sort();
+                    // Then go through the list in order, adding up the dP33 increments acheived by each datapoint, until the total required increment is achieved
+                    // If any of the datapoints can achieve the required dP33 increment alone, the shortest of these will define the timestep duration
+                    double timeTodP33max = double.PositiveInfinity;
+                    double dP33_to_accommodate = d_P33max;
+                    foreach(FractureGrowthControl datapointControl in datapointP33Increments)
+                    {
+                        timeTodP33max = datapointControl.TimeToReachIncrement;
+                        dP33_to_accommodate -= datapointControl.dP33Increment;
+                        if (dP33_to_accommodate <= 0)
+                            break;
                     }
+
+                    // Calculate the time until the next datapoint representing nucleating fractures will form
+                    {
+                        // Create a variable for the time until the next datapoint representing nucleating fractures will form
+                        double timeToNextDatapoint;
+
+                        // Cache required data locally
+                        double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
+                        double cumGammaRmin_Nminus1 = rmin_beta + previous_CumGamma;// CurrentFractureData.Cum_Gamma_Mminus1;
+
+                        // Get the initial and final volumetric density of fractures with radius > rmin for the current timestep, ignoring stress shadows
+                        // Only Power Law is currently implemented
+                        double nucleationWtime = double.PositiveInfinity;
+                        switch (InitialDistribution)
+                        {
+                            case InitialFractureDistribution.PowerLaw:
+                                {
+                                    // betac_factor is -beta*c if b<>2, -c if b=2
+                                    double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
+                                    double RP30term = min_datapoint_RP30 / (RaysPerFracture * CapB * CurrentFractureData.theta_dashed_Mminus1);
+
+                                    //double nVB_invbetac1_factor = (bis2 ? Math.Log(nVB_factor) / betac_factor : Math.Pow(nVB_factor, 1 / betac_factor));
+
+                                    nucleationWtime = cumGammaRmin_Nminus1 - Math.Pow(RP30term + Math.Pow(cumGammaRmin_Nminus1, betac_factor), 1 / betac_factor);
+                                }
+                                break;
+                            case InitialFractureDistribution.Exponential:
+                                break;
+                            case InitialFractureDistribution.LogNormal:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        if (setVto0)
+                        {
+                            timeToNextDatapoint = (nucleationWtime * beta) / (CapA * Math.Pow(U * sqrtpi_Kc_factor, b));
+                        }
+
+                    }
+
 
                     if (timeTodP33max < optdur)
                         optdur = timeTodP33max;
                 }
-
 
                 if (setVto0)
                     V = 0;
@@ -2567,6 +2594,60 @@ namespace DFMGenerator_SharedCode
 
             // Return the calculated maximum duration
             return optdur;
+        }
+        /// <summary>
+        /// Class used to collate growth in all implicit fracture population datapoints and compare them by duration
+        /// </summary>
+        private class FractureGrowthControl : IComparable<FractureGrowthControl>
+        {
+            // Data
+            /// <summary>
+            /// Reference to the relevent ImplicitFracturePopulationDatapoint object
+            /// </summary>
+            public ImplicitFracturePopulationDatapoint Datapoint;
+            /// <summary>
+            /// Increment in the P33 volumetric density represented by the datapoint during the growth period
+            /// </summary>
+            public double dP33Increment;
+            /// <summary>
+            /// Duration of the growth period
+            /// </summary>
+            public double TimeToReachIncrement;
+            /// <summary>
+            /// Flag to indicate whether the dP33 increment of this datapoint alone is sufficient to reach the specified dP33 growth target
+            /// </summary>
+            public bool RequiredGrowthAchieved;
+
+            // Control and implementation functions
+            /// <summary>
+            /// Compare FractureGrowthControl objects based on duration
+            /// </summary>
+            /// <param name="that">FractureGrowthControl object to compare with</param>
+            /// <returns>Positive if this FractureGrowthControl object has the longest duration, negative if that FractureGrowthControl object has the longest duration, zero if they have the same duration</returns>
+            public int CompareTo(FractureGrowthControl that)
+            {
+                return this.TimeToReachIncrement.CompareTo(that.TimeToReachIncrement);
+            }
+
+            // Constructors
+            /// <summary>
+            /// Constructor: specify GridblockCOnfiguration object, timestep number and end time
+            /// </summary>
+            /// <param name="Datapoint_in">Reference to ImplicitFracturePopulationDatapoint object</param>
+            /// <param name="dP33Increment_in">Increment in the P33 volumetric density represented by the datapoint during the growth period</param>
+            /// <param name="TimeToReachIncrement_in">Duration of the growth period (s)</param>
+            /// <param name="RequiredGrowthAchieved_in">Flag to indicate whether the dP33 increment of this datapoint alone is sufficient to reach the specified dP33 growth target</param>
+            public FractureGrowthControl(ImplicitFracturePopulationDatapoint Datapoint_in, double dP33Increment_in, double TimeToReachIncrement_in, bool RequiredGrowthAchieved_in)
+            {
+                // Reference to relevant ImplicitFracturePopulationDatapoint object
+                Datapoint = Datapoint_in;
+                // Increment in the P33 volumetric density represented by the datapoint during the growth period
+                dP33Increment = dP33Increment_in;
+                // Duration of the growth period
+                TimeToReachIncrement = TimeToReachIncrement_in;
+                // Flag to indicate whether the dP33 increment of this datapoint alone is sufficient to reach the specified dP33 growth target
+                RequiredGrowthAchieved = RequiredGrowthAchieved_in;
+            }
         }
         /// <summary>
         /// Set the duration, driving stress and propagation rate data for the current timestep; this can only be done after U and V are set using the getOptimalDuration function
@@ -2654,6 +2735,10 @@ namespace DFMGenerator_SharedCode
             // Set the timestep duration mean driving stress, mean macrofracture propagation rate and microfracture propagation rate coefficient (= gamma ^ 1/beta)
             CurrentFractureData.SetDynamicData(TimestepDuration_in, mean_SigmaD_M, F_PropRate_Coefficient);
 
+            // If the fracture set has been deactivated, there will be no fracture growth or nucleation
+            if (!FracturesActive)
+                return;
+
             // Set the growth rates for all fully active datapoints
             foreach (ImplicitFracturePopulationDatapoint activeFracturePopulationDatapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
             {
@@ -2681,10 +2766,15 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Check if this will cause the fracture to exceed the maximum allowed radius, and if so reduce the propagation increment
+                bool incrementExceedsMaxRadius = false;
                 if (incrementR > (MaximumFractureRadius - initialR))
+                {
                     incrementR = MaximumFractureRadius - initialR;
+                    incrementExceedsMaxRadius = true;
+                }
 
-                activeFracturePopulationDatapoint.RayLengthIncrement = incrementR;
+                // Set the ray length increment - and also the flag to indicate whether the ray will reach the maximum allowed radius
+                activeFracturePopulationDatapoint.SetRayLengthIncrement(incrementR, incrementExceedsMaxRadius);
             }
 
             // Set the growth rates for all restricted datapoints
@@ -2716,10 +2806,15 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Check if this will cause the fracture to exceed the maximum allowed radius, and if so reduce the propagation increment
+                bool incrementExceedsMaxRadius = false;
                 if (incrementR > (MaximumFractureRadius - initialR))
+                {
                     incrementR = MaximumFractureRadius - initialR;
+                    incrementExceedsMaxRadius = true;
+                }
 
-                restrictedFracturePopulationDatapoint.RayLengthIncrement = incrementR;
+                // Set the ray length increment - and also the flag to indicate whether the ray will reach the maximum allowed radius
+                restrictedFracturePopulationDatapoint.SetRayLengthIncrement(incrementR, incrementExceedsMaxRadius);
             }
 
             // Add a new fully active datapoint representing fractures nucleating in this timestep - but only if any new fractures nucleate
@@ -2807,10 +2902,6 @@ namespace DFMGenerator_SharedCode
             // We will calculate the restricted datapoints before the fully active ones, as the deactivation of fully active fractures will create new restricted fractures
             foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
             {
-                // If the ray has already reached the maximum length it will not be deactivated
-                if ((float)datapoint.RayLength == (float)MaximumFractureRadius)
-                    continue;
-
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
                 // This is given by the inverse of the interaction zone volume around all other fractures in the current set
                 // This will depend on the stress distribution scenario
@@ -2851,10 +2942,6 @@ namespace DFMGenerator_SharedCode
                 // Only implement deactivation if the ray has grown by the specified amount or the activation probability has dropped below a minimum value
                 if ((datapoint.ProportionalGrowthSinceLastDeactivationCheck >= max_R_deactivation) || (datapoint.Phi <= min_R_activation))
                 {
-                    // If the ray has already reached the maximum length it will not be deactivated
-                    if ((float)datapoint.RayLength == (float)MaximumFractureRadius)
-                        continue;
-
                     // Calculate the probability that this ray will be deactivated due to stress shadow interaction and due to intersection during this timestep
                     // This function will also reduce the volumetric density for the datapoint proportionally
                     ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays();
@@ -2943,8 +3030,9 @@ namespace DFMGenerator_SharedCode
                 for (int datapointNo = noDataPoints - 1; datapointNo >= 0; datapointNo--)
                 {
                     ImplicitFracturePopulationDatapoint datapoint = Fractures.fracturePopulationDatapoints[status][datapointNo];
-                    datapoint.IncrementRayLength();
-                    if ((float)datapoint.RayLength >= (float)MaximumFractureRadius)
+                    // The ImplicitFracturePopulationDatapoint.IncrementRayLength() returns true if the ray length increment will reach the maximum fracture radius, otherwise false
+                    bool maxRadiusReached = datapoint.IncrementRayLength();
+                    if (maxRadiusReached)
                     {
                         Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius].Add(datapoint);
                         Fractures.fracturePopulationDatapoints[status].RemoveAt(datapointNo);
@@ -2989,6 +3077,12 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private void deactivateFractures()
         {
+            // Set the ray length increments for all active datapoints to zero
+            foreach (RayPropagationStatus status in new RayPropagationStatus[2] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted })
+                foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[status])
+                    datapoint.SetRayLengthIncrement(0, false);
+
+            // Set the fracture evolution stage to deactivated
             CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
         }
         /// <summary>
@@ -3105,7 +3199,6 @@ namespace DFMGenerator_SharedCode
             double stressShadowHalfWidthRatio = stressShadowWidthRatio * StressShadowWidthMultiplier / 2;
             PointXYZ edgeOfRayStressShadow = new PointXYZ(effectiveRayOrigin);
             edgeOfRayStressShadow.AddVector((finalEffectiveRayLength * stressShadowHalfWidthRatio) * fractureNormalVector);
-
 
             // Loop through all the fractures in the intersecting fracture set
             foreach (UnconfinedFractureXYZ UCF in LocalDFNUnconfinedFractures)
@@ -3432,7 +3525,7 @@ namespace DFMGenerator_SharedCode
             // Set the minimum RP30 value for a nucleating fracture datapoint
             // This is the value that will generate the specified dP33 value if all fractures grow to the maximum radius
             double dP33 = gbc.PropControl.max_TS_MFP33_increase;
-            double maxFracVol = (4 / 3) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
+            double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
             min_datapoint_RP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
         }
         /// <summary>

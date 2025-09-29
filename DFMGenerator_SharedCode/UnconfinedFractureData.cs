@@ -46,7 +46,17 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Incremental increase in the ray length in the current timestep
         /// </summary>
-        public double RayLengthIncrement { get; set; }
+        public double RayLengthIncrement { get; private set; }
+        /// <summary>
+        /// Set the incremental increase in the ray length in the current timestep
+        /// </summary>
+        /// <param name="RayLengthIncrement_in">Incremental increase in the ray length in the current timestep</param>
+        /// <param name="IncrementToMaxRadius_in">Flag to indicate whether the next ray length increment will reach the maximum fracture radius</param>
+        public void SetRayLengthIncrement(double RayLengthIncrement_in, bool IncrementToMaxRadius_in)
+        {
+            RayLengthIncrement = RayLengthIncrement_in;
+            incrementToMaxRadius = IncrementToMaxRadius_in;
+        }
         /// <summary>
         /// Volumetric density of rays represented by this datapoint (NB this is an incremental rather than a cumulative population density)
         /// </summary>
@@ -60,6 +70,10 @@ namespace DFMGenerator_SharedCode
         /// Propagation status of rays represented by this datapoint 
         /// </summary>
         public RayPropagationStatus Status { get; private set; }
+        /// <summary>
+        /// Flag to indicate whether the next ray length increment will reach the maximum fracture radius; if so, set the ray propagation status to StaticMaxRadius when the ray length is incremented
+        /// </summary>
+        private bool incrementToMaxRadius;
         /// <summary>
         /// Length of the ray controlling the propagation rate of this ray; once set, this will not change
         /// </summary>
@@ -237,12 +251,17 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Add the increment in ray length to the current ray length, then reset the increment in ray length to zero
         /// </summary>
-        public void IncrementRayLength()
+        /// <returns>True if the ray length increment will reach the maximum fracture radius, otherwise false</returns>
+        public bool IncrementRayLength()
         {
             RayLength += RayLengthIncrement;
             if (Status == RayPropagationStatus.FullyActive)
                 PropagationControllingLength += RayLengthIncrement;
             RayLengthIncrement = 0;
+
+            if (incrementToMaxRadius)
+                Status = RayPropagationStatus.StaticMaxRadius;
+            return incrementToMaxRadius;
         }
         /// <summary>
         /// Update the fracture activation probabilities for the current timestep
@@ -368,6 +387,7 @@ namespace DFMGenerator_SharedCode
             RayLengthIncrement = rayLengthIncrement_in;
             dP30 = dP30_in;
             Status = status_in;
+            incrementToMaxRadius = false;
             if (status_in == RayPropagationStatus.FullyActive)
                 PropagationControllingLength = rayLength_in;
             else
@@ -577,7 +597,7 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            return RP33 * (4 / 3) * (Math.PI / (double)noSegments);
+            return RP33 * (4d / 3d) * (Math.PI / (double)noSegments);
         }
         /// <summary>
         /// Get the total volumetric ratio of all overlapping fracture segments with effective radius greater than a specified value
@@ -608,7 +628,7 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            return RP33 * (4 / 3) * (Math.PI / (double)noSegments);
+            return RP33 * (4d / 3d) * (Math.PI / (double)noSegments);
         }
 
         /// <summary>
@@ -720,8 +740,8 @@ namespace DFMGenerator_SharedCode
 
                 // Apply the area and volume multipliers
                 RP32_total[status] *= (Math.PI / (double)noSegments);
-                RP33_exclusive_total[status] *= (4 / 3) * (Math.PI / (double)noSegments);
-                RP33_overlapping_total[status] *= (4 / 3) * (Math.PI / (double)noSegments);
+                RP33_exclusive_total[status] *= (4d / 3d) * (Math.PI / (double)noSegments);
+                RP33_overlapping_total[status] *= (4d / 3d) * (Math.PI / (double)noSegments);
             }
         }
 
@@ -858,7 +878,7 @@ namespace DFMGenerator_SharedCode
                 }
             }
             // Apply the required multiplier to calculate the true shell volumes 
-            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * (StressShadowWidthRatio / 2) / (double)noSegments;
+            double stressShadowVolumeMultiplier = (4d / 3d) * Math.PI * (StressShadowWidthRatio / 2) / (double)noSegments;
             if (exclusiveInnerCoreVolume > 1)
                 exclusiveInnerCoreVolume = 1;
             exclusiveOuterShellVolume *= stressShadowVolumeMultiplier;
@@ -890,7 +910,7 @@ namespace DFMGenerator_SharedCode
             double minDeactivationRadius = Fracture2.EffectiveRayLength * minStressShadowDeactivationRatio;
 
             // Calculate the required multiplier to convert dP33 factors into true shell volumes 
-            double stressShadowVolumeMultiplier = (4 / 3) * Math.PI * (StressShadowWidthRatio / 2) / (double)noSegments;
+            double stressShadowVolumeMultiplier = (4d / 3d) * Math.PI * (StressShadowWidthRatio / 2) / (double)noSegments;
 
             // Get the initial and final radius and effective radius of fracture 2
             double frac2InitialRadius = Fracture2.RayLength;
