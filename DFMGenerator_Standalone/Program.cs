@@ -530,9 +530,9 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 1;// 3;
-            int NoCols = 1;// 3;
-            int NoLayers = 1;// 3;
+            int NoRows = 3;
+            int NoCols = 3;
+            int NoLayers = 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 50;
             double Length_NS = 50;
@@ -729,7 +729,7 @@ namespace DFMGenerator_Standalone
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
             // If DepthAtDeformation is specified, this will be used to calculate vertical stress
             // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
-            double DepthAtDeformation = -1;
+            double DepthAtDeformation = 2000;// -1;
             //bool OverwriteDepth = (DepthAtDeformation > 0);
             // Mean density of overlying sediments and fluid (kg/m3)
             double MeanOverlyingSedimentDensity = 2250;
@@ -862,12 +862,12 @@ namespace DFMGenerator_Standalone
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
             double MinStressShadowDeactivationRatio = 0;// 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-            double MinIntersectionDeactivationRatio = 1000000;// 0.5;
+            double MinIntersectionDeactivationRatio = 1000000;
             // Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepMFP33Increase = 0.2;// 0.005;
+            double MaxTimestepMFP33Increase = 0.02;// 0.005;
             // Maximum proportional increase in the radius of the unconfined fractures in each timestep (controls speed and accuracy of calculation)
             double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
@@ -899,9 +899,9 @@ namespace DFMGenerator_Standalone
             // Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
             double Active_TotalMFP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double MinimumClearZoneVolume = 0.01;
+            double MinimumClearZoneVolume = 0.1;// 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 1000;
+            int MaxTimesteps = 250;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;

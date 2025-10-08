@@ -9,7 +9,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for the mechanism controlling the rate of propagation of an unconfined fracture ray
     /// </summary>
-    public enum RaySegmentPropagationRateControl { Critical, SubcriticalFullyActive, SubcriticalRestricted }
+    public enum RaySegmentPropagationRateControl { Critical, SubcriticalFullyActive, SubcriticalRestricted, LengthLimited }
 
     /// <summary>
     /// A ray segment is confined within a single gridblock
@@ -129,7 +129,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public RaySegmentPropagationRateControl PropagationRateControl { get; set; }
         /// <summary>
-        /// Ray segment state - true if the fracture segment is still propagating
+        /// Flag for active segment propagation - true if the fracture segment is still propagating within the current gridblock
         /// </summary>
         public bool Active { get { return (PropNodeType == SegmentNodeType.Propagating); } }
         /// <summary>
@@ -351,7 +351,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Flag to specify type and connectivity of ray tips
         /// </summary>
-        public FractureTipType TipType { get; private set; }
+        public FractureTipType TipType { get { return GetRayTipType(); } }
         /// <summary>
         /// Ray tip state - true if the ray tip is still propagating
         /// </summary>
@@ -393,9 +393,9 @@ namespace DFMGenerator_SharedCode
 
         // Reset and data input functions
         /// <summary>
-        /// Set the tip type and terminating fracture for the ray
+        /// Set the terminating fracture for the ray
         /// </summary>
-        public void SetRayTipData()
+        public void SetTerminatingFracture()
         {
             if (NoSegments > 0)
             {
@@ -405,13 +405,11 @@ namespace DFMGenerator_SharedCode
                     // NB The nucleation point cannot be the outermost node
                     case SegmentNodeType.Propagating:
                         {
-                            TipType = FractureTipType.Propagating;
                             // Still propagating so no terminating fracture
                         }
                         break;
                     case SegmentNodeType.ConnectedStressShadow:
                         {
-                            TipType = FractureTipType.StressShadow;
                             // With a connected stress shadow, the fracture tip interacts directly with the stress shadow of a similar sized fracture propagating in the opposite direction
                             if (!(outerSegment.TerminatingFracture is null))
                                 TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
@@ -419,52 +417,90 @@ namespace DFMGenerator_SharedCode
                         break;
                     case SegmentNodeType.NonconnectedStressShadow:
                         {
-                            TipType = FractureTipType.StressShadow;
                             // With a nonconnected stress shadow, the fracture tip becomes enveloped in the stress shadow of a larger fracture
                             // There is no direct connection to the larger fracture 
                         }
                         break;
                     case SegmentNodeType.Intersection:
                         {
-                            TipType = FractureTipType.Intersection;
+                            // With an intersection, the fracture tip terminates against another fracture from a different set
                             if (!(outerSegment.TerminatingFracture is null))
                                 TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
                         }
                         break;
                     case SegmentNodeType.Convergence:
                         {
-                            TipType = FractureTipType.Convergence;
+                            // Does not apply to unconfined fractures
                         }
                         break;
                     // NB A connected gridblock boundary cannot be the outermost node
                     case SegmentNodeType.NonconnectedGridblockBound:
                         {
-                            TipType = FractureTipType.OutOfBounds;
                             // Still propagating so no terminating fracture
                         }
                         break;
                     // NB The outermost segment can be a relay segment, if the fracture interacts with the stress shadow of an inactive fracture segment
                     case SegmentNodeType.Relay:
                         {
-                            TipType = FractureTipType.StressShadow;
                             if (!(outerSegment.TerminatingFracture is null))
                                 TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
                         }
                         break;
                     case SegmentNodeType.Pinchout:
                         {
-                            TipType = FractureTipType.Pinchout;
-                            // No terminating fracture
+                            // Fracture stops propagating because the unit it is confined to becomes too thin; no terminating fracture
+                        }
+                        break;
+                    case SegmentNodeType.Arrested:
+                        {
+                            // Fracture stops propagating for an undefined reason; no terminating fracture
                         }
                         break;
                     default:
                         {
-                            TipType = FractureTipType.OutOfBounds;
                             // No terminating fracture
                         }
                         break;
                 }
             }
+        }
+        /// <summary>
+        /// Get the tip type for the ray
+        /// </summary>
+        private FractureTipType GetRayTipType()
+        {
+            if (NoSegments > 0)
+            {
+                UnconfinedFractureRaySegment outerSegment = segments[NoSegments - 1];
+                switch (outerSegment.PropNodeType)
+                {
+                    // NB The nucleation point cannot be the outermost node
+                    case SegmentNodeType.Propagating:
+                        return FractureTipType.Propagating;
+                    case SegmentNodeType.ConnectedStressShadow:
+                        return FractureTipType.StressShadow;
+                    case SegmentNodeType.NonconnectedStressShadow:
+                        return FractureTipType.StressShadow;
+                    case SegmentNodeType.Intersection:
+                        return FractureTipType.Intersection;
+                    case SegmentNodeType.Convergence:
+                        return FractureTipType.Convergence;
+                    // NB A connected gridblock boundary cannot be the outermost node
+                    case SegmentNodeType.NonconnectedGridblockBound:
+                        return FractureTipType.OutOfBounds;
+                    // NB The outermost segment can be a relay segment, if the fracture interacts with the stress shadow of an inactive fracture segment
+                    case SegmentNodeType.Relay:
+                        return FractureTipType.StressShadow;
+                    case SegmentNodeType.Pinchout:
+                        return FractureTipType.Pinchout;
+                    case SegmentNodeType.Arrested:
+                        return FractureTipType.Arrested;
+                    default:
+                        return FractureTipType.OutOfBounds;
+                }
+            }
+            else
+                return FractureTipType.OutOfBounds;
         }
 
         // Constructors
@@ -490,7 +526,7 @@ namespace DFMGenerator_SharedCode
             segments.Add(new UnconfinedFractureRaySegment(this, ucf_in, ufs_in, gbc_in, NucleationPoint, Orientation, InitialLength, NucleationTime_in, NucleationWTime_in, NucleationTimestep_in));
 
             // Set the tip data
-            TipType = FractureTipType.Propagating;
+            //TipType = FractureTipType.Propagating;
             //TerminatingRaySegment = null;
             TerminatingFracture = -1;
         }
@@ -509,7 +545,7 @@ namespace DFMGenerator_SharedCode
                 segments.Add(new UnconfinedFractureRaySegment(segment));
 
             // Set the tip data
-            TipType = ray_in.TipType;
+            //TipType = ray_in.TipType;
             //TerminatingRaySegment = ray_in.TerminatingRaySegment;
             TerminatingFracture = ray_in.TerminatingFracture;
         }
@@ -661,10 +697,9 @@ namespace DFMGenerator_SharedCode
         // Reset, data input, control and implementation functions
         public void PopulateData()
         {
-            // Set the ray tip data
+            // Set the terminating fracture for each ray tip
             foreach (UnconfinedFractureRay ray in rays)
-                ray.SetRayTipData();
-
+                ray.SetTerminatingFracture();
         }
         /// <summary>
         /// Criterion to use when sorting unconfined fractures

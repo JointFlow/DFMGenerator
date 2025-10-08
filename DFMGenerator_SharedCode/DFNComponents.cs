@@ -11,11 +11,11 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for different macrofracture tip types
     /// </summary>
-    public enum FractureTipType { Propagating, StressShadow, Intersection, Convergence, OutOfBounds, Pinchout }
+    public enum FractureTipType { Propagating, StressShadow, Intersection, Convergence, OutOfBounds, Pinchout, Arrested }
     /// <summary>
     /// Enumerator for different macrofracture segment node types
     /// </summary>
-    public enum SegmentNodeType { NucleationPoint, Propagating, ConnectedStressShadow, NonconnectedStressShadow, Intersection, Convergence, ConnectedGridblockBound, NonconnectedGridblockBound, Relay, Pinchout }
+    public enum SegmentNodeType { NucleationPoint, Propagating, ConnectedStressShadow, NonconnectedStressShadow, Intersection, Convergence, ConnectedGridblockBound, NonconnectedGridblockBound, Relay, Pinchout, Arrested }
     /// <summary>
     /// Enumerator for direction of propagation of macrofracture segment
     /// </summary>
@@ -1602,6 +1602,12 @@ namespace DFMGenerator_SharedCode
                             case SegmentNodeType.Pinchout:
                                 {
                                     tiptypes[dir] = FractureTipType.Pinchout;
+                                    // No terminating fracture
+                                }
+                                break;
+                            case SegmentNodeType.Arrested:
+                                {
+                                    tiptypes[dir] = FractureTipType.Arrested;
                                     // No terminating fracture
                                 }
                                 break;

@@ -50,12 +50,12 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Set the incremental increase in the ray length in the current timestep
         /// </summary>
-        /// <param name="RayLengthIncrement_in">Incremental increase in the ray length in the current timestep</param>
-        /// <param name="IncrementToMaxRadius_in">Flag to indicate whether the next ray length increment will reach the maximum fracture radius</param>
-        public void SetRayLengthIncrement(double RayLengthIncrement_in, bool IncrementToMaxRadius_in)
+        /// <param name="rayLengthIncrement_in">Incremental increase in the ray length in the current timestep</param>
+        /// <param name="incrementToMaxRadius_in">Flag to indicate whether the next ray length increment will reach the maximum fracture radius</param>
+        public void SetRayLengthIncrement(double rayLengthIncrement_in, bool incrementToMaxRadius_in)
         {
-            RayLengthIncrement = RayLengthIncrement_in;
-            incrementToMaxRadius = IncrementToMaxRadius_in;
+            RayLengthIncrement = rayLengthIncrement_in;
+            incrementToMaxRadius = incrementToMaxRadius_in;
         }
         /// <summary>
         /// Volumetric density of rays represented by this datapoint (NB this is an incremental rather than a cumulative population density)
@@ -292,10 +292,22 @@ namespace DFMGenerator_SharedCode
             EffectiveRayLengthAtLastDeactivationCheck = EffectiveRayLength;
         }
         /// <summary>
-        /// Deactivate a proportion of currently active rays based on the current fracture activation probabilities
+        /// Deactivate a proportion of currently active rays based on the current fracture activation probabilities at the end of the current timestep
         /// </summary>
-        /// <returns></returns>
+        /// <returns>List of ImplicitFracturePopulationDatapoints representing the originally active rays that became restricted or deactivated rays</returns>
         public ImplicitFracturePopulationDatapoint[] DeactivateRays()
+        {
+            // Set the proportion of the ray length increment for the original fully active datapoint to apply to the deactivated and restricted datapoints to 1
+            // The full increment will therefore be applied to the derived deactivated and restricted datapoints
+            // This implies deactivation at the end of the current timestep
+            return DeactivateRays(1);
+        }
+        /// <summary>
+        /// Deactivate a proportion of currently active rays based on the current fracture activation probabilities, applying a specified proportion of the original increment to the deactivated rays
+        /// </summary>
+        /// <param name="proportionalIncrementToApply">Proportion of the ray length increment for the original fully active datapoint to apply to the deactivated and restricted datapoints: 0 assumes deactivation at the start of the current timestep and 1 implies deactivation at the end of the current timestep</param>
+        /// <returns>List of ImplicitFracturePopulationDatapoints representing the originally active rays that became restricted or deactivated rays</returns>
+        private ImplicitFracturePopulationDatapoint[] DeactivateRays(double proportionalIncrementToApply)
         {
             // Create an array for the output datapoints - these represent the rays that become deactivated or restricted
             ImplicitFracturePopulationDatapoint[] outputDatapoints;
@@ -307,6 +319,11 @@ namespace DFMGenerator_SharedCode
             double F_II_M = (PhiII_ratio > 0) ? (1 - Phi) * PhiII_ratio : 0;
             double F_IJ_M = (PhiIJ_ratio > 0) ? (1 - Phi) * PhiIJ_ratio : 0;
 
+            // Calculate the proportion of the original fully active ray increment to be applied to the derived deactivated and restricted datapoints
+            double incrementToApply = proportionalIncrementToApply * RayLengthIncrement;
+            bool incrementDerivedDatapointsToMaxRadius = incrementToMaxRadius && (proportionalIncrementToApply >= 1);
+            double finalRayLength = RayLength + incrementToApply;
+
             switch (Status)
             {
                 case RayPropagationStatus.FullyActive:
@@ -316,11 +333,11 @@ namespace DFMGenerator_SharedCode
                     // This will be the probability that a single ray will not be deactivated (Phi_Ray_M) to the power of the number of rays per fracture
                     double Phi_Fracture_M = Math.Pow(Phi, NoRaysPerFracture);
                     // The first datapoint in the output array represents the new restricted rays
-                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * (Phi - Phi_Fracture_M), RayPropagationStatus.Restricted, RayLength);
+                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * (Phi - Phi_Fracture_M), RayPropagationStatus.Restricted, finalRayLength);
                     // The second datapoint in the output array represents the new static rays due to stress shadow interaction
-                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, RayLength);
+                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, finalRayLength);
                     // The third datapoint in the output array represents the new static rays due to intersection
-                    outputDatapoints[2] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, RayLength);
+                    outputDatapoints[2] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, finalRayLength);
                     // Reduce the volumetric density of fully active rays represented by this datapoint
                     dP30 *= Phi_Fracture_M;
                     break;
@@ -328,9 +345,9 @@ namespace DFMGenerator_SharedCode
                     // There will be two datapoints in the output array, representing the rays that become deactivated due to stress shadow interaction and intersection respectively
                     outputDatapoints = new ImplicitFracturePopulationDatapoint[2];
                     // The first datapoint in the output array represents the new static rays due to stress shadow interaction
-                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, PropagationControllingLength);
+                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, PropagationControllingLength);
                     // The second datapoint in the output array represents the new static rays due to intersection
-                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, 0, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, PropagationControllingLength);
+                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, PropagationControllingLength);
                     // Reduce the volumetric density of restricted rays represented by this datapoint
                     dP30 *= Phi;
                     break;
@@ -363,14 +380,17 @@ namespace DFMGenerator_SharedCode
 
         // Constructors
         /// <summary>
-        /// Default constructor: Create a datapoint representing fully active rays of a specified length
+        /// Default constructor: Create a datapoint representing fully active rays belonging to a nucleating fracture
+        /// In this case the rays start with length zero, but we add an increment to bring them to the minimum ray length
         /// </summary>
-        /// <param name="rayLength_in">Current length of rays represented by this datapoint</param>
+        /// <param name="rayLength_in">Initial length of rays represented by this datapoint</param>
         /// <param name="dP30_in">Volumetric density of rays represented by this datapoint (NB this is an incremental rather than a cumulative population density)</param>
-        public ImplicitFracturePopulationDatapoint(double rayLength_in, double dP30_in) : this(rayLength_in, 0, dP30_in, RayPropagationStatus.FullyActive, rayLength_in)
+        public ImplicitFracturePopulationDatapoint(double rayLength_in, double dP30_in) : this(0, rayLength_in, false, dP30_in, RayPropagationStatus.FullyActive, rayLength_in)
         {
             // Defaults:
-            // Incremental increase in the ray length in the current timestep: set to 0
+            // The current ray length will be set to 0, and the specified initial ray length will instead be specified as the current ray increment
+            // This will allow for ray deactivation if they intersect or interact with the stress shadow of another fracture before they reach the specified initial length
+            // The flag to indicate whether the next ray length increment will reach the maximum fracture radius will be set to false - it is assumed the specified initial length is less than the maximum ray length
             // Length of the ray controlling the propagation rate of this ray: For a fully active ray this will always be the ray length
         }
         /// <summary>
@@ -378,16 +398,17 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="rayLength_in">Current length of rays represented by this datapoint</param>
         /// <param name="rayLengthIncrement_in">Incremental increase in the ray length in the current timestep</param>
+        /// <param name="incrementToMaxRadius_in">Flag to indicate whether the next ray length increment will reach the maximum fracture radius</param>
         /// <param name="dP30_in">Volumetric density of rays represented by this datapoint (NB this is an incremental rather than a cumulative population density)</param>
         /// <param name="status_in">Propagation status of rays represented by this datapoint</param>
         /// <param name="propagationControllingLength_in">Length of the ray controlling the propagation rate of this ray</param>
-        private ImplicitFracturePopulationDatapoint(double rayLength_in, double rayLengthIncrement_in, double dP30_in, RayPropagationStatus status_in, double propagationControllingLength_in)
+        private ImplicitFracturePopulationDatapoint(double rayLength_in, double rayLengthIncrement_in, bool incrementToMaxRadius_in, double dP30_in, RayPropagationStatus status_in, double propagationControllingLength_in)
         {
             RayLength = rayLength_in;
             RayLengthIncrement = rayLengthIncrement_in;
             dP30 = dP30_in;
             Status = status_in;
-            incrementToMaxRadius = false;
+            incrementToMaxRadius = incrementToMaxRadius_in;
             if (status_in == RayPropagationStatus.FullyActive)
                 PropagationControllingLength = rayLength_in;
             else
@@ -906,7 +927,7 @@ namespace DFMGenerator_SharedCode
             // (including the specified datapoint), assuming that it lay within the clear zone volume before the incremental increase
             // This is more complex than calculating the clear zone volume, since the increment in fracture ray length will be different for every datapoint
             // Also we must take account of the minimum stress shadow deactivation ratio
-            // Fractures will not terminate if they encounter another fracture with effective radius less than a specified proportion of their own effective radius
+            // Fracture rays will not terminate if they encounter another fracture with effective radius less than a specified proportion of their own effective radius
             double minDeactivationRadius = Fracture2.EffectiveRayLength * minStressShadowDeactivationRatio;
 
             // Calculate the required multiplier to convert dP33 factors into true shell volumes 
