@@ -901,7 +901,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.1;// 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 250;// 1000;
+            int MaxTimesteps = 50;// 250;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
@@ -926,7 +926,7 @@ namespace DFMGenerator_Standalone
             double ProbabilisticFractureNucleationLimit = -1;
             // Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set
             // Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time
-            bool PropagateFracturesInNucleationOrder = true;
+            bool PropagateFracturesInNucleationOrder = false;// true;
             // Flag to control whether to search adjacent gridblocks for stress shadow interaction; if set to automatic, this will be determined independently for each gridblock based on the gridblock geometry
             AutomaticFlag SearchNeighbouringGridblocks = AutomaticFlag.Automatic;
             // Minimum radius for microfractures to be included in explicit DFN

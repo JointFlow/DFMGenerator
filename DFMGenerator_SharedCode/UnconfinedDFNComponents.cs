@@ -9,7 +9,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for the mechanism controlling the rate of propagation of an unconfined fracture ray
     /// </summary>
-    public enum RaySegmentPropagationRateControl { Critical, SubcriticalFullyActive, SubcriticalRestricted, LengthLimited }
+    public enum RaySegmentPropagationRateControl { Critical, SubcriticalFullyActive, SubcriticalRestricted, LengthLimitedFullyActive, LengthLimitedRestricted, GrowToInitialSize }
 
     /// <summary>
     /// A ray segment is confined within a single gridblock
@@ -79,6 +79,15 @@ namespace DFMGenerator_SharedCode
         public bool IsSegmentInGridblock(GridblockConfiguration gbc_in)
         {
             return GridblockConfiguration.ReferenceEquals(gbc, gbc_in);
+        }
+        /// <summary>
+        /// Check if the ray that this segment belongs to nucleated in a specific gridblock
+        /// </summary>
+        /// <param name="GridblockToCheck">Reference to the gridblock to check for nucleation</param>
+        /// <returns>True if this ray nucleated in the specified gridblock, otherwise false</returns>
+        public bool CheckNucleationGridblock(GridblockConfiguration GridblockToCheck)
+        {
+            return ucf.CheckNucleationGridblock(GridblockToCheck);
         }
 
         // Geometric properties
@@ -209,8 +218,13 @@ namespace DFMGenerator_SharedCode
             // Set the node types and propagation rate control
             NonPropNodeType = SegmentNodeType.NucleationPoint;
             PropNodeType = SegmentNodeType.Propagating;
-            // Initially the fracture will be subcritical and fully active
-            PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+            // Initially the fracture will be subcritical and fully active, unless the initial length is 0
+            // In this case we will assume that the fracture is being allowed to grow to the mininum unconfined fracture radius
+            // This will ensure boundary intersections and other interactions are correctly modelled
+            if (InitialLength > 0)
+                PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+            else
+                PropagationRateControl = RaySegmentPropagationRateControl.GrowToInitialSize;
 
             // Set the nucleation time
             NucleationTime = NucleationTime_in;
@@ -390,6 +404,53 @@ namespace DFMGenerator_SharedCode
         /// Get the position of the outer tip of the ray - this will be the propagating node of the outermost ray segment
         /// </summary>
         public PointXYZ OuterTip { get { if (segments.Count > 0) return (new PointXYZ(segments[segments.Count - 1].PropNode)); else return null; } }
+        /// <summary>
+        /// Get the tip type for the ray
+        /// </summary>
+        private FractureTipType GetRayTipType()
+        {
+            if (NoSegments > 0)
+            {
+                UnconfinedFractureRaySegment outerSegment = segments[NoSegments - 1];
+                switch (outerSegment.PropNodeType)
+                {
+                    // NB The nucleation point cannot be the outermost node
+                    case SegmentNodeType.Propagating:
+                        return FractureTipType.Propagating;
+                    case SegmentNodeType.ConnectedStressShadow:
+                        return FractureTipType.StressShadow;
+                    case SegmentNodeType.NonconnectedStressShadow:
+                        return FractureTipType.StressShadow;
+                    case SegmentNodeType.Intersection:
+                        return FractureTipType.Intersection;
+                    case SegmentNodeType.Convergence:
+                        return FractureTipType.Convergence;
+                    // NB A connected gridblock boundary cannot be the outermost node
+                    case SegmentNodeType.NonconnectedGridblockBound:
+                        return FractureTipType.OutOfBounds;
+                    // NB The outermost segment can be a relay segment, if the fracture interacts with the stress shadow of an inactive fracture segment
+                    case SegmentNodeType.Relay:
+                        return FractureTipType.StressShadow;
+                    case SegmentNodeType.Pinchout:
+                        return FractureTipType.Pinchout;
+                    case SegmentNodeType.Arrested:
+                        return FractureTipType.Arrested;
+                    default:
+                        return FractureTipType.OutOfBounds;
+                }
+            }
+            else
+                return FractureTipType.OutOfBounds;
+        }
+        /// <summary>
+        /// Check if the ray nucleated in a specific gridblock
+        /// </summary>
+        /// <param name="GridblockToCheck">Reference to the gridblock to check for nucleation</param>
+        /// <returns>True if this ray nucleated in the specified gridblock, otherwise false</returns>
+        public bool CheckNucleationGridblock(GridblockConfiguration GridblockToCheck)
+        {
+            return ucf.CheckNucleationGridblock(GridblockToCheck);
+        }
 
         // Reset and data input functions
         /// <summary>
@@ -464,44 +525,6 @@ namespace DFMGenerator_SharedCode
                 }
             }
         }
-        /// <summary>
-        /// Get the tip type for the ray
-        /// </summary>
-        private FractureTipType GetRayTipType()
-        {
-            if (NoSegments > 0)
-            {
-                UnconfinedFractureRaySegment outerSegment = segments[NoSegments - 1];
-                switch (outerSegment.PropNodeType)
-                {
-                    // NB The nucleation point cannot be the outermost node
-                    case SegmentNodeType.Propagating:
-                        return FractureTipType.Propagating;
-                    case SegmentNodeType.ConnectedStressShadow:
-                        return FractureTipType.StressShadow;
-                    case SegmentNodeType.NonconnectedStressShadow:
-                        return FractureTipType.StressShadow;
-                    case SegmentNodeType.Intersection:
-                        return FractureTipType.Intersection;
-                    case SegmentNodeType.Convergence:
-                        return FractureTipType.Convergence;
-                    // NB A connected gridblock boundary cannot be the outermost node
-                    case SegmentNodeType.NonconnectedGridblockBound:
-                        return FractureTipType.OutOfBounds;
-                    // NB The outermost segment can be a relay segment, if the fracture interacts with the stress shadow of an inactive fracture segment
-                    case SegmentNodeType.Relay:
-                        return FractureTipType.StressShadow;
-                    case SegmentNodeType.Pinchout:
-                        return FractureTipType.Pinchout;
-                    case SegmentNodeType.Arrested:
-                        return FractureTipType.Arrested;
-                    default:
-                        return FractureTipType.OutOfBounds;
-                }
-            }
-            else
-                return FractureTipType.OutOfBounds;
-        }
 
         // Constructors
         /// <summary>
@@ -567,6 +590,19 @@ namespace DFMGenerator_SharedCode
         public int UnconfinedFractureID { get; private set; }
 
         // References to external objects
+        /// <summary>
+        /// Reference to the gridblock in which the fracture nucleated
+        /// </summary>
+        private GridblockConfiguration nucleationGridblock;
+        /// <summary>
+        /// Check if the fracture nucleated in a specific gridblock
+        /// </summary>
+        /// <param name="GridblockToCheck">Reference to the gridblock to check for nucleation</param>
+        /// <returns>True if this fracture nucleated in the specified gridblock, otherwise false</returns>
+        public bool CheckNucleationGridblock(GridblockConfiguration GridblockToCheck)
+        {
+            return GridblockConfiguration.ReferenceEquals(GridblockToCheck, nucleationGridblock);
+        }
 
         // Fracture geometry data
         /// <summary>
@@ -1052,6 +1088,9 @@ namespace DFMGenerator_SharedCode
             // Assign the new object an ID number and increment the unconfined fracture counter
             UnconfinedFractureID = ++unconfinedfractureCounter;
 
+            // Set the reference to the gridblock in which the fracture nucleated
+            nucleationGridblock = gbc_in;
+
             // Fracture set index number - this will not change after fracture is initiated
             SetIndex = setIndex_in;
 
@@ -1080,13 +1119,10 @@ namespace DFMGenerator_SharedCode
             }
 
             // Set the fracture geometry data (minimum, maximum and mean ray lengths and total area)
-            // If the specified initial radius is smaller than the minimum radius defined for the set, then use the minimum radius for this
-            // This will be the case if we are "growing" the fracture to the minimum radius (to account for fracture and boundary intersections and stress shadow interactions)
-            double initialGeometryRadius = Math.Max(InitialRadius, ufs_in.MinimumFractureRadius);
-            MinimumRayLength = initialGeometryRadius;
-            MaximumRayLength = initialGeometryRadius;
-            MeanRayLength = initialGeometryRadius;
-            Area = Math.PI * initialGeometryRadius * initialGeometryRadius;
+            MinimumRayLength = InitialRadius;
+            MaximumRayLength = InitialRadius;
+            MeanRayLength = InitialRadius;
+            Area = Math.PI * InitialRadius * InitialRadius;
             Centroid = new PointXYZ(NucleationPoint_in);
         }
         /// <summary>
@@ -1097,6 +1133,9 @@ namespace DFMGenerator_SharedCode
         {
             // Assign the new object an ID number and increment the unconfined fracture counter
             UnconfinedFractureID = ++unconfinedfractureCounter;
+
+            // Set the reference to the gridblock in which the fracture nucleated
+            nucleationGridblock = fracture_in.nucleationGridblock;
 
             // Fracture set index number - this will not change after fracture is initiated
             SetIndex = fracture_in.SetIndex;
