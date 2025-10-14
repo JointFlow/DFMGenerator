@@ -119,7 +119,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Strike of fracture set (radians); positive in the IPlus direction
         /// </summary>
-        public double Strike { get { return strike; }  }
+        public double Strike { get { return strike; } }
         /// <summary>
         /// Azimuth of fracture set (radians); positive in the JPlus direction
         /// </summary>
@@ -1083,7 +1083,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="indexRadii">List of index radii for the piecewise cumulative density distribution function</param>
         /// <param name="rayType">Specified ray type</param>
         /// <returns>List of cumulative P30 density values for the specified ray type; each item in the list will represent the cumulative P30 for the corresponding index radius in the input list</returns>
-        public List<double> GetCumulativeRP30Values (List<double> indexRadii, RayPropagationStatus rayType)
+        public List<double> GetCumulativeRP30Values(List<double> indexRadii, RayPropagationStatus rayType)
         {
             // Sort the incoming list in reverse order
             indexRadii.Sort();
@@ -2005,7 +2005,7 @@ namespace DFMGenerator_SharedCode
 
             return wtime;
         }
-        
+
         // Functions to calculate fracture population data
         /// <summary>
         /// Create a new FractureCalculationData object for the current timestep, populate it with data from the end of the previous timestep, and add it to the list of previous timestep data
@@ -2513,7 +2513,7 @@ namespace DFMGenerator_SharedCode
                     // If any of the datapoints can achieve the required dP33 increment alone, the shortest of these will define the timestep duration
                     double timeTodP33max = double.PositiveInfinity;
                     double dP33_to_accommodate = d_P33max;
-                    foreach(FractureGrowthControl datapointControl in datapointP33Increments)
+                    foreach (FractureGrowthControl datapointControl in datapointP33Increments)
                     {
                         timeTodP33max = datapointControl.TimeToReachIncrement;
                         dP33_to_accommodate -= datapointControl.dP33Increment;
@@ -3600,6 +3600,35 @@ namespace DFMGenerator_SharedCode
             // Return true if the propagating segment will intersect a boundary, otherwise false
             return crossesBoundary;
         }
+        /// <summary>
+        /// Check if a propagating unconfined fracture ray segment will reach the specified maximum length
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to the propagating UnconfinedFractureRaySegment</param>
+        /// <param name="MaxPropagationLength">Reference to the current maximum propagation length of the propagating ray segment; this will be updated if intersection is detected</param>
+        /// <param name="TerminateIfArrests">If true, automatically flag propagating fracture ray segment as arrested; if false only update maximum propagation length</param>
+        /// <returns>True if the propagating unconfined fracture ray segment will intersect any of the fractures in the specified unconfined fracture set; otherwise false</returns>
+        public bool checkMaximumLength(UnconfinedFractureRaySegment propagatingSegment, ref double MaxPropagationLength, bool TerminateIfArrests)
+        {
+            bool reachesMaximumLength = false;
+
+            // Check if the propagation increment will cause the ray to reach or exceed the maximum fracture radius
+            if ((propagatingSegment.RayLength + MaxPropagationLength) >= MaximumFractureRadius)
+            {
+                // Set the return value to true
+                reachesMaximumLength = true;
+
+                // Reduce the maximum propagation distance of the propagating fracture ray segment accordingly
+                MaxPropagationLength = MaximumFractureRadius - propagatingSegment.RayLength;
+
+                // Set the propagating fracture ray segment to inactive, due to arrest
+                if (TerminateIfArrests)
+                {
+                    propagatingSegment.PropNodeType = SegmentNodeType.Arrested;
+                }
+            }
+
+            return reachesMaximumLength;
+        }
 
         // Reset and data input functions
         /// <summary>
@@ -3670,7 +3699,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Strike_in">Fracture strike (radians)</param>
         /// <param name="Dip_in">Fracture dip (radians)</param>
-        public void setOrientation (double Strike_in, double Dip_in)
+        public void setOrientation(double Strike_in, double Dip_in)
         {
             // Trim values, and ensure azimuth is clockwise of strike
             if (Dip_in < 0)
@@ -3678,7 +3707,7 @@ namespace DFMGenerator_SharedCode
                 Dip_in = -Dip_in;
                 Strike_in += Math.PI;
             }
-            if (Dip_in > (Math.PI/2))
+            if (Dip_in > (Math.PI / 2))
             {
                 Dip_in = Math.PI - Dip_in;
                 Strike_in += Math.PI;
@@ -3693,7 +3722,7 @@ namespace DFMGenerator_SharedCode
             cosdip = VectorXYZ.Cos_trim(Dip_in);
 
             // Create new vectors for strike, dip, azimuth and fracture normal
-            strikeVector = VectorXYZ.GetLineVector(Strike_in, 0); 
+            strikeVector = VectorXYZ.GetLineVector(Strike_in, 0);
             dipVector = VectorXYZ.GetLineVector(Strike_in + (Math.PI / 2), Dip_in);
             azimuthVector = VectorXYZ.GetLineVector(Strike_in + (Math.PI / 2), 0);
             normalVector = VectorXYZ.GetNormalToPlane(Strike_in + (Math.PI / 2), Dip_in);

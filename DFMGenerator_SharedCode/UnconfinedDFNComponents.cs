@@ -9,7 +9,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator for the mechanism controlling the rate of propagation of an unconfined fracture ray
     /// </summary>
-    public enum RaySegmentPropagationRateControl { Critical, SubcriticalFullyActive, SubcriticalRestricted, LengthLimitedFullyActive, LengthLimitedRestricted, GrowToInitialSize }
+    public enum RaySegmentPropagationRateControl { Critical, SubcriticalFullyActive, SubcriticalRestricted, GrowToInitialSize }
 
     /// <summary>
     /// A ray segment is confined within a single gridblock

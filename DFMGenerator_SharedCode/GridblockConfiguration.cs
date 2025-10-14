@@ -6228,7 +6228,7 @@ namespace DFMGenerator_SharedCode
                         Dict_UCF_TotalFractureVolume[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * UCRSegment.RayLength * (4d / 3d) * (Math.PI / ufs.RaysPerFracture));
                         if (fromPreviousTS) Dict_UCF_NoTotalExistingFracRays[ufs_index]++;
                     }
-                    double segmentPropagationDistance = double.NaN;
+                    double segmentPropagationDistance = -1;
 #endif
                     // If macrofracture segment is still active, grow it
                     if (UCRSegment.Active)
@@ -6327,6 +6327,10 @@ namespace DFMGenerator_SharedCode
         /// <returns>Maximum length of ray propagation (m)</returns>
         private double calculateUnconfinedFractureRayGrowth(UnconfinedFractureRaySegment UCRSegment, double propagatingTime, double growthFactor, double InitialDrivingStress, double MaxRadius, double sqrtpi_Kc_factor)
         {
+            // If the propagation time or the growth factor are zero, there will be no gorwth so we can return 0
+            if (!(propagatingTime > 0) || !(growthFactor > 0))
+                return 0;
+
             // Get helper variables
             double CapA = MechProps.CapA;
             bool bis2 = (MechProps.GetbType() == bType.Equals2);
@@ -6361,15 +6365,6 @@ namespace DFMGenerator_SharedCode
                     // Set the ray propagation rate control for the ray segment to Critical
                     UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
                 }
-
-                // Check if the current maximum propagation length will exceed the maximum ray length; if so truncate it
-                if (finalR > MaxRadius)
-                {
-                    finalR = MaxRadius;
-                    incrementR = finalR - initialR;
-                    // Set the ray propagation rate control for the ray segment to LengthLimitedFullyActive
-                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.LengthLimitedFullyActive;
-                }
             }
             // Set the growth rate if the fracture is restricted
             else
@@ -6397,15 +6392,6 @@ namespace DFMGenerator_SharedCode
                     finalR = initialR + incrementR;
                     // Set the ray propagation rate control for the ray segment to Critical
                     UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
-                }
-
-                // Check if the current maximum propagation length will exceed the maximum ray length; if so truncate it
-                if (finalR > MaxRadius)
-                {
-                    finalR = MaxRadius;
-                    incrementR = finalR - initialR;
-                    // Set the ray propagation rate control for the ray segment to LengthLimitedRestricted
-                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.LengthLimitedRestricted;
                 }
             }
 
@@ -7063,6 +7049,21 @@ namespace DFMGenerator_SharedCode
             // Create a flag for fracture deactivation mechanism
             SegmentNodeType tipDeactivationMechanism = SegmentNodeType.Propagating;
 
+            // Check if the ray will reach or exceed the maximum fracture radius
+            if (ufs.checkMaximumLength(UCRSegment, ref maxPropLength, true))
+            {
+                // Set fracture deactivation mechanism to Arrested
+                tipDeactivationMechanism = SegmentNodeType.Arrested;
+            }
+
+            // Check if the segment will intersect a gridblock boundary
+            GridDirection intersectedBoundary;
+            if (ufs.checkBoundaryIntersection(UCRSegment, ref maxPropLength, out intersectedBoundary, true, TerminateAtGridBoundary))
+            {
+                // Set fracture deactivation mechanism to ConnectedGridblockBound
+                tipDeactivationMechanism = SegmentNodeType.ConnectedGridblockBound;
+            }
+
             // Check if the segment will intersect an unconfined fracture from another set
             // Loop through every other fracture set, except this one
             for (int intersecting_ufs_index = 0; intersecting_ufs_index < NoUnconfinedFractureSets; intersecting_ufs_index++)
@@ -7101,21 +7102,6 @@ namespace DFMGenerator_SharedCode
                 } // End check unconfined fractures from adjacent gridblocks
 
             } // End check if the segment will interact with another unconfined fracture stress shadow
-
-            // Check if the segment will intersect a gridblock boundary
-            GridDirection intersectedBoundary;
-            if (ufs.checkBoundaryIntersection(UCRSegment, ref maxPropLength, out intersectedBoundary, true, TerminateAtGridBoundary))
-            {
-                // Set fracture deactivation mechanism to ConnectedGridblockBound
-                tipDeactivationMechanism = SegmentNodeType.ConnectedGridblockBound;
-            }
-
-            // If the segment will increment the full specified length but this takes it to the maximum allowed fracture radius, set the fracture deactivation mechanism to Arrested
-            if ((tipDeactivationMechanism == SegmentNodeType.Propagating) && ((UCRSegment.PropagationRateControl == RaySegmentPropagationRateControl.LengthLimitedFullyActive) || (UCRSegment.PropagationRateControl == RaySegmentPropagationRateControl.LengthLimitedRestricted)))
-            {
-                // Set fracture deactivation mechanism to Arrested
-                tipDeactivationMechanism = SegmentNodeType.Arrested;
-            }
 
             // Check the maximum propagation length is not negative (this can happen if the propagating node is already outside the gridblock)
             if (maxPropLength < 0)
@@ -7217,7 +7203,6 @@ namespace DFMGenerator_SharedCode
                                 }
                                 break;
                             case RaySegmentPropagationRateControl.SubcriticalFullyActive:
-                            case RaySegmentPropagationRateControl.LengthLimitedFullyActive:
                                 {
                                     double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
                                     double r_final = UCRSegment.RayLength;
@@ -7232,7 +7217,6 @@ namespace DFMGenerator_SharedCode
                                 }
                                 break;
                             case RaySegmentPropagationRateControl.SubcriticalRestricted:
-                            case RaySegmentPropagationRateControl.LengthLimitedRestricted:
                                 {
                                     double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
                                     double reff_final = UCRSegment.EffectiveRayLength;
