@@ -134,9 +134,13 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public SegmentNodeType PropNodeType { get; set; }
         /// <summary>
+        /// Flag to specify tip type of the ray containing this segment
+        /// </summary>
+        public FractureTipType RayTipType { get { return ufr.TipType; } }
+        /// <summary>
         /// Flag to specify for the mechanism controlling the rate of propagation of this ray segment
         /// </summary>
-        public RaySegmentPropagationRateControl PropagationRateControl { get; set; }
+        public RaySegmentPropagationRateControl PropagationRateControl { get { return ufr.RayPropagationRateControl; } set { if (Active) ufr.RayPropagationRateControl = value; } }
         /// <summary>
         /// Flag for active segment propagation - true if the fracture segment is still propagating within the current gridblock
         /// </summary>
@@ -215,16 +219,9 @@ namespace DFMGenerator_SharedCode
             unitVector = Orientation.GetNormalisedVector();
             Length = InitialLength;
 
-            // Set the node types and propagation rate control
+            // Set the node types
             NonPropNodeType = SegmentNodeType.NucleationPoint;
             PropNodeType = SegmentNodeType.Propagating;
-            // Initially the fracture will be subcritical and fully active, unless the initial length is 0
-            // In this case we will assume that the fracture is being allowed to grow to the mininum unconfined fracture radius
-            // This will ensure boundary intersections and other interactions are correctly modelled
-            if (InitialLength > 0)
-                PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
-            else
-                PropagationRateControl = RaySegmentPropagationRateControl.GrowToInitialSize;
 
             // Set the nucleation time
             NucleationTime = NucleationTime_in;
@@ -261,7 +258,6 @@ namespace DFMGenerator_SharedCode
             // Set the node types and propagation rate control
             NonPropNodeType = SegmentNodeType.ConnectedGridblockBound;
             PropNodeType = SegmentNodeType.Propagating;
-            PropagationRateControl = initiatorRaySegment.PropagationRateControl;
 
             // Set the nucleation time
             NucleationTime = NucleationTime_in;
@@ -287,7 +283,6 @@ namespace DFMGenerator_SharedCode
             // Set the node types, propagation rate control and terminating segment
             NonPropNodeType = segment_in.NonPropNodeType;
             PropNodeType = segment_in.PropNodeType;
-            PropagationRateControl = segment_in.PropagationRateControl;
             TerminatingFracture = segment_in.TerminatingFracture;
 
             // Set the nucleation time
@@ -367,6 +362,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public FractureTipType TipType { get { return GetRayTipType(); } }
         /// <summary>
+        /// Flag to specify for the mechanism controlling the rate of propagation of this ray
+        /// </summary>
+        public RaySegmentPropagationRateControl RayPropagationRateControl { get; set; }
+        /// <summary>
         /// Ray tip state - true if the ray tip is still propagating
         /// </summary>
         public bool Active { get { if (segments.Count > 0) return (segments[segments.Count - 1].PropNodeType == SegmentNodeType.Propagating); else return false; } }
@@ -375,7 +374,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public UnconfinedFractureRaySegment TerminatingRaySegment { get; private set; }*/
         /// <summary>
-        /// ID number of the fracture that terminates the specified tip of this macrofracture, by intersection or stress shadow interaction; 0 if there is no terminating fracture
+        /// ID number of the fracture that terminates the specified tip of this macrofracture, by intersection or stress shadow interaction; -1 if there is no terminating fracture
         /// </summary>
         public int TerminatingFracture { get; private set; }
         /// <summary>
@@ -548,10 +547,16 @@ namespace DFMGenerator_SharedCode
             segments = new List<UnconfinedFractureRaySegment>();
             segments.Add(new UnconfinedFractureRaySegment(this, ucf_in, ufs_in, gbc_in, NucleationPoint, Orientation, InitialLength, NucleationTime_in, NucleationWTime_in, NucleationTimestep_in));
 
-            // Set the tip data
-            //TipType = FractureTipType.Propagating;
+            // Set the ray tip and propagation rate control data
             //TerminatingRaySegment = null;
             TerminatingFracture = -1;
+            // Initially the fracture will be subcritical and fully active, unless the initial length is 0
+            // In this case we will assume that the fracture is being allowed to grow to the mininum unconfined fracture radius
+            // This will ensure boundary intersections and other interactions are correctly modelled
+            if (InitialLength > 0)
+                RayPropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+            else
+                RayPropagationRateControl = RaySegmentPropagationRateControl.GrowToInitialSize;
         }
         /// <summary>
         /// Copy constructor: copy all data from an existing UnconfinedFractureRay object
@@ -567,10 +572,10 @@ namespace DFMGenerator_SharedCode
             foreach (UnconfinedFractureRaySegment segment in ray_in.segments)
                 segments.Add(new UnconfinedFractureRaySegment(segment));
 
-            // Set the tip data
-            //TipType = ray_in.TipType;
+            // Set the ray tip and propagation rate control data
             //TerminatingRaySegment = ray_in.TerminatingRaySegment;
             TerminatingFracture = ray_in.TerminatingFracture;
+            RayPropagationRateControl = ray_in.RayPropagationRateControl;
         }
     }
 

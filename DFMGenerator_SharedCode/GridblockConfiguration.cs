@@ -1,9 +1,9 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-//#define LOGIMPPOP
+#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
-#define LOGDFNPOP
+//#define LOGDFNPOP
 
 using System;
 using System.Collections.Generic;
@@ -4179,7 +4179,7 @@ namespace DFMGenerator_SharedCode
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
-                                ufs.a_RP32_total()+ ufs.r_RP32_total()+ ufs.sII_RP32_total()+ ufs.sIJ_RP32_total()+ ufs.sMR_RP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_F_StressShadowWidthRatio, ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                                ufs.a_RP32_total() + ufs.r_RP32_total() + ufs.sII_RP32_total() + ufs.sIJ_RP32_total() + ufs.sMR_RP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_F_StressShadowWidthRatio, ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 #endif
 
                             timestepData = timestepData + fractureSetData;
@@ -4284,7 +4284,7 @@ namespace DFMGenerator_SharedCode
                     foreach (RayPropagationStatus rayType in rayTypesToLog)
                     {
                         string rayTypeDatapointOutput = TAdataoutput + string.Format("{0}\t\t", UFSToLog.getNoDatapoints(rayType));
-                        List<double> dataList = UFSToLog.getPhiIIValues(rayType);  // UFSToLog.getRayLengths(rayType);// UFSToLog.getdP30Values(rayType);//UFSToLog.getEffectiveRayLengths(rayType);//UFSToLog.getPhiValues(rayType);// UFSToLog.getdP33Factors(rayType);// UFSToLog.getPhiIJValues(rayType);
+                        List<double> dataList = UFSToLog.getRayLengths(rayType);// UFSToLog.getPhiIIValues(rayType);  // UFSToLog.getdP30Values(rayType);//UFSToLog.getEffectiveRayLengths(rayType);//UFSToLog.getPhiValues(rayType);// UFSToLog.getdP33Factors(rayType);// UFSToLog.getPhiIJValues(rayType);
                         foreach (double dataPoint in dataList)
                             rayTypeDatapointOutput += string.Format("{0}\t", dataPoint);
                         rayLogFiles[rayType].WriteLine(rayTypeDatapointOutput);
@@ -5808,7 +5808,6 @@ namespace DFMGenerator_SharedCode
                     // NB this may not match the actual number of unconfined fractures since some may have been located in stress shadows so not generated
                     // If this is the first timestep, we need to add initial unconfined fractures - therefore the UCF counter starts at 1
                     //int UCF_No = (CurrentExplicitTimestep == 1) ? 1 : (int)(CapBV * ts_CumrminGammaMminus1betac_factor) + 1;
-                    int UCF_No = (int)(CapBV * ts_CumrminGammaMminus1betac_factor) + 1;
 
                     // If this is the first timestep, we need to add initial unconfined fractures
                     if (CurrentExplicitTimestep == 1)
@@ -5832,10 +5831,6 @@ namespace DFMGenerator_SharedCode
 #if LOGDFNPOP
                             Dict_UCF_NoTotalNucleating[ufs_index] += ufs.RaysPerFracture;
 #endif
-                            // Fractures will all be assigned zero initial radius and then allowed to grow to the mininum unconfined fracture radius
-                            // This will ensure boundary intersections and other interactions are correctly modelled
-                            double next_UCF_radius = 0;
-
                             // Get random location for the new fracture
                             PointXYZ new_UCF_centrepointXYZ = getRandomPoint(false);
 
@@ -5895,7 +5890,9 @@ namespace DFMGenerator_SharedCode
                             if (addThisFracture)
                             {
                                 // Create a new UnconfinedFractureXYZ object and add it to the list of unconfined fractures in the local fracture set - this is used to check for fracture intersection
-                                UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, next_UCF_radius, initialWTime, 0);
+                                // Fractures will all be created with zero initial radius and then allowed to grow to the mininum unconfined fracture radius
+                                // This will ensure boundary intersections and other interactions are correctly modelled
+                                UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, 0, initialWTime, 0);
                                 ufs.LocalDFNUnconfinedFractures.Add(new_UCF);
                                 // Also add it to the list of unconfined fractures in the global DFN - this is used to generate the DFN
                                 global_DFN.GlobalDFNUnconfinedFractures.Add(new_UCF);
@@ -5935,6 +5932,10 @@ namespace DFMGenerator_SharedCode
                                 break;
                         }
                     }
+
+                    // Calculate initial unconfined fracture sequence number
+                    // NB this may not match the actual number of unconfined fractures since some may have been located in stress shadows so not generated
+                    int UCF_No = (int)(CapBV * ts_CumrminGammaMminus1betac_factor) + 1;
 
                     // Add new fractures until we reach the end of the timestep
                     // Calculate the weighted time (WTime) when the next unconfined fracture will nucleate
@@ -6027,10 +6028,9 @@ namespace DFMGenerator_SharedCode
                         if (addThisFracture)
                         {
                             // Create a new UnconfinedFractureXYZ object and add it to the list of unconfined fractures in the local fracture set - this is used to check for fracture intersection
-                            // Fractures will all be assigned zero initial radius and then allowed to grow to the mininum unconfined fracture radius
+                            // Fractures will all be created with zero initial radius and then allowed to grow to the mininum unconfined fracture radius
                             // This will ensure boundary intersections and other interactions are correctly modelled
-                            double next_UCF_radius = 0;
-                            UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, next_UCF_radius, NucleationWTime, CurrentExplicitTimestep);
+                            UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, 0, NucleationWTime, CurrentExplicitTimestep);
                             ufs.LocalDFNUnconfinedFractures.Add(new_UCF);
                             // Also add it to the list of unconfined fractures in the global DFN - this is used to generate the DFN
                             global_DFN.GlobalDFNUnconfinedFractures.Add(new_UCF);
@@ -6275,7 +6275,7 @@ namespace DFMGenerator_SharedCode
                     } // End if unconfined fracture ray segment is active
 #if LOGDFNPOP
                     // Update string of ray lengths with the final length of this ray
-                    Dict_UCF_RayLengths[ufs_index] += string.Format("\t{0}\t{1}\t{2}\t{3}", UCRSegment.RayLength, UCRSegment.PropNodeType, UCRSegment.PropagationRateControl, segmentPropagationDistance);
+                    Dict_UCF_RayLengths[ufs_index] += string.Format("\t{0}\t{1}\t{2}\t{3}\t{4}", UCRSegment.RayLength, UCRSegment.PropNodeType, UCRSegment.RayTipType, UCRSegment.PropagationRateControl, segmentPropagationDistance);
 #endif
                 } /// Loop to next unconfined fracture ray segment
 
@@ -6327,7 +6327,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Maximum length of ray propagation (m)</returns>
         private double calculateUnconfinedFractureRayGrowth(UnconfinedFractureRaySegment UCRSegment, double propagatingTime, double growthFactor, double InitialDrivingStress, double MaxRadius, double sqrtpi_Kc_factor)
         {
-            // If the propagation time or the growth factor are zero, there will be no gorwth so we can return 0
+            // If the propagation time or the growth factor are zero, there will be no growth so we can return 0
             if (!(propagatingTime > 0) || !(growthFactor > 0))
                 return 0;
 

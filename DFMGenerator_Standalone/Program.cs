@@ -860,9 +860,9 @@ namespace DFMGenerator_Standalone
             // If set to -1, will use 0.5 * layer thickness
             double MaxUnconfinedFractureRadius = 50;// -1;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-            double MinStressShadowDeactivationRatio = 0;// 0.5;
+            double MinStressShadowDeactivationRatio = 1000000;// 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-            double MinIntersectionDeactivationRatio = 1000000;
+            double MinIntersectionDeactivationRatio = 0;// 0.5;
             // Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
@@ -901,7 +901,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumClearZoneVolume = 0.1;// 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 50;// 250;// 1000;
+            int MaxTimesteps = 150;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
