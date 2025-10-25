@@ -175,7 +175,7 @@
     <value>All fractures are assigned an arbitrary user-specified aperture. Different apertures can be specified for fractures oriented perpendicular to the minimum (i.e. most tensile) and maximum horizontal stress.</value>
   </data>
   <data name="toolTipItem34.Text" xml:space="preserve">
-    <value>If this is checked, all gridblocks in the specified region of the grid will be populated with implicit fracture data, even if the fracture density is zero. If this is not checked, gridblocks with zero fracture density will not be populated; this enables easier visualisation of the extent of the fracture network.</value>
+    <value>If this is checked, all cells in the specified region of the grid will be populated with implicit fracture data, even if the fracture density is zero. If this is not checked, cells with zero fracture density will not be populated; this enables easier visualisation of the extent of the fracture network.</value>
   </data>
   <data name="toolTipItem35.Text" xml:space="preserve">
     <value>Check this to use the present day stress rather than the stress at the time of deformation to calculate fracture aperture and reactivation potential. This will ensure that the calculated fracture porosity, permeability and reactivation risk will be valid for present day conditions. Click on the button to define the present day stress.</value>

@@ -139,7 +139,7 @@
     <value>If absolute stress and fluid pressure are specified, the stress tensor properties should represent the components of the present day absolute (total) stress tensor. The specified fluid pressure property will be subtracted to obtain the effective stress tensor. </value>
   </data>
   <data name="toolTipItem10.Text" xml:space="preserve">
-    <value>Define a present day stress field to calculate fracture aperture and to calculate fracture aperture and reactivation potential, instead of using the stress at the time of deformation. This will ensure that the calculated fracture porosity, permeability and reactivation risk will be valid for present day conditions. The present day stress field can be defined in three ways: </value>
+    <value>Define a present day stress field to calculate fracture aperture and to calculate fracture aperture and reactivation potential, instead of using the stress at the time of deformation. This will ensure that the calculated fracture porosity, permeability and reactivation risk will be valid for present day conditions. The present day stress field can be defined in four ways: </value>
   </data>
   <data name="toolTipItem11.Text" xml:space="preserve">
     <value>By specifying the present day elastic horizontal strain (magnitude and orientation) and current fluid overpressure. The effective stress will then be calculated from lithostatic stress, taking into account stress relaxation and horizontal strain.</value>

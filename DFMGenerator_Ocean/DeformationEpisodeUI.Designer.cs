@@ -63,20 +63,27 @@ namespace DFMGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem18 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo10 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem19 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem20 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem21 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo11 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem22 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo11 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem23 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem24 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem1 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem2 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem3 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem4 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem5 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem6 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo12 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem25 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem26 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo13 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem27 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem28 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem29 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             this.btn_DE_Cancel = new System.Windows.Forms.Button();
             this.btn_DE_OK = new System.Windows.Forms.Button();
             this.toolTipManager_DeformationEpisode = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
@@ -89,7 +96,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DE_Eh = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_DE_SimCase = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_DE_DynamicLoad = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_Stress = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_StressTensorType = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_DE_FP = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.tabControl1 = new Slb.Ocean.Petrel.UI.Controls.TabControl();
             this.tabStatic = new Slb.Ocean.Petrel.UI.Controls.TabPage();
@@ -162,6 +169,8 @@ namespace DFMGenerator_Ocean
             this.comboBox_DE_TimeUnits = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
             this.unitTextBox_DE_DeformationDuration = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.label_DE_DeformationDuration = new System.Windows.Forms.Label();
+            this.toolTipHotspot_DE_StressTensor = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_Duration = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabStatic.SuspendLayout();
@@ -287,8 +296,8 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DE_SimCase.Name = "toolTipHotspot_DE_SimCase";
             this.toolTipHotspot_DE_SimCase.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DE_SimCase.TabIndex = 137;
-            toolTipItem10.Text = "Select a simulation case which contains all the required grid property results. I" +
-    "f none is selected, the current active case will be used.";
+            toolTipItem10.Text = "Select a simulation case which contains all the required results. If none is sele" +
+    "cted, the current active case will be used.";
             toolTipInfo8.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem10});
             this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_SimCase, toolTipInfo8);
@@ -301,15 +310,17 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DE_DynamicLoad.TabIndex = 133;
             toolTipItem11.Text = resources.GetString("toolTipItem11.Text");
             toolTipItem12.ShowBullet = true;
-            toolTipItem12.Text = "Specifying standard properties will define the stress and fluid pressure at the e" +
-    "nd of the timestep.";
+            toolTipItem12.Text = "Specifying grid properties will define the stress and fluid pressure at the end o" +
+    "f the timestep.";
             toolTipItem13.ShowBullet = true;
-            toolTipItem13.Text = resources.GetString("toolTipItem13.Text");
+            toolTipItem13.Text = "Specifying simulation case results will also override the specified deformation e" +
+    "pisode duration, and the deformation episode will be subdivided based on the num" +
+    "ber of timesteps in the simulation.";
             toolTipItem14.ShowBullet = true;
             toolTipItem14.Text = resources.GetString("toolTipItem14.Text");
             toolTipItem15.ShowBullet = true;
             toolTipItem15.Text = "If the horizontal components of the stress tensor (XX, YY and XY) are also specif" +
-    "ied, this will override the strain load.";
+    "ied, this will override the strain data from the Static Load tab.";
             toolTipItem16.ShowBullet = true;
             toolTipItem16.Text = resources.GetString("toolTipItem16.Text");
             toolTipItem17.ShowBullet = true;
@@ -317,7 +328,7 @@ namespace DFMGenerator_Ocean
     "ective stress.";
             toolTipItem18.Text = "NB to output one intermediate fracture growth step per simulation timestep, set \"" +
     "Interval between intermediate outputs\" on the outputs tab of the main dialog box" +
-    " to \"By deformation episode\"";
+    " to \"By deformation episode\".";
             toolTipInfo9.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem11,
             toolTipItem12,
@@ -331,23 +342,26 @@ namespace DFMGenerator_Ocean
             toolTipItem18});
             this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_DynamicLoad, toolTipInfo9);
             // 
-            // toolTipHotspot_DE_Stress
+            // toolTipHotspot_DE_StressTensorType
             // 
-            this.toolTipHotspot_DE_Stress.Location = new System.Drawing.Point(432, 23);
-            this.toolTipHotspot_DE_Stress.Name = "toolTipHotspot_DE_Stress";
-            this.toolTipHotspot_DE_Stress.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_Stress.TabIndex = 131;
-            toolTipItem19.Text = resources.GetString("toolTipItem19.Text");
-            toolTipItem20.Text = "Stress tensor components can be supplied as either absolute (total) stress or eff" +
-    "ective stress.";
-            toolTipItem21.Text = resources.GetString("toolTipItem21.Text");
+            this.toolTipHotspot_DE_StressTensorType.Location = new System.Drawing.Point(432, 23);
+            this.toolTipHotspot_DE_StressTensorType.Name = "toolTipHotspot_DE_StressTensorType";
+            this.toolTipHotspot_DE_StressTensorType.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_StressTensorType.TabIndex = 131;
+            toolTipItem19.Text = "Stress tensor components can be supplied as either:";
+            toolTipItem20.ShowBullet = true;
+            toolTipItem20.Text = "Absolute (total) stress (in which case fluid pressure must also be defined).";
+            toolTipItem21.ShowBullet = true;
+            toolTipItem21.Text = "Terzaghi effective stress (absolute stress minus fluid pressure).";
+            toolTipItem22.ShowBullet = true;
+            toolTipItem22.Text = "Biot effective stress (absolute stress minus fluid pressure, modified by Biot\'s c" +
+    "oefficient).";
             toolTipInfo10.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem19,
-            toolTipSeparator3,
             toolTipItem20,
-            toolTipSeparator4,
-            toolTipItem21});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Stress, toolTipInfo10);
+            toolTipItem21,
+            toolTipItem22});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_StressTensorType, toolTipInfo10);
             // 
             // toolTipHotspot_DE_FP
             // 
@@ -355,12 +369,12 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DE_FP.Name = "toolTipHotspot_DE_FP";
             this.toolTipHotspot_DE_FP.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DE_FP.TabIndex = 132;
-            toolTipItem22.Text = resources.GetString("toolTipItem22.Text");
-            toolTipItem23.Text = "NB This represents the total pore fluid pressure, not the overpressure.";
+            toolTipItem23.Text = resources.GetString("toolTipItem23.Text");
+            toolTipItem24.Text = "NB This represents the total pore fluid pressure, not the overpressure.";
             toolTipInfo11.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem22,
-            toolTipSeparator5,
-            toolTipItem23});
+            toolTipItem23,
+            toolTipSeparator3,
+            toolTipItem24});
             this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_FP, toolTipInfo11);
             // 
             // tabControl1
@@ -763,6 +777,7 @@ namespace DFMGenerator_Ocean
             // 
             // groupBox_DE_StressTensor
             // 
+            this.groupBox_DE_StressTensor.Controls.Add(this.toolTipHotspot_DE_StressTensor);
             this.groupBox_DE_StressTensor.Controls.Add(this.comboBox_DE_StressStateDefinition);
             this.groupBox_DE_StressTensor.Controls.Add(this.label_DE_StressDefinedFrom);
             this.groupBox_DE_StressTensor.Controls.Add(this.label_DE_AbsoluteStressYZ);
@@ -776,7 +791,7 @@ namespace DFMGenerator_Ocean
             this.groupBox_DE_StressTensor.Controls.Add(this.label_DE_AbsoluteStressXY);
             this.groupBox_DE_StressTensor.Controls.Add(this.dropTarget_DE_AbsoluteStressXX);
             this.groupBox_DE_StressTensor.Controls.Add(this.dropTarget_DE_AbsoluteStressYY);
-            this.groupBox_DE_StressTensor.Controls.Add(this.toolTipHotspot_DE_Stress);
+            this.groupBox_DE_StressTensor.Controls.Add(this.toolTipHotspot_DE_StressTensorType);
             this.groupBox_DE_StressTensor.Controls.Add(this.dropTarget_DE_AbsoluteStressXY);
             this.groupBox_DE_StressTensor.Controls.Add(this.toolTipHotspot_DE_FP);
             this.groupBox_DE_StressTensor.Controls.Add(this.presentationBox_DE_AbsoluteStressXX);
@@ -799,7 +814,7 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_DE_StressStateDefinition.DisableMouseWheelScrolling = false;
             this.comboBox_DE_StressStateDefinition.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
-            comboBoxItem1.Text = "Absolute (total) stress";
+            comboBoxItem1.Text = "Absolute (total) stress and fluid pressure";
             comboBoxItem2.Text = "Terzaghi effective stress";
             comboBoxItem3.Text = "Biot effective stress";
             this.comboBox_DE_StressStateDefinition.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
@@ -1061,11 +1076,43 @@ namespace DFMGenerator_Ocean
             this.label_DE_DeformationDuration.TabIndex = 124;
             this.label_DE_DeformationDuration.Text = "Max deformation episode duration:";
             // 
+            // toolTipHotspot_DE_StressTensor
+            // 
+            this.toolTipHotspot_DE_StressTensor.Location = new System.Drawing.Point(680, 11);
+            this.toolTipHotspot_DE_StressTensor.Name = "toolTipHotspot_DE_StressTensor";
+            this.toolTipHotspot_DE_StressTensor.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_StressTensor.TabIndex = 152;
+            toolTipItem25.Text = resources.GetString("toolTipItem25.Text");
+            toolTipItem26.Text = resources.GetString("toolTipItem26.Text");
+            toolTipInfo12.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem25,
+            toolTipSeparator4,
+            toolTipItem26});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_StressTensor, toolTipInfo12);
+            // 
+            // toolTipHotspot_DE_Duration
+            // 
+            this.toolTipHotspot_DE_Duration.Location = new System.Drawing.Point(464, 6);
+            this.toolTipHotspot_DE_Duration.Name = "toolTipHotspot_DE_Duration";
+            this.toolTipHotspot_DE_Duration.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_Duration.TabIndex = 148;
+            toolTipItem27.Text = "Specify the duration of the deformation episode in ma, years or seconds:";
+            toolTipItem28.ShowBullet = true;
+            toolTipItem28.Text = resources.GetString("toolTipItem28.Text");
+            toolTipItem29.ShowBullet = true;
+            toolTipItem29.Text = resources.GetString("toolTipItem29.Text");
+            toolTipInfo13.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem27,
+            toolTipItem28,
+            toolTipItem29});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Duration, toolTipInfo13);
+            // 
             // DeformationEpisodeUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(770, 331);
+            this.Controls.Add(this.toolTipHotspot_DE_Duration);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.btn_DE_Cancel);
             this.Controls.Add(this.btn_DE_OK);
@@ -1154,7 +1201,7 @@ namespace DFMGenerator_Ocean
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressXX;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_DynamicLoad;
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressYY;
-        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_Stress;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_StressTensorType;
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_DE_AbsoluteStressXY;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_FP;
         private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_DE_AbsoluteStressXX;
@@ -1175,5 +1222,7 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.GroupBox groupBox_DE_StressTensor;
         private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_DE_StressStateDefinition;
         private System.Windows.Forms.Label label_DE_StressDefinedFrom;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_StressTensor;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_DE_Duration;
     }
 }

@@ -2010,6 +2010,13 @@ namespace DFMGenerator_Ocean
                                     presentDayStressLabel += string.Format(" - Fluid pressure from {0}\n", FluidPressure_PresentDay_grid.Name);
                                 else
                                     presentDayStressLabel += " - Fluid pressure 0\n";
+                                if (PresentDayStressInput == StressStateDefinition.BiotEffectiveStress)
+                                {
+                                    if (UseGridFor_BiotCoefficient_PresentDay)
+                                        presentDayStressLabel += string.Format(" - Override Biot's coefficient with: {0}", BiotCoefficient_PresentDay_grid.Name) + (!double.IsNaN(BiotCoefficient_PresentDay) ? string.Format("default {0}\n", BiotCoefficient_PresentDay) : "\n");
+                                    else if (!double.IsNaN(BiotCoefficient_PresentDay))
+                                        presentDayStressLabel += string.Format(" - Override Biot's coefficient with: {0}\n", BiotCoefficient_PresentDay);
+                                }
                                 break;
                             case StressStateDefinition.AbsoluteStress:
                                 presentDayStressLabel += string.Format("absolute (total) stress tensor and fluid pressure:\n");
@@ -4751,7 +4758,6 @@ namespace DFMGenerator_Ocean
                                                             }
                                                         }
                                                     }
-
                                                 }
                                                 // Check the elastic properties for physically unrealistic values, and if so warn the user
                                                 // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
@@ -5101,6 +5107,76 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 // End get the present day absolute stress and fluid pressure from the grid as required
 
+                                                // Get the present day mechanical properties from the grid as required
+                                                // Only the Biot coefficient is relevant here (and this only if the Biot effective stress is defined)
+                                                // This will depend on whether we are averaging the mechanical properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                double local_BiotCoefficient_PresentDay = BiotCoefficient_PresentDay;
+
+                                                if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each mechanical property
+                                                    double BiotCoeff_total = 0;
+                                                    int BiotCoeff_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_TopCellK; PetrelGrid_K <= PetrelGrid_BaseCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update Biot coefficient total if defined
+                                                                if (UseGridFor_BiotCoefficient_PresentDay)
+                                                                {
+                                                                    double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
+                                                                    if (!double.IsNaN(cell_BiotCoeff))
+                                                                    {
+                                                                        BiotCoeff_total += cell_BiotCoeff;
+                                                                        BiotCoeff_novalues++;
+                                                                    }
+                                                                }
+
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (BiotCoeff_novalues > 0)
+                                                        local_BiotCoefficient_PresentDay = BiotCoeff_total / (double)BiotCoeff_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
+                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
+                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
+
+                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
+                                                    if (HorizontalUpscalingFactor > 1)
+                                                    {
+                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
+                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
+                                                    }
+
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
+
+                                                    // Update Biot coefficient total if defined
+                                                    if (UseGridFor_BiotCoefficient_PresentDay)
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_TopCellK; PetrelGrid_DataCellK <= PetrelGrid_BaseCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_BiotCoeff = (double)BiotCoefficient_PresentDay_grid[cellRef];
+                                                            if (!double.IsNaN(cell_BiotCoeff))
+                                                            {
+                                                                local_BiotCoefficient_PresentDay = cell_BiotCoeff;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                } // End get the present day mechanical properties from the grid as required
+
+
                                                 // Now we can set the present day stress, depending on the stress type selected
                                                 if (PresentDayStressInput == StressStateDefinition.AbsoluteStress)
                                                 {
@@ -5122,10 +5198,10 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 else if (PresentDayStressInput == StressStateDefinition.BiotEffectiveStress)
                                                 {
-                                                    gc.SetPresentDayBiotStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient);
+                                                    gc.SetPresentDayBiotStress(local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient_PresentDay);
 #if DEBUG_FRAC_INPUT
                                                     PetrelLogger.InfoOutputWindow("");
-                                                    PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayBiotStress({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient));
+                                                    PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayBiotStress({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Sxx_PresentDay, local_Syy_PresentDay, local_Szz_PresentDay, local_Sxy_PresentDay, local_Syz_PresentDay, local_Szx_PresentDay, local_FluidPressure_PresentDay, local_BiotCoefficient_PresentDay));
                                                     PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
 #endif
                                                 }
