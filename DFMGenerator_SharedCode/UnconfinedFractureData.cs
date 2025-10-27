@@ -60,7 +60,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Volumetric density of rays represented by this datapoint (NB this is an incremental rather than a cumulative population density)
         /// </summary>
-        public double dP30 { get; private set; }
+        public double dRP30 { get; private set; }
         /// <summary>
         /// Number of rays comprising each fracture; this is used to calculate the volumetric density of fractures represented by this datapoint
         /// </summary>
@@ -145,11 +145,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Factor to calculate incremental area of segments represented by this datapoint; must be multiplied by a geometric factor to get the true dP32 increment
         /// </summary>
-        public double dP32factor { get { return dP30 * RayLength * RayLength; } }
+        public double dP32factor { get { return dRP30 * RayLength * RayLength; } }
         /// <summary>
         /// Factor to calculate incremental stress shadow volume around the segments represented by this datapoint; must be multiplied by a geometric factor to get the true dP33 increment
         /// </summary>
-        public double dP33factor { get { return  dP30 * RayLength * RayLength * EffectiveRayLength; } }
+        public double dP33factor { get { return dRP30 * RayLength * RayLength * EffectiveRayLength; } }
         /// <summary>
         /// Factor to calculate volume of the stress shadow represented by this datapoint plus or minus an additional shell; must be multiplied by a geometric factor to get the true shell volume
         /// </summary>
@@ -172,7 +172,7 @@ namespace DFMGenerator_SharedCode
             if (effectiveShellRadius < 0)
                 return 0;
             else
-                return dP30 * (shellRadius * shellRadius * effectiveShellRadius);
+                return dRP30 * (shellRadius * shellRadius * effectiveShellRadius);
         }
         /// <summary>
         /// Factor to calculate volume of a symmetric shell around the stress shadow represented by this datapoint; must be multiplied by a geometric factor to get the true shell volume
@@ -196,9 +196,9 @@ namespace DFMGenerator_SharedCode
             if (effectiveShellRadius < 0)
                 return 0;
             else if (shellWidth < 0)
-                return dP30 * ((RayLength * RayLength * EffectiveRayLength) - (shellRadius * shellRadius * effectiveShellRadius));
+                return dRP30 * ((RayLength * RayLength * EffectiveRayLength) - (shellRadius * shellRadius * effectiveShellRadius));
             else
-                return dP30 * ((shellRadius * shellRadius * effectiveShellRadius) - (RayLength * RayLength * EffectiveRayLength));
+                return dRP30 * ((shellRadius * shellRadius * effectiveShellRadius) - (RayLength * RayLength * EffectiveRayLength));
         }
         /*/// <summary>
         /// Get the inverse of the exclusion zone volume seen by a fully active fracture with a specified radius, around all fractures represented by this datapoint
@@ -329,27 +329,27 @@ namespace DFMGenerator_SharedCode
                 case RayPropagationStatus.FullyActive:
                     // There will be three datapoints in the output array, representing the rays that become restricted and deactivated due to stress shadow interaction and intersection respectively
                     outputDatapoints = new ImplicitFracturePopulationDatapoint[3];
-                    // Calculate the total proportion of fractures for which no rays will be deactivated during the current timestep
+                    // Calculate the total proportion of fully active fractures for which no rays will be deactivated during the current timestep
                     // This will be the probability that a single ray will not be deactivated (Phi_Ray_M) to the power of the number of rays per fracture
                     double Phi_Fracture_M = Math.Pow(Phi, NoRaysPerFracture);
                     // The first datapoint in the output array represents the new restricted rays
-                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * (Phi - Phi_Fracture_M), RayPropagationStatus.Restricted, finalRayLength);
+                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dRP30 * (Phi - Phi_Fracture_M), RayPropagationStatus.Restricted, finalRayLength);
                     // The second datapoint in the output array represents the new static rays due to stress shadow interaction
-                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, finalRayLength);
+                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dRP30 * F_II_M, RayPropagationStatus.StaticStressShadow, finalRayLength);
                     // The third datapoint in the output array represents the new static rays due to intersection
-                    outputDatapoints[2] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, finalRayLength);
+                    outputDatapoints[2] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dRP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, finalRayLength);
                     // Reduce the volumetric density of fully active rays represented by this datapoint
-                    dP30 *= Phi_Fracture_M;
+                    dRP30 *= Phi_Fracture_M;
                     break;
                 case RayPropagationStatus.Restricted:
                     // There will be two datapoints in the output array, representing the rays that become deactivated due to stress shadow interaction and intersection respectively
                     outputDatapoints = new ImplicitFracturePopulationDatapoint[2];
                     // The first datapoint in the output array represents the new static rays due to stress shadow interaction
-                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_II_M, RayPropagationStatus.StaticStressShadow, PropagationControllingLength);
+                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dRP30 * F_II_M, RayPropagationStatus.StaticStressShadow, PropagationControllingLength);
                     // The second datapoint in the output array represents the new static rays due to intersection
-                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, PropagationControllingLength);
+                    outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, incrementToApply, incrementDerivedDatapointsToMaxRadius, dRP30 * F_IJ_M, RayPropagationStatus.StaticIntersection, PropagationControllingLength);
                     // Reduce the volumetric density of restricted rays represented by this datapoint
-                    dP30 *= Phi;
+                    dRP30 *= Phi;
                     break;
                 case RayPropagationStatus.StaticStressShadow:
                 case RayPropagationStatus.StaticIntersection:
@@ -375,7 +375,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dP30_increment">Amount by which to increment the dP30 value</param>
         public void Increment_dP30(double dP30_increment)
         {
-            dP30 += dP30_increment;
+            dRP30 += dP30_increment;
         }
 
         // Constructors
@@ -406,7 +406,7 @@ namespace DFMGenerator_SharedCode
         {
             RayLength = rayLength_in;
             RayLengthIncrement = rayLengthIncrement_in;
-            dP30 = dP30_in;
+            dRP30 = dP30_in;
             Status = status_in;
             incrementToMaxRadius = incrementToMaxRadius_in;
             if (status_in == RayPropagationStatus.FullyActive)
@@ -553,7 +553,7 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
-        /// Get the total volumetric density of all segments with effective radius greater than a specified value
+        /// Get the total volumetric density of all fractures with effective radius greater than a specified value
         /// </summary>
         /// <param name="CutoffRadius">Minimum effective radius</param>
         /// <returns>Cumulative P30 density of all fractures with effective radius greater than or equal to the specified minimum</returns>
@@ -566,10 +566,10 @@ namespace DFMGenerator_SharedCode
                 {
                     if (datapoint.EffectiveRayLength < CutoffRadius)
                         break;
-                    RP30 += datapoint.dP30;
+                    RP30 += datapoint.dRP30;
                 }
 
-            return RP30;
+            return RP30 / (double)noSegments;
         }
         /// <summary>
         /// Get the total mean linear density of all segments with effective radius greater than a specified value
@@ -746,7 +746,7 @@ namespace DFMGenerator_SharedCode
                 // Loop through the arrays for population distribution functions
                 foreach (ImplicitFracturePopulationDatapoint dataPoint in fracturePopulationDatapoints[status])
                 {
-                    RP30_total[status] += dataPoint.dP30;
+                    RP30_total[status] += dataPoint.dRP30;
                     RP32_total[status] += dataPoint.dP32factor;
                     if (dataPoint.EffectiveRayLength < minExclusiveEffectiveRayLength)
                         RP33_overlapping_total[status] += dataPoint.dP33factor;
@@ -960,7 +960,7 @@ namespace DFMGenerator_SharedCode
                     if (frac1EffRayLength < minExclusiveEffectiveRayLength)
                         break;
 
-                    double dp_dp30 = datapoint.dP30;
+                    double dp_dp30 = datapoint.dRP30;
                     double dp_shellRadius = datapoint.RayLength - frac2FinalRadius;
                     double dp_shellEffectiveRadius = datapoint.EffectiveRayLength - frac2FinalEffectiveRadius;
                     if (dp_shellRadius < 0)
@@ -1169,7 +1169,7 @@ namespace DFMGenerator_SharedCode
                 {
                     // Get a reference to the current datapoint to keep and cache relevant data locally
                     ImplicitFracturePopulationDatapoint currentPoint = listToCull[currentDataPointNo];
-                    double currentPoint_dP30 = currentPoint.dP30;
+                    double currentPoint_dP30 = currentPoint.dRP30;
                     double currentPoint_Radius = currentPoint.RayLength;
                     double currentPoint_EffectiveRadius = listToCull[currentDataPointNo].EffectiveRayLength;
                     double currentPoint_Area = currentPoint_Radius * currentPoint_Radius;
@@ -1259,7 +1259,7 @@ namespace DFMGenerator_SharedCode
 
                     // Increment the variables for the total volumetric density of rays to be amalgamated into the current datapoint and the total P32 and P33 adjustments
                     double nextPoint_EffectiveRadius = nextPoint.EffectiveRayLength;
-                    double nextPoint_dP30 = nextPoint.dP30;
+                    double nextPoint_dP30 = nextPoint.dRP30;
                     double nextPoint_Area = nextPoint_Radius * nextPoint_Radius;
                     double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRadius;
                     dP30_increment += nextPoint_dP30;

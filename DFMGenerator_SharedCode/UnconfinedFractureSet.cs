@@ -956,7 +956,7 @@ namespace DFMGenerator_SharedCode
         {
             List<double> output = new List<double>();
             foreach (ImplicitFracturePopulationDatapoint dp in Fractures.fracturePopulationDatapoints[rayType])
-                output.Add(dp.dP30);
+                output.Add(dp.dRP30);
             return output;
         }
         /// <summary>
@@ -1104,7 +1104,7 @@ namespace DFMGenerator_SharedCode
             {
                 while ((datapoints.Count > datapointNo) && (datapoints[datapointNo].RayLength >= nextRadius))
                 {
-                    cumP30 += datapoints[datapointNo].dP30;
+                    cumP30 += datapoints[datapointNo].dRP30;
                     datapointNo++;
                 }
                 cumP30List.Add(cumP30);
@@ -2286,9 +2286,9 @@ namespace DFMGenerator_SharedCode
                     int FADatapointNo = 0;
                     while (Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count > FADatapointNo)
                     {
-                        // If the dFP30 value for this datapoint is below the minimum, move on to the next datapoint
-                        double dP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dP30;
-                        if (dP30 < min_datapoint_RP30)
+                        // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
+                        double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dRP30;
+                        if (dRP30 < min_datapoint_RP30)
                         {
                             FADatapointNo++;
                             continue;
@@ -2340,9 +2340,9 @@ namespace DFMGenerator_SharedCode
                     int RDatapointNo = 0;
                     while (Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Count > RDatapointNo)
                     {
-                        // If the dFP30 value for this datapoint is below the minimum, move on to the next datapoint
-                        double dP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dP30;
-                        if (dP30 < min_datapoint_RP30)
+                        // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
+                        double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dRP30;
+                        if (dRP30 < min_datapoint_RP30)
                         {
                             RDatapointNo++;
                             continue;
@@ -2834,7 +2834,7 @@ namespace DFMGenerator_SharedCode
             if (FracturesActive && ((float)mean_SigmaD_M > 0f))
             {
                 ImplicitFracturePopulationDatapoint nucleatingFractures = getNucleatingFractures();
-                if (!(nucleatingFractures is null) && ((float)nucleatingFractures.dP30 > 0f))
+                if (!(nucleatingFractures is null) && ((float)nucleatingFractures.dRP30 > 0f))
                     Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Add(nucleatingFractures);
             }
         }
@@ -2858,7 +2858,7 @@ namespace DFMGenerator_SharedCode
             double cumGammaRmin_N = rmin_beta + CurrentFractureData.Cum_Gamma_M;
             double cumGammaRmin_Nminus1 = rmin_beta + previous_CumGamma;// CurrentFractureData.Cum_Gamma_Mminus1;
 
-            // Get the initial and final volumetric density of fractures with radius > rmin for the current timestep, ignoring stress shadows
+            // Get the incremental increase in volumetric density of fractures with radius > rmin for the current timestep, ignoring stress shadows
             // Only Power Law is currently implemented
             double dUCFP30 = 0;
             switch (InitialDistribution)
@@ -2886,7 +2886,7 @@ namespace DFMGenerator_SharedCode
             double dRP30 = dUCFP30 * (double)RaysPerFracture;
 
             // If the calculated dMFP30 value is less than the specified minimum, return null (no new datapoint will be created)
-            if ((float)dRP30 < (float)min_datapoint_RP30)
+            if (dRP30 < min_datapoint_RP30)
                 return null;
 
             // Create a new datapoint and return it
@@ -2968,9 +2968,9 @@ namespace DFMGenerator_SharedCode
                     // Add the new datapoints to the appropriate arrays - but only if the volumetric density is greater than zero
                     if (newdatapoints.Length == 2)
                     {
-                        if ((float)newdatapoints[0].dP30 > 0f)
+                        if ((float)newdatapoints[0].dRP30 > 0f)
                             Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[0]);
-                        if ((float)newdatapoints[1].dP30 > 0f)
+                        if ((float)newdatapoints[1].dRP30 > 0f)
                             Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[1]);
                     }
                 }
@@ -3073,11 +3073,11 @@ namespace DFMGenerator_SharedCode
                                 newRestrictedDatapoint.SetRayLengthIncrement(restrictedRayIncrement, incrementExceedsMaxRadius);
                                 Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newRestrictedDatapoint);
                             }*/
-                        if ((float)newdatapoints[0].dP30 > 0f)
+                        if ((float)newdatapoints[0].dRP30 > 0f)
                             Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newdatapoints[0]);
-                        if ((float)newdatapoints[1].dP30 > 0f)
+                        if ((float)newdatapoints[1].dRP30 > 0f)
                             Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[1]);
-                        if ((float)newdatapoints[2].dP30 > 0f)
+                        if ((float)newdatapoints[2].dRP30 > 0f)
                             Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[2]);
                     }
                 }

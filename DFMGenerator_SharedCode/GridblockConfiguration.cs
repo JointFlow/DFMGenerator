@@ -1,6 +1,6 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-#define LOGIMPPOP
+//#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
@@ -4769,7 +4769,8 @@ namespace DFMGenerator_SharedCode
 
 #if LOGDFNPOP
             // Create flag to log this gridblock
-            bool writeLoggingData = (((float)SWtop.X == 50f) && ((float)SWtop.Y == 50f) && ((float)SWtop.Depth == 2050f));
+            //bool writeLoggingData = (((float)SWtop.X == 50f) && ((float)SWtop.Y == 50f) && ((float)SWtop.Depth == 2050f));
+            bool writeLoggingData = (((float)SWtop.X == 0f) && ((float)SWtop.Y == 0f) && ((float)SWtop.Depth == 2000f));
 
             // Create lists for the output files for each fracture set
             List<StreamWriter> DFN_MFPopLogFiles = new List<StreamWriter>();
@@ -6224,8 +6225,6 @@ namespace DFMGenerator_SharedCode
                     if (UCRSegment.CheckNucleationGridblock(this))
                     {
                         Dict_UCF_NoTotalFracRays[ufs_index]++;
-                        Dict_UCF_TotalFractureArea[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * (Math.PI / ufs.RaysPerFracture));
-                        Dict_UCF_TotalFractureVolume[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * UCRSegment.RayLength * (4d / 3d) * (Math.PI / ufs.RaysPerFracture));
                         if (fromPreviousTS) Dict_UCF_NoTotalExistingFracRays[ufs_index]++;
                     }
                     double segmentPropagationDistance = -1;
@@ -6276,6 +6275,12 @@ namespace DFMGenerator_SharedCode
 #if LOGDFNPOP
                     // Update string of ray lengths with the final length of this ray
                     Dict_UCF_RayLengths[ufs_index] += string.Format("\t{0}\t{1}\t{2}\t{3}\t{4}", UCRSegment.RayLength, UCRSegment.PropNodeType, UCRSegment.RayTipType, UCRSegment.PropagationRateControl, segmentPropagationDistance);
+                    // Update the fracture area and volume
+                    if (UCRSegment.CheckNucleationGridblock(this))
+                    {
+                        Dict_UCF_TotalFractureArea[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * (Math.PI / ufs.RaysPerFracture));
+                        Dict_UCF_TotalFractureVolume[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * UCRSegment.RayLength * (4d / 3d) * (Math.PI / ufs.RaysPerFracture));
+                    }
 #endif
                 } /// Loop to next unconfined fracture ray segment
 
@@ -6344,7 +6349,6 @@ namespace DFMGenerator_SharedCode
             if (UCRSegment.FractureFullyActive)
             {
                 // By default, set the ray propagation rate control for the ray segment to SubcriticalFullyActive
-                UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
 
                 // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 // First calculate the increment in ray length assuming subcritical fracture propagation
@@ -6365,6 +6369,9 @@ namespace DFMGenerator_SharedCode
                     // Set the ray propagation rate control for the ray segment to Critical
                     UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
                 }
+                else
+                UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+
             }
             // Set the growth rate if the fracture is restricted
             else
@@ -6609,6 +6616,9 @@ namespace DFMGenerator_SharedCode
 #else
                 ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref initialPropagationDistance);
 #endif
+                // If the fracture segment has become deactivated while extending the ray to the minimum fracture radius, there is no need to extend it further so we can return
+                if (!newSegment.Active)
+                    return;
             }
 
             // If the new ray segment nucleated before the end of the last timestep calculated for this gridblock, we will need to propagate the ray up until that time 
@@ -7167,33 +7177,15 @@ namespace DFMGenerator_SharedCode
                         // If so, deactivate the segment
                         UCRSegment.PropNodeType = SegmentNodeType.NonconnectedGridblockBound;
                     }
-                    else if (r_init == 0) // Newly nucleating fracture rays must be extended to the minimum radius for a new fracture
+                    else // The ray can propagate into the neighbouring gridblock
                     {
                         // Get the boundary intersection point (in global XYZ coordinates) and the real intersection time
                         PointXYZ intersectionPoint = UCRSegment.PropNode;
 
-                        // Get the time that the ray segment crosses the boundary - this is the nucleation time
-                        double intersectionRealTime = UCRSegment.NucleationTime;
-
-                        // Determine the distance that the new ray should be extended into the new gridblock
-                        double initialPropagationDistance = ufs.MinimumFractureRadius - maxPropLength;
-
-                        // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock
-                        GridDirection oppositeBoundary = PointXYZ.GetOppositeDirection(intersectedBoundary);
-
-                        // Call function to create an unconfined fracture segment in the neighbouring gridblock
-#if LOGDFNPOP
-                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
-#else
-                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary);
-#endif
-                    }
-                    else // The propagating ray can propagate into the neighbouring gridblock
-                    {
-                        // Get the boundary intersection point (in global XYZ coordinates) and the real intersection time
-                        PointXYZ intersectionPoint = UCRSegment.PropNode;
-                        // Get the time that the ray segment crosses the boundary
+                        // Calculate the time that the ray segment crosses the boundary and the initial propagation distance
+                        // The initial propagation distance is only used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays
                         double intersectionRealTime;
+                        double initialPropagationDistance = 0;
                         switch (UCRSegment.PropagationRateControl)
                         {
                             case RaySegmentPropagationRateControl.Critical:
@@ -7231,15 +7223,16 @@ namespace DFMGenerator_SharedCode
                                 }
                                 break;
                             case RaySegmentPropagationRateControl.GrowToInitialSize:
-                                intersectionRealTime = UCRSegment.NucleationTime;
+                                {
+                                    intersectionRealTime = UCRSegment.NucleationTime;
+                                    // Determine the distance that the new ray should be extended into the new gridblock
+                                    initialPropagationDistance = initial_maxPropLength - maxPropLength;
+                                }
                                 break;
                             default:
                                 intersectionRealTime = CurrentExplicitTime;
                                 break;
                         }
-
-                        // The initial propagation distance is only used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays
-                        double initialPropagationDistance = 0;
 
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock
                         GridDirection oppositeBoundary = PointXYZ.GetOppositeDirection(intersectedBoundary);
