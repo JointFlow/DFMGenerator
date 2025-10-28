@@ -1,6 +1,6 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-//#define LOGIMPPOP
+#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
@@ -4769,8 +4769,8 @@ namespace DFMGenerator_SharedCode
 
 #if LOGDFNPOP
             // Create flag to log this gridblock
-            //bool writeLoggingData = (((float)SWtop.X == 50f) && ((float)SWtop.Y == 50f) && ((float)SWtop.Depth == 2050f));
-            bool writeLoggingData = (((float)SWtop.X == 0f) && ((float)SWtop.Y == 0f) && ((float)SWtop.Depth == 2000f));
+            bool writeLoggingData = (((float)SWtop.X == 50f) && ((float)SWtop.Y == 50f) && ((float)SWtop.Depth == 2050f));
+            //bool writeLoggingData = (((float)SWtop.X == 0f) && ((float)SWtop.Y == 0f) && ((float)SWtop.Depth == 2000f));
 
             // Create lists for the output files for each fracture set
             List<StreamWriter> DFN_MFPopLogFiles = new List<StreamWriter>();
@@ -6348,11 +6348,9 @@ namespace DFMGenerator_SharedCode
             // Set the growth rate if the fracture is fully active
             if (UCRSegment.FractureFullyActive)
             {
-                // By default, set the ray propagation rate control for the ray segment to SubcriticalFullyActive
-
                 // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 // First calculate the increment in ray length assuming subcritical fracture propagation
-                // Fully actove subcritical propagation rate is dependent on driving stress and ray length, both of which may vary during the timestep
+                // Fully active subcritical propagation rate is dependent on driving stress and ray length, both of which may vary during the timestep
                 finalR = bis2 ? (initialR * Math.Exp(-growthFactor)) : Math.Pow(Math.Pow(initialR, 1 / beta) - growthFactor, beta);
                 incrementR = finalR - initialR;
 
@@ -6370,15 +6368,14 @@ namespace DFMGenerator_SharedCode
                     UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
                 }
                 else
-                UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
-
+                {
+                    // Set the ray propagation rate control for the ray segment to SubcriticalFullyActive
+                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+                }
             }
             // Set the growth rate if the fracture is restricted
             else
             {
-                // By default, set the ray propagation rate control for the ray segment to SubcriticalRestricted
-                UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalRestricted;
-
                 // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 // First calculate the increment in ray length assuming subcritical fracture propagation
                 // Restricted subcritical propagation rate is dependent on driving stress and ray length, both of which may vary during the timestep, and on the length of the controlling ray, which is static and will not vary during the timestep
@@ -6399,6 +6396,11 @@ namespace DFMGenerator_SharedCode
                     finalR = initialR + incrementR;
                     // Set the ray propagation rate control for the ray segment to Critical
                     UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
+                }
+                else
+                {
+                    // Set the ray propagation rate control for the ray segment to SubcriticalRestricted
+                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalRestricted;
                 }
             }
 

@@ -706,7 +706,7 @@ namespace DFMGenerator_SharedCode
         {
             // All fully active rays, restricted rays and rays that have reached maximum length are non-overlapping, so for these ray propagation statuses the minimum value is -1
             // Static rays with effective ray length longer than the minimum size that can be deactivated by the largest current fractures are also non-overlapping
-            // However static rays with effective ray length shprter than the minimum size that can be deactivated by the largest current fractures may overlap
+            // However static rays with effective ray length shorter than the minimum size that can be deactivated by the largest current fractures may overlap
 
             switch (status)
             {
@@ -940,12 +940,12 @@ namespace DFMGenerator_SharedCode
             double frac2FinalEffectiveRadius = frac2InitialEffectiveRadius + Fracture2.EffectiveRayLengthIncrement;
 
             // Calculate the fixed components of the inner shell volumes of the non-overlapping fractures
-            double Gamma0 = 0;
-            double Gamma1 = 0;
-            double Gamma2 = 0;
-            double Gamma3 = 0;
-            double Gamma4 = 0;
-            double Gamma5 = 0;
+            double CubicTerm0 = 0;
+            double CubicTerm1 = 0;
+            double CubicTerm2 = 0;
+            double CubicTerm3 = 0;
+            double CubicTerm4 = 0;
+            double CubicTerm5 = 0;
             // Loop through each ray propagation status
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
             {
@@ -968,12 +968,12 @@ namespace DFMGenerator_SharedCode
                     if (dp_shellEffectiveRadius < 0)
                         dp_shellEffectiveRadius = 0;
 
-                    Gamma0 += (dp_dp30 * dp_shellRadius * dp_shellRadius * dp_shellEffectiveRadius);
-                    Gamma1 += (dp_dp30 * dp_shellRadius * dp_shellRadius);
-                    Gamma2 += (dp_dp30 * dp_shellRadius * dp_shellEffectiveRadius);
-                    Gamma3 += (dp_dp30 * dp_shellRadius);
-                    Gamma4 += (dp_dp30 * dp_shellEffectiveRadius);
-                    Gamma5 += dp_dp30;
+                    CubicTerm0 += (dp_dp30 * dp_shellRadius * dp_shellRadius * dp_shellEffectiveRadius);
+                    CubicTerm1 += (dp_dp30 * dp_shellRadius * dp_shellRadius);
+                    CubicTerm2 += (dp_dp30 * dp_shellRadius * dp_shellEffectiveRadius);
+                    CubicTerm3 += (dp_dp30 * dp_shellRadius);
+                    CubicTerm4 += (dp_dp30 * dp_shellEffectiveRadius);
+                    CubicTerm5 += dp_dp30;
                 }
             }
             // Calculate the outer shell volumes of the non-overlapping fractures, and the outer shell volumes of the overlapping fractures, before and after ray length increment
@@ -981,7 +981,7 @@ namespace DFMGenerator_SharedCode
             // Although the stress shadows of the non-overlapping fractures cannot overlap, the outer exclusion zones can overlap each other and, to a limited extent, the stress shadows
             // The inner core volume of non-overlapping stress shadows is the volume which the outer exclusion zones cannot overlap
             // The outer shell volume of overlapping stress shadows is the outer exclusion zone of the overlapping fractures - like the stress shadows, these can overlap anything
-            double initialExclusiveInnerCoreVolume = Gamma0;           
+            double initialExclusiveInnerCoreVolume = CubicTerm0;           
             double initialExclusiveOuterShellVolume = 0;
             double initialOverlappingOuterShellVolume = 0;
             double finalExclusiveOuterShellVolume = 0;
@@ -1016,10 +1016,10 @@ namespace DFMGenerator_SharedCode
                         // We must therefore calculate it separately for all fractures
                         // We can use a full version or an approximation, valid when frac1RadiusIncrement << frac1Radius
                         // Full version
-                        double finalExclusiveInnerCoreVolume = Gamma0 - (Gamma1 * frac1EffectiveRadiusIncrement) - (2 * Gamma2 * frac1RadiusIncrement) + (2 * Gamma3 * frac1RadiusIncrement * frac1EffectiveRadiusIncrement)
-                            + (Gamma4 * frac1RadiusIncrement * frac1RadiusIncrement) - (Gamma5 * frac1RadiusIncrement * frac1RadiusIncrement * frac1EffectiveRadiusIncrement);
+                        double finalExclusiveInnerCoreVolume = CubicTerm0 - (CubicTerm1 * frac1EffectiveRadiusIncrement) - (2 * CubicTerm2 * frac1RadiusIncrement) + (2 * CubicTerm3 * frac1RadiusIncrement * frac1EffectiveRadiusIncrement)
+                            + (CubicTerm4 * frac1RadiusIncrement * frac1RadiusIncrement) - (CubicTerm5 * frac1RadiusIncrement * frac1RadiusIncrement * frac1EffectiveRadiusIncrement);
                         // Approximation
-                        //double finalExclusiveInnerCoreVolume = Gamma0 - (Gamma1 * frac1EffectiveRadiusIncrement) - (2 * Gamma2 * frac1RadiusIncrement);
+                        //double finalExclusiveInnerCoreVolume = CubicTerm0 - (CubicTerm1 * frac1EffectiveRadiusIncrement) - (2 * CubicTerm2 * frac1RadiusIncrement);
                         // Apply the required multiplier to calculate the true final exclusive inner core volume 
                         finalExclusiveInnerCoreVolume *= stressShadowVolumeMultiplier;
                         if (finalExclusiveInnerCoreVolume > 1)
