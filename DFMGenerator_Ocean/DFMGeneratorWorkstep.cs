@@ -1460,6 +1460,11 @@ namespace DFMGenerator_Ocean
                     bool GenerateExplicitDFN = arguments.Argument_GenerateExplicitDFN;
                     // Set false to allow fractures to propagate outside of the outer grid boundary
                     bool CropAtBoundary = arguments.Argument_CropAtGridBoundary;
+                    // Flag to ignore faults when propagating fractures; if set to true, fractures will be able to propagate across faults
+                    // By default fractures will terminate if they intersect a fault at a gridblock boundary
+                    // This can cause problems with stairstep grids contining inclined faults or faults at different depths, as any pillar intersecting a fault will cause fractures to terminate, even if the fault does not cut the layer containing the fractures
+                    // Therefore this flag can be set to ignore the faults and allow fractures to propagate across all gridblock boundaries
+                    bool IgnoreFaults = arguments.Argument_IgnoreFaults;
                     // Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
                     bool LinkStressShadows = arguments.Argument_LinkParallelFractures;
                     // Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set 
@@ -2178,6 +2183,8 @@ namespace DFMGenerator_Ocean
                         explicitInputParams += "Crop fractures at boundary to specified subgrid\n";
                     else
                         explicitInputParams += "Fractures can propagate out of specified subgrid\n";
+                    if (IgnoreFaults)
+                        explicitInputParams += "Fractures can propagate across faults\n";
                     if (LinkStressShadows)
                         explicitInputParams += "Link fractures across relay zones\n";
                     else
@@ -4197,24 +4204,26 @@ namespace DFMGenerator_Ocean
                                 // Check if the western boundary if faulted
                                 // This will be the case if any of the Petrel cells on the southern boundary are faulted
                                 bool faultToWest = false;
-                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                {
-                                    Index2 SWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J);
-                                    Index2 NWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J + 1);
-                                    if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(NWpillar))
-                                        faultToWest = true;
-                                }
+                                if (!IgnoreFaults)
+                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                    {
+                                        Index2 SWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J);
+                                        Index2 NWpillar = new Index2(PetrelGrid_FirstCellI, PetrelGrid_J + 1);
+                                        if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(NWpillar))
+                                            faultToWest = true;
+                                    }
 
                                 // Check if the southern boundary is faulted
                                 // This will be the case if any of the Petrel cells on the southern boundary are faulted
                                 bool faultToSouth = false;
-                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                {
-                                    Index2 SWpillar = new Index2(PetrelGrid_I, PetrelGrid_FirstCellJ);
-                                    Index2 SEpillar = new Index2(PetrelGrid_I + 1, PetrelGrid_FirstCellJ);
-                                    if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(SEpillar))
-                                        faultToSouth = true;
-                                }
+                                if (!IgnoreFaults)
+                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                    {
+                                        Index2 SWpillar = new Index2(PetrelGrid_I, PetrelGrid_FirstCellJ);
+                                        Index2 SEpillar = new Index2(PetrelGrid_I + 1, PetrelGrid_FirstCellJ);
+                                        if (PetrelGrid.IsNodeFaulted(SWpillar) && PetrelGrid.IsNodeFaulted(SEpillar))
+                                            faultToSouth = true;
+                                    }
 
 #if DEBUG_FRAC_INPUT
                                 foreach (PointXYZ point in new PointXYZ[] { FractureGrid_SWtop, FractureGrid_NWtop, FractureGrid_NEtop, FractureGrid_SEtop, FractureGrid_SWbottom, FractureGrid_NWbottom, FractureGrid_NEbottom, FractureGrid_SEbottom })
@@ -7679,6 +7688,7 @@ namespace DFMGenerator_Ocean
             private double argument_Minimum_ClearZone_Volume = 0.01;
             // DFN geometry controls
             private bool argument_CropAtGridBoundary = true;
+            private bool argument_IgnoreFaults = false;
             private bool argument_LinkParallelFractures = true;
             private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
@@ -12319,6 +12329,12 @@ namespace DFMGenerator_Ocean
                 internal get { return this.argument_StressStateDefinition4; }
                 set { this.argument_StressStateDefinition4 = value; }
             }
+            [Description("Flag to ignore faults when propagating fractures", "Flag to ignore faults when propagating fractures; if set to true, fractures will be able to propagate across faults")]
+            public bool Argument_IgnoreFaults
+            {
+                internal get { return this.argument_IgnoreFaults; }
+                set { this.argument_IgnoreFaults = value; }
+            }
 
             /// <summary>
             /// Reset all arguments to default values
@@ -12664,6 +12680,7 @@ namespace DFMGenerator_Ocean
                 argument_Minimum_ClearZone_Volume = 0.01;
                 // DFN geometry controls
                 argument_CropAtGridBoundary = true;
+                argument_IgnoreFaults = false;
                 argument_LinkParallelFractures = true;
                 argument_MaxConsistencyAngle = Math.PI / 4;
                 argument_MinimumLayerThickness = 1;
