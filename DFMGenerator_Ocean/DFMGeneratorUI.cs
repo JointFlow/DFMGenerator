@@ -302,6 +302,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_Minimum_ClearZone_Volume, unitTextBox_Minimum_ClearZone_Volume, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             // DFN geometry controls
             UpdateCheckBox(args.Argument_CropAtGridBoundary, checkBox_CropAtGridBoundary);
+            UpdateCheckBox(args.Argument_IgnoreFaults, checkBox_IgnoreFaults);
             UpdateCheckBox(args.Argument_LinkParallelFractures, checkBox_LinkParallelFractures);
             UpdateTextBox(args.Argument_MaxConsistencyAngle, unitTextBox_MaxConsistencyAngle, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_MaxConsistencyAngle_Units);
             UpdateTextBox(args.Argument_MinimumLayerThickness, unitTextBox_MinimumLayerThickness, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumLayerThickness_Units);
@@ -474,6 +475,7 @@ namespace DFMGenerator_Ocean
             args.Argument_Minimum_ClearZone_Volume = GetDoubleFromTextBox(unitTextBox_Minimum_ClearZone_Volume);
             // DFN geometry controls
             args.Argument_CropAtGridBoundary = checkBox_CropAtGridBoundary.Checked;
+            args.Argument_IgnoreFaults = checkBox_IgnoreFaults.Checked;
             args.Argument_LinkParallelFractures = checkBox_LinkParallelFractures.Checked;
             args.Argument_MaxConsistencyAngle = GetDoubleFromTextBox(unitTextBox_MaxConsistencyAngle);
             args.Argument_MinimumLayerThickness = GetDoubleFromTextBox(unitTextBox_MinimumLayerThickness);
