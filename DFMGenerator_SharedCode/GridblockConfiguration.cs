@@ -1,9 +1,9 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-#define LOGIMPPOP
+//#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
-//#define LOGDFNPOP
+#define LOGDFNPOP
 
 using System;
 using System.Collections.Generic;
@@ -6279,7 +6279,7 @@ namespace DFMGenerator_SharedCode
                     if (UCRSegment.CheckNucleationGridblock(this))
                     {
                         Dict_UCF_TotalFractureArea[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * (Math.PI / ufs.RaysPerFracture));
-                        Dict_UCF_TotalFractureVolume[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * UCRSegment.RayLength * (4d / 3d) * (Math.PI / ufs.RaysPerFracture));
+                        Dict_UCF_TotalFractureVolume[ufs_index] += (UCRSegment.RayLength * UCRSegment.RayLength * UCRSegment.EffectiveRayLength * (4d / 3d) * (Math.PI / ufs.RaysPerFracture));
                     }
 #endif
                 } /// Loop to next unconfined fracture ray segment
