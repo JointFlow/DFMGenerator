@@ -2456,9 +2456,9 @@ namespace DFMGenerator_Ocean
             this.checkBox_PopulateEmptyGridblocks.AutoSize = true;
             this.checkBox_PopulateEmptyGridblocks.Location = new System.Drawing.Point(20, 359);
             this.checkBox_PopulateEmptyGridblocks.Name = "checkBox_PopulateEmptyGridblocks";
-            this.checkBox_PopulateEmptyGridblocks.Size = new System.Drawing.Size(314, 17);
+            this.checkBox_PopulateEmptyGridblocks.Size = new System.Drawing.Size(287, 17);
             this.checkBox_PopulateEmptyGridblocks.TabIndex = 57;
-            this.checkBox_PopulateEmptyGridblocks.Text = "Populate implicit fracture data in gridblocks with no fractures?";
+            this.checkBox_PopulateEmptyGridblocks.Text = "Populate implicit fracture data in cells with no fractures?";
             this.checkBox_PopulateEmptyGridblocks.UseVisualStyleBackColor = true;
             // 
             // button_DefinePresentDayStress
@@ -2681,6 +2681,7 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_FractureTypesInPermeabilityTensor.DisableMouseWheelScrolling = false;
             this.comboBox_FractureTypesInPermeabilityTensor.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
+            comboBoxItem7.Enabled = false;
             comboBoxItem7.Text = "Microfractures only";
             comboBoxItem8.Text = "Layer-bound fractures only";
             comboBoxItem9.Text = "All fractures";
@@ -2718,6 +2719,7 @@ namespace DFMGenerator_Ocean
             this.comboBox_PermeabilityAlgorithm.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem10.Text = "Oda (1986)";
             comboBoxItem11.Text = "Oda corrected (1987)";
+            comboBoxItem12.Enabled = false;
             comboBoxItem12.Text = "Size and connectivity corrected";
             this.comboBox_PermeabilityAlgorithm.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
             comboBoxItem10,
