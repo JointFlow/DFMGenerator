@@ -1240,6 +1240,7 @@ namespace DFMGenerator_Ocean
 
         private void button_DefinePresentDayStress_Click(object sender, EventArgs e)
         {
+            checkBox_UsePresentDayStress.Checked = true;
             updateArgsFromUI();
             OpenPresentDayStressUI();
         }

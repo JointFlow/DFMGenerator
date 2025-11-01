@@ -70,12 +70,6 @@ namespace DFMGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem23 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator3 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem24 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem1 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem2 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem3 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem4 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem5 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
-            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem6 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo12 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem25 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
@@ -84,6 +78,12 @@ namespace DFMGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem27 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem28 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem29 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem1 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem2 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem3 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem4 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem5 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem6 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             this.btn_DE_Cancel = new System.Windows.Forms.Button();
             this.btn_DE_OK = new System.Windows.Forms.Button();
             this.toolTipManager_DeformationEpisode = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
@@ -98,6 +98,8 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DE_DynamicLoad = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_DE_StressTensorType = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_DE_FP = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_StressTensor = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
+            this.toolTipHotspot_DE_Duration = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.tabControl1 = new Slb.Ocean.Petrel.UI.Controls.TabControl();
             this.tabStatic = new Slb.Ocean.Petrel.UI.Controls.TabPage();
             this.unitTextBox_DE_StressArchingFactor = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
@@ -169,8 +171,6 @@ namespace DFMGenerator_Ocean
             this.comboBox_DE_TimeUnits = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
             this.unitTextBox_DE_DeformationDuration = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
             this.label_DE_DeformationDuration = new System.Windows.Forms.Label();
-            this.toolTipHotspot_DE_StressTensor = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.toolTipHotspot_DE_Duration = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DeformationEpisode)).BeginInit();
             this.tabControl1.SuspendLayout();
             this.tabStatic.SuspendLayout();
@@ -376,6 +376,37 @@ namespace DFMGenerator_Ocean
             toolTipSeparator3,
             toolTipItem24});
             this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_FP, toolTipInfo11);
+            // 
+            // toolTipHotspot_DE_StressTensor
+            // 
+            this.toolTipHotspot_DE_StressTensor.Location = new System.Drawing.Point(680, 11);
+            this.toolTipHotspot_DE_StressTensor.Name = "toolTipHotspot_DE_StressTensor";
+            this.toolTipHotspot_DE_StressTensor.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_StressTensor.TabIndex = 152;
+            toolTipItem25.Text = resources.GetString("toolTipItem25.Text");
+            toolTipItem26.Text = resources.GetString("toolTipItem26.Text");
+            toolTipInfo12.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem25,
+            toolTipSeparator4,
+            toolTipItem26});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_StressTensor, toolTipInfo12);
+            // 
+            // toolTipHotspot_DE_Duration
+            // 
+            this.toolTipHotspot_DE_Duration.Location = new System.Drawing.Point(464, 6);
+            this.toolTipHotspot_DE_Duration.Name = "toolTipHotspot_DE_Duration";
+            this.toolTipHotspot_DE_Duration.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_DE_Duration.TabIndex = 148;
+            toolTipItem27.Text = "Specify the duration of the deformation episode in ma, years or seconds:";
+            toolTipItem28.ShowBullet = true;
+            toolTipItem28.Text = resources.GetString("toolTipItem28.Text");
+            toolTipItem29.ShowBullet = true;
+            toolTipItem29.Text = resources.GetString("toolTipItem29.Text");
+            toolTipInfo13.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem27,
+            toolTipItem28,
+            toolTipItem29});
+            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Duration, toolTipInfo13);
             // 
             // tabControl1
             // 
@@ -1075,37 +1106,6 @@ namespace DFMGenerator_Ocean
             this.label_DE_DeformationDuration.Size = new System.Drawing.Size(169, 13);
             this.label_DE_DeformationDuration.TabIndex = 124;
             this.label_DE_DeformationDuration.Text = "Max deformation episode duration:";
-            // 
-            // toolTipHotspot_DE_StressTensor
-            // 
-            this.toolTipHotspot_DE_StressTensor.Location = new System.Drawing.Point(680, 11);
-            this.toolTipHotspot_DE_StressTensor.Name = "toolTipHotspot_DE_StressTensor";
-            this.toolTipHotspot_DE_StressTensor.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_StressTensor.TabIndex = 152;
-            toolTipItem25.Text = resources.GetString("toolTipItem25.Text");
-            toolTipItem26.Text = resources.GetString("toolTipItem26.Text");
-            toolTipInfo12.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem25,
-            toolTipSeparator4,
-            toolTipItem26});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_StressTensor, toolTipInfo12);
-            // 
-            // toolTipHotspot_DE_Duration
-            // 
-            this.toolTipHotspot_DE_Duration.Location = new System.Drawing.Point(464, 6);
-            this.toolTipHotspot_DE_Duration.Name = "toolTipHotspot_DE_Duration";
-            this.toolTipHotspot_DE_Duration.Size = new System.Drawing.Size(20, 20);
-            this.toolTipHotspot_DE_Duration.TabIndex = 148;
-            toolTipItem27.Text = "Specify the duration of the deformation episode in ma, years or seconds:";
-            toolTipItem28.ShowBullet = true;
-            toolTipItem28.Text = resources.GetString("toolTipItem28.Text");
-            toolTipItem29.ShowBullet = true;
-            toolTipItem29.Text = resources.GetString("toolTipItem29.Text");
-            toolTipInfo13.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem27,
-            toolTipItem28,
-            toolTipItem29});
-            this.toolTipManager_DeformationEpisode.SetToolTip(this.toolTipHotspot_DE_Duration, toolTipInfo13);
             // 
             // DeformationEpisodeUI
             // 

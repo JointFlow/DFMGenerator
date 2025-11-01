@@ -2677,6 +2677,7 @@ namespace DFMGenerator_Ocean
             // 
             this.comboBox_FractureTypesInPermeabilityTensor.DisableMouseWheelScrolling = false;
             this.comboBox_FractureTypesInPermeabilityTensor.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
+            comboBoxItem7.Enabled = false;
             comboBoxItem7.Text = "Microfractures only";
             comboBoxItem8.Text = "Layer-bound fractures only";
             comboBoxItem9.Text = "All fractures";
@@ -2714,6 +2715,7 @@ namespace DFMGenerator_Ocean
             this.comboBox_PermeabilityAlgorithm.DropDownStyle = Slb.Ocean.Petrel.UI.Controls.ComboBoxStyle.DropDownList;
             comboBoxItem10.Text = "Oda (1986)";
             comboBoxItem11.Text = "Oda corrected (1987)";
+            comboBoxItem12.Enabled = false;
             comboBoxItem12.Text = "Size and connectivity corrected";
             this.comboBox_PermeabilityAlgorithm.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
             comboBoxItem10,

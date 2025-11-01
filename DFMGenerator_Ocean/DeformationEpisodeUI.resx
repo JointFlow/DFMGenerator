@@ -130,7 +130,7 @@
     <value>With a static load, fracturing is driven by an applied horizontal strain (specified as a minimum and maximum strain rate and an orientation), fluid overpressure, thermal contraction and/or uplift. Specify the strain orientation and rate, fluid pressure, temperature change or uplift rate as grid properties to model lateral variations in the load data. If no grid property is specified, the model will apply the specified default values to all cells.</value>
   </data>
   <data name="toolTipItem11.Text" xml:space="preserve">
-    <value>With a dynamic load, DFM Generator uses results from a geomechanical simulation to define the load for a deformation episode. This can be in the form of results from a simulation case or grid properties describing the components of the stress tensor and the fluid pressure.</value>
+    <value>With a dynamic load, DFM Generator uses results from a geomechanical or fluid flow simulation to define the load for a deformation episode. This can be in the form of results from a simulation case or grid properties describing the components of the stress tensor and the fluid pressure.</value>
   </data>
   <data name="toolTipItem14.Text" xml:space="preserve">
     <value>If only the fluid pressure and ZZ component of the total stress are specified, the static fluid overpressure load and uplift rate will be overridden but the horizontal strain data from the Static Load tab will be used to calculate the horizontal stress components.</value>
