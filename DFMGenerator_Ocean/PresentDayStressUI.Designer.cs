@@ -52,9 +52,11 @@ namespace DFMGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem11 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem12 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem13 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem14 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem1 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem2 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem3 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
+            Slb.Ocean.Petrel.UI.Controls.ComboBoxItem comboBoxItem4 = new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem();
             this.tabControl1 = new Slb.Ocean.Petrel.UI.Controls.TabControl();
             this.tabStrain = new Slb.Ocean.Petrel.UI.Controls.TabPage();
             this.toolTipHotspot_PDS_PoissonsRatio = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
@@ -633,7 +635,7 @@ namespace DFMGenerator_Ocean
             this.tabStress.Controls.Add(this.label_PDS_StressZZ);
             this.tabStress.Name = "tabStress";
             this.tabStress.Size = new System.Drawing.Size(738, 243);
-            this.tabStress.Text = "Defined from stress";
+            this.tabStress.Text = "Defined from stress tensor";
             // 
             // label_PDS_StressYZ
             // 
@@ -851,11 +853,14 @@ namespace DFMGenerator_Ocean
     "nt day fluid pressure.";
             toolTipItem13.ShowBullet = true;
             toolTipItem13.Text = "By specifying the components of the Terzaghi effective stress tensor.";
+            toolTipItem14.ShowBullet = true;
+            toolTipItem14.Text = "By specifying the components of the Biot effective stress tensor.";
             toolTipInfo8.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem10,
             toolTipItem11,
             toolTipItem12,
-            toolTipItem13});
+            toolTipItem13,
+            toolTipItem14});
             this.toolTipManager_PresentDayStress.SetToolTip(this.toolTipHotspot_PDS_StressDefinedFrom, toolTipInfo8);
             // 
             // btn_PDS_Cancel
@@ -897,10 +902,12 @@ namespace DFMGenerator_Ocean
             comboBoxItem1.Text = "Lithostatic stress and horizontal strain";
             comboBoxItem2.Text = "Absolute (total) stress and fluid pressure";
             comboBoxItem3.Text = "Terzaghi effective stress";
+            comboBoxItem4.Text = "Biot effective stress";
             this.comboBox_PDS_StressStateDefinition.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ComboBoxItem[] {
             comboBoxItem1,
             comboBoxItem2,
-            comboBoxItem3});
+            comboBoxItem3,
+            comboBoxItem4});
             this.comboBox_PDS_StressStateDefinition.Location = new System.Drawing.Point(173, 5);
             this.comboBox_PDS_StressStateDefinition.Name = "comboBox_PDS_StressStateDefinition";
             this.comboBox_PDS_StressStateDefinition.Size = new System.Drawing.Size(270, 22);

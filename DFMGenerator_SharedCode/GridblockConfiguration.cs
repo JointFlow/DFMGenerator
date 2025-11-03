@@ -1405,6 +1405,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="BiotCoefficient">Biot coefficient</param>
         public void SetPresentDayBiotStress(double SigmaXX, double SigmaYY, double SigmaZZ, double SigmaXY, double SigmaYZ, double SigmaZX, double FP, double BiotCoefficient)
         {
+            if (double.IsNaN(BiotCoefficient))
+                BiotCoefficient = MechProps.Biot;
             double stressAdjustment = FP * (1 - BiotCoefficient);
             SetPresentDayStress(new Tensor2S(SigmaXX - stressAdjustment, SigmaYY - stressAdjustment, SigmaZZ - stressAdjustment, SigmaXY, SigmaYZ, SigmaZX));
         }
@@ -1417,9 +1419,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="fluidOverpressure">Fluid overpressure (Pa)</param>
         /// <param name="E_r">Present day Young's Modulus (Pa); if NaN, will use Young's Modulus defined in the MechProps object</param>
         /// <param name="Nu_r">Present day Poisson's ratio; if NaN, will use Poisson's ratio defined in the MechProps object</param>
-        /// <param name="Biot">Present day Biot coefficient; if NaN, will use Biot coefficient defined in the MechProps object</param>
+        /// <param name="BiotCoefficient">Present day Biot coefficient; if NaN, will use Biot coefficient defined in the MechProps object</param>
         /// <param name="InitialStressRelaxation">Present day initial stress relaxation; if NaN, will use initial stress relaxation defined in the StressStrain object</param>
-        public void SetPresentDayStressFromStrain(double Ehmin, double Ehmax, double EhminAzi, double fluidOverpressure, double E_r, double Nu_r, double Biot, double InitialStressRelaxation)
+        public void SetPresentDayStressFromStrain(double Ehmin, double Ehmax, double EhminAzi, double fluidOverpressure, double E_r, double Nu_r, double BiotCoefficient, double InitialStressRelaxation)
         {
             // NB We use the Terzaghi effective stress rather than the Biot effective stress, because the differential compaction of the grains and the bulk rock is accounted for in the compactional strain
             // As a result the el_Epsilon strain tensor is related to the Terzaghi effective stress tensor by Hooke's Law
@@ -1435,9 +1437,9 @@ namespace DFMGenerator_SharedCode
             if (!Nu_supplied)
                 Nu_r = MechProps.Nu_r;
             double E_eff = E_r / (1 - Math.Pow(Nu_r, 2));
-            if (double.IsNaN(Biot))
-                Biot = MechProps.Biot;
-            double OneMinusBiot = 1 - Biot;
+            if (double.IsNaN(BiotCoefficient))
+                BiotCoefficient = MechProps.Biot;
+            double OneMinusBiot = 1 - BiotCoefficient;
             if (double.IsNaN(InitialStressRelaxation))
                 InitialStressRelaxation = StressStrain.InitialStressRelaxation;
             if (double.IsNaN(fluidOverpressure))

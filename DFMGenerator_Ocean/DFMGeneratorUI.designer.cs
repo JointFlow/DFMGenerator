@@ -2470,9 +2470,9 @@ namespace DFMGenerator_Ocean
             this.checkBox_PopulateEmptyGridblocks.AutoSize = true;
             this.checkBox_PopulateEmptyGridblocks.Location = new System.Drawing.Point(20, 359);
             this.checkBox_PopulateEmptyGridblocks.Name = "checkBox_PopulateEmptyGridblocks";
-            this.checkBox_PopulateEmptyGridblocks.Size = new System.Drawing.Size(314, 17);
+            this.checkBox_PopulateEmptyGridblocks.Size = new System.Drawing.Size(287, 17);
             this.checkBox_PopulateEmptyGridblocks.TabIndex = 57;
-            this.checkBox_PopulateEmptyGridblocks.Text = "Populate implicit fracture data in gridblocks with no fractures?";
+            this.checkBox_PopulateEmptyGridblocks.Text = "Populate implicit fracture data in cells with no fractures?";
             this.checkBox_PopulateEmptyGridblocks.UseVisualStyleBackColor = true;
             // 
             // button_DefinePresentDayStress
