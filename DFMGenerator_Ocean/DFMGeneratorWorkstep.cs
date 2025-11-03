@@ -5201,17 +5201,6 @@ namespace DFMGenerator_Ocean
                                                 }
                                                 else // We are taking data from a single cell
                                                 {
-                                                    // If there is no upscaling, we take the data from the uppermost cell that contains valid data
-                                                    int PetrelGrid_DataCellI = PetrelGrid_FirstCellI;
-                                                    int PetrelGrid_DataCellJ = PetrelGrid_FirstCellJ;
-
-                                                    // If there is upscaling, we take data from the uppermost middle cell that contains valid data
-                                                    if (HorizontalUpscalingFactor > 1)
-                                                    {
-                                                        PetrelGrid_DataCellI += (HorizontalUpscalingFactor / 2);
-                                                        PetrelGrid_DataCellJ += (HorizontalUpscalingFactor / 2);
-                                                    }
-
                                                     // Create a reference to the cell from which we will read the data
                                                     Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_TopCellK);
 
