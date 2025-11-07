@@ -41,6 +41,7 @@ namespace DFMGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DFMGeneratorUI));
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
@@ -521,38 +522,52 @@ namespace DFMGenerator_Ocean
             this.label_MaxTSDuration = new System.Windows.Forms.Label();
             this.label_HorizontalUpscalingFactor = new System.Windows.Forms.Label();
             this.label_FractureMode = new System.Windows.Forms.Label();
-            this.tabGeometry = new Slb.Ocean.Petrel.UI.Controls.TabPage();
-            this.checkBox_CalculateImplicitUCFData = new System.Windows.Forms.CheckBox();
-            this.numericUpDown_RaysPerUCF = new System.Windows.Forms.NumericUpDown();
-            this.unitTextBox_MaxDeactivationCheckInterval = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_MinPhi = new System.Windows.Forms.Label();
-            this.unitTextBox_MinPhi = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.textBox_StaticDPCullInterval = new System.Windows.Forms.TextBox();
-            this.label_StaticDPCullInterval = new System.Windows.Forms.Label();
-            this.label_StaticDPCullInterval_Units = new System.Windows.Forms.Label();
-            this.label_MaxUCFRadius = new System.Windows.Forms.Label();
-            this.unitTextBox_MaxUCFRadius = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_MaxUCFRadius_Units = new System.Windows.Forms.Label();
-            this.unitTextBox_MinStaticDPSizeRatio = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_MinStaticDPSizeRatio = new System.Windows.Forms.Label();
-            this.label_MinIDR = new System.Windows.Forms.Label();
-            this.unitTextBox_MinIDR = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_MaxUCFRTSIncrease = new System.Windows.Forms.Label();
-            this.unitTextBox_MaxUCFRTSIncrease = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.label_MaxDeactivationCheckInterval = new System.Windows.Forms.Label();
-            this.label_MaxDeactivationCheckInterval_Units = new System.Windows.Forms.Label();
-            this.label_MaxUCFRTSIncrease_Units = new System.Windows.Forms.Label();
-            this.unitTextBox_MinSSDR = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
-            this.checkBox_UseUnconfinedFractures = new System.Windows.Forms.CheckBox();
-            this.label_MinSSDR = new System.Windows.Forms.Label();
-            this.label_RaysPerUCF = new System.Windows.Forms.Label();
-            this.label_MinUCFRadius = new System.Windows.Forms.Label();
-            this.unitTextBox_MinUCFRadius = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.tabUnconfinedFractures = new Slb.Ocean.Petrel.UI.Controls.TabPage();
             this.label_MinUCFRadius_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_MinUCFRadius = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinUCFRadius = new System.Windows.Forms.Label();
+            this.numericUpDown_RaysPerUCF = new System.Windows.Forms.NumericUpDown();
+            this.label_RaysPerUCF = new System.Windows.Forms.Label();
+            this.checkBox_CalculateImplicitUCFData = new System.Windows.Forms.CheckBox();
+            this.checkBox_UseUnconfinedFractures = new System.Windows.Forms.CheckBox();
             this.toolTipManager_DFMGenerator = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
             this.btnRestoreDefaults = new System.Windows.Forms.Button();
-            this.label_VerticalUpscalingFactor = new System.Windows.Forms.Label();
+            this.label_MaxUCFRadius_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_MaxUCFRadius = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxUCFRadius = new System.Windows.Forms.Label();
+            this.unitTextBox_MaxUCFRTSIncrease = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxUCFRTSIncrease = new System.Windows.Forms.Label();
+            this.unitTextBox_MaxUCFP33TSincrease = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxUCFP33TSincrease = new System.Windows.Forms.Label();
+            this.label_MaxUCFRTSIncrease_Units = new System.Windows.Forms.Label();
+            this.groupBox_CalculationTerminationControlForUCF = new System.Windows.Forms.GroupBox();
+            this.unitTextBox_Minimum_UCFClearZone_Volume = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.unitTextBox_Active_UCRP30_TerminationRatio = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.unitTextBox_Historic_UCFP32_TerminationRatio = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_Minimum_UCFClearZone_Volume = new System.Windows.Forms.Label();
+            this.label_Active_UCRP30_TerminationRatio = new System.Windows.Forms.Label();
+            this.label_Historic_UCFP32_TerminationRatio = new System.Windows.Forms.Label();
+            this.unitTextBox_MinPhi = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinPhi = new System.Windows.Forms.Label();
+            this.unitTextBox_MaxDeactivationCheckInterval = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MaxDeactivationCheckInterval = new System.Windows.Forms.Label();
+            this.label_MaxDeactivationCheckInterval_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_MinSSDR = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinSSDR = new System.Windows.Forms.Label();
+            this.unitTextBox_MinIDR = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinIDR = new System.Windows.Forms.Label();
+            this.unitTextBox_ProportionalUCRIncrementToApply = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_ProportionalUCRIncrementToApply = new System.Windows.Forms.Label();
+            this.label_ProportionalUCRIncrementToApply_Units = new System.Windows.Forms.Label();
+            this.unitTextBox_MinStaticDPSizeRatio = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
+            this.label_MinStaticDPSizeRatio = new System.Windows.Forms.Label();
+            this.label_StaticDPCullInterval = new System.Windows.Forms.Label();
+            this.label_MinStaticDPSizeRatio_Units = new System.Windows.Forms.Label();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.numericUpDown_VerticalUpscalingFactor = new System.Windows.Forms.NumericUpDown();
+            this.label_VerticalUpscalingFactor = new System.Windows.Forms.Label();
+            this.textBox_StaticDPCullInterval = new System.Windows.Forms.TextBox();
+            this.checkBox_CheckAllUCFStressShadows = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoIntermediateOutputs)).BeginInit();
@@ -572,9 +587,10 @@ namespace DFMGenerator_Ocean
             this.groupBox_DFNGeometryControls.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoMicrofractureCornerpoints)).BeginInit();
             this.groupBox_CalculationTerminationControl.SuspendLayout();
-            this.tabGeometry.SuspendLayout();
+            this.tabUnconfinedFractures.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_RaysPerUCF)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DFMGenerator)).BeginInit();
+            this.groupBox_CalculationTerminationControlForUCF.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_VerticalUpscalingFactor)).BeginInit();
             this.SuspendLayout();
             // 
@@ -633,7 +649,7 @@ namespace DFMGenerator_Ocean
             this.tabFracAperture,
             this.tabOutputs,
             this.tabControls,
-            this.tabGeometry});
+            this.tabUnconfinedFractures});
             // 
             // tabMain
             // 
@@ -741,6 +757,7 @@ namespace DFMGenerator_Ocean
     " the principal horizontal stress directions, so there will be no strike-slip dis" +
     "placement.";
             toolTipItem6.ShowBullet = true;
+            toolTipItem6.Text = resources.GetString("toolTipItem6.Text");
             toolTipInfo4.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem4,
             toolTipItem5,
@@ -777,6 +794,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_NoIntermediateOutputs.Name = "toolTipHotspot_NoIntermediateOutputs";
             this.toolTipHotspot_NoIntermediateOutputs.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_NoIntermediateOutputs.TabIndex = 45;
+            toolTipItem8.Text = resources.GetString("toolTipItem8.Text");
             toolTipInfo6.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem8});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_NoIntermediateOutputs, toolTipInfo6);
@@ -787,6 +805,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_Kindices.Name = "toolTipHotspot_Kindices";
             this.toolTipHotspot_Kindices.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_Kindices.TabIndex = 44;
+            toolTipItem9.Text = resources.GetString("toolTipItem9.Text");
             toolTipItem10.Text = "NB it is only possible to model one brittle layer at a time. It is of course poss" +
     "ible to rerun the model several times to generate multiple DFNs for different br" +
     "ittle layers.";
@@ -802,6 +821,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_IJindices.Name = "toolTipHotspot_IJindices";
             this.toolTipHotspot_IJindices.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_IJindices.TabIndex = 43;
+            toolTipItem11.Text = resources.GetString("toolTipItem11.Text");
             toolTipInfo8.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem11});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_IJindices, toolTipInfo8);
@@ -824,6 +844,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_ModelName.Name = "toolTipHotspot_ModelName";
             this.toolTipHotspot_ModelName.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_ModelName.TabIndex = 41;
+            toolTipItem13.Text = resources.GetString("toolTipItem13.Text");
             toolTipInfo10.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem13});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_ModelName, toolTipInfo10);
@@ -1194,6 +1215,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_InitialMicrofractureDensity.Name = "toolTipHotspot_InitialMicrofractureDensity";
             this.toolTipHotspot_InitialMicrofractureDensity.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_InitialMicrofractureDensity.TabIndex = 81;
+            toolTipItem14.Text = resources.GetString("toolTipItem14.Text");
             toolTipInfo11.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem14});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_InitialMicrofractureDensity, toolTipInfo11);
@@ -1204,6 +1226,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FrictionCoefficient.Name = "toolTipHotspot_FrictionCoefficient";
             this.toolTipHotspot_FrictionCoefficient.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FrictionCoefficient.TabIndex = 80;
+            toolTipItem15.Text = resources.GetString("toolTipItem15.Text");
             toolTipInfo12.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem15});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FrictionCoefficient, toolTipInfo12);
@@ -1310,6 +1333,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FractureStrainRelaxation.Name = "toolTipHotspot_FractureStrainRelaxation";
             this.toolTipHotspot_FractureStrainRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FractureStrainRelaxation.TabIndex = 66;
+            toolTipItem16.Text = resources.GetString("toolTipItem16.Text");
             toolTipInfo13.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem16});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_FractureStrainRelaxation, toolTipInfo13);
@@ -1320,6 +1344,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_AverageMechanicalPropertyData.Name = "toolTipHotspot_AverageMechanicalPropertyData";
             this.toolTipHotspot_AverageMechanicalPropertyData.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AverageMechanicalPropertyData.TabIndex = 65;
+            toolTipItem17.Text = resources.GetString("toolTipItem17.Text");
             toolTipInfo14.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem17});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AverageMechanicalPropertyData, toolTipInfo14);
@@ -1330,6 +1355,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_SubcriticalPropagationIndex.Name = "toolTipHotspot_SubcriticalPropagationIndex";
             this.toolTipHotspot_SubcriticalPropagationIndex.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SubcriticalPropagationIndex.TabIndex = 64;
+            toolTipItem18.Text = resources.GetString("toolTipItem18.Text");
             toolTipInfo15.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem18});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SubcriticalPropagationIndex, toolTipInfo15);
@@ -1340,6 +1366,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_RockStrainRelaxation.Name = "toolTipHotspot_RockStrainRelaxation";
             this.toolTipHotspot_RockStrainRelaxation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_RockStrainRelaxation.TabIndex = 63;
+            toolTipItem19.Text = resources.GetString("toolTipItem19.Text");
             toolTipInfo16.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem19});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_RockStrainRelaxation, toolTipInfo16);
@@ -1350,6 +1377,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MechanicalProperties.Name = "toolTipHotspot_MechanicalProperties";
             this.toolTipHotspot_MechanicalProperties.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MechanicalProperties.TabIndex = 62;
+            toolTipItem20.Text = resources.GetString("toolTipItem20.Text");
             toolTipInfo17.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem20});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MechanicalProperties, toolTipInfo17);
@@ -1968,6 +1996,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_AverageStressStrainData.Name = "toolTipHotspot_AverageStressStrainData";
             this.toolTipHotspot_AverageStressStrainData.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_AverageStressStrainData.TabIndex = 17;
+            toolTipItem23.Text = resources.GetString("toolTipItem23.Text");
             toolTipInfo20.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem23});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_AverageStressStrainData, toolTipInfo20);
@@ -1999,6 +2028,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DepthAtDeformation.Name = "toolTipHotspot_DepthAtDeformation";
             this.toolTipHotspot_DepthAtDeformation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DepthAtDeformation.TabIndex = 15;
+            toolTipItem28.Text = resources.GetString("toolTipItem28.Text");
             toolTipInfo22.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem28});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_DepthAtDeformation, toolTipInfo22);
@@ -2181,6 +2211,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_BartonBandisAperture.Name = "toolTipHotspot_BartonBandisAperture";
             this.toolTipHotspot_BartonBandisAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_BartonBandisAperture.TabIndex = 12;
+            toolTipItem30.Text = resources.GetString("toolTipItem30.Text");
             toolTipInfo24.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem30});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_BartonBandisAperture, toolTipInfo24);
@@ -2255,6 +2286,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_DynamicAperture.Name = "toolTipHotspot_DynamicAperture";
             this.toolTipHotspot_DynamicAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_DynamicAperture.TabIndex = 8;
+            toolTipItem31.Text = resources.GetString("toolTipItem31.Text");
             toolTipInfo25.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem31});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_DynamicAperture, toolTipInfo25);
@@ -2302,6 +2334,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_SizeDependentAperture.Name = "toolTipHotspot_SizeDependentAperture";
             this.toolTipHotspot_SizeDependentAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SizeDependentAperture.TabIndex = 8;
+            toolTipItem32.Text = resources.GetString("toolTipItem32.Text");
             toolTipInfo26.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem32});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SizeDependentAperture, toolTipInfo26);
@@ -2378,6 +2411,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_UniformAperture.Name = "toolTipHotspot_UniformAperture";
             this.toolTipHotspot_UniformAperture.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_UniformAperture.TabIndex = 4;
+            toolTipItem33.Text = resources.GetString("toolTipItem33.Text");
             toolTipInfo27.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem33});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_UniformAperture, toolTipInfo27);
@@ -2461,6 +2495,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_PopulateEmptyGridblocks.Name = "toolTipHotspot_PopulateEmptyGridblocks";
             this.toolTipHotspot_PopulateEmptyGridblocks.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_PopulateEmptyGridblocks.TabIndex = 58;
+            toolTipItem34.Text = resources.GetString("toolTipItem34.Text");
             toolTipInfo28.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem34});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PopulateEmptyGridblocks, toolTipInfo28);
@@ -2492,6 +2527,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_UsePresentDayStress.Name = "toolTipHotspot_UsePresentDayStress";
             this.toolTipHotspot_UsePresentDayStress.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_UsePresentDayStress.TabIndex = 29;
+            toolTipItem35.Text = resources.GetString("toolTipItem35.Text");
             toolTipInfo29.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem35});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_UsePresentDayStress, toolTipInfo29);
@@ -2513,6 +2549,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CalculateFractureReactivationPotential.Name = "toolTipHotspot_CalculateFractureReactivationPotential";
             this.toolTipHotspot_CalculateFractureReactivationPotential.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CalculateFractureReactivationPotential.TabIndex = 27;
+            toolTipItem36.Text = resources.GetString("toolTipItem36.Text");
             toolTipInfo30.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem36});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureReactivationPotential, toolTipInfo30);
@@ -2662,13 +2699,16 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FracturePermeability.Name = "toolTipHotspot_FracturePermeability";
             this.toolTipHotspot_FracturePermeability.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FracturePermeability.TabIndex = 28;
+            toolTipItem37.Text = resources.GetString("toolTipItem37.Text");
             toolTipItem38.Text = "The following algorithms can be used to calculate fracture permeability:";
             toolTipItem39.ShowBullet = true;
+            toolTipItem39.Text = resources.GetString("toolTipItem39.Text");
             toolTipItem40.ShowBullet = true;
             toolTipItem40.Text = "Oda corrected (1987): This algorithm adds a correction factor to account for frac" +
     "ture connectivity, as described in Oda, et al. (1987), Journal of Geophysical Re" +
     "search 92, B8, 8037-8048.";
             toolTipItem41.ShowBullet = true;
+            toolTipItem41.Text = resources.GetString("toolTipItem41.Text");
             toolTipInfo31.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem37,
             toolTipItem38,
@@ -2769,6 +2809,7 @@ namespace DFMGenerator_Ocean
             this.toolTip_CalculateBulkRockElasticTensors.Name = "toolTip_CalculateBulkRockElasticTensors";
             this.toolTip_CalculateBulkRockElasticTensors.Size = new System.Drawing.Size(20, 20);
             this.toolTip_CalculateBulkRockElasticTensors.TabIndex = 20;
+            toolTipItem42.Text = resources.GetString("toolTipItem42.Text");
             toolTipInfo32.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem42});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTip_CalculateBulkRockElasticTensors, toolTipInfo32);
@@ -2789,6 +2830,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy.Name = "toolTipHotspot_CalculateFractureConnectivityAnisotropy";
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy.TabIndex = 18;
+            toolTipItem43.Text = resources.GetString("toolTipItem43.Text");
             toolTipInfo33.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem43});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureConnectivityAnisotropy, toolTipInfo33);
@@ -2908,6 +2950,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_WriteDFNFiles.Name = "toolTipHotspot_WriteDFNFiles";
             this.toolTipHotspot_WriteDFNFiles.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_WriteDFNFiles.TabIndex = 5;
+            toolTipItem50.Text = resources.GetString("toolTipItem50.Text");
             toolTipInfo37.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem50});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_WriteDFNFiles, toolTipInfo37);
@@ -2918,6 +2961,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_LogCalculation.Name = "toolTipHotspot_LogCalculation";
             this.toolTipHotspot_LogCalculation.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_LogCalculation.TabIndex = 4;
+            toolTipItem51.Text = resources.GetString("toolTipItem51.Text");
             toolTipInfo38.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem51});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_LogCalculation, toolTipInfo38);
@@ -3189,6 +3233,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_Max_TS_MFP33_increase.Name = "toolTipHotspot_Max_TS_MFP33_increase";
             this.toolTipHotspot_Max_TS_MFP33_increase.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_Max_TS_MFP33_increase.TabIndex = 21;
+            toolTipItem64.Text = resources.GetString("toolTipItem64.Text");
             toolTipInfo43.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem64});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_Max_TS_MFP33_increase, toolTipInfo43);
@@ -3211,6 +3256,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_No_r_bins.Name = "toolTipHotspot_No_r_bins";
             this.toolTipHotspot_No_r_bins.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_No_r_bins.TabIndex = 19;
+            toolTipItem66.Text = resources.GetString("toolTipItem66.Text");
             toolTipInfo45.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem66});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_No_r_bins, toolTipInfo45);
@@ -3221,6 +3267,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_MinimumImplicitMicrofractureRadius.Name = "toolTipHotspot_MinimumImplicitMicrofractureRadius";
             this.toolTipHotspot_MinimumImplicitMicrofractureRadius.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_MinimumImplicitMicrofractureRadius.TabIndex = 18;
+            toolTipItem67.Text = resources.GetString("toolTipItem67.Text");
             toolTipInfo46.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem67});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumImplicitMicrofractureRadius, toolTipInfo46);
@@ -3231,6 +3278,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_HorizontalUpscalingFactor.Name = "toolTipHotspot_HorizontalUpscalingFactor";
             this.toolTipHotspot_HorizontalUpscalingFactor.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_HorizontalUpscalingFactor.TabIndex = 16;
+            toolTipItem68.Text = resources.GetString("toolTipItem68.Text");
             toolTipInfo47.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem68});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_HorizontalUpscalingFactor, toolTipInfo47);
@@ -3485,9 +3533,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_SearchAdjacentGridblocks.Name = "toolTipHotspot_SearchAdjacentGridblocks";
             this.toolTipHotspot_SearchAdjacentGridblocks.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_SearchAdjacentGridblocks.TabIndex = 27;
-            toolTipInfo54.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem79});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SearchAdjacentGridblocks, toolTipInfo54);
+            toolTipItem80.Text = resources.GetString("toolTipItem80.Text");
+            toolTipInfo55.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem80});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_SearchAdjacentGridblocks, toolTipInfo55);
             // 
             // toolTipHotspot_MinimumExplicitMicrofractureRadius
             // 
@@ -3508,9 +3557,10 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_PropagateFracturesInNucleationOrder.Name = "toolTipHotspot_PropagateFracturesInNucleationOrder";
             this.toolTipHotspot_PropagateFracturesInNucleationOrder.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_PropagateFracturesInNucleationOrder.TabIndex = 25;
-            toolTipInfo56.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem81});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PropagateFracturesInNucleationOrder, toolTipInfo56);
+            toolTipItem82.Text = resources.GetString("toolTipItem82.Text");
+            toolTipInfo57.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem82});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_PropagateFracturesInNucleationOrder, toolTipInfo57);
             // 
             // toolTipHotspot_ProbabilisticFractureNucleationLimit
             // 
@@ -3518,17 +3568,14 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.Name = "toolTipHotspot_ProbabilisticFractureNucleationLimit";
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.TabIndex = 24;
-            toolTipItem83.ShowBullet = true;
-            toolTipItem83.Text = "Set to 0 to disable probabilistic fracture nucleation.";
-            toolTipItem83.Text = "Set to 0 to disable probabilistic fracture nucleation.";
+            toolTipItem83.Text = resources.GetString("toolTipItem83.Text");
             toolTipItem84.ShowBullet = true;
             toolTipItem84.Text = "Set to 0 to disable probabilistic fracture nucleation.";
             toolTipItem85.ShowBullet = true;
             toolTipItem85.Text = "Leave blank for automatic (probabilistic fracture nucleation will be activated wh" +
-            toolTipInfo57.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem82,
-            toolTipInfo57.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem82,
+    "enever searching neighbouring gridblocks is also active).";
+            toolTipItem86.Text = resources.GetString("toolTipItem86.Text");
+            toolTipInfo58.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem83,
             toolTipItem84,
             toolTipItem85,
@@ -3539,21 +3586,23 @@ namespace DFMGenerator_Ocean
             // 
             this.toolTipHotspot_MinimumLayerThickness.Location = new System.Drawing.Point(338, 124);
             this.toolTipHotspot_MinimumLayerThickness.Name = "toolTipHotspot_MinimumLayerThickness";
-            toolTipInfo58.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem86});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumLayerThickness, toolTipInfo58);
-            toolTipItem86});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumLayerThickness, toolTipInfo58);
+            this.toolTipHotspot_MinimumLayerThickness.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_MinimumLayerThickness.TabIndex = 23;
+            toolTipItem87.Text = resources.GetString("toolTipItem87.Text");
+            toolTipInfo59.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem87});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MinimumLayerThickness, toolTipInfo59);
             // 
             // toolTipHotspot_MaxConsistencyAngle
             // 
             this.toolTipHotspot_MaxConsistencyAngle.Location = new System.Drawing.Point(338, 98);
             this.toolTipHotspot_MaxConsistencyAngle.Name = "toolTipHotspot_MaxConsistencyAngle";
-            toolTipInfo59.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
-            toolTipItem87});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxConsistencyAngle, toolTipInfo59);
-            toolTipItem87});
-            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxConsistencyAngle, toolTipInfo59);
+            this.toolTipHotspot_MaxConsistencyAngle.Size = new System.Drawing.Size(20, 20);
+            this.toolTipHotspot_MaxConsistencyAngle.TabIndex = 22;
+            toolTipItem88.Text = resources.GetString("toolTipItem88.Text");
+            toolTipInfo60.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
+            toolTipItem88});
+            this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_MaxConsistencyAngle, toolTipInfo60);
             // 
             // numericUpDown_NoMicrofractureCornerpoints
             // 
@@ -3721,9 +3770,10 @@ namespace DFMGenerator_Ocean
     "g) volumetric density (MFP30).";
             toolTipItem92.ShowBullet = true;
             toolTipItem92.Text = "When the total clear zone volume (the volume in which macrofractures can nucleate" +
-            toolTipItem93.Text = "To stop the calculation while fractures are still growing, set a maximum deformat" +
-            toolTipItem92.Text = resources.GetString("toolTipItem92.Text");
-            toolTipItem93.Text = "To stop the calculation while fractures are still growing, set a maximum deformat" +
+    " or propagate without overlapping the stress shadow of another macrofracture) dr" +
+    "ops below a specified minimum.";
+            toolTipItem93.Text = resources.GetString("toolTipItem93.Text");
+            toolTipItem94.Text = "To stop the calculation while fractures are still growing, set a maximum deformat" +
     "ion episode duration. If this is blank, there will be no time limit to the defor" +
     "mation episode.";
             toolTipItem95.Text = "The maximum timestep limit is designed to prevent models hanging if termination c" +
@@ -3836,267 +3886,110 @@ namespace DFMGenerator_Ocean
             this.label_FractureMode.TabIndex = 0;
             this.label_FractureMode.Text = "Fracture mode:";
             // 
-            // tabGeometry
+            // tabUnconfinedFractures
             // 
-            this.tabGeometry.Controls.Add(this.numericUpDown_VerticalUpscalingFactor);
-            this.tabGeometry.Controls.Add(this.label_VerticalUpscalingFactor);
-            this.tabGeometry.Controls.Add(this.checkBox_CalculateImplicitUCFData);
-            this.tabGeometry.Controls.Add(this.numericUpDown_RaysPerUCF);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MaxDeactivationCheckInterval);
-            this.tabGeometry.Controls.Add(this.label_MinPhi);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MinPhi);
-            this.tabGeometry.Controls.Add(this.textBox_StaticDPCullInterval);
-            this.tabGeometry.Controls.Add(this.label_StaticDPCullInterval);
-            this.tabGeometry.Controls.Add(this.label_StaticDPCullInterval_Units);
-            this.tabGeometry.Controls.Add(this.label_MaxUCFRadius);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MaxUCFRadius);
-            this.tabGeometry.Controls.Add(this.label_MaxUCFRadius_Units);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MinStaticDPSizeRatio);
-            this.tabGeometry.Controls.Add(this.label_MinStaticDPSizeRatio);
-            this.tabGeometry.Controls.Add(this.label_MinIDR);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MinIDR);
-            this.tabGeometry.Controls.Add(this.label_MaxUCFRTSIncrease);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MaxUCFRTSIncrease);
-            this.tabGeometry.Controls.Add(this.label_MaxDeactivationCheckInterval);
-            this.tabGeometry.Controls.Add(this.label_MaxDeactivationCheckInterval_Units);
-            this.tabGeometry.Controls.Add(this.label_MaxUCFRTSIncrease_Units);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MinSSDR);
-            this.tabGeometry.Controls.Add(this.checkBox_UseUnconfinedFractures);
-            this.tabGeometry.Controls.Add(this.label_MinSSDR);
-            this.tabGeometry.Controls.Add(this.label_RaysPerUCF);
-            this.tabGeometry.Controls.Add(this.label_MinUCFRadius);
-            this.tabGeometry.Controls.Add(this.unitTextBox_MinUCFRadius);
-            this.tabGeometry.Controls.Add(this.label_MinUCFRadius_Units);
-            this.tabGeometry.Name = "tabGeometry";
-            this.tabGeometry.Size = new System.Drawing.Size(747, 391);
-            this.tabGeometry.Text = "Fracture geometry";
-            // 
-            // checkBox_CalculateImplicitUCFData
-            // 
-            this.checkBox_CalculateImplicitUCFData.AutoSize = true;
-            this.checkBox_CalculateImplicitUCFData.Location = new System.Drawing.Point(238, 18);
-            this.checkBox_CalculateImplicitUCFData.Name = "checkBox_CalculateImplicitUCFData";
-            this.checkBox_CalculateImplicitUCFData.Size = new System.Drawing.Size(249, 17);
-            this.checkBox_CalculateImplicitUCFData.TabIndex = 67;
-            this.checkBox_CalculateImplicitUCFData.Text = "Calculate implicit data for unconfined fractures?";
-            this.checkBox_CalculateImplicitUCFData.UseVisualStyleBackColor = true;
-            // 
-            // numericUpDown_RaysPerUCF
-            // 
-            this.numericUpDown_RaysPerUCF.Location = new System.Drawing.Point(238, 56);
-            this.numericUpDown_RaysPerUCF.Name = "numericUpDown_RaysPerUCF";
-            this.numericUpDown_RaysPerUCF.Size = new System.Drawing.Size(100, 20);
-            this.numericUpDown_RaysPerUCF.TabIndex = 66;
-            // 
-            // unitTextBox_MaxDeactivationCheckInterval
-            // 
-            this.unitTextBox_MaxDeactivationCheckInterval.Location = new System.Drawing.Point(238, 211);
-            this.unitTextBox_MaxDeactivationCheckInterval.Name = "unitTextBox_MaxDeactivationCheckInterval";
-            this.unitTextBox_MaxDeactivationCheckInterval.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MaxDeactivationCheckInterval.TabIndex = 65;
-            // 
-            // label_MinPhi
-            // 
-            this.label_MinPhi.AutoSize = true;
-            this.label_MinPhi.Location = new System.Drawing.Point(19, 240);
-            this.label_MinPhi.Name = "label_MinPhi";
-            this.label_MinPhi.Size = new System.Drawing.Size(167, 13);
-            this.label_MinPhi.TabIndex = 63;
-            this.label_MinPhi.Text = "Minimum ray activation probability:";
-            this.label_MinPhi.Click += new System.EventHandler(this.label1_Click);
-            // 
-            // unitTextBox_MinPhi
-            // 
-            this.unitTextBox_MinPhi.Location = new System.Drawing.Point(238, 237);
-            this.unitTextBox_MinPhi.Name = "unitTextBox_MinPhi";
-            this.unitTextBox_MinPhi.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MinPhi.TabIndex = 64;
-            this.unitTextBox_MinPhi.TextChanged += new System.EventHandler(this.unitTextBox1_TextChanged);
-            // 
-            // textBox_StaticDPCullInterval
-            // 
-            this.textBox_StaticDPCullInterval.Location = new System.Drawing.Point(238, 289);
-            this.textBox_StaticDPCullInterval.Name = "textBox_StaticDPCullInterval";
-            this.textBox_StaticDPCullInterval.Size = new System.Drawing.Size(100, 20);
-            this.textBox_StaticDPCullInterval.TabIndex = 60;
-            // 
-            // label_StaticDPCullInterval
-            // 
-            this.label_StaticDPCullInterval.AutoSize = true;
-            this.label_StaticDPCullInterval.Location = new System.Drawing.Point(19, 292);
-            this.label_StaticDPCullInterval.Name = "label_StaticDPCullInterval";
-            this.label_StaticDPCullInterval.Size = new System.Drawing.Size(140, 13);
-            this.label_StaticDPCullInterval.TabIndex = 61;
-            this.label_StaticDPCullInterval.Text = "Static datapoint cull interval:";
-            // 
-            // label_StaticDPCullInterval_Units
-            // 
-            this.label_StaticDPCullInterval_Units.AutoSize = true;
-            this.label_StaticDPCullInterval_Units.Location = new System.Drawing.Point(340, 292);
-            this.label_StaticDPCullInterval_Units.Name = "label_StaticDPCullInterval_Units";
-            this.label_StaticDPCullInterval_Units.Size = new System.Drawing.Size(55, 13);
-            this.label_StaticDPCullInterval_Units.TabIndex = 62;
-            this.label_StaticDPCullInterval_Units.Text = "Timesteps";
-            // 
-            // label_MaxUCFRadius
-            // 
-            this.label_MaxUCFRadius.AutoSize = true;
-            this.label_MaxUCFRadius.Location = new System.Drawing.Point(20, 110);
-            this.label_MaxUCFRadius.Name = "label_MaxUCFRadius";
-            this.label_MaxUCFRadius.Size = new System.Drawing.Size(180, 13);
-            this.label_MaxUCFRadius.TabIndex = 57;
-            this.label_MaxUCFRadius.Text = "Maximum unconfined fracture radius:";
-            // 
-            // unitTextBox_MaxUCFRadius
-            // 
-            this.unitTextBox_MaxUCFRadius.Location = new System.Drawing.Point(238, 107);
-            this.unitTextBox_MaxUCFRadius.Name = "unitTextBox_MaxUCFRadius";
-            this.unitTextBox_MaxUCFRadius.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MaxUCFRadius.TabIndex = 59;
-            // 
-            // label_MaxUCFRadius_Units
-            // 
-            this.label_MaxUCFRadius_Units.AutoSize = true;
-            this.label_MaxUCFRadius_Units.Location = new System.Drawing.Point(341, 110);
-            this.label_MaxUCFRadius_Units.Name = "label_MaxUCFRadius_Units";
-            this.label_MaxUCFRadius_Units.Size = new System.Drawing.Size(15, 13);
-            this.label_MaxUCFRadius_Units.TabIndex = 58;
-            this.label_MaxUCFRadius_Units.Text = "m";
-            // 
-            // unitTextBox_MinStaticDPSizeRatio
-            // 
-            this.unitTextBox_MinStaticDPSizeRatio.Location = new System.Drawing.Point(238, 263);
-            this.unitTextBox_MinStaticDPSizeRatio.Name = "unitTextBox_MinStaticDPSizeRatio";
-            this.unitTextBox_MinStaticDPSizeRatio.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MinStaticDPSizeRatio.TabIndex = 55;
-            // 
-            // label_MinStaticDPSizeRatio
-            // 
-            this.label_MinStaticDPSizeRatio.AutoSize = true;
-            this.label_MinStaticDPSizeRatio.Location = new System.Drawing.Point(19, 266);
-            this.label_MinStaticDPSizeRatio.Name = "label_MinStaticDPSizeRatio";
-            this.label_MinStaticDPSizeRatio.Size = new System.Drawing.Size(170, 13);
-            this.label_MinStaticDPSizeRatio.TabIndex = 53;
-            this.label_MinStaticDPSizeRatio.Text = "Minimum static datapoint size ratio:";
-            // 
-            // label_MinIDR
-            // 
-            this.label_MinIDR.AutoSize = true;
-            this.label_MinIDR.Location = new System.Drawing.Point(20, 162);
-            this.label_MinIDR.Name = "label_MinIDR";
-            this.label_MinIDR.Size = new System.Drawing.Size(192, 13);
-            this.label_MinIDR.TabIndex = 44;
-            this.label_MinIDR.Text = "Minimum intersection deactivation ratio:";
-            // 
-            // unitTextBox_MinIDR
-            // 
-            this.unitTextBox_MinIDR.Location = new System.Drawing.Point(238, 159);
-            this.unitTextBox_MinIDR.Name = "unitTextBox_MinIDR";
-            this.unitTextBox_MinIDR.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MinIDR.TabIndex = 52;
-            // 
-            // label_MaxUCFRTSIncrease
-            // 
-            this.label_MaxUCFRTSIncrease.AutoSize = true;
-            this.label_MaxUCFRTSIncrease.Location = new System.Drawing.Point(20, 188);
-            this.label_MaxUCFRTSIncrease.Name = "label_MaxUCFRTSIncrease";
-            this.label_MaxUCFRTSIncrease.Size = new System.Drawing.Size(212, 13);
-            this.label_MaxUCFRTSIncrease.TabIndex = 45;
-            this.label_MaxUCFRTSIncrease.Text = "Maximum UCF radius increase per timestep:";
-            // 
-            // unitTextBox_MaxUCFRTSIncrease
-            // 
-            this.unitTextBox_MaxUCFRTSIncrease.Location = new System.Drawing.Point(238, 185);
-            this.unitTextBox_MaxUCFRTSIncrease.Name = "unitTextBox_MaxUCFRTSIncrease";
-            this.unitTextBox_MaxUCFRTSIncrease.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MaxUCFRTSIncrease.TabIndex = 51;
-            // 
-            // label_MaxDeactivationCheckInterval
-            // 
-            this.label_MaxDeactivationCheckInterval.AutoSize = true;
-            this.label_MaxDeactivationCheckInterval.Location = new System.Drawing.Point(20, 214);
-            this.label_MaxDeactivationCheckInterval.Name = "label_MaxDeactivationCheckInterval";
-            this.label_MaxDeactivationCheckInterval.Size = new System.Drawing.Size(222, 13);
-            this.label_MaxDeactivationCheckInterval.TabIndex = 46;
-            this.label_MaxDeactivationCheckInterval.Text = "Maximum deactivation check radius increase:";
-            // 
-            // label_MaxDeactivationCheckInterval_Units
-            // 
-            this.label_MaxDeactivationCheckInterval_Units.AutoSize = true;
-            this.label_MaxDeactivationCheckInterval_Units.Location = new System.Drawing.Point(341, 214);
-            this.label_MaxDeactivationCheckInterval_Units.Name = "label_MaxDeactivationCheckInterval_Units";
-            this.label_MaxDeactivationCheckInterval_Units.Size = new System.Drawing.Size(27, 13);
-            this.label_MaxDeactivationCheckInterval_Units.TabIndex = 49;
-            this.label_MaxDeactivationCheckInterval_Units.Text = "ratio";
-            // 
-            // label_MaxUCFRTSIncrease_Units
-            // 
-            this.label_MaxUCFRTSIncrease_Units.AutoSize = true;
-            this.label_MaxUCFRTSIncrease_Units.Location = new System.Drawing.Point(341, 188);
-            this.label_MaxUCFRTSIncrease_Units.Name = "label_MaxUCFRTSIncrease_Units";
-            this.label_MaxUCFRTSIncrease_Units.Size = new System.Drawing.Size(27, 13);
-            this.label_MaxUCFRTSIncrease_Units.TabIndex = 48;
-            this.label_MaxUCFRTSIncrease_Units.Text = "ratio";
-            // 
-            // unitTextBox_MinSSDR
-            // 
-            this.unitTextBox_MinSSDR.Location = new System.Drawing.Point(238, 133);
-            this.unitTextBox_MinSSDR.Name = "unitTextBox_MinSSDR";
-            this.unitTextBox_MinSSDR.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MinSSDR.TabIndex = 43;
-            // 
-            // checkBox_UseUnconfinedFractures
-            // 
-            this.checkBox_UseUnconfinedFractures.AutoSize = true;
-            this.checkBox_UseUnconfinedFractures.Location = new System.Drawing.Point(26, 18);
-            this.checkBox_UseUnconfinedFractures.Name = "checkBox_UseUnconfinedFractures";
-            this.checkBox_UseUnconfinedFractures.Size = new System.Drawing.Size(151, 17);
-            this.checkBox_UseUnconfinedFractures.TabIndex = 0;
-            this.checkBox_UseUnconfinedFractures.Text = "Use unconfined fractures?";
-            this.checkBox_UseUnconfinedFractures.UseVisualStyleBackColor = true;
-            // 
-            // label_MinSSDR
-            // 
-            this.label_MinSSDR.AutoSize = true;
-            this.label_MinSSDR.Location = new System.Drawing.Point(20, 136);
-            this.label_MinSSDR.Name = "label_MinSSDR";
-            this.label_MinSSDR.Size = new System.Drawing.Size(205, 13);
-            this.label_MinSSDR.TabIndex = 41;
-            this.label_MinSSDR.Text = "Minimum stress shadow deactivation ratio:";
-            // 
-            // label_RaysPerUCF
-            // 
-            this.label_RaysPerUCF.AutoSize = true;
-            this.label_RaysPerUCF.Location = new System.Drawing.Point(20, 58);
-            this.label_RaysPerUCF.Name = "label_RaysPerUCF";
-            this.label_RaysPerUCF.Size = new System.Drawing.Size(194, 13);
-            this.label_RaysPerUCF.TabIndex = 32;
-            this.label_RaysPerUCF.Text = "Number of rays per unconfined fracture:";
-            // 
-            // label_MinUCFRadius
-            // 
-            this.label_MinUCFRadius.AutoSize = true;
-            this.label_MinUCFRadius.Location = new System.Drawing.Point(20, 84);
-            this.label_MinUCFRadius.Name = "label_MinUCFRadius";
-            this.label_MinUCFRadius.Size = new System.Drawing.Size(177, 13);
-            this.label_MinUCFRadius.TabIndex = 33;
-            this.label_MinUCFRadius.Text = "Minimum unconfined fracture radius:";
-            // 
-            // unitTextBox_MinUCFRadius
-            // 
-            this.unitTextBox_MinUCFRadius.Location = new System.Drawing.Point(238, 81);
-            this.unitTextBox_MinUCFRadius.Name = "unitTextBox_MinUCFRadius";
-            this.unitTextBox_MinUCFRadius.Size = new System.Drawing.Size(100, 20);
-            this.unitTextBox_MinUCFRadius.TabIndex = 39;
+            this.tabUnconfinedFractures.Controls.Add(this.checkBox_CheckAllUCFStressShadows);
+            this.tabUnconfinedFractures.Controls.Add(this.textBox_StaticDPCullInterval);
+            this.tabUnconfinedFractures.Controls.Add(this.numericUpDown_VerticalUpscalingFactor);
+            this.tabUnconfinedFractures.Controls.Add(this.label_VerticalUpscalingFactor);
+            this.tabUnconfinedFractures.Controls.Add(this.checkBox1);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinStaticDPSizeRatio_Units);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MinStaticDPSizeRatio);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinStaticDPSizeRatio);
+            this.tabUnconfinedFractures.Controls.Add(this.label_StaticDPCullInterval);
+            this.tabUnconfinedFractures.Controls.Add(this.label_ProportionalUCRIncrementToApply_Units);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_ProportionalUCRIncrementToApply);
+            this.tabUnconfinedFractures.Controls.Add(this.label_ProportionalUCRIncrementToApply);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MinIDR);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinIDR);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MinSSDR);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinSSDR);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxDeactivationCheckInterval_Units);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MinPhi);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinPhi);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MaxDeactivationCheckInterval);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxDeactivationCheckInterval);
+            this.tabUnconfinedFractures.Controls.Add(this.groupBox_CalculationTerminationControlForUCF);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxUCFRTSIncrease_Units);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MaxUCFRTSIncrease);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxUCFRTSIncrease);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MaxUCFP33TSincrease);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxUCFP33TSincrease);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxUCFRadius_Units);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MaxUCFRadius);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MaxUCFRadius);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinUCFRadius_Units);
+            this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_MinUCFRadius);
+            this.tabUnconfinedFractures.Controls.Add(this.label_MinUCFRadius);
+            this.tabUnconfinedFractures.Controls.Add(this.numericUpDown_RaysPerUCF);
+            this.tabUnconfinedFractures.Controls.Add(this.label_RaysPerUCF);
+            this.tabUnconfinedFractures.Controls.Add(this.checkBox_CalculateImplicitUCFData);
+            this.tabUnconfinedFractures.Controls.Add(this.checkBox_UseUnconfinedFractures);
+            this.tabUnconfinedFractures.Name = "tabUnconfinedFractures";
+            this.tabUnconfinedFractures.Size = new System.Drawing.Size(747, 391);
+            this.tabUnconfinedFractures.Text = "Unconfined fractures";
             // 
             // label_MinUCFRadius_Units
             // 
             this.label_MinUCFRadius_Units.AutoSize = true;
-            this.label_MinUCFRadius_Units.Location = new System.Drawing.Point(341, 84);
+            this.label_MinUCFRadius_Units.Location = new System.Drawing.Point(329, 73);
             this.label_MinUCFRadius_Units.Name = "label_MinUCFRadius_Units";
             this.label_MinUCFRadius_Units.Size = new System.Drawing.Size(15, 13);
-            this.label_MinUCFRadius_Units.TabIndex = 36;
+            this.label_MinUCFRadius_Units.TabIndex = 6;
             this.label_MinUCFRadius_Units.Text = "m";
+            // 
+            // unitTextBox_MinUCFRadius
+            // 
+            this.unitTextBox_MinUCFRadius.Location = new System.Drawing.Point(235, 70);
+            this.unitTextBox_MinUCFRadius.Name = "unitTextBox_MinUCFRadius";
+            this.unitTextBox_MinUCFRadius.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MinUCFRadius.TabIndex = 5;
+            // 
+            // label_MinUCFRadius
+            // 
+            this.label_MinUCFRadius.AutoSize = true;
+            this.label_MinUCFRadius.Location = new System.Drawing.Point(10, 73);
+            this.label_MinUCFRadius.Name = "label_MinUCFRadius";
+            this.label_MinUCFRadius.Size = new System.Drawing.Size(177, 13);
+            this.label_MinUCFRadius.TabIndex = 4;
+            this.label_MinUCFRadius.Text = "Minimum unconfined fracture radius:";
+            // 
+            // numericUpDown_RaysPerUCF
+            // 
+            this.numericUpDown_RaysPerUCF.Location = new System.Drawing.Point(235, 44);
+            this.numericUpDown_RaysPerUCF.Name = "numericUpDown_RaysPerUCF";
+            this.numericUpDown_RaysPerUCF.Size = new System.Drawing.Size(88, 20);
+            this.numericUpDown_RaysPerUCF.TabIndex = 3;
+            // 
+            // label_RaysPerUCF
+            // 
+            this.label_RaysPerUCF.AutoSize = true;
+            this.label_RaysPerUCF.Location = new System.Drawing.Point(10, 46);
+            this.label_RaysPerUCF.Name = "label_RaysPerUCF";
+            this.label_RaysPerUCF.Size = new System.Drawing.Size(214, 13);
+            this.label_RaysPerUCF.TabIndex = 2;
+            this.label_RaysPerUCF.Text = "Number of rays in each unconfined fracture:";
+            this.label_RaysPerUCF.Click += new System.EventHandler(this.label1_Click);
+            // 
+            // checkBox_CalculateImplicitUCFData
+            // 
+            this.checkBox_CalculateImplicitUCFData.AutoSize = true;
+            this.checkBox_CalculateImplicitUCFData.Location = new System.Drawing.Point(389, 15);
+            this.checkBox_CalculateImplicitUCFData.Name = "checkBox_CalculateImplicitUCFData";
+            this.checkBox_CalculateImplicitUCFData.Size = new System.Drawing.Size(223, 17);
+            this.checkBox_CalculateImplicitUCFData.TabIndex = 1;
+            this.checkBox_CalculateImplicitUCFData.Text = "Calculate implicit unconfined fracture data";
+            this.checkBox_CalculateImplicitUCFData.UseVisualStyleBackColor = true;
+            // 
+            // checkBox_UseUnconfinedFractures
+            // 
+            this.checkBox_UseUnconfinedFractures.AutoSize = true;
+            this.checkBox_UseUnconfinedFractures.Location = new System.Drawing.Point(13, 15);
+            this.checkBox_UseUnconfinedFractures.Name = "checkBox_UseUnconfinedFractures";
+            this.checkBox_UseUnconfinedFractures.Size = new System.Drawing.Size(203, 17);
+            this.checkBox_UseUnconfinedFractures.TabIndex = 0;
+            this.checkBox_UseUnconfinedFractures.Text = "Include unconfined fractures in model";
+            this.checkBox_UseUnconfinedFractures.UseVisualStyleBackColor = true;
             // 
             // btnRestoreDefaults
             // 
@@ -4114,21 +4007,309 @@ namespace DFMGenerator_Ocean
             this.btnRestoreDefaults.UseVisualStyleBackColor = true;
             this.btnRestoreDefaults.Click += new System.EventHandler(this.btnRestoreDefaults_Click);
             // 
-            // label_VerticalUpscalingFactor
+            // label_MaxUCFRadius_Units
             // 
-            this.label_VerticalUpscalingFactor.AutoSize = true;
-            this.label_VerticalUpscalingFactor.Location = new System.Drawing.Point(19, 317);
-            this.label_VerticalUpscalingFactor.Name = "label_VerticalUpscalingFactor";
-            this.label_VerticalUpscalingFactor.Size = new System.Drawing.Size(123, 13);
-            this.label_VerticalUpscalingFactor.TabIndex = 68;
-            this.label_VerticalUpscalingFactor.Text = "Vertical upscaling factor:";
+            this.label_MaxUCFRadius_Units.AutoSize = true;
+            this.label_MaxUCFRadius_Units.Location = new System.Drawing.Point(705, 73);
+            this.label_MaxUCFRadius_Units.Name = "label_MaxUCFRadius_Units";
+            this.label_MaxUCFRadius_Units.Size = new System.Drawing.Size(15, 13);
+            this.label_MaxUCFRadius_Units.TabIndex = 9;
+            this.label_MaxUCFRadius_Units.Text = "m";
+            // 
+            // unitTextBox_MaxUCFRadius
+            // 
+            this.unitTextBox_MaxUCFRadius.Location = new System.Drawing.Point(611, 70);
+            this.unitTextBox_MaxUCFRadius.Name = "unitTextBox_MaxUCFRadius";
+            this.unitTextBox_MaxUCFRadius.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MaxUCFRadius.TabIndex = 8;
+            // 
+            // label_MaxUCFRadius
+            // 
+            this.label_MaxUCFRadius.AutoSize = true;
+            this.label_MaxUCFRadius.Location = new System.Drawing.Point(386, 73);
+            this.label_MaxUCFRadius.Name = "label_MaxUCFRadius";
+            this.label_MaxUCFRadius.Size = new System.Drawing.Size(180, 13);
+            this.label_MaxUCFRadius.TabIndex = 7;
+            this.label_MaxUCFRadius.Text = "Maximum unconfined fracture radius:";
+            // 
+            // unitTextBox_MaxUCFRTSIncrease
+            // 
+            this.unitTextBox_MaxUCFRTSIncrease.Location = new System.Drawing.Point(611, 96);
+            this.unitTextBox_MaxUCFRTSIncrease.Name = "unitTextBox_MaxUCFRTSIncrease";
+            this.unitTextBox_MaxUCFRTSIncrease.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MaxUCFRTSIncrease.TabIndex = 13;
+            // 
+            // label_MaxUCFRTSIncrease
+            // 
+            this.label_MaxUCFRTSIncrease.AutoSize = true;
+            this.label_MaxUCFRTSIncrease.Location = new System.Drawing.Point(386, 99);
+            this.label_MaxUCFRTSIncrease.Name = "label_MaxUCFRTSIncrease";
+            this.label_MaxUCFRTSIncrease.Size = new System.Drawing.Size(202, 13);
+            this.label_MaxUCFRTSIncrease.TabIndex = 12;
+            this.label_MaxUCFRTSIncrease.Text = "Max increase in UCR length per timestep:";
+            // 
+            // unitTextBox_MaxUCFP33TSincrease
+            // 
+            this.unitTextBox_MaxUCFP33TSincrease.Location = new System.Drawing.Point(235, 96);
+            this.unitTextBox_MaxUCFP33TSincrease.Name = "unitTextBox_MaxUCFP33TSincrease";
+            this.unitTextBox_MaxUCFP33TSincrease.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MaxUCFP33TSincrease.TabIndex = 11;
+            // 
+            // label_MaxUCFP33TSincrease
+            // 
+            this.label_MaxUCFP33TSincrease.AutoSize = true;
+            this.label_MaxUCFP33TSincrease.Location = new System.Drawing.Point(10, 99);
+            this.label_MaxUCFP33TSincrease.Name = "label_MaxUCFP33TSincrease";
+            this.label_MaxUCFP33TSincrease.Size = new System.Drawing.Size(187, 13);
+            this.label_MaxUCFP33TSincrease.TabIndex = 10;
+            this.label_MaxUCFP33TSincrease.Text = "Max increase in UCFP33 per timestep:";
+            // 
+            // label_MaxUCFRTSIncrease_Units
+            // 
+            this.label_MaxUCFRTSIncrease_Units.AutoSize = true;
+            this.label_MaxUCFRTSIncrease_Units.Location = new System.Drawing.Point(705, 99);
+            this.label_MaxUCFRTSIncrease_Units.Name = "label_MaxUCFRTSIncrease_Units";
+            this.label_MaxUCFRTSIncrease_Units.Size = new System.Drawing.Size(27, 13);
+            this.label_MaxUCFRTSIncrease_Units.TabIndex = 14;
+            this.label_MaxUCFRTSIncrease_Units.Text = "ratio";
+            // 
+            // groupBox_CalculationTerminationControlForUCF
+            // 
+            this.groupBox_CalculationTerminationControlForUCF.Controls.Add(this.unitTextBox_Minimum_UCFClearZone_Volume);
+            this.groupBox_CalculationTerminationControlForUCF.Controls.Add(this.unitTextBox_Active_UCRP30_TerminationRatio);
+            this.groupBox_CalculationTerminationControlForUCF.Controls.Add(this.unitTextBox_Historic_UCFP32_TerminationRatio);
+            this.groupBox_CalculationTerminationControlForUCF.Controls.Add(this.label_Minimum_UCFClearZone_Volume);
+            this.groupBox_CalculationTerminationControlForUCF.Controls.Add(this.label_Active_UCRP30_TerminationRatio);
+            this.groupBox_CalculationTerminationControlForUCF.Controls.Add(this.label_Historic_UCFP32_TerminationRatio);
+            this.groupBox_CalculationTerminationControlForUCF.Location = new System.Drawing.Point(3, 236);
+            this.groupBox_CalculationTerminationControlForUCF.Name = "groupBox_CalculationTerminationControlForUCF";
+            this.groupBox_CalculationTerminationControlForUCF.Size = new System.Drawing.Size(371, 152);
+            this.groupBox_CalculationTerminationControlForUCF.TabIndex = 13;
+            this.groupBox_CalculationTerminationControlForUCF.TabStop = false;
+            this.groupBox_CalculationTerminationControlForUCF.Text = "Calculation termination controls";
+            // 
+            // unitTextBox_Minimum_UCFClearZone_Volume
+            // 
+            this.unitTextBox_Minimum_UCFClearZone_Volume.Location = new System.Drawing.Point(226, 103);
+            this.unitTextBox_Minimum_UCFClearZone_Volume.Name = "unitTextBox_Minimum_UCFClearZone_Volume";
+            this.unitTextBox_Minimum_UCFClearZone_Volume.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_Minimum_UCFClearZone_Volume.TabIndex = 28;
+            // 
+            // unitTextBox_Active_UCRP30_TerminationRatio
+            // 
+            this.unitTextBox_Active_UCRP30_TerminationRatio.Location = new System.Drawing.Point(226, 77);
+            this.unitTextBox_Active_UCRP30_TerminationRatio.Name = "unitTextBox_Active_UCRP30_TerminationRatio";
+            this.unitTextBox_Active_UCRP30_TerminationRatio.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_Active_UCRP30_TerminationRatio.TabIndex = 27;
+            // 
+            // unitTextBox_Historic_UCFP32_TerminationRatio
+            // 
+            this.unitTextBox_Historic_UCFP32_TerminationRatio.Location = new System.Drawing.Point(226, 51);
+            this.unitTextBox_Historic_UCFP32_TerminationRatio.Name = "unitTextBox_Historic_UCFP32_TerminationRatio";
+            this.unitTextBox_Historic_UCFP32_TerminationRatio.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_Historic_UCFP32_TerminationRatio.TabIndex = 26;
+            // 
+            // label_Minimum_UCFClearZone_Volume
+            // 
+            this.label_Minimum_UCFClearZone_Volume.AutoSize = true;
+            this.label_Minimum_UCFClearZone_Volume.Location = new System.Drawing.Point(14, 106);
+            this.label_Minimum_UCFClearZone_Volume.Name = "label_Minimum_UCFClearZone_Volume";
+            this.label_Minimum_UCFClearZone_Volume.Size = new System.Drawing.Size(163, 13);
+            this.label_Minimum_UCFClearZone_Volume.TabIndex = 21;
+            this.label_Minimum_UCFClearZone_Volume.Text = "Minimum clear zone volume ratio:";
+            // 
+            // label_Active_UCRP30_TerminationRatio
+            // 
+            this.label_Active_UCRP30_TerminationRatio.AutoSize = true;
+            this.label_Active_UCRP30_TerminationRatio.Location = new System.Drawing.Point(14, 80);
+            this.label_Active_UCRP30_TerminationRatio.Name = "label_Active_UCRP30_TerminationRatio";
+            this.label_Active_UCRP30_TerminationRatio.Size = new System.Drawing.Size(174, 13);
+            this.label_Active_UCRP30_TerminationRatio.TabIndex = 19;
+            this.label_Active_UCRP30_TerminationRatio.Text = "Min ratio of active to total UCRP30:";
+            // 
+            // label_Historic_UCFP32_TerminationRatio
+            // 
+            this.label_Historic_UCFP32_TerminationRatio.AutoSize = true;
+            this.label_Historic_UCFP32_TerminationRatio.Location = new System.Drawing.Point(14, 54);
+            this.label_Historic_UCFP32_TerminationRatio.Name = "label_Historic_UCFP32_TerminationRatio";
+            this.label_Historic_UCFP32_TerminationRatio.Size = new System.Drawing.Size(212, 13);
+            this.label_Historic_UCFP32_TerminationRatio.TabIndex = 17;
+            this.label_Historic_UCFP32_TerminationRatio.Text = "Min ratio of current to peak active UCFP32:";
+            // 
+            // unitTextBox_MinPhi
+            // 
+            this.unitTextBox_MinPhi.Location = new System.Drawing.Point(611, 122);
+            this.unitTextBox_MinPhi.Name = "unitTextBox_MinPhi";
+            this.unitTextBox_MinPhi.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MinPhi.TabIndex = 18;
+            // 
+            // label_MinPhi
+            // 
+            this.label_MinPhi.AutoSize = true;
+            this.label_MinPhi.Location = new System.Drawing.Point(386, 116);
+            this.label_MinPhi.Name = "label_MinPhi";
+            this.label_MinPhi.Size = new System.Drawing.Size(183, 26);
+            this.label_MinPhi.TabIndex = 17;
+            this.label_MinPhi.Text = "Minimum activation probability before \r\ndeactivating fractures:";
+            // 
+            // unitTextBox_MaxDeactivationCheckInterval
+            // 
+            this.unitTextBox_MaxDeactivationCheckInterval.Location = new System.Drawing.Point(235, 122);
+            this.unitTextBox_MaxDeactivationCheckInterval.Name = "unitTextBox_MaxDeactivationCheckInterval";
+            this.unitTextBox_MaxDeactivationCheckInterval.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MaxDeactivationCheckInterval.TabIndex = 16;
+            // 
+            // label_MaxDeactivationCheckInterval
+            // 
+            this.label_MaxDeactivationCheckInterval.AutoSize = true;
+            this.label_MaxDeactivationCheckInterval.Location = new System.Drawing.Point(8, 116);
+            this.label_MaxDeactivationCheckInterval.Name = "label_MaxDeactivationCheckInterval";
+            this.label_MaxDeactivationCheckInterval.Size = new System.Drawing.Size(175, 26);
+            this.label_MaxDeactivationCheckInterval.TabIndex = 15;
+            this.label_MaxDeactivationCheckInterval.Text = "Max increase in UCR length before \r\ndeactivating fractures:";
+            // 
+            // label_MaxDeactivationCheckInterval_Units
+            // 
+            this.label_MaxDeactivationCheckInterval_Units.AutoSize = true;
+            this.label_MaxDeactivationCheckInterval_Units.Location = new System.Drawing.Point(329, 125);
+            this.label_MaxDeactivationCheckInterval_Units.Name = "label_MaxDeactivationCheckInterval_Units";
+            this.label_MaxDeactivationCheckInterval_Units.Size = new System.Drawing.Size(27, 13);
+            this.label_MaxDeactivationCheckInterval_Units.TabIndex = 19;
+            this.label_MaxDeactivationCheckInterval_Units.Text = "ratio";
+            // 
+            // unitTextBox_MinSSDR
+            // 
+            this.unitTextBox_MinSSDR.Location = new System.Drawing.Point(235, 174);
+            this.unitTextBox_MinSSDR.Name = "unitTextBox_MinSSDR";
+            this.unitTextBox_MinSSDR.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MinSSDR.TabIndex = 21;
+            // 
+            // label_MinSSDR
+            // 
+            this.label_MinSSDR.AutoSize = true;
+            this.label_MinSSDR.Location = new System.Drawing.Point(10, 177);
+            this.label_MinSSDR.Name = "label_MinSSDR";
+            this.label_MinSSDR.Size = new System.Drawing.Size(205, 13);
+            this.label_MinSSDR.TabIndex = 20;
+            this.label_MinSSDR.Text = "Minimum stress shadow deactivation ratio:";
+            // 
+            // unitTextBox_MinIDR
+            // 
+            this.unitTextBox_MinIDR.Location = new System.Drawing.Point(611, 174);
+            this.unitTextBox_MinIDR.Name = "unitTextBox_MinIDR";
+            this.unitTextBox_MinIDR.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MinIDR.TabIndex = 23;
+            // 
+            // label_MinIDR
+            // 
+            this.label_MinIDR.AutoSize = true;
+            this.label_MinIDR.Location = new System.Drawing.Point(386, 177);
+            this.label_MinIDR.Name = "label_MinIDR";
+            this.label_MinIDR.Size = new System.Drawing.Size(192, 13);
+            this.label_MinIDR.TabIndex = 22;
+            this.label_MinIDR.Text = "Minimum intersection deactivation ratio:";
+            // 
+            // unitTextBox_ProportionalUCRIncrementToApply
+            // 
+            this.unitTextBox_ProportionalUCRIncrementToApply.Location = new System.Drawing.Point(235, 148);
+            this.unitTextBox_ProportionalUCRIncrementToApply.Name = "unitTextBox_ProportionalUCRIncrementToApply";
+            this.unitTextBox_ProportionalUCRIncrementToApply.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_ProportionalUCRIncrementToApply.TabIndex = 25;
+            // 
+            // label_ProportionalUCRIncrementToApply
+            // 
+            this.label_ProportionalUCRIncrementToApply.AutoSize = true;
+            this.label_ProportionalUCRIncrementToApply.Location = new System.Drawing.Point(10, 142);
+            this.label_ProportionalUCRIncrementToApply.Name = "label_ProportionalUCRIncrementToApply";
+            this.label_ProportionalUCRIncrementToApply.Size = new System.Drawing.Size(185, 26);
+            this.label_ProportionalUCRIncrementToApply.TabIndex = 24;
+            this.label_ProportionalUCRIncrementToApply.Text = "Proportion of UCR increment to apply \r\nbefore deactivating fractures:";
+            // 
+            // label_ProportionalUCRIncrementToApply_Units
+            // 
+            this.label_ProportionalUCRIncrementToApply_Units.AutoSize = true;
+            this.label_ProportionalUCRIncrementToApply_Units.Location = new System.Drawing.Point(329, 151);
+            this.label_ProportionalUCRIncrementToApply_Units.Name = "label_ProportionalUCRIncrementToApply_Units";
+            this.label_ProportionalUCRIncrementToApply_Units.Size = new System.Drawing.Size(27, 13);
+            this.label_ProportionalUCRIncrementToApply_Units.TabIndex = 26;
+            this.label_ProportionalUCRIncrementToApply_Units.Text = "ratio";
+            // 
+            // unitTextBox_MinStaticDPSizeRatio
+            // 
+            this.unitTextBox_MinStaticDPSizeRatio.Location = new System.Drawing.Point(611, 200);
+            this.unitTextBox_MinStaticDPSizeRatio.Name = "unitTextBox_MinStaticDPSizeRatio";
+            this.unitTextBox_MinStaticDPSizeRatio.Size = new System.Drawing.Size(88, 20);
+            this.unitTextBox_MinStaticDPSizeRatio.TabIndex = 30;
+            // 
+            // label_MinStaticDPSizeRatio
+            // 
+            this.label_MinStaticDPSizeRatio.AutoSize = true;
+            this.label_MinStaticDPSizeRatio.Location = new System.Drawing.Point(386, 203);
+            this.label_MinStaticDPSizeRatio.Name = "label_MinStaticDPSizeRatio";
+            this.label_MinStaticDPSizeRatio.Size = new System.Drawing.Size(198, 13);
+            this.label_MinStaticDPSizeRatio.TabIndex = 29;
+            this.label_MinStaticDPSizeRatio.Text = "Minimum static datapoint ray length ratio:";
+            // 
+            // label_StaticDPCullInterval
+            // 
+            this.label_StaticDPCullInterval.AutoSize = true;
+            this.label_StaticDPCullInterval.Location = new System.Drawing.Point(10, 203);
+            this.label_StaticDPCullInterval.Name = "label_StaticDPCullInterval";
+            this.label_StaticDPCullInterval.Size = new System.Drawing.Size(206, 13);
+            this.label_StaticDPCullInterval.TabIndex = 27;
+            this.label_StaticDPCullInterval.Text = "Static datapoint cull frequency (timesteps):";
+            // 
+            // label_MinStaticDPSizeRatio_Units
+            // 
+            this.label_MinStaticDPSizeRatio_Units.AutoSize = true;
+            this.label_MinStaticDPSizeRatio_Units.Location = new System.Drawing.Point(705, 203);
+            this.label_MinStaticDPSizeRatio_Units.Name = "label_MinStaticDPSizeRatio_Units";
+            this.label_MinStaticDPSizeRatio_Units.Size = new System.Drawing.Size(27, 13);
+            this.label_MinStaticDPSizeRatio_Units.TabIndex = 31;
+            this.label_MinStaticDPSizeRatio_Units.Text = "ratio";
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(389, 44);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(223, 17);
+            this.checkBox1.TabIndex = 32;
+            this.checkBox1.Text = "Calculate implicit unconfined fracture data";
+            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // numericUpDown_VerticalUpscalingFactor
             // 
-            this.numericUpDown_VerticalUpscalingFactor.Location = new System.Drawing.Point(238, 315);
+            this.numericUpDown_VerticalUpscalingFactor.Location = new System.Drawing.Point(611, 254);
             this.numericUpDown_VerticalUpscalingFactor.Name = "numericUpDown_VerticalUpscalingFactor";
-            this.numericUpDown_VerticalUpscalingFactor.Size = new System.Drawing.Size(99, 20);
-            this.numericUpDown_VerticalUpscalingFactor.TabIndex = 69;
+            this.numericUpDown_VerticalUpscalingFactor.Size = new System.Drawing.Size(88, 20);
+            this.numericUpDown_VerticalUpscalingFactor.TabIndex = 36;
+            // 
+            // label_VerticalUpscalingFactor
+            // 
+            this.label_VerticalUpscalingFactor.AutoSize = true;
+            this.label_VerticalUpscalingFactor.Location = new System.Drawing.Point(386, 256);
+            this.label_VerticalUpscalingFactor.Name = "label_VerticalUpscalingFactor";
+            this.label_VerticalUpscalingFactor.Size = new System.Drawing.Size(123, 13);
+            this.label_VerticalUpscalingFactor.TabIndex = 35;
+            this.label_VerticalUpscalingFactor.Text = "Vertical upscaling factor:";
+            // 
+            // textBox_StaticDPCullInterval
+            // 
+            this.textBox_StaticDPCullInterval.Location = new System.Drawing.Point(235, 200);
+            this.textBox_StaticDPCullInterval.Name = "textBox_StaticDPCullInterval";
+            this.textBox_StaticDPCullInterval.Size = new System.Drawing.Size(88, 20);
+            this.textBox_StaticDPCullInterval.TabIndex = 37;
+            // 
+            // checkBox_CheckAllUCFStressShadows
+            // 
+            this.checkBox_CheckAllUCFStressShadows.AutoSize = true;
+            this.checkBox_CheckAllUCFStressShadows.Location = new System.Drawing.Point(389, 150);
+            this.checkBox_CheckAllUCFStressShadows.Name = "checkBox_CheckAllUCFStressShadows";
+            this.checkBox_CheckAllUCFStressShadows.Size = new System.Drawing.Size(355, 17);
+            this.checkBox_CheckAllUCFStressShadows.TabIndex = 38;
+            this.checkBox_CheckAllUCFStressShadows.Text = "Check unconfined fractures against stress shadows of all fracture sets";
+            this.checkBox_CheckAllUCFStressShadows.UseVisualStyleBackColor = true;
             // 
             // DFMGeneratorUI
             // 
@@ -4174,10 +4355,12 @@ namespace DFMGenerator_Ocean
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoMicrofractureCornerpoints)).EndInit();
             this.groupBox_CalculationTerminationControl.ResumeLayout(false);
             this.groupBox_CalculationTerminationControl.PerformLayout();
-            this.tabGeometry.ResumeLayout(false);
-            this.tabGeometry.PerformLayout();
+            this.tabUnconfinedFractures.ResumeLayout(false);
+            this.tabUnconfinedFractures.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_RaysPerUCF)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.toolTipManager_DFMGenerator)).EndInit();
+            this.groupBox_CalculationTerminationControlForUCF.ResumeLayout(false);
+            this.groupBox_CalculationTerminationControlForUCF.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_VerticalUpscalingFactor)).EndInit();
             this.ResumeLayout(false);
 
@@ -4489,37 +4672,53 @@ namespace DFMGenerator_Ocean
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_kh_default;
         private System.Windows.Forms.Label label_kh_default;
         private Slb.Ocean.Petrel.UI.Controls.PresentationBox presentationBox_kh;
-        private Slb.Ocean.Petrel.UI.Controls.TabPage tabGeometry;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinStaticDPSizeRatio;
-        private System.Windows.Forms.Label label_MinStaticDPSizeRatio;
-        private System.Windows.Forms.Label label_MinIDR;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinIDR;
-        private System.Windows.Forms.Label label_MaxUCFRTSIncrease;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFRTSIncrease;
-        private System.Windows.Forms.Label label_MaxDeactivationCheckInterval;
-        private System.Windows.Forms.Label label_MaxUCFRTSIncrease_Units;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinSSDR;
-        private System.Windows.Forms.CheckBox checkBox_UseUnconfinedFractures;
-        private System.Windows.Forms.Label label_MinSSDR;
-        private System.Windows.Forms.Label label_RaysPerUCF;
-        private System.Windows.Forms.Label label_MinUCFRadius;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinUCFRadius;
-        private System.Windows.Forms.Label label_MinUCFRadius_Units;
-        private System.Windows.Forms.Label label_MaxUCFRadius;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFRadius;
-        private System.Windows.Forms.Label label_MaxUCFRadius_Units;
-        private System.Windows.Forms.TextBox textBox_StaticDPCullInterval;
-        private System.Windows.Forms.Label label_StaticDPCullInterval;
-        private System.Windows.Forms.Label label_StaticDPCullInterval_Units;
-        private System.Windows.Forms.Label label_MinPhi;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinPhi;
-        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxDeactivationCheckInterval;
-        private System.Windows.Forms.Label label_MaxDeactivationCheckInterval_Units;
-        private System.Windows.Forms.NumericUpDown numericUpDown_RaysPerUCF;
-        private System.Windows.Forms.CheckBox checkBox_CalculateImplicitUCFData;
-        private System.Windows.Forms.NumericUpDown numericUpDown_VerticalUpscalingFactor;
-        private System.Windows.Forms.Label label_VerticalUpscalingFactor;
         private Slb.Ocean.Petrel.UI.DropTarget dropTarget_kh;
         private System.Windows.Forms.Label label_kh;
+        private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_IgnoreFaults;
+        private System.Windows.Forms.CheckBox checkBox_IgnoreFaults;
+        private Slb.Ocean.Petrel.UI.Controls.TabPage tabUnconfinedFractures;
+        private System.Windows.Forms.Label label_RaysPerUCF;
+        private System.Windows.Forms.CheckBox checkBox_CalculateImplicitUCFData;
+        private System.Windows.Forms.CheckBox checkBox_UseUnconfinedFractures;
+        private System.Windows.Forms.Label label_MinUCFRadius_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinUCFRadius;
+        private System.Windows.Forms.Label label_MinUCFRadius;
+        private System.Windows.Forms.NumericUpDown numericUpDown_RaysPerUCF;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinPhi;
+        private System.Windows.Forms.Label label_MinPhi;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxDeactivationCheckInterval;
+        private System.Windows.Forms.Label label_MaxDeactivationCheckInterval;
+        private System.Windows.Forms.GroupBox groupBox_CalculationTerminationControlForUCF;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_Minimum_UCFClearZone_Volume;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_Active_UCRP30_TerminationRatio;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_Historic_UCFP32_TerminationRatio;
+        private System.Windows.Forms.Label label_Minimum_UCFClearZone_Volume;
+        private System.Windows.Forms.Label label_Active_UCRP30_TerminationRatio;
+        private System.Windows.Forms.Label label_Historic_UCFP32_TerminationRatio;
+        private System.Windows.Forms.Label label_MaxUCFRTSIncrease_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFRTSIncrease;
+        private System.Windows.Forms.Label label_MaxUCFRTSIncrease;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFP33TSincrease;
+        private System.Windows.Forms.Label label_MaxUCFP33TSincrease;
+        private System.Windows.Forms.Label label_MaxUCFRadius_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFRadius;
+        private System.Windows.Forms.Label label_MaxUCFRadius;
+        private System.Windows.Forms.Label label_MaxDeactivationCheckInterval_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinSSDR;
+        private System.Windows.Forms.Label label_MinSSDR;
+        private System.Windows.Forms.Label label_ProportionalUCRIncrementToApply_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_ProportionalUCRIncrementToApply;
+        private System.Windows.Forms.Label label_ProportionalUCRIncrementToApply;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinIDR;
+        private System.Windows.Forms.Label label_MinIDR;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Label label_MinStaticDPSizeRatio_Units;
+        private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinStaticDPSizeRatio;
+        private System.Windows.Forms.Label label_MinStaticDPSizeRatio;
+        private System.Windows.Forms.Label label_StaticDPCullInterval;
+        private System.Windows.Forms.NumericUpDown numericUpDown_VerticalUpscalingFactor;
+        private System.Windows.Forms.Label label_VerticalUpscalingFactor;
+        private System.Windows.Forms.TextBox textBox_StaticDPCullInterval;
+        private System.Windows.Forms.CheckBox checkBox_CheckAllUCFStressShadows;
     }
 }
