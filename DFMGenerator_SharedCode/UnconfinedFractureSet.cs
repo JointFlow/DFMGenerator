@@ -627,15 +627,15 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Variable to hold maximum historic active mean linear fracture density; used to check if termination criteria are met, and updated when the CheckFractureDeactivation is called
         /// </summary>
-        private double max_historic_a_RP32;
+        private double max_historic_a_UCFP32;
         /// <summary>
         /// Cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated
         /// </summary>
         private double previous_CumGamma;
         /// <summary>
-        /// Minimum RP30 value for a nucleating fracture datapoint - a new datapoint will not be created until the volumetric density of the nucleating fractures reaches this value
+        /// Minimum UCRP30 value for a nucleating fracture datapoint - a new datapoint will not be created until the volumetric density of the nucleating fractures reaches this value
         /// </summary>
-        private double min_datapoint_RP30;
+        private double min_datapoint_UCRP30;
 
         // Fracture data for previous timesteps
         /// <summary>
@@ -723,10 +723,10 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getClearZoneVolume() { return CurrentFractureData.theta_dashed_M; }
         /// <summary>
-        /// P33, ignoring overlaps
+        /// UCFP33, ignoring overlaps
         /// </summary>
         /// <returns></returns>
-        public double getP33() { return CurrentFractureData.Total_RP33Exclusive_M + CurrentFractureData.Total_RP33Overlapping_M; }
+        public double getUCFP33() { return CurrentFractureData.Total_RP33Exclusive_M + CurrentFractureData.Total_RP33Overlapping_M; }
         /// <summary>
         /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
         /// </summary>
@@ -1026,64 +1026,64 @@ namespace DFMGenerator_SharedCode
         /// Total volumetric density of fully active fracture rays
         /// </summary>
         /// <returns></returns>
-        public double a_RP30_total() { return Fractures.a_RP30_total; }
+        public double a_UCRP30_total() { return Fractures.a_RP30_total; }
         /// <summary>
         /// Total volumetric density of restricted fracture rays
         /// </summary>
         /// <returns></returns>
-        public double r_RP30_total() { return Fractures.r_RP30_total; }
+        public double r_UCRP30_total() { return Fractures.r_RP30_total; }
         /// <summary>
         /// Total volumetric density of fracture rays deactivated due to stress shadow interaction
         /// </summary>
         /// <returns></returns>
-        public double sII_RP30_total() { return Fractures.sII_RP30_total; }
+        public double sII_UCRP30_total() { return Fractures.sII_RP30_total; }
         /// <summary>
         /// Total volumetric density of fracture rays deactivated due to intersection
         /// </summary>
         /// <returns></returns>
-        public double sIJ_RP30_total() { return Fractures.sIJ_RP30_total; }
+        public double sIJ_UCRP30_total() { return Fractures.sIJ_RP30_total; }
         /// <summary>
         /// Total volumetric density of fracture rays deactivated due to reaching the maximum radius
         /// </summary>
         /// <returns></returns>
-        public double sMR_RP30_total() { return Fractures.sMR_RP30_total; }
+        public double sMR_UCRP30_total() { return Fractures.sMR_RP30_total; }
         /// <summary>
         /// Total mean linear density of fully active fracture rays
         /// </summary>
         /// <returns></returns>
-        public double a_RP32_total() { return Fractures.a_RP32_total; }
+        public double a_UCRP32_total() { return Fractures.a_RP32_total; }
         /// <summary>
         /// Total mean linear density of restricted fracture rays
         /// </summary>
         /// <returns></returns>
-        public double r_RP32_total() { return Fractures.r_RP32_total; }
+        public double r_UCRP32_total() { return Fractures.r_RP32_total; }
         /// <summary>
         /// Total mean linear density of fracture rays deactivated due to stress shadow interaction
         /// </summary>
         /// <returns></returns>
-        public double sII_RP32_total() { return Fractures.sII_RP32_total; }
+        public double sII_UCRP32_total() { return Fractures.sII_RP32_total; }
         /// <summary>
         /// Total mean linear density of fracture rays deactivated due to intersection
         /// </summary>
         /// <returns></returns>
-        public double sIJ_RP32_total() { return Fractures.sIJ_RP32_total; }
+        public double sIJ_UCRP32_total() { return Fractures.sIJ_RP32_total; }
         /// <summary>
         /// Total mean linear density of fracture rays deactivated due to reaching the maximum radius
         /// </summary>
         /// <returns></returns>
-        public double sMR_RP32_total() { return Fractures.sMR_RP32_total; }
+        public double sMR_UCRP32_total() { return Fractures.sMR_RP32_total; }
         /// <summary>
         /// Total mean linear density of fractures in the set
         /// </summary>
         /// <returns></returns>
-        public double RP32_total() { return Fractures.FP32_total; }
+        public double UCRP32_total() { return Fractures.FP32_total; }
         /// <summary>
         /// Get a piecewise cumulative P30 density distribution function for the specified ray type
         /// </summary>
         /// <param name="indexRadii">List of index radii for the piecewise cumulative density distribution function</param>
         /// <param name="rayType">Specified ray type</param>
         /// <returns>List of cumulative P30 density values for the specified ray type; each item in the list will represent the cumulative P30 for the corresponding index radius in the input list</returns>
-        public List<double> GetCumulativeRP30Values(List<double> indexRadii, RayPropagationStatus rayType)
+        public List<double> GetCumulativeUCRP30Values(List<double> indexRadii, RayPropagationStatus rayType)
         {
             // Sort the incoming list in reverse order
             indexRadii.Sort();
@@ -1121,7 +1121,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="indexRadii">List of index radii for the piecewise cumulative density distribution function</param>
         /// <param name="rayType">Specified ray type</param>
         /// <returns>List of cumulative P32 density values for the specified ray type; each item in the list will represent the cumulative P32 for the corresponding index radius in the input list</returns>
-        public List<double> GetCumulativeRP32Values(List<double> indexRadii, RayPropagationStatus rayType)
+        public List<double> GetCumulativeUCRP32Values(List<double> indexRadii, RayPropagationStatus rayType)
         {
             // Sort the incoming list in reverse order
             indexRadii.Sort();
@@ -1159,40 +1159,40 @@ namespace DFMGenerator_SharedCode
         /// Total volumetric ratio of fully active fracture rays
         /// </summary>
         /// <returns></returns>
-        public double a_RP33_total() { return Fractures.a_RP33_total; }
+        public double a_UCRP33_total() { return Fractures.a_RP33_total; }
         /// <summary>
         /// Total volumetric ratio of restricted fracture rays
         /// </summary>
         /// <returns></returns>
-        public double r_RP33_total() { return Fractures.r_RP33_total; }
+        public double r_UCRP33_total() { return Fractures.r_RP33_total; }
         /// <summary>
         /// Total volumetric ratio of fracture rays deactivated due to stress shadow interaction
         /// This value does not take into account that the stress shadows around static fracture rays may overlap; it will therefore be an overestimate of the true value
         /// </summary>
         /// <returns></returns>
-        public double sII_RP33_total() { return Fractures.sII_RP33_total; }
+        public double sII_UCRP33_total() { return Fractures.sII_RP33_total; }
         /// <summary>
         /// Total volumetric ratio of fracture rays deactivated due to intersection
         /// This value does not take into account that the stress shadows around static fracture rays may overlap; it will therefore be an overestimate of the true value
         /// </summary>
         /// <returns></returns>
-        public double sIJ_RP33_total() { return Fractures.sIJ_RP33_total; }
+        public double sIJ_UCRP33_total() { return Fractures.sIJ_RP33_total; }
         /// <summary>
         /// Total volumetric ratio of fracture rays deactivated due to reaching the maximum radius
         /// This value does not take into account that the stress shadows around static fracture rays may overlap; it will therefore be an overestimate of the true value
         /// </summary>
         /// <returns></returns>
-        public double sMR_RP33_total() { return Fractures.sMR_RP33_total; }
+        public double sMR_UCRP33_total() { return Fractures.sMR_RP33_total; }
         /// <summary>
         /// Total volumetric ratio of non-overlapping fractures in the set
         /// </summary>
         /// <returns></returns>
-        public double RP33_exclusive_total() { return Fractures.FP33_exclusive_total; }
+        public double UCFP33_exclusive_total() { return Fractures.FP33_exclusive_total; }
         /// <summary>
         /// Total volumetric ratio of overlapping fractures in the set
         /// </summary>
         /// <returns></returns>
-        public double RP33_overlapping_total() { return Fractures.FP33_overlapping_total; }
+        public double UCFP33_overlapping_total() { return Fractures.FP33_overlapping_total; }
 #endif
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
@@ -2025,11 +2025,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Check if the fracture set meets the specified deactivation criteria, and if so set the fracture evolution stage to Deactivated
         /// </summary>
-        /// <param name="historic_a_RP32_termination_ratio">Ratio of current to maximum active man linear fracture density at which fracture sets are considered inactive; calculation will terminate when fracture set falls below this ratio</param>
+        /// <param name="historic_a_UCFP32_termination_ratio">Ratio of current to maximum active mean linear fracture density at which fracture sets are considered inactive; calculation will terminate when fracture set falls below this ratio</param>
         /// <param name="active_total_RP30_termination_ratio">Ratio of active to total fracture volumetric density at which fracture sets are considered inactive; calculation will terminate when fracture set falls below this ratio</param>
         /// <param name="minimum_ClearZone_Volume">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
         /// <returns>True if the fracture set meets any of the deactivation criteria</returns>
-        public bool CheckFractureDeactivation(double historic_a_RP32_termination_ratio, double active_total_RP30_termination_ratio, double minimum_ClearZone_Volume)
+        public bool CheckFractureDeactivation(double historic_a_UCFP32_termination_ratio, double active_total_RP30_termination_ratio, double minimum_ClearZone_Volume)
         {
             // If the fracture set is already deactivated, we do not need to check it again
             if (CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated)
@@ -2040,15 +2040,15 @@ namespace DFMGenerator_SharedCode
 
             // Calculate the ratio of current to maximum active fracture volumetric ratio for this fracture set, and if it is below the specified minimum set the fracture deactivation flag to true
             // We only need to do this if the specified minimum is greater than zero; otherwise the check is not performed
-            if (historic_a_RP32_termination_ratio > 0)
+            if (historic_a_UCFP32_termination_ratio > 0)
             {
                 // If the active fracture volumetric ratio for this fracture set is increasing, update the maximum historic active fracture volumetric ratio
                 double current_tot_a_RP32 = Fractures.a_RP32_total + Fractures.r_RP32_total;
-                if (max_historic_a_RP32 < current_tot_a_RP32)
-                    max_historic_a_RP32 = current_tot_a_RP32;
+                if (max_historic_a_UCFP32 < current_tot_a_RP32)
+                    max_historic_a_UCFP32 = current_tot_a_RP32;
 
-                double historic_a_RP32_ratio = (max_historic_a_RP32 > 0 ? current_tot_a_RP32 / max_historic_a_RP32 : 1);
-                if (historic_a_RP32_ratio <= historic_a_RP32_termination_ratio)
+                double historic_a_RP32_ratio = (max_historic_a_UCFP32 > 0 ? current_tot_a_RP32 / max_historic_a_UCFP32 : 1);
+                if (historic_a_RP32_ratio <= historic_a_UCFP32_termination_ratio)
                     deactivateFractureSet = true;
             }
 
@@ -2070,7 +2070,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // Check if the extrapolated initial microfracture radius of current nucleating fractures is less than zero (will only apply if b<2); if so, set the fracture deactivation flag to true
-            if (Check_Initial_uF_Radius(MinimumFractureRadius))
+            if (Check_Initial_UCF_Radius(MinimumFractureRadius))
             {
                 deactivateFractureSet = true;
             }
@@ -2288,7 +2288,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
                         double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dRP30;
-                        if (dRP30 < min_datapoint_RP30)
+                        if (dRP30 < min_datapoint_UCRP30)
                         {
                             FADatapointNo++;
                             continue;
@@ -2342,7 +2342,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
                         double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dRP30;
-                        if (dRP30 < min_datapoint_RP30)
+                        if (dRP30 < min_datapoint_UCRP30)
                         {
                             RDatapointNo++;
                             continue;
@@ -2540,7 +2540,7 @@ namespace DFMGenerator_SharedCode
                                 {
                                     // betac_factor is -beta*c if b<>2, -c if b=2
                                     double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
-                                    double RP30term1 = min_datapoint_RP30 / (RaysPerFracture * CapB * CurrentFractureData.theta_dashed_Mminus1);
+                                    double RP30term1 = min_datapoint_UCRP30 / (RaysPerFracture * CapB * CurrentFractureData.theta_dashed_Mminus1);
                                     double RP30term2 = (bis2 ? Math.Log(Math.Exp(betac_factor * cumGammaRmin_Nprev) + RP30term1) / betac_factor : Math.Pow(Math.Pow(cumGammaRmin_Nprev, betac_factor) + RP30term1, 1 / betac_factor));
                                     nucleationWtime = cumGammaRmin_Nminus1 - RP30term2;
                                 }
@@ -2756,13 +2756,14 @@ namespace DFMGenerator_SharedCode
             if (!FracturesActive)
                 return;
 
-            // Set the growth rates for all fully active datapoints
+            // Calculate the growth increments for all fully active datapoints
+            // Note that these are the maximum stress-driven growth increments that do no take into account the maximum allowed ray length
             foreach (ImplicitFracturePopulationDatapoint activeFracturePopulationDatapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
             {
                 double initialR = activeFracturePopulationDatapoint.RayLength;
 
                 // If this datapoint represents newly nucleating fractures and an initial increment has already been set to bring the datapoint to the nucleation radius, skip it an move on to the next datapoint
-                if (((float)initialR == 0f) && (activeFracturePopulationDatapoint.RayLengthIncrement > 0))
+                if (((float)initialR == 0f) && (activeFracturePopulationDatapoint.ActualRayLengthIncrement > 0))
                     continue;
 
                 // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
@@ -2780,18 +2781,8 @@ namespace DFMGenerator_SharedCode
                 if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
                     incrementR = criticalPropagationIncrement;
 
-                // Check if the calculated increment will cause the fracture to exceed the maximum allowed radius, and if so reduce the propagation increment
-                // It is necessary to allow a margin, since there may be a discrepency between the ray length increment calculated here from the specified timestep duration
-                // and the ray length increment used to calculate the timestep duration in the GetOptimalDuration() function, due to rounding error
-                bool incrementExceedsMaxRadius = false;
-                if ((incrementR + initialR) >= (rayLengthIncrementErrorMargin * MaximumFractureRadius))
-                {
-                    incrementR = MaximumFractureRadius - initialR;
-                    incrementExceedsMaxRadius = true;
-                }
-
-                // Set the ray length increment - and also the flag to indicate whether the ray will reach the maximum allowed radius
-                activeFracturePopulationDatapoint.SetRayLengthIncrement(incrementR, incrementExceedsMaxRadius);
+                // Set the ray length increment
+                activeFracturePopulationDatapoint.CalculatedRayLengthIncrement = incrementR;
             }
 
             // Set the growth rates for all restricted datapoints
@@ -2816,18 +2807,8 @@ namespace DFMGenerator_SharedCode
                 if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
                     incrementR = criticalPropagationIncrement;
 
-                // Check if this will cause the fracture to exceed the maximum allowed radius, and if so reduce the propagation increment
-                // It is necessary to allow a margin, since there may be a discrepency between the ray length increment calculated here from the specified timestep duration
-                // and the ray length increment used to calculate the timestep duration in the GetOptimalDuration() function, due to rounding error
-                bool incrementExceedsMaxRadius = false;
-                if ((incrementR + initialR) >= (rayLengthIncrementErrorMargin * MaximumFractureRadius))
-                {
-                    incrementR = MaximumFractureRadius - initialR;
-                    incrementExceedsMaxRadius = true;
-                }
-
-                // Set the ray length increment - and also the flag to indicate whether the ray will reach the maximum allowed radius
-                restrictedFracturePopulationDatapoint.SetRayLengthIncrement(incrementR, incrementExceedsMaxRadius);
+                // Set the ray length increment
+                restrictedFracturePopulationDatapoint.CalculatedRayLengthIncrement = incrementR;
             }
 
             // Add a new fully active datapoint representing fractures nucleating in this timestep - but only if any new fractures nucleate
@@ -2838,13 +2819,6 @@ namespace DFMGenerator_SharedCode
                     Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Add(nucleatingFractures);
             }
         }
-        /// <summary>
-        /// Margin of error allowed when checking if a ray will reach the maximum allowed radius when its radius is next incremented
-        /// This is necessary because there may be a discrepency between the ray length increment calculated in the SetTimestepData() function from the specified timestep duration
-        /// and the ray length increment used to calculate the timestep duration in the GetOptimalDuration() function, due to rounding error
-        /// The ray length will therefore be set to the maximum radius if it exceeds this specified fraction of the maximum radius 
-        /// </summary>
-        private const double rayLengthIncrementErrorMargin = 0.999999;
         /// <summary>
         /// Get a fracture population datapoint representing the new fractures nucleating during the current timestep
         /// </summary>
@@ -2886,16 +2860,17 @@ namespace DFMGenerator_SharedCode
             double dRP30 = dUCFP30 * (double)RaysPerFracture;
 
             // If the calculated dMFP30 value is less than the specified minimum, return null (no new datapoint will be created)
-            if (dRP30 < min_datapoint_RP30)
+            if (dRP30 < min_datapoint_UCRP30)
                 return null;
 
             // Create a new datapoint and return it
             // Also update the cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated
             previous_CumGamma = CurrentFractureData.Cum_Gamma_M;
-            return new ImplicitFracturePopulationDatapoint(MinimumFractureRadius, dRP30);
+            return new ImplicitFracturePopulationDatapoint(MinimumFractureRadius, dRP30, Fractures);
         }
         /// <summary>
-        /// Calculate the probability of deactivation for fractures represented by each of the datapoints, and implement the deactivation
+        /// Calculate the probability of deactivation for fractures represented by each of the datapoints
+        /// Note that this function does not implement the deactivation - this will only be done after deactivation probabilites have been calculated for all fracture sets, by the updateTotalFracturePopulation() function
         /// </summary>
         public void setFractureDeactivationRate()
         {
@@ -2913,79 +2888,10 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            // Cache the stress shadow width ratio, fracture growth deactivation cutoff and minimum fracture activation probability locally
+            // Cache the stress shadow width ratio locally
             double stressShadowWidthRatio = Max_F_StressShadowWidthRatio;
-            double max_R_deactivation = gbc.PropControl.max_R_DeactivationCheck_interval;
-            double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
-
-            // Loop through all restricted datapoints, calculating deactivation rates due to stress shadow interaction and intersection
-            // We will calculate the restricted datapoints before the fully active ones, as the deactivation of fully active fractures will create new restricted fractures
-            foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
-            {
-                // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
-                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
-                // This will depend on the stress distribution scenario
-                double phiII_M;
-                switch (FractureDistribution)
-                {
-                    // There are no stress shadows in the evenly distributed stress scenario
-                    case StressDistribution.EvenlyDistributedStress:
-                        phiII_M = 1;
-                        break;
-                    // Stress shadow widths are proportional to the effective fracture radius in the stress shadow scenario
-                    case StressDistribution.StressShadow:
-                    // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
-                    case StressDistribution.DuctileBoundary:
-                        phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
-                        break;
-                    // By default assume no stress shadows
-                    default:
-                        phiII_M = 1;
-                        break;
-                }
-
-                // Get the probability that a fracture ray represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
-                double mean_apparent_P32 = 0;
-                double minIntersectionRadius = gbc.PropControl.MinIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
-                for (int setNo = 0; setNo < noSets; setNo++)
-                {
-                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
-                    for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
-                        mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
-                }
-                double phiIJ_M = Math.Exp(-mean_apparent_P32 * datapoint.RayLengthIncrement);
-
-                // Update the fracture activation probabilites for the datapoint
-                datapoint.UpdateFractureActivationProbabilities(phiII_M, phiIJ_M);
-
-                // Only implement deactivation if the ray has grown by the specified amount or the activation probability has dropped below a minimum value
-                if ((datapoint.ProportionalGrowthSinceLastDeactivationCheck >= max_R_deactivation) || (datapoint.Phi <= min_R_activation))
-                {
-                    // Calculate the probability that this ray will be deactivated due to stress shadow interaction and due to intersection during this timestep
-                    // This function will also reduce the volumetric density for the datapoint proportionally
-                    ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays();
-
-                    // Add the new datapoints to the appropriate arrays - but only if the volumetric density is greater than zero
-                    if (newdatapoints.Length == 2)
-                    {
-                        if ((float)newdatapoints[0].dRP30 > 0f)
-                            Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[0]);
-                        if ((float)newdatapoints[1].dRP30 > 0f)
-                            Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[1]);
-                    }
-                }
-            }
 
             // Loop through all fully active datapoints, calculating deactivation rates due to stress shadow interaction and intersection
-
-            /*// First cache the mechanical properties and timestep dynamic data required to calculate the locally
-            MechanicalProperties MechProps = gbc.MechProps;
-            double CapA = MechProps.CapA;
-            double beta = MechProps.beta;
-            bType b_type = MechProps.GetbType();
-            bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
-            double criticalIncrement = CapA * CurrentFractureData.M_Duration;*/
-
             foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
             {
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
@@ -3020,11 +2926,72 @@ namespace DFMGenerator_SharedCode
                     for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
                         mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
                 }
-                double phiIJ_M = Math.Exp(-mean_apparent_P32 * datapoint.RayLengthIncrement);
+                double phiIJ_M = Math.Exp(-mean_apparent_P32 * datapoint.ActualRayLengthIncrement);
 
                 // Update the fracture activation probabilites for the datapoint
                 datapoint.UpdateFractureActivationProbabilities(phiII_M, phiIJ_M);
+            }
 
+            // Loop through all restricted datapoints, calculating deactivation rates due to stress shadow interaction and intersection
+            foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
+            {
+                // Get the probability that a fracture represented by this datapoint will not be deactivated due to stress shadow interaction in the current timestep
+                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
+                // This will depend on the stress distribution scenario
+                double phiII_M;
+                switch (FractureDistribution)
+                {
+                    // There are no stress shadows in the evenly distributed stress scenario
+                    case StressDistribution.EvenlyDistributedStress:
+                        phiII_M = 1;
+                        break;
+                    // Stress shadow widths are proportional to the effective fracture radius in the stress shadow scenario
+                    case StressDistribution.StressShadow:
+                    // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
+                    case StressDistribution.DuctileBoundary:
+                        phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                        break;
+                    // By default assume no stress shadows
+                    default:
+                        phiII_M = 1;
+                        break;
+                }
+
+                // Get the probability that a fracture ray represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
+                double mean_apparent_P32 = 0;
+                double minIntersectionRadius = gbc.PropControl.MinIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
+                for (int setNo = 0; setNo < noSets; setNo++)
+                {
+                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
+                    for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
+                        mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
+                }
+                double phiIJ_M = Math.Exp(-mean_apparent_P32 * datapoint.ActualRayLengthIncrement);
+
+                // Update the fracture activation probabilites for the datapoint
+                datapoint.UpdateFractureActivationProbabilities(phiII_M, phiIJ_M);
+            }
+        }
+        /// <summary>
+        /// Lock in the previously calculated increments in ray length and resort the fracture population distribution arrays
+        /// </summary>
+        public void updateTotalFracturePopulation()
+        {
+            // Cache the proportion of the ray length increment to apply to deactivating fractures before they deactivate, fracture growth deactivation cutoff and minimum fracture activation probability locally
+            double proportionalIncrementToApply = gbc.PropControl.proportionalIncrementToApply;
+            double max_R_deactivation = gbc.PropControl.max_R_DeactivationCheck_interval;
+            double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
+
+            // First cache the mechanical properties and timestep dynamic data required to calculate the increment of restricted fractures
+            double CapA = gbc.MechProps.CapA;
+            double beta = gbc.MechProps.beta;
+            bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
+            double criticalIncrement = CapA * CurrentFractureData.M_Duration;
+
+            // Loop through all restricted datapoints, calculating deactivation rates due to stress shadow interaction and intersection
+            // We will calculate the restricted datapoints before the fully active ones, as the deactivation of fully active fractures will create new restricted fractures
+            foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
+            {
                 // Only implement deactivation if the ray has grown by the specified amount or the activation probability has dropped below a minimum value
                 if ((datapoint.ProportionalGrowthSinceLastDeactivationCheck >= max_R_deactivation) || (datapoint.Phi <= min_R_activation))
                 {
@@ -3033,46 +3000,63 @@ namespace DFMGenerator_SharedCode
                     ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays();
 
                     // Add the new datapoints to the appropriate arrays - but only if the volumetric density is greater than zero
+                    if (newdatapoints.Length == 2)
+                    {
+                        if ((float)newdatapoints[0].dRP30 > 0f)
+                            Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticStressShadow].Add(newdatapoints[0]);
+                        if ((float)newdatapoints[1].dRP30 > 0f)
+                            Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticIntersection].Add(newdatapoints[1]);
+                    }
+                }
+            }
+
+            // Loop through all fully active datapoints, calculating deactivation rates due to stress shadow interaction and intersection
+            foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
+            {
+                // Only implement deactivation if the ray has grown by the specified amount or the activation probability has dropped below a minimum value
+                if ((datapoint.ProportionalGrowthSinceLastDeactivationCheck >= max_R_deactivation) || (datapoint.Phi <= min_R_activation))
+                {
+                    // Calculate the probability that this ray will be deactivated due to stress shadow interaction and due to intersection during this timestep
+                    // This function will also reduce the volumetric density for the datapoint proportionally
+                    ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays(proportionalIncrementToApply);
+
+                    // Add the new datapoints to the appropriate arrays - but only if the volumetric density is greater than zero
                     // Before doing so, calculate the appropriate ray length increment for the restricted ray in this timestep
                     if (newdatapoints.Length == 3)
                     {
-                        /*if ((float)newdatapoints[0].dP30 > 0f)
+                        // If the fully active rays are deactivated before the full increment is applied, the DeactivateRays(proportionalIncrementToApply) function will only calculate the increment on the restricted rays spawned from fully active rays until the point of deactivation
+                        // We therefore need to calculate the increment for the new restricted rays until the end of the timestep
+                        if ((proportionalIncrementToApply < 1) && ((float)newdatapoints[0].dRP30 > 0f))
+                        {
+                            // Calculate the correct increment for the new restricted ray until the end of the timestep
+                            double fullyActiveRayIncrement = datapoint.CalculatedRayLengthIncrement;
+                            double restrictedRayIncrementToDeactivation = newdatapoints[0].CalculatedRayLengthIncrement;
+                            double lengthAtDeactivation = newdatapoints[0].RayLength + restrictedRayIncrementToDeactivation;
+                            double restrictedRayIncrementFromDeactivationToEndTimestep;
+                            // If the ray is already propagating at the critical rate, this will not change
+                            if ((float)fullyActiveRayIncrement >= (float)criticalIncrement)
                             {
-                                ImplicitFracturePopulationDatapoint newRestrictedDatapoint = newdatapoints[0];
-                                double fullyActiveRayIncrement = datapoint.RayLengthIncrement;
-                                double propagationControllingLength = newRestrictedDatapoint.PropagationControllingLength;
-                                double restrictedRayIncrement;
-                                bool incrementExceedsMaxRadius = false;
-                                // We will assume that if the fully active ray exceeds the maximum fracture radius in this timestep, the restricted ray will also exceed the maximum fracture radius
-                                if ((float)(propagationControllingLength + fullyActiveRayIncrement) >= (float)MaximumFractureRadius)
+                                restrictedRayIncrementFromDeactivationToEndTimestep = criticalIncrement - restrictedRayIncrementToDeactivation;
+                            }
+                            // Otherwise calculate the length increment of the restricted ray from the length increment of the fully active rays
+                            else
+                            {
+                                double fullyActiveFinalR = datapoint.RayLength + datapoint.CalculatedRayLengthIncrement;
+                                if (bis2)
                                 {
-                                    restrictedRayIncrement = MaximumFractureRadius - propagationControllingLength;
-                                    incrementExceedsMaxRadius = true;
+                                    restrictedRayIncrementFromDeactivationToEndTimestep = (2 * Math.Sqrt(lengthAtDeactivation * fullyActiveFinalR)) - (2 * lengthAtDeactivation);
                                 }
-                                // If the ray is already propagating at the critical rate, this will not change
-                                else if ((float)fullyActiveRayIncrement >= (float)criticalIncrement)
-                                {
-                                    restrictedRayIncrement = criticalIncrement;
-                                }
-                                // Otherwise calculate the length increment of the restricted ray from the length increment of the fully active rays
                                 else
                                 {
-                                    double fullyActiveFinalR = propagationControllingLength + fullyActiveRayIncrement;
-                                    if (bis2)
-                                    {
-                                        restrictedRayIncrement = (2 * Math.Sqrt(propagationControllingLength * fullyActiveFinalR)) - (2 * propagationControllingLength);
-                                    }
-                                    else
-                                    {
-                                        double R0term = Math.Pow(propagationControllingLength, 1 / beta) / 2;
-                                        double RFAterm = Math.Pow(fullyActiveFinalR, 1 / beta) / 2;
-                                        restrictedRayIncrement = (2 * Math.Pow(R0term + RFAterm, beta)) - (2 * propagationControllingLength);
-                                    }
+                                    double R0term = Math.Pow(lengthAtDeactivation, 1 / beta) / 2;
+                                    double RFAterm = Math.Pow(fullyActiveFinalR, 1 / beta) / 2;
+                                    restrictedRayIncrementFromDeactivationToEndTimestep = (2 * Math.Pow(R0term + RFAterm, beta)) - (2 * lengthAtDeactivation);
                                 }
-                                // Set the ray length increment - and also the flag to indicate whether the ray will reach the maximum allowed radius
-                                newRestrictedDatapoint.SetRayLengthIncrement(restrictedRayIncrement, incrementExceedsMaxRadius);
-                                Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newRestrictedDatapoint);
-                            }*/
+                            }
+                            // Set the ray length increment
+                            newdatapoints[0].CalculatedRayLengthIncrement += restrictedRayIncrementFromDeactivationToEndTimestep;
+                        }
+
                         if ((float)newdatapoints[0].dRP30 > 0f)
                             Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Add(newdatapoints[0]);
                         if ((float)newdatapoints[1].dRP30 > 0f)
@@ -3082,12 +3066,7 @@ namespace DFMGenerator_SharedCode
                     }
                 }
             }
-        }
-        /// <summary>
-        /// Lock in the previously calculated increments in ray length and resort the fracture population distribution arrays
-        /// </summary>
-        public void updateTotalFracturePopulation()
-        {
+
             // Lock in the increments in ray length calculated by setTimestepPropagationData()
             // If any rays have reached the maximum specified length, deactivate them and move the appropriate datapoints to the StaticMaxRadius array
             foreach (RayPropagationStatus status in new RayPropagationStatus[4] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted, RayPropagationStatus.StaticStressShadow, RayPropagationStatus.StaticIntersection })
@@ -3096,7 +3075,7 @@ namespace DFMGenerator_SharedCode
                 for (int datapointNo = noDataPoints - 1; datapointNo >= 0; datapointNo--)
                 {
                     ImplicitFracturePopulationDatapoint datapoint = Fractures.fracturePopulationDatapoints[status][datapointNo];
-                    if (datapoint.RayLengthIncrement > 0)
+                    if (datapoint.ActualRayLengthIncrement > 0)
                     {
                         // The ImplicitFracturePopulationDatapoint.IncrementRayLength() returns true if the ray length increment will reach the maximum fracture radius, otherwise false
                         bool maxRadiusReached = datapoint.IncrementRayLength();
@@ -3125,7 +3104,7 @@ namespace DFMGenerator_SharedCode
             Fractures.CullArray(RayPropagationStatus.StaticMaxRadius, minDatapointSizeRatio);
         }
         /// <summary>
-        /// Set the unconfined fracture density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, RP32, RP33Exclusive and RP33Overlapping in the CurrentFractureData object
+        /// Set the unconfined fracture density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, FP32, FP33Exclusive and FP33Overlapping in the CurrentFractureData object
         /// </summary>
         public void setFractureDensityData()
         {
@@ -3149,17 +3128,17 @@ namespace DFMGenerator_SharedCode
             // Set the ray length increments for all active datapoints to zero
             foreach (RayPropagationStatus status in new RayPropagationStatus[2] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted })
                 foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[status])
-                    datapoint.SetRayLengthIncrement(0, false);
+                    datapoint.CalculatedRayLengthIncrement = 0;
 
             // Set the fracture evolution stage to deactivated
             CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Deactivated);
         }
         /// <summary>
-        /// Check if the if the extrapolated initial radius of a fully active fracture with current radius r is zero or less (will only apply if b is less than 2)
+        /// Check if the if the extrapolated initial radius of a fully active unconfined fracture with current radius r is zero or less (will only apply if b is less than 2)
         /// </summary>
         /// <param name="r">Current fracture radius</param>
         /// <returns>True if initial fracture radius is zero or less; false if it is greater than zero or b is greater than or equal to 2</returns>
-        public bool Check_Initial_uF_Radius(double r)
+        public bool Check_Initial_UCF_Radius(double r)
         {
             double b = gbc.MechProps.b_factor;
             if (b < 2)
@@ -3637,7 +3616,7 @@ namespace DFMGenerator_SharedCode
         public void clearImplicitFracturePopulationArrays()
         {
             double initialRP30 = InitialP30() * (double)RaysPerFracture;
-            Fractures.ResetPopulationDistributionData(initialRP30, MinimumFractureRadius, RaysPerFracture, gbc.PropControl.MinStressShadowDeactivationRatio, gbc.PropControl.MinIntersectionDeactivationRatio);
+            Fractures.ResetPopulationDistributionData(initialRP30, MinimumFractureRadius, gbc.PropControl.MinStressShadowDeactivationRatio, gbc.PropControl.MinIntersectionDeactivationRatio);
         }
         /// <summary>
         /// Reset all fracture data to initial values (implicit population comprising only initial microfractures, no explicit fractures, no previous deformation)
@@ -3663,7 +3642,7 @@ namespace DFMGenerator_SharedCode
             MaximumFractureRadius = rmax_in;
             // Create new UnconfinedFractureData object
             double initialRP30 = InitialP30() * (double)raysPerFracture_in;
-            Fractures = new UnconfinedFractureData(initialRP30, rmin_in, raysPerFracture_in, gbc.PropControl.MinStressShadowDeactivationRatio, gbc.PropControl.MinIntersectionDeactivationRatio);
+            Fractures = new UnconfinedFractureData(initialRP30, rmin_in, gbc.PropControl.MinStressShadowDeactivationRatio, gbc.PropControl.MinIntersectionDeactivationRatio, this);
 
             // Recreate the array of fracture ray vectors
             // We start with the dip vector and then rotate this using the Rodrigues method
@@ -3689,10 +3668,10 @@ namespace DFMGenerator_SharedCode
             previous_CumGamma = 0;
             // Set the minimum RP30 value for a nucleating fracture datapoint
             // This is the value that will generate the specified maximum dP33 increment with nucleating fractures
-            double dP33 = gbc.PropControl.max_TS_MFP33_increase;
+            double dP33 = gbc.PropControl.max_TS_UCFP33_increase;
             //double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
             double minFracVol = (4d / 3d) * Math.PI * Math.Pow(MinimumFractureRadius, 3);
-            min_datapoint_RP30 = (dP33 / minFracVol) * (double)raysPerFracture_in;
+            min_datapoint_UCRP30 = (dP33 / minFracVol) * (double)raysPerFracture_in;
         }
         /// <summary>
         /// Set the fracture orientation data: dip, strike, normal vector and azimuth
@@ -3820,7 +3799,7 @@ namespace DFMGenerator_SharedCode
             LocalDFNUnconfinedFractures = new List<UnconfinedFractureXYZ>();
 
             // Set the maximum historic active fracture volumetric ratio to 0
-            max_historic_a_RP32 = 0;
+            max_historic_a_UCFP32 = 0;
         }
     }
 }

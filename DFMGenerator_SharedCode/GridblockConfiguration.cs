@@ -1,6 +1,6 @@
 ﻿// Set this flag to output detailed information on the behaviour of the implicit fracture distribution
 // Use for debugging only; will significantly increase runtime
-//#define LOGIMPPOP
+#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 #define LOGDFNPOP
@@ -2332,7 +2332,7 @@ namespace DFMGenerator_SharedCode
         {
             double UCF_P32_value = 0;
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                UCF_P32_value += ufs.RP32_total();
+                UCF_P32_value += ufs.UCRP32_total();
             return UCF_P32_value;
         }
         /// <summary>
@@ -2345,7 +2345,7 @@ namespace DFMGenerator_SharedCode
             foreach (Gridblock_FractureSet fs in FractureSets)
                 P32_value += (fs.combined_T_uFP32_total() + fs.combined_T_MFP32_total());
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                P32_value += ufs.RP32_total();
+                P32_value += ufs.UCRP32_total();
             return P32_value;
         }
         /// <summary>
@@ -3318,16 +3318,20 @@ namespace DFMGenerator_SharedCode
             double tf = MechProps.tf;
 
             // Calculation control criteria
-            // Set the target maximum increase in MFP33 allowed per timestep
+            // Set the target maximum increase in MFP33 and UCFP33 allowed per timestep
             double d_MFP33 = PropControl.max_TS_MFP33_increase;
-            // Set the target maximum increase in unconfined fracture radius allowed per timestep
-            double d_Radius = PropControl.max_R_timestep_increase;
-            // Set the ratio of current to maximum active macrofracture volumetric ratio at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio
+            double d_UCFP33 = PropControl.max_TS_UCFP33_increase;
+            // Set the target maximum increase in unconfined fracture ray length allowed per timestep
+            double d_RayLength = PropControl.max_R_timestep_increase;
+            // Set the ratio of current to maximum active fracture volumetric ratio or mean linear density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio
             double historic_a_MFP33_termination_ratio = PropControl.historic_a_MFP33_termination_ratio;
-            // Set the ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio 
+            double historic_a_UCFP32_termination_ratio = PropControl.historic_a_UCFP32_termination_ratio;
+            // Set the ratio of active to total fracture volumetric density at which fracture sets are considered inactive; calculation will terminate when all fracture sets fall below this ratio 
             double active_total_MFP30_termination_ratio = PropControl.active_total_MFP30_termination_ratio;
+            double active_total_UCRP30_termination_ratio = PropControl.active_total_UCRP30_termination_ratio;
             // Set the minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double minimum_ClearZone_Volume = PropControl.minimum_ClearZone_Volume;
+            double minimum_MFClearZone_Volume = PropControl.minimum_MFClearZone_Volume;
+            double minimum_UCFClearZone_Volume = PropControl.minimum_UCFClearZone_Volume;
             // Set maximum number of timesteps allowed
             int maxTimesteps = PropControl.maxTimesteps;
             // Set maximum duration for individual timesteps
@@ -3353,6 +3357,9 @@ namespace DFMGenerator_SharedCode
             // Flag to check microfractures against stress shadows of all macrofractures, regardless of set; if false will only check microfractures against stress shadows of macrofractures in the same set
             // NB we do not need to do this in the evenly distributed stress scenario
             bool checkAlluFStressShadows = PropControl.checkAlluFStressShadows && (SD != StressDistribution.EvenlyDistributedStress);
+            // Flag to check unconfined fractures against stress shadows of all other unconfined fractures, regardless of set; if false will only check unconfined fractures against stress shadows of other unconfined vfractures in the same set
+            // NB we do not need to do this in the evenly distributed stress scenario
+            bool checkAllUCFStressShadows = PropControl.checkAllUCFStressShadows && (SD != StressDistribution.EvenlyDistributedStress);
 
             // Output control criteria
             // Flag to calculate separate tensors for cumulative inelastic (relaxed) strain in host rock and fractures; if false, will only calculate overall total cumulative strain tensor
@@ -3951,11 +3958,11 @@ namespace DFMGenerator_SharedCode
                     AllSetsDeactivated = true;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
-                        AllSetsDeactivated &= fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume, minrb_maxRad);
+                        AllSetsDeactivated &= fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_MFClearZone_Volume, minrb_maxRad);
                     }
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
-                        AllSetsDeactivated &= ufs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_ClearZone_Volume);
+                        AllSetsDeactivated &= ufs.CheckFractureDeactivation(historic_a_UCFP32_termination_ratio, active_total_UCRP30_termination_ratio, minimum_UCFClearZone_Volume);
                     }
 
                     // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
@@ -3976,7 +3983,7 @@ namespace DFMGenerator_SharedCode
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         // Use the getOptimalDuration function in the fracture set object to get the optimal timestep duration for that set
-                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_Radius, d_MFP33);
+                        double maxdur = ufs.getOptimalDuration(StressStrain.Sigma_eff, StressStrain.Sigma_eff_dashed, d_RayLength, d_UCFP33);
 
                         // Check to see if the maximum timstep duration calculated for this timestep is less than the maximum timestep duration so far
                         // NB if it is not possible to calculate a value for the optimal timestep duration, the getOptimalDuration function will return infinity
@@ -4175,13 +4182,13 @@ namespace DFMGenerator_SharedCode
                         foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         {
                             // Get fracture data and add to timestep log string
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP30_total(), ufs.r_RP30_total(), ufs.sII_RP30_total(), ufs.sIJ_RP30_total(), ufs.sMR_RP30_total(),
-                                ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
+                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 #if LOGIMPPOP
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
-                                ufs.a_RP32_total() + ufs.r_RP32_total() + ufs.sII_RP32_total() + ufs.sIJ_RP32_total() + ufs.sMR_RP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_F_StressShadowWidthRatio, ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP33_total(), ufs.r_UCRP33_total(), ufs.sII_UCRP33_total(), ufs.sIJ_UCRP33_total(), ufs.sMR_UCRP33_total(),
+                                ufs.a_UCRP32_total() + ufs.r_UCRP32_total() + ufs.sII_UCRP32_total() + ufs.sIJ_UCRP32_total() + ufs.sMR_UCRP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_F_StressShadowWidthRatio, ufs.UCFP33_exclusive_total(), ufs.UCFP33_overlapping_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 #endif
 
                             timestepData = timestepData + fractureSetData;
@@ -4282,7 +4289,7 @@ namespace DFMGenerator_SharedCode
                         UFSToLog.getClearZoneVolume(), UFSToLog.getNoDatapoints(RayPropagationStatus.FullyActive),
                         UFSToLog.getNoDatapoints(RayPropagationStatus.Restricted), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticStressShadow),
                         UFSToLog.getNoDatapoints(RayPropagationStatus.StaticIntersection), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticMaxRadius)));
-                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getP33(), UFSToLog.getClearZoneVolume());
+                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getUCFP33(), UFSToLog.getClearZoneVolume());
                     foreach (RayPropagationStatus rayType in rayTypesToLog)
                     {
                         string rayTypeDatapointOutput = TAdataoutput + string.Format("{0}\t\t", UFSToLog.getNoDatapoints(rayType));
@@ -4524,8 +4531,8 @@ namespace DFMGenerator_SharedCode
                         Dictionary<RayPropagationStatus, List<double>> P32values = new Dictionary<RayPropagationStatus, List<double>>();
                         foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                         {
-                            P30values[status] = ufs.GetCumulativeRP30Values(indexRadii, status);
-                            P32values[status] = ufs.GetCumulativeRP32Values(indexRadii, status);
+                            P30values[status] = ufs.GetCumulativeUCRP30Values(indexRadii, status);
+                            P32values[status] = ufs.GetCumulativeUCRP32Values(indexRadii, status);
                         }
 
                         // Create strings for header data and write to file
@@ -4738,6 +4745,7 @@ namespace DFMGenerator_SharedCode
             bool use_MF_min_length_cutoff = (MF_minLength > 0) && !calc_uF; // There cannot be a minimum macrofracture cutoff length if the DFN includes microfractures
             bool checkStressShadow = (PropControl.StressDistributionCase == StressDistribution.StressShadow);
             bool checkAlluFStressShadows = PropControl.checkAlluFStressShadows && checkStressShadow;
+            bool checkAllUCFStressShadows = PropControl.checkAllUCFStressShadows && checkStressShadow;
             bool TerminateAtGridBoundary = DFNControl.CropToGrid;
             double probabilisticFractureNucleationLimit = DFNControl.probabilisticFractureNucleationLimit;
             bool allowProbabilisticFractureNucleation = (probabilisticFractureNucleationLimit > 0);
@@ -5730,7 +5738,7 @@ namespace DFMGenerator_SharedCode
                             bool inExclusionZone = false;
 
                             // First check whether this point lies in the stress shadow or exclusion zone of a fracture in this gridblock
-                            if (checkAlluFStressShadows)
+                            if (checkAllUCFStressShadows)
                             {
                                 inStressShadow = checkInUCFStressShadow(testPointXYZ, ufs_index, ref ufsStressShadowWidthRatios);
                                 inExclusionZone = checkInUCFExclusionZone(testPointXYZ, ufs_index, UCF_minRadius, UCF_minRadius, ref ufsStressShadowWidthRatios);
@@ -5750,7 +5758,7 @@ namespace DFMGenerator_SharedCode
                                 // Loop through each gridblock in the list
                                 foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
                                 {
-                                    if (checkAlluFStressShadows)
+                                    if (checkAllUCFStressShadows)
                                     {
                                         // Find the index number of the equivalent unconfined fracture set in the neighbouring gridblock
                                         int neighbourGB_ufs_index = neighbour_gb.getClosestUnconfinedFractureSetIndex(ufs.NormalVector);
@@ -5842,7 +5850,7 @@ namespace DFMGenerator_SharedCode
                             if (checkStressShadow)
                             {
                                 // First check other unconfined fractures from this gridblock
-                                if (checkAlluFStressShadows)
+                                if (checkAllUCFStressShadows)
                                     addThisFracture = !checkInUCFStressShadow(new_UCF_centrepointXYZ, ufs_index, ref UCFStressShadowWidthRatios);
                                 else
                                     addThisFracture = !ufs.checkInUCFStressShadow(new_UCF_centrepointXYZ);
@@ -5857,7 +5865,7 @@ namespace DFMGenerator_SharedCode
                                     // Loop through each gridblock in the list
                                     foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
                                     {
-                                        if (checkAlluFStressShadows)
+                                        if (checkAllUCFStressShadows)
                                         {
                                             // Find the index number of the equivalent unconfined fracture set in the neighbouring gridblock
                                             int neighbourGB_ufs_index = neighbour_gb.getClosestUnconfinedFractureSetIndex(ufs.NormalVector);
@@ -5980,7 +5988,7 @@ namespace DFMGenerator_SharedCode
                         if (checkStressShadow)
                         {
                             // First check other unconfined fractures from this gridblock
-                            if (checkAlluFStressShadows)
+                            if (checkAllUCFStressShadows)
                                 addThisFracture = !checkInUCFStressShadow(new_UCF_centrepointXYZ, ufs_index, ref UCFStressShadowWidthRatios);
                             else
                                 addThisFracture = !ufs.checkInUCFStressShadow(new_UCF_centrepointXYZ);
@@ -5995,7 +6003,7 @@ namespace DFMGenerator_SharedCode
                                 // Loop through each gridblock in the list
                                 foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
                                 {
-                                    if (checkAlluFStressShadows)
+                                    if (checkAllUCFStressShadows)
                                     {
                                         // Find the index number of the equivalent unconfined fracture set in the neighbouring gridblock
                                         int neighbourGB_ufs_index = neighbour_gb.getClosestUnconfinedFractureSetIndex(ufs.NormalVector);
