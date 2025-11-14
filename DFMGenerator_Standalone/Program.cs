@@ -931,7 +931,7 @@ namespace DFMGenerator_Standalone
             // Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time
             bool PropagateFracturesInNucleationOrder = false;// true;
             // Flag to control whether to search adjacent gridblocks for stress shadow interaction; if set to automatic, this will be determined independently for each gridblock based on the gridblock geometry
-            AutomaticFlag SearchNeighbouringGridblocks = AutomaticFlag.Automatic;
+            AutomaticFlag SearchNeighbouringGridblocks = AutomaticFlag.All;// AutomaticFlag.Automatic;
             // Minimum radius for microfractures to be included in explicit DFN
             // Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN
             double MinExplicitMicrofractureRadius = 0;
@@ -982,7 +982,7 @@ namespace DFMGenerator_Standalone
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
             double Min_R_ActivationProbability = 0.8;
             // The proportion of the ray length increment to apply to active unconfined fracture datapoints before the specified proportion of fractures are deactivated
-            double ProportionalUCRIncrementToApply = 0.5;
+            double ProportionalUCRIncrementToApply = 1;// 0.5;
             // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
             double Min_R_staticDatapointSizeRatio = 0.02;
             // Frequency (in timesteps) with which static unconfined fracture datapoints are culled

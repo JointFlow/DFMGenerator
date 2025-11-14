@@ -322,7 +322,7 @@ namespace DFMGenerator_SharedCode
 
             // Calculate the proportion of the original fully active ray increment to be applied before deactivation occurs
             double preDeactivationIncrement = proportionalIncrementAtDeactivation * CalculatedRayLengthIncrement;
-            double lengthAtDeactivation = RayLength + preDeactivationIncrement;
+            double lengthAtDeactivation = Math.Min(RayLength + preDeactivationIncrement, ufd.MaximumAllowedRayLength);
             switch (Status)
             {
                 case RayPropagationStatus.FullyActive:
@@ -1056,7 +1056,7 @@ namespace DFMGenerator_SharedCode
             // Calculate the initial and final clear zone volumes and return the ratio of the two
             double initialClearZoneVolume = Math.Exp(-(initialExclusiveOuterShellVolume + initialOverlappingOuterShellVolume));
             double finalClearZoneVolume = Math.Exp(-(finalExclusiveOuterShellVolume + finalOverlappingOuterShellVolume));
-            return finalClearZoneVolume / initialClearZoneVolume;
+            return (initialClearZoneVolume > 0) ? finalClearZoneVolume / initialClearZoneVolume : 0;
         }
 
         // Reset and data input functions

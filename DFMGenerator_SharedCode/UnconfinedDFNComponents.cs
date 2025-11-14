@@ -653,12 +653,14 @@ namespace DFMGenerator_SharedCode
         public double MaximumRayLength { get; private set; }
         /// <summary>
         /// Mean ray length
+        /// NB This is calculated the root mean square ray length, to ensure that the area of the fracture calculated from the mean ray length will equal the sum of the area of all the rays
         /// </summary>
         public double MeanRayLength { get; private set; }
         /// <summary>
-        /// The mean effective fracture radius, used for calculating whole fracture stress shadow width, is the average of the minimum (or propagation contolling) ray length and the mean ray length
+        /// The effective fracture radius, used for calculating whole fracture stress shadow width, is the average of the minimum (or propagation contolling) ray length and the mean ray length, weighted by area
+        /// The average is weighted by area to ensure that the whole fracture stress shadow volume calculated from fracture effective radius is equal to the sum of the stress shadow volume around all the rays
         /// </summary>
-        public double MeanEffectiveRadius { get { return (MinimumRayLength + MeanRayLength) / 2; } }
+        public double EffectiveRadius { get; private set; }
         /// <summary>
         /// Total area of the fracture
         /// </summary>
@@ -692,44 +694,66 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public PointXYZ Centroid { get; private set; }
         /// <summary>
-        /// Recalculate the minimum, maximum and mean ray lengths, total fracture area and location of centroid
+        /// Recalculate the minimum, maximum and mean ray lengths, total fracture area and P33 volume (for calculating effective radius), flags for fully active and fully deactivated and location of centroid
         /// This should be done after all fracture growth has been calculated for the timestep, as these values will be used to calculate effective radii and fracture growth rates in the next timestep
         /// </summary>
         public void RecalculateGeometry()
         {
             double minLength = double.PositiveInfinity; 
             double maxLength = 0; 
-            double totalLength = 0; 
-            double area = 0; 
-                List<PointXYZ> outerTips = new List<PointXYZ>();
-            foreach (UnconfinedFractureRay ray in rays) 
-            { 
-                double rayLength = ray.Length; 
-                if (minLength > rayLength) 
-                    minLength = rayLength; 
-                if (maxLength < rayLength) 
-                    maxLength = rayLength; 
-                totalLength += rayLength; 
-                area += ray.Area; 
-                    outerTips.AddRange(ray.GetNodesInXYZ());
+            //double totalLength = 0; 
+            List<PointXYZ> outerTips = new List<PointXYZ>();
+            bool fullyActive = true;
+            bool fullyDeactivated = true;
+            // Loop through the rays once to get the minimum and maximum ray lengths, flags for fully active and fully deactivated and location of centroid
+            foreach (UnconfinedFractureRay ray in rays)
+            {
+                double rayLength = ray.Length;
+                if (minLength > rayLength)
+                    minLength = rayLength;
+                if (maxLength < rayLength)
+                    maxLength = rayLength;
+                //totalLength += rayLength;
+                //outerTips.AddRange(ray.GetNodesInXYZ());
+                outerTips.Add(new PointXYZ(ray.OuterTip));
+                if (ray.Active)
+                    fullyDeactivated = false;
+                else
+                    fullyActive = false;
             }
-
             MinimumRayLength = minLength;
             MaximumRayLength = maxLength;
-            MeanRayLength =  totalLength / NoRays;
-            Area = area;
             Centroid = PointXYZ.getCentroid(outerTips);
+            FullyActive = fullyActive;
+            FullyDeactivated = fullyDeactivated;
+
+            // Loop through the rays a second time to get the total fracture area and P33 volume (for calculating effective radius)
+            // NB the P33 volume required the effective ray length, thus can only be calculated after the minimum ray length has been determined
+            double areaElements = 0;
+            double volumeElements = 0;
+            // Loop through the rays once to get the minimum and maximum ray lengths, flags for fully active and fully deactivated and location of centroid
+            foreach (UnconfinedFractureRay ray in rays)
+            {
+                double rayLength = ray.Length;
+                double lengthSquared = (rayLength * rayLength);
+                double effectiveLength = (rayLength + MinimumRayLength) / 2;
+                areaElements += lengthSquared;
+                volumeElements += lengthSquared * effectiveLength;
+            }
+            Area = Math.PI * areaElements;
+            MeanRayLength = Math.Sqrt(areaElements / NoRays);
+            EffectiveRadius = volumeElements / areaElements;
         }
 
         // Dynamic data
         /// <summary>
         /// True if all rays are still active; otherwise false
         /// </summary>
-        public bool FullyActive { get { foreach (UnconfinedFractureRay ray in rays) if (!ray.Active) return false; return true; } }
+        public bool FullyActive { get; private set; }
         /// <summary>
         /// True if all rays are deactivated; false if any rays are still active
         /// </summary>
-        public bool FullyDeactivated { get { foreach (UnconfinedFractureRay ray in rays) if (ray.Active) return false; return true; } }
+        public bool FullyDeactivated { get; private set; }
         /// <summary>
         /// Time of fracture nucleation (real time) - this will not change after fracture is initiated
         /// </summary>
@@ -1129,6 +1153,10 @@ namespace DFMGenerator_SharedCode
             MeanRayLength = InitialRadius;
             Area = Math.PI * InitialRadius * InitialRadius;
             Centroid = new PointXYZ(NucleationPoint_in);
+
+            // Set the flags for fully active and fully deactivated
+            FullyActive = true;
+            FullyDeactivated = false;
         }
         /// <summary>
         /// Copy constructor: copy all data from an existing UnconfinedFractureXYZ object
@@ -1167,6 +1195,10 @@ namespace DFMGenerator_SharedCode
             MeanRayLength = fracture_in.MeanRayLength;
             Area = fracture_in.Area;
             Centroid = new PointXYZ(fracture_in.Centroid);
+
+            // Set the flags for fully active and fully deactivated
+            FullyActive = fracture_in.FullyActive;
+            FullyDeactivated = fracture_in.FullyDeactivated;
         }
     }
 

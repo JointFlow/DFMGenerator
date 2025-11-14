@@ -2415,11 +2415,11 @@ namespace DFMGenerator_SharedCode
                             // Find the radius the current fracture would need to grow to to increment dP33 by the required amount
                             double datapoint_current_dP33 = (4d / 3d) * (Math.PI / (double)RaysPerFracture) * datapoint.dP33factor;
                             double datapoint_drmax = Math.Pow((d_P33max / datapoint_current_dP33) + 1, 1d / 3d) - 1;
-                            // If this is greater than the maximum allowable fracture radius, reduce the radius increase accordingly, calculate the actual dP33 growth achieved and set the flag to indicate that the required dP33 growth cannot be achieved by this datapoint alone
+                            // If this is greater than the maximum allowable fracture radius, calculate the actual dP33 growth achieved and set the flag to indicate that the required dP33 growth cannot be achieved by this datapoint alone
+                            // NB we will not reduce the radius increment for the datapoint accordingly; if this is the time-limiting datapoint, it will grow to the maximum radius and then arrest, but will not fall short due to rounding errors
                             double max_drmax = (MaximumFractureRadius / datapoint_currentR) - 1;
                             if (datapoint_drmax > max_drmax)
                             {
-                                datapoint_drmax = max_drmax;
                                 dP33_increment = datapoint_current_dP33 * (Math.Pow(datapoint_drmax + 1, 3) - 1);
                                 requiredGrowthAchieved = false;
                             }
@@ -2997,7 +2997,7 @@ namespace DFMGenerator_SharedCode
                 {
                     // Calculate the probability that this ray will be deactivated due to stress shadow interaction and due to intersection during this timestep
                     // This function will also reduce the volumetric density for the datapoint proportionally
-                    ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays();
+                    ImplicitFracturePopulationDatapoint[] newdatapoints = datapoint.DeactivateRays(proportionalIncrementToApply);
 
                     // Add the new datapoints to the appropriate arrays - but only if the volumetric density is greater than zero
                     if (newdatapoints.Length == 2)
@@ -3203,7 +3203,7 @@ namespace DFMGenerator_SharedCode
                 // The maximum radius, i.e. the radius in the plane of the fracture, will be the sum of the mean radius of this fracture plus the outer exclusion zone width
                 double EZMaxWidth = UCF.MeanRayLength + MaxOuterExclusionZoneWidth;
                 // The minimum radius, i.e. the radius perpendicular to the plane of the fracture, will be the sum of the effective radius of this fracture plus the outer exclusion zone width
-                double EZMinWidth = UCF.MeanEffectiveRadius + MinOuterExclusionZoneWidth;
+                double EZMinWidth = UCF.EffectiveRadius + MinOuterExclusionZoneWidth;
                 double EZWidthRatio = (EZMaxWidth > 0) ? EZMinWidth / EZMaxWidth : 1;
 
                 // Calculate the ratio of the width of the exclusion zone perpendicular to the fracture centroid to the mean fracture radius
@@ -3298,7 +3298,7 @@ namespace DFMGenerator_SharedCode
                     continue;
 
                 // Check if it has effective radius less than the minimum required for stress shadow interaction; if so move on to the next
-                if (UCF.MeanEffectiveRadius < minStressShadowInteractionRadius)
+                if (UCF.EffectiveRadius < minStressShadowInteractionRadius)
                     continue;
 
                 // Cache the centrepoint and mean radius of this fracture locally
@@ -3322,7 +3322,7 @@ namespace DFMGenerator_SharedCode
 
                 // Calculate the mean stress shadow width to ray length ratio for both fractures combined
                 // NB This will be an approximation
-                double combinedEffectiveRadius = propagatingSegment.EffectiveRayLength + UCF.MeanEffectiveRadius;
+                double combinedEffectiveRadius = propagatingSegment.EffectiveRayLength + UCF.EffectiveRadius;
                 double combinedActualRadius = initialRayLength + UCF.MeanRayLength;
                 double combinedRadiusRatio = (combinedActualRadius > 0) ? combinedEffectiveRadius / combinedActualRadius : 1;
                 double combinedStressShadowMultiplier = (stressShadowWidthRatio / 2) * StressShadowWidthMultiplier * combinedRadiusRatio;
@@ -3423,7 +3423,7 @@ namespace DFMGenerator_SharedCode
             foreach (UnconfinedFractureXYZ fracture in intersecting_ufs.LocalDFNUnconfinedFractures)
             {
                 // If the effective radius of the intersecting fracture is below the cutoff, ignore it and move on to the next
-                if (fracture.MeanEffectiveRadius < minIntersectionRadius)
+                if (fracture.EffectiveRadius < minIntersectionRadius)
                     continue;
 
                 // Get a list of triangular segments comprising the fracture surface

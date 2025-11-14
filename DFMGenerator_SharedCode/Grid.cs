@@ -625,7 +625,7 @@ namespace DFMGenerator_SharedCode
                                     foreach (UnconfinedFractureXYZ frac in latestDFN.GlobalDFNUnconfinedFractures)
                                     {
                                         PointXYZ centroid = frac.Centroid;
-                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", frac.UnconfinedFractureID, frac.SetIndex, centroid.X, centroid.Y, centroid.Depth, frac.MeanEffectiveRadius, frac.Dip, frac.Azimuth, !frac.FullyDeactivated);
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", frac.UnconfinedFractureID, frac.SetIndex, centroid.X, centroid.Y, centroid.Depth, frac.EffectiveRadius, frac.Dip, frac.Azimuth, !frac.FullyDeactivated);
                                         UCF_outputFile.WriteLine(data);
 
                                         // Write output data for each of the fracture rays
