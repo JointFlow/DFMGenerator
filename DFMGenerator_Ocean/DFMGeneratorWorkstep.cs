@@ -6214,7 +6214,7 @@ namespace DFMGenerator_Ocean
                                         switch (PermeabilityAlgorithm)
                                         {
                                             case PermeabilityCalculationAlgorithm.Oda1986:
-                                                FracturePermeabilityTensorCollectionName += ": Oda (1985)";
+                                                FracturePermeabilityTensorCollectionName += ": Oda (1986)";
                                                 break;
                                             case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                                                 FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
