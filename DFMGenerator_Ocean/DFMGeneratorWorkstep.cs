@@ -4470,7 +4470,7 @@ namespace DFMGenerator_Ocean
                                                 // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
                                                 // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
                                                 double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
-                                                double local_Ehmin_PresentDay = Ehmax_PresentDay;
+                                                double local_Ehmin_PresentDay = Ehmin_PresentDay;
                                                 double local_Ehmax_PresentDay = Ehmax_PresentDay;
                                                 double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
 
@@ -6240,7 +6240,7 @@ namespace DFMGenerator_Ocean
                                         }
                                         // Create property for the sigma factor
                                         Property SigmaFactorProperty = FracturePermeabilityTensorData.CreateProperty(SigmaFactorTemplate);
-                                        SigmaFactorProperty.Name = string.Format("{0}_sigma", PermeabilityTensorComponentName_base);
+                                        SigmaFactorProperty.Name = string.Format("{0}Sigma", PermeabilityTensorComponentName_base);
                                         IHistoryInfoEditor SigmaFactorHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(SigmaFactorProperty);
                                         SigmaFactorHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
