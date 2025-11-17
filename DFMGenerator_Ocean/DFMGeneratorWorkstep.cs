@@ -409,7 +409,7 @@ namespace DFMGenerator_Ocean
                             StressArchingFactor_list.Add(next_StressArchingFactor_GeologicalTimeUnits);
 
                         // Dynamic load data as standard properties
-                        // Check if the supplied Fluid Pressure or ZZ stress grid property argument is a standard Property object, and the deformation epsidoe duration has been specified
+                        // Check if the supplied Fluid Pressure or ZZ stress grid property argument is a standard Property object, and the deformation episode duration has been specified
                         // If so we can use the stress tensor specified by the supplied properties to define the deformation load
                         bool dynamicLoadFromProperties = arguments.DynamicLoadDefinedFromStandardProperties(deformationEpisodeNo);
                         if (dynamicLoadFromProperties && !(next_DeformationEpisodeDuration_GeologicalTimeUnits > 0))
@@ -1975,7 +1975,7 @@ namespace DFMGenerator_Ocean
                                 if (UseGridFor_Ehmax_PresentDay)
                                     presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}, default {1}\n", Ehmax_PresentDay_grid.Name, Ehmax_PresentDay);
                                 else
-                                    presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}Ehmin_PresentDay\n", Ehmax_PresentDay);
+                                    presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}\n", Ehmax_PresentDay);
                                 if (UseGridFor_AppliedOverpressure_PresentDay)
                                     presentDayStressLabel += string.Format(" - Fluid overpressure: {0}, default {1}{2}\n", AppliedOverpressure_PresentDay_grid.Name, toProjectPressureUnits.Convert(AppliedOverpressure_PresentDay), PressureUnits);
                                 else if (AppliedOverpressure_PresentDay > 0)
@@ -4337,7 +4337,10 @@ namespace DFMGenerator_Ocean
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
-                                PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
+                                if (InitialStressRelaxation < 0)
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.SetCriticalInitialStressStrainState({0}, {1}, {2});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure));
+                                else
+                                    PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.SetInitialStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22}, {23}, {24});",
                                     CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
@@ -4456,9 +4459,9 @@ namespace DFMGenerator_Ocean
 
                                 // If required, define the present day stress
 #if DEBUG_FRAC_INPUT
-                                                PetrelLogger.InfoOutputWindow("");
-                                                PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
+                                PetrelLogger.InfoOutputWindow("");
+                                PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
+                                PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
 #endif
                                 if (UsePresentDayStress)
                                 {
@@ -4803,21 +4806,19 @@ namespace DFMGenerator_Ocean
                                                 if (double.IsNaN(local_BiotCoefficient_PresentDay))
                                                     local_BiotCoefficient_PresentDay = local_BiotCoefficient;*/
 
-
                                                 // Get the present day stress relaxation factor
                                                 // This is a uniform constant across the grid
                                                 double local_InitialStressRelaxation_PresentDay = InitialStressRelaxation_PresentDay;
                                                 // If it is not defined, use the initial stress relaxation at the time of deformation
-                                                // This is not required as the SetPresentDayStressFromStrain will automatically substitute initial stress relaxation at the time of deformation if NaNs are supplied
-                                                /*if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
-                                                    local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;*/
+                                                if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
+                                                    local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;
 
                                                 // Now we can set the present day stress
                                                 gc.SetPresentDayStressFromStrain(local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay);
 #if DEBUG_FRAC_INPUT
                                                 PetrelLogger.InfoOutputWindow("");
                                                 PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
-                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZX)));
 #endif
                                             }
                                             break;

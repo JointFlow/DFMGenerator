@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -2652,7 +2652,7 @@ namespace DFMGenerator_Standalone
                         Tensor2S local_PresentDayEffectiveStress = new Tensor2S(PresentDayEffectiveStress_XX_array[RowNo, ColNo], PresentDayEffectiveStress_YY_array[RowNo, ColNo], PresentDayEffectiveStress_ZZ_array[RowNo, ColNo],
                             PresentDayEffectiveStress_XY_array[RowNo, ColNo], PresentDayEffectiveStress_YZ_array[RowNo, ColNo], PresentDayEffectiveStress_ZX_array[RowNo, ColNo]);
                         gc.SetPresentDayStress(local_PresentDayEffectiveStress);
-                        //gc.SetPresentDayStressFromStrain(0, 0, 0, 0, double.NaN, double.NaN, double.NaN, double.NaN);
+                        //gc.SetPresentDayStressFromStrain(-0.0001, 0.0001, Math.PI/4, 0, double.NaN, double.NaN, double.NaN, double.NaN);
                     }
 
                     // Set the fracture aperture control data
