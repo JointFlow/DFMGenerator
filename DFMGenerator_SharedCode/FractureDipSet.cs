@@ -903,7 +903,7 @@ namespace DFMGenerator_SharedCode
                     output = radius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    double compressive_sigmaNeff = (usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
@@ -937,7 +937,7 @@ namespace DFMGenerator_SharedCode
                     output = radius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    double compressive_sigmaNeff = (usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
@@ -970,7 +970,7 @@ namespace DFMGenerator_SharedCode
                     output = gbc.MechProps.DynamicApertureMultiplier * (2 * gbc.ThicknessAtDeformation * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    double compressive_sigmaNeff = (usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
@@ -1003,7 +1003,7 @@ namespace DFMGenerator_SharedCode
                     output = gbc.MechProps.DynamicApertureMultiplier * (Math.PI * gbc.ThicknessAtDeformation * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (2 * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
-                    double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    double compressive_sigmaNeff = (usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;

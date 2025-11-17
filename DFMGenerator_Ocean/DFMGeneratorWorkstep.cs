@@ -413,7 +413,7 @@ namespace DFMGenerator_Ocean
                         StressArchingFactor_list.Add(next_StressArchingFactor_GeologicalTimeUnits);
 
                         // Dynamic load data as standard properties
-                        // Check if the supplied Fluid Pressure or ZZ stress grid property argument is a standard Property object, and the deformation epsidoe duration has been specified
+                        // Check if the supplied Fluid Pressure or ZZ stress grid property argument is a standard Property object, and the deformation episode duration has been specified
                         // If so we can use the stress tensor specified by the supplied properties to define the deformation load
                         bool dynamicLoadFromProperties = arguments.DynamicLoadDefinedFromStandardProperties(deformationEpisodeNo);
                         if (dynamicLoadFromProperties && !(next_DeformationEpisodeDuration_GeologicalTimeUnits > 0))
@@ -2064,7 +2064,7 @@ namespace DFMGenerator_Ocean
                                 if (UseGridFor_Ehmax_PresentDay)
                                     presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}, default {1}\n", Ehmax_PresentDay_grid.Name, Ehmax_PresentDay);
                                 else
-                                    presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}Ehmin_PresentDay\n", Ehmax_PresentDay);
+                                    presentDayStressLabel += string.Format(" - Maximum horizontal strain: {0}\n", Ehmax_PresentDay);
                                 if (UseGridFor_AppliedOverpressure_PresentDay)
                                     presentDayStressLabel += string.Format(" - Fluid overpressure: {0}, default {1}{2}\n", AppliedOverpressure_PresentDay_grid.Name, toProjectPressureUnits.Convert(AppliedOverpressure_PresentDay), PressureUnits);
                                 else if (AppliedOverpressure_PresentDay > 0)
@@ -4585,19 +4585,19 @@ namespace DFMGenerator_Ocean
                                         PetrelLogger.InfoOutputWindow(string.Format("Use present day stress? {0}", UsePresentDayStress));
                                         PetrelLogger.InfoOutputWindow(string.Format("Define present day stress from {0}", PresentDayStressInput));
 #endif
-                                        if (UsePresentDayStress)
-                                        {
-                                            switch (PresentDayStressInput)
+                                if (UsePresentDayStress)
+                                {
+                                    switch (PresentDayStressInput)
+                                    {
+                                        case StressStateDefinition.Strain:
                                             {
-                                                case StressStateDefinition.Strain:
-                                                    {
-                                                        // Get the present day strain and fluid overpressure from the grid as required
-                                                        // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
-                                                        // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
-                                                        double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
-                                                        double local_Ehmin_PresentDay = Ehmax_PresentDay;
-                                                        double local_Ehmax_PresentDay = Ehmax_PresentDay;
-                                                        double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
+                                                // Get the present day strain and fluid overpressure from the grid as required
+                                                // This will depend on whether we are averaging the strain and fluid overpressure properties over all Petrel cells that make up the gridblock, or taking the values from a single cell
+                                                // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
+                                                double local_EhminAzi_PresentDay = EhminAzi_PresentDay;
+                                                double local_Ehmin_PresentDay = Ehmin_PresentDay;
+                                                double local_Ehmax_PresentDay = Ehmax_PresentDay;
+                                                double local_AppliedOverpressure_PresentDay = AppliedOverpressure_PresentDay;
 
                                                         if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                                                         {
@@ -4906,21 +4906,19 @@ namespace DFMGenerator_Ocean
                                                         if (double.IsNaN(local_BiotCoefficient_PresentDay))
                                                             local_BiotCoefficient_PresentDay = local_BiotCoefficient;*/
 
-
-                                                        // Get the present day stress relaxation factor
-                                                        // This is a uniform constant across the grid
-                                                        double local_InitialStressRelaxation_PresentDay = InitialStressRelaxation_PresentDay;
-                                                        // If it is not defined, use the initial stress relaxation at the time of deformation
-                                                        // This is not required as the SetPresentDayStressFromStrain will automatically substitute initial stress relaxation at the time of deformation if NaNs are supplied
-                                                        /*if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
-                                                            local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;*/
+                                                // Get the present day stress relaxation factor
+                                                // This is a uniform constant across the grid
+                                                double local_InitialStressRelaxation_PresentDay = InitialStressRelaxation_PresentDay;
+                                                // If it is not defined, use the initial stress relaxation at the time of deformation
+                                                if (double.IsNaN(local_InitialStressRelaxation_PresentDay))
+                                                    local_InitialStressRelaxation_PresentDay = local_InitialStressRelaxation;
 
                                                         // Now we can set the present day stress
                                                         gc.SetPresentDayStressFromStrain(local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay);
 #if DEBUG_FRAC_INPUT
-                                                        PetrelLogger.InfoOutputWindow("");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
-                                                        PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZZ)));
+                                                PetrelLogger.InfoOutputWindow("");
+                                                PetrelLogger.InfoOutputWindow(string.Format("gc.SetPresentDayStressFromStrain({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_Ehmin_PresentDay, local_Ehmax_PresentDay, local_EhminAzi_PresentDay, local_AppliedOverpressure_PresentDay, local_YoungsMod_PresentDay, local_PoissonsRatio_PresentDay, local_BiotCoefficient_PresentDay, local_InitialStressRelaxation_PresentDay));
+                                                PetrelLogger.InfoOutputWindow(string.Format("Present day stress tensor is (XX: {0}, YY: {1}, ZZ: {2}, XY: {3}, YZ: {4}, ZX: {5})", gc.PresentDayStress.Component(Tensor2SComponents.XX), gc.PresentDayStress.Component(Tensor2SComponents.YY), gc.PresentDayStress.Component(Tensor2SComponents.ZZ), gc.PresentDayStress.Component(Tensor2SComponents.XY), gc.PresentDayStress.Component(Tensor2SComponents.YZ), gc.PresentDayStress.Component(Tensor2SComponents.ZX)));
 #endif
                                                     }
                                                     break;
@@ -6319,63 +6317,63 @@ namespace DFMGenerator_Ocean
 
                                         } // End write fracture porosity data
 
-                                        // Write fracture permeability tensor and sigma factor data to Petrel grid
-                                        if (CalculateFracturePermeabilityTensor)
+                                    // Write fracture permeability tensor and sigma factor data to Petrel grid
+                                    if (CalculateFracturePermeabilityTensor)
+                                    {
+                                        // Create a subfolder for the fracture permeability tensor components and sigma factors
+                                        string FracturePermeabilityTensorCollectionName;
+                                        string PermeabilityTensorComponentName_base;
+                                        switch (FractureTypesInPermeabilityTensor)
                                         {
-                                            // Create a subfolder for the fracture permeability tensor components and sigma factors
-                                            string FracturePermeabilityTensorCollectionName;
-                                            string PermeabilityTensorComponentName_base;
-                                            switch (FractureTypesInPermeabilityTensor)
-                                            {
-                                                case FractureType.Microfractures:
-                                                    FracturePermeabilityTensorCollectionName = "Microfracture permeability tensor";
-                                                    PermeabilityTensorComponentName_base = "k_uF_";
-                                                    break;
-                                                case FractureType.LayerBoundFractures:
-                                                    FracturePermeabilityTensorCollectionName = "Macrofracture permeability tensor";
-                                                    PermeabilityTensorComponentName_base = "k_MF_";
-                                                    break;
-                                                case FractureType.AllFractures:
-                                                    FracturePermeabilityTensorCollectionName = "Fracture permeability tensor";
-                                                    PermeabilityTensorComponentName_base = "k_F_";
-                                                    break;
-                                                default:
-                                                    FracturePermeabilityTensorCollectionName = "";
-                                                    PermeabilityTensorComponentName_base = "";
-                                                    break;
-                                            }
-                                            switch (PermeabilityAlgorithm)
-                                            {
-                                                case PermeabilityCalculationAlgorithm.Oda1986:
-                                                    FracturePermeabilityTensorCollectionName += ": Oda (1985)";
-                                                    break;
-                                                case PermeabilityCalculationAlgorithm.OdaCorrected1987:
-                                                    FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
-                                                    break;
-                                                case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
-                                                    FracturePermeabilityTensorCollectionName += ": Connectivity and size corrected";
-                                                    break;
-                                                default:
-                                                    break;
-                                            }
-                                            PropertyCollection FracturePermeabilityTensorData = FracData.CreatePropertyCollection(FracturePermeabilityTensorCollectionName);
+                                            case FractureType.Microfractures:
+                                                FracturePermeabilityTensorCollectionName = "Microfracture permeability tensor";
+                                                PermeabilityTensorComponentName_base = "k_uF_";
+                                                break;
+                                            case FractureType.LayerBoundFractures:
+                                                FracturePermeabilityTensorCollectionName = "Macrofracture permeability tensor";
+                                                PermeabilityTensorComponentName_base = "k_MF_";
+                                                break;
+                                            case FractureType.AllFractures:
+                                                FracturePermeabilityTensorCollectionName = "Fracture permeability tensor";
+                                                PermeabilityTensorComponentName_base = "k_F_";
+                                                break;
+                                            default:
+                                                FracturePermeabilityTensorCollectionName = "";
+                                                PermeabilityTensorComponentName_base = "";
+                                                break;
+                                        }
+                                        switch (PermeabilityAlgorithm)
+                                        {
+                                            case PermeabilityCalculationAlgorithm.Oda1986:
+                                                FracturePermeabilityTensorCollectionName += ": Oda (1986)";
+                                                break;
+                                            case PermeabilityCalculationAlgorithm.OdaCorrected1987:
+                                                FracturePermeabilityTensorCollectionName += ": Oda corrected (1987)";
+                                                break;
+                                            case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
+                                                FracturePermeabilityTensorCollectionName += ": Connectivity and size corrected";
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                        PropertyCollection FracturePermeabilityTensorData = FracData.CreatePropertyCollection(FracturePermeabilityTensorCollectionName);
 
-                                            // Create properties and set templates for each component of both tensors
-                                            Dictionary<Tensor2SComponents, Property> PermeabilityTensorProperties = new Dictionary<Tensor2SComponents, Property>();
-                                            Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
-                                            foreach (Tensor2SComponents ij in tensorComponents)
-                                            {
-                                                Property PermeabilityTensor_ij = FracturePermeabilityTensorData.CreateProperty(FracturePermeabilityTemplate[ij]);
-                                                PermeabilityTensor_ij.Name = string.Format("{0}{1}", PermeabilityTensorComponentName_base, ij);
-                                                IHistoryInfoEditor PermeabilityTensor_ijHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(PermeabilityTensor_ij);
-                                                PermeabilityTensor_ijHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                                PermeabilityTensorProperties[ij] = PermeabilityTensor_ij;
-                                            }
-                                            // Create property for the sigma factor
-                                            Property SigmaFactorProperty = FracturePermeabilityTensorData.CreateProperty(SigmaFactorTemplate);
-                                            SigmaFactorProperty.Name = string.Format("{0}_sigma", PermeabilityTensorComponentName_base);
-                                            IHistoryInfoEditor SigmaFactorHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(SigmaFactorProperty);
-                                            SigmaFactorHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                        // Create properties and set templates for each component of both tensors
+                                        Dictionary<Tensor2SComponents, Property> PermeabilityTensorProperties = new Dictionary<Tensor2SComponents, Property>();
+                                        Tensor2SComponents[] tensorComponents = new Tensor2SComponents[6] { Tensor2SComponents.XX, Tensor2SComponents.YY, Tensor2SComponents.ZZ, Tensor2SComponents.XY, Tensor2SComponents.YZ, Tensor2SComponents.ZX };
+                                        foreach (Tensor2SComponents ij in tensorComponents)
+                                        {
+                                            Property PermeabilityTensor_ij = FracturePermeabilityTensorData.CreateProperty(FracturePermeabilityTemplate[ij]);
+                                            PermeabilityTensor_ij.Name = string.Format("{0}{1}", PermeabilityTensorComponentName_base, ij);
+                                            IHistoryInfoEditor PermeabilityTensor_ijHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(PermeabilityTensor_ij);
+                                            PermeabilityTensor_ijHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                            PermeabilityTensorProperties[ij] = PermeabilityTensor_ij;
+                                        }
+                                        // Create property for the sigma factor
+                                        Property SigmaFactorProperty = FracturePermeabilityTensorData.CreateProperty(SigmaFactorTemplate);
+                                        SigmaFactorProperty.Name = string.Format("{0}Sigma", PermeabilityTensorComponentName_base);
+                                        IHistoryInfoEditor SigmaFactorHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(SigmaFactorProperty);
+                                        SigmaFactorHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
                                             // Loop through all gridblocks in the Fracture Grid
                                             // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index

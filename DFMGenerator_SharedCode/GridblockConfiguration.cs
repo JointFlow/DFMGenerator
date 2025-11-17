@@ -1440,8 +1440,6 @@ namespace DFMGenerator_SharedCode
             if (double.IsNaN(BiotCoefficient))
                 BiotCoefficient = MechProps.Biot;
             double OneMinusBiot = 1 - BiotCoefficient;
-            if (double.IsNaN(InitialStressRelaxation))
-                InitialStressRelaxation = StressStrain.InitialStressRelaxation;
             if (double.IsNaN(fluidOverpressure))
                 fluidOverpressure = StressStrain.FluidOverpressure;
             if (double.IsNaN(Ehmin))
@@ -1454,6 +1452,26 @@ namespace DFMGenerator_SharedCode
             // Get the current lithostatic effective stress
             double fluidPressure = (CurrentDepth * StressStrain.FluidDensity * StressStrainState.Gravity) + fluidOverpressure;
             double lithostaticStress_eff_Terzaghi = (CurrentDepth * StressStrain.MeanOverlyingBulkRockDensity * StressStrainState.Gravity) - fluidPressure;
+
+            // Get the initial stress relaxation, and if necessary calculate the critical initial stress relaxation
+            if (double.IsNaN(InitialStressRelaxation))
+                InitialStressRelaxation = StressStrain.InitialStressRelaxation;
+            if (double.IsNaN(InitialStressRelaxation) || (InitialStressRelaxation < 0))
+            {
+                // Cache mechanical properties for intact rock
+                double MuFr = MechProps.MuFr;
+
+                // Calculate the initial stress relaxation required for critical stress state
+                double friction_angle = Math.Atan(MuFr);
+                double sin_friction_angle = Math.Sin(friction_angle);
+                double sh0d_svd = (1 - sin_friction_angle) / (1 + sin_friction_angle);
+                InitialStressRelaxation = (((1 - Nu_r) * sh0d_svd) - Nu_r) / (1 - (2 * Nu_r));
+                // Add component to take account of differential grain compaction (Biot coefficient)
+                if (OneMinusBiot != 0)
+                {
+                    InitialStressRelaxation += (OneMinusBiot * (fluidPressure / lithostaticStress_eff_Terzaghi));
+                }
+            }
 
             // Calculate the present day Terzaghi effective stress tensor
             Tensor2S effStress;
