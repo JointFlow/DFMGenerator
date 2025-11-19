@@ -5279,7 +5279,7 @@ namespace DFMGenerator_Ocean
                         {
                             List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
                             double currentEpisodeEndTime = 0;
-                            NoIntermediateOutputs = 0;
+                            NoIntermediateOutputs = -1;
                             for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                             {
                                 double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
@@ -5730,7 +5730,7 @@ namespace DFMGenerator_Ocean
                                             {
                                                 // Create properties and set templates for each property
                                                 Property FDS_ReactivationPotential = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
-                                                Property FDS_SlipTendency = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
+                                                Property FDS_SlipTendency = FracSetData.CreateProperty(SlipTendencyTemplate);
                                                 FDS_ReactivationPotential.Name = "Reactivation_Potential";
                                                 FDS_SlipTendency.Name = "Slip_Tendency";
 
