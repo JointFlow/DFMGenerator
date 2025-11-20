@@ -6305,7 +6305,7 @@ namespace DFMGenerator_SharedCode
                     } // End if unconfined fracture ray segment is active
 #if LOGDFNPOP
                     // Update string of ray lengths with the final length of this ray
-                    Dict_UCF_RayLengths[ufs_index] += string.Format("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", UCRSegment.RayLength, UCRSegment.Length, segmentPropagationDistance, UCRSegment.RayTipType, UCRSegment.PropagationRateControl, UCRSegment.NonPropNodeType, UCRSegment.PropNodeType);
+                    Dict_UCF_RayLengths[ufs_index] += string.Format("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", UCRSegment.RayLength, UCRSegment.Length, segmentPropagationDistance, UCRSegment.RayTipType, UCRSegment.GrowToInitialSize, UCRSegment.NonPropNodeType, UCRSegment.PropNodeType);
                     // Update the fracture area and volume
                     if (UCRSegment.CheckNucleationGridblock(this))
                     {
@@ -6369,6 +6369,9 @@ namespace DFMGenerator_SharedCode
             if (!(propagatingTime > 0) || !(growthFactor > 0))
                 return 0;
 
+            // The ray is clearly no longer growing to its initial size so we can reset the flag for this
+            UCRSegment.GrowToInitialSize = false;
+
             // Get helper variables
             double CapA = MechProps.CapA;
             bool bis2 = (MechProps.GetbType() == bType.Equals2);
@@ -6394,14 +6397,7 @@ namespace DFMGenerator_SharedCode
                 if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
                 {
                     incrementR = criticalPropagationIncrement;
-                    finalR = initialR + incrementR;
-                    // Set the ray propagation rate control for the ray segment to Critical
-                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
-                }
-                else
-                {
-                    // Set the ray propagation rate control for the ray segment to SubcriticalFullyActive
-                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+                    //finalR = initialR + incrementR;
                 }
             }
             // Set the growth rate if the fracture is restricted
@@ -6424,14 +6420,7 @@ namespace DFMGenerator_SharedCode
                 if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
                 {
                     incrementR = criticalPropagationIncrement;
-                    finalR = initialR + incrementR;
-                    // Set the ray propagation rate control for the ray segment to Critical
-                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.Critical;
-                }
-                else
-                {
-                    // Set the ray propagation rate control for the ray segment to SubcriticalRestricted
-                    UCRSegment.PropagationRateControl = RaySegmentPropagationRateControl.SubcriticalRestricted;
+                    //finalR = initialR + incrementR;
                 }
             }
 
@@ -7208,7 +7197,7 @@ namespace DFMGenerator_SharedCode
                         // Update the flag for fracture deactivation mechanism
                         tipDeactivationMechanism = SegmentNodeType.Pinchout;
                     }
-                    else*/ 
+                    else*/
                     if (intersectedBoundary == UCRSegment.NonPropNodeBoundary) // The ray segment is crossing back into the same gridblock it has just come from
                     {
                         // If so, deactivate the segment
@@ -7220,55 +7209,53 @@ namespace DFMGenerator_SharedCode
                         PointXYZ intersectionPoint = UCRSegment.PropNode;
 
                         // Calculate the time that the ray segment crosses the boundary and the initial propagation distance
-                        // The initial propagation distance is only used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays
-                        double intersectionRealTime;
-                        double initialPropagationDistance = 0;
-                        switch (UCRSegment.PropagationRateControl)
+                        double intersectionRealTime, initialPropagationDistance;
+                        if (UCRSegment.GrowToInitialSize)
                         {
-                            case RaySegmentPropagationRateControl.Critical:
-                                {
-                                    double t0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationTime : CurrentExplicitTime;
-                                    intersectionRealTime = t0 + (maxPropLength / MechProps.CapA);
-                                }
-                                break;
-                            case RaySegmentPropagationRateControl.SubcriticalFullyActive:
-                                {
-                                    double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
-                                    double r_final = UCRSegment.RayLength;
-                                    bool bis2 = (MechProps.GetbType() == bType.Equals2);
-                                    double beta = MechProps.beta;
-                                    double dWt;
-                                    if (bis2)
-                                        dWt = Math.Log(r_final) - Math.Log(r_init);
-                                    else
-                                        dWt = (Math.Pow(r_final, 1 / beta) - Math.Pow(r_init, 1 / beta)) * beta;
-                                    intersectionRealTime = ufs.ConvertWeightedTimeToTime(Wt0 + dWt, currentExplicitTimestep);
-                                }
-                                break;
-                            case RaySegmentPropagationRateControl.SubcriticalRestricted:
-                                {
-                                    double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
-                                    double reff_final = UCRSegment.EffectiveRayLength;
-                                    bool bis2 = (MechProps.GetbType() == bType.Equals2);
-                                    double beta = MechProps.beta;
-                                    double dWt;
-                                    if (bis2)
-                                        dWt = 2 * (Math.Log(reff_final) - Math.Log(reff_init));
-                                    else
-                                        dWt = 2 * (Math.Pow(reff_final, 1 / beta) - Math.Pow(reff_init, 1 / beta)) * beta;
-                                    intersectionRealTime = ufs.ConvertWeightedTimeToTime(Wt0 + dWt, currentExplicitTimestep);
-                                }
-                                break;
-                            case RaySegmentPropagationRateControl.GrowToInitialSize:
-                                {
-                                    intersectionRealTime = UCRSegment.NucleationTime;
-                                    // Determine the distance that the new ray should be extended into the new gridblock
-                                    initialPropagationDistance = initial_maxPropLength - maxPropLength;
-                                }
-                                break;
-                            default:
-                                intersectionRealTime = CurrentExplicitTime;
-                                break;
+                            // Growing the ray to its initial size is assumed to occur instantaneously, at the nucleation time
+                            intersectionRealTime = UCRSegment.NucleationTime;
+                            // In this case, the distance that the new ray should be extended into the new gridblock is determined by the initial propagation distance parameter
+                            initialPropagationDistance = initial_maxPropLength - maxPropLength;
+                        }
+                        else
+                        {
+                            // First calculate the intersection time assuming subcritical fracture propagation
+                            if (UCRSegment.FractureFullyActive)
+                            {
+                                double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
+                                double r_final = UCRSegment.RayLength;
+                                bool bis2 = (MechProps.GetbType() == bType.Equals2);
+                                double beta = MechProps.beta;
+                                double dWt;
+                                if (bis2)
+                                    dWt = Math.Log(r_final) - Math.Log(r_init);
+                                else
+                                    dWt = (Math.Pow(r_final, 1 / beta) - Math.Pow(r_init, 1 / beta)) * beta;
+                                intersectionRealTime = ufs.ConvertWeightedTimeToTime(Wt0 + dWt, currentExplicitTimestep);
+                            }
+                            else
+                            {
+                                double Wt0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationWTime : 0;
+                                double reff_final = UCRSegment.EffectiveRayLength;
+                                bool bis2 = (MechProps.GetbType() == bType.Equals2);
+                                double beta = MechProps.beta;
+                                double dWt;
+                                if (bis2)
+                                    dWt = 2 * (Math.Log(reff_final) - Math.Log(reff_init));
+                                else
+                                    dWt = 2 * (Math.Pow(reff_final, 1 / beta) - Math.Pow(reff_init, 1 / beta)) * beta;
+                                intersectionRealTime = ufs.ConvertWeightedTimeToTime(Wt0 + dWt, currentExplicitTimestep);
+                            }
+                            // Calculate the intersection time for critical fracture propagation
+                            // If the intersection time for critical fracture propagation is greater than the intersection time for subcritical propagation then the fracture must be propagating critically
+                            {
+                                double t0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationTime : CurrentExplicitTime;
+                                double criticalIntersectionRealTime = t0 + (maxPropLength / MechProps.CapA);
+                                if (intersectionRealTime < criticalIntersectionRealTime)
+                                    intersectionRealTime = criticalIntersectionRealTime;
+                            }
+                            // The initial propagation distance is only used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays
+                            initialPropagationDistance = 0;
                         }
 
                         // Get the boundary it will propagate out from in the neighbouring gridblock - this will be the opposite of the one it propagates into in this gridblock

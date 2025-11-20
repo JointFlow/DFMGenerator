@@ -138,9 +138,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public FractureTipType RayTipType { get { return ufr.TipType; } }
         /// <summary>
-        /// Flag to specify for the mechanism controlling the rate of propagation of this ray segment
+        /// Flag to specify if this ray segment is being grown to the mininum unconfined fracture radius
+        /// This is done to ensure boundary intersections and other interactions are correctly modelled
         /// </summary>
-        public RaySegmentPropagationRateControl PropagationRateControl { get { return ufr.RayPropagationRateControl; } set { if (Active) ufr.RayPropagationRateControl = value; } }
+        public bool GrowToInitialSize { get { return ufr.GrowToInitialSize; } set { if (Active) ufr.GrowToInitialSize = value; } }
         /// <summary>
         /// Flag for active segment propagation - true if the fracture segment is still propagating within the current gridblock
         /// </summary>
@@ -362,9 +363,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public FractureTipType TipType { get { return GetRayTipType(); } }
         /// <summary>
-        /// Flag to specify for the mechanism controlling the rate of propagation of this ray
+        /// Flag to specify if the ray is being grown to the mininum unconfined fracture radius
+        /// This is done to ensure boundary intersections and other interactions are correctly modelled
         /// </summary>
-        public RaySegmentPropagationRateControl RayPropagationRateControl { get; set; }
+        public bool GrowToInitialSize { get; set; }
         /// <summary>
         /// Ray tip state - true if the ray tip is still propagating
         /// </summary>
@@ -554,9 +556,9 @@ namespace DFMGenerator_SharedCode
             // In this case we will assume that the fracture is being allowed to grow to the mininum unconfined fracture radius
             // This will ensure boundary intersections and other interactions are correctly modelled
             if (InitialLength > 0)
-                RayPropagationRateControl = RaySegmentPropagationRateControl.SubcriticalFullyActive;
+                GrowToInitialSize = false;
             else
-                RayPropagationRateControl = RaySegmentPropagationRateControl.GrowToInitialSize;
+                GrowToInitialSize = true;
         }
         /// <summary>
         /// Copy constructor: copy all data from an existing UnconfinedFractureRay object
@@ -575,7 +577,7 @@ namespace DFMGenerator_SharedCode
             // Set the ray tip and propagation rate control data
             //TerminatingRaySegment = ray_in.TerminatingRaySegment;
             TerminatingFracture = ray_in.TerminatingFracture;
-            RayPropagationRateControl = ray_in.RayPropagationRateControl;
+            GrowToInitialSize = ray_in.GrowToInitialSize;
         }
     }
 
