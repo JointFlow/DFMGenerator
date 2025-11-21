@@ -5279,9 +5279,11 @@ namespace DFMGenerator_Ocean
                         {
                             List<double> DeformationEpisodeEndTimes_SITimeUnits_list = new List<double>();
                             double currentEpisodeEndTime = 0;
+                            // Since the final deformation episode does not count as an intermediate output, we will start the Intermediate Output counter at -1
                             NoIntermediateOutputs = -1;
                             for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDefinedDeformationEpisodes; deformationEpisodeNo++)
                             {
+                                bool finalEpisode = (deformationEpisodeNo == (noDefinedDeformationEpisodes - 1));
                                 double TimeUnitConverter = TimeUnitConverter_list[deformationEpisodeNo];
                                 if (SubEpisodesDefined_list[deformationEpisodeNo])
                                 {
@@ -5303,16 +5305,23 @@ namespace DFMGenerator_Ocean
                                 else
                                 {
                                     double deformationEpisodeDuration_GeologicalTimeUnit = DeformationEpisodeDuration_GeologicalTimeUnits_list[deformationEpisodeNo];
-                                    if (deformationEpisodeDuration_GeologicalTimeUnit > 0)
+                                    // Intermediate deformation episodes will only be added to the list if they have a defined duration
+                                    // The final deformation episode will be added to the list even if the duration is undefined
+                                    if ((deformationEpisodeDuration_GeologicalTimeUnit > 0) || finalEpisode)
                                     {
                                         currentEpisodeEndTime += (deformationEpisodeDuration_GeologicalTimeUnit * TimeUnitConverter);
                                         DeformationEpisodeEndTimes_SITimeUnits_list.Add(currentEpisodeEndTime);
+                                        if (deformationEpisodeNo < DeformationEpisodeName_list.Count)
+                                            OutputStageNameOverride.Add(DeformationEpisodeName_list[deformationEpisodeNo]);
+                                        else
+                                            OutputStageNameOverride.Add(null);
                                         NoIntermediateOutputs++;
                                     }
-                                    if (deformationEpisodeNo < DeformationEpisodeName_list.Count)
-                                        OutputStageNameOverride.Add(DeformationEpisodeName_list[deformationEpisodeNo]);
                                     else
-                                        OutputStageNameOverride.Add(null);
+                                    {
+                                        PetrelLogger.InfoOutputWindow(string.Format("Duration is undefined for deformation episode {0}. This may cause errors in calculating the timing of intermediate outputs.", deformationEpisodeNo + 1));
+                                        PetrelLogger.InfoOutputWindow(string.Format("Duration should be defined for all deformation episodes except the final episode, which can have undefined duration (run to fracture saturation)."));
+                                    }
                                 }
                             }
                             dfn_control.IntermediateOutputTimes = DeformationEpisodeEndTimes_SITimeUnits_list;
@@ -7049,8 +7058,16 @@ namespace DFMGenerator_Ocean
                                     stageNumber = 1;
                                     foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                     {
-                                        // Create a stage-specific label for the output file
-                                        string outputLabel = (stageNumber == NoStages ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime).ToString("G3"), ProjectTimeUnits));
+                                        string stageNameOverride = null;
+                                        if ((IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime) && (stageNumber <= OutputStageNameOverride.Count))
+                                            stageNameOverride = OutputStageNameOverride[stageNumber - 1];
+
+                                        // Create a stage-specific label for the output
+                                        string outputLabel;
+                                        if ((stageNameOverride is null) || (stageNameOverride.Length == 0))
+                                            outputLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(DFN.CurrentTime).ToString("G3"), ProjectTimeUnits);
+                                        else
+                                            outputLabel = "_" + stageNameOverride;
 
                                         using (ITransaction transactionCreateCentrelines = DataManager.NewTransaction())
                                         {
