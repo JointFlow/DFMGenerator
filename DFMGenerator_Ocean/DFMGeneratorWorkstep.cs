@@ -3705,6 +3705,8 @@ namespace DFMGenerator_Ocean
                                         {
                                             initialSzx = 0;
                                             initialSyz = 0;
+                                            finalSzx = 0;
+                                            finalSyz = 0;
                                         }
                                         local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
                                         local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
