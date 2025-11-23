@@ -5670,7 +5670,7 @@ namespace DFMGenerator_Ocean
                                                             UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
                                                             RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
                                                             IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                            NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
+                                                            NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(FractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
                                                             EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
                                                         }
                                                         else
