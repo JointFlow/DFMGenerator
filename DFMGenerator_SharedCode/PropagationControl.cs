@@ -644,7 +644,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// List of intermediate output times, if intermediate stage DFNs are to be output at specified times; stored in SI units (s)
         /// </summary>
-        public List<double> intermediateOutputTimes;
+        private List<double> intermediateOutputTimes;
         /// <summary>
         /// Get the specified intermediate stage output time from the list in SI units (s)
         /// </summary>
