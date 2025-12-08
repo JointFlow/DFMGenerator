@@ -1149,10 +1149,11 @@ namespace DFMGenerator_SharedCode
                 rays[rayNo] = nextRay;
             }
 
-            // Set the fracture geometry data (minimum, maximum and mean ray lengths and total area)
+            // Set the fracture geometry data (minimum, maximum and mean ray lengths, effective radius and total area)
             MinimumRayLength = InitialRadius;
             MaximumRayLength = InitialRadius;
             MeanRayLength = InitialRadius;
+            EffectiveRadius = InitialRadius;
             Area = Math.PI * InitialRadius * InitialRadius;
             Centroid = new PointXYZ(NucleationPoint_in);
 
@@ -1191,10 +1192,11 @@ namespace DFMGenerator_SharedCode
             // Set the nucleation time
             NucleationTime = fracture_in.NucleationTime;
 
-            // Set the fracture geometry data (minimum, maximum and mean ray lengths and total area)
+            // Set the fracture geometry data (minimum, maximum and mean ray lengths, effective radius and total area)
             MinimumRayLength = fracture_in.MinimumRayLength;
             MaximumRayLength = fracture_in.MaximumRayLength;
             MeanRayLength = fracture_in.MeanRayLength;
+            EffectiveRadius = fracture_in.EffectiveRadius;
             Area = fracture_in.Area;
             Centroid = new PointXYZ(fracture_in.Centroid);
 

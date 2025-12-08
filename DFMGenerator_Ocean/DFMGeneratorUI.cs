@@ -1289,11 +1289,6 @@ namespace DFMGenerator_Ocean
             OpenPresentDayStressUI();
         }
         #endregion
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
     }
     /// <summary>
     /// Event arguments class for passing on event information when a deformation episode is removed from the DFM Generator UI
