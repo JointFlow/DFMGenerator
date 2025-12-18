@@ -189,17 +189,11 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotal_RP32_M(int Timestep_M) { return dataList[Timestep_M].Total_RP32_M; }
         /// <summary>
-        /// Volumetric ratio of all non-overlapping rays, at the end of timestep M
+        /// Maximum volumetric ratio of all rays, not accounting for overlap, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getTotal_RP33Exclusive_M(int Timestep_M) { return dataList[Timestep_M].Total_RP33Exclusive_M; }
-        /// <summary>
-        /// Volumetric ratio of all overlapping rays, at the end of timestep M
-        /// </summary>
-        /// <param name="Timestep_M">Timestep M</param>
-        /// <returns></returns>
-        public double getTotal_RP33Overlapping_M(int Timestep_M) { return dataList[Timestep_M].Total_RP33Overlapping_M; }
+        public double getTotal_RP33_M(int Timestep_M) { return dataList[Timestep_M].Total_RP33_M; }
         /*/// <summary>
         /// P35 value for all rays, static and dynamic, at the end of timestep M
         /// </summary>

@@ -995,9 +995,9 @@ namespace DFMGenerator_Standalone
             // If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
             AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.Automatic;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-            double MinStressShadowDeactivationRatio = 1000000;// 0.5;
+            double MinStressShadowDeactivationRatio = 0;// 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-            double MinIntersectionDeactivationRatio = 0;// 0.5;
+            double MinIntersectionDeactivationRatio = 1000000;// 0.5;
 
             // Create a random number generator for randomising properties, if required
             Random RandomNumberGenerator = new Random();

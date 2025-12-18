@@ -140,13 +140,12 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Total_RP32_M { get; private set; }
         /// <summary>
-        /// Volumetric ratio of all non-overlapping rays, at the end of timestep M
+        /// Maximum volumetric ratio of all fractures
+        /// NB This does not take into account stress shadow overlap
+        /// It will therefore be an overestimate of the true volumetric density and should not be used for calculating total stress shadow volume
+        /// However it can be used for porosity calculations since fracture aperture is much smaller than fracture radius, so overlap is negligible
         /// </summary>
-        public double Total_RP33Exclusive_M { get; private set; }
-        /// <summary>
-        /// Volumetric ratio of all overlapping rays, at the end of timestep M
-        /// </summary>
-        public double Total_RP33Overlapping_M { get; private set; }
+        public double Total_RP33_M { get; private set; }
         /*/// <summary>
         /// P35 value for all rays, static and dynamic, at the end of timestep M
         /// This represents the combined integral of R^3 across the area of every fracture segment, where R is the ray length
@@ -204,9 +203,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="sIJ_RP30_in">Volumetric density of static rays terminated due to intersection (sIJ_RP30), at end of timestep M</param>
         /// <param name="sRMax_RP30_in">Volumetric density of static rays terminated due to exceeding the maximum radius (sRMax_RP30), at end of timestep M</param>
         /// <param name="Total_RP32_in">Total mean linear density of rays (Total_RP32), at end of timestep M</param>
-        /// <param name="Total_RP33Exclusive_in">Volumetric ratio of all non-overlapping rays, at the end of timestep M</param>
-        /// <param name="Total_RP33Overlapping_in">Volumetric ratio of all overlapping rays, at the end of timestep M</param>
-        public void SetFractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double sRMax_RP30_in, double Total_RP32_in, double Total_RP33Exclusive_in, double Total_RP33Overlapping_in)
+        /// <param name="Total_RP33_in">Maximum volumetric ratio of all rays, not accounting for overlap, at the end of timestep M</param>
+        public void SetFractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double sRMax_RP30_in, double Total_RP32_in, double Total_RP33_in)
         {
             // Set the new values for all ray densities at the end of the timestep
             a_RP30_M = a_RP30_in;
@@ -215,8 +213,7 @@ namespace DFMGenerator_SharedCode
             sIJ_RP30_M = sIJ_RP30_in;
             sRMax_RP30_M = sRMax_RP30_in;
             Total_RP32_M = Total_RP32_in;
-            Total_RP33Exclusive_M = Total_RP33Exclusive_in;
-            Total_RP33Overlapping_M = Total_RP33Overlapping_in;
+            Total_RP33_M = Total_RP33_in;
         }
         /*/// <summary>
         /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, RP31, RP32, RP33 and RP35 at the end of the timestep
@@ -318,34 +315,12 @@ namespace DFMGenerator_SharedCode
                 case FractureEvolutionStage.Deactivated:
                     {
                         EvolutionStage = FractureEvolutionStage.Deactivated;
-
-                        // Set the mean fracture propagation rate coefficient to zero for this timestep
-                        // This will prevent any growth in the populations of implicit fractures, and also prevent nucleation and growth of explicit fractures in the DFN
-                        // NB we will keep the values for the driving stress, U and V; this is equivalent to reducing the timestep duration to zero
-                        // Before updating the dynamic data for timestep M we must cache the cumulative data at the start of the timestep Cum_Gamma_Mminus1 and Cum_HalfLength_Mminus1
-                        //double temp_Cum_Gamma = Cum_Gamma_Mminus1;
-                        //gamma_InvBeta_M = 0;
-                        // Update the cumulative data for the start of this timestep; the FractureCalculationData object will then automatically calculate the cumulative data for the end of this timestep
-                        //Cum_Gamma_Mminus1 = temp_Cum_Gamma;
                     }
                     break;
                 default:
                     break;
             }
         }
-        /*/// <summary>
-        /// Reduce the fracture propagation rate coefficient by a specified amount
-        /// This will reduce growth in the populations of implicit fractures, and of explicit fractures in the DFN, in the case that the fracture dipset is deactivated within the timestep
-        /// NB this will not change the values for the driving stress, U and V
-        /// </summary>
-        /// <param name="reductionFactor"></param>
-        public void ReduceFractureGrowth(double reductionFactor)
-        {
-            if (reductionFactor > 0)
-            {
-                gamma_InvBeta_M *= reductionFactor;
-            }
-        }*/
         /// <summary>
         /// Create a new FractureCalculationData_Minimised object for the next timestep, and populate it based on the data for this timestep (dynamic values will be set to defaults)
         /// </summary>
@@ -446,10 +421,8 @@ namespace DFMGenerator_SharedCode
             //Total_RP31_M = 0;
             // Mean linear density of all rays, static and dynamic, at the end of timestep M
             Total_RP32_M = 0;
-            // Volumetric ratio of all non-overlapping rays, at the end of timestep M
-            Total_RP33Exclusive_M = 0;
-            // Volumetric ratio of all overlapping rays, at the end of timestep M
-            Total_RP33Overlapping_M = 0;
+            // Maximum volumetric ratio of all rays, not accounting for overlap, at the end of timestep M
+            Total_RP33_M = 0;
             // P35 of all rays, static and dynamic, at the end of timestep M
             //Total_RP35_M = 0;
             // Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M
@@ -524,10 +497,8 @@ namespace DFMGenerator_SharedCode
             //Total_RP31_M = fcd_in.Total_RP31_M;
             // Mean linear density of all rays, static and dynamic, at the end of timestep M
             Total_RP32_M = fcd_in.Total_RP32_M;
-            // Volumetric ratio of all non-overlapping rays, at the end of timestep M
-            Total_RP33Exclusive_M = fcd_in.Total_RP33Exclusive_M;
-            // Volumetric ratio of all overlapping rays, at the end of timestep M
-            Total_RP33Overlapping_M = fcd_in.Total_RP33Overlapping_M;
+            // Maximum volumetric ratio of all rays, not accounting for overlap, at the end of timestep M
+            Total_RP33_M = fcd_in.Total_RP33_M;
             // P35 of all rays, static and dynamic, at the end of timestep M
             //Total_RP35_M = fcd_in.Total_RP35_M;
             // Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M

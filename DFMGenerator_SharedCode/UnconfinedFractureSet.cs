@@ -260,282 +260,6 @@ namespace DFMGenerator_SharedCode
         /// Array for the orientation multipliers for the weighted mean linear density of fractures from other sets seen by rays from this set
         /// </summary>
         private double[,] orientationMultipliers;
-        /*/// <summary>
-        /// Calculate the I coordinate (relative to fracture strike) of a point in grid (XYZ) coordinates
-        /// </summary>
-        /// <param name="point_in">Input point in XYZ coordinates</param>
-        /// <returns>I coordinate of input point</returns>
-        public double getICoordinate(PointXYZ point_in)
-        {
-            return (VectorXYZ.Sin_trim(strike) * point_in.X) + (VectorXYZ.Cos_trim(strike) * point_in.Y);
-        }
-        /// <summary>
-        /// Calculate the J coordinate (relative to fracture dip direction) of a point in grid (XYZ) coordinates
-        /// </summary>
-        /// <param name="point_in">Input point in XYZ coordinates</param>
-        /// <returns>J coordinate of input point</returns>
-        public double getJCoordinate(PointXYZ point_in)
-        {
-            return (VectorXYZ.Cos_trim(strike) * point_in.X) - (VectorXYZ.Sin_trim(strike) * point_in.Y);
-        }
-        /// <summary>
-        /// Convert a point in grid (XYZ) coordinates to a point in fracture set (IJK) coordinates
-        /// </summary>
-        /// <param name="point_in">Input point in XYZ coordinates</param>
-        /// <returns>New point in IJK coordinates</returns>
-        public PointIJK convertXYZtoIJK(PointXYZ point_in)
-        {
-            // Get sin and cosine of fracture strike (i.e. I+ axis)
-            double sinstrike = VectorXYZ.Sin_trim(strike);
-            double cosstrike = VectorXYZ.Cos_trim(strike);
-
-            // Convert X and Y coordinates
-            double I = (sinstrike * point_in.X) + (cosstrike * point_in.Y);
-            double J = (cosstrike * point_in.X) - (sinstrike * point_in.Y);
-
-            // Get point_z of centre of gridblock at point x,y
-            double K = point_in.Z - gbc.getCentreZ(point_in.X, point_in.Y);
-
-            // Create an IJK point and return it
-            PointIJK output = new PointIJK(I, J, K);
-            return output;
-        }
-        /// <summary>
-        /// Convert a point in fracture set (IJK) coordinates to a point in grid (XYZ) coordinates
-        /// </summary>
-        /// <param name="point_in">Input point in IJK coordinates</param>
-        /// <returns>New point in XYZ coordinates</returns>
-        public PointXYZ convertIJKtoXYZ(PointIJK point_in)
-        {
-            // Get sin and cosine of fracture strike (i.e. I+ axis)
-            double sinstrike = VectorXYZ.Sin_trim(strike);
-            double cosstrike = VectorXYZ.Cos_trim(strike);
-
-            // Convert X and Y coordinates
-            double X = (sinstrike * point_in.I) + (cosstrike * point_in.J);
-            double Y = (cosstrike * point_in.I) - (sinstrike * point_in.J);
-
-            // Get point_z of centre of gridblock at point x,y
-            double Z = point_in.K + gbc.getCentreZ(X, Y);
-
-            // Create an IJK point and return it
-            PointXYZ output = new PointXYZ(X, Y, Z);
-            return output;
-        }
-        /// <summary>
-        /// Get the true vertical thickness of the layer at a specified point in grid (XYZ) coordinates
-        /// </summary>
-        /// <param name="point_in">Input point in XYZ coordinates</param>
-        /// <returns>True vertical thickness of the gridblock (m)</returns>
-        public double getTVTAtPoint(PointXYZ point_in)
-        {
-            // Return point_t of gridblock at point x,y
-            return gbc.getTVT(point_in.X, point_in.Y);
-        }
-        /// <summary>
-        /// Get the true vertical thickness of the layer at a specified point in fracture set (IJK) coordinates
-        /// </summary>
-        /// <param name="point_in">Input point in IJK coordinates</param>
-        /// <returns>point_t of the gridblock (m)</returns>
-        public double getTVTAtPoint(PointIJK point_in)
-        {
-            // Get sin and cosine of fracture strike (i.e. I+ axis)
-            double sinstrike = VectorXYZ.Sin_trim(strike);
-            double cosstrike = VectorXYZ.Cos_trim(strike);
-
-            // Convert X and Y coordinates
-            double X = (sinstrike * point_in.I) + (cosstrike * point_in.J);
-            double Y = (cosstrike * point_in.I) - (sinstrike * point_in.J);
-
-            // Return point_t of gridblock at point x,y
-            return gbc.getTVT(X, Y);
-        }
-        /// <summary>
-        /// Get the I and J coordinates of the endpoints of a specified boundary segment
-        /// </summary>
-        /// <param name="boundary">Boundary segment for which endpoints are required</param>
-        /// <param name="boundaryleftI">Reference parameter for the I coordinate of the left hand boundary endpoint</param>
-        /// <param name="boundaryleftJ">Reference parameter for the J coordinate of the left hand boundary endpoint</param>
-        /// <param name="boundaryrightI">Reference parameter for the I coordinate of the right hand boundary endpoint</param>
-        /// <param name="boundaryrightJ">Reference parameter for the J coordinate of the right hand boundary endpoint</param>
-        public void getBoundaryEndPoints(GridDirection boundary, out double boundaryleftI, out double boundaryleftJ, out double boundaryrightI, out double boundaryrightJ)
-        {
-            switch (boundary)
-            {
-                case GridDirection.N:
-                    {
-                        boundaryleftI = NWMidPoint.I;
-                        boundaryleftJ = NWMidPoint.J;
-                        boundaryrightI = NEMidPoint.I;
-                        boundaryrightJ = NEMidPoint.J;
-                        return;
-                    }
-                case GridDirection.E:
-                    {
-                        boundaryleftI = NEMidPoint.I;
-                        boundaryleftJ = NEMidPoint.J;
-                        boundaryrightI = SEMidPoint.I;
-                        boundaryrightJ = SEMidPoint.J;
-                        return;
-                    }
-                case GridDirection.S:
-                    {
-                        boundaryleftI = SEMidPoint.I;
-                        boundaryleftJ = SEMidPoint.J;
-                        boundaryrightI = SWMidPoint.I;
-                        boundaryrightJ = SWMidPoint.J;
-                        return;
-                    }
-                case GridDirection.W:
-                    {
-                        boundaryleftI = SWMidPoint.I;
-                        boundaryleftJ = SWMidPoint.J;
-                        boundaryrightI = NWMidPoint.I;
-                        boundaryrightJ = NWMidPoint.J;
-                        return;
-                    }
-                default:
-                    {
-                        boundaryleftI = 0;
-                        boundaryleftJ = 0;
-                        boundaryrightI = 0;
-                        boundaryrightJ = 0;
-                        return;
-                    }
-            }
-        }
-        /// <summary>
-        /// Get the cornerpoints of a specified boundary as PointXYZ objects
-        /// </summary>
-        /// <param name="boundary">Boundary for which cornerpoint are required</param>
-        /// <param name="UpperLeftCorner">Reference parameter for PointXYZ object representing the upper left cornerpoint of the specified boundary</param>
-        /// <param name="UpperRightCorner">Reference parameter for PointXYZ object representing the upper right cornerpoint of the specified boundary</param>
-        /// <param name="LowerLeftCorner">Reference parameter for PointXYZ object representing the lower left cornerpoint of the specified boundary</param>
-        /// <param name="LowerRightCorner">Reference parameter for PointXYZ object representing the lower right cornerpoint of the specified boundary</param>
-        public void getBoundaryCorners(GridDirection boundary, out PointXYZ UpperLeftCorner, out PointXYZ UpperRightCorner, out PointXYZ LowerLeftCorner, out PointXYZ LowerRightCorner)
-        {
-            gbc.getBoundaryCornerpoints(boundary, out UpperLeftCorner, out UpperRightCorner, out LowerLeftCorner, out LowerRightCorner);
-        }
-        /// <summary>
-        /// Get the I coordinate of the intersection between a fracture with a specified J coordinate, and a specified boundary segment
-        /// Note that the fracture is considered infinite in either direction but it must intersect the boundary segment between the gridblock cornerpoints, otherwise the function will return NaN
-        /// </summary>
-        /// <param name="intersection_j">J coordinate of the fracture</param>
-        /// <param name="boundary">Boundary with which to calculate the intersection</param>
-        /// <param name="propDir">Direction of propagation, used to determine whether whether the fracture crosses out from or into the gridblock</param>
-        /// <param name="crossesOutward">Output flag to determine whether the fracture crosses out from the gridblock (true) or into the gridblock (false)</param>
-        /// <returns>The I coordinate of the intersection point; NaN if the fracture does not intersect the specified boundary segment when extended to infinity</returns>
-        private double getBoundaryIntersection(double intersection_j, GridDirection boundary, PropagationDirection propDir, out bool crossesOutward)
-        {
-            // By default set crossesOutward flag to false
-            crossesOutward = false;
-
-            // Get the coordinates for the fracture and boundary cornerpoints relative to the direction of the fracture (i)
-            double leftCorner_i, leftCorner_j, rightCorner_i, rightCorner_j;
-            getBoundaryEndPoints(boundary, out leftCorner_i, out leftCorner_j, out rightCorner_i, out rightCorner_j);
-
-            // Determine whether the fracture intersects the boundary between the cornerpoints; if so, determine which direction it is crossing, if not return NaN
-            // Also return NaN if the boundary is parallel to the fracture (i.e. leftCorner_j == rightCorner_j)
-            if (leftCorner_j == rightCorner_j) // If leftCorner_j == rightCorner_j the line is parallel to the line
-                return double.NaN;
-            else if ((leftCorner_j <= intersection_j) && (intersection_j <= rightCorner_j)) // If leftCorner_j < rightCorner_j the fracture is crossing outwards
-                crossesOutward = true;
-            else if ((leftCorner_j >= intersection_j) && (intersection_j >= rightCorner_j)) // If leftCorner_j > rightCorner_j the fracture is crossing inwards
-                crossesOutward = false;
-            else // If intersection_j does not lie between leftCorner_j and rightCorner_j the fracture does not intersect the boundary segment between the cornerpoints 
-                return double.NaN;
-            // If the fracture is propagating in the IMinus direction, reverse the flag for whether the fracture crosses out from or into the gridblock
-            if (propDir == PropagationDirection.IMinus)
-                crossesOutward = !crossesOutward;
-
-            // Calculate the position of the intersection and return it
-            // This is valid whether rightCorner_j > leftCorner_j or leftCorner_j > rightCorner_j
-            double relativeIntersectionPoint = (intersection_j - leftCorner_j) / (rightCorner_j - leftCorner_j);
-            return (leftCorner_i * (1 - relativeIntersectionPoint)) + (rightCorner_i * relativeIntersectionPoint);
-        }
-        /// <summary>
-        /// Create a random fracture nucleation position within the gridblock
-        /// </summary>
-        /// <returns></returns>
-        public PointIJK getRandomNucleationPoint()
-        {
-            return getRandomNucleationPoint(-1);
-        }
-        /// <summary>
-        /// Create a random fracture nucleation position within the gridblock - the depth can either be random or specified relative to the gridblock
-        /// </summary>
-        /// <param name="FractureNucleationPosition_w">Specified depth of nucleation relative to the gridblock: set to 0 for the base of the layer, 0.5 for the centre of the layer, 1 for the top of the layer, and -1 for a random depth within the layer</param>
-        /// <returns>A random point within the layer in IJK coordinates</returns>
-        public PointIJK getRandomNucleationPoint(double FractureNucleationPosition_w)
-        {
-            // Get reference to the random number generator
-            Random randGen = gbc.RandGen;
-
-            // Get range of allowable I and J values
-            double IRange = MaxI - MinI;
-            double JRange = MaxJ - MinJ;
-
-            // Set the default location to the SW cornerpoint
-            double nucleationPointI = SWMidPoint.I;
-            double nucleationPointJ = SWMidPoint.J;
-
-            // Find a random pair of I and J coordinates that lie within the gridblock
-            // If this cannot be done within 1000 attempts, it will revert to the default - this way the function will always return a point
-            for (int MaxTries = 0; MaxTries < 1000; MaxTries++)
-            {
-                // Select random I and J coordinates within the range of allowable values, and see if they lie within the gridblock
-                double pointI = MinI + (IRange * randGen.NextDouble());
-                double pointJ = MinJ + (JRange * randGen.NextDouble());
-
-                // Check whether the point lies within the gridblock, and whether an infinite extension of the fracture will cross at least one gridblock boundary outwards in each direction
-                int IPlusBoundaryIntersections = 0;
-                int IMinusBoundaryIntersections = 0;
-                foreach (GridDirection boundary in new GridDirection[4] { GridDirection.N, GridDirection.E, GridDirection.S, GridDirection.W })
-                {
-                    bool crossesOutwards;
-                    double boundaryIntersection = getBoundaryIntersection(pointJ, boundary, PropagationDirection.IPlus, out crossesOutwards);
-                    if (boundaryIntersection >= pointI)
-                    {
-                        if (crossesOutwards)
-                            IPlusBoundaryIntersections++;
-                        else
-                            IPlusBoundaryIntersections--;
-                    }
-                    if (boundaryIntersection < pointI)
-                    {
-                        // For boundary intersections in the IMinus direction, we must reverse the outwards direction
-                        if (!crossesOutwards)
-                            IMinusBoundaryIntersections++;
-                        else
-                            IMinusBoundaryIntersections--;
-                    }
-                }
-
-                if ((IPlusBoundaryIntersections == 1) && (IMinusBoundaryIntersections == 1))
-                {
-                    nucleationPointI = pointI;
-                    nucleationPointJ = pointJ;
-                    break;
-                }
-            }
-
-            // Create a PointIJK object at the specificied I and J coordinates with K=0
-            PointIJK nucleationPoint = new PointIJK(nucleationPointI, nucleationPointJ, 0);
-
-            // If the relative nucleation depth is 0.5, then K=0 and there is no need for further calculation
-            // Otherwise we will need to calculate the K coordinate
-            if (FractureNucleationPosition_w != 0.5)
-            {
-                // If the specified relative nucleation depth is negative or no relative nucleation depth is specified, generate a random value
-                if (!(FractureNucleationPosition_w >= 0))
-                    FractureNucleationPosition_w = randGen.NextDouble();
-                double TVT = getTVTAtPoint(nucleationPoint);
-                nucleationPoint.K = TVT * (FractureNucleationPosition_w - 0.5);
-            }
-
-            // Return the new point
-            return nucleationPoint;
-        }*/
 
         // Fracture distribution control data
         /// <summary>
@@ -596,26 +320,9 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double MaximumFractureRadius { get; private set; }
         /// <summary>
-        /// Effective radius of the largest current fracture; if there are no datapoints, return zero
-        /// NB this assumes that the fracture population datapoint arrays have already been sorted from largest to smallest
+        /// Mean fracture ray length
         /// </summary>
-        private double MaximumCurrentFractureRadius
-        {
-            get
-            {
-                double output = 0;
-                double maxFullyActiveRadius = (Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive].Count > 0) ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][0].EffectiveRayLength : 0;
-                if (output < maxFullyActiveRadius)
-                    output = maxFullyActiveRadius;
-                double maxRestrictedRadius = (Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted].Count > 0) ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][0].EffectiveRayLength : 0;
-                if (output < maxRestrictedRadius)
-                    output = maxRestrictedRadius;
-                double maxStaticMaxLengthRadius = (Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius].Count > 0) ? Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius][0].EffectiveRayLength : 0;
-                if (output < maxStaticMaxLengthRadius)
-                    output = maxStaticMaxLengthRadius;
-                return output;
-            }
-        }
+        public double MeanFractureRadius { get { return Fractures.MeanRayLength; } }
         /// <summary>
         /// Object containing cumulative population data for all fractures
         /// </summary>
@@ -635,7 +342,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Minimum UCRP30 value for a nucleating fracture datapoint - a new datapoint will not be created until the volumetric density of the nucleating fractures reaches this value
         /// </summary>
-        private double min_datapoint_UCRP30;
+        private double min_NucleatingDatapoint_UCRP30;
+        /// <summary>
+        /// Minimum UCRP30 value for a growing fracture datapoint to be included when determining the maximum timestep duration based on increase in ray length
+        /// </summary>
+        private double min_GrowingDatapoint_UCRP30;
 
         // Fracture data for previous timesteps
         /// <summary>
@@ -703,15 +414,10 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotalUCFP32() { return CurrentFractureData.Total_RP32_M; }
         /// <summary>
-        /// Return the non-overlapping volumetric ratio of all unconfined fractures during the current timestep
+        /// Return the maximum volumetric ratio of all unconfined fractures, not accounting for overlap, during the current timestep
         /// </summary>
         /// <returns></returns>
-        public double getTotalExclusiveUCFP33() { return CurrentFractureData.Total_RP33Exclusive_M; }
-        /// <summary>
-        /// Return the overlapping volumetric ratio of all unconfined fractures during the current timestep
-        /// </summary>
-        /// <returns></returns>
-        public double getTotalOverlappingUCFP33() { return CurrentFractureData.Total_RP33Overlapping_M; }
+        public double getTotalUCFP33() { return CurrentFractureData.Total_RP33_M; }
         /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during the current timestep
         /// </summary>
@@ -722,11 +428,6 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double getClearZoneVolume() { return CurrentFractureData.theta_dashed_M; }
-        /// <summary>
-        /// UCFP33, ignoring overlaps
-        /// </summary>
-        /// <returns></returns>
-        public double getUCFP33() { return CurrentFractureData.Total_RP33Exclusive_M + CurrentFractureData.Total_RP33Overlapping_M; }
         /// <summary>
         /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
         /// </summary>
@@ -812,17 +513,11 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getTotalUCFP32(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP32_M(Timestep_M); }
         /// <summary>
-        /// Return the non-overlapping volumetric ratio of all unconfined fractures at the end of a specified previous timestep (Pa)
+        /// Return the maximum volumetric ratio of all unconfined fractures, not accounting for overlap, at the end of a specified previous timestep (Pa)
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getTotalExclusiveUCFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP33Exclusive_M(Timestep_M); }
-        /// <summary>
-        /// Return the overlapping volumetric ratio of all unconfined fractures at the end of a specified previous timestep (Pa)
-        /// </summary>
-        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
-        /// <returns></returns>
-        public double getTotalOverlappingUCFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP33Overlapping_M(Timestep_M); }
+        public double getTotalUCFP33(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP33_M(Timestep_M); }
         /// <summary>
         /// Return the total porosity of all unconfined fractures that were present at the end of a specified previous timestep
         /// </summary>
@@ -849,12 +544,12 @@ namespace DFMGenerator_SharedCode
                     output = PreviousFractureData.getTotal_RP32_M(Timestep_M) * UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = (PreviousFractureData.getTotal_RP33Exclusive_M(Timestep_M) + PreviousFractureData.getTotal_RP33Overlapping_M(Timestep_M)) * (SizeDependentApertureMultiplier / 2);
+                    output = PreviousFractureData.getTotal_RP33_M(Timestep_M) * (SizeDependentApertureMultiplier / 2);
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = (PreviousFractureData.getTotal_RP33Exclusive_M(Timestep_M) + PreviousFractureData.getTotal_RP33Overlapping_M(Timestep_M)) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = PreviousFractureData.getTotal_RP33_M(Timestep_M) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -1184,15 +879,20 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double sMR_UCRP33_total() { return Fractures.sMR_RP33_total; }
         /// <summary>
-        /// Total volumetric ratio of non-overlapping fractures in the set
+        /// Maximum volumetric ratio of all fractures
+        /// NB This does not take into account stress shadow overlap
+        /// It will therefore be an overestimate of the true volumetric density and should not be used for calculating total stress shadow volume
+        /// However it can be used for porosity calculations since fracture aperture is much smaller than fracture radius, so overlap is negligible
         /// </summary>
         /// <returns></returns>
-        public double UCFP33_exclusive_total() { return Fractures.FP33_exclusive_total; }
+        public double UCFP33_total() { return Fractures.FP33_total; }
         /// <summary>
-        /// Total volumetric ratio of overlapping fractures in the set
+        /// Total fracture stress shadow volume
+        /// This value takes into account stress shadow overlap
+        /// It will therefore be less than FP33 * (W/r)
         /// </summary>
         /// <returns></returns>
-        public double UCFP33_overlapping_total() { return Fractures.FP33_overlapping_total; }
+        public double StressShadowVolume_total() { return Fractures.StressShadowVolume_total; }
 #endif
 
         // Fracture aperture control data - for uniform and size-dependent aperture, which are dependent on dip set
@@ -1552,7 +1252,7 @@ namespace DFMGenerator_SharedCode
             get
             {
                 double elasticityMultiplier = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
-                double fractureDensityMultiplier = (4 / Math.PI) * Fractures.FP33_overlapping_total;
+                double fractureDensityMultiplier = (4 / Math.PI) * Fractures.FP33_total;
                 return elasticityMultiplier * fractureDensityMultiplier * Fracture_ComplianceTensorBase;
             }
         }
@@ -1581,12 +1281,12 @@ namespace DFMGenerator_SharedCode
                     output = Fractures.FP32_total * UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = (Fractures.FP33_exclusive_total + Fractures.FP33_overlapping_total) * (SizeDependentApertureMultiplier / 2);
+                    output = Fractures.FP33_total * (SizeDependentApertureMultiplier / 2);
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = (Fractures.FP33_exclusive_total + Fractures.FP33_overlapping_total) * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = Fractures.FP33_total * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -1878,10 +1578,24 @@ namespace DFMGenerator_SharedCode
                     break;
             }
 
-            // If the stress shadow widths have changed, update the CurrentFractureData object
-            bool stressShadowWidthChanged = (total_StressShadowWidthRatio != CurrentFractureData.StressShadowWidthRatio_M) || (azimuthal_StressShadowWidthRatio != CurrentFractureData.AzimuthalStressShadowWidthRatio_M);
+            // If the stress shadow widths have changed, update the CurrentFractureData object and recalculate the stress shadow volume for each datapoint
+            double previousTotalStressShadowWidthRatio = CurrentFractureData.ShearStressShadowWidthRatio_M;
+            double previousAzimuthalStressShadowWidthRatio = CurrentFractureData.AzimuthalStressShadowWidthRatio_M;
+            bool stressShadowWidthChanged = ((float) total_StressShadowWidthRatio != (float)previousTotalStressShadowWidthRatio) || ((float)azimuthal_StressShadowWidthRatio != (float)previousAzimuthalStressShadowWidthRatio);
             if (stressShadowWidthChanged)
             {
+                // Calculate a multiplier for the stress shadow volume around each datapoint to represent the change in stress shadow width
+                // NB This will be positive for growing stress shadows and negative for shrinking stress shadows
+                double dW_Wi = (previousTotalStressShadowWidthRatio > 0) ? (total_StressShadowWidthRatio - previousTotalStressShadowWidthRatio) / previousTotalStressShadowWidthRatio : 0;
+
+                // Recalculate the stress shadow volume associated with each datapoint in the UnconfinedFractureData object
+                if (dW_Wi != 0)
+                    Fractures.CalculateStressShadowIncrementsFromStressShadowWidthChange(dW_Wi);
+
+                // Recalculate the total stress shadow volume for the implicit fracture data
+                Fractures.RecalculateStressShadowVolumeData();
+
+                // Update the stress shadow widths in the CurrentFractureData object; the stress shadow volume will be updated later
                 CurrentFractureData.SetStressShadowWidth(azimuthal_StressShadowWidthRatio, total_StressShadowWidthRatio);
 
                 // Also revert any residual active sets to growing, since the deactivation probabilities may have significantly reduced
@@ -2288,7 +2002,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
                         double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dRP30;
-                        if (dRP30 < min_datapoint_UCRP30)
+                        if (dRP30 < min_GrowingDatapoint_UCRP30)
                         {
                             FADatapointNo++;
                             continue;
@@ -2342,7 +2056,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
                         double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dRP30;
-                        if (dRP30 < min_datapoint_UCRP30)
+                        if (dRP30 < min_GrowingDatapoint_UCRP30)
                         {
                             RDatapointNo++;
                             continue;
@@ -2523,8 +2237,6 @@ namespace DFMGenerator_SharedCode
 
                     // Calculate the time until the next datapoint representing nucleating fractures will form
                     {
-                        // Create a variable for the time until the next datapoint representing nucleating fractures will form
-                        double timeToNextDatapoint;
 
                         // Cache required data locally
                         double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
@@ -2540,9 +2252,9 @@ namespace DFMGenerator_SharedCode
                                 {
                                     // betac_factor is -beta*c if b<>2, -c if b=2
                                     double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
-                                    double RP30term1 = min_datapoint_UCRP30 / (RaysPerFracture * CapB * CurrentFractureData.theta_dashed_Mminus1);
-                                    double RP30term2 = (bis2 ? Math.Log(Math.Exp(betac_factor * cumGammaRmin_Nprev) + RP30term1) / betac_factor : Math.Pow(Math.Pow(cumGammaRmin_Nprev, betac_factor) + RP30term1, 1 / betac_factor));
-                                    nucleationWtime = cumGammaRmin_Nminus1 - RP30term2;
+                                    double RP30term1 = min_NucleatingDatapoint_UCRP30 / (RaysPerFracture * CapB * CurrentFractureData.theta_Mminus1);
+                                    double RP30term2 = bis2 ? Math.Log(Math.Exp(betac_factor * cumGammaRmin_Nprev) + RP30term1) / betac_factor : Math.Pow(Math.Pow(cumGammaRmin_Nprev, betac_factor) + RP30term1, 1 / betac_factor);
+                                    nucleationWtime = bis2 ? (cumGammaRmin_Nminus1 - RP30term2) : beta * (cumGammaRmin_Nminus1 - RP30term2);
                                 }
                                 break;
                             case InitialFractureDistribution.Exponential:
@@ -2554,20 +2266,24 @@ namespace DFMGenerator_SharedCode
                         }
 
                         // Convert the weighted time into a real time
-                        if (setVto0)
+                        if (nucleationWtime > 0)
                         {
-                            timeToNextDatapoint = ((beta / CapA) * nucleationWtime) / Math.Pow(U * sqrtpi_Kc_factor, b);
-                        }
-                        else
-                        {
-                            double Uterm = Math.Pow(U * sqrtpi_Kc_factor, b + 1);
-                            double Vterm = (beta / CapA) * nucleationWtime * V * (b + 1) * sqrtpi_Kc_factor;
-                            double UVterm = Math.Pow(Uterm + Vterm, 1 / (b + 1));
-                            timeToNextDatapoint = (UVterm / (V * sqrtpi_Kc_factor)) - (U / V);
-                        }
+                            double timeToNextDatapoint;
+                            if (setVto0)
+                            {
+                                timeToNextDatapoint = (nucleationWtime / CapA) / Math.Pow(U * sqrtpi_Kc_factor, b);
+                            }
+                            else
+                            {
+                                double Uterm = Math.Pow(U * sqrtpi_Kc_factor, b + 1);
+                                double Vterm = (nucleationWtime / CapA) * V * (b + 1) * sqrtpi_Kc_factor;
+                                double UVterm = Math.Pow(Uterm + Vterm, 1 / (b + 1));
+                                timeToNextDatapoint = (UVterm / (V * sqrtpi_Kc_factor)) - (U / V);
+                            }
 
-                        if (timeTodP33max > timeToNextDatapoint)
-                            timeTodP33max = timeToNextDatapoint;
+                            if (timeTodP33max > timeToNextDatapoint)
+                                timeTodP33max = timeToNextDatapoint;
+                        }
                     }
 
                     // If the real time until the next detapoint will nucleate is less than the current timestep duration, set the current timestep duration to the real time until the next detapoint will nucleate
@@ -2860,7 +2576,7 @@ namespace DFMGenerator_SharedCode
             double dRP30 = dUCFP30 * (double)RaysPerFracture;
 
             // If the calculated dMFP30 value is less than the specified minimum, return null (no new datapoint will be created)
-            if (dRP30 < min_datapoint_UCRP30)
+            if (dRP30 < min_NucleatingDatapoint_UCRP30)
                 return null;
 
             // Create a new datapoint and return it
@@ -2888,8 +2604,8 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            // Cache the stress shadow width ratio locally
-            double stressShadowWidthRatio = Max_F_StressShadowWidthRatio;
+            // Cache the minimum intersection deactivation ratio locally
+            double minIntersectionDeactivationRatio = gbc.PropControl.MinIntersectionDeactivationRatio;
 
             // Loop through all fully active datapoints, calculating deactivation rates due to stress shadow interaction and intersection
             foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive])
@@ -2908,7 +2624,7 @@ namespace DFMGenerator_SharedCode
                     case StressDistribution.StressShadow:
                     // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
                     case StressDistribution.DuctileBoundary:
-                        phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                        phiII_M = Fractures.getStressShadowNonInteractionVolumeRatio(datapoint);
                         break;
                     // By default assume no stress shadows
                     default:
@@ -2919,7 +2635,7 @@ namespace DFMGenerator_SharedCode
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
                 // This is given by the inverse of the interaction zone volume around all other fractures in the current set
                 double mean_apparent_P32 = 0;
-                double minIntersectionRadius = gbc.PropControl.MinIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
+                double minIntersectionRadius = minIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
                 for (int setNo = 0; setNo < noSets; setNo++)
                 {
                     UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
@@ -2949,7 +2665,7 @@ namespace DFMGenerator_SharedCode
                     case StressDistribution.StressShadow:
                     // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
                     case StressDistribution.DuctileBoundary:
-                        phiII_M = Fractures.getStressShadowNonInteractionVolume(datapoint, stressShadowWidthRatio);
+                        phiII_M = Fractures.getStressShadowNonInteractionVolumeRatio(datapoint);
                         break;
                     // By default assume no stress shadows
                     default:
@@ -2959,7 +2675,7 @@ namespace DFMGenerator_SharedCode
 
                 // Get the probability that a fracture ray represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
                 double mean_apparent_P32 = 0;
-                double minIntersectionRadius = gbc.PropControl.MinIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
+                double minIntersectionRadius = minIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
                 for (int setNo = 0; setNo < noSets; setNo++)
                 {
                     UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
@@ -2983,10 +2699,9 @@ namespace DFMGenerator_SharedCode
             double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
 
             // First cache the mechanical properties and timestep dynamic data required to calculate the increment of restricted fractures
-            double CapA = gbc.MechProps.CapA;
             double beta = gbc.MechProps.beta;
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
-            double criticalIncrement = CapA * CurrentFractureData.M_Duration;
+            double criticalIncrement = gbc.MechProps.CapA * CurrentFractureData.M_Duration;
 
             // Loop through all restricted datapoints, calculating deactivation rates due to stress shadow interaction and intersection
             // We will calculate the restricted datapoints before the fully active ones, as the deactivation of fully active fractures will create new restricted fractures
@@ -3067,30 +2782,23 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            // Lock in the increments in ray length calculated by setTimestepPropagationData()
-            // If any rays have reached the maximum specified length, deactivate them and move the appropriate datapoints to the StaticMaxRadius array
-            foreach (RayPropagationStatus status in new RayPropagationStatus[4] { RayPropagationStatus.FullyActive, RayPropagationStatus.Restricted, RayPropagationStatus.StaticStressShadow, RayPropagationStatus.StaticIntersection })
-            {
-                int noDataPoints = Fractures.fracturePopulationDatapoints[status].Count;
-                for (int datapointNo = noDataPoints - 1; datapointNo >= 0; datapointNo--)
-                {
-                    ImplicitFracturePopulationDatapoint datapoint = Fractures.fracturePopulationDatapoints[status][datapointNo];
-                    if (datapoint.ActualRayLengthIncrement > 0)
-                    {
-                        // The ImplicitFracturePopulationDatapoint.IncrementRayLength() returns true if the ray length increment will reach the maximum fracture radius, otherwise false
-                        bool maxRadiusReached = datapoint.IncrementRayLength();
-                        if (maxRadiusReached)
-                        {
-                            Fractures.fracturePopulationDatapoints[RayPropagationStatus.StaticMaxRadius].Add(datapoint);
-                            Fractures.fracturePopulationDatapoints[status].RemoveAt(datapointNo);
-                        }
-                    }
-                }
-            }
+            // Calculate increments in the stress shadow volume for each datapoint
+            Fractures.CalculateStressShadowIncrementsFromRayLengthIncrement();
+
+            // Apply the increments in ray length calculated by setTimestepPropagationData()
+            Fractures.ApplyRayLengthIncrements();
 
             // Recalculate the total RP30 and RP32 values from the fracture population distribution arrays
             // This will also resort the fracture population distribution arrays based on new effective radius, from largest to smallest
             Fractures.RecalculateTotalPopulationData();
+
+            // Recalculate the minimum RP30 value for nucleating fracture datapoints based on the mean static ray length
+            // This is taken as a proxy for the maximum length that the nucleating rays will grow to
+            // The minimum RP30 value represents the value that will generate the specified maximum dP33 increment when the rays grow to their maximum length
+            double dP33 = gbc.PropControl.max_TS_UCFP33_increase;
+            double maxRadius = (Fractures.MeanStaticRayLength > 0) ? Fractures.MeanStaticRayLength : MaximumFractureRadius;
+            double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(maxRadius, 3);
+            min_NucleatingDatapoint_UCRP30 = (dP33 / maxFracVol) * (double)RaysPerFracture;
         }
         /// <summary>
         /// Cull datapoints from the static fracture population distribution arrays
@@ -3104,11 +2812,11 @@ namespace DFMGenerator_SharedCode
             Fractures.CullArray(RayPropagationStatus.StaticMaxRadius, minDatapointSizeRatio);
         }
         /// <summary>
-        /// Set the unconfined fracture density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, FP32, FP33Exclusive and FP33Overlapping in the CurrentFractureData object
+        /// Set the unconfined fracture density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, FP32 and FP33 in the CurrentFractureData object
         /// </summary>
         public void setFractureDensityData()
         {
-            CurrentFractureData.SetFractureDensityData(Fractures.a_RP30_total, Fractures.r_RP30_total, Fractures.sII_RP30_total, Fractures.sIJ_RP30_total, Fractures.sMR_RP30_total, Fractures.FP32_total, Fractures.FP33_exclusive_total, Fractures.FP33_overlapping_total);
+            CurrentFractureData.SetFractureDensityData(Fractures.a_RP30_total, Fractures.r_RP30_total, Fractures.sII_RP30_total, Fractures.sIJ_RP30_total, Fractures.sMR_RP30_total, Fractures.FP32_total, Fractures.FP33_total);
         }
         /// <summary>
         /// Update the values describing the inverse stress shadow and clear zone volumes for this fracture set
@@ -3116,7 +2824,7 @@ namespace DFMGenerator_SharedCode
         public void setFractureExclusionZoneData()
         {
             double theta;
-            double theta_dashed = Fractures.getStressShadowClearZoneVolume(MinimumFractureRadius, Max_F_StressShadowWidthRatio, out theta);
+            double theta_dashed = Fractures.getStressShadowClearZoneVolume(MinimumFractureRadius, MinimumFractureRadius, out theta);
             CurrentFractureData.SetFractureExclusionZoneData(theta, theta_dashed);
         }
 
@@ -3666,12 +3374,13 @@ namespace DFMGenerator_SharedCode
 
             // Set the cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated to 0
             previous_CumGamma = 0;
-            // Set the minimum RP30 value for a nucleating fracture datapoint
-            // This is the value that will generate the specified maximum dP33 increment with nucleating fractures
+            // Set the minimum RP30 value for nucleating and growing fracture datapoints
+            // Both these are initially set to the value that will generate the specified maximum dP33 increment with fractures of maximum size
+            // The minimum RP30 value for growing fracture datapoints will not change, but the minimum RP30 value for nucleating fracture datapoints will be recalculated at each timestep based on the mean static ray length
             double dP33 = gbc.PropControl.max_TS_UCFP33_increase;
-            //double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
-            double minFracVol = (4d / 3d) * Math.PI * Math.Pow(MinimumFractureRadius, 3);
-            min_datapoint_UCRP30 = (dP33 / minFracVol) * (double)raysPerFracture_in;
+            double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
+            min_NucleatingDatapoint_UCRP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
+            min_GrowingDatapoint_UCRP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
         }
         /// <summary>
         /// Set the fracture orientation data: dip, strike, normal vector and azimuth

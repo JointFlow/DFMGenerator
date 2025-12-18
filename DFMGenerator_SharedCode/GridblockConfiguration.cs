@@ -3441,7 +3441,7 @@ namespace DFMGenerator_SharedCode
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getAA", "getBB", "getCCStep", "getMeanStressShadowWidth", "getMeanShearStressShadowWidth",
                 //    "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", "getClearZoneVolume", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
                 //FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tRP33_exclusive\tRP33_overlapping\tClear zone volume\t";
-                FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ttotal_RP32\tAzimuthal stress shadow width ratio\tShear stress shadow width ratio\tCombined stress shadow width ratio\tRP33_exclusive\tRP33_overlapping\tStress shadow volume\tClear zone volume\t";
+                FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ttotal_RP32\tAzimuthal stress shadow width ratio\tShear stress shadow width ratio\tCombined stress shadow width ratio\tRP33\tStress shadow volume\tStress shadow volume\tClear zone volume\t";
 #endif
                 string TS0data = "0\t0\t0\t0\t0\t0\t0\t";
                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
@@ -4201,12 +4201,12 @@ namespace DFMGenerator_SharedCode
                         {
                             // Get fracture data and add to timestep log string
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), ufs.StressShadowVolume_total(), ufs.getClearZoneVolume());
 #if LOGIMPPOP
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP33_total(), ufs.r_UCRP33_total(), ufs.sII_UCRP33_total(), ufs.sIJ_UCRP33_total(), ufs.sMR_UCRP33_total(),
-                                ufs.a_UCRP32_total() + ufs.r_UCRP32_total() + ufs.sII_UCRP32_total() + ufs.sIJ_UCRP32_total() + ufs.sMR_UCRP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_F_StressShadowWidthRatio, ufs.UCFP33_exclusive_total(), ufs.UCFP33_overlapping_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                                ufs.a_UCRP32_total() + ufs.r_UCRP32_total() + ufs.sII_UCRP32_total() + ufs.sIJ_UCRP32_total() + ufs.sMR_UCRP32_total(), ufs.Max_Azimuthal_F_StressShadowWidth, ufs.Max_Shear_F_StressShadowWidth, ufs.Max_F_StressShadowWidthRatio, ufs.UCFP33_total(), ufs.StressShadowVolume_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 #endif
 
                             timestepData = timestepData + fractureSetData;
@@ -4307,7 +4307,7 @@ namespace DFMGenerator_SharedCode
                         UFSToLog.getClearZoneVolume(), UFSToLog.getNoDatapoints(RayPropagationStatus.FullyActive),
                         UFSToLog.getNoDatapoints(RayPropagationStatus.Restricted), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticStressShadow),
                         UFSToLog.getNoDatapoints(RayPropagationStatus.StaticIntersection), UFSToLog.getNoDatapoints(RayPropagationStatus.StaticMaxRadius)));
-                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getUCFP33(), UFSToLog.getClearZoneVolume());
+                    string TAdataoutput = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", CurrentImplicitTimestep, TimestepDuration, endLastTimestep, UFSToLog.getFinalDrivingStressSigmaD(), UFSToLog.getTotalUCFP33(), UFSToLog.getClearZoneVolume());
                     foreach (RayPropagationStatus rayType in rayTypesToLog)
                     {
                         string rayTypeDatapointOutput = TAdataoutput + string.Format("{0}\t\t", UFSToLog.getNoDatapoints(rayType));
