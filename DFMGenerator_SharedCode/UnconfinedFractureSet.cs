@@ -2694,7 +2694,7 @@ namespace DFMGenerator_SharedCode
         public void updateTotalFracturePopulation()
         {
             // Cache the proportion of the ray length increment to apply to deactivating fractures before they deactivate, fracture growth deactivation cutoff and minimum fracture activation probability locally
-            double proportionalIncrementToApply = gbc.PropControl.proportionalIncrementToApply;
+            double proportionalIncrementToApply = 1 - Fractures.StressShadowVolume_total;// gbc.PropControl.proportionalIncrementToApply;
             double max_R_deactivation = gbc.PropControl.max_R_DeactivationCheck_interval;
             double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
 

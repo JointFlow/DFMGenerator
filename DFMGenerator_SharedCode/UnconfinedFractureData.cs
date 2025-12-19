@@ -296,7 +296,7 @@ namespace DFMGenerator_SharedCode
                     // The first datapoint in the output array represents the new restricted rays
                     // Note that this function will only increment the restricted rays until the point of deactivation
                     // This is because this object does not have access to the mechanical property data needed to calculate the increment to the end of the timestep
-                    // The full increment to the end of the timestep must therefroe be calculated in the grandparent UnconfinedFractureSet object
+                    // The full increment to the end of the timestep must therefore be calculated in the grandparent UnconfinedFractureSet object
                     outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, preDeactivationIncrement, dRP30 * (Phi - Phi_Fracture_M), StressShadowVolume * (Phi - Phi_Fracture_M), RayPropagationStatus.Restricted, lengthAtDeactivation, ufd);
                     // The second datapoint in the output array represents the new static rays due to stress shadow interaction
                     outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, preDeactivationIncrement, dRP30 * F_II_M, StressShadowVolume * F_II_M, RayPropagationStatus.StaticStressShadow, lengthAtDeactivation, ufd);
@@ -567,6 +567,8 @@ namespace DFMGenerator_SharedCode
                 double psi = 0;
                 foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                     psi += Psi_total[status];
+                if (psi > 1)
+                    psi = 1;
                 return psi;
             }
         }

@@ -4201,7 +4201,7 @@ namespace DFMGenerator_SharedCode
                         {
                             // Get fracture data and add to timestep log string
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), ufs.StressShadowVolume_total(), ufs.getClearZoneVolume());
+                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
 #if LOGIMPPOP
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
