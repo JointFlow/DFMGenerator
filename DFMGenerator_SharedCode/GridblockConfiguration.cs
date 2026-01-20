@@ -3,7 +3,7 @@
 //#define LOGIMPPOP
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
-#define LOGDFNPOP
+//#define LOGDFNPOP
 
 using System;
 using System.Collections.Generic;
