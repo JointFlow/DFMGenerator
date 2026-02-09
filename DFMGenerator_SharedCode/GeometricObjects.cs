@@ -818,38 +818,67 @@ namespace DFMGenerator_SharedCode
 
         // Geometric functions
         /// <summary>
-        /// Minimum magnitude for nonzero sine and cosine values; smaller values will be rounded to zero. 
+        /// Round a double to 0, 1 or -1 if it is very close to these values
         /// </summary>
-        private static double roundToZero = 1E-10;
-        /// <summary>
-        /// Modified sin function that will return exactly zero for sin(pi) or multiples and exactly 1 for sin(pi/2) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
-        /// </summary>
-        /// <param name="angle">Angle to calculate sine of</param>
-        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple and 1d for angle=Math.Pi/2 or a multiple</returns>
-        public static double Sin_trim(double angle)
+        /// <param name="x">Number to trim</param>
+        /// <returns>0, 1 or -1 if x is very close to these values, otherwise x</returns>
+        private static double Trim(double x)
         {
-            double output = Math.Sin(angle);
-            if (Math.Abs(output) < roundToZero)
-                return 0;
-            else if (Math.Abs(1 - output) < roundToZero)
-                return 1;
+            if ((float)x == 1f)
+                return 1d;
+            else if ((float)x == -1f)
+                return -1d;
+            else if ((float)(x + 1d) == 1f)
+                return 0d;
             else
-                return output;
+                return x;
         }
         /// <summary>
-        /// Modified cos function that will return exactly zero for cos(pi/2) or multiples and exactly 1 for cos(pi) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// Round a double to 0, 1, -1, positive or negative infinity if it is very close to these values
+        /// </summary>
+        /// <param name="x">Number to trim</param>
+        /// <returns>0, 1, -1, positive or negative infinity if x is very close to these values, otherwise x</returns>
+        private static double TrimInfinite(double x)
+        {
+            if ((float)x == 1f)
+                return 1d;
+            else if ((float)x == -1f)
+                return -1d;
+            else if (float.IsPositiveInfinity((float)x))
+                return double.PositiveInfinity;
+            else if (float.IsNegativeInfinity((float)x))
+                return double.NegativeInfinity;
+            else if ((float)(x + 1d) == 1f)
+                return 0d;
+            else
+                return x;
+        }
+        /// <summary>
+        /// Modified sin function that will return exactly zero for sin(pi) or multiples thereof and exactly 1 or -1 for sin(pi/2) or multiples thereof; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// </summary>
+        /// <param name="angle">Angle to calculate sine of</param>
+        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple thereof and 1d or -1d for angle=Math.Pi/2 or a multiple thereof</returns>
+        public static double Sin_trim(double angle)
+        {
+            return Trim(Math.Sin(angle));
+        }
+        /// <summary>
+        /// Modified cos function that will return exactly zero for cos(pi/2) or multiples thereof and exactly 1 or -1 for cos(pi) or multiples thereof; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
         /// </summary>
         /// <param name="angle">Angle to calculate cosine of</param>
-        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple and 1d for angle=Math.Pi or a multiple</returns>
+        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple thereof and 1d or -1d for angle=Math.Pi or a multiple thereof</returns>
         public static double Cos_trim(double angle)
         {
-            double output = Math.Cos(angle);
-            if (Math.Abs(output) < roundToZero)
-                return 0;
-            else if (Math.Abs(1 - output) < roundToZero)
-                return 1;
-            else
-                return output;
+            return Trim(Math.Cos(angle));
+        }
+        /// <summary>
+        /// Modified tan function that will return exactly zero for tan(pi) or multiples thereof, and exactly 1 or -1 for tan(pi/4) or multiples thereof; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// </summary>
+        /// <param name="angle">Angle to calculate tangent of</param>
+        /// <returns>Math.Tan(angle), except 0d for angle=Math.Pi/2 or a multiple thereof and 1d or -1d for angle=Math.Pi or a multiple thereof</returns>
+        public static double Tan_trim(double angle)
+        {
+            return TrimInfinite(Math.Tan(angle));
         }
         /// <summary>
         /// Return a unit length vector with the specified orientation

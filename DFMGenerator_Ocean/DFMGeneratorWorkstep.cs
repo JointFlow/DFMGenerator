@@ -7050,7 +7050,8 @@ namespace DFMGenerator_Ocean
                                         CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
 
                                         // Write the input parameters for the model run to the collection comments string
-                                        CentrelineCollection.Comments = headerInputParams + generalInputParams + explicitInputParams;
+                                        string outputStageParams = string.Format("Model name: {0}\n\n", ModelName);
+                                        CentrelineCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
 
                                         // Commit the changes to the Petrel database
                                         transactionCreateCentrelineCollection.Commit();

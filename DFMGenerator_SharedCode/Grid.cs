@@ -19,7 +19,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Program name and version number (hard coded)
         /// </summary>
-        public static string VersionNumber { get { return "DFMGenerator v2.4.0"; } }
+        public static string VersionNumber { get { return "DFMGenerator v2.4.1"; } }
 
         // Grid data
         /// <summary>
@@ -447,7 +447,11 @@ namespace DFMGenerator_SharedCode
                             case DFNFileType.ASCII:
                                 {
                                     // Write header data
+#if LOGGRIDBLOCKS
+                                    string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tNucleation timestep\tNucleation timestep\tNucleation time ({0})\t", timeUnits);
+#else
                                     string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
+#endif
                                     MF_outputFile.WriteLine(FSheader1);
 
                                     // Loop through each macrofracture and write data to logfile
@@ -458,7 +462,11 @@ namespace DFMGenerator_SharedCode
                                         int NoPoints = CornerPoints.Count();
 
                                         // Write general fracture data to logfile
+#if LOGGRIDBLOCKS
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.MF_segments[PropagationDirection.IPlus][0].NucleationTimestep, frac.MF_segments[PropagationDirection.IMinus][0].NucleationTimestep, frac.NucleationTime / timeUnits_Modifier);
+#else
                                         string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
+#endif
                                         MF_outputFile.WriteLine(data);
 
                                         // Write cornerpoint coordinates to logfile - one row per point
@@ -601,7 +609,11 @@ namespace DFMGenerator_SharedCode
                             case DFNFileType.ASCII:
                                 {
                                     // Write header data
+#if LOGGRIDBLOCKS
+                                    string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tNucleation timestep\tNucleation timestep\tNucleation time ({0})\t", timeUnits);
+#else
                                     string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
+#endif
                                     CP_outputFile.WriteLine(FSheader1);
 
                                     // Loop through each macrofracture and write data to logfile
@@ -612,7 +624,11 @@ namespace DFMGenerator_SharedCode
                                         int NoPoints = CentrePoints.Count();
 
                                         // Write general fracture data to logfile
+#if LOGGRIDBLOCKS
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.MF_segments[PropagationDirection.IPlus][0].NucleationTimestep, frac.MF_segments[PropagationDirection.IMinus][0].NucleationTimestep, frac.NucleationTime / timeUnits_Modifier);
+#else
                                         string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
+#endif
                                         CP_outputFile.WriteLine(data);
 
                                         // Write cornerpoint coordinates to logfile - one row per point
