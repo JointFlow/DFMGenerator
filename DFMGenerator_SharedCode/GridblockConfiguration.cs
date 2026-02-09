@@ -4184,7 +4184,7 @@ namespace DFMGenerator_SharedCode
             }
             // Flag to ignore zero length macrofractures when calculating macrofracture stress shadow interaction
             // This will prevent the development of "shatter zones" with a very high density of very short segments in late timesteps 
-            bool ignoreZeroLengthMFStressShadows = checkStressShadow;
+            bool ignoreZeroLengthMFStressShadows = checkAlluFStressShadows;
 
             // Get reference to the random number generator
             Random randGen = RandGen;
