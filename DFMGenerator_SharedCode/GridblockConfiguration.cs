@@ -3110,10 +3110,11 @@ namespace DFMGenerator_SharedCode
                 //    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "U", "V", "MF Propagation Rate", "MF Propagation Distance", "MF Maximum Propagation Distance", 
                 //    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
-                FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getPhi", "getInstantaneousFII", "getInstantaneousFIJ", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", 
-                    "a_MFP30_total", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolume");
+                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getPhi", "getInstantaneousFII", "getInstantaneousFIJ", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", 
+                //    "a_MFP30_total", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolume");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getAA", "getBB", "getCCStep", "getMeanStressShadowWidth", "getMeanShearStressShadowWidth",
                 //    "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", "getClearZoneVolume", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
+                FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\tAzimuthal stres shadow width\tShear stress shadow width\tTotal stress shadow width\tInverse stress shadow volume this set\tInverse stress shadow volume all sets\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tClear zone volume\t";
 #endif
                 string TS0data = "0\t0\t0\t0\t0\t0\t0\t";
                 for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
@@ -3779,6 +3780,8 @@ namespace DFMGenerator_SharedCode
                                     fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolume());
                                 //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
                                 //    fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolume(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.getMeanAzimuthalStressShadowWidth(), fds.getMeanShearStressShadowWidth(), fds.getMeanStressShadowWidth(), fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
+                                //    fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #endif
                                 timestepData = timestepData + fractureSetData;
                             }
@@ -4179,12 +4182,19 @@ namespace DFMGenerator_SharedCode
                     probabilisticFractureNucleationLimit = 0;
                 }
             }
+            // Flag to ignore zero length macrofractures when calculating macrofracture stress shadow interaction
+            // This will prevent the development of "shatter zones" with a very high density of very short segments in late timesteps 
+            bool ignoreZeroLengthMFStressShadows = checkAlluFStressShadows;
 
             // Get reference to the random number generator
             Random randGen = RandGen;
 
             // Create a temporary list for the maximum macrofracture propagation lengths
             List<List<double>> maxPropLengths = new List<List<double>>();
+
+            // Create a holder for a list of stress shadow half-widths of all fracture sets as seen by all other fracture sets, and vice versa
+            List<List<List<double>>> StressShadowHalfWidthsIJ = new List<List<List<double>>>();
+            List<List<List<double>>> StressShadowHalfWidthsJI = new List<List<List<double>>>();
 
 #if LOGDFNPOP
             // Create a dictionary for the output files for each fracture set
@@ -4213,8 +4223,11 @@ namespace DFMGenerator_SharedCode
 
                 // Create a null reference to a list of stress shadow half-widths of other fracture sets as seen by this fracture set, and to the stress shadow half-widths of this fracture set as seen by other fracture sets
                 // These will be filled out as required
-                List<List<double>> StressShadowHalfWidthsIJ = null;
-                List<List<double>> StressShadowHalfWidthsJI = null;
+                List<List<double>> SetI_StressShadowHalfWidthsIJ = null;
+                List<List<double>> SetI_StressShadowHalfWidthsJI = null;
+                // Also add the lists for this set to the holders for all sets
+                StressShadowHalfWidthsIJ.Add(SetI_StressShadowHalfWidthsIJ);
+                StressShadowHalfWidthsJI.Add(SetI_StressShadowHalfWidthsJI);
 
 #if LOGDFNPOP
                 string fileName = string.Format("DFNPopulationLog_X{0}_Y{1}_Set{2}.txt", SWtop.X, SWtop.Y, fs_index);
@@ -4465,7 +4478,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // First check other macrofractures from this gridblock
                                 if (checkAlluFStressShadows)
-                                    addThisFracture = !checkInMFStressShadow(new_uf_centrepointXYZ, fs_index, ref StressShadowHalfWidthsIJ);
+                                    addThisFracture = !checkInMFStressShadow(new_uf_centrepointXYZ, fs_index, ref SetI_StressShadowHalfWidthsIJ);
                                 else
                                     addThisFracture = !fs.checkInMFStressShadow(new_uF_centrepointIJK);
 
@@ -4489,7 +4502,7 @@ namespace DFMGenerator_SharedCode
                                             // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
                                             // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
                                             // We will therefore use the list generated for this gridblock to speed up the calculation
-                                            if (neighbour_gb.checkInMFStressShadow(new_uf_centrepointXYZ, neighbourGB_fs_index, ref StressShadowHalfWidthsIJ))
+                                            if (neighbour_gb.checkInMFStressShadow(new_uf_centrepointXYZ, neighbourGB_fs_index, ref SetI_StressShadowHalfWidthsIJ))
                                             {
                                                 addThisFracture = false;
                                                 break;
@@ -4689,7 +4702,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // First check other macrofractures from this gridblock
                                 if (checkAlluFStressShadows)
-                                    addThisFracture = !checkInMFExclusionZone(new_MF_nucleationpointXYZ, fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI);
+                                    addThisFracture = !checkInMFExclusionZone(new_MF_nucleationpointXYZ, fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
                                 else
                                     addThisFracture = !fs.checkInMFExclusionZone(new_MF_nucleationpointIJK, MF_StressShadowWidth);
 
@@ -4713,7 +4726,7 @@ namespace DFMGenerator_SharedCode
                                             // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
                                             // We will therefore use the list generated for this gridblock to speed up the calculation
                                             // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            if (neighbour_gb.checkInMFExclusionZone(new_MF_nucleationpointXYZ, neighbourGB_fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
+                                            if (neighbour_gb.checkInMFExclusionZone(new_MF_nucleationpointXYZ, neighbourGB_fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI))
                                             {
                                                 addThisFracture = false;
                                                 break;
@@ -4805,7 +4818,7 @@ namespace DFMGenerator_SharedCode
                                 // If we find a stress shadow interaction, deactivate this microfracture and move on to the next one
                                 if (checkAlluFStressShadows)
                                 {
-                                    if (checkInMFStressShadow(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, ref StressShadowHalfWidthsIJ))
+                                    if (checkInMFStressShadow(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, ref SetI_StressShadowHalfWidthsIJ))
                                     {
                                         uF.Active = false;
                                         continue;
@@ -4843,7 +4856,7 @@ namespace DFMGenerator_SharedCode
                                             // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
                                             // We will therefore use the list generated for this gridblock to speed up the calculation
                                             // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            if (neighbour_gb.checkInMFStressShadow(uFcentrepointXYZ, neighbourGB_fs_index, ref StressShadowHalfWidthsIJ))
+                                            if (neighbour_gb.checkInMFStressShadow(uFcentrepointXYZ, neighbourGB_fs_index, ref SetI_StressShadowHalfWidthsIJ))
                                             {
                                                 deactivateFracture = true;
                                                 break;
@@ -4859,7 +4872,7 @@ namespace DFMGenerator_SharedCode
                                             // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
                                             if (neighbourGB_fs.checkInMFStressShadow(uFcentrepointXYZ))
                                             {
-                                                deactivateFracture = false;
+                                                deactivateFracture = true;
                                                 break;
                                             }
                                         }
@@ -4912,7 +4925,7 @@ namespace DFMGenerator_SharedCode
                                 {
                                     // First check other macrofractures from this gridblock
                                     if (checkAlluFStressShadows)
-                                        addThisFracture = !checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI);
+                                        addThisFracture = !checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
                                     else
                                         addThisFracture = !fs.checkInMFExclusionZone(uF.CentrePoint, MF_StressShadowWidth);
 
@@ -4936,7 +4949,7 @@ namespace DFMGenerator_SharedCode
                                                 // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
                                                 // We will therefore use the list generated for this gridblock to speed up the calculation
                                                 // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                                if (neighbour_gb.checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), neighbourGB_fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
+                                                if (neighbour_gb.checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), neighbourGB_fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI))
                                                 {
                                                     addThisFracture = false;
                                                     break;
@@ -5013,7 +5026,7 @@ namespace DFMGenerator_SharedCode
             {
                 // First we will check again that macrofracture segments nucleated at time zero with zero length do not lie in the exclusion zone of macrofracture from another set
                 // This is necessary to deactivate dormant initial macrofractures that now lie within the exclusion zones of macrofractures from other sets
-                if (checkAlluFStressShadows)
+                if (!ignoreZeroLengthMFStressShadows && checkAlluFStressShadows)
                 {
                     foreach (MacrofractureSegmentHolder segmentHolder in MacrofractureSegments)
                     {
@@ -5035,13 +5048,13 @@ namespace DFMGenerator_SharedCode
                             // Check if the maximum propagation length is zero - if so we can skip the calculation
                             if (maxPropLength > 0)
                             {
-                                // Create a null reference to a list of stress shadow half-widths of other fracture sets as seen by this fracture set, and to the stress shadow half-widths of this fracture set as seen by other fracture sets
-                                List<List<double>> StressShadowHalfWidthsIJ = null;
-                                List<List<double>> StressShadowHalfWidthsJI = null;
+                                // Get the list of stress shadow half-widths of other fracture sets as seen by this fracture set, and to the stress shadow half-widths of this fracture set as seen by other fracture sets
+                                List<List<double>> SetI_StressShadowHalfWidthsIJ = StressShadowHalfWidthsIJ[fs_index];
+                                List<List<double>> SetI_StressShadowHalfWidthsJI = StressShadowHalfWidthsJI[fs_index];
 
                                 // First check other macrofractures from this gridblock
                                 PointXYZ segmentPropNodeXYZ = MFSegment.getPropNodeinXYZ();
-                                bool deactivateThisFracture = checkInMFExclusionZone(segmentPropNodeXYZ, fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI);
+                                bool deactivateThisFracture = checkInMFExclusionZone(segmentPropNodeXYZ, fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
 
                                 // Then, if required, check macrofractures from adjacent gridblocks
                                 // NB we do not need to do this if we have already found a stress shadow interaction
@@ -5061,7 +5074,7 @@ namespace DFMGenerator_SharedCode
                                         // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
                                         // We will therefore use the list generated for this gridblock to speed up the calculation
                                         // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                        if (neighbour_gb.checkInMFExclusionZone(segmentPropNodeXYZ, neighbourGB_fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
+                                        if (neighbour_gb.checkInMFExclusionZone(segmentPropNodeXYZ, neighbourGB_fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsIJ))
                                         {
                                             deactivateThisFracture = true;
                                             break;
@@ -5115,17 +5128,87 @@ namespace DFMGenerator_SharedCode
                         // Check if the maximum propagation length is zero - if so we can skip the calculation
                         if (maxPropLength > 0)
                         {
+                            // First we will check again that macrofracture segments with zero length do not lie in the exclusion zone of another macrofracture
+                            // This is necessary to deactivate dormant initial macrofractures that now lie within the exclusion zones of other macrofractures
+                            if (ignoreZeroLengthMFStressShadows && (float)MFSegment.StrikeLength == 0f)
+                            {
+                                // Get the list of stress shadow half-widths of other fracture sets as seen by this fracture set, and to the stress shadow half-widths of this fracture set as seen by other fracture sets
+                                List<List<double>> SetI_StressShadowHalfWidthsIJ = StressShadowHalfWidthsIJ[fs_index];
+                                List<List<double>> SetI_StressShadowHalfWidthsJI = StressShadowHalfWidthsJI[fs_index];
+
+                                // First check other macrofractures from this gridblock
+                                bool deactivateThisFracture;
+                                PointXYZ segmentPropNodeXYZ = MFSegment.getPropNodeinXYZ();
+                                if (checkAlluFStressShadows)
+                                    deactivateThisFracture = checkInMFExclusionZone(segmentPropNodeXYZ, fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsIJ);
+                                else
+                                    deactivateThisFracture = fs.checkInMFExclusionZone(segmentPropNodeXYZ, fs.FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth);
+
+                                // Then, if required, check macrofractures from adjacent gridblocks
+                                // NB we do not need to do this if we have already found a stress shadow interaction
+                                if (!deactivateThisFracture && SearchNeighbouringGridblocks())
+                                {
+                                    // Create a list of neighbouring gridblocks to search - include diagonal neighbours
+                                    List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
+
+                                    // Loop through each gridblock in the list
+                                    foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
+                                    {
+                                        if (checkAlluFStressShadows)
+                                        {
+                                            // Find the index number of the equivalent fracture set in the neighbouring gridblock
+                                            int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, fs.Strike);
+
+                                            // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
+                                            // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
+                                            // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
+                                            // We will therefore use the list generated for this gridblock to speed up the calculation
+                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
+                                            if (neighbour_gb.checkInMFExclusionZone(segmentPropNodeXYZ, neighbourGB_fs_index, dipsetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI))
+                                            {
+                                                deactivateThisFracture = true;
+                                                break;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Find the correct fracture set in the neighbouring gridblock to search
+                                            Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, fs.Strike);
+
+                                            // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
+                                            // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
+                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
+                                            if (neighbourGB_fs.checkInMFStressShadow(segmentPropNodeXYZ))
+                                            {
+                                                deactivateThisFracture = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } // End check macrofractures from adjacent gridblocks
+
+                                // If the segment does lie in the exclusion zone of another macrofracture, deactivate it and move on to the next
+                                // NB Although this will deactivate the macrofracture segment, it will not record a reference to the deactivating segment or link it up
+                                // We therefore classify it as a nonconnected stress shadow
+                                // These fractures will later be removed by the FractureGrid.GenerateDFN() function as they have zero length
+                                if (deactivateThisFracture)
+                                {
+                                    MFSegment.PropNodeType = SegmentNodeType.NonconnectedStressShadow;
+                                    continue;
+                                }
+                            }
+
                             // The process of extending the fracture, after checking for stress shadow interaction, intersection or propagating across a gridblock boundary, is handled by a separate function
 #if LOGDFNPOP
                             int NoStressShadowInteractions = Dict_NoStressShadowInteractions[fs_index];
                             int NoIntersections = Dict_NoIntersections[fs_index];
                             int NoPropagatingOut = Dict_NoPropagatingOut[fs_index];
-                            ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fs_index, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                            ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fs_index, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
                             Dict_NoStressShadowInteractions[fs_index] = NoStressShadowInteractions;
                             Dict_NoIntersections[fs_index] = NoIntersections;
                             Dict_NoPropagatingOut[fs_index] = NoPropagatingOut;
 #else
-                            ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fs_index, fs, MFSegment, dipsetIndex, ref maxPropLength);
+                            ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fs_index, fs, MFSegment, dipsetIndex, ref maxPropLength);
 #endif
                         } // End if the maximum propagation length is zero
                     } // End if macrofracture segment is active
@@ -5160,15 +5243,16 @@ namespace DFMGenerator_SharedCode
         /// <param name="newSegmentNucleationTime">Real time at which it crosses the gridblock boundary (s)</param>
         /// <param name="use_MF_min_length_cutoff">Flag specifying whether a minimum cutoff length is defined</param>
         /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
+        /// <param name="ignoreZeroLengthMFStressShadows">If true, do not record a stress shadow interaction if the second fracture segment has zero length</param>
         /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
 #if LOGDFNPOP
         /// <param name="fromPreviousTS">Flag specifying whether fracture nucleated in this timestep or a previous timestep - used for debugging only</param>
         /// <param name="NoStressShadowInteractions">Counter for fracture stress shadow interactions - used for debugging only</param>
         /// <param name="NoIntersections">Counter for fracture intersections - used for debugging only</param>
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
-        public void PropagateMFIntoGridblock(MacrofractureSegmentIJK initiatorSegment, int segmentFSIndex, GridDirection FromBoundary, PointXYZ insertionPoint, double newSegmentNucleationTime, bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
+        public void PropagateMFIntoGridblock(MacrofractureSegmentIJK initiatorSegment, int segmentFSIndex, GridDirection FromBoundary, PointXYZ insertionPoint, double newSegmentNucleationTime, bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
-        private void PropagateMFIntoGridblock(MacrofractureSegmentIJK initiatorSegment, int segmentFSIndex, GridDirection FromBoundary, PointXYZ insertionPoint, double newSegmentNucleationTime, bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary)
+        private void PropagateMFIntoGridblock(MacrofractureSegmentIJK initiatorSegment, int segmentFSIndex, GridDirection FromBoundary, PointXYZ insertionPoint, double newSegmentNucleationTime, bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary)
 #endif
         {
             // Check that the fracture set index for the incoming fracture is not higher than the total number of sets in this gridblock
@@ -5304,9 +5388,9 @@ namespace DFMGenerator_SharedCode
                 if (propagationLength > 0)
                 {
 #if LOGDFNPOP
-                    ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, newSegment_FSIndex, newSegment_fs, newSegment, newSegment_DipSetIndex, ref propagationLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                    ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, newSegment_FSIndex, newSegment_fs, newSegment, newSegment_DipSetIndex, ref propagationLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                    ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, newSegment_FSIndex, newSegment_fs, newSegment, newSegment_DipSetIndex, ref propagationLength);
+                    ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, newSegment_FSIndex, newSegment_fs, newSegment, newSegment_DipSetIndex, ref propagationLength);
 #endif
                 }
 
@@ -5319,6 +5403,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="use_MF_min_length_cutoff">Flag specifying whether a minimum cutoff length is defined</param>
         /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
+        /// <param name="ignoreZeroLengthMFStressShadows">If true, do not record a stress shadow interaction if the second fracture segment has zero length</param>
         /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
         /// <param name="fsIndex">Fracture orientation</param>
         /// <param name="fs">Reference to parent fracture set</param>
@@ -5331,18 +5416,18 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoIntersections">Counter for fracture intersections - used for debugging only</param>
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
+        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
+        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
 #endif
         {
             // Check if a tracking boundary has been specified - if so call the ExtendBoundaryTrackingFracture function
             if (MFSegment.TrackingBoundary != GridDirection.None)
 #if LOGDFNPOP
-                return ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                return ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                return ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength);
+                return ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength);
 #endif
 
             // Cache the initial maximum propagation length
@@ -5370,7 +5455,7 @@ namespace DFMGenerator_SharedCode
                 bool checkRelayCrossing = PropControl.checkAlluFStressShadows;
 
                 // First check other macrofractures from this gridblock
-                if (fs.checkStressShadowInteraction(MFSegment, ref maxPropLength, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
+                if (fs.checkStressShadowInteraction(MFSegment, ref maxPropLength, ignoreZeroLengthMFStressShadows, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
 
                 // Then, if required, check macrofractures from adjacent gridblocks
                 if (SearchNeighbouringGridblocks())
@@ -5385,7 +5470,7 @@ namespace DFMGenerator_SharedCode
                         Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fsIndex, fs.Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                        if (fs.checkStressShadowInteraction(MFSegment, neighbourGB_fs, ref maxPropLength, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
+                        if (fs.checkStressShadowInteraction(MFSegment, neighbourGB_fs, ref maxPropLength, ignoreZeroLengthMFStressShadows, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
 
                     } // End loop through each gridblock in the list of neighbouring gridblocks
 
@@ -5507,9 +5592,9 @@ namespace DFMGenerator_SharedCode
                         maxPropLength = initial_maxPropLength - maxPropLength;
 
 #if LOGDFNPOP
-                        ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                        ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                        ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength);
+                        ExtendBoundaryTrackingFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength);
 #endif
                     }
                     else // The fracture can propagate into the neighbouring gridblock
@@ -5525,9 +5610,9 @@ namespace DFMGenerator_SharedCode
 
                         // Call function to create a macrofracture segment in the neighbouring gridblock
 #if LOGDFNPOP
-                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary);
+                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary);
 #endif
                     }
                 }
@@ -5545,6 +5630,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="use_MF_min_length_cutoff">Flag specifying whether a minimum cutoff length is defined</param>
         /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
+        /// <param name="ignoreZeroLengthMFStressShadows">If true, do not record a stress shadow interaction if the second fracture segment has zero length</param>
         /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
         /// <param name="fsIndex">Fracture orientation</param>
         /// <param name="fs">Reference to parent fracture set</param>
@@ -5560,7 +5646,7 @@ namespace DFMGenerator_SharedCode
         private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
+        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
 #endif
         {
             // Get the tracking boundary
@@ -5569,9 +5655,9 @@ namespace DFMGenerator_SharedCode
             // If TrackingBoundary is set to none, will call ExtendFracture without specifying a boundary
             if (TrackingBoundary == GridDirection.None)
 #if LOGDFNPOP
-                return ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                return ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                return ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength);
+                return ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fsIndex, fs, MFSegment, dipsetIndex, ref maxPropLength);
 #endif
 
             // Create a flag for fracture deactivation mechanism
@@ -5680,9 +5766,9 @@ namespace DFMGenerator_SharedCode
 
                         // Call function to create a macrofracture segment in the neighbouring gridblock
 #if LOGDFNPOP
-                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
+                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
 #else
-                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, TerminateAtGridBoundary);
+                        NeighbourGridblocks[intersectedBoundary].PropagateMFIntoGridblock(MFSegment, fsIndex, oppositeBoundary, intersectionPoint, intersectionRealTime, use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary);
 #endif
                     }
                 }
