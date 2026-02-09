@@ -2164,7 +2164,7 @@ namespace DFMGenerator_SharedCode
                                     double V_term2 = ((b + 1) * (V / CapA) * V_term1);
                                     double UV_term = U_term + V_term2;
 
-                                    // If U>>V then the exact equation for optimal duration may give zero because (U_component + V_component2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
+                                    // If U>>V then the exact equation for optimal duration may give zero because (U_term + V_term2) is indistinguishable from U_term due to rounding
                                     if ((float)(UV_term / U_term) > 1f)
                                     {
                                         // Use the formula for increasing stress to calculate optimal duration
@@ -2202,7 +2202,7 @@ namespace DFMGenerator_SharedCode
                                     double V_term2 = ((b + 1) * (V / CapA) * V_term1);
                                     double UV_term = U_term + V_term2;
 
-                                    // If U>>V then the exact equation for optimal duration may give zero because (V_factor + U_factor2) ^ (1 / (b + 1)) is indistinguishable from U due to rounding
+                                    // If U>>V then the exact equation for optimal duration may give zero because (U_term + V_term2) is indistinguishable from U_term due to rounding
                                     if ((float)(UV_term / U_term) > 1f)
                                     {
                                         // Use the formula for increasing stress to calculate optimal duration
@@ -2269,16 +2269,16 @@ namespace DFMGenerator_SharedCode
                         if (nucleationWtime > 0)
                         {
                             double timeToNextDatapoint;
-                            if (setVto0)
+                            double U_term = Math.Pow(U * sqrtpi_Kc_factor, b + 1);
+                            double V_term = (nucleationWtime / CapA) * V * (b + 1) * sqrtpi_Kc_factor;
+                            double UV_term = Math.Pow(U_term + V_term, 1 / (b + 1));
+                            if ((float)(UV_term / U_term) > 1f)
                             {
-                                timeToNextDatapoint = (nucleationWtime / CapA) / Math.Pow(U * sqrtpi_Kc_factor, b);
+                                timeToNextDatapoint = (UV_term / (V * sqrtpi_Kc_factor)) - (U / V);
                             }
                             else
                             {
-                                double Uterm = Math.Pow(U * sqrtpi_Kc_factor, b + 1);
-                                double Vterm = (nucleationWtime / CapA) * V * (b + 1) * sqrtpi_Kc_factor;
-                                double UVterm = Math.Pow(Uterm + Vterm, 1 / (b + 1));
-                                timeToNextDatapoint = (UVterm / (V * sqrtpi_Kc_factor)) - (U / V);
+                                timeToNextDatapoint = (nucleationWtime / CapA) / Math.Pow(U * sqrtpi_Kc_factor, b);
                             }
 
                             if (timeTodP33max > timeToNextDatapoint)
@@ -2576,7 +2576,7 @@ namespace DFMGenerator_SharedCode
             double dRP30 = dUCFP30 * (double)RaysPerFracture;
 
             // If the calculated dMFP30 value is less than the specified minimum, return null (no new datapoint will be created)
-            if (dRP30 < min_NucleatingDatapoint_UCRP30)
+            if ((float)dRP30 < (float)min_NucleatingDatapoint_UCRP30)
                 return null;
 
             // Create a new datapoint and return it

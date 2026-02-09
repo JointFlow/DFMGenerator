@@ -563,19 +563,19 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 3;
-            int NoCols = 3;
-            int NoLayers = 3;
+            int NoRows = 1;// 3;
+            int NoCols = 1;// 3;
+            int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 50;
-            double Length_NS = 50;
-            double LayerThickness = 50;// 1;
+            double Width_EW = 10;// 50;
+            double Length_NS = 10;// 50;
+            double LayerThickness = 10;// 1;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial in metres, positive downwards
-            double Depth = 2000;
+            double Depth = 1000;// 2000;
             // Time units used in input load rates, time limits and strain relaxation time constants
             // These will be converted to SI units (s) by the gridblock objects
             TimeUnits ModelTimeUnits = TimeUnits.ma;
@@ -710,13 +710,13 @@ namespace DFMGenerator_Standalone
             InitialFluidPressure_list.Add(15000000);
             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
             BiazimuthalConjugate = false;*/
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.01);
-            EhmaxRate_list.Add(EhmaxRate);
+            EhminAzi_list.Add(Math.PI / 4);
+            EhminRate_list.Add(-0.001);
+            EhmaxRate_list.Add(-0.001);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
-            AppliedTemperatureChange_list.Add(-2);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(1);
+            StressArchingFactor_list.Add(StressArchingFactor);
             DeformationEpisodeDuration_list.Add(-1);
             AbsoluteStressRate_list.Add(AbsoluteStressRate);
             InitialFluidPressure_list.Add(InitialFluidPressure);
@@ -762,7 +762,7 @@ namespace DFMGenerator_Standalone
             // Depth at the start of deformation (in metres, positive downwards) - this will control stress state
             // If DepthAtDeformation is specified, this will be used to calculate vertical stress
             // If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
-            double DepthAtDeformation = 2000;// -1;
+            double DepthAtDeformation = -1;
             //bool OverwriteDepth = (DepthAtDeformation > 0);
             // Mean density of overlying sediments and fluid (kg/m3)
             double MeanOverlyingSedimentDensity = 2250;
@@ -882,7 +882,7 @@ namespace DFMGenerator_Standalone
             double MaxTimestepDuration = -1;
             // Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepMFP33Increase = 0.02;// 0.005;
+            double MaxTimestepMFP33Increase = 0.005;
             // Minimum radius for microfractures to be included in implicit fracture density and porosity calculations
             // If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
             // If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
@@ -906,7 +906,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which macrofractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumMFClearZoneVolume = 0.1;// 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 150;// 1000;
+            int MaxTimesteps = 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
@@ -952,10 +952,10 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 8;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 5;// -1;
+            double MinUnconfinedFractureRadius = 2;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 50;// -1;
+            double MaxUnconfinedFractureRadius = 10;// -1;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -982,7 +982,7 @@ namespace DFMGenerator_Standalone
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
             double Min_R_ActivationProbability = 0.8;
             // The proportion of the ray length increment to apply to active unconfined fracture datapoints before the specified proportion of fractures are deactivated
-            double ProportionalUCRIncrementToApply = 1;// 0.5;
+            double ProportionalUCRIncrementToApply = 0.5;
             // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
             double Min_R_staticDatapointSizeRatio = 0.02;
             // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
@@ -995,9 +995,9 @@ namespace DFMGenerator_Standalone
             // If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
             AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.Automatic;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-            double MinStressShadowDeactivationRatio = 1000000;// 0.5;
+            double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-            double MinIntersectionDeactivationRatio = 0;// 0.5;
+            double MinIntersectionDeactivationRatio = 0.5;
 
             // Create a random number generator for randomising properties, if required
             Random RandomNumberGenerator = new Random();

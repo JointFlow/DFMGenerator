@@ -2297,10 +2297,11 @@ namespace DFMGenerator_Ocean
                         generalInputParams += string.Format("Amalgamate all grid layers into 1 fracture layer\n");
                     if (MaxTimestepDuration > 0)
                         generalInputParams += string.Format("Maximum duration for individual timesteps: {0}{1}\n", MaxTimestepDuration, ProjectTimeUnits);
-                    generalInputParams += string.Format("Maximum MFP33 increase per timestep (controls accuracy of calculation): {0}\n", MaxTimestepMFP33Increase);
                     if (NoUnconfinedFractureStrikeSets > 0)
                     {
-                        generalInputParams += string.Format("Maximum unconfined fracture radius increase per timestep (controls accuracy of calculation): {0}\n", Max_R_timestep_increase);
+                        generalInputParams += string.Format("Maximum UCFP33 increase per timestep (controls accuracy of calculation): {0}\n", MaxTimestepUCFP33Increase);
+                        if (Max_R_timestep_increase > 0)
+                            generalInputParams += string.Format("Maximum unconfined fracture radius increase per timestep (controls accuracy of calculation): {0}\n", Max_R_timestep_increase);
                         generalInputParams += string.Format("Minimum fracture size ratio for deactivation by stress shadow interaction: {0}\n", MinStressShadowDeactivationRatio);
                         generalInputParams += string.Format("Minimum fracture size ratio for deactivation by intersection: {0}\n", MinIntersectionDeactivationRatio);
                         generalInputParams += string.Format("Maximum proportional increase in unconfined fracture radius before checking for deactivation: {0}\n", Max_R_DeactivationCheck_interval);
@@ -2308,6 +2309,10 @@ namespace DFMGenerator_Ocean
                         generalInputParams += string.Format("Minimum static implicit unconfined fracture size ratio: {0} (datapoints for static unconfined fractures will be amalgamated every {1} timesteps if their size ratio is below this cutoff)\n", Min_R_staticDatapointSizeRatio, CullTSFrequency);
                         if (!CalculateImplicitUCFData)
                             generalInputParams += "Do not calculate implicit fracture data\n";
+                    }
+                    else
+                    {
+                        generalInputParams += string.Format("Maximum MFP33 increase per timestep (controls accuracy of calculation): {0}\n", MaxTimestepMFP33Increase);
                     }
 
                     // Calculation termination controls
