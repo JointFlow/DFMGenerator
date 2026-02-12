@@ -255,11 +255,11 @@ namespace DFMGenerator_Ocean
             UpdateComboBox(args.Argument_IntermediateOutputIntervalControl, comboBox_IntermediateOutputInterval);
             UpdateCheckBox(args.Argument_OutputCentrepoints, checkBox_OutputCentrepoints);
             // Fracture connectivity and anisotropy index control parameters
-            UpdateCheckBox(args.Argument_CalculateFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
-            UpdateCheckBox(args.Argument_CalculateFractureReactivationPotential, checkBox_CalculateFractureReactivationPotential);
-            UpdateCheckBox(args.Argument_CalculateBulkRockElasticTensors, checkBox_CalculateBulkRockElasticTensors);
-            UpdateCheckBox(args.Argument_CalculateFracturePorosity, checkBox_CalculateFracturePorosity);
-            UpdateCheckBox(args.Argument_CalculateFracturePermeabilityTensor, checkBox_CalculateFracturePermeabilityTensor);
+            UpdateCheckBox(args.Argument_OutputFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
+            UpdateCheckBox(args.Argument_OutputFractureReactivationPotential, checkBox_CalculateFractureReactivationPotential);
+            UpdateCheckBox(args.Argument_OutputBulkRockElasticTensors, checkBox_CalculateBulkRockElasticTensors);
+            UpdateCheckBox(args.Argument_OutputFracturePorosity, checkBox_CalculateFracturePorosity);
+            UpdateCheckBox(args.Argument_OutputFracturePermeabilityTensor, checkBox_CalculateFracturePermeabilityTensor);
             UpdateComboBox(args.Argument_PermeabilityAlgorithm, comboBox_PermeabilityAlgorithm);
             UpdateComboBox(args.Argument_FractureTypesInPermeabilityTensor, comboBox_FractureTypesInPermeabilityTensor);
             // Enable the controls for horizontal and vertical host rock permeability if the selected fracture permeability algorithm requires these; otherwise disable them
@@ -418,11 +418,11 @@ namespace DFMGenerator_Ocean
             args.Argument_IntermediateOutputIntervalControl = comboBox_IntermediateOutputInterval.SelectedIndex;
             args.Argument_OutputCentrepoints = checkBox_OutputCentrepoints.Checked;
             // Fracture connectivity and anisotropy index control parameters
-            args.Argument_CalculateFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
-            args.Argument_CalculateFractureReactivationPotential = checkBox_CalculateFractureReactivationPotential.Checked;
-            args.Argument_CalculateBulkRockElasticTensors = checkBox_CalculateBulkRockElasticTensors.Checked;
-            args.Argument_CalculateFracturePermeabilityTensor = checkBox_CalculateFracturePermeabilityTensor.Checked;
-            args.Argument_CalculateFracturePorosity = checkBox_CalculateFracturePorosity.Checked;
+            args.Argument_OutputFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
+            args.Argument_OutputFractureReactivationPotential = checkBox_CalculateFractureReactivationPotential.Checked;
+            args.Argument_OutputBulkRockElasticTensors = checkBox_CalculateBulkRockElasticTensors.Checked;
+            args.Argument_OutputFracturePermeabilityTensor = checkBox_CalculateFracturePermeabilityTensor.Checked;
+            args.Argument_OutputFracturePorosity = checkBox_CalculateFracturePorosity.Checked;
             args.Argument_PermeabilityAlgorithm = comboBox_PermeabilityAlgorithm.SelectedIndex;
             args.Argument_FractureTypesInPermeabilityTensor = comboBox_FractureTypesInPermeabilityTensor.SelectedIndex;
             args.Argument_UsePresentDayStress = checkBox_UsePresentDayStress.Checked;

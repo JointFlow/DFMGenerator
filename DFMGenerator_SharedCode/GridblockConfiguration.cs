@@ -416,6 +416,14 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Area { get; private set; }
         /// <summary>
+        /// Point representing the local gridblock origin, with the minimum X, Y and Z values of all corners of the gridblock
+        /// </summary>
+        public PointXYZ Gridblock_Origin { get { return new PointXYZ(MinX, MinY, MinZ); } }
+        /// <summary>
+        /// Point representing the local gridblock maximum, with the maximum X, Y and Z values of all corners of the gridblock
+        /// </summary>
+        public PointXYZ Gridblock_Maximum { get { return new PointXYZ(MaxX, MaxY, MaxZ); } }
+        /// <summary>
         /// Length of the west side of the middle surface of the gridblock, projected onto the horizontal; recalculated whenever gridblock cornerpoints are changed
         /// </summary>
         public double Length_WSide { get; private set; }
