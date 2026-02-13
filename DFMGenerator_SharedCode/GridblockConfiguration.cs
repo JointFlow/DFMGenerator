@@ -24,6 +24,11 @@ namespace DFMGenerator_SharedCode
     /// </summary>
     public enum GridDirection { N, E, S, W, None }
     /// <summary>
+    /// Enumerator for the gridblock cornerpoints
+    /// NB This is not properly implemented in the GridblockConfiguration object but is provided for the DataTransferToDFMGenerator interface
+    /// </summary>
+    public enum GridblockCornerpoint { NWTop, NETop, SETop, SWTop, NWBottom, NEBottom, SEBottom, SWBottom }
+    /// <summary>
     /// Enumerator for return codes for the CalculateFractureData function: 0 if the calculation runs to completion without errors; 1 if the timestep limit is hit
     /// </summary>
     public enum CalculateFractureDataReturnCode { Completed, TimestepLimitExceeded }

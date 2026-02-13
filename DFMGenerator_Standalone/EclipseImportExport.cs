@@ -20,11 +20,26 @@ namespace DFMGenerator_Standalone
         private FractureGrid gd { get; set; }
 
         // Helper functions and properties
+        /// <summary>
+        /// Null value for the output files
+        /// </summary>
         private double NullValue { get; set; }
 
-
         // Functions to write output data
-
+        /// <summary>
+        /// Write grid geometry and implicit output data to a GRDECL format file or files
+        /// Data will be written for each specified intermediate stage as well as the final stage
+        /// </summary>
+        /// <param name="ModelName">Name of the model to output - will be included in the filenames</param>
+        /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
+        /// <param name="WritePropertiesToSeparateFiles">Flag to write properties to separate GRDECL files - if true separate files will be created for each group of implicit properties</param>
+        /// <param name="OutputFractureSetData">Flag to output implicit data for each fracture set and dipset</param>
+        /// <param name="OutputFractureConnectivityAnisotropy">Flag to output fracture connectivity and anisotropy data, for each fracture set (if selected) and for the fracture network as a whole</param>
+        /// <param name="OutputFractureReactivationPotential">Flag to output reactivation potential and slip tendency for each fracture set</param>
+        /// <param name="OutputFracturePorosity">Flag to output P32 density and porosity for the fracture network as a whole</param>
+        /// <param name="OutputFracturePermeabilityTensor">Flag to output the fracture permeability tensor</param>
+        /// <param name="OutputBulkRockElasticTensors">Flag to output the bulk rock stiffness and compressibility tensors, including the effects of fractures (final stage only)</param>
+        /// <param name="PopulateEmptyGridblocks">Flag to write implicit fracture data for gridblocks with no fractures; if false, null values will be written to implicit fracture properties in gridblocks with no fractures</param>
         public void WriteGRDECL(string ModelName, IProgressReporterWrapper progressReporter, bool WritePropertiesToSeparateFiles, bool OutputFractureSetData, bool OutputFractureConnectivityAnisotropy, bool OutputFractureReactivationPotential, bool OutputFracturePorosity, bool OutputFracturePermeabilityTensor, bool OutputBulkRockElasticTensors, bool PopulateEmptyGridblocks)
         {
             // Get the number of rows, columns and gridblocks
@@ -179,7 +194,7 @@ namespace DFMGenerator_Standalone
                         gridMetadata += string.Format("  METRES /\n\n");
                         PointXYZ gridOrigin = gd.GetGridOrigin();
                         gridMetadata += string.Format("MAPAXES\t-- Generated: {0}\n", metadataSource);
-                        gridMetadata += string.Format("  {0} {1} {2} {3} {4} {5}/\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.X, gridOrigin.X + 1000, gridOrigin.Y);
+                        gridMetadata += string.Format("  {0} {1} {2} {3} {4} {5}/\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.Y, gridOrigin.X + 1000, gridOrigin.Y);
                         gridMetadata += string.Format("GRIDUNIT\t-- Generated: {0}\n", metadataSource);
                         gridMetadata += string.Format("  METRES /\n\n");
                         gridMetadata += string.Format("DIMENS\t-- Generated: {0}\n", metadataSource);
@@ -1343,7 +1358,14 @@ namespace DFMGenerator_Standalone
                 }
             }
         }
-
+        /// <summary>
+        /// Write explicit DFN data to a FAB format file or files
+        /// Data will be written for each specified intermediate stage as well as the final stage
+        /// </summary>
+        /// <param name="ModelName">Name of the model to output - will be included in the filenames</param>
+        /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
+        /// <param name="WriteuFData">Write data for microfractures in the DFN</param>
+        /// <param name="WriteMFData">Write data for layer-bound macrofractures in the DFN</param>
         public void WriteFAB(string ModelName, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData)
         {
             // Get control data from DFNControl object
