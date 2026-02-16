@@ -14,12 +14,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Install", "DFM
 		{F339DBA5-EDC9-4602-859B-5BE45BAA50D2} = {F339DBA5-EDC9-4602-859B-5BE45BAA50D2}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_Compatible", "DFMGenerator_Compatible\DFMGenerator_Compatible.csproj", "{1CB7E235-50B1-4BC8-8439-A8046E29E942}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DFMGenerator_GRDECL", "DFMGenerator_Compatible\DFMGenerator_GRDECL.csproj", "{1CB7E235-50B1-4BC8-8439-A8046E29E942}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DFMGenerator_DataTransfer", "DFMGenerator_DataTransfer\DFMGenerator_DataTransfer.shproj", "{B21E13AB-DBCD-4B80-A347-8471738E3936}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		DFMGenerator_DataTransfer\DFMGenerator_DataTransfer.projitems*{1cb7e235-50b1-4bc8-8439-a8046e29e942}*SharedItemsImports = 4
 		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{1cb7e235-50b1-4bc8-8439-a8046e29e942}*SharedItemsImports = 4
 		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{3763fa9f-9862-4bf7-b072-7e8662d5498c}*SharedItemsImports = 13
+		DFMGenerator_DataTransfer\DFMGenerator_DataTransfer.projitems*{b21e13ab-dbcd-4b80-a347-8471738e3936}*SharedItemsImports = 13
 		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{c7744768-fed9-48d0-8549-7491d6d66c54}*SharedItemsImports = 4
 		DFMGenerator_SharedCode\DFMGenerator_SharedCode.projitems*{f339dba5-edc9-4602-859b-5be45baa50d2}*SharedItemsImports = 4
 	EndGlobalSection

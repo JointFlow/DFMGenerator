@@ -2,16 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using DFMGenerator_SharedCode;
 
-namespace DFMGenerator_Compatible
+namespace DFMGenerator_DataTransfer
 {
     /// <summary>
     /// Enumerator to describe grid file types
     /// </summary>
     enum GridFileType { GRDECL }
+
+    /// <summary>
+    /// Enumerator for the current status of a shadow grid object
+    /// </summary>
+    enum ShadowGridErrorStatus { DataLoadedOK, NoDataLoaded, ErrorReadingFile, ErrorBuildingGrid, ErrorPopulatingProperties }
 
     /// <summary>
     /// A single pillar in a pillar grid
@@ -197,7 +201,7 @@ namespace DFMGenerator_Compatible
                 values[cellI, cellJ, cellK] = value;
                 return 0;
             }
-            catch (IndexOutOfRangeException e)
+            catch (IndexOutOfRangeException)
             {
                 return 1;
             }
@@ -215,7 +219,7 @@ namespace DFMGenerator_Compatible
             {
                 return values[cellI, cellJ, cellK];
             }
-            catch (IndexOutOfRangeException e)
+            catch (IndexOutOfRangeException)
             {
                 return default(T);
             }
@@ -286,8 +290,14 @@ namespace DFMGenerator_Compatible
     /// <summary>
     /// DFM Generator shadow grid that can load data from and write data to GRDECL files
     /// </summary>
-    class ShadowGrid_GRDECL : IDataTransferToDFMGenerator
+    class ShadowGrid : IDataTransfer
     {
+        // Error status
+        /// <summary>
+        /// Current status of the grid; will be set when loading data
+        /// </summary>
+        public ShadowGridErrorStatus ErrorStatus { get; private set; }
+
         // Grid geometry
         // Grid is zero-indexed from SWtop corner
         // I increases towards E
@@ -1821,11 +1831,10 @@ namespace DFMGenerator_Compatible
         /// </summary>
         /// <param name="FileName">Filename for the file to read, not including the GRDECL extension or the file path</param>
         /// <param name="FilePath">Filepath for the file to read</param>
-        /// <returns>Return code: 0 if the operation was successful, 1 if there were errors reading the data, 2 if there were errors building the grid, 3 if there were errors populating the grid properties</returns>
-        /// <returns></returns>
-        public int LoadGRDECLFile(string FileName, string FilePath)
+        /// <returns>Return code: 0 if the operation was successful, 2 if there were errors reading the data, 3 if there were errors building the grid, 4 if there were errors populating the grid properties</returns>
+        public ShadowGridErrorStatus LoadGRDECLFile(string FileName, string FilePath)
         {
-            int returnCode = 0;
+            ShadowGridErrorStatus returnCode = ShadowGridErrorStatus.DataLoadedOK;
 
             // Read data from the specified GRDECL file into a string array
             // Check each line for INCLUDE files, if so open and read them also
@@ -1834,17 +1843,17 @@ namespace DFMGenerator_Compatible
             string[] RawData = new string[0];
             // If there are errors reading the data, set the return code to 1
             if (ReadDataFile(fileNamePlusExtension, FilePath, ref RawData) > 0)
-                returnCode = 1;
+                returnCode = ShadowGridErrorStatus.ErrorReadingFile;
 
             // Recreate the grid and set the grid geometry using the data read from the specified GRDECL file
             // If there are errors recreating the grid, set the return code to 2
             if (BuildGrid(RawData) > 0)
-                returnCode = 2;
+                returnCode = ShadowGridErrorStatus.ErrorBuildingGrid;
 
             // Populate the grid with property data read from the specified GRDECL file
             // If there are errors reading the property data, set the return code to 3
             if (PopulateProperties(RawData) > 0)
-                returnCode = 3;
+                returnCode = ShadowGridErrorStatus.ErrorPopulatingProperties;
 
             // Return the return code
             return returnCode;
@@ -1856,16 +1865,23 @@ namespace DFMGenerator_Compatible
         /// </summary>
         /// <param name="FileName">Filename for the file to read, not including the GRDECL extension or the file path</param>
         /// <param name="FilePath">Filepath for the file to read</param>
-        public ShadowGrid_GRDECL(string FileName, string FilePath) : this()
+        public ShadowGrid(string FileName, string FilePath, GridFileType FileType) : this()
         {
-            // Read data from the spcified file and use it to rebuild the grid and load grid proeprties
-            LoadGRDECLFile(FileName, FilePath);
+            switch (FileType)
+            {
+                case GridFileType.GRDECL:
+                    // Read data from the specified GRDECL file and use it to rebuild the grid and load grid properties
+                    ErrorStatus = LoadGRDECLFile(FileName, FilePath);
+                    break;
+                default:
+                    break;
+            }
         }
         /// <summary>
         /// Basic constructor to instantiate the required arrays and lists
         /// This should not be called directly but from another constructor that builds the grid geometry from an input file
         /// </summary>
-        private ShadowGrid_GRDECL()
+        private ShadowGrid()
         {
             // Set the null values
             NullIntegerValue = -999;
@@ -1873,6 +1889,9 @@ namespace DFMGenerator_Compatible
 
             // Create all the required list objects, as well as empty arrays of pillars and cell face types
             ResetGridGeometry(0, 0, 0);
+
+            // Set the error status to NoDataLoaded
+            ErrorStatus = ShadowGridErrorStatus.NoDataLoaded;
         }
     }
 }

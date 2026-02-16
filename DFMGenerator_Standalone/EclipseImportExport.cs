@@ -1424,7 +1424,7 @@ namespace DFMGenerator_Standalone
                 // Unless we are generating fracture centrelines in which case we will need to loop through a third time
                 int numberOfElements = totalNoFractures * 2;
                 progressReporter.SetNumberOfElements(numberOfElements);
-                int noFracturesGenerated = 0;
+                //int noFracturesGenerated = 0;
 
                 // Loop through each stage in the fracture growth
                 int stageNumber = 1;
