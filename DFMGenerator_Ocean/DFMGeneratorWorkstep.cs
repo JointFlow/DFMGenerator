@@ -1,7 +1,7 @@
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-//#define DEBUG_FRAC_INPUT
-//#define DEBUG_FRAC_OUTPUT
+#define DEBUG_FRAC_INPUT
+#define DEBUG_FRAC_OUTPUT
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -1080,7 +1080,7 @@ namespace DFMGenerator_Ocean
                         HostRock_kv_grid = HostRock_kh_grid;
                     bool UseGridFor_HostRock_kv = (HostRock_kv_grid != null);
 
-                    // Flags for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
+                    // Flag for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageMechanicalPropertyData = arguments.Argument_AverageMechanicalPropertyData;
 
                     // Stress state
@@ -1122,7 +1122,7 @@ namespace DFMGenerator_Ocean
                     double InitialStressRelaxation = -1;
                     if (!double.IsNaN(arguments.Argument_InitialStressRelaxation))
                         InitialStressRelaxation = arguments.Argument_InitialStressRelaxation;
-                    // Flags for whether to average stress and strain data across the Petrel grid cells, or take the value from the top middle cell
+                    // Flag for whether to average stress and strain data across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageStressStrainData = arguments.Argument_AverageStressStrainData;
 
                     // Outputs
@@ -4345,8 +4345,8 @@ namespace DFMGenerator_Ocean
                                     PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.SetInitialStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
                                 PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, {21}, {22}, {23}, {24});",
-                                    CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
-                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
+                                    OutputPopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio,
+                                    MinimumClearZoneVolume, MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
 #endif
 
                                 // Add the deformation load data 

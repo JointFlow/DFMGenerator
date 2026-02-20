@@ -307,23 +307,23 @@ namespace DFMGenerator_DataTransfer
         /// <summary>
         /// Number of columns (I coordinate) in the grid
         /// </summary>
-        private int NoICols { get; set; }
+        public int NoICols { get; private set; }
         /// <summary>
         /// Number of rows (J coordinate) in the grid
         /// </summary>
-        private int NoJRows { get; set; }
+        public int NoJRows { get; private set; }
         /// <summary>
         /// Number of layers (K coordinate) in the grid
         /// </summary>
-        private int NoKLayers { get; set; }
+        public int NoKLayers { get; private set; }
         /// <summary>
         /// Total number of cells in the grid
         /// </summary>
-        private int NoCells { get { return NoICols * NoJRows * NoKLayers; } }
+        public int NoCells { get { return NoICols * NoJRows * NoKLayers; } }
         /// <summary>
         /// Total number of pillars in the grid
         /// </summary>
-        private int NoPillars { get { return (NoICols + 1) * (NoJRows + 1); } }
+        public int NoPillars { get { return (NoICols + 1) * (NoJRows + 1); } }
         /// <summary>
         /// Array of grid pillars
         /// </summary>
@@ -827,7 +827,7 @@ namespace DFMGenerator_DataTransfer
         /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
         /// <param name="IncludeGridGeometry">Flag to include grid geometry data in the GRDECL file</param>
         /// <returns>Return code: 0 if the operation was successful, 1 if the specified stage does not exist, 2 if there is an error writing to the specified file</returns>
-        public int WriteGRDECL(string ModelName, string FilePath, IProgressReporterWrapper progressReporter, int Stage, int TopLayerK, int BottomLayerK, bool IncludeGridGeometry, bool PopulateEmptyGridblocks)
+        public int WriteGRDECLFile(string ModelName, string FilePath, IProgressReporterWrapper progressReporter, int Stage, int TopLayerK, int BottomLayerK, bool IncludeGridGeometry, bool PopulateEmptyGridblocks)
         {
             try
             {
@@ -913,6 +913,299 @@ namespace DFMGenerator_DataTransfer
 
             // Return code 0
             return 0;
+        }
+        /// <summary>
+        /// Write explicit DFN data to a FAB format file or files
+        /// Data will be written for each specified intermediate stage as well as the final stage
+        /// </summary>
+        /// <param name="ModelName">Name of the model to output - will be included in the filenames</param>
+        /// <param name="ModelGrid">Reference to the FractureGrid object containing the DFNs to be exported</param>
+        /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
+        /// <param name="WriteuFData">Write data for microfractures in the DFN</param>
+        /// <param name="WriteMFData">Write data for layer-bound macrofractures in the DFN</param>
+        public void WriteFABFile(string ModelName, FractureGrid ModelGrid, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData)
+        {
+            // Get control data from DFNControl object
+            // Folder to write output files in
+            string filepath = ModelGrid.DFNControl.FolderPath;
+            // Number of intermediate DFNs to output and flag to control their separation
+            int NoIntermediateOutputs = ModelGrid.DFNControl.NumberOfIntermediateOutputs;
+            if (NoIntermediateOutputs < 0) NoIntermediateOutputs = 0;
+            IntermediateOutputInterval IntermediateOutputIntervalControl = ModelGrid.DFNControl.SeparateIntermediateOutputsBy;
+            // Number of cornerpoints for each microfracture
+            int nouFCornerPoints = ModelGrid.DFNControl.NumberOfuFPoints;
+            // Default values for fracture aperture, permeability and compressibility
+            double DefaultFractureAperture = ModelGrid.DFNControl.DefaultFractureAperture;
+            double DefaultFracturePermeability = ModelGrid.DFNControl.DefaultFracturePermeability;
+            double DefaultFractureCompressibility = ModelGrid.DFNControl.DefaultFractureCompressibility;
+            // Get the time units and time units modifier for the output labels
+            double currentTime = ModelGrid.CurrentDFN.CurrentTime;
+            TimeUnits timeUnits = ModelGrid.DFNControl.timeUnits;
+            string ProjectTimeUnits;
+            switch (timeUnits)
+            {
+                case TimeUnits.second:
+                    ProjectTimeUnits = "seconds";
+                    break;
+                case TimeUnits.year:
+                    ProjectTimeUnits = "years";
+                    break;
+                case TimeUnits.ma:
+                    ProjectTimeUnits = "ma";
+                    break;
+                default:
+                    ProjectTimeUnits = "seconds";
+                    break;
+            }
+            double timeUnits_Modifier = ModelGrid.DFNControl.getTimeUnitsModifier();
+
+            // If the calculation has already been cancelled, do not write any output data
+            if (!progressReporter.abortCalculation())
+            {
+                // Write explicit fracture property data to an FAB file
+                progressReporter.OutputMessage("Write explicit data to FAB file(s)");
+
+                // Set the output file extension
+                string fileExtension = ".FAB";
+
+                // Get the total number of fractures to write and update the progress bar
+                int totalNoFractures = 0;
+                foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
+                {
+                    totalNoFractures += (DFN.GlobalDFNMicrofractures.Count + DFN.GlobalDFNMacrofractures.Count);
+
+                }
+
+                // Set the number of elements in the progress bar to twice the total number of fractures
+                // We must loop through all the fractures twice - the first time to generate the fracture objects and the second to assign properties to them
+                // Unless we are generating fracture centrelines in which case we will need to loop through a third time
+                int numberOfElements = totalNoFractures * 2;
+                progressReporter.SetNumberOfElements(numberOfElements);
+                //int noFracturesGenerated = 0;
+
+                // Loop through each stage in the fracture growth
+                int stageNumber = 1;
+                int NoStages = ModelGrid.DFNGrowthStages.Count;
+
+                // Loop through each stage in the fracture growth
+                foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
+                {
+                    // Create a stage-specific label and description for the output
+                    string outputStageLabel;
+                    string stageNameOverride = null;
+                    if ((stageNameOverride is null) || (stageNameOverride.Length == 0))
+                        outputStageLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, (DFN.CurrentTime / timeUnits_Modifier).ToString("G3"), ProjectTimeUnits);
+                    else
+                        outputStageLabel = "_" + stageNameOverride;
+                    string outputStageParams = string.Format("Model name: {0}\n", ModelName);
+                    outputStageParams += (stageNumber == NoStages) ? "Final stage" : string.Format("Stage {0}", stageNumber);
+                    outputStageParams += (stageNameOverride is null) ? "\n" : string.Format(": {0}\n", stageNameOverride);
+                    outputStageParams += string.Format("Time {0}{1}\n", (DFN.CurrentTime / timeUnits_Modifier), ProjectTimeUnits);
+                    outputStageParams += "\n";
+
+                    // Write the model time of the intermediate DFN to the Petrel log window
+                    progressReporter.OutputMessage(string.Format("DFN realisation {0} at time {1} {2}", stageNumber, (DFN.CurrentTime / timeUnits_Modifier), ProjectTimeUnits));
+
+                    // Create a list of all output files for this stage - this will make it easier to keep track of them and ensure that all of them are closed at the end
+                    List<StreamWriter> outputFiles = new List<StreamWriter>();
+
+                    try
+                    {
+                        // Write microfracture data to file
+                        if (WriteuFData)
+                        {
+                            // Create output file for microfractures
+                            string fileNameBase = ModelName + outputStageLabel + "_Microfractures";
+                            string outputFileName = filepath + fileNameBase + fileExtension;
+                            StreamWriter uF_outputFile = new StreamWriter(outputFileName);
+                            outputFiles.Add(uF_outputFile);
+
+                            {
+                                int No_uFracs = DFN.GlobalDFNMicrofractures.Count();
+                                int No_Nodes = No_uFracs * nouFCornerPoints;
+
+                                // Write general fracture FAB header data to logfile
+                                string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
+                                uF_outputFile.WriteLine(FAB_header_1);
+                                string FAB_header5 = string.Format("{0} {1}", "No_Fractures =", No_uFracs);
+                                string FAB_header6 = string.Format("No_TessFractures = 0");
+                                string FAB_header7 = string.Format("{0} {1}", "No_Nodes = ", No_Nodes);
+                                uF_outputFile.WriteLine(FAB_header5);
+                                uF_outputFile.WriteLine(FAB_header6);
+                                uF_outputFile.WriteLine(FAB_header7);
+
+                                string FAB_header_3 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n", "No_RockBlocks = 0", "No_NodesRockBlock = 0", "No_Properties = 3", "END FORMAT");
+                                uF_outputFile.WriteLine(FAB_header_3);
+                                string FAB_header_4 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}", "BEGIN PROPERTIES", "Prop1    =    (Real*4) \"Permeability\"", "Prop2    =    (Real*4) \"Compressibility\"", "Prop3    =    (Real*4) \"Aperture\"");
+                                uF_outputFile.WriteLine(FAB_header_4);
+                                string FAB_header_5 = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n{3}\r\n\r\n{4}", "END PROPERTIES", "BEGIN SETS", "Set1    =    \"Discrete fractures\"", "END SETS", "BEGIN FRACTURE");
+                                uF_outputFile.WriteLine(FAB_header_5);
+
+                                // Loop through each microfracture and write data to logfile
+                                for (int uFracNo = 0; uFracNo < No_uFracs; uFracNo++)
+                                {
+                                    MicrofractureXYZ frac = DFN.GlobalDFNMicrofractures[uFracNo];
+                                    double aperture = frac.MeanAperture;
+                                    double permeability = Math.Pow(aperture, 2) / 12;
+                                    if (double.IsNaN(aperture))
+                                    {
+                                        aperture = DefaultFractureAperture;
+                                        permeability = DefaultFracturePermeability;
+                                    }
+                                    double compressibility = frac.Compressibility;
+                                    if (double.IsNaN(compressibility))
+                                        compressibility = DefaultFractureCompressibility;
+
+                                    string data = string.Format("{0} {1} {2} {3} {4} {5}", uFracNo + 1, nouFCornerPoints, 1, permeability, compressibility, aperture);
+                                    uF_outputFile.WriteLine(data);
+
+                                    // Get a list of cornerpoints using the GetFractureCornerpointsInXYZ function
+                                    List<PointXYZ> cornerPoints = frac.GetFractureCornerpointsInXYZ(nouFCornerPoints);
+                                    // Loop through each point and write the coordinates to file
+                                    int pointNo = 1;
+                                    foreach (PointXYZ cornerPoint in cornerPoints)
+                                    {
+                                        string pointCoords = string.Format("{0} {1} {2} {3}", pointNo++, cornerPoint.X, cornerPoint.Y, cornerPoint.Z);
+                                        uF_outputFile.WriteLine(pointCoords);
+                                    }
+
+                                    VectorXYZ fractureNormal = VectorXYZ.GetNormalToPlane(frac.Azimuth, frac.Dip);
+                                    string lastLine = string.Format("{0} {1} {2} {3}", 0, fractureNormal.Component(VectorComponents.X), fractureNormal.Component(VectorComponents.Y), fractureNormal.Component(VectorComponents.Z));
+                                    uF_outputFile.WriteLine(lastLine);
+                                }
+
+                                // Write FAB footer data to logfile
+                                string footer = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n\r\n{3}\r\n{4}", "END FRACTURE", "BEGIN TESSFRACTURE", "END TESSFRACTURE", "BEGIN ROCKBLOCK", "END ROCKBLOCK");
+                                uF_outputFile.WriteLine(footer);
+                            }
+
+                            // Close microfracture output file
+                            uF_outputFile.Close();
+                        }
+
+                        // Write macrofracture data to file
+                        if (WriteMFData)
+                        {
+                            // Create file for microfractures
+                            string fileNameBase = ModelName + outputStageLabel + "_LayerBoundFractures";
+                            string outputFileName = filepath + fileNameBase + fileExtension;
+                            StreamWriter MF_outputFile = new StreamWriter(outputFileName);
+                            outputFiles.Add(MF_outputFile);
+
+                            {
+                                int No_MFracs = DFN.GlobalDFNMacrofractures.Count;
+                                int No_Segments = 0;
+                                int No_Cornerpoints = 0;
+
+                                // Loop through each macrofracture and count the total number of segments and cornerpoints, excluding zero length segments
+                                foreach (MacrofractureXYZ frac in DFN.GlobalDFNMacrofractures)
+                                {
+                                    foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+                                    {
+                                        int nonZeroLengthSegments = 0;
+                                        foreach (bool segmentFlag in frac.ZeroLengthSegments[dir])
+                                            if (!segmentFlag)
+                                                nonZeroLengthSegments++;
+                                        No_Segments += nonZeroLengthSegments;
+                                        No_Cornerpoints += nonZeroLengthSegments * 4;
+                                    }
+                                }
+
+                                // Write general fracture FAB header data to logfile
+                                string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
+                                MF_outputFile.WriteLine(FAB_header_1);
+                                string FAB_header5 = string.Format("{0} {1}", "No_Fractures =", No_Segments);
+                                string FAB_header6 = string.Format("No_TessFractures = 0");
+                                // NB In FAB terminology, "Nodes" refer to Cornerpoints
+                                string FAB_header7 = string.Format("{0} {1}", "No_Nodes = ", No_Cornerpoints);
+                                MF_outputFile.WriteLine(FAB_header5);
+                                MF_outputFile.WriteLine(FAB_header6);
+                                MF_outputFile.WriteLine(FAB_header7);
+
+                                string FAB_header_3 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n", "No_RockBlocks = 0", "No_NodesRockBlock = 0", "No_Properties = 3", "END FORMAT");
+                                MF_outputFile.WriteLine(FAB_header_3);
+                                string FAB_header_4 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}", "BEGIN PROPERTIES", "Prop1    =    (Real*4) \"Permeability\"", "Prop2    =    (Real*4) \"Compressibility\"", "Prop3    =    (Real*4) \"Aperture\"");
+                                MF_outputFile.WriteLine(FAB_header_4);
+                                string FAB_header_5 = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n{3}\r\n\r\n{4}", "END PROPERTIES", "BEGIN SETS", "Set1    =    \"Discrete fractures\"", "END SETS", "BEGIN FRACTURE");
+                                MF_outputFile.WriteLine(FAB_header_5);
+
+                                // Loop through each macrofracture segment and write data to logfile
+                                int global_segmentNo = 1;
+                                foreach (MacrofractureXYZ MF in DFN.GlobalDFNMacrofractures)
+                                {
+                                    // Get a list of normal vectors to the fracture segments
+                                    Dictionary<PropagationDirection, List<VectorXYZ>> segmentNormalVectors = MF.GetSegmentNormalVectors();
+
+                                    foreach (PropagationDirection dir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
+                                    {
+                                        int MF_noSegments = MF.SegmentCornerPoints[dir].Count;
+                                        for (int MF_segmentNo = 0; MF_segmentNo < MF_noSegments; MF_segmentNo++)
+                                        {
+                                            // Check if it is a zero length segment; if so, move on to the next segment
+                                            if (MF.ZeroLengthSegments[dir][MF_segmentNo])
+                                                continue;
+
+                                            // Get a reference to the cornerpoint list for the segment
+                                            List<PointXYZ> segment = MF.SegmentCornerPoints[dir][MF_segmentNo];
+
+                                            int noNodes = segment.Count;
+
+                                            // Set the fracture aperture
+                                            double aperture = MF.SegmentMeanAperture[dir][MF_segmentNo];
+                                            double permeability = Math.Pow(aperture, 2) / 12;
+                                            if (double.IsNaN(aperture))
+                                            {
+                                                aperture = DefaultFractureAperture;
+                                                permeability = DefaultFracturePermeability;
+                                            }
+                                            double compressibility = MF.SegmentCompressibility[dir][MF_segmentNo];
+                                            if (double.IsNaN(compressibility))
+                                                compressibility = DefaultFractureCompressibility;
+
+                                            string data = string.Format("{0} {1} {2} {3} {4} {5}", global_segmentNo, noNodes, 1, permeability, compressibility, aperture);
+                                            MF_outputFile.WriteLine(data);
+
+                                            int nodeCounter = 1;
+
+                                            foreach (PointXYZ nextPoint in segment)
+                                            {
+                                                string pointCoords = string.Format("{0} {1} {2} {3}", nodeCounter, nextPoint.X, nextPoint.Y, nextPoint.Z);
+                                                MF_outputFile.WriteLine(pointCoords);
+                                                nodeCounter++;
+                                            }
+
+                                            VectorXYZ segmentNormal = segmentNormalVectors[dir][MF_segmentNo];
+                                            string lastLine = string.Format("{0} {1} {2} {3}", 0, segmentNormal.Component(VectorComponents.X), segmentNormal.Component(VectorComponents.Y), segmentNormal.Component(VectorComponents.Z));
+                                            MF_outputFile.WriteLine(lastLine);
+
+                                            global_segmentNo++;
+                                        }
+                                    }
+                                }
+
+                                // Write FAB footer data to logfile
+                                string footer = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n\r\n{3}\r\n{4}", "END FRACTURE", "BEGIN TESSFRACTURE", "END TESSFRACTURE", "BEGIN ROCKBLOCK", "END ROCKBLOCK");
+                                MF_outputFile.WriteLine(footer);
+                            }
+
+                            // Close macrofracture  output file
+                            MF_outputFile.Close();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        // Write an error message
+                        progressReporter.OutputMessage(string.Format("Error occurred while writing output files for stage {0}", outputStageLabel));
+                        progressReporter.OutputMessage(string.Format("Error message: {0}", e.Message));
+                    }
+                    finally
+                    {
+                        // Close all the output files
+                        foreach (StreamWriter nextFile in outputFiles)
+                            nextFile.Close();
+                    }
+                }
+            }
         }
 
         // Functions to populate the shadow grid with data read from a GRDECL file

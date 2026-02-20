@@ -1656,7 +1656,14 @@ namespace DFMGenerator_SharedCode
         }
 
         // Functions to generate specific tensors
-
+        /// <summary>
+        /// Create a tensor filled with NaNs (NB the default constructor will return a tensor where all components are 0)
+        /// </summary>
+        /// <returns>Tensor2S object with all components set to double.NaN</returns>
+        public static Tensor2S NullTensor()
+        {
+            return new Tensor2S(double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
+        }
         /// <summary>
         /// Create a uniaxial second order tensor with a principal axis of arbitrary orientation and magnitude
         /// For example a permeability tensor for flow along parallel tubes
@@ -1664,7 +1671,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Azimuth">Azimuth of the principal axis</param>
         /// <param name="Dip">Dip of the principal axis</param>
         /// <param name="Magnitude">Magnitude of the quantity along the principal axis; magnitude of the quantity along other two axes is 0</param>
-        /// <returns>Tensor2D object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S UniaxialTensor(double Azimuth, double Dip, double Magnitude)
         {
             double sinazi = VectorXYZ.Sin_trim(Azimuth);
@@ -1691,7 +1698,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Axis">VectorXYZ object representing the principal axis; NB if the supplied axis vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the axis vector</param>
         /// <param name="Magnitude">Magnitude of the quantity along the principal axis; magnitude of the quantity along other two axes is 0</param>
-        /// <returns>Tensor2D object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S UniaxialTensor(VectorXYZ Axis, double Magnitude)
         {
             double x = Axis.Component(VectorComponents.X);
@@ -1714,7 +1721,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Azimuth">Azimuth of the plane containing the two principal axes</param>
         /// <param name="Dip">Dip of the plane containing the two principal axes</param>
         /// <param name="Magnitude">Magnitude of the quantity along the two principal axes; magnitude of the quantity along the third axis is 0</param>
-        /// <returns>Tensor2D object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S BiaxialTensor(double Azimuth, double Dip, double Magnitude)
         {
             double sinazi = VectorXYZ.Sin_trim(Azimuth);
@@ -1741,7 +1748,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Normal">VectorXYZ object representing the normal to the plane containing the two principal axes; NB if the supplied normal vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the normal vector</param>
         /// <param name="Magnitude">Magnitude of the quantity along the two principal axes; magnitude of the quantity along the third axis is 0</param>
-        /// <returns>Tensor2D object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S BiaxialTensor(VectorXYZ Normal, double Magnitude)
         {
             double x = Normal.Component(VectorComponents.X);
@@ -1764,7 +1771,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Epsilon_hmin">Minimum horizontal strain (negative for extensional)</param>
         /// <param name="Epsilon_hmax">Maximum horizontal strain (negative for extensional)</param>
         /// <param name="Epsilon_hmin_azimuth">Azimuth of minimum horizontal strain (rad)<</param>
-        /// <returns>Tensor2D object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
+        /// <returns>Tensor2S object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
         public static Tensor2S HorizontalStrainTensor(double Epsilon_hmin, double Epsilon_hmax, double Epsilon_hmin_azimuth)
         {
             if (double.IsNaN(Epsilon_hmin_azimuth) || double.IsNaN(Epsilon_hmax) || double.IsNaN(Epsilon_hmin_azimuth))

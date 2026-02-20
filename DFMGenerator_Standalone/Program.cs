@@ -52,6 +52,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("OriginYOffset 0");
                 input_file.WriteLine("% Current depth of burial in metres, positive downwards");
                 input_file.WriteLine("Depth 2000");
+                input_file.WriteLine("% Time units used in input load rates, time limits and strain relaxation time constants");
                 input_file.WriteLine("% Set time units to ma, year or second");
                 input_file.WriteLine("ModelTimeUnits ma");
                 input_file.WriteLine("% Deformation load");
@@ -730,7 +731,7 @@ namespace DFMGenerator_Standalone
             // Present day effective stress parameters
             // Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
             bool UsePresentDayStress = false;
-            // Present Terzaghi effective day stress tensor - define this to override stress at the time of deformation when calculating fracture aperture and permeability
+            // Present day Terzaghi effective stress tensor - define this to override stress at the time of deformation when calculating fracture aperture and permeability
             double PresentDayEffectiveStress_XX = 0;
             double PresentDayEffectiveStress_YY = 0;
             double PresentDayEffectiveStress_ZZ = 0;
@@ -819,8 +820,8 @@ namespace DFMGenerator_Standalone
             // Number of cornerpoints defining the microfracture polygons in the explicit DFN
             // Set to zero to output microfractures as just a centrepoint and radius; set to 3 or greater to output microfractures as polygons defined by a list of cornerpoints
             int Number_uF_Points = 8;
-            // Not yet implemented - keep this at 0
-            double MinDFNMacrofractureLength = 0;
+            // Minimum macrofracture length cutoff is not yet implemented - keep this at 0
+            double MinMacrofractureLength = 0;
 
             // Create a random number generator for randomising properties, if required
             Random RandomNumberGenerator = new Random();
@@ -1516,7 +1517,7 @@ namespace DFMGenerator_Standalone
                             break;
                         // Not yet implemented - keep this at 0
                         case "MinDFNMacrofractureLength":
-                            MinDFNMacrofractureLength = 0;
+                            MinMacrofractureLength = 0;
                             break;
 
                         // If this is an include statement, add the file name to the list - we will deal with this later
@@ -2689,7 +2690,7 @@ namespace DFMGenerator_Standalone
                 }
             }
             // Set the DFN generation data
-            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
+            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits);
 #if DEBUG_FRACS
             Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, DFNFileType.{13}, {14}, {15}, {16}, {17}, TimeUnits.{18});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, ModelTimeUnits));
 #endif
@@ -2747,7 +2748,7 @@ namespace DFMGenerator_Standalone
             {
             Console.WriteLine("Writing implicit data to GRDECL files");
             EclipseImportExport Exporter = new EclipseImportExport(ModelGrid);
-            Exporter.WriteGRDECL("TestExportSeparate", progReporter, WriteSeparateGRDECLPropertyFiles, true, true, true, OutputFracturePorosity, OutputFracturePermeabilityTensor, OutputBulkRockElasticTensors, false);
+            Exporter.WriteGRDECLFile("TestExportSeparate", progReporter, WriteSeparateGRDECLPropertyFiles, true, true, true, OutputFracturePorosity, OutputFracturePermeabilityTensor, OutputBulkRockElasticTensors, false);
             Console.WriteLine("Data export completed!");
             }
 
