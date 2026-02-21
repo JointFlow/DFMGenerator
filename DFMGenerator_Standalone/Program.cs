@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -479,7 +479,7 @@ namespace DFMGenerator_Standalone
             double EhminAzi = 0;
             // Set VariableStrainOrientation false to have N-S minimum strain orientatation in all cells
             // Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
-            bool VariableStrainOrientation = false;
+            bool VariableStrainOrientation = true;// false;
             double EhminCurvature = Math.PI / 16;
             if (VariableStrainOrientation)
                 EhminAzi = Math.PI / 4;
@@ -604,7 +604,7 @@ namespace DFMGenerator_Standalone
             // Mechanical properties
             double YoungsMod = 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
-            bool VariableYoungsMod = false;
+            bool VariableYoungsMod = true;// false;
             double VariableYoungsModSmoothingFactor = 2;
             double PoissonsRatio = 0.25;
             double Porosity = 0.2;
@@ -674,7 +674,7 @@ namespace DFMGenerator_Standalone
             // - SpecifiedTime (output at the end of each specified deformation episode)
             IntermediateOutputInterval IntermediateOutputIntervalControl = IntermediateOutputInterval.EqualArea;
             // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
-            bool OutputCentrepoints = false;
+            bool OutputCentrepoints = true;// false;
             // Flag to calculate and output the bulk rock compliance and stiffness tensors
             bool OutputBulkRockElasticTensors = false;
             // Flag to calculate and output fracture porosity
@@ -744,7 +744,7 @@ namespace DFMGenerator_Standalone
             // Set to 1 to generate a single fracture set, perpendicular to ehmin
             // Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehmax; this is typical of a single stage of deformation in intact rock
             // Set to 6 or more to generate oblique fractures; this is typical of multiple stages of deformation with fracture reactivation, or transtensional strain
-            int NoFractureSets = 2;
+            int NoFractureSets = 6;// 2;
             // Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
             bool Mode1Only = false;
             bool Mode2Only = false;
