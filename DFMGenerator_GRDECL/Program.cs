@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 #define DEBUG_FRAC_INPUT
@@ -412,7 +412,7 @@ namespace DFMGenerator_GRDECL
             string outputFolderPath = "";
 #else
             // Get path for input and output files
-            string inputFileName = "Hardcoded";
+            string inputfile_name = "Hardcoded";
             string fullHomePath = "";
             string outputFolderPath = "";
 
