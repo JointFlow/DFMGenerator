@@ -5112,8 +5112,9 @@ namespace DFMGenerator_SharedCode
 
             // Check if the nucleating segment lies in the exclusion zone of another macrofracture segment
             // We need to do this even if we have already searched adjacent gridblocks for stress shadow interaction,
-            // since this will only pick up interactions with the stress shadows of fractures propagating in the opposite direction
-            // However we need to check against fractures propagating in the same direction, whose stress shadows may have widened across the gridblock boundary
+            // since this will only pick up interactions with the stress shadows of fractures propagating in the opposite direction,
+            // but we need to check against fractures propagating in the same direction, whose stress shadows may have widened across the gridblock boundary
+            // However we only need to check against macrofractures of the same set in the same gridblock
             if (checkStressShadow)
             {
                 // We will need to create new stress shadow half-width tables for the new gridblock
@@ -5121,7 +5122,7 @@ namespace DFMGenerator_SharedCode
                 List<List<double>> SetI_StressShadowHalfWidthsJI = StressShadowHalfWidthsJI[newSegment_FSIndex];
 
                 // Check if the propagating node of the macrofracture segment lies in an exclusion zone
-                bool deactivateThisFracture = checkInMFExclusionZone(insertionPoint, newSegment_FSIndex, newSegment_DipSetIndex, PropControl.checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
+                bool deactivateThisFracture = checkInMFExclusionZone(insertionPoint, newSegment_FSIndex, newSegment_DipSetIndex, false, false, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
 
                 if (deactivateThisFracture)
                 {
