@@ -329,9 +329,13 @@ namespace DFMGenerator_DataTransfer
         /// </summary>
         private ShadowGridPillar[,] gridPillars;
         /// <summary>
-        /// Arrays of cell face types (0=unfaulted, 1=faulted)
+        /// Arrays of cell face types (0 for unfaulted faces, >0 for faulted faces, giving the index number of the fault)
         /// </summary>
         private Dictionary<GridDirection, GridPropertyArray<int>> cellFaces;
+        /// <summary>
+        /// List of fault names; the index number of the name in the list corresponds to the fault index numbers in the cellFaces arrays
+        /// </summary>
+        private List<string> faultNames;
 
         // Input properties
         // These properties will be set from GRDECL input files and read by DFM Generator as inputs
@@ -517,7 +521,7 @@ namespace DFMGenerator_DataTransfer
         /// <returns>Return code: 0 if the operation was successful, 1 if the specified cell does not exist, 2 if the specified property does not exist, 3 if the specified value is invalid</returns>
         public int SetFloatingPointProperty(int cellI, int cellJ, int cellK, string PropertyName, double value)
         {
-            GridPropertyArray<double> prop = floatingPointInputProperties.Find(x => x.PropertyName == PropertyName);
+            GridPropertyArray<double> prop = currentStageFloatingPointOutputProperties.Find(x => x.PropertyName == PropertyName);
             if (prop is null)
                 return 1;
             else
@@ -534,7 +538,7 @@ namespace DFMGenerator_DataTransfer
         /// <returns>Return code: 0 if the operation was successful, 1 if the specified cell does not exist, 2 if the specified property does not exist, 3 if the specified value is invalid</returns>
         public int SetIntegerProperty(int cellI, int cellJ, int cellK, string PropertyName, int value)
         {
-            GridPropertyArray<int> prop = integerInputProperties.Find(x => x.PropertyName == PropertyName);
+            GridPropertyArray<int> prop = currentStageIntegerOutputProperties.Find(x => x.PropertyName == PropertyName);
             if (prop is null)
                 return 1;
             else
@@ -561,8 +565,8 @@ namespace DFMGenerator_DataTransfer
         private string GetMapUnitsInGRDECLFormat()
         {
             string unitData = "";
-            unitData += string.Format("MAPUNITS\t-- Generated: {0}\n", GeometryDataSource);
-            unitData += string.Format("  METRES /\n\n");
+            unitData += string.Format("MAPUNITS\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            unitData += string.Format("  METRES {0}\n\n", EndBlockIndicator);
             return unitData;
         }
         /// <summary>
@@ -573,8 +577,8 @@ namespace DFMGenerator_DataTransfer
         {
             string axisData = "";
             PointXYZ gridOrigin = gridPillars[0, 0].GetCellCornerpoint(0, GridblockCornerpoint.NWTop);
-            axisData += string.Format("MAPAXES\t-- Generated: {0}\n", GeometryDataSource);
-            axisData += string.Format("  {0} {1} {2} {3} {4} {5}/\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.X, gridOrigin.X + 1000, gridOrigin.Y);
+            axisData += string.Format("MAPAXES\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            axisData += string.Format("  {0} {1} {2} {3} {4} {5} {6}\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.X, gridOrigin.X + 1000, gridOrigin.Y, EndBlockIndicator);
             return axisData;
         }
         /// <summary>
@@ -584,22 +588,9 @@ namespace DFMGenerator_DataTransfer
         private string GetGridUnitsInGRDECLFormat()
         {
             string unitData = "";
-            unitData += string.Format("GRIDUNIT\t-- Generated: {0}\n", GeometryDataSource);
-            unitData += string.Format("  METRES MAP/\n\n");
+            unitData += string.Format("GRIDUNIT\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            unitData += string.Format("  METRES MAP {0}\n\n", EndBlockIndicator);
             return unitData;
-        }
-        /// <summary>
-        /// Get a string representing the dimension data for the entire grid in GRDECL format
-        /// </summary>
-        /// <returns>A string representing the dimension data for the entire grid in GRDECL format</returns>
-        private string GetGridDimensionsInGRDECLFormat()
-        {
-            string dimensionData = "";
-            //dimensionData += string.Format("DIMENS\t-- Generated: {0}\n", GeometryDataSource);
-            //dimensionData += string.Format("  {0} {1} {2}/\n\n", NoICols, NoJRows, NoKLayers);
-            dimensionData += string.Format("SPECGRID\t-- Generated: {0}\n", GeometryDataSource);
-            dimensionData += string.Format("  {0} {1} {2} {3} {4}/\n\n", NoICols, NoJRows, NoKLayers, 1, "F");
-            return dimensionData;
         }
         /// <summary>
         /// Get a string representing the grid coordinate system data in GRDECL format
@@ -608,9 +599,17 @@ namespace DFMGenerator_DataTransfer
         private string GetCoordinateSystemInGRDECLFormat()
         {
             string coordinateSystemData = "";
-            coordinateSystemData += string.Format("COORDSYS\t-- Generated: {0}\n", GeometryDataSource);
-            coordinateSystemData += string.Format("  {0} {1}/\n\n", 1, 5);
+            coordinateSystemData += string.Format("COORDSYS\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            coordinateSystemData += string.Format("  {0} {1} {2}\n\n", 1, 5, EndBlockIndicator);
             return coordinateSystemData;
+        }
+        /// <summary>
+        /// Get a string representing the dimension data for the entire grid in GRDECL format
+        /// </summary>
+        /// <returns>A string representing the dimension data for the entire grid in GRDECL format</returns>
+        private string GetGridDimensionsInGRDECLFormat()
+        {
+            return GetGridDimensionsInGRDECLFormat(0, NoKLayers - 1);
         }
         /// <summary>
         /// Get a string representing the dimension data for a specified stratigraphic interval of the grid in GRDECL format
@@ -620,12 +619,12 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the dimension data for a specified stratigraphic interval of the grid in GRDECL format</returns>
         private string GetGridDimensionsInGRDECLFormat(int TopLayerK, int BottomLayerK)
         {
-            int noLayers = TopLayerK - BottomLayerK + 1;
+            int noLayers = BottomLayerK + 1 - TopLayerK;
             string dimensionData = "";
-            //dimensionData += string.Format("DIMENS\t-- Generated: {0}\n", GeometryDataSource);
+            //dimensionData += string.Format("DIMENS\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
             //dimensionData += string.Format("  {0} {1} {2}/\n\n", NoICols, NoJRows, noLayers);
-            dimensionData += string.Format("SPECGRID\t-- Generated: {0}\n", GeometryDataSource);
-            dimensionData += string.Format("  {0} {1} {2} {3} {4}/\n\n", NoICols, NoJRows, noLayers, 1, "F");
+            dimensionData += string.Format("SPECGRID\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            dimensionData += string.Format("  {0} {1} {2} {3} {4} {5}\n\n", NoICols, NoJRows, noLayers, 1, "F", EndBlockIndicator);
             return dimensionData;
         }
         /// <summary>
@@ -634,7 +633,7 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the grid pillar endpoints in GRDECL format</returns>
         private string GetPillarsInGRDECLFormat()
         {
-            string pillarData = string.Format("COORD\t-- Generated : {0}\n", GeometryDataSource);
+            string pillarData = string.Format("COORD\t{0} Generated : {1}\n", CommentIndicator, GeometryDataSource);
             for (int pillarJ = NoJRows; pillarJ >= 0; pillarJ--)
                 for (int pillarI = 0; pillarI <= NoICols; pillarI++)
                 {
@@ -642,7 +641,7 @@ namespace DFMGenerator_DataTransfer
                     PointXYZ PillarBottom = gridPillars[pillarI, pillarJ].PillarBottom;
                     pillarData += string.Format("  {0} {1} {2} {3} {4} {5}\n", PillarTop.X, PillarTop.Y, PillarTop.Depth, PillarBottom.X, PillarBottom.Y, PillarBottom.Depth);
                 }
-            pillarData += "  /\n\n";
+            pillarData += string.Format("  {0}\n\n", EndBlockIndicator);
             return pillarData;
         }
         /// <summary>
@@ -662,7 +661,7 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the cell cornerpoints of a specified stratigraphic interval of the grid in GRDECL format</returns>
         private string GetCellCornerDepthsInGRDECLFormat(int TopLayerK, int BottomLayerK)
         {
-            string cornerDepthData = string.Format("ZCORN\t-- Generated : {0}\n ", GeometryDataSource);
+            string cornerDepthData = string.Format("ZCORN\t{0} Generated : {1}\n ", CommentIndicator, GeometryDataSource);
             for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
             {
                 // Get the depths for the top corners of all the cells in layer K
@@ -695,8 +694,107 @@ namespace DFMGenerator_DataTransfer
                     cornerDepthData += "\n ";
                 }
             }
-            cornerDepthData += " /\n\n";
+            cornerDepthData += string.Format("  {0}\n\n", EndBlockIndicator);
             return cornerDepthData;
+        }
+        /// <summary>
+        /// Get a string representing the faults within the entire grid in GRDECL format
+        /// </summary>
+        /// <returns>A string representing a nested datablock describing the faulted cell faces within the entire grid in GRDECL format</returns>
+        private string GetFaultsInGRDECLFormat()
+        {
+            return GetFaultsInGRDECLFormat(0, NoKLayers - 1);
+        }
+        /// <summary>
+        /// Get a string representing the faults within a specified stratigraphic interval of the grid in GRDECL format
+        /// </summary>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <returns>A string representing a nested datablock describing the faulted cell faces within a specified stratigraphic interval of the grid in GRDECL format</returns>
+        private string GetFaultsInGRDECLFormat(int TopLayerK, int BottomLayerK)
+        {
+            string faultData = string.Format("FAULTS\t{0} Generated : {1}\n\n", CommentIndicator, GeometryDataSource);
+            faultData += CommentIndicator + " NAME\tIX1\tIX2\tIY1\tIY2\tIZ1\tIZ2\tFACE\n";
+
+            // Loop through all the cells finding fault patches
+            // We will assume patches are a maximum of one cell wide, but may be many cells tall
+            // We will therefore loop through the I and J grid coordinates first to find cell stacks, and then through each face of the stack
+            for (int cellI = 0; cellI < NoICols; cellI++)
+                for (int cellJ = 0; cellJ < NoJRows; cellJ++)
+                    foreach (GridDirection face in new GridDirection[] { GridDirection.E, GridDirection.W, GridDirection.S, GridDirection.N })
+                    {
+                        string directionValue = "";
+                        switch (face)
+                        {
+                            case GridDirection.N:
+                                directionValue = "Y-";
+                                break;
+                            case GridDirection.E:
+                                directionValue = "X+";
+                                break;
+                            case GridDirection.S:
+                                directionValue = "Y+";
+                                break;
+                            case GridDirection.W:
+                                directionValue = "X-";
+                                break;
+                            case GridDirection.None:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        // Set null values for the top and bottom of the current fault patch and the current fault index number
+                        int TopK = -1;
+                        int BottomK = -1;
+                        int currentFaultIndex = 0;
+
+                        // Now loop through the K layers looking for faulted patches on the current face
+                        for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+                        {
+                            // Get the value in the cellFaces array for the appropriate face of the current cell
+                            int cellFaceValue = cellFaces[face].GetPropertyValue(cellI, cellJ, cellK);
+
+                            // If we have not yet found a fault patch, look for the start of a fault patch
+                            if (currentFaultIndex == 0)
+                            {
+                                if (cellFaceValue > 0)
+                                {
+                                    // If we have found the top of the fault patch, set the top of the current fault patch and the current fault index number
+                                    TopK = cellK;
+                                    currentFaultIndex = cellFaceValue;
+                                }
+                            }
+
+                            // If we have aleady found the top of a fault patch, check if we are at the bottom of the patch
+                            // This may be because we are at the bottom of the cell stack, or because the cellFaces value of the underlying cell is different to the current fault index
+                            if ((currentFaultIndex != 0) && ((cellK == BottomLayerK) || (cellFaces[face].GetPropertyValue(cellI, cellJ, cellK + 1) != currentFaultIndex)))
+                            {
+                                // If we are at the bottom of the cell stack we will need to set the BottomK value manually
+                                if (cellK == BottomLayerK)
+                                    BottomK = BottomLayerK;
+
+                                // If we have found the bottom of the fault patch, write a new subblock to the nested fault data block, then reset the top abd bottom fault 
+                                // The coordinates in the GRDECL files are 1-indexed so must be converted from 0-index
+                                // The J coordinates must also be reversed
+                                // Finally the fault index number must be converted from 1-index to 0-index to lookup the fault name
+                                string faultName = (currentFaultIndex <= faultNames.Count) ? faultNames[currentFaultIndex - 1] : "FAULT";
+                                string subblockText = string.Format("'{0}' {1} {2} {3} {4} {5} {6} '{7}' {8}\n", faultName, cellI + 1, cellI + 1, NoJRows - cellJ, NoJRows - cellJ, TopK + 1, BottomK + 1, directionValue, EndBlockIndicator);
+                                faultData += subblockText;
+                                TopK = -1;
+                                BottomK = -1;
+                                currentFaultIndex = 0;
+                            }
+                        }
+                    }
+
+            // Add a list of unique fault names and an end block indicator to the nested block
+            faultData += string.Format("\n{0} List of unique fault names\n", CommentIndicator);
+            foreach (string faultName in faultNames)
+                faultData += string.Format("{0} {1}\n", CommentIndicator, faultName);
+            faultData += string.Format("\n{0}\n\n", EndBlockIndicator);
+
+            return faultData;
         }
         /// <summary>
         /// Get a string representing the Actnum values of all the cells in the grid in GRDECL format, assuming all cells are active (Actnum value 1)
@@ -704,8 +802,8 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the Actnum values of all the cells in the grid in GRDECL format</returns>
         private string GetActnumDataInGRDECLFormat()
         {
-            string actnumData = string.Format("ACTNUM\t-- Generated : {0}\n  ", GeometryDataSource);
-            actnumData += string.Format("  {0}*1  /\n\n", NoCells);
+            string actnumData = string.Format("ACTNUM\t{0} Generated : {1}\n  ", CommentIndicator, GeometryDataSource);
+            actnumData += string.Format("  {0}*1  {1}\n\n", NoCells, EndBlockIndicator);
             return actnumData;
         }
         /// <summary>
@@ -716,8 +814,8 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the Actnum values of all the cells in a specified stratigraphic interval of the grid in GRDECL formatt</returns>
         private string GetActnumDataInGRDECLFormat(int TopLayerK, int BottomLayerK)
         {
-            string actnumData = string.Format("ACTNUM\t-- Generated : {0}\n  ", GeometryDataSource);
-            actnumData += string.Format("  {0}*1  /\n\n", NoICols * NoJRows * (TopLayerK - BottomLayerK + 1));
+            string actnumData = string.Format("ACTNUM\t{0} Generated : {1}\n  ", CommentIndicator, GeometryDataSource);
+            actnumData += string.Format("  {0}*1  {1}\n\n", NoICols * NoJRows * (TopLayerK - BottomLayerK + 1), EndBlockIndicator);
             return actnumData;
         }
         /// <summary>
@@ -749,7 +847,7 @@ namespace DFMGenerator_DataTransfer
                         Source = OutputDataSource;*/
 
             // Create a string for the property
-            string propertyData = string.Format("{0}\t-- Generated : {1}\n ", Property.PropertyName, Source);
+            string propertyData = string.Format("{0}\t{1} Generated : {2}\n ", Property.PropertyName, CommentIndicator, Source);
 
             // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
             for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
@@ -765,7 +863,7 @@ namespace DFMGenerator_DataTransfer
             }
 
             // Add the terminator to the property string and return it
-            propertyData += " /\n\n";
+            propertyData += string.Format("  {0}\n\n", EndBlockIndicator);
             return propertyData;
         }
         /// <summary>
@@ -797,7 +895,7 @@ namespace DFMGenerator_DataTransfer
                         Source = OutputDataSource;*/
 
             // Create a string for the property
-            string propertyData = string.Format("{0}\t-- Generated : {1}\n ", Property.PropertyName, Source);
+            string propertyData = string.Format("{0}\t{1} Generated : {2}\n ", Property.PropertyName, CommentIndicator, Source);
 
             // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
             for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
@@ -813,7 +911,7 @@ namespace DFMGenerator_DataTransfer
             }
 
             // Add the terminator to the property string and return it
-            propertyData += " /\n\n";
+            propertyData += string.Format("  {0}\n\n", EndBlockIndicator);
             return propertyData;
         }
         /// <summary>
@@ -822,7 +920,7 @@ namespace DFMGenerator_DataTransfer
         /// <param name="ModelName">Name of the model to output - will be included in the filename</param>
         /// <param name="FilePath">File path to write the output file to</param>
         /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
-        /// <param name="Stage">Stage of the model output to write to the GRDECL file</param>
+        /// <param name="Stage">Stage of the model output to write to the GRDECL file, indexed from 1</param>
         /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
         /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
         /// <param name="IncludeGridGeometry">Flag to include grid geometry data in the GRDECL file</param>
@@ -838,15 +936,15 @@ namespace DFMGenerator_DataTransfer
 
                 // Get the lists of output properties for the soecified stage and the stage name
                 // If the specified stage is out of range create an error message and return code 1
-                if ((Stage < 0) || (Stage >= NoStages))
+                if ((Stage < 0) || (Stage > NoStages))
                 {
                     progressReporter.OutputMessage(string.Format("There is no output data for stage {0}", Stage));
                     progressReporter.OutputMessage("No output files will be written");
                     return 1;
                 }
-                List<GridPropertyArray<double>> floatingPointPropertiesToOutput = floatingPointOutputProperties[Stage];
-                List<GridPropertyArray<int>> integerPropertiesToOutput = integerOutputProperties[Stage];
-                string stageName = stageNames[Stage];
+                List<GridPropertyArray<double>> floatingPointPropertiesToOutput = floatingPointOutputProperties[Stage-1];
+                List<GridPropertyArray<int>> integerPropertiesToOutput = integerOutputProperties[Stage-1];
+                string stageName = stageNames[Stage - 1];
 
                 // If the calculation has already been cancelled, do not write any output data
                 if (!progressReporter.abortCalculation())
@@ -864,14 +962,14 @@ namespace DFMGenerator_DataTransfer
 
                     // Write header
                     string headerInfo = "";
-                    headerInfo += string.Format("-- Generated [\n");
-                    headerInfo += string.Format("--Format      : Eclipse keywords(grid geometry and properties)(ASCII)\n");
-                    headerInfo += string.Format("-- Exported by: {0}\n", FractureGrid.VersionNumber);
-                    headerInfo += string.Format("-- User name: {0}\n", "");
-                    headerInfo += string.Format("-- Date: {0}\n", System.DateTime.Now);
-                    headerInfo += string.Format("-- Project: {0}\n", ModelName);
-                    headerInfo += string.Format("-- Grid: \n");
-                    headerInfo += string.Format("-- Generated ]\n\n");
+                    headerInfo += string.Format("{0} Generated [\n", CommentIndicator);
+                    headerInfo += string.Format("{0} Format      : Eclipse keywords(grid geometry and properties)(ASCII)\n", CommentIndicator);
+                    headerInfo += string.Format("{0} Exported by: {1}\n", CommentIndicator, FractureGrid.VersionNumber);
+                    headerInfo += string.Format("{0} User name: {1}\n", CommentIndicator, "");
+                    headerInfo += string.Format("{0} Date: {1}\n", CommentIndicator, System.DateTime.Now);
+                    headerInfo += string.Format("{0} Project: {1}\n", CommentIndicator, ModelName);
+                    headerInfo += string.Format("{0} Grid: \n", CommentIndicator);
+                    headerInfo += string.Format("{0} Generated ]\n\n", CommentIndicator);
                     outputFile.Write(headerInfo);
 
 
@@ -891,6 +989,8 @@ namespace DFMGenerator_DataTransfer
                         outputFile.Write(GetPillarsInGRDECLFormat());
                         // Write the depths (-Z coordinates) of the cell cornerpoint to the output file
                         outputFile.Write(GetCellCornerDepthsInGRDECLFormat(TopLayerK, BottomLayerK));
+                        // Write the fault patches to the output file
+                        outputFile.Write(GetFaultsInGRDECLFormat(TopLayerK, BottomLayerK));
                     }
 
                     // Write the property data for all properties in the specified output stage to the output file
@@ -919,15 +1019,14 @@ namespace DFMGenerator_DataTransfer
         /// Data will be written for each specified intermediate stage as well as the final stage
         /// </summary>
         /// <param name="ModelName">Name of the model to output - will be included in the filenames</param>
-        /// <param name="ModelGrid">Reference to the FractureGrid object containing the DFNs to be exported</param>
+         /// <param name="FilePath">File path to write the output file to</param>
+       /// <param name="ModelGrid">Reference to the FractureGrid object containing the DFNs to be exported</param>
         /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
         /// <param name="WriteuFData">Write data for microfractures in the DFN</param>
         /// <param name="WriteMFData">Write data for layer-bound macrofractures in the DFN</param>
-        public void WriteFABFile(string ModelName, FractureGrid ModelGrid, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData)
+        public void WriteFABFiles(string ModelName, string FilePath, FractureGrid ModelGrid, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData)
         {
             // Get control data from DFNControl object
-            // Folder to write output files in
-            string filepath = ModelGrid.DFNControl.FolderPath;
             // Number of intermediate DFNs to output and flag to control their separation
             int NoIntermediateOutputs = ModelGrid.DFNControl.NumberOfIntermediateOutputs;
             if (NoIntermediateOutputs < 0) NoIntermediateOutputs = 0;
@@ -973,15 +1072,14 @@ namespace DFMGenerator_DataTransfer
                 foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                 {
                     totalNoFractures += (DFN.GlobalDFNMicrofractures.Count + DFN.GlobalDFNMacrofractures.Count);
-
                 }
 
                 // Set the number of elements in the progress bar to twice the total number of fractures
                 // We must loop through all the fractures twice - the first time to generate the fracture objects and the second to assign properties to them
                 // Unless we are generating fracture centrelines in which case we will need to loop through a third time
-                int numberOfElements = totalNoFractures * 2;
+                int numberOfElements = totalNoFractures;
                 progressReporter.SetNumberOfElements(numberOfElements);
-                //int noFracturesGenerated = 0;
+                int noFracturesGenerated = 0;
 
                 // Loop through each stage in the fracture growth
                 int stageNumber = 1;
@@ -994,7 +1092,7 @@ namespace DFMGenerator_DataTransfer
                     string outputStageLabel;
                     string stageNameOverride = null;
                     if ((stageNameOverride is null) || (stageNameOverride.Length == 0))
-                        outputStageLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, (DFN.CurrentTime / timeUnits_Modifier).ToString("G3"), ProjectTimeUnits);
+                        outputStageLabel = (stageNumber == NoStages) ? "_Final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, (DFN.CurrentTime / timeUnits_Modifier).ToString("G3"), ProjectTimeUnits);
                     else
                         outputStageLabel = "_" + stageNameOverride;
                     string outputStageParams = string.Format("Model name: {0}\n", ModelName);
@@ -1016,7 +1114,7 @@ namespace DFMGenerator_DataTransfer
                         {
                             // Create output file for microfractures
                             string fileNameBase = ModelName + outputStageLabel + "_Microfractures";
-                            string outputFileName = filepath + fileNameBase + fileExtension;
+                            string outputFileName = FilePath + fileNameBase + fileExtension;
                             StreamWriter uF_outputFile = new StreamWriter(outputFileName);
                             outputFiles.Add(uF_outputFile);
 
@@ -1072,6 +1170,9 @@ namespace DFMGenerator_DataTransfer
                                     VectorXYZ fractureNormal = VectorXYZ.GetNormalToPlane(frac.Azimuth, frac.Dip);
                                     string lastLine = string.Format("{0} {1} {2} {3}", 0, fractureNormal.Component(VectorComponents.X), fractureNormal.Component(VectorComponents.Y), fractureNormal.Component(VectorComponents.Z));
                                     uF_outputFile.WriteLine(lastLine);
+
+                                    // Update progress bar
+                                    progressReporter.UpdateProgress(++noFracturesGenerated);
                                 }
 
                                 // Write FAB footer data to logfile
@@ -1088,7 +1189,7 @@ namespace DFMGenerator_DataTransfer
                         {
                             // Create file for microfractures
                             string fileNameBase = ModelName + outputStageLabel + "_LayerBoundFractures";
-                            string outputFileName = filepath + fileNameBase + fileExtension;
+                            string outputFileName = FilePath + fileNameBase + fileExtension;
                             StreamWriter MF_outputFile = new StreamWriter(outputFileName);
                             outputFiles.Add(MF_outputFile);
 
@@ -1181,6 +1282,9 @@ namespace DFMGenerator_DataTransfer
                                             global_segmentNo++;
                                         }
                                     }
+
+                                    // Update progress bar
+                                    progressReporter.UpdateProgress(++noFracturesGenerated);
                                 }
 
                                 // Write FAB footer data to logfile
@@ -1203,6 +1307,9 @@ namespace DFMGenerator_DataTransfer
                         // Close all the output files
                         foreach (StreamWriter nextFile in outputFiles)
                             nextFile.Close();
+
+                        // Increment the stage counter
+                        stageNumber++;
                     }
                 }
             }
@@ -1218,6 +1325,14 @@ namespace DFMGenerator_DataTransfer
         /// </summary>
         private double NullFloatingPointValue;
         /// <summary>
+        /// Indicates a comment in a GRDECL file; the rest of the line will be ignored
+        /// </summary>
+        private string CommentIndicator;
+        /// <summary>
+        /// Indicates the end of a data block in a GRDECL file
+        /// </summary>
+        private string EndBlockIndicator;
+        /// <summary>
         /// Read a block of string data with a specific name from a GRDECL file and return it as a GRDECLDataBlock object
         /// </summary>
         /// <param name="BlockName">Name of the block to read</param>
@@ -1227,18 +1342,16 @@ namespace DFMGenerator_DataTransfer
         private GRDECLDataBlock<string> ExtractStringBlockFromGRDECLData(string BlockName, string[] RawData, int MaxNumberOfDataItems)
         {
             GRDECLDataBlock<string> currentDataBlock = null;
-            string commentIndicator = "--";
-            string endBlockIndicator = "/";
 
             // Loop through each line in the input datafile
             foreach (string nextLine in RawData)
             {
                 // First remove any data after a comment indicator
-                int commentPosition = nextLine.IndexOf(commentIndicator);
-                if (commentPosition >= 0) nextLine.Remove(commentPosition);
+                int commentPosition = nextLine.IndexOf(CommentIndicator);
+                string trimmedNextLine = (commentPosition >= 0) ? nextLine.Remove(commentPosition) : nextLine;
 
                 // Split the line into strings separated by spaces or tabs
-                string[] items = nextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] items = trimmedNextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 
                 // Loop through each item in turn
                 foreach (string item in items)
@@ -1255,7 +1368,7 @@ namespace DFMGenerator_DataTransfer
                         }
                     }
                     // Otherwise check if we have reached the end of the block; if so return the data
-                    else if ((trimmedItem == endBlockIndicator) || (currentDataBlock.NoDataValues >= MaxNumberOfDataItems))
+                    else if ((trimmedItem == EndBlockIndicator) || (currentDataBlock.NoDataValues >= MaxNumberOfDataItems))
                     {
                         return currentDataBlock;
                     }
@@ -1290,18 +1403,15 @@ namespace DFMGenerator_DataTransfer
             GRDECLDataBlock<string> currentSubBlock = null;
             bool readingSubBlock = false;
 
-            string commentIndicator = "--";
-            string endBlockIndicator = "/";
-
             // Loop through each line in the input datafile
             foreach (string nextLine in RawData)
             {
                 // First remove any data after a comment indicator
-                int commentPosition = nextLine.IndexOf(commentIndicator);
-                if (commentPosition >= 0) nextLine.Remove(commentPosition);
+                int commentPosition = nextLine.IndexOf(CommentIndicator);
+                string trimmedNextLine = (commentPosition >= 0) ? nextLine.Remove(commentPosition) : nextLine;
 
                 // Split the line into strings separated by spaces or tabs
-                string[] items = nextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] items = trimmedNextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 
                 // Loop through each item in turn
                 foreach (string item in items)
@@ -1322,7 +1432,7 @@ namespace DFMGenerator_DataTransfer
                     if (!readingSubBlock)
                     {
                         // If we read the end block indicator while not reading a sub-block, assume this refers to the outer nested blocks, and return the current list of sub-blocks
-                        if (trimmedItem == endBlockIndicator)
+                        if (trimmedItem == EndBlockIndicator)
                         {
                             return nestedBlocks;
                         }
@@ -1336,7 +1446,7 @@ namespace DFMGenerator_DataTransfer
                         }
                     }
                     // Otherwise check if we have reached the end of the block; if so add it to the list of nested blocks and set the flag to indicate we are no longer reading a sub-block
-                    else if ((trimmedItem == endBlockIndicator) || (currentSubBlock.NoDataValues >= MaxNumberOfDataItems))
+                    else if ((trimmedItem == EndBlockIndicator) || (currentSubBlock.NoDataValues >= MaxNumberOfDataItems))
                     {
                         nestedBlocks.Add(currentSubBlock);
                         readingSubBlock = false;
@@ -1363,18 +1473,16 @@ namespace DFMGenerator_DataTransfer
         private GRDECLDataBlock<int> ExtractIntegerBlockFromGRDECLData(string BlockName, string[] RawData, int MaxNumberOfDataItems)
         {
             GRDECLDataBlock<int> currentDataBlock = null;
-            string commentIndicator = "--";
-            string endBlockIndicator = "/";
 
             // Loop through each line in the input datafile
             foreach (string nextLine in RawData)
             {
                 // First remove any data after a comment indicator
-                int commentPosition = nextLine.IndexOf(commentIndicator);
-                if (commentPosition >= 0) nextLine.Remove(commentPosition);
+                int commentPosition = nextLine.IndexOf(CommentIndicator);
+                string trimmedNextLine = (commentPosition >= 0) ? nextLine.Remove(commentPosition) : nextLine;
 
                 // Split the line into strings separated by spaces or tabs
-                string[] items = nextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] items = trimmedNextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 
                 // Loop through each item in turn
                 foreach (string item in items)
@@ -1391,7 +1499,7 @@ namespace DFMGenerator_DataTransfer
                         }
                     }
                     // Otherwise check if we have reached the end of the block; if so return the data
-                    else if ((trimmedItem == endBlockIndicator) || (currentDataBlock.NoDataValues >= MaxNumberOfDataItems))
+                    else if ((trimmedItem == EndBlockIndicator) || (currentDataBlock.NoDataValues >= MaxNumberOfDataItems))
                     {
                         return currentDataBlock;
                     }
@@ -1463,18 +1571,16 @@ namespace DFMGenerator_DataTransfer
         private GRDECLDataBlock<double> ExtractFloatingPointBlockFromGRDECLData(string BlockName, string[] RawData, int MaxNumberOfDataItems)
         {
             GRDECLDataBlock<double> currentDataBlock = null;
-            string commentIndicator = "--";
-            string endBlockIndicator = "/";
 
             // Loop through each line in the input datafile
             foreach (string nextLine in RawData)
             {
                 // First remove any data after a comment indicator
-                int commentPosition = nextLine.IndexOf(commentIndicator);
-                if (commentPosition >= 0) nextLine.Remove(commentPosition);
+                int commentPosition = nextLine.IndexOf(CommentIndicator);
+                string trimmedNextLine = (commentPosition >= 0) ? nextLine.Remove(commentPosition) : nextLine;
 
                 // Split the line into strings separated by spaces or tabs
-                string[] items = nextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] items = trimmedNextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 
                 // Loop through each item in turn
                 foreach (string item in items)
@@ -1491,7 +1597,7 @@ namespace DFMGenerator_DataTransfer
                         }
                     }
                     // Otherwise check if we have reached the end of the block; if so return the data
-                    else if ((trimmedItem == endBlockIndicator) || (currentDataBlock.NoDataValues >= MaxNumberOfDataItems))
+                    else if ((trimmedItem == EndBlockIndicator) || (currentDataBlock.NoDataValues >= MaxNumberOfDataItems))
                     {
                         return currentDataBlock;
                     }
@@ -1571,18 +1677,16 @@ namespace DFMGenerator_DataTransfer
         {
             List<GRDECLDataBlock<double>> dataBlocks = new List<GRDECLDataBlock<double>>();
             GRDECLDataBlock<double> currentDataBlock = null;
-            string commentIndicator = "--";
-            string endBlockIndicator = "/";
 
             // Loop through each line in the input datafile
             foreach (string nextLine in RawData)
             {
                 // First remove any data after a comment indicator
-                int commentPosition = nextLine.IndexOf(commentIndicator);
-                if (commentPosition >= 0) nextLine.Remove(commentPosition);
+                int commentPosition = nextLine.IndexOf(CommentIndicator);
+                string trimmedNextLine = (commentPosition >= 0) ? nextLine.Remove(commentPosition) : nextLine;
 
                 // Split the line into strings separated by spaces or tabs
-                string[] items = nextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] items = trimmedNextLine.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
 
                 // Loop through each item in turn
                 foreach (string item in items)
@@ -1607,7 +1711,7 @@ namespace DFMGenerator_DataTransfer
                         }
                         // Check if it contains * or the end block indicator
                         // If so it is not a new block name
-                        if (trimmedItem.Contains('*') || trimmedItem.Contains(endBlockIndicator))
+                        if (trimmedItem.Contains('*') || trimmedItem.Contains(EndBlockIndicator))
                             startNewBlock = false;
                         // Check if it is on the list of names to skip
                         if (BlockNamesToSkip.Contains(trimmedItem))
@@ -1621,7 +1725,7 @@ namespace DFMGenerator_DataTransfer
                         }
                     }
                     // Otherwise check for an end of block indicator; if so set the current block pointer to null
-                    else if (trimmedItem == endBlockIndicator)
+                    else if (trimmedItem == EndBlockIndicator)
                     {
                         currentDataBlock = null;
                     }
@@ -1717,6 +1821,9 @@ namespace DFMGenerator_DataTransfer
                 cellFaces[face] = new GridPropertyArray<int>(arrayName, NoICols_in, NoJRows_in, NoKLayers_in, 0);
             }
 
+            // Recreate the list of fault names
+            faultNames = new List<string>();
+
             // Recreate lists for floating point and integer input and output properties
             // NB a new output stage must be created using CreateNewStage(StageName) before output property data can be written
             floatingPointInputProperties = new List<GridPropertyArray<double>>();
@@ -1789,7 +1896,7 @@ namespace DFMGenerator_DataTransfer
             // Create a counter to keep track of the position in the input data
             int dataCounter = 0;
 
-            for (int cellK = 0; cellK <= NoKLayers; cellK++)
+            for (int cellK = 0; cellK < NoKLayers; cellK++)
             {
                 // Get the depths for the top corners of all the cells in layer K
                 for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
@@ -1803,7 +1910,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(NWTopZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.NWTop, NWTopZ) > 0)
+                        if (gridPillars[cellI, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.NWTop, NWTopZ) > 0)
                             return 3;
 
                         // Get the depth value for the NE top corner of the current cell
@@ -1813,7 +1920,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(NETopZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI + 1, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.NETop, NETopZ) > 0)
+                        if (gridPillars[cellI + 1, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.NETop, NETopZ) > 0)
                             return 3;
                     }
                     for (int cellI = 0; cellI < NoICols; cellI++)
@@ -1825,7 +1932,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(SWTopZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.SWTop, SWTopZ) > 0)
+                        if (gridPillars[cellI, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.SWTop, SWTopZ) > 0)
                             return 3;
 
                         // Get the depth value for the SE top corner of the current cell
@@ -1835,7 +1942,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(SETopZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI + 1, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.SETop, SETopZ) > 0)
+                        if (gridPillars[cellI + 1, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.SETop, SETopZ) > 0)
                             return 3;
                     }
                 }
@@ -1852,7 +1959,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(NWBottomZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.NWBottom, NWBottomZ) > 0)
+                        if (gridPillars[cellI, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.NWBottom, NWBottomZ) > 0)
                             return 3;
 
                         // Get the depth value for the NE bottom corner of the current cell
@@ -1862,7 +1969,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(NEBottomZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI + 1, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.NEBottom, NEBottomZ) > 0)
+                        if (gridPillars[cellI + 1, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.NEBottom, NEBottomZ) > 0)
                             return 3;
                     }
                     for (int cellI = 0; cellI < NoICols; cellI++)
@@ -1874,7 +1981,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(SWBottomZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.SWBottom, SWBottomZ) > 0)
+                        if (gridPillars[cellI, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.SWBottom, SWBottomZ) > 0)
                             return 3;
 
                         // Get the depth value for the SE bottom corner of the current cell
@@ -1884,7 +1991,7 @@ namespace DFMGenerator_DataTransfer
                         if (double.IsNaN(SEBottomZ))
                             return 2;
                         // Otherwise add it to the appropriate pillar
-                        if (gridPillars[cellI + 1, cellJ + 1].SetLayerZCoordinate(cellK, GridblockCornerpoint.SEBottom, SEBottomZ) > 0)
+                        if (gridPillars[cellI + 1, cellJ].SetLayerZCoordinate(cellK, GridblockCornerpoint.SEBottom, SEBottomZ) > 0)
                             return 3;
                     }
                 }
@@ -1896,11 +2003,104 @@ namespace DFMGenerator_DataTransfer
         /// <summary>
         /// Populate the grid with faults
         /// </summary>
-        /// <param name="Faults">List of string GRDECLDataBlock items containing the faulted cell faces</param>
-        /// <returns>Return code: 0 if the operation was successful, ...</returns>
+        /// <param name="Faults">List of string GRDECLDataBlock items from a nested data block, containing the faulted cell faces</param>
+        /// <returns>Return code: 0 if the operation was successful, 1 if the fault coordinates are in an invalid format, 2 if a fault coordinate is out of range, 3 if the fault face data is in an invalid format, 4 for any other errors</returns>
         private int AddFaultsToGrid(List<GRDECLDataBlock<string>> Faults)
         {
-            // To be implemented
+            // Each string in the input string list represents a sub-block describing a single fault patch
+            foreach (GRDECLDataBlock<string> subblock in Faults)
+            {
+                // Extract data from the sub-block
+                try
+                {
+                    // Get the fault name from the sub-block
+                    string faultName = subblock.BlockName.Trim('\u0022', '\u0027');
+                    // Check if it is already in the list of fault names and if so get the index number; if not add it
+                    int faultIndexNo = faultNames.IndexOf(faultName);
+                    if (faultIndexNo < 0)
+                    {
+                        faultIndexNo = faultNames.Count;
+                        faultNames.Add(faultName);
+                    }
+
+                    // Get the coordinates of the fault patch represented by the sub-block
+                    // The coordinates in the GRDECL files are 1-indexed so must be converted to 0-index
+                    // The J coordinates must also be reversed
+                    int I1 = Convert.ToInt32(subblock.BlockData[0]) - 1;
+                    int I2 = Convert.ToInt32(subblock.BlockData[1]) - 1;
+                    int J1 = NoJRows - Convert.ToInt32(subblock.BlockData[2]);
+                    int J2 = NoJRows - Convert.ToInt32(subblock.BlockData[3]);
+                    int K1 = Convert.ToInt32(subblock.BlockData[4]) - 1;
+                    int K2 = Convert.ToInt32(subblock.BlockData[5]) - 1;
+
+                    // Get the start and end I, J and K coordinates for the fault patch
+                    int startI = (I1 <= I2) ? I1 : I2;
+                    int endI = (I1 > I2) ? I1 : I2;
+                    int startJ = (J1 <= J2) ? J1 : J2;
+                    int endJ = (J1 > J2) ? J1 : J2;
+                    int startK = (K1 <= K2) ? K1 : K2;
+                    int endK = (K1 > K2) ? K1 : K2;
+
+                    // Check that the coordinates all lie within the grid; if not throw an error
+                    if ((startI < 0) || (startI >= NoICols))
+                        throw (new ArgumentOutOfRangeException("startI", startI, string.Format("{0} value {1} is outside the grid range {2}-{3}", "startI", startI, 0, NoICols)));
+                    if ((endI < startI) || (endI >= NoICols))
+                        throw (new ArgumentOutOfRangeException("endI", endI, string.Format("{0} value {1} is outside the grid range {2}-{3}", "endI", endI, 0, NoICols)));
+                    if ((startJ < 0) || (startJ >= NoJRows))
+                        throw (new ArgumentOutOfRangeException("startJ", startJ, string.Format("{0} value {1} is outside the grid range {2}-{3}", "startJ", startJ, 0, NoJRows)));
+                    if ((endJ < startJ) || (endJ >= NoJRows))
+                        throw (new ArgumentOutOfRangeException("endJ", endJ, string.Format("{0} value {1} is outside the grid range {2}-{3}", "endJ", endJ, 0, NoJRows)));
+                    if ((startK < 0) || (startK >= NoKLayers))
+                        throw (new ArgumentOutOfRangeException("startK", startK, string.Format("{0} value {1} is outside the grid range {2}-{3}", "startK", startK, 0, NoKLayers)));
+                    if ((endK < startK) || (endK >= NoKLayers))
+                        throw (new ArgumentOutOfRangeException("endK", endK, string.Format("{0} value {1} is outside the grid range {2}-{3}", "endK", endK, 0, NoKLayers)));
+
+                    // Get the face of the cell
+                    GridDirection face;
+                    string faceData = subblock.BlockData[6].Trim('\u0022', '\u0027');
+                    switch (faceData)
+                    {
+                        case "X":
+                        case "X+":
+                            face = GridDirection.E;
+                            break;
+                        case "X-":
+                            face = GridDirection.W;
+                            break;
+                        case "Y":
+                        case "Y+":
+                            face = GridDirection.S;
+                            break;
+                        case "Y-":
+                            face = GridDirection.N;
+                            break;
+                        default:
+                            return 3;
+                    }
+
+                    // Set the value of the specified face of all cells in the specified range to the fault index number
+                    // This must be converted from 0-indexed to 1-indexed
+                    for (int cellI = startI; cellI <= endI; cellI++)
+                        for (int cellJ = startJ; cellJ <= endJ; cellJ++)
+                            for (int cellK = startK; cellK <= endK; cellK++)
+                                cellFaces[face].SetPropertyValue(cellI, cellJ, cellK, faultIndexNo + 1);
+                }
+                catch (FormatException)
+                {
+                    // Invalid data for fault coordinate
+                    return 1;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    // Fault coordinate out of range
+                    return 2;
+                }
+                catch (Exception)
+                {
+                    // Undefined error
+                    return 4;
+                }
+            }
 
             // Return 0
             return 0;
@@ -1964,7 +2164,7 @@ namespace DFMGenerator_DataTransfer
         {
             // Create a list of keywords defining the geometry
             // Get a list of data blocks with any name other than the geometry keywords
-            List<string> keywords = new List<string> { "GRIDUNIT", "MAPUNITS", "METRES", "FEET", "SPECGRID", "DIMENS", "COORD", "ZCORN", "FAULTS" };
+            List<string> keywords = new List<string> { "GRIDUNIT", "MAPUNITS", "METRES", "FEET", "SPECGRID", "DIMENS", "COORD", "ZCORN", "FAULTS", "MAPAXES", "MAP", "F", "COORDSYS" };
             List<GRDECLDataBlock<double>> propertyBlocks = ExtractFloatingPointBlocksFromGRDECLData(keywords, RawData, NoCells);
             // If no data was found, return 1
             if (propertyBlocks.Count == 0)
@@ -1973,7 +2173,7 @@ namespace DFMGenerator_DataTransfer
             // We will assume that all extracted data blocks with any name other than the geometry keywords that have the required number of values are grid properties
             // We will assume they are floating point values unless they are on a specific list of defined integer properties
             int loadErrors = 0;
-            List<string> integerProperties = new List<string> { "FACIES" };
+            List<string> integerProperties = new List<string> { "FACIES", "ACTNUM", "LAYERS" };
             foreach (GRDECLDataBlock<double> propertyBlock in propertyBlocks)
             {
                 // Check if it has the required number of values; if not move on to the next block
@@ -1999,7 +2199,7 @@ namespace DFMGenerator_DataTransfer
                     int badValues = 0;
 
                     // Loop through all the cells in the grid and assign values from the data block - NB we must loop through the J cells in reverse order
-                    for (int cellK = 0; cellK <= NoKLayers; cellK++)
+                    for (int cellK = 0; cellK < NoKLayers; cellK++)
                         for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
                             for (int cellI = 0; cellI < NoICols; cellI++)
                             {
@@ -2032,7 +2232,7 @@ namespace DFMGenerator_DataTransfer
                     if (badValues > 0)
                         loadErrors++;
                 }
-                // Otherwise assume the property is 
+                // Otherwise assume the property is a floating point property
                 else
                 {
                     // Create a new floating point grid property object
@@ -2042,7 +2242,7 @@ namespace DFMGenerator_DataTransfer
                     int dataCounter = 0;
 
                     // Loop through all the cells in the grid and assign values from the data block - NB we must loop through the J cells in reverse order
-                    for (int cellK = 0; cellK <= NoKLayers; cellK++)
+                    for (int cellK = 0; cellK < NoKLayers; cellK++)
                         for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
                             for (int cellI = 0; cellI < NoICols; cellI++)
                             {
@@ -2067,9 +2267,9 @@ namespace DFMGenerator_DataTransfer
         /// </summary>
         /// <param name="FileNameWithExtension">Filename for the file to read, including any extension but not including the file path</param>
         /// <param name="FilePath">Filepath for the file to read</param>
-        /// <param name="data">String array to read the file data into</param>
+        /// <param name="data">List of strings to read the file data into</param>
         /// <returns>Return code: 0 if the operation was successful, 1 if there were read errors (some data may have been read)</returns>
-        private int ReadDataFile(string FileNameWithExtension, string FilePath, ref string[] data)
+        private int ReadDataFile(string FileNameWithExtension, string FilePath, ref List<string> data)
         {
             // Open the specified GRDECL file and write each line into a string array
             // Check each line for INCLUDE files, if so open and read them also
@@ -2108,7 +2308,7 @@ namespace DFMGenerator_DataTransfer
                     else
                     {
                         // Otherwise just append the line of text to the array of data
-                        data.Append(nextLine);
+                        data.Add(nextLine);
                     }
                 }
             }
@@ -2133,10 +2333,15 @@ namespace DFMGenerator_DataTransfer
             // Check each line for INCLUDE files, if so open and read them also
             string fileExtension = ".GRDECL";
             string fileNamePlusExtension = FileName + fileExtension;
-            string[] RawData = new string[0];
-            // If there are errors reading the data, set the return code to 1
-            if (ReadDataFile(fileNamePlusExtension, FilePath, ref RawData) > 0)
-                returnCode = ShadowGridErrorStatus.ErrorReadingFile;
+            // The data will be read as a List object and then converted to an Array; this is because we do not yet know the number of lines in the file
+            string[] RawData;
+            {
+                List<string> FileData = new List<string>();
+                // If there are errors reading the data, set the return code to 1
+                if (ReadDataFile(FileName, FilePath, ref FileData) > 0)
+                    returnCode = ShadowGridErrorStatus.ErrorReadingFile;
+                RawData = FileData.ToArray();
+            }
 
             // Recreate the grid and set the grid geometry using the data read from the specified GRDECL file
             // If there are errors recreating the grid, set the return code to 2
@@ -2179,6 +2384,10 @@ namespace DFMGenerator_DataTransfer
             // Set the null values
             NullIntegerValue = -999;
             NullFloatingPointValue = -999.99;
+
+            // Set the comment and end block indicators
+            CommentIndicator = "--";
+            EndBlockIndicator = "/";
 
             // Create all the required list objects, as well as empty arrays of pillars and cell face types
             ResetGridGeometry(0, 0, 0);

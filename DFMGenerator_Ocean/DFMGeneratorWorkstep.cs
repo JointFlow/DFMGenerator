@@ -3737,7 +3737,8 @@ namespace DFMGenerator_Ocean
                                         double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
                                         double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
                                         local_InitialVerticalStress = initialSzz;
-                                        local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                                        double local_OP_Thermal_factor = (local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt;
+                                        local_StressArchingFactor = (local_OP_Thermal_factor != 0) ? (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt) : 1;
                                         // Trim the result so it lies between 0 and 1 inclusive
                                         if (local_StressArchingFactor < 0)
                                             local_StressArchingFactor = 0;

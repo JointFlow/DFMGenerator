@@ -1,11 +1,11 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRAC_INPUT
-#define DEBUG_FRAC_OUTPUT
+//#define DEBUG_FRAC_INPUT
+//#define DEBUG_FRAC_OUTPUT
 
 using System;
 using System.Collections.Generic;
@@ -95,13 +95,6 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("% If the fluid pressure is specified this will replace the hydrostatic fluid pressure and override the fluid overpressure load");
                 input_file.WriteLine("% Dynamic loads should be specified in Pa as either AbsoluteStress, TerzaghiEffectiveStress or BiotEffectiveStress tensors, depending on the StressLoadDefinition flag");
                 input_file.WriteLine("%StressLoadDefinition TerzaghiEffectiveStress");
-                input_file.WriteLine("%DefaultStressXX 15000000");
-                input_file.WriteLine("%DefaultStressYY 15000000");
-                input_file.WriteLine("%DefaultStressZZ 22000000");
-                input_file.WriteLine("%DefaultStressXY 0");
-                input_file.WriteLine("%DefaultStressYZ 0");
-                input_file.WriteLine("%DefaultStressZX 0");
-                input_file.WriteLine("%DefaultFluidPressure 10000000");
                 input_file.WriteLine("%StressXXProperty PROPERTYNAME");
                 input_file.WriteLine("%StressYYProperty PROPERTYNAME");
                 input_file.WriteLine("%StressZZProperty PROPERTYNAME");
@@ -211,11 +204,13 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)");
                 input_file.WriteLine("%      - FAB (FAB files can be loaded directly into Petrel)");
                 input_file.WriteLine("OutputDFNFileType ASCII");
-                input_file.WriteLine("% Flag to write implicit fracture data to one or more GRDECL files");
-                input_file.WriteLine("% This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups");
+                input_file.WriteLine("% Flag to write implicit fracture data to a series of GRDECL files");
+                input_file.WriteLine("% A separate GRDECL file will be generated for each output stage");
+                input_file.WriteLine("% These files can include the grid geometry and output properties, or only the output properties");
                 input_file.WriteLine("WriteGRDECLFiles true");
-                input_file.WriteLine("WriteSeparateGRDECLPropertyFiles false");
-                input_file.WriteLine("% Flag to write explicit DFN data to one or more FAB files");
+                input_file.WriteLine("IncludeGridGeometryInGRDECLFiles false");
+                input_file.WriteLine("% Flag to write explicit DFN data to a series of FAB files");
+                input_file.WriteLine("% A separate FAB file will be generated for each output stage");
                 input_file.WriteLine("WriteFABFiles true");
                 input_file.WriteLine("% Output DFM at intermediate stages of fracture growth");
                 input_file.WriteLine("NoIntermediateOutputs 0");
@@ -411,42 +406,10 @@ namespace DFMGenerator_GRDECL
             // Get path for output files
             string outputFolderPath = "";
 #else
-            // Get path for input and output files
+            // Get path for input files
             string inputfile_name = "Hardcoded";
-            string fullHomePath = "";
             string outputFolderPath = "";
-
-            try
-            {
-                var homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
-                if (homeDrive != null)
-                {
-                    var homePath = Environment.GetEnvironmentVariable("HOMEPATH");
-                    if (homePath != null)
-                    {
-                        fullHomePath = homeDrive + Path.DirectorySeparatorChar + homePath;
-                        outputFolderPath = Path.Combine(fullHomePath, "DFMFolder");
-                        outputFolderPath = outputFolderPath + @"\";
-                        // If the output folder does not exist, create it
-                        if (!Directory.Exists(outputFolderPath))
-                            Directory.CreateDirectory(outputFolderPath);
-                    }
-                    else
-                    {
-                        throw new Exception("Environment variable error, there is no 'HOMEPATH'");
-                    }
-                }
-                else
-                {
-                    throw new Exception("Environment variable error, there is no 'HOMEDRIVE'");
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Exception thrown: " + e.Message);
-                return;
-            }
-            string inputFolderPath = outputFolderPath;
+            string inputFolderPath = "Z:\\21_FundsP\\GO-Forward\\Project data\\WP2.4 Model development\\GRDECL format\\";// "";
 #endif
 
             // Set hardcoded default values for all parameters
@@ -462,7 +425,7 @@ namespace DFMGenerator_GRDECL
             // the parameter will be set to the specified default value in that gridblock
             // If no property name is specified (the property name string is empty), or no property with the specified name can be found in the GRDECL file,
             // the parameter will be set to the specified default value in every gridblock
-            string GridFileName = "Gridfile.GRDECL";
+            string GridFileName = ModelName + ".GRDECL";
             // Subset of rows and columns from the shadow grid to include in the fracture grid (indexed from 1)
             // Set to -1 to include all rows and columns
             int ShadowGrid_StartColI = -1;
@@ -520,14 +483,14 @@ namespace DFMGenerator_GRDECL
             // If all 6 stress components are specified, a full stress tensor will be generated which will override the strain, thermal and uplift loads
             // If the fluid pressure is specified this will replace the hydrostatic fluid pressure and override the fluid overpressure load
             // Dynamic loads should be specified in Pa as either AbsoluteStress, TerzaghiEffectiveStress or BiotEffectiveStress tensors, depending on the StressLoadDefinition flag
-            StressStateDefinition StressLoadDefinition = StressStateDefinition.AbsoluteStress;
-            double DefaultSxx = double.NaN;
-            double DefaultSyy = double.NaN;
-            double DefaultSzz = double.NaN;
-            double DefaultSxy = double.NaN;
-            double DefaultSyz = double.NaN;
-            double DefaultSzx = double.NaN;
-            double DefaultFluidPressure = double.NaN;
+            StressStateDefinition StressDefinition = StressStateDefinition.AbsoluteStress;
+            //double DefaultSxx = double.NaN;
+            //double DefaultSyy = double.NaN;
+            //double DefaultSzz = double.NaN;
+            //double DefaultSxy = double.NaN;
+            //double DefaultSyz = double.NaN;
+            //double DefaultSzx = double.NaN;
+            //double DefaultFluidPressure = double.NaN;
             string SxxPropertyName = string.Empty;
             string SyyPropertyName = string.Empty;
             string SzzPropertyName = string.Empty;
@@ -556,18 +519,14 @@ namespace DFMGenerator_GRDECL
             List<string> AppliedUpliftRatePropertyName_list = new List<string>();
             List<double> StressArchingFactor_list = new List<double>();
             List<double> DeformationEpisodeDuration_list = new List<double>();
-            List<StressStateDefinition> StressStateDefinition_list = new List<StressStateDefinition>();
-            List<bool> UsePropertyFor_Szz_list = new List<bool>();
-            List<bool> UsePropertyFor_StressTensor_list = new List<bool>();
-            List<bool> UsePropertyFor_ShvComponents_list = new List<bool>();
-            List<bool> UsePropertyFor_FluidPressure_list = new List<bool>();
-            List<double> DefaultSxx_list = new List<double>();
-            List<double> DefaultSyy_list = new List<double>();
-            List<double> DefaultSzz_list = new List<double>();
-            List<double> DefaultSxy_list = new List<double>();
-            List<double> DefaultSyz_list = new List<double>();
-            List<double> DefaultSzx_list = new List<double>();
-            List<double> DefaultFluidPressure_list = new List<double>();
+            List<StressStateDefinition> StressDefinition_list = new List<StressStateDefinition>();
+            //List<double> DefaultSxx_list = new List<double>();
+            //List<double> DefaultSyy_list = new List<double>();
+            //List<double> DefaultSzz_list = new List<double>();
+            //List<double> DefaultSxy_list = new List<double>();
+            //List<double> DefaultSyz_list = new List<double>();
+            //List<double> DefaultSzx_list = new List<double>();
+            //List<double> DefaultFluidPressure_list = new List<double>();
             List<string> SxxPropertyName_list = new List<string>();
             List<string> SyyPropertyName_list = new List<string>();
             List<string> SzzPropertyName_list = new List<string>();
@@ -580,7 +539,9 @@ namespace DFMGenerator_GRDECL
             DeformationEpisodeName_list.Add("Deformation_Episode_1");
             DefaultEhminAzi_list.Add(DefaultEhminAzi);
             EhminAziPropertyName_list.Add(EhminAziPropertyName);
+            //EhminAziPropertyName_list.Add("DIPAZIMUTH");
             DefaultEhminRate_list.Add(DefaultEhminRate);
+            //DefaultEhminRate_list.Add(-0.01);
             EhminRatePropertyName_list.Add(EhminRatePropertyName);
             DefaultEhmaxRate_list.Add(DefaultEhmaxRate);
             EhmaxRatePropertyName_list.Add(EhmaxRatePropertyName);
@@ -664,15 +625,17 @@ namespace DFMGenerator_GRDECL
             // Output to file from within FractureGrid object
             // This will generate one file of implicit data per gridblock, and one DFN file per output stage
             // Output files from the FractureGrid object can be useful for debugging or detailed analysis of fracture growth
-            bool WriteImplicitDataFiles = true; //false;
-            bool WriteDFNFiles = true; //false;
+            bool WriteImplicitDataFiles = false;
+            bool WriteDFNFiles = false;
             // Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)
             DFNFileType OutputDFNFileType = DFNFileType.ASCII;
-            // Flag to write implicit fracture data to one or more GRDECL files
-            // This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups
+            // Flag to write implicit fracture data to a series of GRDECL files
+            // A separate GRDECL file will be generated for each output stage
+            // These files can include the grid geometry and output properties, or only the output properties
             bool WriteGRDECLFiles = true;
-            bool WriteSeparateGRDECLPropertyFiles = false;
-            // Flag to write explicit DFN data to one or more FAB files
+            bool IncludeGridGeometryInGRDECLFiles = false;
+            // Flag to write explicit DFN data to a series of FAB files
+            // A separate FAB file will be generated for each output stage
             bool WriteFABFiles = true;
             // Output DFM at intermediate stages of fracture growth
             int NoIntermediateOutputs = 0;
@@ -1172,137 +1135,11 @@ namespace DFMGenerator_GRDECL
                         case "StressLoadDefinition":
                             {
                                 if (line_split[1] == "AbsoluteStress")
-                                    StressLoadDefinition = StressStateDefinition.AbsoluteStress;
+                                    StressDefinition = StressStateDefinition.AbsoluteStress;
                                 else if (line_split[1] == "TerzaghiEffectiveStress")
-                                    StressLoadDefinition = StressStateDefinition.TerzaghiEffectiveStress;
+                                    StressDefinition = StressStateDefinition.TerzaghiEffectiveStress;
                                 else if (line_split[1] == "BiotEffectiveStress")
-                                    StressLoadDefinition = StressStateDefinition.BiotEffectiveStress;
-                            }
-                            break;
-                        case "DefaultStressXX":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultSxx_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultSxx_list.Add(DefaultSxx);
-                                    }
-                                }
-                            }
-                            break;
-                        case "DefaultStressYY":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultSyy_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultSyy_list.Add(DefaultSyy);
-                                    }
-                                }
-                            }
-                            break;
-                        case "DefaultStressZZ":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultSzz_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultSzz_list.Add(DefaultSzz);
-                                    }
-                                }
-                            }
-                            break;
-                        case "DefaultStressXY":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultSxy_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultSxy_list.Add(DefaultSxy);
-                                    }
-                                }
-                            }
-                            break;
-                        case "DefaultStressYZ":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultSyz_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultSyz_list.Add(DefaultSyz);
-                                    }
-                                }
-                            }
-                            break;
-                        case "DefaultStressZX":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultSzx_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultSzx_list.Add(DefaultSzx);
-                                    }
-                                }
-                            }
-                            break;
-                        case "DefaultFluidPressure":
-                            {
-                                int noValues = line_split.GetLength(0);
-                                for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                {
-                                    // If the specified value is not a valid number, replace it with the default NaN
-                                    // This allows for null values to be specified for individual deformation episodes
-                                    try
-                                    {
-                                        DefaultFluidPressure_list.Add(Convert.ToDouble(line_split[valueNo]));
-                                    }
-                                    catch
-                                    {
-                                        DefaultFluidPressure_list.Add(DefaultFluidPressure);
-                                    }
-                                }
+                                    StressDefinition = StressStateDefinition.BiotEffectiveStress;
                             }
                             break;
                         case "StressXXProperty":
@@ -1531,17 +1368,19 @@ namespace DFMGenerator_GRDECL
                                     OutputDFNFileType = DFNFileType.FAB;
                             }
                             break;
-                        // Flag to write implicit fracture data to one or more GRDECL files
-                        // This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups
+                        // Flag to write implicit fracture data to a series of GRDECL files
+                        // A separate GRDECL file will be generated for each output stage
+                        // These files can include the grid geometry and output properties, or only the output properties
                         case "WriteGRDECLFiles":
                             WriteGRDECLFiles = true;
                             break;
-                        case "WriteSeparateGRDECLPropertyFiles":
-                            WriteSeparateGRDECLPropertyFiles = true;
+                        case "IncludeGridGeometryInGRDECLFiles":
+                            IncludeGridGeometryInGRDECLFiles = true;
                             break;
-                        // Flag to write explicit DFN data to one or more FAB files
+                        // Flag to write explicit DFN data to a series of FAB files
+                        // A separate FAB file will be generated for each output stage
                         case "WriteFABFiles":
-                            WriteSeparateGRDECLPropertyFiles = true;
+                            WriteFABFiles = true;
                             break;
                         // Output DFM at intermediate stages of fracture growth
                         case "NoIntermediateOutputs":
@@ -1937,7 +1776,8 @@ namespace DFMGenerator_GRDECL
             // Create output folder
             try
             {
-                outputFolderPath = inputfile_name.Replace(".txt", "") + "_output" + @"\";
+                outputFolderPath = (ModelName.Length > 0 ? ModelName : inputfile_name.Replace(".txt", "")) + "_output" + @"\";
+                outputFolderPath = "Z:\\21_FundsP\\GO-Forward\\Project data\\WP2.4 Model development\\GRDECL format\\" + outputFolderPath;
                 // If the output folder does not exist, create it
                 if (!Directory.Exists(outputFolderPath))
                     Directory.CreateDirectory(outputFolderPath);
@@ -1945,7 +1785,7 @@ namespace DFMGenerator_GRDECL
             catch (Exception e)
             {
                 if (Directory.Exists(outputFolderPath))
-                    Console.WriteLine(string.Format("Coulnd not find folder {0}: 1", outputFolderPath, e.Message));
+                    Console.WriteLine(string.Format("Could not find folder {0}: 1", outputFolderPath, e.Message));
                 else
                     Console.WriteLine(string.Format("Error creating folder {0}: {1}", outputFolderPath, e.Message));
                 Console.WriteLine("Model will not be run");
@@ -1993,8 +1833,41 @@ namespace DFMGenerator_GRDECL
                 noDeformationEpisodes = DefaultAppliedUpliftRate_list.Count;
             if (noDeformationEpisodes < StressArchingFactor_list.Count)
                 noDeformationEpisodes = StressArchingFactor_list.Count;
-            if (noDeformationEpisodes < DefaultSxx_list.Count)
-                noDeformationEpisodes = DefaultSxx_list.Count;
+            if (noDeformationEpisodes < DeformationEpisodeDuration_list.Count)
+                noDeformationEpisodes = DeformationEpisodeDuration_list.Count;
+            if (noDeformationEpisodes < SzzPropertyName_list.Count)
+                noDeformationEpisodes = SzzPropertyName_list.Count;
+
+            // Default values for the static deformation load parameters must be defined for each deformation episode
+            // If they are not defined we will revert to the defaults
+            for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
+            {
+                if ((DefaultEhminAzi_list.Count <= deformationEpisodeNo) || double.IsNaN(DefaultEhminAzi_list[deformationEpisodeNo]))
+                    DefaultEhminAzi_list.Add(DefaultEhminAzi);
+                if ((DefaultEhminRate_list.Count <= deformationEpisodeNo) || double.IsNaN(DefaultEhminRate_list[deformationEpisodeNo]))
+                    DefaultEhminRate_list.Add(DefaultEhminRate);
+                if ((DefaultEhmaxRate_list.Count <= deformationEpisodeNo) || double.IsNaN(DefaultEhmaxRate_list[deformationEpisodeNo]))
+                    DefaultEhmaxRate_list.Add(DefaultEhmaxRate);
+                if ((DefaultAppliedOverpressureRate_list.Count <= deformationEpisodeNo) || double.IsNaN(DefaultAppliedOverpressureRate_list[deformationEpisodeNo]))
+                    DefaultAppliedOverpressureRate_list.Add(DefaultAppliedOverpressureRate);
+                if ((DefaultAppliedTemperatureChange_list.Count <= deformationEpisodeNo) || double.IsNaN(DefaultAppliedTemperatureChange_list[deformationEpisodeNo]))
+                    DefaultAppliedTemperatureChange_list.Add(DefaultAppliedTemperatureChange);
+                if ((DefaultAppliedUpliftRate_list.Count <= deformationEpisodeNo) || double.IsNaN(DefaultAppliedUpliftRate_list[deformationEpisodeNo]))
+                    DefaultAppliedUpliftRate_list.Add(DefaultAppliedUpliftRate);
+                if ((StressArchingFactor_list.Count <= deformationEpisodeNo) || double.IsNaN(StressArchingFactor_list[deformationEpisodeNo]))
+                    StressArchingFactor_list.Add(StressArchingFactor);
+                if ((DeformationEpisodeDuration_list.Count <= deformationEpisodeNo) || double.IsNaN(DeformationEpisodeDuration_list[deformationEpisodeNo]))
+                    DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);
+                // If the dynamic load stress definition has not been defined for this deformation episode we will use the value for the previous episode
+                // If the dynamic load stress definition has not been defined for any deformation episode we will revert to the default
+                if (StressDefinition_list.Count <= deformationEpisodeNo)
+                    if (deformationEpisodeNo > 0)
+                        StressDefinition_list.Add(StressDefinition_list[deformationEpisodeNo - 1]);
+                    else
+                        StressDefinition_list.Add(StressDefinition);
+                // We do not need defaults for the dynamic load components, since if these are inadequately defined by the specified properties
+                // (either because the properties are not specified or because they are null in a specific gridblock) we will revert to the static load
+            }
 
             // Create lists of flags to determine which load parameters should be populated from grid properties
             List<bool> UseGridFor_EhminAzi_list = new List<bool>();
@@ -2015,12 +1888,14 @@ namespace DFMGenerator_GRDECL
                 UseGridFor_AppliedOverpressureRate_list.Add((AppliedOverpressureRatePropertyName_list.Count > deformationEpisodeNo) ? (AppliedOverpressureRatePropertyName_list[deformationEpisodeNo].Length > 0) : false);
                 UseGridFor_AppliedTemperatureChange_list.Add((AppliedTemperatureChangePropertyName_list.Count > deformationEpisodeNo) ? (AppliedTemperatureChangePropertyName_list[deformationEpisodeNo].Length > 0) : false);
                 UseGridFor_AppliedUpliftRate_list.Add((AppliedUpliftRatePropertyName_list.Count > deformationEpisodeNo) ? (AppliedUpliftRatePropertyName_list[deformationEpisodeNo].Length > 0) : false);
-                UseGridFor_Szz_list.Add((EhminAziPropertyName_list.Count > deformationEpisodeNo) ? (EhminAziPropertyName_list[deformationEpisodeNo].Length > 0) : false);
                 bool UseGridFor_Szz = (SzzPropertyName_list.Count > deformationEpisodeNo) ? (SzzPropertyName_list[deformationEpisodeNo].Length > 0) : false;
                 bool UseGridFor_StressTensor = UseGridFor_Szz && (SxxPropertyName_list.Count > deformationEpisodeNo) && (SyyPropertyName_list.Count > deformationEpisodeNo) && (SxyPropertyName_list.Count > deformationEpisodeNo) &&
                     (SxxPropertyName_list[deformationEpisodeNo].Length > 0) && (SyyPropertyName_list[deformationEpisodeNo].Length > 0) && (SxyPropertyName_list[deformationEpisodeNo].Length > 0);
                 bool UseGridFor_ShvComponents = UseGridFor_StressTensor && (SyzPropertyName_list.Count > deformationEpisodeNo) && (SzxPropertyName_list.Count > deformationEpisodeNo) &&
                     (SyzPropertyName_list[deformationEpisodeNo].Length > 0) && (SzxPropertyName_list[deformationEpisodeNo].Length > 0);
+                UseGridFor_Szz_list.Add(UseGridFor_Szz);
+                UseGridFor_StressTensor_list.Add(UseGridFor_StressTensor);
+                UseGridFor_ShvComponents_list.Add(UseGridFor_ShvComponents);
                 UseGridFor_FluidPressure_list.Add((FluidPressurePropertyName_list.Count > deformationEpisodeNo) ? (FluidPressurePropertyName_list[deformationEpisodeNo].Length > 0) : false);
             }
 
@@ -2053,12 +1928,32 @@ namespace DFMGenerator_GRDECL
 
             // Create a shadow grid and use the specified GRDECL file to populate it
             // If this operation fails then display an error message and abort the run
+            Console.WriteLine(string.Format("Loading data from {0}", inputFolderPath + GridFileName));
             ShadowGrid SourceDataGrid = new ShadowGrid(GridFileName, inputFolderPath, GridFileType.GRDECL);
-            if (SourceDataGrid.ErrorStatus != ShadowGridErrorStatus.DataLoadedOK)
+            switch (SourceDataGrid.ErrorStatus)
             {
-                Console.WriteLine(string.Format("Error reading grid and property data from {0}: {1}", inputFolderPath + GridFileName, SourceDataGrid.ErrorStatus));
-                Console.WriteLine("Model run will be aborted without generating output");
-                return;
+                case ShadowGridErrorStatus.DataLoadedOK:
+                    Console.WriteLine(string.Format("Data loaded OK from {0}", inputFolderPath + GridFileName));
+                    Console.WriteLine("Model run will continue");
+                    break;
+                case ShadowGridErrorStatus.NoDataLoaded:
+                    Console.WriteLine(string.Format("No grid properties were found in {0}", inputFolderPath + GridFileName));
+                    Console.WriteLine("Model run will continue using defaults");
+                    break;
+                case ShadowGridErrorStatus.ErrorReadingFile:
+                    Console.WriteLine(string.Format("Error reading file {0}", inputFolderPath + GridFileName));
+                    Console.WriteLine("Model run will be aborted without generating output");
+                    return;
+                case ShadowGridErrorStatus.ErrorBuildingGrid:
+                    Console.WriteLine(string.Format("Error building grid from {0}", inputFolderPath + GridFileName));
+                    Console.WriteLine("Model run will be aborted without generating output");
+                    return;
+                case ShadowGridErrorStatus.ErrorPopulatingProperties:
+                    Console.WriteLine(string.Format("Error reading one or more grid properties from {0}", inputFolderPath + GridFileName));
+                    Console.WriteLine("Model run will continue but some properties may be replaced by defaults");
+                    break;
+                default:
+                    break;
             }
 
             // Create a DFM Generator grid and populate it with default values and property data from the shadow grid
@@ -2098,7 +1993,6 @@ namespace DFMGenerator_GRDECL
                 ShadowGrid_BottomLayerK--;
             else
                 ShadowGrid_BottomLayerK = SourceDataGrid.NoKLayers - 1;
-            ShadowGrid_BottomLayerK = -1;
 #if DEBUG_FRAC_INPUT
             progressReporter.OutputMessage("");
             progressReporter.OutputMessage(string.Format("StartCellI {0}, maxI {1}, NoPetrelGridCols {2}", ShadowGrid_StartColI, ShadowGrid_EndColI, NoICols));
@@ -2884,7 +2778,7 @@ namespace DFMGenerator_GRDECL
                     List<double> local_AppliedUpliftRate_list = new List<double>();
                     List<double> local_StressArchingFactor_list = new List<double>();
                     List<double> local_DeformationEpisodeDuration_list = new List<double>();
-                    List<StressStateDefinition> local_StressStateDefinition_list = new List<StressStateDefinition>();
+                    List<StressStateDefinition> local_StressDefinition_list = new List<StressStateDefinition>();
                     List<double> local_InitialVerticalStress_list = new List<double>();
                     List<Tensor2S> local_StressRateTensor_list = new List<Tensor2S>();
                     List<Tensor2S> local_InitialStressTensor_list = new List<Tensor2S>();
@@ -2926,17 +2820,17 @@ namespace DFMGenerator_GRDECL
 
                         // Get local handles for the static load properties and flags
                         bool UseGridFor_EhminAzi = UseGridFor_EhminAzi_list[deformationEpisodeNo];
-                        string EhminAziProperty = EhminAziPropertyName_list[deformationEpisodeNo];
+                        string EhminAziProperty = UseGridFor_EhminAzi ? EhminAziPropertyName_list[deformationEpisodeNo] : string.Empty;
                         bool UseGridFor_EhminRate = UseGridFor_EhminRate_list[deformationEpisodeNo];
-                        string EhminRateProperty = EhminRatePropertyName_list[deformationEpisodeNo];
+                        string EhminRateProperty = UseGridFor_EhminRate ? EhminRatePropertyName_list[deformationEpisodeNo] : string.Empty;
                         bool UseGridFor_EhmaxRate = UseGridFor_EhmaxRate_list[deformationEpisodeNo];
-                        string EhmaxRateProperty = EhmaxRatePropertyName_list[deformationEpisodeNo];
+                        string EhmaxRateProperty = UseGridFor_EhmaxRate ? EhmaxRatePropertyName_list[deformationEpisodeNo] : string.Empty;
                         bool UseGridFor_AppliedOverpressureRate = UseGridFor_AppliedOverpressureRate_list[deformationEpisodeNo];
-                        string AppliedOverpressureRateProperty = AppliedOverpressureRatePropertyName_list[deformationEpisodeNo];
+                        string AppliedOverpressureRateProperty = UseGridFor_AppliedOverpressureRate ? AppliedOverpressureRatePropertyName_list[deformationEpisodeNo] : string.Empty;
                         bool UseGridFor_AppliedTemperatureChange = UseGridFor_AppliedTemperatureChange_list[deformationEpisodeNo];
-                        string AppliedTemperatureChangeProperty = AppliedTemperatureChangePropertyName_list[deformationEpisodeNo];
+                        string AppliedTemperatureChangeProperty = UseGridFor_AppliedTemperatureChange ? AppliedTemperatureChangePropertyName_list[deformationEpisodeNo] : string.Empty;
                         bool UseGridFor_AppliedUpliftRate = UseGridFor_AppliedUpliftRate_list[deformationEpisodeNo];
-                        string AppliedUpliftRateProperty = AppliedUpliftRatePropertyName_list[deformationEpisodeNo];
+                        string AppliedUpliftRateProperty = UseGridFor_AppliedUpliftRate ? AppliedUpliftRatePropertyName_list[deformationEpisodeNo] : string.Empty;
 
                         if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
                         {
@@ -3206,17 +3100,17 @@ namespace DFMGenerator_GRDECL
 
                         // Get the dynamic deformation load data as grid properties if required
                         // Get local handles for the Property names and flags defining the load data for this deformation episode
-                        bool UsePropertyFor_FluidPressure = UsePropertyFor_FluidPressure_list[deformationEpisodeNo];
-                        string FluidPressureProperty = FluidPressurePropertyName_list[deformationEpisodeNo];
-                        bool UsePropertyFor_Szz = UsePropertyFor_Szz_list[deformationEpisodeNo];
-                        string SzzProperty = SzzPropertyName_list[deformationEpisodeNo];
-                        bool UsePropertyFor_StressTensor = UsePropertyFor_StressTensor_list[deformationEpisodeNo];
-                        string SxxProperty = SxxPropertyName_list[deformationEpisodeNo];
-                        string SyyProperty = SyyPropertyName_list[deformationEpisodeNo];
-                        string SxyProperty = SxyPropertyName_list[deformationEpisodeNo];
-                        bool UsePropertyFor_ShvComponents = UsePropertyFor_ShvComponents_list[deformationEpisodeNo];
-                        string SyzProperty = SyzPropertyName_list[deformationEpisodeNo];
-                        string SzxProperty = SzxPropertyName_list[deformationEpisodeNo];
+                        bool UseGridFor_FluidPressure = UseGridFor_FluidPressure_list[deformationEpisodeNo];
+                        string FluidPressureProperty = UseGridFor_FluidPressure ? FluidPressurePropertyName_list[deformationEpisodeNo] : string.Empty;
+                        bool UseGridFor_Szz = UseGridFor_Szz_list[deformationEpisodeNo];
+                        string SzzProperty = UseGridFor_Szz ? SzzPropertyName_list[deformationEpisodeNo] : string.Empty;
+                        bool UseGridFor_StressTensor = UseGridFor_StressTensor_list[deformationEpisodeNo];
+                        string SxxProperty = UseGridFor_StressTensor ? SxxPropertyName_list[deformationEpisodeNo] : string.Empty;
+                        string SyyProperty = UseGridFor_StressTensor ? SyyPropertyName_list[deformationEpisodeNo] : string.Empty;
+                        string SxyProperty = UseGridFor_StressTensor ? SxyPropertyName_list[deformationEpisodeNo] : string.Empty;
+                        bool UseGridFor_ShvComponents = UseGridFor_ShvComponents_list[deformationEpisodeNo];
+                        string SyzProperty = UseGridFor_ShvComponents ? SyzPropertyName_list[deformationEpisodeNo] : string.Empty;
+                        string SzxProperty = UseGridFor_ShvComponents ? SzxPropertyName_list[deformationEpisodeNo] : string.Empty;
 
                         // Update the initial load values with the final load values from the previous deformation episode, if defined
                         // If these are not defined, we will use the final values (i.e. assume constant stress during the deformation episode)
@@ -3253,7 +3147,7 @@ namespace DFMGenerator_GRDECL
                                     for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
                                     {
                                         // Update final absolute vertical stress total if defined
-                                        if (UsePropertyFor_Szz)
+                                        if (UseGridFor_Szz)
                                         {
                                             double cell_szz = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, SzzProperty);
                                             if (!double.IsNaN(cell_szz))
@@ -3264,7 +3158,7 @@ namespace DFMGenerator_GRDECL
                                         }
 
                                         // Update final horizontal stress tensor components total if defined
-                                        if (UsePropertyFor_StressTensor)
+                                        if (UseGridFor_StressTensor)
                                         {
                                             double cell_sxx = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, SxxProperty);
                                             if (!double.IsNaN(cell_sxx))
@@ -3287,7 +3181,7 @@ namespace DFMGenerator_GRDECL
                                         }
 
                                         // Update final vertical shear stress tensor components total if defined
-                                        if (UsePropertyFor_ShvComponents)
+                                        if (UseGridFor_ShvComponents)
                                         {
                                             double cell_szx = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, SzxProperty);
                                             if (!double.IsNaN(cell_szx))
@@ -3304,7 +3198,7 @@ namespace DFMGenerator_GRDECL
                                         }
 
                                         // Update final fluid pressure total if defined
-                                        if (UsePropertyFor_FluidPressure)
+                                        if (UseGridFor_FluidPressure)
                                         {
                                             double cell_fluidpressure = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, FluidPressureProperty);
                                             if (!double.IsNaN(cell_fluidpressure))
@@ -3345,7 +3239,7 @@ namespace DFMGenerator_GRDECL
                             }
 
                             // Update final absolute vertical stress total if defined
-                            if (UsePropertyFor_Szz)
+                            if (UseGridFor_Szz)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                 for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
@@ -3360,7 +3254,7 @@ namespace DFMGenerator_GRDECL
                             }
 
                             // Update final horizontal stress totals if defined
-                            if (UsePropertyFor_StressTensor)
+                            if (UseGridFor_StressTensor)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                 // We need valid data for all three horizontal components of the stress tensor
@@ -3380,7 +3274,7 @@ namespace DFMGenerator_GRDECL
                             }
 
                             // Update final vertical shear stress totals if defined
-                            if (UsePropertyFor_ShvComponents)
+                            if (UseGridFor_ShvComponents)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                 // We need valid data for both vertical shear components of the stress tensor
@@ -3398,7 +3292,7 @@ namespace DFMGenerator_GRDECL
                             }
 
                             // Update final fluid pressure total if defined
-                            if (UsePropertyFor_FluidPressure)
+                            if (UseGridFor_FluidPressure)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                 for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
@@ -3421,8 +3315,8 @@ namespace DFMGenerator_GRDECL
                         Tensor2S local_StressRateTensor = null;
                         // Next determine if there is sufficient data to calculate the stress rate tensor
                         // This can only be done if a timestep duration is defined
-                        bool overideStressRate = UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz) && !double.IsNaN(finalSxx) && !double.IsNaN(finalSyy) && !double.IsNaN(finalSxy);
-                        bool overideShvComponents = UsePropertyFor_ShvComponents && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzx) && !double.IsNaN(finalSyz);
+                        bool overideStressRate = UseGridFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz) && !double.IsNaN(finalSxx) && !double.IsNaN(finalSyy) && !double.IsNaN(finalSxy);
+                        bool overideShvComponents = UseGridFor_ShvComponents && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzx) && !double.IsNaN(finalSyz);
                         if (overideStressRate)
                         {
                             double local_szzRate = 0;
@@ -3470,7 +3364,7 @@ namespace DFMGenerator_GRDECL
                             local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
                             local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
                         }
-                        bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
+                        bool overrideFluidPressure = UseGridFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
                         if (overrideFluidPressure)
                         {
                             double local_FluidPressureRate = 0;
@@ -3484,7 +3378,7 @@ namespace DFMGenerator_GRDECL
                         }
                         // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
                         // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
-                        bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
+                        bool overrideStressArchingFactor = UseGridFor_Szz && !UseGridFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
                         if (overrideStressArchingFactor)
                         {
                             double dSigmazz_dt = 0;
@@ -3496,7 +3390,8 @@ namespace DFMGenerator_GRDECL
                             double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
                             double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
                             local_InitialVerticalStress = initialSzz;
-                            local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
+                            double local_OP_Thermal_factor = (local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt;
+                            local_StressArchingFactor = (local_OP_Thermal_factor != 0) ? (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt) : 1;
                             // Trim the result so it lies between 0 and 1 inclusive
                             if (local_StressArchingFactor < 0)
                                 local_StressArchingFactor = 0;
@@ -3528,7 +3423,7 @@ namespace DFMGenerator_GRDECL
                         local_AppliedUpliftRate_list.Add(local_AppliedUpliftRate);
                         local_StressArchingFactor_list.Add(local_StressArchingFactor);
                         local_DeformationEpisodeDuration_list.Add(local_DeformationEpisodeDuration);
-                        local_StressStateDefinition_list.Add(StressStateDefinition_list[deformationEpisodeNo]);
+                        local_StressDefinition_list.Add(StressDefinition_list[deformationEpisodeNo]);
 
                         // Add the stress load tensor - this will be null if not defined
                         local_StressRateTensor_list.Add(local_StressRateTensor);
@@ -3777,12 +3672,12 @@ namespace DFMGenerator_GRDECL
                             initialFP = local_InitialFluidPressure;
 
                         // Get the type of data used to define this deformation episode load
-                        StressStateDefinition local_StressStateDefinition = local_StressStateDefinition_list[deformationEpisodeNo];
+                        StressStateDefinition local_StressDefinition = local_StressDefinition_list[deformationEpisodeNo];
                         if (local_StressRateTensor is null)
-                            local_StressStateDefinition = StressStateDefinition.Strain;
+                            local_StressDefinition = StressStateDefinition.Strain;
 
                         // Add the deformation episode to the deformation episode list in the PropControl object, using the function appropriate to the data type
-                        switch (local_StressStateDefinition)
+                        switch (local_StressDefinition)
                         {
                             case StressStateDefinition.Strain:
                                 {
@@ -4536,21 +4431,21 @@ namespace DFMGenerator_GRDECL
                         // Create a stage-specific label and description for the output
                         string outputLabel;
                         if ((stageNameOverride is null) || (stageNameOverride.Length == 0))
-                            outputLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, stageEndTime.ToString("G3"), ModelTimeUnits);
+                            outputLabel = (stageNumber == NoStages) ? "Final" : string.Format("Stage{0}_Time{1}{2}", stageNumber, (stageEndTime / TimeUnitConverter).ToString("G3"), ModelTimeUnits);
                         else
-                            outputLabel = "_" + stageNameOverride;
+                            outputLabel = stageNameOverride;
                         string outputStageParams = string.Format("Model name: {0}\n", ModelName);
                         outputStageParams += (stageNumber == NoStages) ? "Final stage" : string.Format("Stage {0}", stageNumber);
                         outputStageParams += (stageNameOverride is null) ? "\n" : string.Format(": {0}\n", stageNameOverride);
-                        outputStageParams += string.Format("Time {0}{1}\n", stageEndTime, ModelTimeUnits);
+                        outputStageParams += string.Format("Time {0}{1}\n", stageEndTime / TimeUnitConverter, ModelTimeUnits);
                         outputStageParams += "\n";
 
                         // Create a new model stage output property folder in the shadow grid
-                        SourceDataGrid.CreateNewStage(ModelName + outputLabel);
+                        SourceDataGrid.CreateNewStage(outputLabel);
 
 #if DEBUG_FRAC_OUTPUT
                         progressReporter.OutputMessage("");
-                        progressReporter.OutputMessage("Stage" + outputLabel);
+                        progressReporter.OutputMessage("Stage: " + outputLabel);
 #endif
 
                         // If required, loop through each fracture set to output data
@@ -5489,14 +5384,20 @@ namespace DFMGenerator_GRDECL
                         // Loop through each stage in the fracture growth
                         for (int stageNumber = 1; stageNumber <= NoStages; stageNumber++)
                         {
-                            SourceDataGrid.WriteGRDECLFile(ModelName, outputFolderPath, progressReporter, stageNumber, ShadowGrid_TopLayerK, ShadowGrid_BottomLayerK, WriteSeparateGRDECLPropertyFiles, PopulateEmptyGridblocks);
+                            SourceDataGrid.WriteGRDECLFile(ModelName, outputFolderPath, progressReporter, stageNumber, ShadowGrid_TopLayerK, ShadowGrid_BottomLayerK, IncludeGridGeometryInGRDECLFiles, PopulateEmptyGridblocks);
                         }
 
                     // Write the explicit DFNs to a series of FAB output files
                     if (WriteFABFiles)
-                        SourceDataGrid.WriteFABFile(ModelName, ModelGrid, progressReporter, (MinExplicitMicrofractureRadius > 0), true);
+                        SourceDataGrid.WriteFABFiles(ModelName, outputFolderPath, ModelGrid, progressReporter, (MinExplicitMicrofractureRadius > 0), true);
                 }
             }
+
+#if !READINPUTFROMFILE
+            // If running from hardcoded data, require a user key press before terminating and closing the console window
+            Console.WriteLine("Model run complete; press any key to continue");
+            Console.ReadKey();
+#endif
         }
     }
 }
