@@ -129,6 +129,18 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getCumulativeThetaDashed(int Timestep_M) { return dataList[Timestep_M].theta_dashed_M; }
         /// <summary>
+        /// Inverse stress shadow volume for all fracture sets (including this one), i.e. cumulative probability that an initial microfracture from this fracture set does not lie in the stress shadow of any fracture set, at end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double getCumulativeTheta_AllFS_M(int Timestep_M) { return dataList[Timestep_M].theta_allFS_M; }
+        /// <summary>
+        /// Clear zone volume for all fracture sets (including this one), i.e. cumulative probability that an initial microfracture from this fracture set does not lie in the exclusion zone of any fracture set, at end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double getCumulativeThetaDashed_AllFS_M(int Timestep_M) { return dataList[Timestep_M].theta_dashed_allFS_M; }
+        /// <summary>
         /// Volumetric density of all fully active rays, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M"></param>

@@ -332,7 +332,11 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_CheckAllUCFStressShadows, checkBox_CheckAllUCFStressShadows);
             UpdateCheckBox(args.Argument_CalculateImplicitUCFData, checkBox_CalculateImplicitUCFData);
             UpdateTextBox(args.Argument_MinStressShadowDeactivationRatio, unitTextBox_MinSSDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdateTextBox(args.Argument_MinIntersectionDeactivationRatio, unitTextBox_MinIDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General); 
+            UpdateTextBox(args.Argument_MinIntersectionDeactivationRatio, unitTextBox_MinIDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateCheckBox(args.Argument_FilterByProperty, checkBox_FilterByProperty);
+            UpdatePropertyPresentationBox(args.Argument_PropertyToFilter, presentationBox_FilterByProperty);
+            UpdateTextBox(args.Argument_FilterByPropertyMinCutoff, unitTextBox_FilterByPropertyMinCutoff, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_FilterByPropertyMaxCutoff, unitTextBox_FilterByPropertyMaxCutoff, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
         }
 
         private void updateArgsFromUI()
@@ -512,6 +516,10 @@ namespace DFMGenerator_Ocean
             args.Argument_CalculateImplicitUCFData = checkBox_CalculateImplicitUCFData.Checked;
             args.Argument_MinStressShadowDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinSSDR);
             args.Argument_MinIntersectionDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinIDR);
+            args.Argument_FilterByProperty = checkBox_FilterByProperty.Checked;
+            args.Argument_PropertyToFilter = presentationBox_FilterByProperty.Tag as Property;
+            args.Argument_FilterByPropertyMinCutoff = GetDoubleFromTextBox(unitTextBox_FilterByPropertyMinCutoff);
+            args.Argument_FilterByPropertyMaxCutoff = GetDoubleFromTextBox(unitTextBox_FilterByPropertyMaxCutoff);
 
             // tell fwk to update LineUI:
             context.OnArgumentPackageChanged(this, new WorkflowContext.ArgumentPackageChangedEventArgs());
@@ -1032,7 +1040,12 @@ namespace DFMGenerator_Ocean
         {
             Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_DepthAtDeformation);
+        }
 
+        private void dropTarget_FilterByProperty_DragDrop(object sender, DragEventArgs e)
+        {
+            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
+            UpdatePropertyPresentationBox(droppedProperty, presentationBox_FilterByProperty);
         }
 
         private void presentationBox_Grid_KeyDown(object sender, KeyEventArgs e)
@@ -1166,6 +1179,15 @@ namespace DFMGenerator_Ocean
             if (e.KeyCode == Keys.Delete)
             {
                 UpdatePropertyPresentationBox(Property.NullObject, presentationBox_kv);
+                e.Handled = true;
+            }
+        }
+
+        private void presentationBox_FilterByProperty_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_FilterByProperty);
                 e.Handled = true;
             }
         }

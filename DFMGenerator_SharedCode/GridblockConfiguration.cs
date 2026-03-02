@@ -5830,7 +5830,7 @@ namespace DFMGenerator_SharedCode
                 double UCF_StressShadowWidthRatio = ufs.getStressShadowWidthRatio(CurrentExplicitTimestep);
 
                 // Add new unconfined fractures if required
-                if (calc_UCF)
+                if (calc_UCF && ufs.ExplicitNucleationActive)
                 {
                     // Calculate local helper variables
                     double ts_CumrminGammaMminus1 = (bis2 ? Math.Log(UCF_minRadius) : Math.Pow(UCF_minRadius, 1 / beta)) + Cum_Gamma_Mminus1;
@@ -5954,6 +5954,17 @@ namespace DFMGenerator_SharedCode
 
                                 // Recalculate the fracture geometry
                                 new_UCF.RecalculateGeometry();
+
+                                // Reset the counter for the number of consecutive failed explicit fracture nucleation attempts to zero
+                                ufs.ResetFailedNucleationAttemptCounter();
+                            }
+                            else
+                            {
+                                // If the attempt to nucleate a new fracture failed, increment the counter for the number of consecutive failed explicit fracture nucleation attempts
+                                // If this causes the fracture set to be considered incapable of nucleating new explicit fractures, break out of the current loop of added new fractures
+                                ufs.IncrementFailedNucleationAttemptCounter();
+                                if (!ufs.ExplicitNucleationActive)
+                                    break;
                             }
 
                             // Update the number of unconfined fractures that we need to add - if there are no more to add we can break out of the loop
@@ -6090,6 +6101,17 @@ namespace DFMGenerator_SharedCode
 
                             // Recalculate the fracture geometry
                             new_UCF.RecalculateGeometry();
+
+                            // Reset the counter for the number of consecutive failed explicit fracture nucleation attempts to zero
+                            ufs.ResetFailedNucleationAttemptCounter();
+                        }
+                        else
+                        {
+                            // If the attempt to nucleate a new fracture failed, increment the counter for the number of consecutive failed explicit fracture nucleation attempts
+                            // If this causes the fracture set to be considered incapable of nucleating new explicit fractures, break out of the current loop of added new fractures
+                            ufs.IncrementFailedNucleationAttemptCounter();
+                            if (!ufs.ExplicitNucleationActive)
+                                break;
                         }
 
                         // Update the weighted time (RTime) when the next unconfined fracture will nucleate

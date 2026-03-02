@@ -369,6 +369,34 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public FractureEvolutionStage getEvolutionStage() { return CurrentFractureData.EvolutionStage; }
         /// <summary>
+        /// Maximum number of consecutive attempts to nucleate a new explicit fracture before the set is considered incapable of nucleating new explicit fractures
+        /// When this is exceeded the ExplicitNucleationActive flag is set to false
+        /// </summary>
+        private int MaxNucleationAttempts { get { return (int)(10d / gbc.PropControl.minimum_UCFClearZone_Volume); } }
+        /// <summary>
+        /// Counter for the number of consecutive failed explicit fracture nucleation attempts
+        /// When this exceeds MaxNucleationAttempts the set will be considered incapable of nucleating new explicit fractures and the ExplicitNucleationActive flag is set to false
+        /// </summary>
+        private int failedNucleationAttempts;
+        /// <summary>
+        /// Increment the counter for the number of consecutive failed explicit fracture nucleation attempts; if necessary this will also set the ExplicitNucleationActive flag is set to false
+        /// </summary>
+        public void IncrementFailedNucleationAttemptCounter()
+        {
+            failedNucleationAttempts++;
+        }
+        /// <summary>
+        /// Increment the counter for the number of consecutive failed explicit fracture nucleation attempts to zero
+        /// </summary>
+        public void ResetFailedNucleationAttemptCounter()
+        {
+            failedNucleationAttempts = 0;
+        }
+        /// <summary>
+        /// Flag to specify whether the set is still capable of nucleating new explicit fractures in the current gridblock during DFN generation
+        /// </summary>
+        public bool ExplicitNucleationActive { get { return (failedNucleationAttempts < MaxNucleationAttempts); } }
+        /// <summary>
         /// Effective normal stress on the fracture at the end of the current timestep (Pa)
         /// </summary>
         /// <returns></returns>
@@ -428,6 +456,16 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <returns></returns>
         public double getClearZoneVolume() { return CurrentFractureData.theta_dashed_M; }
+        /// <summary>
+        /// Inverse stress shadow volume for all fracture sets (including this one), i.e. cumulative probability that an initial microfracture from this fracture set does not lie in the stress shadow of any fracture set, at end of the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getInverseStressShadowVolumeAllFS() { return CurrentFractureData.theta_allFS_M; }
+        /// <summary>
+        /// Clear zone volume for all fracture sets (including this one), i.e. cumulative probability that an initial microfracture from this fracture set does not lie in the exclusion zone of any fracture set, at end of the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getClearZoneVolumeAllFS() { return CurrentFractureData.theta_dashed_allFS_M; }
         /// <summary>
         /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
         /// </summary>
@@ -2906,7 +2944,7 @@ namespace DFMGenerator_SharedCode
                 if (StressShadowWidthRatio <= 0)
                     return false;
 
-                // Get the maximum and maximum radius of the exclusion zone around this fracture
+                // Get the minimum and maximum radius of the exclusion zone around this fracture
                 // These may be different because the effective fracture radius, which controls the stress around the fracture, may be different to the mean fracture radius 
                 // The maximum radius, i.e. the radius in the plane of the fracture, will be the sum of the mean radius of this fracture plus the outer exclusion zone width
                 double EZMaxWidth = UCF.MeanRayLength + MaxOuterExclusionZoneWidth;
@@ -2999,7 +3037,7 @@ namespace DFMGenerator_SharedCode
             edgeOfRayStressShadow.AddVector((finalRayLength * propagatingSegmentStressShadowMultiplier) * fractureNormalVector);
 
             // Loop through all the fractures in the interacting fracture set
-            foreach (UnconfinedFractureXYZ UCF in LocalDFNUnconfinedFractures)
+            foreach (UnconfinedFractureXYZ UCF in interacting_ufs.LocalDFNUnconfinedFractures)
             {
                 // Check if it is the parent fracture of the propagating segment; if so move on to the next
                 if (propagatingSegment.IsSegmentInFracture(UCF))
@@ -3371,6 +3409,8 @@ namespace DFMGenerator_SharedCode
             PreviousFractureData = new FCD_List_Minimised(CurrentFractureData, true);
             // Set the flag to deactivate the fracture set at the start of the next timestep to false
             DeactivateNextTimestep = false;
+            // Set the counter for consecutive failed nucleation attempts to 0
+            failedNucleationAttempts = 0;
 
             // Set the cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated to 0
             previous_CumGamma = 0;
