@@ -906,7 +906,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which macrofractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumMFClearZoneVolume = 0.1;// 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 1000;
+            int MaxTimesteps = 100;// 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
@@ -922,7 +922,7 @@ namespace DFMGenerator_Standalone
             double MinimumLayerThickness = 0;
             // Maximum number of new fractures that can be generated per gridblock per timestep: set automatically to 100,000
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaximumNewFracturesPerTimestep = 100000;
+            int MaximumNewFracturesPerTimestep = 1000;// 100000;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)

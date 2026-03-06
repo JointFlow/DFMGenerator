@@ -938,7 +938,8 @@ namespace DFMGenerator_SharedCode
                 }
             }
         }
-        /// <summary>
+        // The following functions have been moved to the UnconfinedFractureSet class to make them more accessible
+        /*/// <summary>
         /// Get the total clear zone volume seen by as seen by rays represented by a specified datapoint, taking account of overlap and the effective radius of all fractures
         /// </summary>
         /// <param name="DatapointToCheck">Implicit fracture population datapoint representing the dimensions of the specified fracture rays</param>
@@ -956,6 +957,18 @@ namespace DFMGenerator_SharedCode
         /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
         /// <returns>Clear zone volume seen by rays represented by a specified datapoint; this is the volume in which the centre of the specified fracture could be placed without its stress shadow overlapping the stress shadow of any other fractures</returns>
         public double getStressShadowClearZoneVolume(double dtc_rayLength, double dtc_effectiveRaylength, out double InverseStressShadowVolume)
+        {
+            return getStressShadowClearZoneVolume(dtc_rayLength, dtc_effectiveRaylength, 1, out InverseStressShadowVolume);
+        }
+        /// <summary>
+        /// Get the total clear zone volume and inverse stress shadow volume seen by rays of specified dimensions from any fracture set, taking account of stress shadow exclusion zone overlap
+        /// </summary>
+        /// <param name="dtc_rayLength">Length of the specified fracture rays</param>
+        /// <param name="dtc_effectiveRaylength">Effective length of the specified fracture rays</param>
+        /// <param name="stressShadowWidthMultiplier">Multiplier to take account of cross fault set stress shadows</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by rays represented by a specified datapoint; this is the volume in which the centre of the specified fracture could be placed without its stress shadow overlapping the stress shadow of any other fractures</returns>
+        public double getStressShadowClearZoneVolume(double dtc_rayLength, double dtc_effectiveRaylength, double stressShadowWidthMultiplier, out double InverseStressShadowVolume)
         {
             // Cache the ray length, stress shadow width and minimum stress shadow deactivation radius of the specified datapoint locally
             double minStressShadowDeactivationRadius = dtc_effectiveRaylength * minStressShadowDeactivationRatio;
@@ -982,8 +995,11 @@ namespace DFMGenerator_SharedCode
                 }
             }
 
-            // Calculate the inverse stress shadow volume, and the clear zone volume taking into account overlap of the outer shells
-            InverseStressShadowVolume = 1 - StressShadowVolume_total;
+            // Calculate the inverse stress shadow volume, and the clear zone volume taking into account overlap of the outer shells, and also taking into account the multiplier for cross fault set stress shadows
+            // The multiplier for cross fault set stress shadows is applied only to the stress shadow volume, not to the outer exclusion zone volume
+            // This is because the outer exclusion zone volume represents the stress shadow around the fracture being tested, not around a fracture from a different set
+            // NB This will not be exact as the multiplier for cross fault set stress shadows (assuming it is < 1) will mean that some of the outer exclusion zone volume lies within the stress shadow volume so cannot overlap
+            InverseStressShadowVolume = 1 - (stressShadowVolume * stressShadowWidthMultiplier);
             double clearZoneVolume = InverseStressShadowVolume * Math.Exp(-exclusiveOuterExclusionZoneVolume);
 
             // Return the clear zone volume
@@ -1052,7 +1068,7 @@ namespace DFMGenerator_SharedCode
 
             // Return the clear zone volume
             return phi_II;
-        }
+        }*/
 
         // Reset and data input functions
         /// <summary>

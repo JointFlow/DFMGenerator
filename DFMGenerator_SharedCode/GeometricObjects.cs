@@ -1721,7 +1721,6 @@ namespace DFMGenerator_SharedCode
         }
 
         // Functions to generate specific tensors
-
         /// <summary>
         /// Create a uniaxial second order tensor with a principal axis of arbitrary orientation and magnitude
         /// For example a permeability tensor for flow along parallel tubes

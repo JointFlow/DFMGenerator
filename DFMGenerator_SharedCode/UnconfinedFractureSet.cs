@@ -467,20 +467,26 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getClearZoneVolumeAllFS() { return CurrentFractureData.theta_dashed_allFS_M; }
         /// <summary>
-        /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
+        /// Increment of displacement on the fracture resulting from an increment in the applied strain, at the end of the current timestep
         /// </summary>
         /// <returns></returns>
-        public double getAzimuthalStressShadowWidthRatio() { return CurrentFractureData.AzimuthalStressShadowWidthRatio_M; }
+        public VectorXYZ getIncrementalDisplacement() { return CurrentFractureData.IncrementalDisplacement_M; }
         /// <summary>
-        /// Ratio of the strike-slip shear component of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
+        /// Increment of applied strain acting on the fracture, at the end of the current timestep
         /// </summary>
         /// <returns></returns>
-        public double getShearStressShadowWidthRatio() { return CurrentFractureData.ShearStressShadowWidthRatio_M; }
+        public VectorXYZ getIncrementalStrainOnFracture() { return CurrentFractureData.IncrementalStrainOnFracture_M; }
         /// <summary>
-        /// Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
+        /// Ratio of the maximum fracture stress shadow width to effective fracture radius, at the end of the current timestep
         /// </summary>
         /// <returns></returns>
         public double getStressShadowWidthRatio() { return CurrentFractureData.StressShadowWidthRatio_M; }
+        /// <summary>
+        /// Ratio of the maximum fracture stress shadow width to effective fracture radius for a fracture in another set as seen by a fracture in this set, at the end of the current timestep
+        /// </summary>
+        /// <param name="UFS_I">Reference to the fracture set containing the fracture with the stress shadow</param>
+        /// <returns></returns>
+        public double getStressShadowWidthRatio(UnconfinedFractureSet UFS_I) { return UFS_I.getUFSW_IJ(this) * CurrentFractureData.StressShadowWidthRatio_M; }
 
         // Functions to return data for previous timesteps from the PreviousFractureData list
         /// <summary>
@@ -601,7 +607,6 @@ namespace DFMGenerator_SharedCode
 
             return output;
         }
-
         /// <summary>
         /// Inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, during a specified previous timestep
         /// </summary>
@@ -615,23 +620,30 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getClearZoneVolume(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getCumulativeThetaDashed(Timestep_M); }
         /// <summary>
-        /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
+        /// Increment of displacement on the fracture resulting from an increment in the applied strain, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getAzimuthalStressShadowWidthRatio(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getAzimuthalStressShadowWidthRatio_M(Timestep_M); }
+        public VectorXYZ getIncrementalDisplacement(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getIncrementalDisplacement_M(Timestep_M); }
         /// <summary>
-        /// Ratio of the strike-slip shear component of the maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
+        /// Increment of applied strain acting on the fracture, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
-        public double getShearStressShadowWidthRatio(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getShearStressShadowWidthRatio_M(Timestep_M); }
+        public VectorXYZ getIncrementalStrainOnFracture(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getIncrementalStrainOnFracture_M(Timestep_M); }
         /// <summary>
-        /// Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
+        /// Ratio of the maximum fracture stress shadow width to effective fracture radius, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getStressShadowWidthRatio(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getStressShadowWidthRatio_M(Timestep_M); }
+        /// <summary>
+        /// Ratio of the maximum fracture stress shadow width to effective fracture radius for a fracture in another set as seen by a fracture in this set, at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="UFS_I">Reference to the fracture set containing the fracture with the stress shadow</param>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getStressShadowWidthRatio(UnconfinedFractureSet UFS_I, int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return UFS_I.getUFSW_IJ(this, Timestep_M) * PreviousFractureData.getStressShadowWidthRatio_M(Timestep_M); }
 
         // Functions to get logging data - only required in debug mode
 #if DEBUG
@@ -1128,7 +1140,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Recalculate the shear displacement pitch and vector, the fracture mode and the compliance tensor base for the given effective stress tensor
         /// </summary>
-        public void RecalculateElasticResponse(Tensor2S CurrentStress)
+        /// <param name="CurrentStress">Current effective stress tensor</param>
+        /// <returns>True if the shear displacement vector has changed, false if it has not</returns>
+        public bool RecalculateElasticResponse(Tensor2S CurrentStress)
         {
             // Get stress vector acting on the fracture plane
             VectorXYZ stressOnFracture = CurrentStress * normalVector;
@@ -1160,13 +1174,19 @@ namespace DFMGenerator_SharedCode
                 sigmad_positive = true;
             bool sigmad_changed = (sigmad_positive != previous_sigmad_positive);
 
-            // Recalculate the compliance tensor base
+            // Recalculate the compliance tensor base, the fracture mode factors and the incremental displacement on the fracture
             // This is only necessary if either:
             // - the fracture mode has changed (from dilatant to shear or vice versa)
             // - the driving stress has changed from positive to negative, or vice versa, so fractures can now / can no longer accommodate elastic strain
             // - the shear displacement vector has changed, for shear fractures (the compliance tensor is independent of the shear displacement vector for dilatant fractures so this does not apply for these)
-            if (sigmaneff_changed || sigmad_changed || (stressVectorChanged && !sigmaneff_negative))
+            bool fractureStateChanged = sigmaneff_changed || sigmad_changed || (stressVectorChanged && !sigmaneff_negative);
+            if (fractureStateChanged)
+            {
                 RecalculateComplianceTensorBase(sigmaneff_negative, sigmad_positive);
+                RecalculateIncrementalDisplacement();
+            }
+
+            return fractureStateChanged;
         }
         /// <summary>
         /// Recalculate the shear stress and displacement pitch and vectors if they have changed
@@ -1456,81 +1476,98 @@ namespace DFMGenerator_SharedCode
 
         // Applied strain components
         /// <summary>
-        /// Ratio of incremental normal strain to total incremental normal strain on the fracture, given by eff^2 / (eff^2 + efw^2 + efs^2)
-        /// </summary>
-        private double eff2d_e2d { get; set; }
-        /// <summary>
-        /// Ratio of incremental normal strain x downdip shear strain to total incremental normal strain on the fracture, given by eff*efw / (eff^2 + efw^2 + efs^2)
-        /// </summary>
-        private double efffwd_e2d { get; set; }
-        /// <summary>
-        /// Ratio of incremental downdip shear strain to total incremental normal strain on the fracture, given by efw^2 / (eff^2 + efw^2 + efs^2)
-        /// </summary>
-        private double efw2d_e2d { get; set; }
-        /// <summary>
-        /// Ratio of incremental normal strain x alongstrike shear strain to total incremental normal strain on the fracture, given by eff*efs / (eff^2 + efw^2 + efs^2)
-        /// </summary>
-        private double efffsd_e2d { get; set; }
-        /// <summary>
-        /// Ratio of incremental alongstrike shear strain to total incremental normal strain on the fracture, given by efs^2 / (eff^2 + efw^2 + efs^2)
-        /// </summary>
-        private double efs2d_e2d { get { return 1 - eff2d_e2d - efw2d_e2d; } }
-        /// <summary>
         /// Recalculate the applied strain components acting on the fractures, for a specified strain or strain rate tensor
         /// </summary>
         /// <param name="AppliedStrainTensor">Current strain or strain rate tensor</param>
         public void RecalculateStrainRatios(Tensor2S AppliedStrainTensor)
         {
-            VectorXYZ normalStrainOnFracture = AppliedStrainTensor * normalVector;
-            VectorXYZ downDipStrainOnFracture = AppliedStrainTensor * dipVector;
-            VectorXYZ alongStrikeStrainOnFracture = AppliedStrainTensor * strikeVector;
-            double effd = normalVector & normalStrainOnFracture;
-            double efwd = dipVector & normalStrainOnFracture;
-            double ewwd = dipVector & downDipStrainOnFracture;
-            double efsd = strikeVector & normalStrainOnFracture;
-            double essd = strikeVector & alongStrikeStrainOnFracture;
+            CurrentFractureData.IncrementalStrainOnFracture_M = AppliedStrainTensor * normalVector;
+            RecalculateIncrementalDisplacement();
+        }
+        /// <summary>
+        /// Recalculate the incremental displacement and the incremental displacement/applied strain ratio controlling stress shadow width, based the current fracture mode factors and incremental applied strain vector
+        /// </summary>
+        private void RecalculateIncrementalDisplacement()
+        {
+            // Get the components of the tensor for the applied stress increment
+            VectorXYZ strainOnFracture = CurrentFractureData.IncrementalStrainOnFracture_M;
+            double effd = normalVector & strainOnFracture;
+            double efwd = dipVector & strainOnFracture;
+            double efsd = strikeVector & strainOnFracture;
 
             // Set the strain ratios to zero if they are small - this will avoid rounding errors
-            double emax = effd + efwd + ewwd + efsd + essd;
+            double emax = effd + efwd + efsd;
             if ((float)(emax + effd) == (float)emax)
                 effd = 0;
             if ((float)(emax + efwd) == (float)emax)
                 efwd = 0;
-            if ((float)(emax + ewwd) == (float)emax)
-                ewwd = 0;
             if ((float)(emax + efsd) == (float)emax)
                 efsd = 0;
-            if ((float)(emax + essd) == (float)emax)
-                essd = 0;
-            double eff_squared = Math.Pow(effd, 2);
-            double efw_squared = Math.Pow(efwd, 2);
-            double efs_squared = Math.Pow(efsd, 2);
-            double e_squared = eff_squared + efw_squared + efs_squared;
-            eff2d_e2d = (e_squared > 0 ? eff_squared / e_squared : 1);
-            efw2d_e2d = (e_squared > 0 ? efw_squared / e_squared : 0);
-            efffwd_e2d = (e_squared > 0 ? (effd * efwd) / e_squared : 0);
-            efffsd_e2d = (e_squared > 0 ? (effd * efsd) / e_squared : 0);
-        }
 
-        // Fracture mode factors - these form the basis for the stress shadow width
-        // They represent the ratio of far-field displacement (i.e. applied strain) to displacement on a fracture, normalised to remove the effects of fracture size and geometry
-        // For convenience, these are combined with the respective strain components when they are calculated, so they need only be multiplied by geometric factors to determine stress shadow widths
+            // Get the components of the fracture displacement vector
+            // The shear components Dw and Ds are divided by 2 so they are equivalent to the fd and fs components of the fracture shear tensor
+            double Df = Mff * effd;
+            double Dw_half = (Mfw * effd) + (Mww * efwd);
+            double Ds_half = (Mfs * effd) + (Mss * efsd);
+
+            // Recalculate the incremental displacement vector in XYZ coordinates
+            // This is used to calculate the ratio of incremental displacement to applied strain on the fracture
+            CurrentFractureData.IncrementalDisplacement_M = (Df * normalVector) + (Dw_half * dipVector) + (Ds_half * strikeVector);
+
+            // Update the ratio of incremental displacement to applied strain on the fracture
+            // This is used to calculate the stress shadow width
+            De_ee_Ratio = CurrentFractureData.Displacement_Strain_Ratio;
+        }
         /// <summary>
-        /// Fracture Mode Factor: azimuthal strain => azimuthal displacement
+        /// Return the current ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J; i.e. DI.eJ / DJ.eJ
         /// </summary>
-        private double Maa_eaa2d_eh2d { get { return Math.Max(((eff2d_e2d * Mff) + (efffwd_e2d * Mfw) + (efw2d_e2d * Mww)), 0); } }
+        /// <param name="J">Reference to unconfined fracture set J</param>
+        /// <returns>The ratio DI.eJ / DJ.eJ, or 0 if DJ.eJ is zero (i.e. the applied strain on J is 0)</returns>
+        public double getUFSW_IJ(UnconfinedFractureSet J)
+        {
+            // Get the displacement increment and applied stress increment on fracture set J
+            VectorXYZ displacementIncrement_J = J.CurrentFractureData.IncrementalDisplacement_M;
+            VectorXYZ strainOnFractureJ = J.CurrentFractureData.IncrementalStrainOnFracture_M;
+
+            // Calculate DIeJ and DJeJ
+            double DIeJ = CurrentFractureData.IncrementalDisplacement_M & strainOnFractureJ;
+            double DJeJ = displacementIncrement_J & strainOnFractureJ;
+
+            if (DJeJ > 0)
+                return DIeJ / DJeJ;
+            else
+                return 0;
+        }
         /// <summary>
-        /// Fracture Mode Factor: strike-parallel shear strain => azimuthal displacement
+        /// Return the ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J, in a specified timestep M; i.e. DI.eJ / DJ.eJ
         /// </summary>
-        private double Mas_eaaasd_eh2d { get { return Math.Max((efffsd_e2d * Mfs), 0); } }
+        /// <param name="J">Reference to unconfined fracture set J</param>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns>The ratio DI.eJ / DJ.eJ, or 0 if DJ.eJ is zero (i.e. the applied strain on J is 0)</returns>
+        public double getUFSW_IJ(UnconfinedFractureSet J, int Timestep_M)
+        {
+            if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep;
+
+            // Get the displacement increment and applied stress increment on fracture set J in timestep M
+            VectorXYZ displacementIncrement_J = J.PreviousFractureData.getIncrementalDisplacement_M(Timestep_M);
+            VectorXYZ strainOnFractureJ = J.PreviousFractureData.getIncrementalStrainOnFracture_M(Timestep_M);
+
+            // Get the displacement increment on this fracture set I in timestep M
+            VectorXYZ displacementIncrement_I = PreviousFractureData.getIncrementalDisplacement_M(Timestep_M);
+
+            // Calculate DIeJ and DJeJ
+            double DIeJ = displacementIncrement_I & strainOnFractureJ;
+            double DJeJ = displacementIncrement_J & strainOnFractureJ;
+
+            if (DJeJ > 0)
+                return DIeJ / DJeJ;
+            else
+                return 0;
+        }
         /// <summary>
-        /// Fracture Mode Factor: strike-parallel shear strain => strike-slip displacement
+        /// Ratio of incremental displacement on the fracture to applied strain; equal to D.e/e.e
         /// </summary>
-        private double Mss_eas2d_eh2d { get { return Math.Max((efs2d_e2d * Mss), 0); } }
-        /// <summary>
-        /// Fracture Mode Factor: maximum horizontal strain => horizontal displacement
-        /// </summary>
-        private double Mhh_eh2d { get { return Maa_eaa2d_eh2d + Mas_eaaasd_eh2d + Mss_eas2d_eh2d; } }
+        private double De_ee_Ratio { get; set; }
         /// <summary>
         /// Geometric factor: normal strain => normal displacement
         /// </summary>
@@ -1559,23 +1596,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Max_F_StressShadowWidthRatio
         {
-            get { return Mhh_eh2d * (8 / Math.PI); }
-        }
-        /// <summary>
-        /// Ratio of azimuthal component of maximum fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
-        /// </summary>
-        /// <returns></returns>
-        public double Max_Azimuthal_F_StressShadowWidth
-        {
-            get { return Maa_eaa2d_eh2d * (8 / Math.PI); }
-        }
-        /// <summary>
-        /// Ratio of strike-slip shear component of maximum fracture stress shadow width to fracture radius - returns a value regardless of the FractureDistribution case
-        /// </summary>
-        /// <returns></returns>
-        public double Max_Shear_F_StressShadowWidth
-        {
-            get { return (Mas_eaaasd_eh2d + Mss_eas2d_eh2d) * (8 / Math.PI); }
+            get { return De_ee_Ratio * (8 / Math.PI); }
         }
         /// <summary>
         /// Ratio of mean stress shadow width to effective fracture radius - returns a value regardless of the FractureDistribution case
@@ -1583,7 +1604,7 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double Mean_F_StressShadowWidthRatio
         {
-            get { return Mhh_eh2d * (16 / (3 * Math.PI)); }
+            get { return De_ee_Ratio * (16 / (3 * Math.PI)); }
         }
         // Functions to set stress shadow width ratio
         /// <summary>
@@ -1592,39 +1613,35 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if the stress shadow width ratio of this fracture set has changed, false if the stress shadow width ratio is unchanged</returns>
         public bool setStressShadowWidthData()
         {
-            // Get the current stress shadow width ratios
-            // These will depend on the stress distribution scenario
-            double azimuthal_StressShadowWidthRatio, total_StressShadowWidthRatio;
+            // Get the current stress shadow width ratio
+            // This will depend on the stress distribution scenario
+            double current_StressShadowWidthRatio;
             switch (FractureDistribution)
             {
                 // There are no stress shadows in the evenly distributed stress scenario
                 case StressDistribution.EvenlyDistributedStress:
-                    azimuthal_StressShadowWidthRatio = 0;
-                    total_StressShadowWidthRatio = 0;
+                    current_StressShadowWidthRatio = 0;
                     break;
                 // Stress shadow widths are proportional to the effective fracture radius in the stress shadow scenario
                 case StressDistribution.StressShadow:
                 // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
                 case StressDistribution.DuctileBoundary:
-                    azimuthal_StressShadowWidthRatio = Max_Azimuthal_F_StressShadowWidth;
-                    total_StressShadowWidthRatio = Max_F_StressShadowWidthRatio;
+                    current_StressShadowWidthRatio = Max_F_StressShadowWidthRatio;
                     break;
                 // By default assume no stress shadows
                 default:
-                    azimuthal_StressShadowWidthRatio = 0;
-                    total_StressShadowWidthRatio = 0;
+                    current_StressShadowWidthRatio = 0;
                     break;
             }
 
-            // If the stress shadow widths have changed, update the CurrentFractureData object and recalculate the stress shadow volume for each datapoint
-            double previousTotalStressShadowWidthRatio = CurrentFractureData.ShearStressShadowWidthRatio_M;
-            double previousAzimuthalStressShadowWidthRatio = CurrentFractureData.AzimuthalStressShadowWidthRatio_M;
-            bool stressShadowWidthChanged = ((float) total_StressShadowWidthRatio != (float)previousTotalStressShadowWidthRatio) || ((float)azimuthal_StressShadowWidthRatio != (float)previousAzimuthalStressShadowWidthRatio);
+            // If the stress shadow width has changed, update the CurrentFractureData object and recalculate the stress shadow volume for each datapoint
+            double previous_StressShadowWidthRatio = CurrentFractureData.StressShadowWidthRatio_M;
+            bool stressShadowWidthChanged = ((float) current_StressShadowWidthRatio != (float)previous_StressShadowWidthRatio);
             if (stressShadowWidthChanged)
             {
                 // Calculate a multiplier for the stress shadow volume around each datapoint to represent the change in stress shadow width
                 // NB This will be positive for growing stress shadows and negative for shrinking stress shadows
-                double dW_Wi = (previousTotalStressShadowWidthRatio > 0) ? (total_StressShadowWidthRatio - previousTotalStressShadowWidthRatio) / previousTotalStressShadowWidthRatio : 0;
+                double dW_Wi = (previous_StressShadowWidthRatio > 0) ? (current_StressShadowWidthRatio - previous_StressShadowWidthRatio) / previous_StressShadowWidthRatio : 0;
 
                 // Recalculate the stress shadow volume associated with each datapoint in the UnconfinedFractureData object
                 if (dW_Wi != 0)
@@ -1634,7 +1651,7 @@ namespace DFMGenerator_SharedCode
                 Fractures.RecalculateStressShadowVolumeData();
 
                 // Update the stress shadow widths in the CurrentFractureData object; the stress shadow volume will be updated later
-                CurrentFractureData.SetStressShadowWidth(azimuthal_StressShadowWidthRatio, total_StressShadowWidthRatio);
+                CurrentFractureData.SetStressShadowWidth(current_StressShadowWidthRatio);
 
                 // Also revert any residual active sets to growing, since the deactivation probabilities may have significantly reduced
                 // If the deactivation probabilities have not significantly reduced, the fracture dipsets will revert to Residual Active when the calculateTotalMacrofracturePopulation() function is called
@@ -1642,9 +1659,142 @@ namespace DFMGenerator_SharedCode
                     CurrentFractureData.SetEvolutionStage(FractureEvolutionStage.Growing);
             }
 
-            // Return the flag for stress shaow widths changed
+            // Return the flag for stress shadow widths changed
             return stressShadowWidthChanged;
         }
+
+        // Stress shadow and exclusion zone data
+        /// <summary>
+        /// Get the total clear zone volume seen by as seen by rays represented by a specified datapoint, taking account of overlap and the effective radius of all fractures
+        /// </summary>
+        /// <param name="DatapointToCheck">Implicit fracture population datapoint representing the dimensions of the specified fracture rays</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by the specified fracture; this is the inverse of the exclusion zone volume seen by the fracture</returns>
+        public double getStressShadowClearZoneVolume(ImplicitFracturePopulationDatapoint DatapointToCheck, out double InverseStressShadowVolume)
+        {
+            return getStressShadowClearZoneVolume(DatapointToCheck.RayLength, DatapointToCheck.EffectiveRayLength, out InverseStressShadowVolume);
+        }
+        /// <summary>
+        /// Get the total clear zone volume and inverse stress shadow volume seen by rays of specified dimensions, taking account of stress shadow exclusion zone overlap
+        /// </summary>
+        /// <param name="dtc_rayLength">Length of the specified fracture rays</param>
+        /// <param name="dtc_effectiveRaylength">Effective length of the specified fracture rays</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by rays represented by a specified datapoint; this is the volume in which the centre of the specified fracture could be placed without its stress shadow overlapping the stress shadow of any other fractures</returns>
+        public double getStressShadowClearZoneVolume(double dtc_rayLength, double dtc_effectiveRaylength, out double InverseStressShadowVolume)
+        {
+            return getStressShadowClearZoneVolume(dtc_rayLength, dtc_effectiveRaylength, 1, out InverseStressShadowVolume);
+        }
+        /// <summary>
+        /// Get the total clear zone volume and inverse stress shadow volume seen by rays of specified dimensions from any fracture set, taking account of stress shadow exclusion zone overlap
+        /// </summary>
+        /// <param name="dtc_rayLength">Length of the specified fracture rays</param>
+        /// <param name="dtc_effectiveRaylength">Effective length of the specified fracture rays</param>
+        /// <param name="stressShadowWidthMultiplier">Multiplier to take account of cross fault set stress shadows</param>
+        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
+        /// <returns>Clear zone volume seen by rays represented by a specified datapoint; this is the volume in which the centre of the specified fracture could be placed without its stress shadow overlapping the stress shadow of any other fractures</returns>
+        public double getStressShadowClearZoneVolume(double dtc_rayLength, double dtc_effectiveRaylength, double stressShadowWidthMultiplier, out double InverseStressShadowVolume)
+        {
+            // Cache the ray length, stress shadow width and minimum stress shadow deactivation radius of the specified datapoint locally
+            double minStressShadowDeactivationRadius = dtc_effectiveRaylength * gbc.PropControl.MinStressShadowDeactivationRatio;
+            double stressShadowHalfWidthRatio = Max_F_StressShadowWidthRatio / 2;
+            double dtc_stressShadowHalfWidth = dtc_effectiveRaylength * stressShadowHalfWidthRatio;
+
+            // Calculate the total stress shadow volume and the exclusive outer exclusion zone volume of fractures that can deactivate this fracture
+            // The outer exclusion zone volume is the volume within the exclusion zone volume but outside the stress shadow volume of every other fracture
+            // The outer exclusion zones of individual fractures can overlap with each other and with the stress shadows of the fractures - however first we must calculate the sum of the outer exclusion zone volumes of all fractures ignoring overlap
+            double stressShadowVolume = 0;
+            double exclusiveOuterExclusionZoneVolume = 0;
+            // Loop through each ray propagation status
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // Loop through each datapoint in the population data array
+                foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[status])
+                {
+                    // Check if it is large enough to deactivate the current fracture - if not we can ignore it
+                    if (datapoint.EffectiveRayLength >= minStressShadowDeactivationRadius)
+                    {
+                        stressShadowVolume += datapoint.StressShadowVolume;
+                        exclusiveOuterExclusionZoneVolume += (datapoint.dP33ShellFactor(dtc_rayLength, dtc_stressShadowHalfWidth) * (4d / 3d) * Math.PI / (double)RaysPerFracture);
+                    }
+                }
+            }
+
+            // Calculate the inverse stress shadow volume, and the clear zone volume taking into account overlap of the outer shells, and also taking into account the multiplier for cross fault set stress shadows
+            // The multiplier for cross fault set stress shadows is applied only to the stress shadow volume, not to the outer exclusion zone volume
+            // This is because the outer exclusion zone volume represents the stress shadow around the fracture being tested, not around a fracture from a different set
+            // NB This will not be exact as the multiplier for cross fault set stress shadows (assuming it is < 1) will mean that some of the outer exclusion zone volume lies within the stress shadow volume so cannot overlap
+            InverseStressShadowVolume = 1 - (stressShadowVolume * stressShadowWidthMultiplier);
+            double clearZoneVolume = InverseStressShadowVolume * Math.Exp(-exclusiveOuterExclusionZoneVolume);
+
+            // Return the clear zone volume
+            return clearZoneVolume;
+        }
+        /// <summary>
+        /// Get the ratio of the total volume not in an interaction or exclusion zone around any fracture segment in this set to the total clear zone volume as seen by rays represented by a specified datapoint, taking account of stress shadow interaction zone overlap
+        /// This represents the volume in which the centre of the specified fracture could be placed without experiencing stress shadow interaction in the current timestep
+        /// This is equivalent to the expected probability that an active ray that will not be deactivated due to stress shadow interaction in this timestep (PhiII_M)
+        /// </summary>
+        /// <param name="DatapointToCheck">Implicit fracture population datapoint representing the dimensions of the specified fracture rays</param>
+        /// <returns>Ratio of the total volume not in an interaction or exclusion zone around any fracture segment in this set to the total clear zone volume as seen by rays represented by the specified datapoint (Phi_II)</returns>
+        public double getStressShadowNonInteractionVolumeRatio(ImplicitFracturePopulationDatapoint DatapointToCheck)
+        {
+            // Cache the ray length and increment, stress shadow width and increment and minimum stress shadow deactivation radius of the specified datapoint locally
+            double minStressShadowDeactivationRadius = DatapointToCheck.EffectiveRayLength * gbc.PropControl.MinStressShadowDeactivationRatio;
+            double dtc_rayLength = DatapointToCheck.RayLength;
+            double stressShadowHalfWidthRatio = Max_F_StressShadowWidthRatio / 2;
+            double dtc_stressShadowHalfWidth = DatapointToCheck.EffectiveRayLength * stressShadowHalfWidthRatio;
+            double dtc_rayLengthIncrement = DatapointToCheck.ActualRayLengthIncrement;
+            double dtc_stressShadowHalfWidthIncrement = DatapointToCheck.EffectiveRayLengthIncrement * stressShadowHalfWidthRatio;
+
+            // The increment shell volume is a shell of width equal to the combined radius and stress shadow increment of both fractures in the coming timestep
+            // This is the volume in which the centre of the specified fracture could be placed without experiencing stress shadow interaction in the current timestep
+            // Since the origin of an active ray cannot lie within a stress shadow exclusion zone, the ratio of the increment shell volume to the clear zone volume gives the expected proportion of active rays that will be deactivated due to stress shadow interaction in this timestep (PhiII_M)
+            // However the increment shells of individual fractures can overlap with each other and with the outer exclusion zones and stress shadows of the fractures
+            //
+            // This can be expressed as                (TIEZV - TEZV)       (1 - SSV) exp(-ExOEZV) (1 - exp(-ExISV))
+            //                           PhiII_M = 1 - -------------- = 1 - ---------------------------------------- = exp(-ExISV)
+            //                                           (1 - TEZV)                  (1 - SSV) exp(-ExOEZV)
+            //
+            // TIEZV = total interaction and exclusion zone volume, accounting for overlap
+            // TEZV = total exclusion zone volume, accounting for overlap
+            // SSV = total stress shadow volume
+            // ExOEZV = sum of outer exclusion zone volumes around each fracture, ignoring overlap
+            // ExISV = sum of increment shell zone volumes around each fracture, ignoring overlap
+            //
+            // Because the terms representing the stress shadow and outer deactivation zone volume cancel each other out in the ratio, it is not necessary to calculate these
+            // We therefore only need to calculate the exclusive increment shell volume of fractures that can deactivate this fracture (ExISV)
+            double exclusiveIncrementShellVolume = 0;
+            // Loop through each ray propagation status
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+            {
+                // Loop through each datapoint in the population data array
+                foreach (ImplicitFracturePopulationDatapoint datapoint in Fractures.fracturePopulationDatapoints[status])
+                {
+                    // Check if it is large enough to deactivate the current fracture - if not we can ignore it
+                    if (datapoint.EffectiveRayLength >= minStressShadowDeactivationRadius)
+                    {
+                        // Cache the combined ray length and stress shadow width of the specified and the current datapoints
+                        double combined_rayLength = dtc_rayLength + datapoint.RayLength;
+                        double combined_stressShadowHalfWidth = dtc_stressShadowHalfWidth + (datapoint.EffectiveRayLength * stressShadowHalfWidthRatio);
+
+                        // Cache the combined ray length increment and stress shadow width increment of the specified and the current datapoints
+                        double combined_rayLengthIncrement = dtc_rayLengthIncrement + datapoint.ActualRayLengthIncrement;
+                        double combined_stressShadowHalfWidthIncrement = dtc_stressShadowHalfWidthIncrement + (datapoint.EffectiveRayLengthIncrement * stressShadowHalfWidthRatio);
+
+                        // Update the total exclusize outer exclusion zone volume and increment shell volume
+                        exclusiveIncrementShellVolume += (datapoint.dP33DetachedShellFactor(combined_rayLength, combined_stressShadowHalfWidth, combined_rayLengthIncrement, combined_stressShadowHalfWidthIncrement) * (4d / 3d) * Math.PI / (double)RaysPerFracture);
+                    }
+                }
+            }
+
+            // Calculate ratio of the total volume not in an interaction or exclusion zone around any fracture segment in this set to the total clear zone volume (Phi_II)
+            double phi_II = Math.Exp(-exclusiveIncrementShellVolume);
+
+            // Return the clear zone volume
+            return phi_II;
+        }
+
 
         // Functions to convert between fracture growth weighted time (WTime, proportional to CumGamma) and real time
         /// <summary>
@@ -1816,7 +1966,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // If the clear zone volume for nucleating fractures has dropped below the minimum specified, set the fracture deactivation flag to true
-            if (CurrentFractureData.theta_dashed_M < minimum_ClearZone_Volume)
+            if (CurrentFractureData.theta_allFS_M < minimum_ClearZone_Volume)
             {
                 deactivateFractureSet = true;
             }
@@ -2662,7 +2812,7 @@ namespace DFMGenerator_SharedCode
                     case StressDistribution.StressShadow:
                     // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
                     case StressDistribution.DuctileBoundary:
-                        phiII_M = Fractures.getStressShadowNonInteractionVolumeRatio(datapoint);
+                        phiII_M = getStressShadowNonInteractionVolumeRatio(datapoint);
                         break;
                     // By default assume no stress shadows
                     default:
@@ -2703,7 +2853,7 @@ namespace DFMGenerator_SharedCode
                     case StressDistribution.StressShadow:
                     // The ductile boundary scenario is not valid for unconfined fractures, so we default to the stress shadow scenario
                     case StressDistribution.DuctileBoundary:
-                        phiII_M = Fractures.getStressShadowNonInteractionVolumeRatio(datapoint);
+                        phiII_M = getStressShadowNonInteractionVolumeRatio(datapoint);
                         break;
                     // By default assume no stress shadows
                     default:
@@ -2862,8 +3012,17 @@ namespace DFMGenerator_SharedCode
         public void setFractureExclusionZoneData()
         {
             double theta;
-            double theta_dashed = Fractures.getStressShadowClearZoneVolume(MinimumFractureRadius, MinimumFractureRadius, out theta);
+            double theta_dashed = getStressShadowClearZoneVolume(MinimumFractureRadius, MinimumFractureRadius, out theta);
             CurrentFractureData.SetFractureExclusionZoneData(theta, theta_dashed);
+        }
+        /// <summary>
+        /// Update the values describing the inverse stress shadow and clear zone volumes for all fracture sets
+        /// </summary>
+        /// <param name="theta_allFS_in">Inverse stress shadow volume (1 - Psi) of all fracture sets as seen by this set, i.e. cumulative probability that an initial microfracture from this set will not lie in the stress shadow of another fracture from any set, at end of timestep M</param>
+        /// <param name="theta_dashed_allFS_in">Clear zone volume (1 - Chi) of all fracture sets as seen by this set, i.e. cumulative probability that a fracture nucleating from this set will not lie in the stress shadow exclusion zone of another fracture from any set, at end of timestep M</param>
+        public void setOtherFSExclusionZoneData(double theta_AllFS, double theta_dashed_allFS)
+        {
+            CurrentFractureData.SetOtherFSExclusionZoneData(theta_AllFS, theta_dashed_allFS);
         }
 
         /// <summary>

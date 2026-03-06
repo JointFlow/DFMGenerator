@@ -1619,6 +1619,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double[,][] MFTerminations;
         /// <summary>
+        /// Array of stress shadow multipliers relating stress shadows for different unconfined fracture sets
+        /// </summary>
+        private double[,] UCFW_IJ;
+        /// <summary>
         /// Update the MFTerminations array with the most recent dsIJ_MFP30 for each fracture set
         /// </summary>
         private void upDateMFTerminations()
@@ -2028,6 +2032,48 @@ namespace DFMGenerator_SharedCode
                     // Finally we can set the total stress shadow and exclusion zone volumes for dipset Kn
                     fsK.FractureDipSets[dipSetIndexKn].setOtherFSExclusionZoneData(totalStressShadowVolumeK, totalExclusionZoneVolumeKn);
                 } // End loop through each dipset Kn
+
+            } // End loop through each fracture set K
+        }
+        /// <summary>
+        /// Calculate the inverse stress shadow and clear zone volume for each unconfined fracture set J due to the stress shadows from other fracture sets I, and apply these to the FractureDipSet objects
+        /// Valid for isotropic fracture networks as it takes account of multiple fractures overlapping but does not account for the influence of a primary fracture set on the distribution of secondary sets
+        /// </summary>
+        private void setCrossUFSStressShadows()
+        {
+            // Fracture set K represents the fractures to which the stress shadows will apply
+            // The stress shadow and exclusion zone widths will therefore be as seen by fracture set K
+            for (int ufsK_Index = 0; ufsK_Index < NoUnconfinedFractureSets; ufsK_Index++)
+            {
+                // Get a handle to fracture set K
+                UnconfinedFractureSet ufsK = UnconfinedFractureSets[ufsK_Index];
+
+                // We must calculate:
+                // - the total stress shadow volume of every set I as seen by set K,
+                // - the total exclusion zone volume of every set I as seen by a nucleating fracture in set K
+                // To do this we will multiply the inverse stress shadow volumes and clear zone volumes of each set I
+                double inverseStressShadowVolumeK = 1;
+                double clearZoneVolumeK = 1;
+
+                // Fracture set I represents the fractures which the stress shadows and exclusion zones surround
+                for (int ufsI_Index = 0; ufsI_Index < NoUnconfinedFractureSets; ufsI_Index++)
+                {
+                    // Get a handle to fracture set I
+                    UnconfinedFractureSet ufsI = UnconfinedFractureSets[ufsI_Index];
+
+                    // Cache the appropriate stress shadow multipliers for sets I and K locally
+                    double UCFW_IK = UCFW_IJ[ufsI_Index, ufsK_Index];
+
+                    // Calculate the total stress shadow volume of set I and the mean stress shadow width of a set I fracture, as seen by fracture set K
+                    // To do this we will need to loop through each dip set in fracture set I, calculating the stress shadow volume of each
+                    double inverseStressShadowVolumeIK;
+                    double ClearZoneVolume_IK = ufsI.getStressShadowClearZoneVolume(ufsK.MinimumFractureRadius, ufsK.MinimumFractureRadius, UCFW_IK, out inverseStressShadowVolumeIK);
+                    inverseStressShadowVolumeK *= inverseStressShadowVolumeIK;
+                    clearZoneVolumeK *= ClearZoneVolume_IK;
+                }
+
+                // Set the total stress shadow and exclusion zone volumes for each dipset Kn
+                ufsK.setOtherFSExclusionZoneData(inverseStressShadowVolumeK, clearZoneVolumeK);
 
             } // End loop through each fracture set K
         }
@@ -3691,11 +3737,15 @@ namespace DFMGenerator_SharedCode
                     StressStrain.Sigma_eff_dashed.Component(Tensor2SComponents.ZZ, verticalEffectiveStressRate_SubsidenceSupported + verticalEffectiveStressRate_StressArchSupported);
                 }
 
-                // Recalculate the incremental azimuthal and horizontal shear strain acting on the fractures, for the specified applied strain rate tensor
-                // For the first deformation episode, use the applied strain rate, since the initial elastic (noncompactional) horizontal strain will be zero
+                // Recalculate the incremental strain acting on the fractures, for the specified applied strain rate tensor
+                foreach (Gridblock_FractureSet fs in FractureSets)
+                    fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
+                foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    ufs.RecalculateStrainRatios(appliedStrainRate);
+                /*// For the first deformation episode, use the applied strain rate, since the initial elastic (noncompactional) horizontal strain will be zero
                 // For subsequent deformation episodes, use the actual elastic (noncompactional) strain at the start of the episode
                 // Also we will create a flag to determine whether we need to recalculate the horizontal stress ratios in every timestep
-                // This is only required in subsequent timesteps if the incremental strain azimuth does not match the current strain azimuth
+                // This is only required in subsequent timesteps if the incremental strain orientation does not match the current strain orientation
                 bool recalculateHorizontalStrainRatios = false;
                 if (currentDeformationEpisodeIndex == 1)
                 {
@@ -3713,9 +3763,9 @@ namespace DFMGenerator_SharedCode
                     // NB We use ! Equals to compare rather than != or ! == so if both azimuths are NaN (e.g. strain is isotropic strain) the overall expression will return false
                     if (!((float)StressStrain.el_Epsilon_noncompactional.GetMinimumHorizontalAzimuth()).Equals((float)appliedStrainRate.GetMinimumHorizontalAzimuth()))
                         recalculateHorizontalStrainRatios = true;
-                }
+                }*/
 
-                // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays
+                // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays and the unconfined fracture set stress shadow multiplier array
                 if (checkAlluFStressShadows)
                 {
                     for (int I = 0; I < NoFractureSets; I++)
@@ -3733,6 +3783,25 @@ namespace DFMGenerator_SharedCode
                             {
                                 FaaIJ[I, J] = 1;
                                 FasIJ[I, J] = 1;
+                            }
+                        }
+                    }
+                }
+                if (checkAllUCFStressShadows)
+                {
+                    for (int I = 0; I < NoUnconfinedFractureSets; I++)
+                    {
+                        UnconfinedFractureSet UFSI = UnconfinedFractureSets[I];
+                        for (int J = 0; J < NoUnconfinedFractureSets; J++)
+                        {
+                            if (I != J)
+                            {
+                                UnconfinedFractureSet UFSJ = UnconfinedFractureSets[J];
+                                UCFW_IJ[I, J] = UFSI.getUFSW_IJ(UFSJ);
+                            }
+                            else
+                            {
+                                UCFW_IJ[I, J] = 1;
                             }
                         }
                     }
@@ -3764,9 +3833,26 @@ namespace DFMGenerator_SharedCode
                             fds.RecalculateElasticResponse(StressStrain.Sigma_eff);
                         }
                     }
-                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    for (int I = 0; I < NoUnconfinedFractureSets; I++)
                     {
-                        ufs.RecalculateElasticResponse(StressStrain.Sigma_eff);
+                        // For the unconfined sets, if the displacement vector has changed, we will also need to recalculate the stress shadow multipliers related to this set
+                        UnconfinedFractureSet UFSI = UnconfinedFractureSets[I];
+                        bool displacementChanged = UFSI.RecalculateElasticResponse(StressStrain.Sigma_eff);
+                        if (checkAllUCFStressShadows && displacementChanged)
+                        {
+                            for (int J = 0; J < NoUnconfinedFractureSets; J++)
+                            {
+                                if (I != J)
+                                {
+                                    UnconfinedFractureSet UFSJ = UnconfinedFractureSets[J];
+                                    UCFW_IJ[I, J] = UFSI.getUFSW_IJ(UFSJ);
+                                }
+                                else
+                                {
+                                    UCFW_IJ[I, J] = 1;
+                                }
+                            }
+                        }
                     }
 
                     if (stressLoad)
@@ -3932,14 +4018,14 @@ namespace DFMGenerator_SharedCode
                         }
                     }
 
-                    // If necessary, recalculate the horizontal strain ratios
+                    /*// If necessary, recalculate the horizontal strain ratios
                     if (recalculateHorizontalStrainRatios)
                     {
                         foreach (Gridblock_FractureSet fs in FractureSets)
                             fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
                         foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                             ufs.RecalculateStrainRatios(StressStrain.el_Epsilon_noncompactional);
-                    }
+                    }*/
 
                     // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep
                     foreach (Gridblock_FractureSet fs in FractureSets)
@@ -3956,21 +4042,22 @@ namespace DFMGenerator_SharedCode
 
                     // Update the macrofracture and unconfined fracture stress shadow widths (which may have changed due to changes in the in situ stress)
                     // If any macrofracture stress shadow widths have changed, this will also update the macrofracture spacing distribution data and clear zone volume
-                    bool stressShadowWidthChanged = false;
+                    bool MFStressShadowWidthChanged = false;
                     foreach (Gridblock_FractureSet fs in FractureSets)
                     {
                         if (fs.setStressShadowWidthData())
-                            stressShadowWidthChanged = true;
+                            MFStressShadowWidthChanged = true;
                     }
+                    // If required, recalculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
+                    if (checkAlluFStressShadows && MFStressShadowWidthChanged)
+                        setCrossFSStressShadows();
+                    // If any unconfined fracture stress shadow widths have changed, the unconfined fracture clear zone volume will be updated later
+                    bool UCFStressShadowWidthChanged = false;
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         if (ufs.setStressShadowWidthData())
-                            stressShadowWidthChanged = true;
+                            UCFStressShadowWidthChanged = true;
                     }
-
-                    // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
-                    if (checkAlluFStressShadows && stressShadowWidthChanged)
-                        setCrossFSStressShadows();
 
                     // Check if any of the fracture sets meet the deactivation criteria, after in situ stress and stress shadow widths have been recalculated 
                     AllSetsDeactivated = true;
@@ -4087,7 +4174,10 @@ namespace DFMGenerator_SharedCode
 
                     // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
                     if (checkAlluFStressShadows)
+                    {
                         setCrossFSStressShadows();
+                        setCrossUFSStressShadows();
+                    }
 
                     // Calculate the new total linear microfracture population data for each fracture dip set, and update the CurrentFractureData object
                     // NB the microfracture densities from one set do not affect the microfracture density calculations for the other sets
@@ -4201,7 +4291,7 @@ namespace DFMGenerator_SharedCode
                         {
                             // Get fracture data and add to timestep log string
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
+                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
 #if LOGIMPPOP
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
@@ -7481,8 +7571,44 @@ namespace DFMGenerator_SharedCode
         /// <returns>True if point lies within a stress shadow, otherwise false</returns>
         private bool checkInUCFStressShadow(PointXYZ point, int UFSJ_Index, ref List<double> StressShadowWidthRatiosIJ)
         {
-            return checkInUCFExclusionZone(point, UFSJ_Index, 0, 0, ref StressShadowWidthRatiosIJ);
+            // Check the specified fracture set number lies within the range of fracture sets
+            // Otherwise return false
+            if ((UFSJ_Index < 0) || (UFSJ_Index >= NoUnconfinedFractureSets))
+                return false;
+
+            // Get a handle to the unconfined fracture set to which the specified point belongs (set J)
+            UnconfinedFractureSet UFSJ = UnconfinedFractureSets[UFSJ_Index];
+
+            // Create a new list for stress shadow half-widths if one does not already exist
+            if (StressShadowWidthRatiosIJ == null)
+                StressShadowWidthRatiosIJ = new List<double>();
+
+            // Loop through all the unconfined fracture sets
+            for (int UFSI_Index = 0; UFSI_Index < NoUnconfinedFractureSets; UFSI_Index++)
+            {
+                // Get a handle to unconfined fracture set I
+                UnconfinedFractureSet UFSI = UnconfinedFractureSets[UFSI_Index];
+
+                // Check if we already have a stress shadow width ratio for this fracture set, and if not, calculate it
+                while (StressShadowWidthRatiosIJ.Count <= UFSI_Index)
+                {
+                    // For now we will assume no stress shadow interaction between different sets - WIJ = 0 for UFSI != UFSJ
+                    double WIJ = (UFSI_Index == UFSJ_Index) ? UFSJ.getStressShadowWidthRatio(CurrentExplicitTimestep) : UFSJ.getStressShadowWidthRatio(UFSI, CurrentExplicitTimestep);
+
+                    // Calculate the stress shadow width ratio of this fracture set, as seen by fracture set J, and add it to the list
+                    StressShadowWidthRatiosIJ.Add(WIJ);
+                }
+
+                // Check if the specified point lies within the stress shadow of any of the macrofracture segments in fracture set I
+                if (UFSI.checkInUCFStressShadow(point, StressShadowWidthRatiosIJ[UFSI_Index]))
+                    return true;
+            }
+
+            // If the specified point does not lie in the exclusion zone around any fractures, return false
+            return false;
         }
+        /*// This is not valid as the axes of the spheroids around fractures from two different fracture sets will be different, and therefore the geometric calculation must take this into account
+        // This is not done in the current UFS.checkInUCFExclusionZone() function which assumes the spheroids are coaxial (i.e. fractures are from the same set)
         /// <summary>
         /// Check whether a specified point (in XYZ coordinates) lies within an exclusion zone of arbitrary width around any of the stress shadows of the unconfined fractures from any fracture set
         /// </summary>
@@ -7516,7 +7642,7 @@ namespace DFMGenerator_SharedCode
                 while (StressShadowWidthRatiosIJ.Count <= UFSI_Index)
                 {
                     // For now we will assume no stress shadow interaction between different sets - WIJ = 0 for UFSI != UFSJ
-                    double WIJ = (UFSI_Index == UFSJ_Index) ? UFSI.getStressShadowWidthRatio(CurrentExplicitTimestep) : 0;
+                    double WIJ = (UFSI_Index == UFSJ_Index) ? UFSJ.getStressShadowWidthRatio(CurrentExplicitTimestep) : UFSJ.getStressShadowWidthRatio(UFSI, CurrentExplicitTimestep);
 
                     // Calculate the stress shadow width ratio of this fracture set, as seen by fracture set J, and add it to the list
                     StressShadowWidthRatiosIJ.Add(WIJ);
@@ -7529,7 +7655,7 @@ namespace DFMGenerator_SharedCode
 
             // If the specified point does not lie in the exclusion zone around any fractures, return false
             return false;
-        }
+        }*/
 
         // Reset and data input functions
         /// <summary>
@@ -7895,6 +8021,21 @@ namespace DFMGenerator_SharedCode
                     MFTerminations[I, J] = new double[NoDipsetsJ];
                     for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
                         MFTerminations[I, J][fdsJ] = 0;
+                }
+
+            // Create the unconfined fracture set stress shadow multiplier array
+            UCFW_IJ = new double[NoUnconfinedFractureSets, NoUnconfinedFractureSets];
+            for (int I = 0; I < NoUnconfinedFractureSets; I++)
+                for (int J = 0; J < NoUnconfinedFractureSets; J++)
+                {
+                    if (I == J)
+                    {
+                        UCFW_IJ[I, J] = 1;
+                    }
+                    else
+                    {
+                        UCFW_IJ[I, J] = 0;
+                    }
                 }
         }
         /// <summary>

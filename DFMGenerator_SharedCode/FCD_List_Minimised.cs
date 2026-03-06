@@ -219,82 +219,24 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double[] getDRP30_distribution_M(int Timestep_M) { return dataList[Timestep_M].DRP30_distribution_M; }*/
         /// <summary>
-        /// Ratio of the azimuthal component of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+        /// Increment of displacement on the fracture resulting from an increment in the applied strain, at end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getAzimuthalStressShadowWidthRatio_M(int Timestep_M) { return dataList[Timestep_M].AzimuthalStressShadowWidthRatio_M; }
+        public VectorXYZ getIncrementalDisplacement_M(int Timestep_M) { return dataList[Timestep_M].IncrementalDisplacement_M; }
         /// <summary>
-        /// Ratio of the strike-slip shear component of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+        /// Increment of applied strain acting on the fracture, at end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
-        public double getShearStressShadowWidthRatio_M(int Timestep_M) { return dataList[Timestep_M].ShearStressShadowWidthRatio_M; }
+        public VectorXYZ getIncrementalStrainOnFracture_M(int Timestep_M) { return dataList[Timestep_M].IncrementalStrainOnFracture_M; }
         /// <summary>
-        /// Ratio of the total maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
+        /// Ratio of the maximum fracture stress shadow width to effective fracture radius, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getStressShadowWidthRatio_M(int Timestep_M) { return dataList[Timestep_M].StressShadowWidthRatio_M; }
         /*/// <summary>
-        /// Get the weighted average azimuthal stress shadow width throughout the growth of the fracture network
-        /// </summary>
-        /// <returns>The average of the azimuthal stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
-        public double getWeightedAverage_AzimuthalStressShadowWidth()
-        {
-            return getWeightedAverage_AzimuthalStressShadowWidth(NoTimesteps);
-        }
-        /// <summary>
-        /// Get the weighted average azimuthal stress shadow width up to a specified timestep M
-        /// </summary>
-        /// <param name="Timestep_M">Timestep M</param>
-        /// <returns>The average of the azimuthal stress shadow width during each timestep up to and including Timestep_M, weighted by the increase RP32 during that timestep</returns>
-        public double getWeightedAverage_AzimuthalStressShadowWidth(int Timestep_M)
-        {
-            double W_P32 = 0;
-            double lastP32 = 0;
-
-            for (int tsNo = 1; tsNo <= Timestep_M; tsNo++)
-            {
-                FractureCalculationData_Minimised nextFCD = dataList[tsNo];
-                double nextP32 = nextFCD.Total_RP32_M;
-                W_P32 += (nextFCD.AzimuthalStressShadowWidthRatio_M * (nextP32 - lastP32));
-                lastP32 = nextP32;
-            }
-
-            // If there are no fractures it will not be possible to calculate a weighted average; in that case return the calculated stress shadow width for Timestep M
-            return lastP32 > 0 ? W_P32 / lastP32 : dataList[Timestep_M].AzimuthalStressShadowWidthRatio_M;
-        }
-        /// <summary>
-        /// Get the weighted average shear stress shadow width throughout the growth of the fracture network
-        /// </summary>
-        /// <returns>The average of the shear stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
-        public double getWeightedAverage_ShearStressShadowWidth()
-        {
-            return getWeightedAverage_ShearStressShadowWidth(NoTimesteps);
-        }
-        /// <summary>
-        /// Get the weighted average shear stress shadow width up to a specified timestep M
-        /// </summary>
-        /// <param name="Timestep_M">Timestep M</param>
-        /// <returns>The average of the shear stress shadow width during each timestep up to and including Timestep_M, weighted by the increase MFP32 during that timestep</returns>
-        public double getWeightedAverage_ShearStressShadowWidth(int Timestep_M)
-        {
-            double W_P32 = 0;
-            double lastP32 = 0;
-
-            for (int tsNo = 1; tsNo <= Timestep_M; tsNo++)
-            {
-                FractureCalculationData_Minimised nextFCD = dataList[tsNo];
-                double nextP32 = nextFCD.Total_RP32_M;
-                W_P32 += (nextFCD.ShearStressShadowWidthRatio_M * (nextP32 - lastP32));
-                lastP32 = nextP32;
-            }
-
-            // If there are no fractures it will not be possible to calculate a weighted average; in that case return the calculated stress shadow width for Timestep M
-            return lastP32 > 0 ? W_P32 / lastP32 : dataList[Timestep_M].ShearStressShadowWidthRatio_M;
-        }
-        /// <summary>
         /// Get the weighted average stress shadow width throughout the growth of the fracture network
         /// </summary>
         /// <returns>The average of the stress shadow width during each timestep, weighted by the increase MFP32 during that timestep</returns>
