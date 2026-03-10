@@ -563,8 +563,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 1;// 3;
-            int NoCols = 1;// 3;
+            int NoRows = 3;
+            int NoCols = 3;
             int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 10;// 50;
@@ -745,7 +745,7 @@ namespace DFMGenerator_Standalone
             // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
             double FractureRelaxation = 0;
             // Density of initial microfractures
-            double InitialMicrofractureDensity = 0.001;
+            double InitialMicrofractureDensity = 0.0001;// 0.001;
             // Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
             double InitialMicrofractureSizeDistribution = 3;
             // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
@@ -904,9 +904,9 @@ namespace DFMGenerator_Standalone
             // Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
             double Active_TotalMFP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which macrofractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double MinimumMFClearZoneVolume = 0.1;// 0.01;
+            double MinimumMFClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 100;// 1000;
+            int MaxTimesteps = 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
@@ -931,7 +931,7 @@ namespace DFMGenerator_Standalone
             // Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time
             bool PropagateFracturesInNucleationOrder = false;// true;
             // Flag to control whether to search adjacent gridblocks for stress shadow interaction; if set to automatic, this will be determined independently for each gridblock based on the gridblock geometry
-            AutomaticFlag SearchNeighbouringGridblocks = AutomaticFlag.All;// AutomaticFlag.Automatic;
+            AutomaticFlag SearchNeighbouringGridblocks = AutomaticFlag.Automatic;
             // Minimum radius for microfractures to be included in explicit DFN
             // Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN
             double MinExplicitMicrofractureRadius = 0;
@@ -973,7 +973,7 @@ namespace DFMGenerator_Standalone
             double MinimumUCFClearZoneVolume = 0.1;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepUCFP33Increase = 0.02;
+            double MaxTimestepUCFP33Increase = 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
             double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
@@ -982,7 +982,8 @@ namespace DFMGenerator_Standalone
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
             double Min_R_ActivationProbability = 0.8;
             // The proportion of the ray length increment to apply to active unconfined fracture datapoints before the specified proportion of fractures are deactivated
-            double ProportionalUCRIncrementToApply = 0.5;
+            // Set to -1 to use the inverse stress shadow volume
+            double ProportionalUCRIncrementToApply = double.NaN;// 0.5;
             // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
             double Min_R_staticDatapointSizeRatio = 0.02;
             // Frequency (in timesteps) with which static unconfined fracture datapoints are culled

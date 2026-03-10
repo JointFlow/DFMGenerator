@@ -153,6 +153,10 @@ namespace DFMGenerator_SharedCode
         /// Volumetric density of all rays, static and dynamic, at the end of timestep M
         /// </summary>
         public double Total_RP30_M { get { return a_RP30_M + r_RP30_M + sII_RP30_M + sIJ_RP30_M + sRMax_RP30_M; } }
+        /// <summary>
+        /// Volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set, at the end of timestep M
+        /// </summary>
+        public double TerminatingFractureDensity_M { get; set; }
         /*/// <summary>
         /// Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
         /// </summary>
@@ -319,13 +323,19 @@ namespace DFMGenerator_SharedCode
         /// <param name="theta_dashed_in">Clear zone volume (1 - Chi) of this fracture set, i.e. cumulative probability that a fracture nucleating in this gridblock will not lie in the stress shadow exclusion zone of another fracture from this set, at end of timestep M</param>
         public void SetFractureExclusionZoneData(double theta_in, double theta_dashed_in)
         {
-            // Set the inverse stress shadow volume (1-psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
+            // Set the inverse stress shadow volume (1 - Psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
             // NB this is set here rather than in the SetMacrofractureDensityData, because the value of psi will be controlled by the cumulative macrofracture spacing distribution function if the stress shadow width varies through time
-            if ((theta_in >= 0) && (theta_in <= 1))
-                theta_M = theta_in;
+            if (theta_in < 0)
+                theta_in = 0;
+            if (theta_in > 1)
+                theta_in = 1;
+            theta_M = theta_in;
             // Set the clear zone volume (1 - Chi), i.e. cumulative probability that a fracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of timestep M
-            if ((theta_dashed_in >= 0) && (theta_dashed_in <= 1))
-                theta_dashed_M = theta_dashed_in;
+            if (theta_dashed_in < 0)
+                theta_dashed_in = 0;
+            if (theta_dashed_in > 1)
+                theta_dashed_in = 1;
+            theta_dashed_M = theta_dashed_in;
         }
         /// <summary>
         /// Set the inverse stress shadow and clear zone volume for other fracture sets

@@ -176,6 +176,12 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>
         public double getTotal_RP30_M(int Timestep_M) { return dataList[Timestep_M].Total_RP30_M; }
+        /// <summary>
+        /// Volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set, at the end of timestep M
+        /// </summary>
+        /// <param name="Timestep_M">Timestep M</param>
+        /// <returns></returns>
+        public double getTerminatingFractureDensity_M(int Timestep_M) { return dataList[Timestep_M].TerminatingFractureDensity_M; }
         /*/// <summary>
         /// Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
         /// </summary>
@@ -265,6 +271,28 @@ namespace DFMGenerator_SharedCode
             // If there are no fractures it will not be possible to calculate a weighted average; in that case return the calculated stress shadow width for Timestep M
             return lastP32 > 0 ? W_P32 / lastP32 : dataList[Timestep_M].StressShadowWidthRatio_M;
         }*/
+        /// <summary>
+        /// Get the time at which the fracture set becomes deactivated
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if the fracture set was never active: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Deactivation time of fracture set; will return zero or NaN if the fracture set was never active</returns>
+        public double getFinalActiveTime(bool ReturnNanForUndefined)
+        {
+            // Loop through the timesteps in reverse order
+            for (int TimestepNo = NoTimesteps; TimestepNo > 0; TimestepNo--)
+            {
+                // Check if the dipset is active (or residual active); if so return the end time of the current timestep
+                FractureEvolutionStage CurrentStage = getEvolutionStage(TimestepNo);
+                if ((CurrentStage == FractureEvolutionStage.Growing) || (CurrentStage == FractureEvolutionStage.ResidualActivity))
+                    return getEndTime(TimestepNo);
+            }
+
+            // If the fracture set was never active, return 0 or NaN as appropriate
+            if (ReturnNanForUndefined)
+                return double.NaN;
+            else
+                return 0;
+        }
 
         // Functions to add data
         /// <summary>

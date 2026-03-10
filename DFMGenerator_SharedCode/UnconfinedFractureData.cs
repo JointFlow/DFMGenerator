@@ -1170,10 +1170,10 @@ namespace DFMGenerator_SharedCode
             {
                 // Get a reference to the next datapoint to keep and cache relevant data locally
                 ImplicitFracturePopulationDatapoint nextPointToKeep = listToCull[nextDataPointNoToKeep];
-                double nextPoint_Radius = nextPointToKeep.RayLength;
-                double nextPoint_EffectiveRadius = nextPointToKeep.EffectiveRayLength;
-                double nextPoint_Area = nextPoint_Radius * nextPoint_Radius;
-                double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRadius;
+                double nextPoint_RayLength = nextPointToKeep.RayLength;
+                double nextPoint_EffectiveRayLength = nextPointToKeep.EffectiveRayLength;
+                double nextPoint_Area = nextPoint_RayLength * nextPoint_RayLength;
+                double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRayLength;
 
                 // Create variables for the total volumetric density of rays and total stress shadow volume to be amalgamated into the current datapoint 
                 double dP30_increment = 0;
@@ -1185,14 +1185,14 @@ namespace DFMGenerator_SharedCode
                     // Get a reference to the current datapoint to keep and cache relevant data locally
                     ImplicitFracturePopulationDatapoint currentPoint = listToCull[currentDataPointNo];
                     double currentPoint_dP30 = currentPoint.dRP30;
-                    double currentPoint_Radius = currentPoint.RayLength;
-                    double currentPoint_EffectiveRadius = listToCull[currentDataPointNo].EffectiveRayLength;
-                    double currentPoint_Area = currentPoint_Radius * currentPoint_Radius;
-                    double currentPoint_Volume = currentPoint_Area * currentPoint_EffectiveRadius;
+                    double currentPoint_RayLength = currentPoint.RayLength;
+                    double currentPoint_EffectiveRayLength = listToCull[currentDataPointNo].EffectiveRayLength;
+                    double currentPoint_Area = currentPoint_RayLength * currentPoint_RayLength;
+                    double currentPoint_Volume = currentPoint_Area * currentPoint_EffectiveRayLength;
 
                     // Increment the variables for the total volumetric density and stress shadow volume of rays to be amalgamated into the current datapoint and the total P32 and P33 adjustments
                     dP30_increment += currentPoint_dP30;
-                    P31_adjustment += currentPoint_dP30 * (currentPoint_Radius - nextPoint_Radius);
+                    P31_adjustment += currentPoint_dP30 * (currentPoint_RayLength - nextPoint_RayLength);
                     P32_adjustment += currentPoint_dP30 * (currentPoint_Area - nextPoint_Area);
                     P33_adjustment += currentPoint_dP30 * (currentPoint_Volume - nextPoint_Volume);
                     stressShadowVolumeIncrement += currentPoint.StressShadowVolume;
@@ -1201,9 +1201,9 @@ namespace DFMGenerator_SharedCode
                     listToCull.RemoveAt(currentDataPointNo);
                 }
 
-                // Increment the total volumetric density of rays and stress shadow volume associated with the current datapoint to include the datapoints that have been culled
-                listToCull[currentDataPointNo].Increment_dRP30(dP30_increment);
-                listToCull[currentDataPointNo].StressShadowVolume += stressShadowVolumeIncrement;
+                // Increment the total volumetric density of rays and stress shadow volume associated with the datapoint to keep to include the datapoints that have been culled
+                nextPointToKeep.Increment_dRP30(dP30_increment);
+                nextPointToKeep.StressShadowVolume += stressShadowVolumeIncrement;
 
                 // Reduce the current datapoint number by one, so that we skip the point we are keeping
                 currentDataPointNo--;
@@ -1241,14 +1241,14 @@ namespace DFMGenerator_SharedCode
             {
                 // Get a reference to the current datapoint and cache relevant data locally
                 ImplicitFracturePopulationDatapoint currentPoint = listToCull[currentDataPointNo];
-                double currentPoint_Radius = currentPoint.RayLength;
-                double currentPoint_EffectiveRadius = currentPoint.EffectiveRayLength;
-                double currentPoint_Area = currentPoint_Radius * currentPoint_Radius;
-                double currentPoint_Volume = currentPoint_Area * currentPoint_EffectiveRadius;
+                double currentPoint_RayLength = currentPoint.RayLength;
+                double currentPoint_EffectiveRayLength = currentPoint.EffectiveRayLength;
+                double currentPoint_Area = currentPoint_RayLength * currentPoint_RayLength;
+                double currentPoint_Volume = currentPoint_Area * currentPoint_EffectiveRayLength;
 
                 // Calculate the minimum ray length and effective ray lengths for the smaller datapoints that will be amalgamated with this datapoint
-                double minRayLengthToAmalgamate = currentPoint_Radius / (1 + LengthRatio);
-                double minEffectiveRayLengthToAmalgamate = currentPoint_EffectiveRadius / (1 + LengthRatio);
+                double minRayLengthToAmalgamate = currentPoint_RayLength / (1 + LengthRatio);
+                double minEffectiveRayLengthToAmalgamate = currentPoint_EffectiveRayLength / (1 + LengthRatio);
 
                 // Create variables for the total volumetric density of rays and total stress shadow volume to be amalgamated into the current datapoint 
                 double dP30_increment = 0;
@@ -1259,8 +1259,9 @@ namespace DFMGenerator_SharedCode
                 {
                     // Get a reference to the next datapoint and check if it is also within the specified ray length range
                     ImplicitFracturePopulationDatapoint nextPoint = listToCull[nextDataPointNo];
-                    double nextPoint_Radius = nextPoint.RayLength;
-                    if (nextPoint_Radius < minRayLengthToAmalgamate)
+                    double nextPoint_RayLength = nextPoint.RayLength;
+                    double nextPoint_EffectiveRayLength = nextPoint.EffectiveRayLength;
+                    if (nextPoint_RayLength < minRayLengthToAmalgamate)
                     {
                         currentDataPointNo++;
                         nextDataPointNo++;
@@ -1268,23 +1269,22 @@ namespace DFMGenerator_SharedCode
                     }
 
                     // Increment the variables for the total volumetric density and stress shadow volume of rays to be amalgamated into the current datapoint and the total P32 and P33 adjustments
-                    double nextPoint_EffectiveRadius = nextPoint.EffectiveRayLength;
                     double nextPoint_dP30 = nextPoint.dRP30;
-                    double nextPoint_Area = nextPoint_Radius * nextPoint_Radius;
-                    double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRadius;
+                    double nextPoint_Area = nextPoint_RayLength * nextPoint_RayLength;
+                    double nextPoint_Volume = nextPoint_Area * nextPoint_EffectiveRayLength;
                     dP30_increment += nextPoint_dP30;
-                    P31_adjustment += nextPoint_dP30 * (currentPoint_Radius - nextPoint_Radius);
+                    P31_adjustment += nextPoint_dP30 * (nextPoint_RayLength - currentPoint_RayLength);
                     P32_adjustment += nextPoint_dP30 * (nextPoint_Area - currentPoint_Area);
                     P33_adjustment += nextPoint_dP30 * (nextPoint_Volume - currentPoint_Volume);
-                    stressShadowVolumeIncrement += currentPoint.StressShadowVolume;
+                    stressShadowVolumeIncrement += nextPoint.StressShadowVolume;
 
                     // Remove the datapoint to be culled
                     listToCull.RemoveAt(nextDataPointNo);
                 }
 
                 // Increment the total volumetric density of rays and stress shadow volume associated with the current datapoint to include the datapoints that have been culled
-                listToCull[currentDataPointNo].Increment_dRP30(dP30_increment);
-                listToCull[currentDataPointNo].StressShadowVolume += stressShadowVolumeIncrement;
+                currentPoint.Increment_dRP30(dP30_increment);
+                currentPoint.StressShadowVolume += stressShadowVolumeIncrement;
             }
 
             // Update the adjustment factors

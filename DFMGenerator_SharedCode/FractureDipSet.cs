@@ -17,7 +17,7 @@ namespace DFMGenerator_SharedCode
     /// <summary>
     /// Enumerator to distinguish different fracture types within a fracture set
     /// </summary>
-    public enum FractureType { Microfractures, LayerBoundFractures, AllFractures }
+    public enum FractureType { Microfractures, LayerBoundFractures, UnconfinedFractures, AllFractures }
     /// <summary>
     /// Enumerator for fracture mode: Mode1 = dilatant, Mode2 = dip-slip shear, Mode3 = strike-slip shear
     /// </summary>
@@ -2193,8 +2193,6 @@ namespace DFMGenerator_SharedCode
         }
 
         // Fracture permeability tensors
-        // NB These functions return the uncorrected fracture peremabilities, based on based on the Oda (1986) model, which assumes fractures of infinite size and connectivity
-        // Corrections for fracture length and connectivity must take into account other fracture sets and the host rock, so are made at the gridblock level
         /// <summary>
         /// Get the uncorrected permeability tensor for all current microfractures in this dipset
         /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity

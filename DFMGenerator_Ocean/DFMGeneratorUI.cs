@@ -254,7 +254,7 @@ namespace DFMGenerator_Ocean
             UpdateComboBox(args.Argument_DFNFileType, comboBox_DFNFileType);
             UpdateComboBox(args.Argument_IntermediateOutputIntervalControl, comboBox_IntermediateOutputInterval);
             UpdateCheckBox(args.Argument_OutputCentrepoints, checkBox_OutputCentrepoints);
-            // Fracture connectivity and anisotropy index control parameters
+            UpdateCheckBox(args.Argument_CalculateFractureSets, checkBox_CalculateFractureSets);
             UpdateCheckBox(args.Argument_CalculateFractureConnectivityAnisotropy, checkBox_CalculateFractureConnectivityAnisotropy);
             UpdateCheckBox(args.Argument_CalculateFractureReactivationPotential, checkBox_CalculateFractureReactivationPotential);
             UpdateCheckBox(args.Argument_CalculateBulkRockElasticTensors, checkBox_CalculateBulkRockElasticTensors);
@@ -330,6 +330,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_Min_R_staticDatapointSizeRatio, unitTextBox_MinStaticDPSizeRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_CullTSFrequency, textBox_StaticDPCullInterval);
             UpdateCheckBox(args.Argument_CheckAllUCFStressShadows, checkBox_CheckAllUCFStressShadows);
+            UpdateTextBox(args.Argument_LargeFractureMinimumRadius, unitTextBox_LargeFractureMinimumRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_LargeFractureMinimumRadius_Units);
             UpdateCheckBox(args.Argument_CalculateImplicitUCFData, checkBox_CalculateImplicitUCFData);
             UpdateTextBox(args.Argument_MinStressShadowDeactivationRatio, unitTextBox_MinSSDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_MinIntersectionDeactivationRatio, unitTextBox_MinIDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -442,7 +443,7 @@ namespace DFMGenerator_Ocean
             args.Argument_DFNFileType = comboBox_DFNFileType.SelectedIndex;
             args.Argument_IntermediateOutputIntervalControl = comboBox_IntermediateOutputInterval.SelectedIndex;
             args.Argument_OutputCentrepoints = checkBox_OutputCentrepoints.Checked;
-            // Fracture connectivity and anisotropy index control parameters
+            args.Argument_CalculateFractureSets = checkBox_CalculateFractureSets.Checked;
             args.Argument_CalculateFractureConnectivityAnisotropy = checkBox_CalculateFractureConnectivityAnisotropy.Checked;
             args.Argument_CalculateFractureReactivationPotential = checkBox_CalculateFractureReactivationPotential.Checked;
             args.Argument_CalculateBulkRockElasticTensors = checkBox_CalculateBulkRockElasticTensors.Checked;
@@ -513,6 +514,7 @@ namespace DFMGenerator_Ocean
             args.Argument_Min_R_staticDatapointSizeRatio = GetDoubleFromTextBox(unitTextBox_MinStaticDPSizeRatio);
             args.Argument_CullTSFrequency = GetIntFromTextBox(textBox_StaticDPCullInterval);
             args.Argument_CheckAllUCFStressShadows = checkBox_CheckAllUCFStressShadows.Checked;
+            args.Argument_LargeFractureMinimumRadius = GetDoubleFromTextBox(unitTextBox_LargeFractureMinimumRadius);
             args.Argument_CalculateImplicitUCFData = checkBox_CalculateImplicitUCFData.Checked;
             args.Argument_MinStressShadowDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinSSDR);
             args.Argument_MinIntersectionDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinIDR);

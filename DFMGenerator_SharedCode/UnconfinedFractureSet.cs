@@ -437,7 +437,22 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getCumGamma() { return CurrentFractureData.Cum_Gamma_M; }
         /// <summary>
-        /// Return the total linear density of all unconfined fractures during the current timestep
+        /// Return the total volumetric density of all unconfined fractures during the current timestep (fractures/m3)
+        /// </summary>
+        /// <returns></returns>
+        public double getTotalUCFP30() { return CurrentFractureData.Total_RP30_M / RaysPerFracture; }
+        /// <summary>
+        /// Return the volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set, during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTerminatingFractureDensity() { return CurrentFractureData.TerminatingFractureDensity_M; }
+        /// <summary>
+        /// Return the mean number of unconfined fractures from other fracture sets that terminate against a fracture from this set, during the current timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTerminatingFracturesPerUCF() { return (CurrentFractureData.Total_RP30_M > 0) ? CurrentFractureData.TerminatingFractureDensity_M / getTotalUCFP30() : 0; }
+        /// <summary>
+        /// Return the total linear density of all unconfined fractures during the current timestep (fractures/m)
         /// </summary>
         /// <returns></returns>
         public double getTotalUCFP32() { return CurrentFractureData.Total_RP32_M; }
@@ -551,13 +566,59 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getCumGamma(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getCum_Gamma_M(Timestep_M); }
         /// <summary>
-        /// Return the total linear density of all unconfined fractures at the end of a specified previous timestep (Pa)
+        /// Return the volumetric density of all fully active rays at the end of a specified previous timestep (fractures/m3)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double geta_RP30_M(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.geta_RP30_M(Timestep_M); }
+        /// <summary>
+        /// Return the volumetric density of all restricted rays at the end of a specified previous timestep (fractures/m3)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getr_RP30_M(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getr_RP30_M(Timestep_M); }
+        /// <summary>
+        /// Return the volumetric density of all static rays terminated due to stress shadow interaction at the end of a specified previous timestep (fractures/m3)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getsII_RP30_M(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getsII_RP30_M(Timestep_M); }
+        /// <summary>
+        /// Return the volumetric density of all static rays terminated due to intersection at the end of a specified previous timestep (fractures/m3)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getsIJ_RP30_M(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getsIJ_RP30_M(Timestep_M); }
+        /// <summary>
+        /// Return the volumetric density of all static rays terminated due to exceeding the maximum radius at the end of a specified previous timestep (fractures/m3)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getsRMax_RP30_M(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getsRMax_RP30_M(Timestep_M); }
+        /// <summary>
+        /// Return the total volumetric density of all unconfined fractures at the end of a specified previous timestep (fractures/m3)
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
+        /// <returns></returns>
+        public double getTotalUCFP30(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP30_M(Timestep_M) / RaysPerFracture; }
+        /// <summary>
+        /// Return the volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set at the end of a specified previous timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTerminatingFractureDensity(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTerminatingFractureDensity_M(Timestep_M); }
+        /// <summary>
+        /// Return the mean number of unconfined fractures from other fracture sets that terminate against a fracture from this set at the end of a specified previous timestep
+        /// </summary>
+        /// <returns></returns>
+        public double getTerminatingFracturesPerUCF(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return (PreviousFractureData.getTotal_RP30_M(Timestep_M) > 0) ? PreviousFractureData.getTerminatingFractureDensity_M(Timestep_M) / getTotalUCFP30(Timestep_M) : 0; }
+        /// <summary>
+        /// Return the total linear density of all unconfined fractures at the end of a specified previous timestep (fractures/m)
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getTotalUCFP32(int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return PreviousFractureData.getTotal_RP32_M(Timestep_M); }
         /// <summary>
-        /// Return the maximum volumetric ratio of all unconfined fractures, not accounting for overlap, at the end of a specified previous timestep (Pa)
+        /// Return the maximum volumetric ratio of all unconfined fractures, not accounting for overlap, at the end of a specified previous timestep
         /// </summary>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
@@ -644,6 +705,18 @@ namespace DFMGenerator_SharedCode
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
         /// <returns></returns>
         public double getStressShadowWidthRatio(UnconfinedFractureSet UFS_I, int Timestep_M) { if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep; return UFS_I.getUFSW_IJ(this, Timestep_M) * PreviousFractureData.getStressShadowWidthRatio_M(Timestep_M); }
+        /// <summary>
+        /// Get the time at which the fracture set becomes deactivated
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if the fracture set was never active: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Deactivation time of fracture set; will return zero or NaN if the fracture set was never active</returns>
+        public double getFinalActiveTime(bool ReturnNanForUndefined)
+        {
+            // Get time units and unit conversion modifier for output time data if not in SI units
+            double timeUnits_Modifier = gbc.PropControl.getTimeUnitsModifier();
+
+            return PreviousFractureData.getFinalActiveTime(ReturnNanForUndefined) / timeUnits_Modifier;
+        }
 
         // Functions to get logging data - only required in debug mode
 #if DEBUG
@@ -793,6 +866,11 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double sMR_UCRP30_total() { return Fractures.sMR_RP30_total; }
         /// <summary>
+        /// Total volumetric density of fractures in the set
+        /// </summary>
+        /// <returns></returns>
+        public double UCFP30_total() { return Fractures.FP30_total; }
+        /// <summary>
         /// Total mean linear density of fully active fracture rays
         /// </summary>
         /// <returns></returns>
@@ -821,7 +899,7 @@ namespace DFMGenerator_SharedCode
         /// Total mean linear density of fractures in the set
         /// </summary>
         /// <returns></returns>
-        public double UCRP32_total() { return Fractures.FP32_total; }
+        public double UCFP32_total() { return Fractures.FP32_total; }
         /// <summary>
         /// Get a piecewise cumulative P30 density distribution function for the specified ray type
         /// </summary>
@@ -1013,6 +1091,78 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = 0;// -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
+                    output = BartonBandisAperture(compressive_sigmaNeff);
+                    break;
+                default:
+                    output = 0;
+                    break;
+            }
+
+            return output;
+        }
+        /// <summary>
+        /// Maximum aperture of a fracture of a specified radius at the end of a previous timestep
+        /// </summary>
+        /// <param name="radius">Fracture radius (m)</param>
+        /// <param name="timestep">Index for a previous timestep</param>
+        /// <returns>Maximum fracture aperture (m)</returns>
+        public double getMaximumFractureAperture(double radius, int timestep)
+        {
+            double output;
+
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    output = UniformAperture;
+                    break;
+                case FractureApertureType.SizeDependent:
+                    // Mean aperture 
+                    output = (4 / Math.PI) * radius * SizeDependentApertureMultiplier;
+                    break;
+                case FractureApertureType.Dynamic:
+                    double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
+                    output = radius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    break;
+                case FractureApertureType.BartonBandis:
+                    double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
+                    if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
+                    output = BartonBandisAperture(compressive_sigmaNeff);
+                    break;
+                default:
+                    output = 0;
+                    break;
+            }
+
+            return output;
+        }
+        /// <summary>
+        /// Mean aperture of a fracture of a specified radius at the end of a previous timestep
+        /// </summary>
+        /// <param name="radius">Fracture radius (m)</param>
+        /// <param name="timestep">Index for a previous timestep</param>
+        /// <returns>Mean fracture aperture (m)</returns>
+        public double getMeanFractureAperture(double radius, int timestep)
+        {
+            double output;
+
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                case FractureApertureType.Uniform:
+                    output = UniformAperture;
+                    break;
+                case FractureApertureType.SizeDependent:
+                    // Mean aperture 
+                    output = radius * SizeDependentApertureMultiplier;
+                    break;
+                case FractureApertureType.Dynamic:
+                    double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
+                    if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
+                    output = radius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
+                    break;
+                case FractureApertureType.BartonBandis:
+                    double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
                     if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
                     output = BartonBandisAperture(compressive_sigmaNeff);
                     break;
@@ -1357,6 +1507,60 @@ namespace DFMGenerator_SharedCode
             }
 
             return output;
+        }
+
+        // Fracture permeability tensors
+        /// <summary>
+        /// Get the uncorrected permeability tensor for all current unconfined fractures in this set
+        /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity
+        /// </summary>
+        /// <returns>Tensor2S object representing the uncorrected unconfined fracture permeability</returns>
+        public Tensor2S Total_UCF_Permeability()
+        {
+            return Total_UCF_Permeability(-1);
+        }
+        /// <summary>
+        /// Get the uncorrected permeability tensor for all unconfined fractures in this dipset, at the end of a specified previous timestep
+        /// This is based on the Oda (1985) model and assumes fractures of infinite size and connectivity
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <returns>Tensor2S object representing the uncorrected unconfined fracture permeability</returns>
+        public Tensor2S Total_UCF_Permeability(int Timestep_M)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+            bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
+
+            double geometryMultiplier = 1d / 12d;
+            double apertureMultiplier;
+            double densityMultiplier;
+            switch (gbc.PropControl.FractureApertureControl)
+            {
+                // In the Uniform and Barton Bandis fracture aperture scenarios, aperture is uniform across the fracture
+                // The permeability will therefore be proportional to the cube of the mean aperture
+                case FractureApertureType.Uniform:
+                case FractureApertureType.BartonBandis:
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanFractureAperture(1) : getMeanFractureAperture(1, Timestep_M), 3);
+                    densityMultiplier = useCurrentDensityData ? UCFP32_total() : getTotalUCFP32(Timestep_M);
+                    break;
+                // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
+                // The aperture multiplier is calculated by integrating the cube of the local aperture across every fracture
+                // However the aperture calculated by these methods is likely to be unrealistically large for unconfined fractures so is not recommended for permeability calculations
+                // We therefore do not calculate the P35 value, which is required to calculate permeability exactly for a fracture with an elliptical profile
+                // Instead we approximate aperture from mean fracture radius
+                case FractureApertureType.SizeDependent:
+                case FractureApertureType.Dynamic:
+                    apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumFractureAperture(1) : getMaximumFractureAperture(1, Timestep_M), 3);
+                    densityMultiplier = useCurrentDensityData ? UCFP32_total() : getTotalUCFP32(Timestep_M); //(useCurrentDensityData ? UCFP35_total() : getTotalUCFP35(Timestep_M)) / 8;
+                    break;
+                // Aperture is not defined
+                default:
+                    apertureMultiplier = 0;
+                    densityMultiplier = 0;
+                    break;
+            }
+
+            Tensor2S permTensor = Tensor2S.BiaxialTensor(normalVector, geometryMultiplier * apertureMultiplier * densityMultiplier);
+            return permTensor;
         }
 
         // We may want to use the present day stress to calculate fracture aperture and reactivation risk, rather than the stress at the time of fracture development
@@ -1795,6 +1999,40 @@ namespace DFMGenerator_SharedCode
             return phi_II;
         }
 
+        // Connectivity indices
+        /// <summary>
+        /// Proportion of unconnected fracture tip - i.e. the proportion of the total circumference of all fractures that is not connected to another fracture
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 1</param>
+        /// <returns>Ratio of (a_UCRP30_total + r_UCRP30_total + sMR_RP30_total) to UCFP30_total; i.e. normalised to the number of rays per fracture</returns>
+        public double UnconnectedTipRatio(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 1;
+            double T_FP30 = Fractures.FP30_total;
+            return (T_FP30 > 0 ? (Fractures.a_RP30_total + Fractures.r_RP30_total + Fractures.sMR_RP30_total) / T_FP30 : undefinedReturn);
+        }
+        /// <summary>
+        /// Proportion of fracture tip connected to a relay zone - i.e. the proportion of the total circumference of all fractures that is deactivated due to stress shadow interaction
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Ratio of sII_RP30_total to UCFP30_total</returns>
+        public double RelayTipRatio(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double T_FP30 = Fractures.FP30_total;
+            return (T_FP30 > 0 ? (Fractures.sII_RP30_total) / T_FP30 : undefinedReturn);
+        }
+        /// <summary>
+        /// Proportion of intersecting fracture tip - i.e. the proportion of the total circumference of all fractures that intersects with another orthogonal or oblique fracture
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Ratio of sIJ_RP30_total to UCFP30_total</returns>
+        public double IntersectingTipRatio(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double T_FP30 = Fractures.FP30_total;
+            return (T_FP30 > 0 ? (Fractures.sIJ_RP30_total) / T_FP30 : undefinedReturn);
+        }
 
         // Functions to convert between fracture growth weighted time (WTime, proportional to CumGamma) and real time
         /// <summary>
@@ -1966,7 +2204,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // If the clear zone volume for nucleating fractures has dropped below the minimum specified, set the fracture deactivation flag to true
-            if (CurrentFractureData.theta_allFS_M < minimum_ClearZone_Volume)
+            if (CurrentFractureData.theta_dashed_allFS_M < minimum_ClearZone_Volume)
             {
                 deactivateFractureSet = true;
             }
@@ -2406,7 +2644,9 @@ namespace DFMGenerator_SharedCode
                             }
 
                             // Create a new FractureGrowthControl object for this datapoint and add it to the list
-                            datapointP33Increments.Add(new FractureGrowthControl(datapoint, dP33_increment, growthDurationRequired, requiredGrowthAchieved));
+                            // Screen for NaN values first
+                            if (!double.IsNaN(growthDurationRequired))
+                                datapointP33Increments.Add(new FractureGrowthControl(datapoint, dP33_increment, growthDurationRequired, requiredGrowthAchieved));
                         }
 
                     // Sort the list by duration, from shortest to longest
@@ -2882,7 +3122,9 @@ namespace DFMGenerator_SharedCode
         public void updateTotalFracturePopulation()
         {
             // Cache the proportion of the ray length increment to apply to deactivating fractures before they deactivate, fracture growth deactivation cutoff and minimum fracture activation probability locally
-            double proportionalIncrementToApply = 1 - Fractures.StressShadowVolume_total;// gbc.PropControl.proportionalIncrementToApply;
+            double proportionalIncrementToApply = gbc.PropControl.proportionalIncrementToApply;
+            if (!(proportionalIncrementToApply >= 0))
+                proportionalIncrementToApply = 1 - Fractures.StressShadowVolume_total;
             double max_R_deactivation = gbc.PropControl.max_R_DeactivationCheck_interval;
             double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
 
@@ -2936,8 +3178,13 @@ namespace DFMGenerator_SharedCode
                             double restrictedRayIncrementToDeactivation = newdatapoints[0].CalculatedRayLengthIncrement;
                             double lengthAtDeactivation = newdatapoints[0].RayLength + restrictedRayIncrementToDeactivation;
                             double restrictedRayIncrementFromDeactivationToEndTimestep;
+                            // If the ray length at deactivation is less than the minimum ray length, extend the ray to the minimum length
+                            if (lengthAtDeactivation < MinimumFractureRadius)
+                            {
+                                restrictedRayIncrementFromDeactivationToEndTimestep = MinimumFractureRadius - lengthAtDeactivation;
+                            }
                             // If the ray is already propagating at the critical rate, this will not change
-                            if ((float)fullyActiveRayIncrement >= (float)criticalIncrement)
+                            else if ((float)fullyActiveRayIncrement >= (float)criticalIncrement)
                             {
                                 restrictedRayIncrementFromDeactivationToEndTimestep = criticalIncrement - restrictedRayIncrementToDeactivation;
                             }
@@ -3005,6 +3252,14 @@ namespace DFMGenerator_SharedCode
         public void setFractureDensityData()
         {
             CurrentFractureData.SetFractureDensityData(Fractures.a_RP30_total, Fractures.r_RP30_total, Fractures.sII_RP30_total, Fractures.sIJ_RP30_total, Fractures.sMR_RP30_total, Fractures.FP32_total, Fractures.FP33_total);
+        }
+        /// <summary>
+        /// Set the volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set, at the end of timestep M
+        /// </summary>
+        /// <param name="terminatingFractureDensity_in">Volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set</param>
+        public void setTerminatingFractureDensity(double terminatingFractureDensity_in)
+        {
+            CurrentFractureData.TerminatingFractureDensity_M = terminatingFractureDensity_in;
         }
         /// <summary>
         /// Update the values describing the inverse stress shadow and clear zone volumes for this fracture set

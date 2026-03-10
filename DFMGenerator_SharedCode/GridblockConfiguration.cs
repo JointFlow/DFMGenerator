@@ -1614,18 +1614,18 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double[,] FasIJ;
         /// <summary>
+        /// Array of stress shadow multipliers relating stress shadows for different unconfined fracture sets
+        /// </summary>
+        private double[,] UCFW_IJ;
+        /// <summary>
         /// Array containing the number of static half-macrofractures (MFP30) from each dipset terminating against macrofractures from every other fracture set
         /// Indices are: [set of propagating fracture, set of terminating fracture][dipset of terminating fracture]
         /// </summary>
         private double[,][] MFTerminations;
         /// <summary>
-        /// Array of stress shadow multipliers relating stress shadows for different unconfined fracture sets
-        /// </summary>
-        private double[,] UCFW_IJ;
-        /// <summary>
         /// Update the MFTerminations array with the most recent dsIJ_MFP30 for each fracture set
         /// </summary>
-        private void upDateMFTerminations()
+        private void updateMFTerminations()
         {
             // Loop through every set of propagating fractures I
             for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
@@ -1695,16 +1695,85 @@ namespace DFMGenerator_SharedCode
                     FractureDipSet dipSetJm = fsJ.FractureDipSets[dipSetIndexJm];
 
                     // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
-                    double sIJm_MFP32 = 0;
+                    double sIJm_MFP30 = 0;
                     for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
-                        sIJm_MFP32 += MFTerminations[fsI_Index, fsJ_Index][dipSetIndexJm];
+                        sIJm_MFP30 += MFTerminations[fsI_Index, fsJ_Index][dipSetIndexJm];
 
                     // Set the mean number of fractures from all fracture sets I terminating against dipset Jm
-                    dipSetJm.setTerminatingFractureDensity(sIJm_MFP32);
+                    dipSetJm.setTerminatingFractureDensity(sIJm_MFP30);
 
                 } // End loop through each dipset Jm
             } // End loop through every other fracture set J
         }
+        /// <summary>
+        /// Update the UCFTerminations array with the most recent dsIJ_MFP30 for each fracture set
+        /// </summary>
+        private void updateUCFTerminations()
+        {
+            // Loop through every set of propagating fractures I
+            for (int ufsI_Index = 0; ufsI_Index < NoUnconfinedFractureSets; ufsI_Index++)
+            {
+                UnconfinedFractureSet ufsI = UnconfinedFractureSets[ufsI_Index];
+
+                // Get the increment in sIJUCRP30 for set I
+                double dsIJ_UCRP30 = ufsI.sIJ_UCRP30_total() - ((CurrentImplicitTimestep > 0) ? ufsI.getsIJ_RP30_M(CurrentImplicitTimestep - 1) : 0);
+
+                // Get the total apparent UCFP32 for all terminating fracture sets J
+                // This includes all fracture sets except set I
+                double totalApparentUCFP32J = 0;
+                double[] apparentUCFP32J = new double[NoUnconfinedFractureSets];
+                for (int ufsJ_Index = 0; ufsJ_Index < NoUnconfinedFractureSets; ufsJ_Index++)
+                {
+                    if (ufsI_Index == ufsJ_Index)
+                        continue;
+                    UnconfinedFractureSet ufsJ = UnconfinedFractureSets[ufsJ_Index];
+
+                    // Orientation multiplier to project the length of the terminating set J fracture perpendicular to the propagating set I fracture
+                    // This is difficult to calculate since we do not know the fracture rays can propagate in any direction in the plane of the fracture
+                    // We will therefore take the sin of the angle between the two fracture normals
+                    double sinIJ = Math.Sqrt(1 - Math.Pow(ufsI.NormalVector & ufsJ.NormalVector, 2));
+
+                    // Get the apparent P32 of set J seen by set I
+                    double apparentUCFP30_IJ = sinIJ * ufsJ.UCFP32_total();
+                    apparentUCFP32J[ufsJ_Index] = apparentUCFP30_IJ;
+                    totalApparentUCFP32J += apparentUCFP30_IJ;
+                }
+
+                // Loop through every other set of terminating fractures J and apportion sIJMFP30 values
+                for (int ufsJ_Index = 0; ufsJ_Index < NoUnconfinedFractureSets; ufsJ_Index++)
+                {
+                    if (ufsI_Index == ufsJ_Index)
+                        continue;
+                    UnconfinedFractureSet ufsJ = UnconfinedFractureSets[ufsJ_Index];
+
+                    // Calculate the apparent UCFP32 of set J as a proportion of the total apparent UCFP32 for all terminating fracture sets
+                    // This ratio will be used to apportion the sIJUCRP30 values
+                    double apparentUCFP32J_ratio = (totalApparentUCFP32J > 0 ? apparentUCFP32J[ufsJ_Index] / totalApparentUCFP32J : 0);
+
+                    // Update the macrofracture termination array with the correctly proportioned sIJMFP30 value
+                    UCFTerminations[ufsI_Index, ufsJ_Index] += apparentUCFP32J_ratio * dsIJ_UCRP30;
+                } // End loop through every other fracture set J
+            } // End loop through every fracture set I
+
+            // Loop through every unconfined fracture set J and set the total number of fractures I terminating against them
+            for (int ufsJ_Index = 0; ufsJ_Index < NoUnconfinedFractureSets; ufsJ_Index++)
+            {
+                UnconfinedFractureSet ufsJ = UnconfinedFractureSets[ufsJ_Index];
+
+                    // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
+                    double sIJm_UCFP30 = 0;
+                    for (int ufsI_Index = 0; ufsI_Index < NoUnconfinedFractureSets; ufsI_Index++)
+                        sIJm_UCFP30 += UCFTerminations[ufsI_Index, ufsJ_Index];
+
+                // Set the mean number of fractures from all fracture sets I terminating against set J
+                ufsJ.setTerminatingFractureDensity(sIJm_UCFP30);
+            } // End loop through every other fracture set J
+        }
+        /// <summary>
+        /// Array containing the number of static unonfined fracture rays (UCRP30) from each set terminating against unconfined fractures from every other fracture set
+        /// Indices are: [set of propagating fracture, set of terminating fracture]
+        /// </summary>
+        private double[,] UCFTerminations;
         /// <summary>
         /// Calculate the inverse stress shadow and clear zone volume for each fracture set J due to the stress shadows from other fracture sets I, and apply these to the FractureDipSet objects
         /// </summary>
@@ -2224,7 +2293,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private List<UnconfinedFractureRaySegmentHolder> UnconfinedFractureRaySegments;
         /// <summary>
-        /// Holder for MacrofractureSegmentIJK objects, which contains their fracture set index number and which can be used to compare them by nucleation time
+        /// Holder for UnconfinedFractureRaySegment objects, which contains their fracture set index number and which can be used to compare them by nucleation time
         /// </summary>
         private class UnconfinedFractureRaySegmentHolder : IComparable<UnconfinedFractureRaySegmentHolder>
         {
@@ -2396,7 +2465,7 @@ namespace DFMGenerator_SharedCode
         {
             double UCF_P32_value = 0;
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                UCF_P32_value += ufs.UCRP32_total();
+                UCF_P32_value += ufs.UCFP32_total();
             return UCF_P32_value;
         }
         /// <summary>
@@ -2409,7 +2478,7 @@ namespace DFMGenerator_SharedCode
             foreach (Gridblock_FractureSet fs in FractureSets)
                 P32_value += (fs.combined_T_uFP32_total() + fs.combined_T_MFP32_total());
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                P32_value += ufs.UCRP32_total();
+                P32_value += ufs.UCFP32_total();
             return P32_value;
         }
         /// <summary>
@@ -2748,15 +2817,15 @@ namespace DFMGenerator_SharedCode
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
 
             // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
-            double sIJm_MFP32 = 0;
+            double sIJm_MFP30 = 0;
             for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
-                sIJm_MFP32 += MFTerminations[fsI_Index, FractureSetNo][DipSetNo];
+                sIJm_MFP30 += MFTerminations[fsI_Index, FractureSetNo][DipSetNo];
 
             // Calculate the total number of fractures in dipset Jm
             FractureDipSet Jm = FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
             double I_MFP30 = Jm.a_MFP30_total() + Jm.sII_MFP30_total() + Jm.sIJ_MFP30_total();
 
-            return (I_MFP30 > 0) ? (sIJm_MFP32 / I_MFP30) : undefinedReturn;
+            return (I_MFP30 > 0) ? (sIJm_MFP30 / I_MFP30) : undefinedReturn;
         }
         /// <summary>
         /// Mean number of other macrofractures that each macrofracture is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of macrofractures
@@ -2809,9 +2878,86 @@ namespace DFMGenerator_SharedCode
             return connectionsPerFracture;
         }
         /// <summary>
-        /// Get the current fracture fabric tensor F, as defined by Oda 1983
+        /// Get the mean number of unconfined fractures from other fracture sets that terminate against an unconfined fracture from a specified fracture set
         /// </summary>
+        /// <param name="UnconfinedFractureSetNo">Index number of the specified fracture set</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns></returns>
+        public double getTerminatingFracturesPerUCF(int UnconfinedFractureSetNo, bool ReturnNanForUndefined)
+        {
+            // Check if the sepcified fracture dipset exists - if not return NaN
+            if ((UnconfinedFractureSetNo < 0) || (UnconfinedFractureSetNo >= NoUnconfinedFractureSets))
+                return double.NaN;
+
+            // Set the return value if there are no fractures in the specified dipset
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+
+            // Calculate the total number of fractures from all fracture sets I terminating against set J
+            double sIJm_UCFP30 = 0;
+            for (int ufsI_Index = 0; ufsI_Index < NoUnconfinedFractureSets; ufsI_Index++)
+                sIJm_UCFP30 += UCFTerminations[ufsI_Index, UnconfinedFractureSetNo];
+
+            // Calculate the total number of fractures in dipset J
+            UnconfinedFractureSet ufsJ = UnconfinedFractureSets[UnconfinedFractureSetNo];
+            double I_UCFP30 = ufsJ.UCFP30_total();
+
+            return (I_UCFP30 > 0) ? (sIJm_UCFP30 / I_UCFP30) : undefinedReturn;
+        }
+        /// <summary>
+        /// Mean number of other fractures that each unconfined fracture is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of unconfined fractures
+        /// NB Total number of connections is defined as total number of connecting rays; multiple rays may connect to the same fracture
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no unconfined fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Ratio of (sII_UCRP30_total + (2 * ufs.sIJ_UCRP30_total)) / TotalUCFP30</returns>
+        public double ConnectionsPerUnconfinedFracture(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double TotalConnections = 0;
+            double TotalFractures = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+            {
+                // Only hard-linked relays will be counted
+                if (gd.DFNControl.LinkFracturesInStressShadow)
+                    TotalConnections += ufs.sII_UCRP30_total();
+                // Intersections create two fracture connections, one on the terminating fracture and one on the terminated fracture
+                TotalConnections += (2 * ufs.sIJ_UCRP30_total());
+
+                // The total number of macrofractures is half of the total number of half-macrofractures
+                TotalFractures += ufs.getTotalUCFP30();
+            }
+
+            return (TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn);
+        }
+        /// <summary>
+        /// Mean number of other fractures that each unconfined fracture in the specified fracture set is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of unconfined fractures
+        /// NB Total number of connections is defined as total number of connecting rays; multiple rays may connect to the same fracture
+        /// </summary>
+        /// <param name="UnconfinedFractureSetNo">Index number of the specified unconfined fracture set</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns></returns>
+        public double ConnectionsPerUnconfinedFracture(int UnconfinedFractureSetNo, bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double TotalConnections = 0;
+            UnconfinedFractureSet ufs = UnconfinedFractureSets[UnconfinedFractureSetNo];
+            double TotalFractures = ufs.getTotalUCFP30();
+
+            // Calculate the number of connections at the fracture tips
+            // Only hard-linked relays will be counted
+            if (gd.DFNControl.LinkFracturesInStressShadow)
+                TotalConnections += ufs.sII_UCRP30_total();
+            TotalConnections += ufs.sIJ_UCRP30_total();
+            double connectionsPerFracture = TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn;
+
+            // Add the mean number of terminating fractures
+            connectionsPerFracture += getTerminatingFracturesPerUCF(UnconfinedFractureSetNo, ReturnNanForUndefined);
+
+            return connectionsPerFracture;
+        }
+        /// <summary>
+                 /// Get the current fracture fabric tensor F, as defined by Oda 1983
+                 /// </summary>
+                 /// <returns></returns>
         public Tensor2S FractureFabricTensor(FractureType fracType)
         {
             return FractureFabricTensor(fracType, -1);
@@ -3030,18 +3176,29 @@ namespace DFMGenerator_SharedCode
                 // The Oda 1985 model assumes fractures of infinite size and connectivity, so does not take into account network connectivity
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
-                        // Get the basic macrofracture permeability tensor
+                        // Get the basic unconfined fracture permeability tensor
+                        foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                            unconfinedFracturePermeability += ufs.Total_UCF_Permeability(Timestep_M);
                     }
                     break;
                 // The Oda corrected (1987) algorithm includes a directional multiplier to take account of the connectivity of individual fractures
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     {
+                        // First we must get the sum of the uncorrected unconfined fracture permeability tensors
+                        // Get the basic unconfined fracture permeability tensor
+                        foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                            unconfinedFracturePermeability += ufs.Total_UCF_Permeability(Timestep_M);
+
+                        // Then we can apply a correction factor based on the mean number of connections per fracture
+                        double networkConnectivityMultiplier = 1;// GetNetworkPermeabilityMultiplierFromConnections(ConnectionsPerMacrofracture(false));
+                        unconfinedFracturePermeability = networkConnectivityMultiplier * unconfinedFracturePermeability;
                     }
                     break;
                 // The size and connectivity correction algorithm takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock
                 // The host rock permeability is required to calculate the latter
                 case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
                     {
+                        // Not yet implemented
                     }
                     break;
                 default:
@@ -3088,6 +3245,13 @@ namespace DFMGenerator_SharedCode
         /// <param name="MaxL">Reference parameter for the maximum block dimension</param>
         private void GetBlockDimensions(FractureType FracType, int Timestep_M, out double MinL, out double MaxL)
         {
+            // The block dimensions for unconfined fractures are calculated in a separate function
+            if ((FracType == FractureType.UnconfinedFractures) || ((FracType == FractureType.AllFractures) && (NoFractureSets == 0)))
+            {
+                GetUCFBlockDimensions(Timestep_M, out MinL, out MaxL);
+                return;
+            }
+
             bool useCurrentDensityData = (Timestep_M < 0);
 
             MinL = double.PositiveInfinity;
@@ -3184,6 +3348,94 @@ namespace DFMGenerator_SharedCode
             }
         }
         /// <summary>
+        /// Calculate the minimum and maximum horizontal dimensions of unconfined fracture-bounded blocks, at at the end of a specified previous timestep
+        /// </summary>
+        /// <param name="Timestep_M">Index number of the specified timestep</param>
+        /// <param name="MinL">Reference parameter for the minimum block dimension</param>
+        /// <param name="MaxL">Reference parameter for the maximum block dimension</param>
+        private void GetUCFBlockDimensions(int Timestep_M, out double MinL, out double MaxL)
+        {
+            bool useCurrentDensityData = (Timestep_M < 0);
+
+            MinL = double.PositiveInfinity;
+            MaxL = double.PositiveInfinity;
+
+            // Get the respective P32 values for each fracture set
+            double[] P32_values = new double[NoUnconfinedFractureSets];
+            // Loop through every set of propagating fractures I
+            for (int ufsI_Index = 0; ufsI_Index < NoUnconfinedFractureSets; ufsI_Index++)
+            {
+                UnconfinedFractureSet ufsI = UnconfinedFractureSets[ufsI_Index];
+                P32_values[ufsI_Index] = useCurrentDensityData ? ufsI.UCFP32_total() : ufsI.getTotalUCFP32(Timestep_M);
+            }
+
+            // If there are no fracture sets, both block dimensions will be infinite
+            if (NoFractureSets == 0)
+            {
+                return;
+            }
+            // If there is only one fracture set, we can only define the minimum block dimension
+            else if (NoFractureSets == 1)
+            {
+                MinL = 1 / P32_values[0];
+            }
+            // If there are only two fracture sets, one will determine the minimum block dimension and the other will determine the maximum block dimension
+            else if (NoFractureSets == 2)
+            {
+                if (P32_values[0] > P32_values[1])
+                {
+                    MinL = 1 / P32_values[0];
+                    MaxL = 1 / P32_values[1];
+                }
+                else
+                {
+                    MinL = 1 / P32_values[1];
+                    MaxL = 1 / P32_values[0];
+                }
+            }
+            // If there are more than two fracture sets, the minimum and maximum block dimensions will be determined by a combination of all fracture sets
+            else
+            {
+                // Find the orientation minimum block dimension
+                // This will be the orientation where the combined apparent P32 densities of all sets is maximum
+                // This need not coincide with the azimuth of any specific set; however for convenience we will only calculate density along set azimuths
+                double maxP32_azimuth = 0;
+                double maxP32 = 0;
+                for (int ufsI_Index = 0; ufsI_Index < NoUnconfinedFractureSets; ufsI_Index++)
+                {
+                    double ufsI_azimuth = UnconfinedFractureSets[ufsI_Index].Azimuth;
+                    double P32_I = 0;
+                    for (int ufsJ_Index = 0; ufsJ_Index < NoUnconfinedFractureSets; ufsJ_Index++)
+                    {
+                        double ufsJ_azimuth = UnconfinedFractureSets[ufsJ_Index].Azimuth;
+                        double cosIJ = Math.Abs(VectorXYZ.Cos_trim(ufsI_azimuth - ufsJ_azimuth));
+                        P32_I += cosIJ * P32_values[ufsJ_Index];
+                    }
+
+                    if (maxP32 < P32_I)
+                    {
+                        maxP32 = P32_values[ufsI_Index];
+                        maxP32_azimuth = ufsI_azimuth;
+                    }
+                }
+
+                // The maximum block dimension will be perpendicular to this
+                // Get the combined apparent P32 densities of all sets in this orientation 
+                double minP32_azimuth = maxP32_azimuth + (Math.PI / 2);
+                double minP32 = 0;
+                for (int ufsJ_Index = 0; ufsJ_Index < NoUnconfinedFractureSets; ufsJ_Index++)
+                {
+                    double ufsJ_azimuth = UnconfinedFractureSets[ufsJ_Index].Azimuth;
+                    double cosIJ = Math.Abs(VectorXYZ.Cos_trim(minP32_azimuth - ufsJ_azimuth));
+                    minP32 += cosIJ * P32_values[ufsJ_Index];
+                }
+
+                // Calculate the minimum and maximum block dimensions
+                MinL = 1 / maxP32;
+                MaxL = 1 / minP32;
+            }
+        }
+        /// <summary>
         /// Calculate the sigma factor given the minimum and maximum block dimensions, as defined in Kazemi et al (1976)
         /// </summary>
         /// <param name="MinL">Minimum block dimension; if this is infinite, sigma will be undefined</param>
@@ -3258,7 +3510,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Sigma factor for the microfractures in the gridblock</returns>
         public double MicrofractureSigmaFactor(int Timestep_M)
         {
-            // Get the minimum and maximim block dimensions
+            // Get the minimum and maximum block dimensions
             GetBlockDimensions(FractureType.Microfractures, Timestep_M, out double MinL, out double MaxL);
 
             // Calculate and return the sigma factor
@@ -3270,7 +3522,7 @@ namespace DFMGenerator_SharedCode
         /// <returns>Sigma factor for the macrofractures in the gridblock</returns>
         public double MacrofractureSigmaFactor(int Timestep_M)
         {
-            // Get the minimum and maximim block dimensions
+            // Get the minimum and maximum block dimensions
             GetBlockDimensions(FractureType.LayerBoundFractures, Timestep_M, out double MinL, out double MaxL);
 
             // Calculate and return the sigma factor
@@ -3282,12 +3534,11 @@ namespace DFMGenerator_SharedCode
         /// <returns>Sigma factor for the unconfined fractures in the gridblock</returns>
         public double UnconfinedFractureSigmaFactor(int Timestep_M)
         {
-            // Get the minimum and maximim block dimensions
-            //GetBlockDimensions(FractureType.LayerBoundFractures, Timestep_M, out double MinL, out double MaxL);
-
+            // Get the minimum and maximum block dimensions
+            GetBlockDimensions(FractureType.UnconfinedFractures, Timestep_M, out double MinL, out double MaxL);
 
             // Calculate and return the sigma factor
-            return 0;// CalculateSigma(MinL, MaxL);
+            return CalculateSigma(MinL, MaxL);
         }
         /// <summary>
         /// Sigma factor for all fractures in the gridblock, at the end of a specified previous timestep
@@ -4145,8 +4396,9 @@ namespace DFMGenerator_SharedCode
                         ufs.updateTotalFracturePopulation();
                     }
 
-                    // Update the macrofracture termination array
-                    upDateMFTerminations();
+                    // Update the macrofracture abd unconfined fracture termination arrays
+                    updateMFTerminations();
+                    updateUCFTerminations();
 
                     // Calculate and update the macrofracture density, macrofracture spacing distribution and clear zone volume data in the CurrentFractureData object
                     // NB we cannot do this as we calculate the new macrofracture density data for the timestep, because we need to keep the previous values until all macrofracture sets have been calculated
@@ -4174,10 +4426,9 @@ namespace DFMGenerator_SharedCode
 
                     // If required, calculate the inverse stress shadow and clear zone volume multipliers to account for stress shadows from other fracture sets
                     if (checkAlluFStressShadows)
-                    {
                         setCrossFSStressShadows();
+                    if (checkAllUCFStressShadows)
                         setCrossUFSStressShadows();
-                    }
 
                     // Calculate the new total linear microfracture population data for each fracture dip set, and update the CurrentFractureData object
                     // NB the microfracture densities from one set do not affect the microfracture density calculations for the other sets
@@ -8012,17 +8263,6 @@ namespace DFMGenerator_SharedCode
                     }
                 }
 
-            // Create the macrofracture termination array
-            MFTerminations = new double[NoFractureSets, NoFractureSets][];
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
-                {
-                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
-                    MFTerminations[I, J] = new double[NoDipsetsJ];
-                    for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
-                        MFTerminations[I, J][fdsJ] = 0;
-                }
-
             // Create the unconfined fracture set stress shadow multiplier array
             UCFW_IJ = new double[NoUnconfinedFractureSets, NoUnconfinedFractureSets];
             for (int I = 0; I < NoUnconfinedFractureSets; I++)
@@ -8037,6 +8277,26 @@ namespace DFMGenerator_SharedCode
                         UCFW_IJ[I, J] = 0;
                     }
                 }
+
+            // Create the macrofracture termination array
+            MFTerminations = new double[NoFractureSets, NoFractureSets][];
+            for (int I = 0; I < NoFractureSets; I++)
+                for (int J = 0; J < NoFractureSets; J++)
+                {
+                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
+                    MFTerminations[I, J] = new double[NoDipsetsJ];
+                    for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
+                        MFTerminations[I, J][fdsJ] = 0;
+                }
+
+            // Create the unconfined fracture termination array
+            UCFTerminations = new double[NoUnconfinedFractureSets, NoUnconfinedFractureSets];
+            for (int I = 0; I < NoUnconfinedFractureSets; I++)
+                for (int J = 0; J < NoUnconfinedFractureSets; J++)
+                {
+                    UCFTerminations[I, J] = 0;
+                }
+
         }
         /// <summary>
         /// Clear any existing fracture data in the gridblock
