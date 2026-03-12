@@ -5613,7 +5613,8 @@ namespace DFMGenerator_Ocean
                                     // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
                                     int NoStages = NoIntermediateOutputs + 1;
                                     int NoCalculationElementsCompleted = 0;
-                                    int NoElements = NoActiveGridblocks * ((NoFractureSets * NoDipSets) + (CalculateFractureConnectivityAnisotropy ? (NoFractureSets * NoDipSets) + 1 : 0) + (CalculateFractureReactivationPotential ? (NoFractureSets * NoDipSets) : 0) + (CalculateFracturePorosity ? 1 : 0) + (CalculateFracturePermeabilityTensor ? 1 : 0));
+                                    int TotalNoSets = (NoFractureSets * NoDipSets) + NoUnconfinedFractureSets;
+                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (CalculateFractureConnectivityAnisotropy ? TotalNoSets + 1 : 0) + (CalculateFractureReactivationPotential ? TotalNoSets : 0) + (CalculateFracturePorosity ? 1 : 0) + (CalculateFracturePermeabilityTensor ? 1 : 0));
                                     NoElements *= NoStages;
                                     // Bulk rock elastic tensors are only output for the final stage
                                     if (OutputBulkRockElasticTensors)
@@ -6066,7 +6067,7 @@ namespace DFMGenerator_Ocean
                                                 } // End loop through fracture dip sets
                                             } // End loop through fracture sets
 
-                                            for (int UnconfinedFractureSetNo = 0; UnconfinedFractureSetNo < NoUnconfinedFractureDipSets; UnconfinedFractureSetNo++)
+                                            for (int UnconfinedFractureSetNo = 0; UnconfinedFractureSetNo < NoUnconfinedFractureSets; UnconfinedFractureSetNo++)
                                             {
                                                 // Set a name for the fracture set
                                                 string FractureSetName = UnconfinedFractureSetNames[UnconfinedFractureSetNo];
@@ -6132,11 +6133,13 @@ namespace DFMGenerator_Ocean
                                                                 PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
 
                                                             // Get data from GridblockConfiguration object
+                                                            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+                                                            // we must always take data from the FractureCalculationData list
                                                             double cell_UCF_P30_tot, cell_UCF_P32_tot, cell_UCF_MeanArea;
                                                             if (finalStage)
                                                             {
-                                                                cell_UCF_P30_tot = ufs.UCFP30_total();
-                                                                cell_UCF_P32_tot = ufs.UCFP32_total();
+                                                                cell_UCF_P30_tot = ufs.getTotalUCFP30();
+                                                                cell_UCF_P32_tot = ufs.getTotalUCFP32();
                                                                 cell_UCF_MeanArea = cell_UCF_P32_tot / cell_UCF_P30_tot;
                                                             }
                                                             else
@@ -6262,13 +6265,21 @@ namespace DFMGenerator_Ocean
                                                                     PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
 
                                                                 // Get data from GridblockConfiguration object
+                                                                // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+                                                                // we must always take data from the FractureCalculationData list
                                                                 double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerUCF, EndTime;
                                                                 if (finalStage)
                                                                 {
-                                                                    UnconnectedTipRatio = ufs.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                                                    RelayTipRatio = ufs.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                                    IntersectingTipRatio = ufs.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                                    NodesPerUCF = fractureGridCell.ConnectionsPerUnconfinedFracture(UnconfinedFractureSetNo, !PopulateEmptyGridblocks);
+                                                                    double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
+                                                                    double INodes = ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsRMax_RP30_M();
+                                                                    double RNodes = ufs.getsII_RP30_M();
+                                                                    double YNodes = ufs.getsIJ_RP30_M();
+                                                                    double TotalFractures = INodes + RNodes + YNodes;
+                                                                    double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity();
+                                                                    UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);
+                                                                    RelayTipRatio = (TotalFractures > 0 ? RNodes / TotalFractures : undefinedValue);
+                                                                    IntersectingTipRatio = (TotalFractures > 0 ? YNodes / TotalFractures : undefinedValue);
+                                                                    NodesPerUCF = (TotalFractures > 0 ? NoConnections / TotalFractures : undefinedValue);
                                                                     EndTime = ufs.getFinalActiveTime(!PopulateEmptyGridblocks);
                                                                 }
                                                                 else
@@ -6892,9 +6903,10 @@ namespace DFMGenerator_Ocean
                                                                 PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
 
                                                             // Get combined fracture porosity data from the FractureSet objects in the GridblockConfiguration object and combine them locally
+                                                            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+                                                            // we must always take data from the FractureCalculationData list
                                                             double UCF_P32_value;
                                                             double UCF_Porosity_value;
-
                                                             if (finalStage)
                                                             {
                                                                 UCF_P32_value = fractureGridCell.UnconfinedFractureDensity_P32();
@@ -7034,11 +7046,11 @@ namespace DFMGenerator_Ocean
                                                         if (fractureGridCell == null)
                                                             continue;
 
-                                                        // If we are not populating empty cells, we are outputting the macrofracture permability tensor, and there are no macrofractures in the gridblock, move on to the next gridblock
-                                                        if (!PopulateEmptyGridblocks && (FractureTypesInPermeabilityTensor == FractureType.LayerBoundFractures))
+                                                        // If we are not populating empty cells, and there are no fractures in the gridblock, move on to the next gridblock
+                                                        if (!PopulateEmptyGridblocks)
                                                         {
-                                                            double MF_P32_value = finalStage ? fractureGridCell.LayerBoundFractureDensity_P32() : fractureGridCell.LayerBoundFractureDensity_P32(fractureGridCell.getTimestepIndex(stageEndTime));
-                                                            if (!(MF_P32_value > 0))
+                                                            double P32_value = finalStage ? fractureGridCell.LayerBoundFractureDensity_P32() + fractureGridCell.UnconfinedFractureDensity_P32() : fractureGridCell.LayerBoundFractureDensity_P32(fractureGridCell.getTimestepIndex(stageEndTime)) + fractureGridCell.UnconfinedFractureDensity_P32(fractureGridCell.getTimestepIndex(stageEndTime));
+                                                            if (!(P32_value > 0))
                                                             {
                                                                 progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
                                                                 continue;

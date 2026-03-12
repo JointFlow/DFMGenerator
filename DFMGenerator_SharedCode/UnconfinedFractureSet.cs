@@ -437,6 +437,31 @@ namespace DFMGenerator_SharedCode
         /// <returns></returns>
         public double getCumGamma() { return CurrentFractureData.Cum_Gamma_M; }
         /// <summary>
+        /// Return the volumetric density of all fully active rays during the current timestep (fractures/m3)
+        /// </summary>
+        /// <returns></returns>
+        public double geta_RP30_M() { return CurrentFractureData.a_RP30_M; }
+        /// <summary>
+        /// Return the volumetric density of all restricted rays during the current timestep (fractures/m3)
+        /// </summary>
+        /// <returns></returns>
+        public double getr_RP30_M() { return CurrentFractureData.r_RP30_M; }
+        /// <summary>
+        /// Return the volumetric density of all static rays terminated due to stress shadow interaction during the current timestep (fractures/m3)
+        /// </summary>
+        /// <returns></returns>
+        public double getsII_RP30_M() { return CurrentFractureData.sII_RP30_M; }
+        /// <summary>
+        /// Return the volumetric density of all static rays terminated due to intersection during the current timestep (fractures/m3)
+        /// </summary>
+        /// <returns></returns>
+        public double getsIJ_RP30_M() { return CurrentFractureData.sIJ_RP30_M; }
+        /// <summary>
+        /// Return the volumetric density of all static rays terminated due to exceeding the maximum radius during the current timestep (fractures/m3)
+        /// </summary>
+        /// <returns></returns>
+        public double getsRMax_RP30_M() { return CurrentFractureData.sRMax_RP30_M; }
+        /// <summary>
         /// Return the total volumetric density of all unconfined fractures during the current timestep (fractures/m3)
         /// </summary>
         /// <returns></returns>
@@ -1483,23 +1508,25 @@ namespace DFMGenerator_SharedCode
         {
             double output;
 
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             switch (ApertureControl)
             {
                 case FractureApertureType.Uniform:
-                    output = Fractures.FP32_total * UniformAperture;
+                    output = CurrentFractureData.Total_RP32_M * UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = Fractures.FP33_total * (SizeDependentApertureMultiplier / 2);
+                    output = CurrentFractureData.Total_RP33_M * (SizeDependentApertureMultiplier / 2);
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = Fractures.FP33_total * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = CurrentFractureData.Total_RP33_M * gbc.MechProps.DynamicApertureMultiplier * (2 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (compressive_sigmaNeff < 0) compressive_sigmaNeff = 0;
-                    output = Fractures.FP32_total * BartonBandisAperture(compressive_sigmaNeff);
+                    output = CurrentFractureData.Total_RP32_M * BartonBandisAperture(compressive_sigmaNeff);
                     break;
                 default:
                     output = 0;
@@ -1527,6 +1554,8 @@ namespace DFMGenerator_SharedCode
         /// <returns>Tensor2S object representing the uncorrected unconfined fracture permeability</returns>
         public Tensor2S Total_UCF_Permeability(int Timestep_M)
         {
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             bool useCurrentDensityData = (Timestep_M < 0);
             bool useCurrentApertureData = useCurrentDensityData || usePresentDayStress;
 
@@ -1540,7 +1569,7 @@ namespace DFMGenerator_SharedCode
                 case FractureApertureType.Uniform:
                 case FractureApertureType.BartonBandis:
                     apertureMultiplier = Math.Pow(useCurrentApertureData ? getMeanFractureAperture(1) : getMeanFractureAperture(1, Timestep_M), 3);
-                    densityMultiplier = useCurrentDensityData ? UCFP32_total() : getTotalUCFP32(Timestep_M);
+                    densityMultiplier = useCurrentDensityData ? getTotalUCFP32() : getTotalUCFP32(Timestep_M);
                     break;
                 // In the Size Dependent and Dynamic fracture aperture scenarios, aperture follows an elliptical profile
                 // The aperture multiplier is calculated by integrating the cube of the local aperture across every fracture
@@ -1550,7 +1579,7 @@ namespace DFMGenerator_SharedCode
                 case FractureApertureType.SizeDependent:
                 case FractureApertureType.Dynamic:
                     apertureMultiplier = Math.Pow(useCurrentApertureData ? getMaximumFractureAperture(1) : getMaximumFractureAperture(1, Timestep_M), 3);
-                    densityMultiplier = useCurrentDensityData ? UCFP32_total() : getTotalUCFP32(Timestep_M); //(useCurrentDensityData ? UCFP35_total() : getTotalUCFP35(Timestep_M)) / 8;
+                    densityMultiplier = useCurrentDensityData ? getTotalUCFP32() : getTotalUCFP32(Timestep_M); //(useCurrentDensityData ? UCFP35_total() : getTotalUCFP35(Timestep_M)) / 8;
                     break;
                 // Aperture is not defined
                 default:

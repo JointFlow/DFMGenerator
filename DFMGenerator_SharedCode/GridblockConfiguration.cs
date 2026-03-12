@@ -2464,8 +2464,10 @@ namespace DFMGenerator_SharedCode
         public double UnconfinedFractureDensity_P32()
         {
             double UCF_P32_value = 0;
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                UCF_P32_value += ufs.UCFP32_total();
+                UCF_P32_value += ufs.getTotalUCFP32();
             return UCF_P32_value;
         }
         /// <summary>
@@ -2477,8 +2479,10 @@ namespace DFMGenerator_SharedCode
             double P32_value = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
                 P32_value += (fs.combined_T_uFP32_total() + fs.combined_T_MFP32_total());
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                P32_value += ufs.UCFP32_total();
+                P32_value += ufs.getTotalUCFP32();
             return P32_value;
         }
         /// <summary>
@@ -2510,6 +2514,8 @@ namespace DFMGenerator_SharedCode
         public double UnconfinedFracturePorosity()
         {
             double UCF_Porosity_value = 0;
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                 UCF_Porosity_value += ufs.Total_UCF_Porosity();
             return UCF_Porosity_value;
@@ -2523,6 +2529,8 @@ namespace DFMGenerator_SharedCode
             double Porosity_value = 0;
             foreach (Gridblock_FractureSet fs in FractureSets)
                 Porosity_value += (fs.combined_uF_Porosity() + fs.combined_MF_Porosity());
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                 Porosity_value += ufs.Total_UCF_Porosity();
             return Porosity_value;
