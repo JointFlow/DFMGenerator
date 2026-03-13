@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -385,6 +385,8 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor");
                 input_file.WriteLine("% If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets");
                 input_file.WriteLine("CheckAllUCFStressShadows Automatic");
+                input_file.WriteLine("% Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows");
+                input_file.WriteLine("LargeFractureMinimumRadius -1");
                 input_file.WriteLine("% Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius");
                 input_file.WriteLine("MinStressShadowDeactivationRatio 0.5");
                 input_file.WriteLine("% Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius");
@@ -995,6 +997,8 @@ namespace DFMGenerator_Standalone
             // If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor
             // If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
             AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.Automatic;
+            // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
+            double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
             double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
@@ -1756,7 +1760,7 @@ namespace DFMGenerator_Standalone
                             break;
                         // The proportion of the ray length increment to apply to active unconfined fracture datapoints before the specified proportion of fractures are deactivated
                         case "ProportionalIncrementToApply":
-                            ProportionalIncrementToApply = Convert.ToDouble(line_split[1]);
+                            ProportionalUCRIncrementToApply = Convert.ToDouble(line_split[1]);
                             break;
                         // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
                         case "Min_R_staticDatapointSizeRatio":
@@ -1783,6 +1787,10 @@ namespace DFMGenerator_Standalone
                                 else if (line_split[1] == "Automatic")
                                     CheckAllUCFStressShadows = AutomaticFlag.Automatic;
                             }
+                            break;
+                        // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
+                        case "LargeFractureMinimumRadius":
+                            LargeFractureMinimumRadius = Convert.ToDouble(line_split[1]);
                             break;
                         // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
                         case "MinStressShadowDeactivationRatio":
@@ -2894,7 +2902,7 @@ namespace DFMGenerator_Standalone
 
                         // Set the propagation control data for the gridblock
                         gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
+                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false);
                         gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
 
                         // Set folder path for output files
@@ -2919,9 +2927,9 @@ namespace DFMGenerator_Standalone
                         Console.WriteLine(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
                         Console.WriteLine(string.Format("gc.StressStrain.setStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                         Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
-                        Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}); ",
+                        Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}, {25}); ",
                             CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
+                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false));
                         Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
@@ -3009,9 +3017,9 @@ namespace DFMGenerator_Standalone
                 }
             }
             // Set the DFN generation data
-            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits);
+            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 #if DEBUG_FRACS
-            Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {17}, {18}, {19}, {20}, TimeUnits.{21});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits));
+            Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
 #endif
 
             // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times for this purpose and supply it to the DFNGenerationControl object

@@ -708,6 +708,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double MinIntersectionDeactivationRatio { get; set; }
         /// <summary>
+        /// Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
+        /// </summary>
+        public double MinRadiusForLargeFractures { get; set; }
+        /// <summary>
         /// Time units - will be used for output data
         /// </summary>
         public TimeUnits timeUnits { get; private set; }
@@ -790,8 +794,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="propagateFracturesInNucleationOrder_in">Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set</param>
         /// <param name="MinStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
         /// <param name="MinIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
+        /// <param name="MinRadiusForLargeFractures_in">Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows</param>
         /// <param name="timeUnits_in">Time units for output data</param>
-        public void setDFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, double UnconfinedFractureDFNMinimumRadius_in, int MaxNoFractures_in, int MaxNewFracturesPerTimestep_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchNeighbouringGridlocks_in, bool propagateFracturesInNucleationOrder_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, TimeUnits timeUnits_in)
+        public void setDFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, double UnconfinedFractureDFNMinimumRadius_in, int MaxNoFractures_in, int MaxNewFracturesPerTimestep_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchNeighbouringGridlocks_in, bool propagateFracturesInNucleationOrder_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, double MinRadiusForLargeFractures_in, TimeUnits timeUnits_in)
         {
             // Minimum microfracture radius to be included in DFN: if zero or negative, DFN will contain no microfractures; if positive, MacrofractureDFNMinimumLength will be zero (include all macrofractures)
             MicrofractureDFNMinimumRadius = MicrofractureDFNMinimumSizeIndex_in;
@@ -835,6 +840,8 @@ namespace DFMGenerator_SharedCode
             MinStressShadowDeactivationRatio = MinStressShadowDeactivationRatio_in;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
             MinIntersectionDeactivationRatio = MinIntersectionDeactivationRatio_in;
+            // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
+            MinRadiusForLargeFractures = MinRadiusForLargeFractures_in;
             // Time units - will be used for output data
             timeUnits = timeUnits_in;
         }
@@ -844,7 +851,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public DFNGenerationControl()
-                    : this(true, 0d, 0d, 0d, -1, -1, 1, Math.PI / 4, false, false, 4, 0, IntermediateOutputInterval.EqualArea, true, DFNFileType.ASCII, false, 0, AutomaticFlag.Automatic, true, 1, 1, TimeUnits.second)
+                    : this(true, 0d, 0d, 0d, -1, -1, 1, Math.PI / 4, false, false, 4, 0, IntermediateOutputInterval.EqualArea, true, DFNFileType.ASCII, false, 0, AutomaticFlag.Automatic, true, 1, 1, double.NaN, TimeUnits.second)
         {
             // Defaults:
 
@@ -869,6 +876,7 @@ namespace DFMGenerator_SharedCode
             // Flag to control the order in which fractures are propagated within each timestep: true (fractures will be propagated in order of nucleation time regardless of fracture set)
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio: 1
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio: 1
+            // Minimum radius for large fractures; NaN (no fractures will be considered to influence the entire grid when checking stress shadows)
             // Time units: second
         }
         /// <summary>
@@ -894,15 +902,16 @@ namespace DFMGenerator_SharedCode
         /// <param name="propagateFracturesInNucleationOrder_in">Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set</param>
         /// <param name="MinStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
         /// <param name="MinIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
+        /// <param name="MinRadiusForLargeFractures_in">Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows</param>
         /// <param name="timeUnits_in">Time units for output data</param>
-        public DFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, double UnconfinedFractureDFNMinimumRadius_in, int MaxNoFractures_in, int MaxNewFracturesPerTimestep_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchAdjacentGridlocks_in, bool propagateFracturesInNucleationOrder_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, TimeUnits timeUnits_in)
+        public DFNGenerationControl(bool GenerateExplicitDFN_in, double MicrofractureDFNMinimumSizeIndex_in, double MacrofractureDFNMinimumSizeIndex_in, double UnconfinedFractureDFNMinimumRadius_in, int MaxNoFractures_in, int MaxNewFracturesPerTimestep_in, double MinimumLayerThickness_in, double MaxConsistencyAngle_in, bool CropToGrid_in, bool LinkFracturesInStressShadow_in, int NumberOfuFPoints_in, int NumberOfIntermediateOutputs_in, IntermediateOutputInterval SeparateIntermediateOutputsBy_in, bool WriteDFNFiles_in, DFNFileType OutputFileType_in, bool outputCentrepoints_in, double probabilisticFractureNucleationLimit_in, AutomaticFlag SearchAdjacentGridlocks_in, bool propagateFracturesInNucleationOrder_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in, double MinRadiusForLargeFractures_in, TimeUnits timeUnits_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new (empty) list specifying times for intermediate outputs
             IntermediateOutputTimes = new List<double>();
             // Set all other data
-            setDFNGenerationControl(GenerateExplicitDFN_in, MicrofractureDFNMinimumSizeIndex_in, MacrofractureDFNMinimumSizeIndex_in, UnconfinedFractureDFNMinimumRadius_in, MaxNoFractures_in, MaxNewFracturesPerTimestep_in, MinimumLayerThickness_in, MaxConsistencyAngle_in, CropToGrid_in, LinkFracturesInStressShadow_in, NumberOfuFPoints_in, NumberOfIntermediateOutputs_in, SeparateIntermediateOutputsBy_in, WriteDFNFiles_in, OutputFileType_in, outputCentrepoints_in, probabilisticFractureNucleationLimit_in, SearchAdjacentGridlocks_in, propagateFracturesInNucleationOrder_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, timeUnits_in);
+            setDFNGenerationControl(GenerateExplicitDFN_in, MicrofractureDFNMinimumSizeIndex_in, MacrofractureDFNMinimumSizeIndex_in, UnconfinedFractureDFNMinimumRadius_in, MaxNoFractures_in, MaxNewFracturesPerTimestep_in, MinimumLayerThickness_in, MaxConsistencyAngle_in, CropToGrid_in, LinkFracturesInStressShadow_in, NumberOfuFPoints_in, NumberOfIntermediateOutputs_in, SeparateIntermediateOutputsBy_in, WriteDFNFiles_in, OutputFileType_in, outputCentrepoints_in, probabilisticFractureNucleationLimit_in, SearchAdjacentGridlocks_in, propagateFracturesInNucleationOrder_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, MinRadiusForLargeFractures_in, timeUnits_in);
         }
     }
 
@@ -1354,6 +1363,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double DefaultFractureAzimuth { get; set; }
         /// <summary>
+        /// Flag to override the hmin azimuth with the specified default: if true, fracture sets will be generated in the specified default orientation and at equal subsequent angles regardless of the applied strain orientation; if false, fracture sets will be generated striking perpendicular to the applied minimum strain and at equal subsequent angles
+        /// </summary>
+        private bool OverrideHMinAzimuth;
+        /// <summary>
         /// Azimuth of minimum applied horizontal strain for the first deformation episode (radians) 
         /// </summary>
         public double Initial_Applied_Epsilon_hmin_azimuth
@@ -1361,12 +1374,14 @@ namespace DFMGenerator_SharedCode
             get
             {
                 // Look at each deformation episode in turn for a valid ehmin azimuth (i.e. an anisotropic stress or strain load)
-                foreach (DeformationEpisodeLoadControl deformationEpisode in deformationEpisodes)
-                {
-                    double episode_hmin_azimuth = deformationEpisode.Applied_Epsilon_hmin_azimuth;
-                    if (!double.IsNaN(episode_hmin_azimuth))
-                        return episode_hmin_azimuth;
-                }
+                // Do not do this if we have specified to override the hmin azimuth
+                if (!OverrideHMinAzimuth)
+                    foreach (DeformationEpisodeLoadControl deformationEpisode in deformationEpisodes)
+                    {
+                        double episode_hmin_azimuth = deformationEpisode.Applied_Epsilon_hmin_azimuth;
+                        if (!double.IsNaN(episode_hmin_azimuth))
+                            return episode_hmin_azimuth;
+                    }
                 // If there are no deformation episodes with anisotropic stress or strain loads, return the specified default value, or zero if this is not specified
                 return DefaultFractureAzimuth;
             }
@@ -1421,7 +1436,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateFracturePermeabilityTensor_in">Flag to calculate and output fracture permeability tensor</param>
         /// <param name="PermeabilityAlgorithm_in">Algorithm to use for calculating fracture permeability</param>
         /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
-        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_MFClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in)
+        /// <param name="OverrideHMinAzimuth_in">Flag to override the hmin azimuth with the specified default: if true, fracture sets will be generated in the specified default orientation and at equal subsequent angles regardless of the applied strain orientation; if false, fracture sets will be generated striking perpendicular to the applied minimum strain and at equal subsequent angles</param>
+        public void setPropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_MFClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in, bool OverrideHMinAzimuth_in)
         {
             // Set the time units and calculate unit conversion multiplier to adjust input rates if not in SI units
             timeUnits = timeUnits_in;
@@ -1471,6 +1487,8 @@ namespace DFMGenerator_SharedCode
             // Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes
             // This should not be set to NaN 
             DefaultFractureAzimuth = double.IsNaN(DefaultFractureAzimuth_in) ? 0 : DefaultFractureAzimuth_in;
+            // Flag to override the hmin azimuth with the specified default: if true, fracture sets will be generated in the specified default orientation and at equal subsequent angles regardless of the applied strain orientation; if false, fracture sets will be generated striking perpendicular to the applied minimum strain and at equal subsequent angles
+            OverrideHMinAzimuth = OverrideHMinAzimuth_in;
             // Flag to calculate and output fracture permeability tensor
             CalculateFracturePermeabilityTensor = CalculateFracturePermeabilityTensor_in;
             // Algorithm to use for calculating fracture permeability
@@ -1530,7 +1548,7 @@ namespace DFMGenerator_SharedCode
         /// Default Constructor: set default values
         /// </summary>
         public PropagationControl()
-                : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, false, PermeabilityCalculationAlgorithm.Oda1986, 0)
+                : this(true, 20, 0, 0, false, false, StressDistribution.StressShadow, 0.002, -1, -1, 0.01, 1000, -1, 10, 0, -1, false, 1, false, TimeUnits.second, false, FractureApertureType.Uniform, false, PermeabilityCalculationAlgorithm.Oda1986, 0, false)
         {
             // Defaults:
 
@@ -1559,6 +1577,7 @@ namespace DFMGenerator_SharedCode
             // Flag to calculate and output fracture permeability tensor: false
             // Algorithm to use for calculating fracture permeability: Oda1986
             // Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes: 0
+            // Override Hmin azimuth: false - will use Applied_Epsilon_hmin_azimuth for the first deformation episode in which it is defined
         }
         /// <summary>
         /// Constructor: Set all calculation control data for microfractures and layer-bound fractures; set index points for cumulative fracture size distribution arrays independently for each fracture set
@@ -1588,8 +1607,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateFracturePermeabilityTensor_in">Flag to calculate and output fracture permeability tensor</param>
         /// <param name="PermeabilityAlgorithm_in">Algorithm to use for calculating fracture permeability</param>
         /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_MFClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in)
-            : this (CalculatePopulationDistribution_in,  no_l_indexPoints_in,  max_HMin_l_indexPoint_Length_in,  max_HMax_l_indexPoint_Length_in,  CalculateRelaxedStrainPartitioning_in,  OutputBulkRockElasticTensors_in,  StressDistribution_in,  max_TS_MFP33_increase_in,  historic_a_MFP33_termination_ratio_in,  active_total_MFP30_termination_ratio_in,  minimum_MFClearZone_Volume_in,  maxTimesteps_in,  maxTimestepDuration_in,  no_r_bins_in,  minImplicitMicrofractureRadius_in,  FractureNucleationPosition_in,  checkAlluFStressShadows_in,  anisotropyCutoff_in,  WriteImplicitDataFiles_in,  timeUnits_in,  CalculateFracturePorosity_in,  FractureApertureControl_in,  CalculateFracturePermeabilityTensor_in,  PermeabilityAlgorithm_in,  DefaultFractureAzimuth_in, -1, -1, 0.1, 0.02, -1, 0.2, 0.8, 0.5, 0.02, 10, true, false, 0.5, 0.5)
+        /// <param name="OverrideHMinAzimuth_in">Flag to override the hmin azimuth with the specified default: if true, fracture sets will be generated in the specified default orientation and at equal subsequent angles regardless of the applied strain orientation; if false, fracture sets will be generated striking perpendicular to the applied minimum strain and at equal subsequent angles</param>
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_MFClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in, bool OverrideHMinAzimuth_in)
+            : this (CalculatePopulationDistribution_in,  no_l_indexPoints_in,  max_HMin_l_indexPoint_Length_in,  max_HMax_l_indexPoint_Length_in,  CalculateRelaxedStrainPartitioning_in,  OutputBulkRockElasticTensors_in,  StressDistribution_in,  max_TS_MFP33_increase_in,  historic_a_MFP33_termination_ratio_in,  active_total_MFP30_termination_ratio_in,  minimum_MFClearZone_Volume_in,  maxTimesteps_in,  maxTimestepDuration_in,  no_r_bins_in,  minImplicitMicrofractureRadius_in,  FractureNucleationPosition_in,  checkAlluFStressShadows_in,  anisotropyCutoff_in,  WriteImplicitDataFiles_in,  timeUnits_in,  CalculateFracturePorosity_in,  FractureApertureControl_in,  CalculateFracturePermeabilityTensor_in,  PermeabilityAlgorithm_in,  DefaultFractureAzimuth_in, OverrideHMinAzimuth_in, - 1, -1, 0.1, 0.02, -1, 0.2, 0.8, 0.5, 0.02, 10, true, false, 0.5, 0.5)
         {
             // Defaults:
 
@@ -1636,6 +1656,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="CalculateFracturePermeabilityTensor_in">Flag to calculate and output fracture permeability tensor</param>
         /// <param name="PermeabilityAlgorithm_in">Algorithm to use for calculating fracture permeability</param>
         /// <param name="DefaultFractureAzimuth_in">Default azimuth of fracture set 0 - will be used if Applied_Epsilon_hmin_azimuth is not defined for any deformation episodes</param>
+        /// <param name="OverrideHMinAzimuth_in">Flag to override the hmin azimuth with the specified default: if true, fracture sets will be generated in the specified default orientation and at equal subsequent angles regardless of the applied strain orientation; if false, fracture sets will be generated striking perpendicular to the applied minimum strain and at equal subsequent angles</param>
         /// <param name="historic_a_UCFP32_termination_ratio_in">Ratio of current to peak active unconfined fracture mean linear density at which unconfined fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="active_total_UCRP30_termination_ratio_in">Ratio of active to total unconfined fracture volumetric density at which unconfined fracture sets are considered inactive; set to negative value to switch off this control</param>
         /// <param name="minimum_UCFClearZone_Volume_in">Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated</param>
@@ -1650,14 +1671,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="checkAllUCFStressShadows_in">Flag to check unconfined fractures against stress shadows of all other unconfined fractures, regardless of set; if false will only check unconfined fractures against stress shadows of other unconfined fractures in the same set</param>
         /// <param name="MinStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
         /// <param name="MinIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
-        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_MFClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in, double historic_a_UCFP32_termination_ratio_in, double active_total_UCRP30_termination_ratio_in, double minimum_UCFClearZone_Volume_in, double max_TS_UCFP33_increase_in, double max_R_timestep_increase_in, double max_R_DeactivationCheck_interval_in, double min_R_ActivationProbability_in, double proportionalIncrementToApply_in, double min_R_staticDatapointSizeRatio_in, int cullTSFrequency_in, bool calculateImplicitUCFData_in, bool checkAllUCFStressShadows_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in)
+        public PropagationControl(bool CalculatePopulationDistribution_in, int no_l_indexPoints_in, double max_HMin_l_indexPoint_Length_in, double max_HMax_l_indexPoint_Length_in, bool CalculateRelaxedStrainPartitioning_in, bool OutputBulkRockElasticTensors_in, StressDistribution StressDistribution_in, double max_TS_MFP33_increase_in, double historic_a_MFP33_termination_ratio_in, double active_total_MFP30_termination_ratio_in, double minimum_MFClearZone_Volume_in, int maxTimesteps_in, double maxTimestepDuration_in, int no_r_bins_in, double minImplicitMicrofractureRadius_in, double FractureNucleationPosition_in, bool checkAlluFStressShadows_in, double anisotropyCutoff_in, bool WriteImplicitDataFiles_in, TimeUnits timeUnits_in, bool CalculateFracturePorosity_in, FractureApertureType FractureApertureControl_in, bool CalculateFracturePermeabilityTensor_in, PermeabilityCalculationAlgorithm PermeabilityAlgorithm_in, double DefaultFractureAzimuth_in, bool OverrideHMinAzimuth_in, double historic_a_UCFP32_termination_ratio_in, double active_total_UCRP30_termination_ratio_in, double minimum_UCFClearZone_Volume_in, double max_TS_UCFP33_increase_in, double max_R_timestep_increase_in, double max_R_DeactivationCheck_interval_in, double min_R_ActivationProbability_in, double proportionalIncrementToApply_in, double min_R_staticDatapointSizeRatio_in, int cullTSFrequency_in, bool calculateImplicitUCFData_in, bool checkAllUCFStressShadows_in, double MinStressShadowDeactivationRatio_in, double MinIntersectionDeactivationRatio_in)
         {
             // Set folder path for output files to current folder
             FolderPath = "";
             // Create a new list of deformation episodes, but do not create any deformation episodes
             deformationEpisodes = new List<DeformationEpisodeLoadControl>();
             // Set calculation control data for microfractures and layer-bound macrofractures
-            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputBulkRockElasticTensors_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_MFClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minImplicitMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, CalculateFracturePermeabilityTensor_in, PermeabilityAlgorithm_in, DefaultFractureAzimuth_in);
+            setPropagationControl(CalculatePopulationDistribution_in, no_l_indexPoints_in, max_HMin_l_indexPoint_Length_in, max_HMax_l_indexPoint_Length_in, CalculateRelaxedStrainPartitioning_in, OutputBulkRockElasticTensors_in, StressDistribution_in, max_TS_MFP33_increase_in, historic_a_MFP33_termination_ratio_in, active_total_MFP30_termination_ratio_in, minimum_MFClearZone_Volume_in, maxTimesteps_in, maxTimestepDuration_in, no_r_bins_in, minImplicitMicrofractureRadius_in, FractureNucleationPosition_in, checkAlluFStressShadows_in, anisotropyCutoff_in, WriteImplicitDataFiles_in, timeUnits_in, CalculateFracturePorosity_in, FractureApertureControl_in, CalculateFracturePermeabilityTensor_in, PermeabilityAlgorithm_in, DefaultFractureAzimuth_in, OverrideHMinAzimuth_in);
             // Set calculation control data for unconfined fractures
             setUnconfinedFractureControl(historic_a_UCFP32_termination_ratio_in, active_total_UCRP30_termination_ratio_in, minimum_UCFClearZone_Volume_in, max_TS_UCFP33_increase_in, max_R_timestep_increase_in, max_R_DeactivationCheck_interval_in, min_R_ActivationProbability_in, proportionalIncrementToApply_in, min_R_staticDatapointSizeRatio_in, cullTSFrequency_in, calculateImplicitUCFData_in, checkAllUCFStressShadows_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in);
         }

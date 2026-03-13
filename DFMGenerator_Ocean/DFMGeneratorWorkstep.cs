@@ -1604,6 +1604,8 @@ namespace DFMGenerator_Ocean
                     AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.None;
                     if (arguments.Argument_IncludeObliqueFracs && arguments.Argument_CheckAllUCFStressShadows)
                         CheckAllUCFStressShadows = AutomaticFlag.All;
+                    // Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries
+                    bool PlanarUnconfinedFractures = arguments.Argument_PlanarUnconfinedFractures;
                     // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
                     double LargeFractureMinimumRadius = arguments.Argument_LargeFractureMinimumRadius;
                     // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
@@ -2345,6 +2347,8 @@ namespace DFMGenerator_Ocean
                     {
                         generalInputParams += string.Format("Maximum MFP33 increase per timestep (controls accuracy of calculation): {0}\n", MaxTimestepMFP33Increase);
                     }
+                    if (LargeFractureMinimumRadius >= 0)
+                        generalInputParams += string.Format("Minimum radius for large fractures (considered to influence the entire grid when checking stress shadows): {0}{1}\n", LargeFractureMinimumRadius, FractureRadiusUnits);
 
                     // Calculation termination controls
                     generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumMFClearZoneVolume);
@@ -2387,6 +2391,8 @@ namespace DFMGenerator_Ocean
                         default:
                             break;
                     }
+                    if (PlanarUnconfinedFractures)
+                        explicitInputParams += "Make unconfined fractures completely planar, even when crossing gridblock boundaries\n";
                     if (MinExplicitMicrofractureRadius > 0)
                     {
                         explicitInputParams += string.Format("Minimum microfracture radius for explicit DFN: {0}{1}\n", toProjectFractureRadiusUnits.Convert(MinExplicitMicrofractureRadius), FractureRadiusUnits);
@@ -3671,8 +3677,8 @@ namespace DFMGenerator_Ocean
                                                 }
                                             }
 
-                                            // If this is the first deformation episode, set the default fracture azimuth for the gridblock
-                                            if (deformationEpisodeNo == 0)
+                                            // If this is the first deformation episode, and the fractures are not forced to be planar, set the default fracture azimuth for the gridblock
+                                            if (!PlanarUnconfinedFractures && (deformationEpisodeNo == 0))
                                                 local_DefaultFractureAzimuth = local_EhminAzi;
 
                                             // Get the dynamic deformation load data as grid properties if required
@@ -4551,7 +4557,7 @@ namespace DFMGenerator_Ocean
 
                                         // Set the propagation control data for the gridblock
                                         gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth);
+                                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures);
                                         gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
 
                                         // Set folder path for output files
@@ -5461,7 +5467,7 @@ namespace DFMGenerator_Ocean
                                     } // End loop through all gridblocks in the Fracture Grid
 
                             // Set the DFN generation data
-                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits);
+                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 
 #if DEBUG_FRAC_INPUT
                             PetrelLogger.InfoOutputWindow("");
@@ -8743,6 +8749,7 @@ namespace DFMGenerator_Ocean
             private int argument_CullTSFrequency = 10;
             private bool argument_CalculateImplicitUCFData = true;
             private bool argument_CheckAllUCFStressShadows = false;
+            private bool argument_PlanarUnconfinedFractures = false;
             private double argument_LargeFractureMinimumRadius = double.NaN;
             private double argument_MinStressShadowDeactivationRatio = 0.5;
             private double argument_MinIntersectionDeactivationRatio = 0.5;
@@ -13579,6 +13586,13 @@ namespace DFMGenerator_Ocean
                 set { this.argument_CalculateFractureSets = value; }
             }
 
+            [Description("Make unconfined fractures planar", "Make unconfined fractures completely planar, even when crossing gridblock boundaries")]
+            public bool Argument_PlanarUnconfinedFractures
+            {
+                internal get { return this.argument_PlanarUnconfinedFractures; }
+                set { this.argument_PlanarUnconfinedFractures = value; }
+            }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -13952,6 +13966,7 @@ namespace DFMGenerator_Ocean
                 argument_CullTSFrequency = 10;
                 argument_CalculateImplicitUCFData = true;
                 argument_CheckAllUCFStressShadows = false;
+                argument_PlanarUnconfinedFractures = false;
                 argument_LargeFractureMinimumRadius = double.NaN;
                 argument_MinStressShadowDeactivationRatio = 0.5;
                 argument_MinIntersectionDeactivationRatio = 0.5;

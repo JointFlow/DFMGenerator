@@ -582,6 +582,7 @@ namespace DFMGenerator_Ocean
             this.checkBox_UseUnconfinedFractures = new System.Windows.Forms.CheckBox();
             this.toolTipManager_DFMGenerator = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
             this.btnRestoreDefaults = new System.Windows.Forms.Button();
+            this.checkBox_PlanarUnconfinedFractures = new System.Windows.Forms.CheckBox();
             this.tabControl1.SuspendLayout();
             this.tabMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoIntermediateOutputs)).BeginInit();
@@ -652,7 +653,7 @@ namespace DFMGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 4;
+            this.tabControl1.SelectedIndex = 6;
             this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
@@ -3927,6 +3928,7 @@ namespace DFMGenerator_Ocean
             // 
             // tabUnconfinedFractures
             // 
+            this.tabUnconfinedFractures.Controls.Add(this.checkBox_PlanarUnconfinedFractures);
             this.tabUnconfinedFractures.Controls.Add(this.label_LargeFractureMinimumRadius_Units);
             this.tabUnconfinedFractures.Controls.Add(this.unitTextBox_LargeFractureMinimumRadius);
             this.tabUnconfinedFractures.Controls.Add(this.label_LargeFractureMinimumRadius);
@@ -3980,7 +3982,7 @@ namespace DFMGenerator_Ocean
             // label_LargeFractureMinimumRadius_Units
             // 
             this.label_LargeFractureMinimumRadius_Units.AutoSize = true;
-            this.label_LargeFractureMinimumRadius_Units.Location = new System.Drawing.Point(705, 151);
+            this.label_LargeFractureMinimumRadius_Units.Location = new System.Drawing.Point(705, 177);
             this.label_LargeFractureMinimumRadius_Units.Name = "label_LargeFractureMinimumRadius_Units";
             this.label_LargeFractureMinimumRadius_Units.Size = new System.Drawing.Size(15, 13);
             this.label_LargeFractureMinimumRadius_Units.TabIndex = 87;
@@ -3988,7 +3990,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_LargeFractureMinimumRadius
             // 
-            this.unitTextBox_LargeFractureMinimumRadius.Location = new System.Drawing.Point(611, 148);
+            this.unitTextBox_LargeFractureMinimumRadius.Location = new System.Drawing.Point(611, 174);
             this.unitTextBox_LargeFractureMinimumRadius.Name = "unitTextBox_LargeFractureMinimumRadius";
             this.unitTextBox_LargeFractureMinimumRadius.Size = new System.Drawing.Size(88, 20);
             this.unitTextBox_LargeFractureMinimumRadius.TabIndex = 86;
@@ -3996,7 +3998,7 @@ namespace DFMGenerator_Ocean
             // label_LargeFractureMinimumRadius
             // 
             this.label_LargeFractureMinimumRadius.AutoSize = true;
-            this.label_LargeFractureMinimumRadius.Location = new System.Drawing.Point(386, 151);
+            this.label_LargeFractureMinimumRadius.Location = new System.Drawing.Point(386, 177);
             this.label_LargeFractureMinimumRadius.Name = "label_LargeFractureMinimumRadius";
             this.label_LargeFractureMinimumRadius.Size = new System.Drawing.Size(197, 13);
             this.label_LargeFractureMinimumRadius.TabIndex = 85;
@@ -4029,7 +4031,7 @@ namespace DFMGenerator_Ocean
             // checkBox_CheckAllUCFStressShadows
             // 
             this.checkBox_CheckAllUCFStressShadows.AutoSize = true;
-            this.checkBox_CheckAllUCFStressShadows.Location = new System.Drawing.Point(389, 124);
+            this.checkBox_CheckAllUCFStressShadows.Location = new System.Drawing.Point(389, 150);
             this.checkBox_CheckAllUCFStressShadows.Name = "checkBox_CheckAllUCFStressShadows";
             this.checkBox_CheckAllUCFStressShadows.Size = new System.Drawing.Size(355, 17);
             this.checkBox_CheckAllUCFStressShadows.TabIndex = 38;
@@ -4097,7 +4099,7 @@ namespace DFMGenerator_Ocean
             // label_MinStaticDPSizeRatio_Units
             // 
             this.label_MinStaticDPSizeRatio_Units.AutoSize = true;
-            this.label_MinStaticDPSizeRatio_Units.Location = new System.Drawing.Point(705, 203);
+            this.label_MinStaticDPSizeRatio_Units.Location = new System.Drawing.Point(705, 229);
             this.label_MinStaticDPSizeRatio_Units.Name = "label_MinStaticDPSizeRatio_Units";
             this.label_MinStaticDPSizeRatio_Units.Size = new System.Drawing.Size(27, 13);
             this.label_MinStaticDPSizeRatio_Units.TabIndex = 31;
@@ -4105,7 +4107,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_MinStaticDPSizeRatio
             // 
-            this.unitTextBox_MinStaticDPSizeRatio.Location = new System.Drawing.Point(611, 200);
+            this.unitTextBox_MinStaticDPSizeRatio.Location = new System.Drawing.Point(611, 226);
             this.unitTextBox_MinStaticDPSizeRatio.Name = "unitTextBox_MinStaticDPSizeRatio";
             this.unitTextBox_MinStaticDPSizeRatio.Size = new System.Drawing.Size(88, 20);
             this.unitTextBox_MinStaticDPSizeRatio.TabIndex = 30;
@@ -4113,7 +4115,7 @@ namespace DFMGenerator_Ocean
             // label_MinStaticDPSizeRatio
             // 
             this.label_MinStaticDPSizeRatio.AutoSize = true;
-            this.label_MinStaticDPSizeRatio.Location = new System.Drawing.Point(386, 203);
+            this.label_MinStaticDPSizeRatio.Location = new System.Drawing.Point(386, 229);
             this.label_MinStaticDPSizeRatio.Name = "label_MinStaticDPSizeRatio";
             this.label_MinStaticDPSizeRatio.Size = new System.Drawing.Size(198, 13);
             this.label_MinStaticDPSizeRatio.TabIndex = 29;
@@ -4155,7 +4157,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_MinIDR
             // 
-            this.unitTextBox_MinIDR.Location = new System.Drawing.Point(611, 174);
+            this.unitTextBox_MinIDR.Location = new System.Drawing.Point(611, 200);
             this.unitTextBox_MinIDR.Name = "unitTextBox_MinIDR";
             this.unitTextBox_MinIDR.Size = new System.Drawing.Size(88, 20);
             this.unitTextBox_MinIDR.TabIndex = 23;
@@ -4163,7 +4165,7 @@ namespace DFMGenerator_Ocean
             // label_MinIDR
             // 
             this.label_MinIDR.AutoSize = true;
-            this.label_MinIDR.Location = new System.Drawing.Point(386, 177);
+            this.label_MinIDR.Location = new System.Drawing.Point(386, 203);
             this.label_MinIDR.Name = "label_MinIDR";
             this.label_MinIDR.Size = new System.Drawing.Size(192, 13);
             this.label_MinIDR.TabIndex = 22;
@@ -4196,7 +4198,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_MinPhi
             // 
-            this.unitTextBox_MinPhi.Location = new System.Drawing.Point(611, 96);
+            this.unitTextBox_MinPhi.Location = new System.Drawing.Point(611, 122);
             this.unitTextBox_MinPhi.Name = "unitTextBox_MinPhi";
             this.unitTextBox_MinPhi.Size = new System.Drawing.Size(88, 20);
             this.unitTextBox_MinPhi.TabIndex = 18;
@@ -4204,7 +4206,7 @@ namespace DFMGenerator_Ocean
             // label_MinPhi
             // 
             this.label_MinPhi.AutoSize = true;
-            this.label_MinPhi.Location = new System.Drawing.Point(386, 90);
+            this.label_MinPhi.Location = new System.Drawing.Point(386, 116);
             this.label_MinPhi.Name = "label_MinPhi";
             this.label_MinPhi.Size = new System.Drawing.Size(183, 26);
             this.label_MinPhi.TabIndex = 17;
@@ -4292,7 +4294,7 @@ namespace DFMGenerator_Ocean
             // label_MaxUCFRTSIncrease_Units
             // 
             this.label_MaxUCFRTSIncrease_Units.AutoSize = true;
-            this.label_MaxUCFRTSIncrease_Units.Location = new System.Drawing.Point(705, 73);
+            this.label_MaxUCFRTSIncrease_Units.Location = new System.Drawing.Point(705, 99);
             this.label_MaxUCFRTSIncrease_Units.Name = "label_MaxUCFRTSIncrease_Units";
             this.label_MaxUCFRTSIncrease_Units.Size = new System.Drawing.Size(27, 13);
             this.label_MaxUCFRTSIncrease_Units.TabIndex = 14;
@@ -4300,7 +4302,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_MaxUCFRTSIncrease
             // 
-            this.unitTextBox_MaxUCFRTSIncrease.Location = new System.Drawing.Point(611, 70);
+            this.unitTextBox_MaxUCFRTSIncrease.Location = new System.Drawing.Point(611, 96);
             this.unitTextBox_MaxUCFRTSIncrease.Name = "unitTextBox_MaxUCFRTSIncrease";
             this.unitTextBox_MaxUCFRTSIncrease.Size = new System.Drawing.Size(88, 20);
             this.unitTextBox_MaxUCFRTSIncrease.TabIndex = 13;
@@ -4308,7 +4310,7 @@ namespace DFMGenerator_Ocean
             // label_MaxUCFRTSIncrease
             // 
             this.label_MaxUCFRTSIncrease.AutoSize = true;
-            this.label_MaxUCFRTSIncrease.Location = new System.Drawing.Point(386, 73);
+            this.label_MaxUCFRTSIncrease.Location = new System.Drawing.Point(386, 99);
             this.label_MaxUCFRTSIncrease.Name = "label_MaxUCFRTSIncrease";
             this.label_MaxUCFRTSIncrease.Size = new System.Drawing.Size(202, 13);
             this.label_MaxUCFRTSIncrease.TabIndex = 12;
@@ -4333,7 +4335,7 @@ namespace DFMGenerator_Ocean
             // label_MaxUCFRadius_Units
             // 
             this.label_MaxUCFRadius_Units.AutoSize = true;
-            this.label_MaxUCFRadius_Units.Location = new System.Drawing.Point(705, 47);
+            this.label_MaxUCFRadius_Units.Location = new System.Drawing.Point(705, 73);
             this.label_MaxUCFRadius_Units.Name = "label_MaxUCFRadius_Units";
             this.label_MaxUCFRadius_Units.Size = new System.Drawing.Size(15, 13);
             this.label_MaxUCFRadius_Units.TabIndex = 9;
@@ -4341,7 +4343,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_MaxUCFRadius
             // 
-            this.unitTextBox_MaxUCFRadius.Location = new System.Drawing.Point(611, 44);
+            this.unitTextBox_MaxUCFRadius.Location = new System.Drawing.Point(611, 70);
             this.unitTextBox_MaxUCFRadius.Name = "unitTextBox_MaxUCFRadius";
             this.unitTextBox_MaxUCFRadius.Size = new System.Drawing.Size(88, 20);
             this.unitTextBox_MaxUCFRadius.TabIndex = 8;
@@ -4349,7 +4351,7 @@ namespace DFMGenerator_Ocean
             // label_MaxUCFRadius
             // 
             this.label_MaxUCFRadius.AutoSize = true;
-            this.label_MaxUCFRadius.Location = new System.Drawing.Point(386, 47);
+            this.label_MaxUCFRadius.Location = new System.Drawing.Point(386, 73);
             this.label_MaxUCFRadius.Name = "label_MaxUCFRadius";
             this.label_MaxUCFRadius.Size = new System.Drawing.Size(180, 13);
             this.label_MaxUCFRadius.TabIndex = 7;
@@ -4431,6 +4433,16 @@ namespace DFMGenerator_Ocean
             this.toolTipManager_DFMGenerator.SetToolTip(this.btnRestoreDefaults, toolTipInfo63);
             this.btnRestoreDefaults.UseVisualStyleBackColor = true;
             this.btnRestoreDefaults.Click += new System.EventHandler(this.btnRestoreDefaults_Click);
+            // 
+            // checkBox_PlanarUnconfinedFractures
+            // 
+            this.checkBox_PlanarUnconfinedFractures.AutoSize = true;
+            this.checkBox_PlanarUnconfinedFractures.Location = new System.Drawing.Point(389, 45);
+            this.checkBox_PlanarUnconfinedFractures.Name = "checkBox_PlanarUnconfinedFractures";
+            this.checkBox_PlanarUnconfinedFractures.Size = new System.Drawing.Size(164, 17);
+            this.checkBox_PlanarUnconfinedFractures.TabIndex = 88;
+            this.checkBox_PlanarUnconfinedFractures.Text = "Make explicit fractures planar";
+            this.checkBox_PlanarUnconfinedFractures.UseVisualStyleBackColor = true;
             // 
             // DFMGeneratorUI
             // 
@@ -4852,5 +4864,6 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_LargeFractureMinimumRadius_Units;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_LargeFractureMinimumRadius;
         private System.Windows.Forms.Label label_LargeFractureMinimumRadius;
+        private System.Windows.Forms.CheckBox checkBox_PlanarUnconfinedFractures;
     }
 }

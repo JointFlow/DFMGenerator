@@ -330,6 +330,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_Min_R_staticDatapointSizeRatio, unitTextBox_MinStaticDPSizeRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_CullTSFrequency, textBox_StaticDPCullInterval);
             UpdateCheckBox(args.Argument_CheckAllUCFStressShadows, checkBox_CheckAllUCFStressShadows);
+            UpdateCheckBox(args.Argument_PlanarUnconfinedFractures, checkBox_PlanarUnconfinedFractures);
             UpdateTextBox(args.Argument_LargeFractureMinimumRadius, unitTextBox_LargeFractureMinimumRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_LargeFractureMinimumRadius_Units);
             UpdateCheckBox(args.Argument_CalculateImplicitUCFData, checkBox_CalculateImplicitUCFData);
             UpdateTextBox(args.Argument_MinStressShadowDeactivationRatio, unitTextBox_MinSSDR, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -514,6 +515,7 @@ namespace DFMGenerator_Ocean
             args.Argument_Min_R_staticDatapointSizeRatio = GetDoubleFromTextBox(unitTextBox_MinStaticDPSizeRatio);
             args.Argument_CullTSFrequency = GetIntFromTextBox(textBox_StaticDPCullInterval);
             args.Argument_CheckAllUCFStressShadows = checkBox_CheckAllUCFStressShadows.Checked;
+            args.Argument_PlanarUnconfinedFractures = checkBox_PlanarUnconfinedFractures.Checked;
             args.Argument_LargeFractureMinimumRadius = GetDoubleFromTextBox(unitTextBox_LargeFractureMinimumRadius);
             args.Argument_CalculateImplicitUCFData = checkBox_CalculateImplicitUCFData.Checked;
             args.Argument_MinStressShadowDeactivationRatio = GetDoubleFromTextBox(unitTextBox_MinSSDR);

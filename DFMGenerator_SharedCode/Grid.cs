@@ -82,6 +82,262 @@ namespace DFMGenerator_SharedCode
         /// Counter for exceptions thrown when calculating explicit DFN data
         /// </summary>
         public int ExplicitCalculationException { get; private set; }
+        /// <summary>
+        /// List of all unconfined fractures large enough to have a stress shadow influence across mutliple gridblocks
+        /// </summary>
+        public List<UnconfinedFractureXYZ> LargeFractures;
+        /// <summary>
+        /// Check whether a specified point (in XYZ coordinates) lies within the stress shadow of any of the large (multi-gridblock) unconfined fractures in the explicit DFN
+        /// </summary>
+        /// <param name="point">Input point in XYZ coordinates</param>
+        /// <param name="UFSJ_Gridblock">Reference to the gridblock in which the point lies</param>
+        /// <param name="UFSJ_Index">Index number of the unconfined fracture set to which the point belongs</param>
+        /// <param name="StressShadowWidthRatiosIJ">Reference to a list of stress shadow width to effective fracture radius ratios for each unconfined fracture set in the gridblock in which the point lies, as seen by this fracture - if this is null, a new list will be created</param>
+        /// <returns></returns>
+        public bool CheckInLargeUCFStressShadow(PointXYZ point, GridblockConfiguration UFSJ_Gridblock, int UFSJ_Index, ref List<double> StressShadowWidthRatiosIJ)
+        {
+            return CheckInLargeUCFExclusionZone(point, UFSJ_Gridblock, UFSJ_Index, 0, 0, ref StressShadowWidthRatiosIJ);
+        }
+        /// <summary>
+        /// Check whether a specified point (in XYZ coordinates) lies within an exclusion zone of arbitrary width around any of the stress shadows of the large (multi-gridblock) unconfined fractures in the explicit DFN
+        /// </summary>
+        /// <param name="point">Input point in XYZ coordinates</param>
+        /// <param name="UFSJ_Gridblock">Reference to the gridblock in which the point lies</param>
+        /// <param name="UFSJ_Index">Index number of the unconfined fracture set to which the point belongs</param>
+        /// <param name="MaxOuterExclusionZoneWidth">Width of the outer exclusion zone in the plane of the fracture (this will be the mean radius of the fracture we are checking against)</param>
+        /// <param name="MinOuterExclusionZoneWidth">Width of the outer exclusion zone perpendicular to the plane of the fracture (this will be the effective radius of the fracture we are checking against)</param>
+        /// <param name="StressShadowWidthRatiosIJ">Reference to a list of stress shadow width to effective fracture radius ratios for each unconfined fracture set in the gridblock in which the point lies, as seen by this fracture - if this is null, a new list will be created</param>
+        /// <returns></returns>
+        public bool CheckInLargeUCFExclusionZone(PointXYZ point, GridblockConfiguration UFSJ_Gridblock, int UFSJ_Index, double MaxOuterExclusionZoneWidth, double MinOuterExclusionZoneWidth, ref List<double> StressShadowWidthRatiosIJ)
+        {
+            // Create a new list for stress shadow half-widths if one does not already exist
+            if (StressShadowWidthRatiosIJ == null)
+                StressShadowWidthRatiosIJ = new List<double>();
+
+            // Get a handle to the unconfined fracture set to which the specified point belongs (set J)
+            UnconfinedFractureSet UFSJ = UFSJ_Gridblock.UnconfinedFractureSets[UFSJ_Index];
+
+            // Loop through every fracture on the large fracture list
+            foreach (UnconfinedFractureXYZ UCF_I in LargeFractures)
+            {
+                // Get the fracture set in gridblock J closest to the orientation of this large fracture
+                int UFSI_Index = UFSJ_Gridblock.getClosestUnconfinedFractureSetIndex(UCF_I.NormalVector);
+
+                // Get a handle to the unconfined fracture set to which this large fracture is closest (set I)
+                UnconfinedFractureSet UFSI = UFSJ_Gridblock.UnconfinedFractureSets[UFSI_Index];
+
+                // Check if we already have a stress shadow width ratio for this fracture set, and if not, calculate it
+                while (StressShadowWidthRatiosIJ.Count <= UFSI_Index)
+                {
+                    // For now we will assume no stress shadow interaction between different sets - WIJ = 0 for UFSI != UFSJ
+                    double WIJ = (UFSI_Index == UFSJ_Index) ? UFSJ.getStressShadowWidthRatio(UFSJ_Gridblock.CurrentExplicitTimestep) : UFSJ.getStressShadowWidthRatio(UFSI, UFSJ_Gridblock.CurrentExplicitTimestep);
+
+                    // Calculate the stress shadow width ratio of this fracture set, as seen by fracture set J, and add it to the list
+                    StressShadowWidthRatiosIJ.Add(WIJ);
+                }
+
+                // Get the stress shadow width ratio for set I as seen by fracture set J
+                // If the stress shadow width ratio is zero, there will be no stress shadow interaction so we can return false
+                double StressShadowWidthRatio = StressShadowWidthRatiosIJ[UFSI_Index];
+                if (StressShadowWidthRatio <= 0)
+                    return false;
+
+                // Get the minimum and maximum radius of the exclusion zone around this fracture
+                // These may be different because the effective fracture radius, which controls the stress around the fracture, may be different to the mean fracture radius 
+                // The maximum radius, i.e. the radius in the plane of the fracture, will be the sum of the mean radius of this fracture plus the outer exclusion zone width
+                double EZMaxWidth = UCF_I.MeanRayLength + MaxOuterExclusionZoneWidth;
+                // The minimum radius, i.e. the radius perpendicular to the plane of the fracture, will be the sum of the effective radius of this fracture plus the outer exclusion zone width
+                double EZMinWidth = UCF_I.EffectiveRadius + MinOuterExclusionZoneWidth;
+                double EZWidthRatio = (EZMaxWidth > 0) ? EZMinWidth / EZMaxWidth : 1;
+
+                // Calculate the ratio of the width of the exclusion zone perpendicular to the fracture centroid to the mean fracture radius
+                double effectiveStressShadowMultiplier = (StressShadowWidthRatio / 2) * EZWidthRatio;
+
+                // Get the vector between the centroid of this fracture and the specified point
+                VectorXYZ centroidToPoint = new VectorXYZ(UCF_I.Centroid, point);
+
+                // Convert the vector coordinates to the FDS frame for this fracture set (fracture normal, fracture dip, fracture strike)
+                double Fcoord, Dcoord, Scoord;
+                UFSI.convertXYZVectortoFDSVector(centroidToPoint, out Fcoord, out Dcoord, out Scoord);
+
+                // Adjust the Fcoordinate of the vector to take account of the stress shadow width to fracture radius ratio
+                // This will have the effect of stretching the FDS coordinate space parallel to F to make the exclusion zone into a sphere
+                Fcoord /= effectiveStressShadowMultiplier;
+
+                // Now find whether the length of the stretched vector is less than the radius of the exclusion zone sphere
+                double adjustedCentroidToPointDistance = Math.Sqrt((Fcoord * Fcoord) + (Dcoord * Dcoord) + (Scoord * Scoord));
+                if (adjustedCentroidToPointDistance < EZMaxWidth)
+                    return true;
+            }
+
+            // If the point does not lie in the exclusion zone around any of the fractures, return false
+            return false;
+        }
+        /// <summary>
+        /// Check whether a propagating unconfined fracture ray segment from a specified fracture set in a particular gridblock will terminate due to stress shadow interaction with of any of the large unconfined fractures in the explicit DFN
+        /// </summary>
+        /// <param name="propagatingSegment">Reference to a UnconfinedFractureRaySegment object representing the propagating fracture ray segment</param>
+        /// <param name="propagating_ufs">Reference to a UnconfinedFractureSet object representing the fracture set to which the propagating ray segment belongs</param>
+        /// <param name="propagating_gbc">Reference to a GridblockConfiguration object representing the gridblock in which the propagating ray segment is located</param>
+        /// <param name="propagationLength">Reference to variable containing the maximum length that this ray segment will propagate; this will be altered if the propagating ray segment interacts with another unconfined fracture stress shadow (m)</param>
+        /// <param name="StressShadowWidthMultiplier">Multiplier for the stress shadow width to take account of misalignment between the fracture sets; if not known, set to 1</param>
+        /// <param name="terminateIfInteracts">If true, automatically flag propagating ray segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
+        /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
+        public bool checkStressShadowInteraction(UnconfinedFractureRaySegment propagatingSegment, UnconfinedFractureSet propagating_ufs, GridblockConfiguration propagating_gbc, ref double propagationLength, double StressShadowWidthMultiplier, bool terminateIfInteracts)
+        {
+            // Set return value to false initially
+            bool interacts = false;
+
+            // Flag to indicate whether the propagating fracture segment is from the same fracture set (and hence gridblock) as the interacting set
+            // NB This calculation assumes that both fractures are parallel
+            // If the two fractures are in different gridblocks this may not be true
+            // However we will assume the mismatch in alignments is small
+            //bool sameSet = (interacting_ufs == this);
+
+            // Get the current stress shadow width ratio
+            // If this is zero, there will be no stress shadow interaction so we can return false
+            double stressShadowWidthRatio = propagating_ufs.getStressShadowWidthRatio(-1);
+            if (stressShadowWidthRatio <= 0)
+                return false;
+
+            // Get the minimum effective radius of fractures that can deactivate the current ray by stress shadow interaction
+            double minStressShadowInteractionRadius = propagating_gbc.PropControl.MinStressShadowDeactivationRatio * propagatingSegment.EffectiveRayLength;
+
+            // Cache useful data locally
+            VectorXYZ fractureNormalVector = propagating_ufs.NormalVector;
+            VectorXYZ propagationDirection = propagatingSegment.UnitVector;
+            VectorXYZ segmentAxis = (fractureNormalVector * propagationDirection).GetNormalisedVector();
+            double initialRayLength = propagatingSegment.RayLength;
+            double finalRayLength = initialRayLength + propagationLength;
+
+            // Calculate the projected origin of the propagating ray by extrapolating back along the propagation direction
+            PointXYZ rayTip = propagatingSegment.PropNode;
+            PointXYZ projectedRayOrigin = propagatingSegment.PropNode;
+            projectedRayOrigin.SubtractVector(initialRayLength * propagationDirection);
+            PointXYZ projectedFinalRayTip = propagatingSegment.PropNode;
+            projectedFinalRayTip.AddVector(propagationLength * propagationDirection);
+
+            // Calculate the edge of the stress shadow perpendicular to the projected origin of the propagating ray
+            // If the initial ray length is zero, the fracture has just nucleated so we can assume the ratio of effective ray length to actual ray length is 1
+            double propagatingSegmentRayLengthRatio = (initialRayLength > 0) ? propagatingSegment.EffectiveRayLength / initialRayLength : 1;
+            double propagatingSegmentStressShadowMultiplier = (stressShadowWidthRatio / 2) * StressShadowWidthMultiplier * propagatingSegmentRayLengthRatio;
+            PointXYZ edgeOfRayStressShadow = new PointXYZ(projectedRayOrigin);
+            edgeOfRayStressShadow.AddVector((finalRayLength * propagatingSegmentStressShadowMultiplier) * fractureNormalVector);
+
+            // Loop through every fracture on the large fracture list
+            foreach (UnconfinedFractureXYZ UCF in LargeFractures)
+            {
+                // Check if it is the parent fracture of the propagating segment; if so move on to the next
+                if (propagatingSegment.IsSegmentInFracture(UCF))
+                    continue;
+
+                // Check if it is in the same set as the propagating fracture; if not, move on to the next
+                UnconfinedFractureSet UCF_ufs = propagating_gbc.getClosestUnconfinedFractureSet(UCF.NormalVector);
+                if (!UnconfinedFractureSet.ReferenceEquals(propagating_ufs, UCF_ufs))
+                    continue;
+
+                // Check if it has effective radius less than the minimum required for stress shadow interaction; if so move on to the next
+                if (UCF.EffectiveRadius < minStressShadowInteractionRadius)
+                    continue;
+
+                // Cache the centrepoint and mean radius of this fracture locally
+                PointXYZ fractureCentrepoint = UCF.Centroid;
+                double fractureEffectiveRadius = UCF.MeanRayLength;
+
+                // Determine whether the point of intersection of the fracture axis vector and the plane of the ray stress shadow lies within the fracture stress shadow
+                // If it does not, the stress shadows do not interact and we can move on to the next fracture
+                double distanceToAxisIntersection = PointXYZ.getIntersectionDistance(fractureCentrepoint, segmentAxis, projectedRayOrigin, projectedFinalRayTip, edgeOfRayStressShadow, CrossoverType.Extend);
+                if (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius)
+                    continue;
+                PointXYZ axis_rayStressShadow_intersection = new PointXYZ(fractureCentrepoint);
+                axis_rayStressShadow_intersection.AddVector(distanceToAxisIntersection * segmentAxis);
+
+                // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +/-90degrees) of the propagation direction
+                // This will be the case if the scalar product of the two vectors is positive
+                // If not, the ray is propagating in the wrong direction to interact with the fracture so we can move on to the next fracture
+                VectorXYZ rayOriginToIntersection = new VectorXYZ(projectedRayOrigin, axis_rayStressShadow_intersection);
+                if ((rayOriginToIntersection & propagationDirection) < 0)
+                    continue;
+
+                // Calculate the mean stress shadow width to ray length ratio for both fractures combined
+                // NB This will be an approximation
+                double combinedEffectiveRadius = propagatingSegment.EffectiveRayLength + UCF.EffectiveRadius;
+                double combinedActualRadius = initialRayLength + UCF.MeanRayLength;
+                double combinedRadiusRatio = (combinedActualRadius > 0) ? combinedEffectiveRadius / combinedActualRadius : 1;
+                double combinedStressShadowMultiplier = (stressShadowWidthRatio / 2) * StressShadowWidthMultiplier * combinedRadiusRatio;
+                // If the combined stress shadow multiplier is zero there will be no stress shadow so no stress shadow interaction; move on to the next fracture
+                if (!(combinedStressShadowMultiplier > 0))
+                    continue;
+
+                // Check if the intersection point lies within the ray stress shadow
+                double fx = fractureNormalVector.Component(VectorComponents.X);
+                double fy = fractureNormalVector.Component(VectorComponents.Y);
+                double fz = fractureNormalVector.Component(VectorComponents.Z);
+                double rx = propagationDirection.Component(VectorComponents.X);
+                double ry = propagationDirection.Component(VectorComponents.Y);
+                double rz = propagationDirection.Component(VectorComponents.Z);
+                double intersectionToRayOriginX = axis_rayStressShadow_intersection.X - projectedRayOrigin.X;
+                double intersectionToRayOriginY = axis_rayStressShadow_intersection.Y - projectedRayOrigin.Y;
+                double intersectionToRayOriginZ = axis_rayStressShadow_intersection.Z - projectedRayOrigin.Z;
+                double frxy_factor = Math.Abs((fx * ry) - (fy * rx));
+                double fryz_factor = Math.Abs((fy * rz) - (fz * ry));
+                double frzx_factor = Math.Abs((fy * rx) - (fx * rz));
+                // Find the best set of axes to calculate the distance from the ray origin to the intersection point, taking into account the squashing of the ray circle
+                double adjustedIntersectionPointDistanceFromRayOrigin;
+                if ((frxy_factor > fryz_factor) && (frxy_factor > frzx_factor))
+                {
+                    double wfpc_factor = combinedStressShadowMultiplier * ((fy * intersectionToRayOriginX) - (fx * intersectionToRayOriginY));
+                    double rpc_factor = (ry * intersectionToRayOriginX) - (rx * intersectionToRayOriginY);
+                    adjustedIntersectionPointDistanceFromRayOrigin = Math.Sqrt((wfpc_factor * wfpc_factor) + (rpc_factor * rpc_factor)) / (combinedStressShadowMultiplier * frxy_factor);
+                }
+                else if (fryz_factor > frzx_factor)
+                {
+                    double wfpc_factor = combinedStressShadowMultiplier * ((fz * intersectionToRayOriginY) - (fy * intersectionToRayOriginZ));
+                    double rpc_factor = (rz * intersectionToRayOriginY) - (ry * intersectionToRayOriginZ);
+                    adjustedIntersectionPointDistanceFromRayOrigin = Math.Sqrt((wfpc_factor * wfpc_factor) + (rpc_factor * rpc_factor)) / (combinedStressShadowMultiplier * fryz_factor);
+                }
+                else
+                {
+                    double wfpc_factor = combinedStressShadowMultiplier * ((fx * intersectionToRayOriginZ) - (fz * intersectionToRayOriginX));
+                    double rpc_factor = (rx * intersectionToRayOriginZ) - (rz * intersectionToRayOriginX);
+                    adjustedIntersectionPointDistanceFromRayOrigin = Math.Sqrt((wfpc_factor * wfpc_factor) + (rpc_factor * rpc_factor)) / (combinedStressShadowMultiplier * frzx_factor);
+                }
+
+                // If the adjusted distance from the intersection point to the ray origin is greater than the radius of the stress shadow around the ray, the two stress shadows may still intersect
+                // We can check this by a geometric calculation
+                // If the two stress shadows do not overlap, move onto the next fracture
+                double fractureStressShadowRadius_projectedOntoRaySegmentPlane = Math.Sqrt((fractureEffectiveRadius * fractureEffectiveRadius) - (distanceToAxisIntersection * distanceToAxisIntersection));
+                if ((adjustedIntersectionPointDistanceFromRayOrigin) > (finalRayLength + fractureStressShadowRadius_projectedOntoRaySegmentPlane))
+                    continue;
+
+                // The two stress shadows do overlap
+                // We can easily find the ray length at which they first touch
+                double rayLengthForStressShadowInteraction = adjustedIntersectionPointDistanceFromRayOrigin - fractureStressShadowRadius_projectedOntoRaySegmentPlane;
+                // If the ray length at which they first touch is greater than the initial effective ray length, then two stress shadows already overlap before any propagation
+                // In this case we will set the propagation distance to zero
+                double propagationLengthToStressShadowInteraction = rayLengthForStressShadowInteraction - initialRayLength;
+                if (propagationLengthToStressShadowInteraction < 0)
+                    propagationLengthToStressShadowInteraction = 0;
+
+                // Set the return value to true
+                interacts = true;
+
+                // Reduce the maximum propagation distance accordingly
+                if (propagationLength > propagationLengthToStressShadowInteraction)
+                    propagationLength = propagationLengthToStressShadowInteraction;
+                //else
+                //    propagationLength = propagationLength;
+
+                // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
+                if (terminateIfInteracts)
+                {
+                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedStressShadow;
+                    propagatingSegment.TerminatingFracture = UCF;
+                }
+            }
+
+            return interacts;
+        }
 
         // Functions to calculate fracture population data and generate the DFN
         /// <summary>
@@ -1386,6 +1642,9 @@ namespace DFMGenerator_SharedCode
 
             // Create an empty list of GlobalDFN objects representing the DFN at intermediate stages of fracture propagation
             DFNGrowthStages = new List<GlobalDFN>();
+
+            // Create an empty list for large unconfined fractures
+            LargeFractures = new List<UnconfinedFractureXYZ>();
 
             // Initialise random number generator for placing fractures
             RandomNumberGenerator = new Random();
