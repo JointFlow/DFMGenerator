@@ -1333,8 +1333,8 @@ namespace DFMGenerator_SharedCode
 
             // Check if the fractures are dilatant, and flag if this has changed
             // Fractures are dilatant if the effective normal stress acting on them is tensile (i.e. negative)
-            bool previous_sigmaneff_negative = (CurrentFractureData.SigmaNeff_Const_M < 0);
-            bool sigmaneff_negative = (normalStressMagnitude < 0);
+            bool previous_sigmaneff_negative = (CurrentFractureData.SigmaNeff_Const_M <= PreviousFractureData.MaxDrivingStressRoundingError);
+            bool sigmaneff_negative = (normalStressMagnitude <= PreviousFractureData.MaxDrivingStressRoundingError);
             bool sigmaneff_changed = (sigmaneff_negative != previous_sigmaneff_negative);
 
             // Check if the fractures can accommodate elastic strain, and flag if this has changed
@@ -1767,7 +1767,7 @@ namespace DFMGenerator_SharedCode
             double DJeJ = displacementIncrement_J & strainOnFractureJ;
 
             if (DJeJ > 0)
-                return DIeJ / DJeJ;
+                return Math.Abs(DIeJ / DJeJ);
             else
                 return 0;
         }
@@ -1793,7 +1793,7 @@ namespace DFMGenerator_SharedCode
             double DJeJ = displacementIncrement_J & strainOnFractureJ;
 
             if (DJeJ > 0)
-                return DIeJ / DJeJ;
+                return Math.Abs(DIeJ / DJeJ);
             else
                 return 0;
         }

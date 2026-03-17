@@ -3378,17 +3378,17 @@ namespace DFMGenerator_SharedCode
             }
 
             // If there are no fracture sets, both block dimensions will be infinite
-            if (NoFractureSets == 0)
+            if (NoUnconfinedFractureSets == 0)
             {
                 return;
             }
             // If there is only one fracture set, we can only define the minimum block dimension
-            else if (NoFractureSets == 1)
+            else if (NoUnconfinedFractureSets == 1)
             {
                 MinL = 1 / P32_values[0];
             }
             // If there are only two fracture sets, one will determine the minimum block dimension and the other will determine the maximum block dimension
-            else if (NoFractureSets == 2)
+            else if (NoUnconfinedFractureSets == 2)
             {
                 if (P32_values[0] > P32_values[1])
                 {
@@ -3997,32 +3997,21 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Recalculate the incremental strain acting on the fractures, for the specified applied strain rate tensor
-                foreach (Gridblock_FractureSet fs in FractureSets)
-                    fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
-                foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                    ufs.RecalculateStrainRatios(appliedStrainRate);
-                /*// For the first deformation episode, use the applied strain rate, since the initial elastic (noncompactional) horizontal strain will be zero
-                // For subsequent deformation episodes, use the actual elastic (noncompactional) strain at the start of the episode
-                // Also we will create a flag to determine whether we need to recalculate the horizontal stress ratios in every timestep
-                // This is only required in subsequent timesteps if the incremental strain orientation does not match the current strain orientation
-                bool recalculateHorizontalStrainRatios = false;
-                if (currentDeformationEpisodeIndex == 1)
+                // If the applied strain rate is zero, use the total applied strain
+                if (appliedStrainRate.IsZeroValued())
+                {
+                    foreach (Gridblock_FractureSet fs in FractureSets)
+                        fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                        ufs.RecalculateStrainRatios(StressStrain.el_Epsilon_noncompactional);
+                }
+                else
                 {
                     foreach (Gridblock_FractureSet fs in FractureSets)
                         fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         ufs.RecalculateStrainRatios(appliedStrainRate);
                 }
-                else
-                {
-                    foreach (Gridblock_FractureSet fs in FractureSets)
-                        fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
-                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
-                        ufs.RecalculateStrainRatios(StressStrain.el_Epsilon_noncompactional);
-                    // NB We use ! Equals to compare rather than != or ! == so if both azimuths are NaN (e.g. strain is isotropic strain) the overall expression will return false
-                    if (!((float)StressStrain.el_Epsilon_noncompactional.GetMinimumHorizontalAzimuth()).Equals((float)appliedStrainRate.GetMinimumHorizontalAzimuth()))
-                        recalculateHorizontalStrainRatios = true;
-                }*/
 
                 // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays and the unconfined fracture set stress shadow multiplier array
                 if (checkAlluFStressShadows)
@@ -4105,6 +4094,7 @@ namespace DFMGenerator_SharedCode
                                 {
                                     UnconfinedFractureSet UFSJ = UnconfinedFractureSets[J];
                                     UCFW_IJ[I, J] = UFSI.getUFSW_IJ(UFSJ);
+                                    UCFW_IJ[J, I] = UFSJ.getUFSW_IJ(UFSI);
                                 }
                                 else
                                 {
@@ -5117,6 +5107,9 @@ namespace DFMGenerator_SharedCode
             double probabilisticFractureNucleationLimit = DFNControl.probabilisticFractureNucleationLimit;
             bool allowProbabilisticFractureNucleation = (probabilisticFractureNucleationLimit > 0);
             bool searchNeighbouringGridblocks = SearchNeighbouringGridblocks();
+            // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
+            double Minimum_Large_UCF_Radius = DFNControl.MinRadiusForLargeFractures;
+            bool checkLargeFractures = searchNeighbouringGridblocks && (Minimum_Large_UCF_Radius >= 0);
             int maxNewFractures = DFNControl.MaxNewFracturesPerTimestep;
             bool limitNewFractures = (maxNewFractures > 0);
             // If probabilisticFractureNucleationLimit is set to -1 then it should be set to automatic
@@ -6264,7 +6257,17 @@ namespace DFMGenerator_SharedCode
                                             }
                                         }
                                     }
+
                                 } // End check unconfined fractures from adjacent gridblocks
+
+                                // Check against large fractures
+                                // NB we do not need to do this if we have already found a stress shadow interaction
+                                if (addThisFracture&& checkLargeFractures)
+                                {
+                                    if (gd.CheckInLargeUCFStressShadow(new_UCF_centrepointXYZ, this, ufs_index, checkAllUCFStressShadows, ref UCFStressShadowWidthRatios))
+                                        addThisFracture = false;
+                                }
+
                             } // End check whether this point lies in the stress shadow of an existing unconfined fracture
 
                             // Generate a new unconfined fracture and add it to the DFN
@@ -6291,13 +6294,13 @@ namespace DFMGenerator_SharedCode
                                     int NoIntersections = Dict_UCF_NoIntersections[ufs_index];
                                     int NoPropagatingOut = Dict_UCF_NoPropagatingOut[ufs_index];
                                     int NoReachingMaxRadius = Dict_UCF_NoReachingMaxRadius[ufs_index];
-                                    ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
+                                    ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
                                     Dict_UCF_NoStressShadowInteractions[ufs_index] = NoStressShadowInteractions;
                                     Dict_UCF_NoIntersections[ufs_index] = NoIntersections;
                                     Dict_UCF_NoPropagatingOut[ufs_index] = NoPropagatingOut;
                                     Dict_UCF_NoReachingMaxRadius[ufs_index] = NoReachingMaxRadius;
 #else
-                                    ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
+                                    ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
 #endif
                                 }
 
@@ -6414,6 +6417,15 @@ namespace DFMGenerator_SharedCode
                                     }
                                 }
                             } // End check unconfined fractures from adjacent gridblocks
+
+                            // Check against large fractures
+                            // NB we do not need to do this if we have already found a stress shadow interaction
+                            if (addThisFracture && checkLargeFractures)
+                            {
+                                if (gd.CheckInLargeUCFStressShadow(new_UCF_centrepointXYZ, this, ufs_index, checkAllUCFStressShadows, ref UCFStressShadowWidthRatios))
+                                    addThisFracture = false;
+                            }
+
                         } // End check whether this point lies in the stress shadow of an existing unconfined fracture
 
                         // If the point is not in a stress shadow or we are not including stress shadow effects, generate a new unconfined fracture and add it to the DFN
@@ -6438,13 +6450,13 @@ namespace DFMGenerator_SharedCode
                                 int NoIntersections = Dict_UCF_NoIntersections[ufs_index];
                                 int NoPropagatingOut = Dict_UCF_NoPropagatingOut[ufs_index];
                                 int NoReachingMaxRadius = Dict_UCF_NoReachingMaxRadius[ufs_index];
-                                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
+                                ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
                                 Dict_UCF_NoStressShadowInteractions[ufs_index] = NoStressShadowInteractions;
                                 Dict_UCF_NoIntersections[ufs_index] = NoIntersections;
                                 Dict_UCF_NoPropagatingOut[ufs_index] = NoPropagatingOut;
                                 Dict_UCF_NoReachingMaxRadius[ufs_index] = NoReachingMaxRadius;
 #else
-                                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
+                                ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
 #endif
                             }
 
@@ -6663,14 +6675,14 @@ namespace DFMGenerator_SharedCode
                             int NoIntersections = Dict_UCF_NoIntersections[ufs_index];
                             int NoPropagatingOut = Dict_UCF_NoPropagatingOut[ufs_index];
                             int NoReachingMaxRadius = Dict_UCF_NoReachingMaxRadius[ufs_index];
-                            ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
+                            ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
                             Dict_UCF_NoStressShadowInteractions[ufs_index] = NoStressShadowInteractions;
                             Dict_UCF_NoIntersections[ufs_index] = NoIntersections;
                             Dict_UCF_NoPropagatingOut[ufs_index] = NoPropagatingOut;
                             Dict_UCF_NoReachingMaxRadius[ufs_index] = NoReachingMaxRadius;
                             segmentPropagationDistance = maxPropLength;
 #else
-                            ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
+                            ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
 #endif
                         } // End if the maximum propagation length is greater than zero
                     } // End if unconfined fracture ray segment is active
@@ -6694,10 +6706,17 @@ namespace DFMGenerator_SharedCode
                 // Update the geometry for all fractures
                 // This recalculates the minimum, maximum and mean ray lengths, total area and location of centroid for each fracture
                 // This is only done after all fracture growth has been calculated for the timestep, as these values will be used to calculate effective radii and fracture growth rates in the next timestep
-                // Loop through each unconfined fracture set
+                // Also check if they have exceeded the minimum size for large fractures during this increment and if so add them to the list of large fractures
                 foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     foreach (UnconfinedFractureXYZ ucf in ufs.LocalDFNUnconfinedFractures)
+                    {
                         ucf.RecalculateGeometry();
+                        if (checkLargeFractures && !ucf.LargeFracture && (ucf.EffectiveRadius >= Minimum_Large_UCF_Radius))
+                        {
+                            gd.LargeFractures.Add(ucf);
+                            ucf.LargeFracture = true;
+                        }
+                    }
 
             } // End propagate unconfined fracture rays
 
@@ -6971,6 +6990,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="initialPropagationDistance">Distance that the new ray should be extended into the new gridblock; this should only be used to apply the minimum radius to newly nucleating rays, and should be set to zero for propagating rays</param>
         /// <param name="newSegmentNucleationTime">Real time at which it crosses the gridblock boundary (s)</param>
         /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
+        /// <param name="checkLargeFractures">Flag to check stress shadows for large fractures across the the entire grid</param>
         /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
 #if LOGDFNPOP
         /// <param name="fromPreviousTS">Flag specifying whether fracture nucleated in this timestep or a previous timestep - used for debugging only</param>
@@ -6978,9 +6998,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoIntersections">Counter for fracture intersections - used for debugging only</param>
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
         /// <param name="NoReachingMaxRadius">Counter for rays terminating because they reach the maximum length - used for debugging only</param>
-        public void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double initialPropagationDistance, double newSegmentNucleationTime, bool checkStressShadow, bool TerminateAtGridBoundary, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut, ref int NoReachingMaxRadius)
+        public void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double initialPropagationDistance, double newSegmentNucleationTime, bool checkStressShadow, bool checkLargeFractures, bool TerminateAtGridBoundary, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut, ref int NoReachingMaxRadius)
 #else
-        private void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double initialPropagationDistance, double newSegmentNucleationTime, bool checkStressShadow, bool TerminateAtGridBoundary)
+        private void PropagateUCRIntoGridblock(UnconfinedFractureRaySegment initiatorSegment, UnconfinedFractureSet initiatorSegment_ufs, GridDirection FromBoundary, PointXYZ insertionPoint, double initialPropagationDistance, double newSegmentNucleationTime, bool checkStressShadow, bool checkLargeFractures, bool TerminateAtGridBoundary)
 #endif
         {
             // Find the fracture set in this gridblock with the closest orientation to the incoming fracture
@@ -7005,9 +7025,9 @@ namespace DFMGenerator_SharedCode
             if (initialPropagationDistance > 0)
             {
 #if LOGDFNPOP
-                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref initialPropagationDistance, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
+                ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref initialPropagationDistance, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
 #else
-                ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref initialPropagationDistance);
+                ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref initialPropagationDistance);
 #endif
                 // If the fracture segment has become deactivated while extending the ray to the minimum fracture radius, there is no need to extend it further so we can return
                 if (!newSegment.Active)
@@ -7035,9 +7055,9 @@ namespace DFMGenerator_SharedCode
                 if (propagationLength > 0)
                 {
 #if LOGDFNPOP
-                    ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref propagationLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
+                    ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref propagationLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
 #else
-                    ExtendUnconfinedFracture(checkStressShadow, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref propagationLength);
+                    ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, newSegment_UFSIndex, newSegment_ufs, newSegment, ref propagationLength);
 #endif
                 }
 
@@ -7427,9 +7447,10 @@ namespace DFMGenerator_SharedCode
             return tipDeactivationMechanism;
         }
         /// <summary>
-        /// Extend an explicit macrofracture segment by a specified maximum amount, checking for intersection or stress shadow interactions with other fracture segments and whether it crosses the gridblock boundary
+        /// Extend an explicit unconfined fracture ray by a specified maximum amount, checking for intersection or stress shadow interactions with other fracture segments and whether it crosses the gridblock boundary
         /// </summary>
         /// <param name="checkStressShadow">Flag specifying whether the stress distribution case is set to stress shadow</param>
+        /// <param name="checkLargeFractures">Flag to check stress shadows for large fractures across the the entire grid</param>
         /// <param name="TerminateAtGridBoundary">Flag specifying whether to terminate fracture propagation if the fracture crosses the external grid boundary</param>
         /// <param name="ufsIndex">Index number of parent fracture set</param>
         /// <param name="ufs">Reference to parent fracture set</param>
@@ -7442,10 +7463,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoPropagatingOut">Counter for rays propagating across gridblock boundaries - used for debugging only</param>
         /// <param name="NoReachingMaxRadius">Counter for rays terminating because they reach the maximum length - used for debugging only</param>
         /// <returns>Flag specifying whether and how the ray terminates early</returns>
-        private SegmentNodeType ExtendUnconfinedFracture(bool checkStressShadow, bool TerminateAtGridBoundary, int ufsIndex, UnconfinedFractureSet ufs, UnconfinedFractureRaySegment UCRSegment, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut, ref int NoReachingMaxRadius)
+        private SegmentNodeType ExtendUnconfinedFracture(bool checkStressShadow, bool checkLargeFractures, bool TerminateAtGridBoundary, int ufsIndex, UnconfinedFractureSet ufs, UnconfinedFractureRaySegment UCRSegment, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut, ref int NoReachingMaxRadius)
 #else
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendUnconfinedFracture(bool checkStressShadow, bool TerminateAtGridBoundary, int ufsIndex, UnconfinedFractureSet ufs, UnconfinedFractureRaySegment UCRSegment, ref double maxPropLength)
+        private SegmentNodeType ExtendUnconfinedFracture(bool checkStressShadow, bool checkLargeFractures, bool TerminateAtGridBoundary, int ufsIndex, UnconfinedFractureSet ufs, UnconfinedFractureRaySegment UCRSegment, ref double maxPropLength)
 #endif
         {
             // Cache the initial maximum propagation length
@@ -7505,6 +7526,13 @@ namespace DFMGenerator_SharedCode
                     } // End loop through each gridblock in the list of neighbouring gridblocks
 
                 } // End check unconfined fractures from adjacent gridblocks
+
+                // Finally, if required, check large unconfined fractures
+                if (checkLargeFractures)
+                {
+                    if (gd.checkLargeUCFStressShadowInteraction(UCRSegment, ufs, this, ref maxPropLength, 1, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
+                }
+
 
             } // End check if the segment will interact with another unconfined fracture stress shadow
 
@@ -7634,9 +7662,9 @@ namespace DFMGenerator_SharedCode
 
                         // Call function to create an unconfined fracture segment in the neighbouring gridblock
 #if LOGDFNPOP
-                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
+                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
 #else
-                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, TerminateAtGridBoundary);
+                        NeighbourGridblocks[intersectedBoundary].PropagateUCRIntoGridblock(UCRSegment, ufs, oppositeBoundary, intersectionPoint, initialPropagationDistance, intersectionRealTime, checkStressShadow, checkLargeFractures, TerminateAtGridBoundary);
 #endif
                     }
                 }

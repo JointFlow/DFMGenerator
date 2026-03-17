@@ -92,11 +92,12 @@ namespace DFMGenerator_SharedCode
         /// <param name="point">Input point in XYZ coordinates</param>
         /// <param name="UFSJ_Gridblock">Reference to the gridblock in which the point lies</param>
         /// <param name="UFSJ_Index">Index number of the unconfined fracture set to which the point belongs</param>
+        /// <param name="CheckAllUCFStressShadows">Flag to check against stress shadows of all large UCFs; if false, will only check against large UCFs with orientation corresponding to the unconfined fracture set to which the point belongs</param>
         /// <param name="StressShadowWidthRatiosIJ">Reference to a list of stress shadow width to effective fracture radius ratios for each unconfined fracture set in the gridblock in which the point lies, as seen by this fracture - if this is null, a new list will be created</param>
         /// <returns></returns>
-        public bool CheckInLargeUCFStressShadow(PointXYZ point, GridblockConfiguration UFSJ_Gridblock, int UFSJ_Index, ref List<double> StressShadowWidthRatiosIJ)
+        public bool CheckInLargeUCFStressShadow(PointXYZ point, GridblockConfiguration UFSJ_Gridblock, int UFSJ_Index, bool CheckAllUCFStressShadows, ref List<double> StressShadowWidthRatiosIJ)
         {
-            return CheckInLargeUCFExclusionZone(point, UFSJ_Gridblock, UFSJ_Index, 0, 0, ref StressShadowWidthRatiosIJ);
+            return CheckInLargeUCFExclusionZone(point, UFSJ_Gridblock, UFSJ_Index, 0, 0, CheckAllUCFStressShadows, ref StressShadowWidthRatiosIJ);
         }
         /// <summary>
         /// Check whether a specified point (in XYZ coordinates) lies within an exclusion zone of arbitrary width around any of the stress shadows of the large (multi-gridblock) unconfined fractures in the explicit DFN
@@ -106,9 +107,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="UFSJ_Index">Index number of the unconfined fracture set to which the point belongs</param>
         /// <param name="MaxOuterExclusionZoneWidth">Width of the outer exclusion zone in the plane of the fracture (this will be the mean radius of the fracture we are checking against)</param>
         /// <param name="MinOuterExclusionZoneWidth">Width of the outer exclusion zone perpendicular to the plane of the fracture (this will be the effective radius of the fracture we are checking against)</param>
+        /// <param name="CheckAllUCFStressShadows">Flag to check against stress shadows of all large UCFs; if false, will only check against large UCFs with orientation corresponding to the unconfined fracture set to which the point belongs</param>
         /// <param name="StressShadowWidthRatiosIJ">Reference to a list of stress shadow width to effective fracture radius ratios for each unconfined fracture set in the gridblock in which the point lies, as seen by this fracture - if this is null, a new list will be created</param>
         /// <returns></returns>
-        public bool CheckInLargeUCFExclusionZone(PointXYZ point, GridblockConfiguration UFSJ_Gridblock, int UFSJ_Index, double MaxOuterExclusionZoneWidth, double MinOuterExclusionZoneWidth, ref List<double> StressShadowWidthRatiosIJ)
+        public bool CheckInLargeUCFExclusionZone(PointXYZ point, GridblockConfiguration UFSJ_Gridblock, int UFSJ_Index, double MaxOuterExclusionZoneWidth, double MinOuterExclusionZoneWidth, bool CheckAllUCFStressShadows, ref List<double> StressShadowWidthRatiosIJ)
         {
             // Create a new list for stress shadow half-widths if one does not already exist
             if (StressShadowWidthRatiosIJ == null)
@@ -122,6 +124,10 @@ namespace DFMGenerator_SharedCode
             {
                 // Get the fracture set in gridblock J closest to the orientation of this large fracture
                 int UFSI_Index = UFSJ_Gridblock.getClosestUnconfinedFractureSetIndex(UCF_I.NormalVector);
+
+                // If we are only checking against large fractures of the same set, check whether this fracture is from the same set and if not move on to the next
+                if (!CheckAllUCFStressShadows && (UFSI_Index != UFSJ_Index))
+                    continue;
 
                 // Get a handle to the unconfined fracture set to which this large fracture is closest (set I)
                 UnconfinedFractureSet UFSI = UFSJ_Gridblock.UnconfinedFractureSets[UFSI_Index];
@@ -183,7 +189,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="StressShadowWidthMultiplier">Multiplier for the stress shadow width to take account of misalignment between the fracture sets; if not known, set to 1</param>
         /// <param name="terminateIfInteracts">If true, automatically flag propagating ray segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
-        public bool checkStressShadowInteraction(UnconfinedFractureRaySegment propagatingSegment, UnconfinedFractureSet propagating_ufs, GridblockConfiguration propagating_gbc, ref double propagationLength, double StressShadowWidthMultiplier, bool terminateIfInteracts)
+        public bool checkLargeUCFStressShadowInteraction(UnconfinedFractureRaySegment propagatingSegment, UnconfinedFractureSet propagating_ufs, GridblockConfiguration propagating_gbc, ref double propagationLength, double StressShadowWidthMultiplier, bool terminateIfInteracts)
         {
             // Set return value to false initially
             bool interacts = false;
@@ -385,7 +391,7 @@ namespace DFMGenerator_SharedCode
             if (!Directory.Exists(logFolderPath))
                 Directory.CreateDirectory(logFolderPath);
             // Open the log file
-            string logFileName = string.Format("ImplicitCalculation_TopLayer{0}_LogFile.txt", TopLayerNo);
+            string logFileName = (TopLayerNo < 0) ? string.Format("ImplicitCalculation_AllLayers_LogFile.txt") : string.Format("ImplicitCalculation_TopLayer{0}_LogFile.txt", TopLayerNo);
             String logFileNameComb = logFolderPath + logFileName;
             StreamWriter logFile = new StreamWriter(logFileNameComb);
 #endif
@@ -552,6 +558,10 @@ namespace DFMGenerator_SharedCode
             double endTime = (calculationCompleted ? 0 : timestepList[totalNoCalculationElements - 1].EndTimestepTime);
 
             // Loop through the intermediate DFNs
+#if LOGGRIDBLOCKS
+            progressReporter.OutputMessage(string.Format("Generating explicit DFN stage {0}, end time {1}", nextStage, endTime));
+            progressReporter.OutputMessage(string.Format("Calculation element {0} of {1}", currentCalculationElement, totalNoCalculationElements));
+#endif
             while (!calculationCompleted)
             {
                 // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
@@ -1144,7 +1154,7 @@ namespace DFMGenerator_SharedCode
                             }
 #if LOGGRIDBLOCKS
                             // Write next gridblock details to logfile
-                            string timestepCount = string.Format("Gridblock {0},{1},{2}: added {3} timesteps", RowNo, ColNo, LayerNo, NoTimesteps);
+                            string timestepCount = string.Format("Gridblock {0},{1},{2}, SWTop corner {3},{4},{5}: added {6} timesteps", RowNo, ColNo, LayerNo, Gridblock.SWtop.X, Gridblock.SWtop.Y, Gridblock.SWtop.Z, NoTimesteps);
                             logFile.WriteLine(timestepCount);
 #endif
                         }
@@ -1200,8 +1210,18 @@ namespace DFMGenerator_SharedCode
             double currentTime = -1;
             for (; currentCalculationElement <= endCalculationElement; currentCalculationElement++)
             {
+#if LOGGRIDBLOCKS
+                // Write next gridblock details to logfile
+                string elementCountLabel = string.Format("Current element {0}, end element {1}, elements in list {2}", currentCalculationElement, endCalculationElement, timestepList.Count);
+                logFile.WriteLine(elementCountLabel);
+#endif
                 GridblockTimestepControl nextTimestep = timestepList[currentCalculationElement];
 
+#if LOGGRIDBLOCKS
+                // Write next gridblock details to logfile
+                string nextGridBlockLabel1 = string.Format("About to launch Gridblock.PropagateDFN() for gridblock at {0},{1},{2} TS {3} at real time {4}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.Gridblock.SWtop.Z, nextTimestep.TimestepNo, DateTime.Now);
+                logFile.WriteLine(nextGridBlockLabel1);
+#endif
                 // Check if calculation has been aborted
                 if (progressReporter.abortCalculation())
                 {
@@ -1304,7 +1324,17 @@ namespace DFMGenerator_SharedCode
             double currentTime = -1;
             for (; currentCalculationElement <= lastCalculationElement; currentCalculationElement++)
             {
+#if LOGGRIDBLOCKS
+                // Write next gridblock details to logfile
+                string elementCountLabel = string.Format("Current element {0}, end element {1}, elements in list {2}", currentCalculationElement, lastCalculationElement, timestepList.Count);
+                logFile.WriteLine(elementCountLabel);
+#endif
                 GridblockTimestepControl nextTimestep = timestepList[currentCalculationElement];
+#if LOGGRIDBLOCKS
+                // Write next gridblock details to logfile
+                string nextGridBlockLabel1 = string.Format("About to launch Gridblock.PropagateDFN() for gridblock at {0},{1},{2} TS {3} at real time {4}", nextTimestep.Gridblock.SWtop.X, nextTimestep.Gridblock.SWtop.Y, nextTimestep.Gridblock.SWtop.Z, nextTimestep.TimestepNo, DateTime.Now);
+                logFile.WriteLine(nextGridBlockLabel1);
+#endif
 
                 // Check if calculation has been aborted
                 if (progressReporter.abortCalculation())

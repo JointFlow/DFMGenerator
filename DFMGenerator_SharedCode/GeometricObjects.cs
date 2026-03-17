@@ -1719,6 +1719,17 @@ namespace DFMGenerator_SharedCode
             // Return the list of values
             return horizontalValues;
         }
+        /// <summary>
+        /// Check if all the components of the tensor are zero
+        /// </summary>
+        /// <returns>True if all the components of the tensor are 0; otherwise false</returns>
+        public bool IsZeroValued()
+        {
+            foreach (Tensor2SComponents Index in Enum.GetValues(typeof(Tensor2SComponents)).Cast<Tensor2SComponents>())
+                if (components[Index] != 0)
+                    return false;
+            return true;
+        }
 
         // Functions to generate specific tensors
         /// <summary>

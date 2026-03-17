@@ -639,6 +639,10 @@ namespace DFMGenerator_SharedCode
                 segmentsInGridblock.AddRange(ray.GetRaySegmentsInGridblock(gbc_in));
             return segmentsInGridblock;
         }
+        /// <summary>
+        /// Flag for whether this fracture should be treated as a large fracture, considered to influence the entire grid when checking stress shadows
+        /// </summary>
+        public bool LargeFracture { get; set; }
 
         // Geometric data
         /// <summary>
@@ -1160,6 +1164,9 @@ namespace DFMGenerator_SharedCode
             // Set the flags for fully active and fully deactivated
             FullyActive = true;
             FullyDeactivated = false;
+
+            // Set the flag for a large fracture
+            LargeFracture = false;
         }
         /// <summary>
         /// Copy constructor: copy all data from an existing UnconfinedFractureXYZ object
@@ -1203,6 +1210,9 @@ namespace DFMGenerator_SharedCode
             // Set the flags for fully active and fully deactivated
             FullyActive = fracture_in.FullyActive;
             FullyDeactivated = fracture_in.FullyDeactivated;
+
+            // Set the flag for a large fracture
+            LargeFracture = fracture_in.LargeFracture;
         }
     }
 

@@ -16,7 +16,7 @@ namespace DFMGenerator_SharedCode
         private List<FractureCalculationData_Minimised> dataList;
         /// <summary>
         /// Maximum rounding error that can be generated when calculating timestep duration from driving stress, horizontal strain increment from timestep duration, and driving stress from horizontal strain. Used to determine if initial driving stress is really negative
-        /// // Can also be used to check if normal stress on the fracture is really negative
+        /// Can also be used to check if normal stress on the fracture is really negative
         /// </summary>
         public double MaxDrivingStressRoundingError { get; private set; }
 

@@ -1,7 +1,8 @@
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
 //#define DEBUG_FRAC_INPUT
-//#define DEBUG_FRAC_OUTPUT
+//#define DEBUG_IMPLICIT_OUTPUT
+//#define DEBUG_EXPLICIT_OUTPUT
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
@@ -5675,7 +5676,7 @@ namespace DFMGenerator_Ocean
                                         outputStageParams += string.Format("Time {0}{1}\n", toGeologicalTimeUnits.Convert(stageEndTime), ProjectTimeUnits);
                                         outputStageParams += "\n";
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                         PetrelLogger.InfoOutputWindow("");
                                         PetrelLogger.InfoOutputWindow("Stage" + outputLabel);
 #endif
@@ -5781,7 +5782,7 @@ namespace DFMGenerator_Ocean
                                                                 }
                                                                 bool writeMacrofractureData = PopulateEmptyGridblocks || (cell_MF_P32_tot > 0);
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow("");
                                                                 PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
                                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -5794,7 +5795,7 @@ namespace DFMGenerator_Ocean
                                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                             for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                             {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -5922,7 +5923,7 @@ namespace DFMGenerator_Ocean
                                                                         EndTime = stageEndTime;
                                                                     }
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                     PetrelLogger.InfoOutputWindow("");
                                                                     PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
                                                                     PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -5935,7 +5936,7 @@ namespace DFMGenerator_Ocean
                                                                             for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                                 for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                                 {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                                     PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6028,7 +6029,7 @@ namespace DFMGenerator_Ocean
                                                                     double ReactivationPotential = fds.PresentDayReactivationPotential;
                                                                     double SlipTendency = fds.PresentDaySlipTendency;
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                     PetrelLogger.InfoOutputWindow("");
                                                                     PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Set {0} dipset {1}", FractureSetNo, DipSetNo));
                                                                     PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6041,7 +6042,7 @@ namespace DFMGenerator_Ocean
                                                                             for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                                 for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                                 {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                                     PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6157,7 +6158,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                             bool writeUCFData = PopulateEmptyGridblocks || (cell_UCF_P32_tot > 0);
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                             PetrelLogger.InfoOutputWindow("");
                                                             PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0}", UnconfinedFractureSetNo));
                                                             PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6170,7 +6171,7 @@ namespace DFMGenerator_Ocean
                                                                     for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                         for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                         {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                             PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6304,7 +6305,7 @@ namespace DFMGenerator_Ocean
                                                                     EndTime = stageEndTime;
                                                                 }
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow("");
                                                                 PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0}", UnconfinedFractureSetNo));
                                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6317,7 +6318,7 @@ namespace DFMGenerator_Ocean
                                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                             for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                             {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6410,7 +6411,7 @@ namespace DFMGenerator_Ocean
                                                                 double ReactivationPotential = ufs.PresentDayReactivationPotential;
                                                                 double SlipTendency = ufs.PresentDaySlipTendency;
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow("");
                                                                 PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Unconfined set {0}", UnconfinedFractureSetNo));
                                                                 PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6423,7 +6424,7 @@ namespace DFMGenerator_Ocean
                                                                         for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                             for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                             {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                                 PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6629,7 +6630,7 @@ namespace DFMGenerator_Ocean
                                                             EndTime = stageEndTime;
                                                         }
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
                                                         PetrelLogger.InfoOutputWindow("Connectivity data: all sets");
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6642,7 +6643,7 @@ namespace DFMGenerator_Ocean
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                     for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                     {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6794,7 +6795,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                             bool writeMacrofractureData = PopulateEmptyGridblocks || (MF_P32_value > 0);
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                             PetrelLogger.InfoOutputWindow("");
                                                             PetrelLogger.InfoOutputWindow("Porosity data: all sets");
                                                             PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6807,7 +6808,7 @@ namespace DFMGenerator_Ocean
                                                                     for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                         for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                         {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                             PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -6926,7 +6927,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                             bool writeUnconfinedFractureData = PopulateEmptyGridblocks || (UCF_P32_value > 0);
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                             PetrelLogger.InfoOutputWindow("");
                                                             PetrelLogger.InfoOutputWindow("Porosity data: all sets");
                                                             PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -6939,7 +6940,7 @@ namespace DFMGenerator_Ocean
                                                                     for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                         for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                         {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                             PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -7134,7 +7135,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                         }
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
                                                         PetrelLogger.InfoOutputWindow("Permability tensor: all sets");
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -7149,7 +7150,7 @@ namespace DFMGenerator_Ocean
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                     for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                     {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -7252,7 +7253,7 @@ namespace DFMGenerator_Ocean
                                                         Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
                                                         Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
 
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
                                                         PetrelLogger.InfoOutputWindow("Stiffness and compliance tensors: all sets");
                                                         PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
@@ -7268,7 +7269,7 @@ namespace DFMGenerator_Ocean
                                                                 for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
                                                                     for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
                                                                     {
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_IMPLICIT_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
@@ -7317,18 +7318,18 @@ namespace DFMGenerator_Ocean
                                 {
                                     // Get the total number of fractures to write and update the progress bar
                                     int totalNoFractures = 0;
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_EXPLICIT_OUTPUT
                                     int stage = 1;
 #endif
                                     foreach (GlobalDFN DFN in ModelGrid.DFNGrowthStages)
                                     {
                                         totalNoFractures += (DFN.GlobalDFNMicrofractures.Count + DFN.GlobalDFNMacrofractures.Count + DFN.GlobalDFNUnconfinedFractures.Count);
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_EXPLICIT_OUTPUT
                                         PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} microfractures", stage, DFN.GlobalDFNMicrofractures.Count));
                                         PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} macrofractures", stage++, DFN.GlobalDFNMacrofractures.Count));
 #endif
                                     }
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_EXPLICIT_OUTPUT
                                     PetrelLogger.InfoOutputWindow(string.Format("Total {0} fractures", totalNoFractures));
 #endif
 
@@ -8047,7 +8048,7 @@ namespace DFMGenerator_Ocean
                                         }
                                     }
                                 }
-#if DEBUG_FRAC_OUTPUT
+#if DEBUG_EXPLICIT_OUTPUT
                                 // Write cornerpoints of each fracture in the explicit DFN to Petrel project
                                 using (ITransaction trans = DataManager.NewTransaction())
                                 {
