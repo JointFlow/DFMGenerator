@@ -51,7 +51,7 @@ Standalone: DFM_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow
 
 Petrel plug-in: DFM_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFMGenerator/tree/main/Documentation/DFM_Generator_Petrel_UserGuide.pdf)
 
-Precompiled .pip installers for the Petrel version can be downloaded from the links below. These can be installed using the the Ocean Plug-in manager in Petrel. Please note that due to licensing restrictions, the precompiled installers are for a previous version of DFM Generator (v2.2.3) and will lack some functionality of the latest version (e.g. calculation of fracture permeability). If you would like to use the latest version of DFM Generator (v2.4.2) and have access to Ocean, you can download the and compile the DFM Generator source code. If you do not have access to Ocean but would like to use DFM Generator v2.4.2 with Petrel, please contact mwelch@dtu.dk. 
+Precompiled .pip installers for the Petrel version can be downloaded from the links below. These can be installed using the the Ocean Plug-in manager in Petrel. Please note that due to licensing restrictions, the precompiled installers are for a previous version of DFM Generator (v2.2.3) and will lack some functionality of the latest version (e.g. calculation of fracture permeability). If you would like to use the latest version of DFM Generator (v2.4.2) and have access to Ocean, you can download the and compile the DFM Generator source code. If you do not have access to Ocean but would like to use DFM Generator v2.4.2 with Petrel, please contact mwelch@dtu.dk or m.luthje@jointflow.eu. 
 
 Petrel 2020: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2020.pip)
 
