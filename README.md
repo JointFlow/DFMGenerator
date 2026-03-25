@@ -113,7 +113,7 @@ Nucleation, Propagation and Interaction of Layer-Bound Fractures. Springer. (htt
 DFM Generator was initially developed with funding from the Danish Hydrocarbon Research and Technology Centre (DHRTC) under the AWF Improved Recovery programme (up to v2.2.3). The developers kindly acknowledge the Danish Underground Consortium (TotalEnergies E&P Denmark, BlueNord & Nordsøfonden) for granting the permission to publish this work. 
 
 The current release of DFM Generator (v2.4.2) was developed with funding from the European Union under the Horizon Europe programme (grant no. 101147618). 
-![alt text](https://github.com/JointFlow/DFMGenerator/blob/GeothermalVersion/EN_Funded_by_the_EU.jpg?raw=true)
+![alt text](https://github.com/JointFlow/DFMGenerator/blob/main/EN_Funded_by_the_EU.jpg?raw=true)
 
 Please note that DFM Generator comes with no warranty and no liability for any consequence arising from its use is accepted. There is also no formal support or service level agreement for the software. However if you encounter any problems, or have any comments or suggestions, please contact us and we will try to help you. Please also report any bugs that you encounter or requests for functionality enhancements in the same way.
 
