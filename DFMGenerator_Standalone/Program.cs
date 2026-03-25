@@ -565,9 +565,9 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 1;// 3;
-            int NoCols = 1;// 3;
-            int NoLayers = 1;// 3;
+            int NoRows = 3;
+            int NoCols = 3;
+            int NoLayers = 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 1000;// 50;
             double Length_NS = 1000;// 50;
@@ -577,7 +577,7 @@ namespace DFMGenerator_Standalone
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial in metres, positive downwards
-            double Depth = 0;// 2000;
+            double Depth = 1000;// 2000;
             // Time units used in input load rates, time limits and strain relaxation time constants
             // These will be converted to SI units (s) by the gridblock objects
             TimeUnits ModelTimeUnits = TimeUnits.ma;
@@ -719,18 +719,18 @@ namespace DFMGenerator_Standalone
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(1);
-            AbsoluteStressRate_list.Add(new Tensor2S(0, 0, 0, 0, 0, 0));
-            InitialFluidPressure_list.Add(0);
-            InitialAbsoluteStress_list.Add(new Tensor2S(-297000, -297000, -476000, 0, 0, 0));
+            DeformationEpisodeDuration_list.Add(10);
+            AbsoluteStressRate_list.Add(new Tensor2S(-1333333, -1333333, 0, 0, 0, 0));
+            InitialFluidPressure_list.Add(19620000);
+            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
 #endif
 
             // Mechanical properties
-            double YoungsMod = 5E+10;// 1E+10;
+            double YoungsMod = 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
             bool VariableYoungsMod = false;
             double VariableYoungsModSmoothingFactor = 2;
-            double PoissonsRatio = 0.2;// 0.25;
+            double PoissonsRatio = 0.25;
             double Porosity = 0.2;
             double BiotCoefficient = 1;
             // Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
@@ -747,7 +747,7 @@ namespace DFMGenerator_Standalone
             // Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
             double FractureRelaxation = 0;
             // Density of initial microfractures
-            double InitialMicrofractureDensity = 0.0001;// 0.001;
+            double InitialMicrofractureDensity = 0.001;
             // Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
             double InitialMicrofractureSizeDistribution = 3;
             // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
@@ -908,7 +908,7 @@ namespace DFMGenerator_Standalone
             // Minimum required clear zone volume in which macrofractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumMFClearZoneVolume = 0.01;
             // Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
-            int MaxTimesteps = 1;// 1000;
+            int MaxTimesteps = 1000;
             // DFN geometry controls
             // Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
             bool GenerateExplicitDFN = true;
@@ -954,10 +954,10 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 8;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 200;// -1;
+            double MinUnconfinedFractureRadius = 100;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 5000;// -1;
+            double MaxUnconfinedFractureRadius = 1000;// -1;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:

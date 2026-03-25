@@ -378,7 +378,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// ID number of the fracture that terminates the specified tip of this macrofracture, by intersection or stress shadow interaction; -1 if there is no terminating fracture
         /// </summary>
-        public int TerminatingFracture { get; private set; }
+        public int TerminatingFracture { get { return GetTerminatingFracture(); } }
         /// <summary>
         /// Time of ray nucleation (real time) - this will be the time of fracture nucleation
         /// </summary>
@@ -444,20 +444,9 @@ namespace DFMGenerator_SharedCode
                 return FractureTipType.OutOfBounds;
         }
         /// <summary>
-        /// Check if the ray nucleated in a specific gridblock
+        /// Get the terminating fracture for the ray
         /// </summary>
-        /// <param name="GridblockToCheck">Reference to the gridblock to check for nucleation</param>
-        /// <returns>True if this ray nucleated in the specified gridblock, otherwise false</returns>
-        public bool CheckNucleationGridblock(GridblockConfiguration GridblockToCheck)
-        {
-            return ucf.CheckNucleationGridblock(GridblockToCheck);
-        }
-
-        // Reset and data input functions
-        /// <summary>
-        /// Set the terminating fracture for the ray
-        /// </summary>
-        public void SetTerminatingFracture()
+        private int GetTerminatingFracture()
         {
             if (NoSegments > 0)
             {
@@ -474,7 +463,7 @@ namespace DFMGenerator_SharedCode
                         {
                             // With a connected stress shadow, the fracture tip interacts directly with the stress shadow of a similar sized fracture propagating in the opposite direction
                             if (!(outerSegment.TerminatingFracture is null))
-                                TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
+                                return outerSegment.TerminatingFracture.UnconfinedFractureID;
                         }
                         break;
                     case SegmentNodeType.NonconnectedStressShadow:
@@ -487,7 +476,7 @@ namespace DFMGenerator_SharedCode
                         {
                             // With an intersection, the fracture tip terminates against another fracture from a different set
                             if (!(outerSegment.TerminatingFracture is null))
-                                TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
+                                return outerSegment.TerminatingFracture.UnconfinedFractureID;
                         }
                         break;
                     case SegmentNodeType.Convergence:
@@ -505,7 +494,7 @@ namespace DFMGenerator_SharedCode
                     case SegmentNodeType.Relay:
                         {
                             if (!(outerSegment.TerminatingFracture is null))
-                                TerminatingFracture = outerSegment.TerminatingFracture.UnconfinedFractureID;
+                                return outerSegment.TerminatingFracture.UnconfinedFractureID;
                         }
                         break;
                     case SegmentNodeType.Pinchout:
@@ -523,6 +512,41 @@ namespace DFMGenerator_SharedCode
                             // No terminating fracture
                         }
                         break;
+                }
+            }
+            // If there is no terminating fracture return -1
+            return -1;
+        }
+        /// <summary>
+        /// Check if the ray nucleated in a specific gridblock
+        /// </summary>
+        /// <param name="GridblockToCheck">Reference to the gridblock to check for nucleation</param>
+        /// <returns>True if this ray nucleated in the specified gridblock, otherwise false</returns>
+        public bool CheckNucleationGridblock(GridblockConfiguration GridblockToCheck)
+        {
+            return ucf.CheckNucleationGridblock(GridblockToCheck);
+        }
+
+        // Reset and data input functions
+        /// <summary>
+        /// Go through each ray and remove zero-length segments
+        /// </summary>
+        public void RemoveZeroLengthSegments()
+        {
+            // Loop through all segments in the ray except the innermost - this can never be removed
+            for(int SegmentNo = NoSegments - 1; SegmentNo > 0; SegmentNo--)
+            if (NoSegments > 1)
+            {
+                // Check if the outermost segment has length zero, negative or NaN
+                UnconfinedFractureRaySegment outerSegment = segments[SegmentNo];
+                if (!(outerSegment.Length > 0))
+                {
+                    UnconfinedFractureRaySegment innerSegment = segments[SegmentNo - 1];
+                    // Set the node type and terminating fracture of the next outermost segment to that of the zero-length segment to be removed
+                    innerSegment.PropNodeType = outerSegment.PropNodeType;
+                    innerSegment.TerminatingFracture = outerSegment.TerminatingFracture;
+                    // Remove the zero-length segment
+                    segments.RemoveAt(SegmentNo);
                 }
             }
         }
@@ -550,8 +574,7 @@ namespace DFMGenerator_SharedCode
             segments.Add(new UnconfinedFractureRaySegment(this, ucf_in, ufs_in, gbc_in, NucleationPoint, Orientation, InitialLength, NucleationTime_in, NucleationWTime_in, NucleationTimestep_in));
 
             // Set the ray tip and propagation rate control data
-            //TerminatingRaySegment = null;
-            TerminatingFracture = -1;
+
             // Initially the fracture will be subcritical and fully active, unless the initial length is 0
             // In this case we will assume that the fracture is being allowed to grow to the mininum unconfined fracture radius
             // This will ensure boundary intersections and other interactions are correctly modelled
@@ -576,7 +599,6 @@ namespace DFMGenerator_SharedCode
 
             // Set the ray tip and propagation rate control data
             //TerminatingRaySegment = ray_in.TerminatingRaySegment;
-            TerminatingFracture = ray_in.TerminatingFracture;
             GrowToInitialSize = ray_in.GrowToInitialSize;
         }
     }
@@ -766,11 +788,14 @@ namespace DFMGenerator_SharedCode
         public double NucleationTime { get; private set; }
 
         // Reset, data input, control and implementation functions
+        /// <summary>
+        /// Clean up the fracture
+        /// </summary>
         public void PopulateData()
         {
-            // Set the terminating fracture for each ray tip
+            // Remove zero-length segments from each ray
             foreach (UnconfinedFractureRay ray in rays)
-                ray.SetTerminatingFracture();
+                ray.RemoveZeroLengthSegments();
         }
         /// <summary>
         /// Criterion to use when sorting unconfined fractures

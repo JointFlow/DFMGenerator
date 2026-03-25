@@ -3734,7 +3734,8 @@ namespace DFMGenerator_SharedCode
                 string headerLine2 = "\t\t\t\t\t\t\t";
                 string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
                 string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tMF Stress shadow width\tMF Stress shadow volume\tClear zone volume\t\t";
-                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tStress shadow width ratio\tStress shadow volume\tClear zone volume\t";
+                //string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tStress shadow width ratio\tStress shadow volume\tClear zone volume\t";
+                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t";
 #if LOGIMPPOP
                 headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\t{1}\t{2}\t{3}\t{4}\t", timeUnits, "Sigma_eff.XX", "Sigma_eff.YY", "Sigma_eff.XY", "Sigma_eff.ZZ");
                 //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
@@ -3771,7 +3772,7 @@ namespace DFMGenerator_SharedCode
                 }
                 if (CalculateFracturePorosity)
                 {
-                    headerLine1 += "uF Porosity: Uniform aperture\tMF Porosity: Uniform aperture\tucF Porosity: Uniform aperture\tuF Porosity: Size-dependent aperture\tMF Porosity: Size-dependent aperture\tUCF Porosity: Size-dependent aperture\tuF Porosity: Dynamic aperture\tMF Porosity: Dynamic aperture\tUCF Porosity: Dynamic aperture\tuF Porosity: Barton-Bandis aperture\tMF Porosity: Barton-Bandis aperture\tUCF Porosity: Barton-Bandis aperture\t";
+                    headerLine1 += "uF Porosity: Uniform aperture\tMF Porosity: Uniform aperture\tUCF Porosity: Uniform aperture\tuF Porosity: Size-dependent aperture\tMF Porosity: Size-dependent aperture\tUCF Porosity: Size-dependent aperture\tuF Porosity: Dynamic aperture\tMF Porosity: Dynamic aperture\tUCF Porosity: Dynamic aperture\tuF Porosity: Barton-Bandis aperture\tMF Porosity: Barton-Bandis aperture\tUCF Porosity: Barton-Bandis aperture\t";
                     headerLine2 += "\t\t\t\t\t\t\t\t\t\t\t\t";
                     TS0data += "0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t";
                 }
@@ -4539,8 +4540,10 @@ namespace DFMGenerator_SharedCode
                         foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         {
                             // Get fracture data and add to timestep log string
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
+                            //    ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
+                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), 1-ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
 #if LOGIMPPOP
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
@@ -5083,7 +5086,8 @@ namespace DFMGenerator_SharedCode
             // NB this relates to macrofracture propagation rate so is always calculated from h/2, regardless of the fracture nucleation position
             double hb1_factor = (bis2 ? ThicknessAtDeformation / 2 : Math.Pow(ThicknessAtDeformation / 2, b / 2));
             double GridblockVolume = Area * ThicknessAtDeformation;
-            double TimestepDuration = CurrentExplicitTime - TimestepEndTimes[CurrentExplicitTimestep - 1];
+            double PreviousExplicitTime = (CurrentExplicitTimestep > 0) ? TimestepEndTimes[CurrentExplicitTimestep - 1] : 0;
+            double TimestepDuration = CurrentExplicitTime - PreviousExplicitTime;
             double uF_minRadius = DFNControl.MicrofractureDFNMinimumRadius;
             double MF_minLength = DFNControl.MacrofractureDFNMinimumLength;
             // NB If the global minimum unconfined fracture radius is undefined (negative), we will use the local minimum unconfined fracture radius defined for the unconfined fracture set
@@ -6158,7 +6162,7 @@ namespace DFMGenerator_SharedCode
                 }
 #endif
 
-                // If the dip set is deactivated, skip the rest of this stage and move on to the next dip set
+                // If the fracture set is deactivated, skip the rest of this stage and move on to the next dip set
                 if (ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.Deactivated)
                     continue;
 
@@ -7034,8 +7038,9 @@ namespace DFMGenerator_SharedCode
                     return;
             }
 
-            // If the new ray segment nucleated before the end of the last timestep calculated for this gridblock, we will need to propagate the ray up until that time 
-            if (newSegment_NucleationTimestep <= CurrentExplicitTimestep)
+            // If the new ray segment nucleated before the end of the last timestep calculated for this gridblock, we will need to propagate the ray up until that time
+            // Unless it is an initial fracture - these will not propagate until activated
+            if ((newSegment_NucleationTimestep <= CurrentExplicitTimestep) && (newSegment_NucleationTimestep > 0))
             {
                 // Roll back the current timestep to the timestep of nucleation
                 // We must make a note of the current timestep first and remember to revert to that timestep 
@@ -7046,10 +7051,10 @@ namespace DFMGenerator_SharedCode
                 // Calculate the required propagation length
                 // This is controlled by the integral of the PropRateCoefficient * t for duration of growth, which is equal to the GrowthFactor if the ray is propagating for the entire timestep
                 double propagatingTime = LastTimeCalculated - newSegmentNucleationTime;
-                double gf1 = newSegment_ufs.getCumulativeFractureGrowthFactor(LastTimestepCalculated, Math.Max(newSegment_NucleationTimestep - 1, 0));
-                double gf2 = (newSegment.NucleationWTime / MechProps.beta);
+                //double gf1 = newSegment_ufs.getCumulativeFractureGrowthFactor(LastTimestepCalculated, Math.Max(newSegment_NucleationTimestep - 1, 0));
+                //double gf2 = (newSegment.NucleationWTime / MechProps.beta);
                 double growthFactor = newSegment_ufs.getCumulativeFractureGrowthFactor(LastTimestepCalculated, Math.Max(newSegment_NucleationTimestep - 1, 0)) + (newSegment.NucleationWTime / MechProps.beta);
-                double initialDrivingStress = newSegment_ufs.getConstantDrivingStressU(newSegment_NucleationTimestep) + ((newSegmentNucleationTime - (newSegment_NucleationTimestep > 0 ? TimestepEndTimes[newSegment_NucleationTimestep - 1] : 0)) * newSegment_ufs.getVariableDrivingStressV(newSegment_NucleationTimestep));
+                //double initialDrivingStress = newSegment_ufs.getConstantDrivingStressU(newSegment_NucleationTimestep) + ((newSegmentNucleationTime - (newSegment_NucleationTimestep > 0 ? TimestepEndTimes[newSegment_NucleationTimestep - 1] : 0)) * newSegment_ufs.getVariableDrivingStressV(newSegment_NucleationTimestep));
                 double propagationLength = calculateUnconfinedFractureRayGrowth(newSegment, propagatingTime, growthFactor);
 
                 if (propagationLength > 0)
@@ -7520,7 +7525,7 @@ namespace DFMGenerator_SharedCode
                         UnconfinedFractureSet neighbourGB_ufs = neighbour_gb.getClosestUnconfinedFractureSet(ufs.NormalVector);
 
                         // Now check the unconfined fractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                        // For now we will not apply a stress shadow width multiplier to take account of the difference in orienation between the two fractures
+                        // For now we will not apply a stress shadow width multiplier to take account of the difference in orientation between the two fractures
                         if (ufs.checkStressShadowInteraction(UCRSegment, neighbourGB_ufs, ref maxPropLength, 1, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
 
                     } // End loop through each gridblock in the list of neighbouring gridblocks
@@ -7648,7 +7653,8 @@ namespace DFMGenerator_SharedCode
                             // Calculate the intersection time for critical fracture propagation
                             // If the intersection time for critical fracture propagation is greater than the intersection time for subcritical propagation then the fracture must be propagating critically
                             {
-                                double t0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationTime : CurrentExplicitTime;
+                                double PreviousExplicitTime = (CurrentExplicitTimestep > 0) ? TimestepEndTimes[CurrentExplicitTimestep - 1] : 0;
+                                double t0 = (UCRSegment.NucleationTimestep == CurrentExplicitTimestep) ? UCRSegment.NucleationTime : PreviousExplicitTime;
                                 double criticalIntersectionRealTime = t0 + (maxPropLength / MechProps.CapA);
                                 if (intersectionRealTime < criticalIntersectionRealTime)
                                     intersectionRealTime = criticalIntersectionRealTime;

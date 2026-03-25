@@ -508,7 +508,7 @@ namespace DFMGenerator_SharedCode
             }
 
             // If alpha, beta or alpha + beta lie outside the range 0 to 1, the intersection point will not lie within a triangle defiend by the three specified points
-            // If the crossover type restrict is selcleted, in this case we should return NaN
+            // If the crossover type restrict is selected, in this case we should return NaN
             if (XOType == CrossoverType.Restrict)
             {
                 if ((alpha < 0) || (alpha > 1) || (beta < 0) || (beta > 1) || (alpha + beta > 1))

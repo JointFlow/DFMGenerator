@@ -1,6 +1,8 @@
 ﻿// Set this flag to output a list of gridblocks when calculating the implicit and explicit fracture populations
 // Use for debugging only; will significantly increase runtime
 //#define LOGGRIDBLOCKS
+// Set this flag to output the coordinates of all unconfined fracture ray segment nodes in the ASCII format output file
+//#define OUTPUTRAYNODES
 
 using System;
 using System.Collections.Generic;
@@ -904,6 +906,11 @@ namespace DFMGenerator_SharedCode
                                         foreach (UnconfinedFractureRay ray in rays)
                                         {
                                             string rayOutputData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t", ray.OuterTip.X, ray.OuterTip.Y, ray.OuterTip.Depth, ray.Length, ray.TipType, ray.TerminatingFracture);
+#if OUTPUTRAYNODES
+                                            List<PointXYZ> nodes = ray.GetNodesInXYZ();
+                                            foreach (PointXYZ node in nodes)
+                                                rayOutputData += string.Format("\t{0}\t{1}\t{2}\t", node.X, node.Y, node.Depth);
+#endif
                                             UCF_outputFile.WriteLine(rayOutputData);
                                         }
 

@@ -2882,7 +2882,8 @@ namespace DFMGenerator_SharedCode
                 {
                     // To calculate alpha * SigmaDb_M, we divide mean_SigmaD_M by Kc before raising it to b, to avoid excessively large numbers
                     mean_SigmaD_M = U_M;
-                    // We will only calculate the fracture propagation rate coefficient if the fractures are active
+                    // We will not calculate the fracture propagation rate coefficient if the fractures are no longer active
+                    // This will prevent continued propagation of the explicit fractures in the DFN after the implicit fracture model is saturated
                     if (FracturesActive)
                     {
                         F_PropRate_Coefficient = CapA * Math.Pow(sqrtpi_Kc_factor * mean_SigmaD_M, b);
@@ -2904,7 +2905,8 @@ namespace DFMGenerator_SharedCode
                     double UV_U_term = (final_SigmaD_M < 0 ? 0 : (final_SigmaD_M * Math.Pow(sqrtpi_Kc_factor * final_SigmaD_M, b)) - (U_M * Math.Pow(sqrtpi_Kc_factor * U_M, b)));
 
                     mean_SigmaD_M = Math.Pow(UV_U_term / ((b + 1) * V_M * TimestepDuration_in), 1 / b) / sqrtpi_Kc_factor;
-                    // We will only calculate the mean half-macrofracture propagation rate and microfracture propagation rate coefficient if the fractures are active
+                    // We will not calculate the fracture propagation rate coefficient if the fractures are no longer active
+                    // This will prevent continued propagation of the explicit fractures in the DFN after the implicit fracture model is saturated
                     if (FracturesActive)
                     {
                         F_Growth_Factor = CapA * (UV_U_term / ((b + 1) * V_M));
@@ -3712,7 +3714,7 @@ namespace DFMGenerator_SharedCode
             boundaries.Add(new BoundaryCornerpoints(GridDirection.S, gbc.SEtop, gbc.SWtop, gbc.SWbottom, gbc.SEbottom));
             boundaries.Add(new BoundaryCornerpoints(GridDirection.W, gbc.SWtop, gbc.NWtop, gbc.NWbottom, gbc.SWbottom));
             boundaries.Add(new BoundaryCornerpoints(GridDirection.D, gbc.NWbottom, gbc.NEbottom, gbc.SEbottom, gbc.SWbottom));
-            boundaries.Add(new BoundaryCornerpoints(GridDirection.U, gbc.NWtop, gbc.NEtop, gbc.SEtop, gbc.SWtop));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.U, gbc.SWtop, gbc.SEtop, gbc.NEtop, gbc.NWtop));
 
             // Loop through the six gridblock boundaries checking for intersection
             foreach (BoundaryCornerpoints boundary in boundaries)
