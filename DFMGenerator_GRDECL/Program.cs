@@ -409,7 +409,7 @@ namespace DFMGenerator_GRDECL
             // Get path for input files
             string inputfile_name = "Hardcoded";
             string outputFolderPath = "";
-            string inputFolderPath = "Z:\\21_FundsP\\GO-Forward\\Project data\\WP2.4 Model development\\GRDECL format\\";// "";
+            string inputFolderPath = "";
 #endif
 
             // Set hardcoded default values for all parameters
@@ -539,9 +539,7 @@ namespace DFMGenerator_GRDECL
             DeformationEpisodeName_list.Add("Deformation_Episode_1");
             DefaultEhminAzi_list.Add(DefaultEhminAzi);
             EhminAziPropertyName_list.Add(EhminAziPropertyName);
-            //EhminAziPropertyName_list.Add("DIPAZIMUTH");
             DefaultEhminRate_list.Add(DefaultEhminRate);
-            //DefaultEhminRate_list.Add(-0.01);
             EhminRatePropertyName_list.Add(EhminRatePropertyName);
             DefaultEhmaxRate_list.Add(DefaultEhmaxRate);
             EhmaxRatePropertyName_list.Add(EhmaxRatePropertyName);
@@ -1372,15 +1370,15 @@ namespace DFMGenerator_GRDECL
                         // A separate GRDECL file will be generated for each output stage
                         // These files can include the grid geometry and output properties, or only the output properties
                         case "WriteGRDECLFiles":
-                            WriteGRDECLFiles = true;
+                            WriteGRDECLFiles = (line_split[1] == "true");
                             break;
                         case "IncludeGridGeometryInGRDECLFiles":
-                            IncludeGridGeometryInGRDECLFiles = true;
+                            IncludeGridGeometryInGRDECLFiles = (line_split[1] == "true");
                             break;
                         // Flag to write explicit DFN data to a series of FAB files
                         // A separate FAB file will be generated for each output stage
                         case "WriteFABFiles":
-                            WriteFABFiles = true;
+                            WriteFABFiles = (line_split[1] == "true");
                             break;
                         // Output DFM at intermediate stages of fracture growth
                         case "NoIntermediateOutputs":
@@ -1777,7 +1775,6 @@ namespace DFMGenerator_GRDECL
             try
             {
                 outputFolderPath = (ModelName.Length > 0 ? ModelName : inputfile_name.Replace(".txt", "")) + "_output" + @"\";
-                outputFolderPath = "Z:\\21_FundsP\\GO-Forward\\Project data\\WP2.4 Model development\\GRDECL format\\" + outputFolderPath;
                 // If the output folder does not exist, create it
                 if (!Directory.Exists(outputFolderPath))
                     Directory.CreateDirectory(outputFolderPath);

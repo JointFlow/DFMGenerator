@@ -950,12 +950,12 @@ namespace DFMGenerator_DataTransfer
                 if (!progressReporter.abortCalculation())
                 {
                     // Write implicit fracture property data to an Eclipse GRDECL file or files
-                    progressReporter.OutputMessage(string.Format("Write implicit data for stage {0} to GRDECL file(s)", Stage));
 
                     // Set the output file name and extension
                     string fileName = ModelName + "_" + stageName;
                     string fileExtension = ".GRDECL";
                     string fullFileName = FilePath + fileName + fileExtension;
+                    progressReporter.OutputMessage(string.Format("Writing implicit data for stage {0} to GRDECL file {1}", Stage, fullFileName));
 
                     // Create the output file
                     StreamWriter outputFile = new StreamWriter(fullFileName);
@@ -1062,7 +1062,7 @@ namespace DFMGenerator_DataTransfer
             if (!progressReporter.abortCalculation())
             {
                 // Write explicit fracture property data to an FAB file
-                progressReporter.OutputMessage("Write explicit data to FAB file(s)");
+                progressReporter.OutputMessage(string.Format("Write explicit data to FAB file(s) in {0}", FilePath));
 
                 // Set the output file extension
                 string fileExtension = ".FAB";

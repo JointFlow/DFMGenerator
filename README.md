@@ -51,7 +51,7 @@ Standalone: DFM_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow
 
 Petrel plug-in: DFM_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFMGenerator/tree/main/Documentation/DFM_Generator_Petrel_UserGuide.pdf)
 
-For direct use in Petrel via the Ocean Plug-in manager the .pip files can be found here:
+Precompiled .pip installers for the Petrel version can be downloaded from the links below. These can be installed using the the Ocean Plug-in manager in Petrel. Please note that due to licensing restrictions, the precompiled installers are for a previous version of DFM Generator (v2.2.3) and will lack some functionality of the latest version (e.g. calculation of fracture permeability). If you would like to use the latest version of DFM Generator (v2.4.2) and have access to Ocean, you can download the and compile the DFM Generator source code. If you do not have access to Ocean but would like to use DFM Generator v2.4.2 with Petrel, please contact mwelch@dtu.dk. 
 
 Petrel 2020: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2020.pip)
 
@@ -110,7 +110,10 @@ Nucleation, Propagation and Interaction of Layer-Bound Fractures. Springer. (htt
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
 
-The developers kindly acknowledges the Danish Underground Consortium (TotalEnergies E&P Denmark, Noreco & Nordsøfonden) for granting the permission to publish this work. This research has received funding from the Danish Hydrocarbon Research and Technology Centre (DHRTC) under the AWF Improved Recovery programme.
+DFM Generator was initially developed with funding from the Danish Hydrocarbon Research and Technology Centre (DHRTC) under the AWF Improved Recovery programme (up to v2.2.3). The developers kindly acknowledge the Danish Underground Consortium (TotalEnergies E&P Denmark, BlueNord & Nordsøfonden) for granting the permission to publish this work. 
+
+The current release of DFM Generator (v2.4.2) was developed with funding from the European Union under the Horizon Europe programme (grant no. 101147618). 
+![alt text](https://github.com/JointFlow/DFMGenerator/blob/GeothermalVersion/EN_Funded_by_the_EU.jpg?raw=true)
 
 Please note that DFM Generator comes with no warranty and no liability for any consequence arising from its use is accepted. There is also no formal support or service level agreement for the software. However if you encounter any problems, or have any comments or suggestions, please contact us and we will try to help you. Please also report any bugs that you encounter or requests for functionality enhancements in the same way.
 

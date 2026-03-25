@@ -17,6 +17,7 @@ OriginXOffset 0
 OriginYOffset 0
 % Current depth of burial in metres, positive downwards
 Depth 2000
+% Time units used in input load rates, time limits and strain relaxation time constants
 % Set time units to ma, year or second
 ModelTimeUnits ma
 % Deformation load
@@ -93,6 +94,10 @@ InitialMicrofractureSizeDistribution 3
 SubcriticalPropIndex 10
 % Critical fracture propagation rate in m/s
 CriticalPropagationRate 2000
+% Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+% NB Permeability must be given in m^2; 1mD = 9.869233E-16m^2
+HostRock_kh 0
+HostRock_kv 0
 
 % Stress state
 % Stress distribution scenario - use to turn on or off stress shadow effect
@@ -125,21 +130,32 @@ WriteDFNFiles true
 %      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)
 %      - FAB (FAB files can be loaded directly into Petrel)
 OutputDFNFileType ASCII
+% Flag to write implicit fracture data to a GRDECL file
+% This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups
+WriteGRDECLFiles false
+WriteSeparateGRDECLPropertyFiles true
 % Output DFM at intermediate stages of fracture growth
 NoIntermediateOutputs 0
 % Flag to control interval between output of intermediate stage DFMs:
-%      - EqualArea (output at at approximately regular intervals of total fracture area)
+%      - EqualArea (output at at approximately equal increments of total fracture area)
 %      - EqualTime (output at equal intervals of time)
 %      - SpecifiedTime (output at the end of each specified deformation episode)
 IntermediateOutputIntervalControl EqualArea
 % Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
 OutputCentrepoints false
-% Flag to output the bulk rock compliance and stiffness tensors
+% Flag to calculate and output the bulk rock compliance and stiffness tensors
 OutputBulkRockElasticTensors false
 % Flag to calculate and output fracture porosity
-CalculateFracturePorosity true
-% Flag to calculate implicit fracture population distribution functions
-CalculatePopulationDistribution true
+OutputFracturePorosity true
+% Flag to calculate and output fracture permeability tensors
+OutputFracturePermeabilityTensor false
+% Algorithm to use for calculating fracture permeability
+%      - Oda1986 (The Oda 1986 model assumes fractures of infinite size and connectivity)
+%      - OdaCorrected1987 (This algorithm adds a correction factor to account for fracture connectivity)
+%      - SizeConnectivityCorrected (This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock; for the latter, host rock permeability must be specified)
+PermeabilityAlgorithm Oda1986
+% Flag to calculate and output implicit fracture population distribution functions
+OutputPopulationDistribution true
 % Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
 No_l_indexPoints 20
 % MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
@@ -183,6 +199,18 @@ InitialNormalStress 2E+5
 FractureNormalStiffness 2.5E+9
 % Maximum fracture closure (m)
 MaximumClosure 0.0005
+% Present day effective stress parameters
+% Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
+UsePresentDayStress false
+% Present Terzaghi effective day stress tensor components (Pa)
+% These will override the stress at the time of deformation when calculating fracture aperture and permeability
+% Any undefined components will be set to 0
+PresentDayEffectiveStress_XX 15000000
+PresentDayEffectiveStress_YY 15000000
+PresentDayEffectiveStress_ZZ 25000000
+PresentDayEffectiveStress_XY 0
+PresentDayEffectiveStress_YZ 0
+PresentDayEffectiveStress_ZX 0
 
 % Calculation control parameters
 % Number of fracture sets
@@ -275,6 +303,8 @@ Number_uF_Points 8
 % Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, DepthAtDeformation, 
 % YoungsMod, PoissonsRatio, Porosity, BiotCoefficient, GeothermalGradient, FrictionCoefficient, CrackSurfaceEnergy,
 % SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution
+% HostRock_kh, HostRock_kv
+% PresentDayEffectiveStress_XX, PresentDayEffectiveStress_YY, PresentDayEffectiveStress_ZZ, PresentDayEffectiveStress_XY, PresentDayEffectiveStress_YZ, PresentDayEffectiveStress_ZX
 % Additional deformation episodes can be overwritten by listing multiple values after the deformation load keywords
 % Cornerpoints that can be overridden are SETopCorner, SEBottomCorner, NETopCorner, NEBottomCorner,
 % NWTopCorner, NWBottomCorner, SWTopCorner, SWBottomCorner

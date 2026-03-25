@@ -1,7 +1,7 @@
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRAC_INPUT
-#define DEBUG_FRAC_OUTPUT
+//#define DEBUG_FRAC_INPUT
+//#define DEBUG_FRAC_OUTPUT
 
 // Set this flag to enable managed persistence of the dialog box input data
 //#define MANAGED_PERSISTENCE
