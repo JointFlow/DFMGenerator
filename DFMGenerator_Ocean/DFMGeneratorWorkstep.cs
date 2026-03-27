@@ -2325,7 +2325,7 @@ namespace DFMGenerator_Ocean
                     }
                     if (HorizontalUpscalingFactor > 1)
                         generalInputParams += string.Format("Horizontal upscaling factor: {0}\n", HorizontalUpscalingFactor);
-                    if (VerticalUpscalingFactor > 1)
+                    if (VerticalUpscalingFactor > 0)
                         generalInputParams += string.Format("Vertical upscaling factor: {0} - create 1 fracture layer per {0} grid layers\n", VerticalUpscalingFactor);
                     else
                         generalInputParams += string.Format("Amalgamate all grid layers into 1 fracture layer\n");
@@ -8734,7 +8734,7 @@ namespace DFMGenerator_Ocean
             private int argument_NoMicrofractureCornerpoints = 8;
             // Parameters for controlling unconfined fractures
             private bool argument_UseUnconfinedFractures = false;
-            private int argument_VerticalUpscalingFactor = 0;
+            private int argument_VerticalUpscalingFactor = 1;
             private int argument_NoRaysPerUnconfinedFracture = 8;
             private double argument_MinUnconfinedFractureRadius = double.NaN;
             private double argument_MaxUnconfinedFractureRadius = double.NaN;
@@ -13951,7 +13951,7 @@ namespace DFMGenerator_Ocean
 
                 // Parameters for controlling unconfined fractures
                 argument_UseUnconfinedFractures = false;
-                argument_VerticalUpscalingFactor = 0;
+                argument_VerticalUpscalingFactor = 1;
                 argument_NoRaysPerUnconfinedFracture = 8;
                 argument_MinUnconfinedFractureRadius = double.NaN;
                 argument_MaxUnconfinedFractureRadius = double.NaN;

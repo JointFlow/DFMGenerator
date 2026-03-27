@@ -719,6 +719,17 @@ namespace DFMGenerator_Standalone
             AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
+            DeformationEpisodeDuration_list.Add(1);
+            AbsoluteStressRate_list.Add(new Tensor2S(0, 0, 0, 0, 0, 0));
+            InitialFluidPressure_list.Add(19620000);
+            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(StressArchingFactor);
             DeformationEpisodeDuration_list.Add(10);
             AbsoluteStressRate_list.Add(new Tensor2S(-1333333, -1333333, 0, 0, 0, 0));
             InitialFluidPressure_list.Add(19620000);
@@ -931,7 +942,7 @@ namespace DFMGenerator_Standalone
             double ProbabilisticFractureNucleationLimit = -1;
             // Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set
             // Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time
-            bool PropagateFracturesInNucleationOrder = false;// true;
+            bool PropagateFracturesInNucleationOrder = true;
             // Flag to control whether to search adjacent gridblocks for stress shadow interaction; if set to automatic, this will be determined independently for each gridblock based on the gridblock geometry
             AutomaticFlag SearchNeighbouringGridblocks = AutomaticFlag.Automatic;
             // Minimum radius for microfractures to be included in explicit DFN
@@ -972,10 +983,10 @@ namespace DFMGenerator_Standalone
             // Ratio of active to total unconfined fracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
             double Active_TotalUCRP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double MinimumUCFClearZoneVolume = 0.1;
+            double MinimumUCFClearZoneVolume = 0.2;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepUCFP33Increase = 0.01;
+            double MaxTimestepUCFP33Increase = 0.02;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
             double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
@@ -996,7 +1007,7 @@ namespace DFMGenerator_Standalone
             // If None, unconfined fractures will only be deactivated if they lie in the stress shadow zone of parallel unconfined fractures
             // If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor
             // If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
-            AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.Automatic;
+            AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.None;
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
             double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
