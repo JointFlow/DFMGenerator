@@ -4,7 +4,7 @@
 //#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
-//#define DEBUG_FRACS
+#define DEBUG_FRACS
 
 using System;
 using System.Collections.Generic;
@@ -40,8 +40,8 @@ namespace DFMGenerator_Standalone
 
                 input_file.WriteLine("% Main properties");
                 input_file.WriteLine("% Grid size");
-                input_file.WriteLine("NoRows 3");
                 input_file.WriteLine("NoCols 3");
+                input_file.WriteLine("NoRows 3");
                 input_file.WriteLine("NoLayers 1");
                 input_file.WriteLine("% Gridblock size; all lengths in metres");
                 input_file.WriteLine("Width_EW 50");
@@ -51,7 +51,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock");
                 input_file.WriteLine("OriginXOffset 0");
                 input_file.WriteLine("OriginYOffset 0");
-                input_file.WriteLine("% Current depth of burial in metres, positive downwards");
+                input_file.WriteLine("% Current depth of burial of the top surface in metres, positive downwards");
                 input_file.WriteLine("Depth 2000");
                 input_file.WriteLine("% Set time units to ma, year or second");
                 input_file.WriteLine("ModelTimeUnits ma");
@@ -565,8 +565,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoRows = 3;
-            int NoCols = 3;
+            int NoCols = 2;// 3;
+            int NoRows = 4;// 3;
             int NoLayers = 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 1000;// 50;
@@ -576,7 +576,7 @@ namespace DFMGenerator_Standalone
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
             double OriginYOffset = 0;
-            // Current depth of burial in metres, positive downwards
+            // Current depth of burial of the top surface in metres, positive downwards
             double Depth = 1000;// 2000;
             // Time units used in input load rates, time limits and strain relaxation time constants
             // These will be converted to SI units (s) by the gridblock objects
@@ -713,6 +713,14 @@ namespace DFMGenerator_Standalone
             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
             BiazimuthalConjugate = false;*/
             EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(-0.001);
+            EhmaxRate_list.Add(-0.001);
+            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(StressArchingFactor);
+            DeformationEpisodeDuration_list.Add(1);
+            /*EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
@@ -733,7 +741,7 @@ namespace DFMGenerator_Standalone
             DeformationEpisodeDuration_list.Add(10);
             AbsoluteStressRate_list.Add(new Tensor2S(-1333333, -1333333, 0, 0, 0, 0));
             InitialFluidPressure_list.Add(19620000);
-            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
+            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));*/
 #endif
 
             // Mechanical properties
@@ -935,7 +943,7 @@ namespace DFMGenerator_Standalone
             double MinimumLayerThickness = 0;
             // Maximum number of new fractures that can be generated per gridblock per timestep: set automatically to 100,000
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaximumNewFracturesPerTimestep = 1000;// 100000;
+            int MaximumNewFracturesPerTimestep = 100000;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -962,7 +970,7 @@ namespace DFMGenerator_Standalone
             int NoUnconfinedFractureStrikeSets = 6;// 0;
             int NoUnconfinedFractureDipSets = 3;// 0;
             // Number of rays comprising each unconfined fracture
-            int NoRaysPerUnconfinedFracture = 8;
+            int NoRaysPerUnconfinedFracture = 16;// 8;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
             double MinUnconfinedFractureRadius = 100;// -1;
@@ -983,10 +991,10 @@ namespace DFMGenerator_Standalone
             // Ratio of active to total unconfined fracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
             double Active_TotalUCRP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double MinimumUCFClearZoneVolume = 0.2;
+            double MinimumUCFClearZoneVolume = 0.1;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepUCFP33Increase = 0.02;
+            double MaxTimestepUCFP33Increase = 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
             double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
@@ -996,7 +1004,7 @@ namespace DFMGenerator_Standalone
             double Min_R_ActivationProbability = 0.8;
             // The proportion of the ray length increment to apply to active unconfined fracture datapoints before the specified proportion of fractures are deactivated
             // Set to -1 to use the inverse stress shadow volume
-            double ProportionalUCRIncrementToApply = double.NaN;// 0.5;
+            double ProportionalUCRIncrementToApply = 0.5;
             // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
             double Min_R_staticDatapointSizeRatio = 0.02;
             // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
@@ -1007,7 +1015,7 @@ namespace DFMGenerator_Standalone
             // If None, unconfined fractures will only be deactivated if they lie in the stress shadow zone of parallel unconfined fractures
             // If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor
             // If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
-            AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.None;
+            AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.Automatic;
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
             double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
@@ -1081,11 +1089,11 @@ namespace DFMGenerator_Standalone
                     {
                         // Main properties
                         // Grid size
-                        case "NoRows":
-                            NoRows = Convert.ToInt32(line_split[1]);
-                            break;
                         case "NoCols":
                             NoCols = Convert.ToInt32(line_split[1]);
+                            break;
+                        case "NoRows":
+                            NoRows = Convert.ToInt32(line_split[1]);
                             break;
                         case "NoLayers":
                             NoLayers = Convert.ToInt32(line_split[1]);
@@ -1877,21 +1885,21 @@ namespace DFMGenerator_Standalone
                 Tensor2S nextInitialAbsoluteStess = (deformationEpisodeNo < InitialAbsoluteStress_list.Count ? InitialAbsoluteStress_list[deformationEpisodeNo] : InitialAbsoluteStress);
 
                 // Create a new array for this deformation episode for each parameter
-                double[,,] nextEhminAzi_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextEhminRate_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextEhmaxRate_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextAppliedOverpressureRate_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextAppliedTemperatureChange_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextAppliedUpliftRate_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextStressArchingFactor_array = new double[NoRows, NoCols, NoLayers];
-                double[,,] nextDeformationEpisodeDuration_array = new double[NoRows, NoCols, NoLayers];
-                Tensor2S[,,] nextAbsoluteStressRate_array = new Tensor2S[NoRows, NoCols, NoLayers];
-                double[,,] nextInitialFluidPressure_array = new double[NoRows, NoCols, NoLayers];
-                Tensor2S[,,] nextInitialAbsoluteStess_array = new Tensor2S[NoRows, NoCols, NoLayers];
+                double[,,] nextEhminAzi_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextEhminRate_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextEhmaxRate_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextAppliedOverpressureRate_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextAppliedTemperatureChange_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextAppliedUpliftRate_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextStressArchingFactor_array = new double[NoCols, NoRows, NoLayers];
+                double[,,] nextDeformationEpisodeDuration_array = new double[NoCols, NoRows, NoLayers];
+                Tensor2S[,,] nextAbsoluteStressRate_array = new Tensor2S[NoCols, NoRows, NoLayers];
+                double[,,] nextInitialFluidPressure_array = new double[NoCols, NoRows, NoLayers];
+                Tensor2S[,,] nextInitialAbsoluteStess_array = new Tensor2S[NoCols, NoRows, NoLayers];
 
                 // Populate the new arrays with default values
-                for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                for (int RowNo = 0; RowNo < NoRows; RowNo++)
                         for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
                         {
                             if (TestComplexGeometry)
@@ -1899,17 +1907,17 @@ namespace DFMGenerator_Standalone
                                 double local_EhminAzi = 0;
                                 if ((ColNo + RowNo) > 4)
                                     local_EhminAzi += Math.PI / 2;
-                                nextEhminAzi_array[RowNo, ColNo, LayerNo] = ((ColNo + RowNo) % 2 == 1 ? local_EhminAzi - EhminCurvature : local_EhminAzi + EhminCurvature);
+                                nextEhminAzi_array[ColNo, RowNo, LayerNo] = ((ColNo + RowNo) % 2 == 1 ? local_EhminAzi - EhminCurvature : local_EhminAzi + EhminCurvature);
 
                             }
                             else if (VariableStrainOrientation)
                             {
                                 double local_EhminAzi = nextEhminAzi + ((double)(ColNo - RowNo) * (EhminCurvature));
-                                nextEhminAzi_array[RowNo, ColNo, LayerNo] = local_EhminAzi;
+                                nextEhminAzi_array[ColNo, RowNo, LayerNo] = local_EhminAzi;
                             }
                             else
                             {
-                                nextEhminAzi_array[RowNo, ColNo, LayerNo] = nextEhminAzi;
+                                nextEhminAzi_array[ColNo, RowNo, LayerNo] = nextEhminAzi;
                             }
                             if (VariableStrainMagnitude)
                             {
@@ -1923,46 +1931,46 @@ namespace DFMGenerator_Standalone
                                     double neighbourEhminRate, neighbourEhmaxRate;
                                     if ((ColNo > 0) && (RowNo > 0))
                                     {
-                                        neighbourEhminRate = (nextEhminRate_array[RowNo - 1, ColNo - 1, LayerNo] + nextEhminRate_array[RowNo - 1, ColNo, LayerNo] + nextEhminRate_array[RowNo, ColNo - 1, LayerNo]) / 3;
-                                        neighbourEhmaxRate = (nextEhmaxRate_array[RowNo - 1, ColNo - 1, LayerNo] + nextEhmaxRate_array[RowNo - 1, ColNo, LayerNo] + nextEhmaxRate_array[RowNo, ColNo - 1, LayerNo]) / 3;
+                                        neighbourEhminRate = (nextEhminRate_array[ColNo - 1, RowNo - 1, LayerNo] + nextEhminRate_array[ColNo, RowNo - 1, LayerNo] + nextEhminRate_array[ColNo - 1, RowNo, LayerNo]) / 3;
+                                        neighbourEhmaxRate = (nextEhmaxRate_array[ColNo - 1, RowNo - 1, LayerNo] + nextEhmaxRate_array[ColNo, RowNo - 1, LayerNo] + nextEhmaxRate_array[ColNo - 1, RowNo, LayerNo]) / 3;
                                     }
                                     else if (ColNo > 0)
                                     {
-                                        neighbourEhminRate = nextEhminRate_array[RowNo, ColNo - 1, LayerNo];
-                                        neighbourEhmaxRate = nextEhmaxRate_array[RowNo, ColNo - 1, LayerNo];
+                                        neighbourEhminRate = nextEhminRate_array[ColNo - 1, RowNo, LayerNo];
+                                        neighbourEhmaxRate = nextEhmaxRate_array[ColNo - 1, RowNo, LayerNo];
                                     }
                                     else if (RowNo > 0)
                                     {
-                                        neighbourEhminRate = nextEhminRate_array[RowNo - 1, ColNo, LayerNo];
-                                        neighbourEhmaxRate = nextEhmaxRate_array[RowNo - 1, ColNo, LayerNo];
+                                        neighbourEhminRate = nextEhminRate_array[ColNo, RowNo - 1, LayerNo];
+                                        neighbourEhmaxRate = nextEhmaxRate_array[ColNo, RowNo - 1, LayerNo];
                                     }
                                     else
                                     {
                                         neighbourEhminRate = nextEhminRate;
                                         neighbourEhmaxRate = nextEhmaxRate;
                                     }
-                                    nextEhminRate_array[RowNo, ColNo, LayerNo] = ((neighbourEhminRate * VariableStrainSmoothingFactor) + local_EhminRate) / (VariableStrainSmoothingFactor + 1);
-                                    nextEhmaxRate_array[RowNo, ColNo, LayerNo] = ((neighbourEhmaxRate * VariableStrainSmoothingFactor) + local_EhmaxRate) / (VariableStrainSmoothingFactor + 1);
+                                    nextEhminRate_array[ColNo, RowNo, LayerNo] = ((neighbourEhminRate * VariableStrainSmoothingFactor) + local_EhminRate) / (VariableStrainSmoothingFactor + 1);
+                                    nextEhmaxRate_array[ColNo, RowNo, LayerNo] = ((neighbourEhmaxRate * VariableStrainSmoothingFactor) + local_EhmaxRate) / (VariableStrainSmoothingFactor + 1);
                                 }
                                 else
                                 {
-                                    nextEhminRate_array[RowNo, ColNo, LayerNo] = local_EhminRate;
-                                    nextEhmaxRate_array[RowNo, ColNo, LayerNo] = local_EhmaxRate;
+                                    nextEhminRate_array[ColNo, RowNo, LayerNo] = local_EhminRate;
+                                    nextEhmaxRate_array[ColNo, RowNo, LayerNo] = local_EhmaxRate;
                                 }
                             }
                             else
                             {
-                                nextEhminRate_array[RowNo, ColNo, LayerNo] = nextEhminRate;
-                                nextEhmaxRate_array[RowNo, ColNo, LayerNo] = nextEhmaxRate;
+                                nextEhminRate_array[ColNo, RowNo, LayerNo] = nextEhminRate;
+                                nextEhmaxRate_array[ColNo, RowNo, LayerNo] = nextEhmaxRate;
                             }
-                            nextAppliedOverpressureRate_array[RowNo, ColNo, LayerNo] = nextAppliedOverpressureRate;
-                            nextAppliedTemperatureChange_array[RowNo, ColNo, LayerNo] = nextAppliedTemperatureChange;
-                            nextAppliedUpliftRate_array[RowNo, ColNo, LayerNo] = nextAppliedUpliftRate;
-                            nextStressArchingFactor_array[RowNo, ColNo, LayerNo] = nextStressArchingFactor;
-                            nextDeformationEpisodeDuration_array[RowNo, ColNo, LayerNo] = nextDeformationEpisodeDuration;
-                            nextAbsoluteStressRate_array[RowNo, ColNo, LayerNo] = nextAbsoluteStressRate;
-                            nextInitialFluidPressure_array[RowNo, ColNo, LayerNo] = nextInitialFluidPressure;
-                            nextInitialAbsoluteStess_array[RowNo, ColNo, LayerNo] = nextInitialAbsoluteStess;
+                            nextAppliedOverpressureRate_array[ColNo, RowNo, LayerNo] = nextAppliedOverpressureRate;
+                            nextAppliedTemperatureChange_array[ColNo, RowNo, LayerNo] = nextAppliedTemperatureChange;
+                            nextAppliedUpliftRate_array[ColNo, RowNo, LayerNo] = nextAppliedUpliftRate;
+                            nextStressArchingFactor_array[ColNo, RowNo, LayerNo] = nextStressArchingFactor;
+                            nextDeformationEpisodeDuration_array[ColNo, RowNo, LayerNo] = nextDeformationEpisodeDuration;
+                            nextAbsoluteStressRate_array[ColNo, RowNo, LayerNo] = nextAbsoluteStressRate;
+                            nextInitialFluidPressure_array[ColNo, RowNo, LayerNo] = nextInitialFluidPressure;
+                            nextInitialAbsoluteStess_array[ColNo, RowNo, LayerNo] = nextInitialAbsoluteStess;
                         }
 
                 // Add the new arrays to the appropriate list
@@ -1980,99 +1988,99 @@ namespace DFMGenerator_Standalone
             }
 
             // Create arrays for variable mechanical property parameters, depth at start of deformation and present day effective stress, and populate them with default values
-            double[,,] YoungsMod_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PoissonsRatio_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] Porosity_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] BiotCoefficient_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] ThermalExpansionCoefficient_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] FrictionCoefficient_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] CrackSurfaceEnergy_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] SubcriticalPropIndex_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] RockStrainRelaxation_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] FractureRelaxation_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] InitialMicrofractureDensity_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] InitialMicrofractureSizeDistribution_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] HostRock_kh_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] HostRock_kv_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] DepthAtDeformation_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PresentDayEffectiveStress_XX_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PresentDayEffectiveStress_YY_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PresentDayEffectiveStress_ZZ_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PresentDayEffectiveStress_XY_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PresentDayEffectiveStress_YZ_array = new double[NoRows, NoCols, NoLayers];
-            double[,,] PresentDayEffectiveStress_ZX_array = new double[NoRows, NoCols, NoLayers];
-            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+            double[,,] YoungsMod_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PoissonsRatio_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] Porosity_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] BiotCoefficient_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] ThermalExpansionCoefficient_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] FrictionCoefficient_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] CrackSurfaceEnergy_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] SubcriticalPropIndex_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] RockStrainRelaxation_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] FractureRelaxation_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] InitialMicrofractureDensity_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] InitialMicrofractureSizeDistribution_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] HostRock_kh_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] HostRock_kv_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] DepthAtDeformation_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PresentDayEffectiveStress_XX_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PresentDayEffectiveStress_YY_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PresentDayEffectiveStress_ZZ_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PresentDayEffectiveStress_XY_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PresentDayEffectiveStress_YZ_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] PresentDayEffectiveStress_ZX_array = new double[NoCols, NoRows, NoLayers];
+            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
                     {
                         // Set local values for mechanical properties and add them to the appropriate arrays
                         if (VariableYoungsMod)
                         {
-                            //YoungsMod_array[RowNo, ColNo] = YoungsMod * (1 + (((double)(NoCols - ColNo) / (double)NoCols) * 0.05));
+                            //YoungsMod_array[ColNo, RowNo] = YoungsMod * (1 + (((double)(NoRows - RowNo) / (double)NoRows) * 0.05));
                             double youngsModMultiplier = RandomNumberGenerator.NextDouble() * 2;
                             double local_YoungsMod = YoungsMod * youngsModMultiplier;
                             if (VariableYoungsModSmoothingFactor >= 0)
                             {
                                 double neighbourYoungsMod;
-                                if ((ColNo > 0) && (RowNo > 0))
+                                if ((RowNo > 0) && (ColNo > 0))
                                 {
-                                    neighbourYoungsMod = (YoungsMod_array[RowNo - 1, ColNo - 1, LayerNo] + YoungsMod_array[RowNo - 1, ColNo, LayerNo] + YoungsMod_array[RowNo, ColNo - 1, LayerNo]) / 3;
-                                }
-                                else if (ColNo > 0)
-                                {
-                                    neighbourYoungsMod = YoungsMod_array[RowNo, ColNo - 1, LayerNo];
+                                    neighbourYoungsMod = (YoungsMod_array[ColNo - 1, RowNo - 1, LayerNo] + YoungsMod_array[ColNo - 1, RowNo, LayerNo] + YoungsMod_array[ColNo, RowNo - 1, LayerNo]) / 3;
                                 }
                                 else if (RowNo > 0)
                                 {
-                                    neighbourYoungsMod = YoungsMod_array[RowNo - 1, ColNo, LayerNo];
+                                    neighbourYoungsMod = YoungsMod_array[ColNo, RowNo - 1, LayerNo];
+                                }
+                                else if (ColNo > 0)
+                                {
+                                    neighbourYoungsMod = YoungsMod_array[ColNo - 1, RowNo, LayerNo];
                                 }
                                 else
                                 {
                                     neighbourYoungsMod = YoungsMod;
                                 }
-                                YoungsMod_array[RowNo, ColNo, LayerNo] = ((neighbourYoungsMod * VariableYoungsModSmoothingFactor) + local_YoungsMod) / (VariableYoungsModSmoothingFactor + 1);
-                                //Console.WriteLine(string.Format("Cell {0},{1},{2}: ehmin rate {3}, ehmax rate {4}, Youngs Mod {5}", RowNo, ColNo, LayerNo, EhminRate_array[0][RowNo, ColNo, LayerNo], EhmaxRate_array[0][RowNo, ColNo, LayerNo], YoungsMod_array[RowNo, ColNo, LayerNo]));
+                                YoungsMod_array[ColNo, RowNo, LayerNo] = ((neighbourYoungsMod * VariableYoungsModSmoothingFactor) + local_YoungsMod) / (VariableYoungsModSmoothingFactor + 1);
+                                //Console.WriteLine(string.Format("Cell {0},{1},{2}: ehmin rate {3}, ehmax rate {4}, Youngs Mod {5}", ColNo, RowNo, LayerNo, EhminRate_array[0][ColNo, RowNo, LayerNo], EhmaxRate_array[0][ColNo, RowNo, LayerNo], YoungsMod_array[ColNo, RowNo, LayerNo]));
                             }
                             else
                             {
-                                YoungsMod_array[RowNo, ColNo, LayerNo] = YoungsMod * (1 + (((double)(ColNo) / (double)NoCols) * 1));
+                                YoungsMod_array[ColNo, RowNo, LayerNo] = YoungsMod * (1 + (((double)(RowNo) / (double)NoRows) * 1));
                             }
                         }
                         else
                         {
-                            YoungsMod_array[RowNo, ColNo, LayerNo] = YoungsMod;
+                            YoungsMod_array[ColNo, RowNo, LayerNo] = YoungsMod;
                         }
-                        PoissonsRatio_array[RowNo, ColNo, LayerNo] = PoissonsRatio;
-                        Porosity_array[RowNo, ColNo, LayerNo] = Porosity;
-                        BiotCoefficient_array[RowNo, ColNo, LayerNo] = BiotCoefficient;
-                        ThermalExpansionCoefficient_array[RowNo, ColNo, LayerNo] = ThermalExpansionCoefficient;
+                        PoissonsRatio_array[ColNo, RowNo, LayerNo] = PoissonsRatio;
+                        Porosity_array[ColNo, RowNo, LayerNo] = Porosity;
+                        BiotCoefficient_array[ColNo, RowNo, LayerNo] = BiotCoefficient;
+                        ThermalExpansionCoefficient_array[ColNo, RowNo, LayerNo] = ThermalExpansionCoefficient;
                         if (VariableCSE)
-                            CrackSurfaceEnergy_array[RowNo, ColNo, LayerNo] = CrackSurfaceEnergy * (1 + (((double)(ColNo) / (double)NoCols) * 1));
+                            CrackSurfaceEnergy_array[ColNo, RowNo, LayerNo] = CrackSurfaceEnergy * (1 + (((double)(RowNo) / (double)NoRows) * 1));
                         else
-                            CrackSurfaceEnergy_array[RowNo, ColNo, LayerNo] = CrackSurfaceEnergy;
+                            CrackSurfaceEnergy_array[ColNo, RowNo, LayerNo] = CrackSurfaceEnergy;
                         if (VariableFriction)
-                            FrictionCoefficient_array[RowNo, ColNo, LayerNo] = FrictionCoefficient * (1 + (((double)(ColNo) / (double)NoCols) * 1));
+                            FrictionCoefficient_array[ColNo, RowNo, LayerNo] = FrictionCoefficient * (1 + (((double)(RowNo) / (double)NoRows) * 1));
                         else
-                            FrictionCoefficient_array[RowNo, ColNo, LayerNo] = FrictionCoefficient;
-                        SubcriticalPropIndex_array[RowNo, ColNo, LayerNo] = SubcriticalPropIndex;
-                        RockStrainRelaxation_array[RowNo, ColNo, LayerNo] = RockStrainRelaxation;
-                        FractureRelaxation_array[RowNo, ColNo, LayerNo] = FractureRelaxation;
-                        InitialMicrofractureDensity_array[RowNo, ColNo, LayerNo] = InitialMicrofractureDensity;
-                        InitialMicrofractureSizeDistribution_array[RowNo, ColNo, LayerNo] = InitialMicrofractureSizeDistribution;
-                        HostRock_kh_array[RowNo, ColNo, LayerNo] = HostRock_kh;
-                        HostRock_kv_array[RowNo, ColNo, LayerNo] = HostRock_kv;
-                        DepthAtDeformation_array[RowNo, ColNo, LayerNo] = DepthAtDeformation;
-                        PresentDayEffectiveStress_XX_array[RowNo, ColNo, LayerNo] = PresentDayEffectiveStress_XX;
-                        PresentDayEffectiveStress_YY_array[RowNo, ColNo, LayerNo] = PresentDayEffectiveStress_YY;
-                        PresentDayEffectiveStress_ZZ_array[RowNo, ColNo, LayerNo] = PresentDayEffectiveStress_ZZ;
-                        PresentDayEffectiveStress_XY_array[RowNo, ColNo, LayerNo] = PresentDayEffectiveStress_XY;
-                        PresentDayEffectiveStress_YZ_array[RowNo, ColNo, LayerNo] = PresentDayEffectiveStress_YZ;
-                        PresentDayEffectiveStress_ZX_array[RowNo, ColNo, LayerNo] = PresentDayEffectiveStress_ZX;
+                            FrictionCoefficient_array[ColNo, RowNo, LayerNo] = FrictionCoefficient;
+                        SubcriticalPropIndex_array[ColNo, RowNo, LayerNo] = SubcriticalPropIndex;
+                        RockStrainRelaxation_array[ColNo, RowNo, LayerNo] = RockStrainRelaxation;
+                        FractureRelaxation_array[ColNo, RowNo, LayerNo] = FractureRelaxation;
+                        InitialMicrofractureDensity_array[ColNo, RowNo, LayerNo] = InitialMicrofractureDensity;
+                        InitialMicrofractureSizeDistribution_array[ColNo, RowNo, LayerNo] = InitialMicrofractureSizeDistribution;
+                        HostRock_kh_array[ColNo, RowNo, LayerNo] = HostRock_kh;
+                        HostRock_kv_array[ColNo, RowNo, LayerNo] = HostRock_kv;
+                        DepthAtDeformation_array[ColNo, RowNo, LayerNo] = DepthAtDeformation;
+                        PresentDayEffectiveStress_XX_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_XX;
+                        PresentDayEffectiveStress_YY_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_YY;
+                        PresentDayEffectiveStress_ZZ_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_ZZ;
+                        PresentDayEffectiveStress_XY_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_XY;
+                        PresentDayEffectiveStress_YZ_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_YZ;
+                        PresentDayEffectiveStress_ZX_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_ZX;
                     }
 
             // Create arrays for the gridblock cornerpoints and populate them
-            // Note that the cornerpoint with coordinates [RowNo, ColNo, LayerNo] will refer to the SW bottom cornerpoint of the gridblock with coordinates [RowNo, ColNo, LayerNo]
-            PointXYZ[,,] CornerPoints = new PointXYZ[NoRows + 1, NoCols + 1, NoLayers + 1];
+            // Note that the cornerpoint with coordinates [ColNo, RowNo, LayerNo] will refer to the SW bottom cornerpoint of the gridblock with coordinates [ColNo, RowNo, LayerNo]
+            PointXYZ[,,] CornerPoints = new PointXYZ[NoCols + 1, NoRows + 1, NoLayers + 1];
             for (int LayerNo = 0; LayerNo <= NoLayers; LayerNo++)
             {
                 double z_coord = -(Depth + ((double)(NoLayers - LayerNo) * LayerThickness));
@@ -2089,15 +2097,15 @@ namespace DFMGenerator_Standalone
                         if (TestComplexGeometry)
                         {
                             if ((LayerNo % 2) == 1)
-                                Cornerpoint = new PointXYZ(x_coord - ((RowNo % 2) == 1 ? 2 : -2), y_coord - ((ColNo % 2) == 1 ? 2 : -2), z_coord - (LayerThickness * ((RowNo % 2) == 1 ? 0.1 : -0.1)));
+                                Cornerpoint = new PointXYZ(x_coord - ((RowNo % 2) == 1 ? 2 : -2), y_coord - ((ColNo % 2) == 1 ? 2 : -2), z_coord - (LayerThickness * ((ColNo % 2) == 1 ? 0.1 : -0.1)));
                             else
-                                Cornerpoint = new PointXYZ(x_coord, y_coord, z_coord - (LayerThickness * ((ColNo % 2) == 1 ? 0.1 : -0.1)));
+                                Cornerpoint = new PointXYZ(x_coord, y_coord, z_coord - (LayerThickness * ((RowNo % 2) == 1 ? 0.1 : -0.1)));
                         }
                         else
                         {
                             Cornerpoint = new PointXYZ(x_coord, y_coord, z_coord);
                         }
-                        CornerPoints[RowNo, ColNo, LayerNo] = Cornerpoint;
+                        CornerPoints[ColNo, RowNo, LayerNo] = Cornerpoint;
                     }
                 }
             }
@@ -2163,7 +2171,7 @@ namespace DFMGenerator_Standalone
 
                             // Get the number of data items, and give a warning if this does not match the number of cornerpoints
                             int noDataItems = PropertyOverrideData.Count / 3;
-                            int noCornerPoints = (NoRows + 1) * (NoCols + 1) * (NoLayers + 1);
+                            int noCornerPoints = (NoCols + 1) * (NoRows + 1) * (NoLayers + 1);
                             if (noDataItems > noCornerPoints)
                             {
                                 Console.WriteLine(string.Format("Note: the number of specified cornerpoint locations is greater than the number of cornerpoints; excess values will be ignored"));
@@ -2177,10 +2185,10 @@ namespace DFMGenerator_Standalone
                             for (int itemNo = 0; itemNo < noDataItems; itemNo++)
                             {
                                 // Get the row, column and layer index for this item
-                                int noPointsPerLayer = (NoRows + 1) * (NoCols + 1);
+                                int noPointsPerLayer = (NoCols + 1) * (NoRows + 1);
                                 int layerNo = itemNo / noPointsPerLayer;
-                                int rowNo = (itemNo % noPointsPerLayer) / (NoCols + 1);
-                                int colNo = (itemNo % noPointsPerLayer) % (NoCols + 1);
+                                int rowNo = (itemNo % noPointsPerLayer) / (NoRows + 1);
+                                int colNo = (itemNo % noPointsPerLayer) % (NoRows + 1);
 
                                 // Write the data item to the appropriate array
                                 // Catch any exceptions due to invalid data formats
@@ -2423,7 +2431,7 @@ namespace DFMGenerator_Standalone
 
                             // Get the number of data items, and give a warning if this does not match the number of gridblocks
                             int noDataItems = PropertyOverrideData.Count;
-                            int noGridblocks = NoRows * NoCols * NoLayers;
+                            int noGridblocks = NoCols * NoRows * NoLayers;
                             if (noDataItems > noGridblocks)
                             {
                                 Console.WriteLine(string.Format("Warning! The number of specified {0} values is greater than the number of gridblocks; excess values will be ignored", propertyName));
@@ -2443,10 +2451,10 @@ namespace DFMGenerator_Standalone
                                     continue;
 
                                 // Get the row, column and layer index for this item
-                                int noPointsPerLayer = NoRows * NoCols;
+                                int noPointsPerLayer = NoCols * NoRows;
                                 int layerNo = itemNo / noPointsPerLayer;
-                                int rowNo = (itemNo % noPointsPerLayer) / NoCols;
-                                int colNo = (itemNo % noPointsPerLayer) % NoCols;
+                                int rowNo = (itemNo % noPointsPerLayer) / NoRows;
+                                int colNo = (itemNo % noPointsPerLayer) % NoRows;
 
                                 // Write the data item to the appropriate array
                                 // Catch any exceptions due to invalid data formats
@@ -2473,8 +2481,8 @@ namespace DFMGenerator_Standalone
                     continue;
 
                 // Set the row and column numbers for the gridblock to override
-                int RowNo = -1;
                 int ColNo = -1;
+                int RowNo = -1;
                 int LayerNo = -1;
                 // Catch any exceptions due to invalid data formats
                 try
@@ -2491,11 +2499,11 @@ namespace DFMGenerator_Standalone
                         // In the input data, the first coordinate is the column number (E-W), the second coordinate is the row number (N-S) and the third coordinate is the layer number (from bottom to top)
                         // NB The order of the column and row coordinates is reversed in the Grid object interface
                         // Also in the input data the coordinates a 1-based but in the Grid object interface they are 0-based
-                        RowNo = Convert.ToInt32(firstline_split[2]);
                         ColNo = Convert.ToInt32(firstline_split[1]);
+                        RowNo = Convert.ToInt32(firstline_split[2]);
                         LayerNo = Convert.ToInt32(firstline_split[3]);
                     }
-                    if ((RowNo < 1) || (RowNo > NoRows) || (ColNo < 1) || (ColNo > NoCols) || (LayerNo < 1) || (LayerNo > NoLayers))
+                    if ((ColNo < 1) || (ColNo > NoCols) || (RowNo < 1) || (RowNo > NoRows) || (LayerNo < 1) || (LayerNo > NoLayers))
                     {
                         Console.WriteLine(string.Format("Warning! Gridblock coordinate {0},{1},{2} is out of range", ColNo, RowNo, LayerNo));
                         Console.WriteLine("Data will be ignored");
@@ -2505,8 +2513,8 @@ namespace DFMGenerator_Standalone
                     {
                         Console.WriteLine(string.Format("Overrides for gridblock {0},{1},{2}", ColNo, RowNo, LayerNo));
                         // Convert to zero-based coordinates
-                        RowNo--;
                         ColNo--;
+                        RowNo--;
                         LayerNo--;
                     }
                 }
@@ -2556,7 +2564,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > EhminAzi_array.Count)
                                         noValues = EhminAzi_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        EhminAzi_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        EhminAzi_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "EhminRate":
@@ -2566,7 +2574,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > EhminRate_array.Count)
                                         noValues = EhminRate_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        EhminRate_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        EhminRate_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "EhmaxRate":
@@ -2576,7 +2584,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > EhmaxRate_array.Count)
                                         noValues = EhmaxRate_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        EhmaxRate_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        EhmaxRate_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "AppliedOverpressureRate":
@@ -2585,7 +2593,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > AppliedOverpressureRate_array.Count)
                                         noValues = AppliedOverpressureRate_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        AppliedOverpressureRate_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        AppliedOverpressureRate_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "AppliedTemperatureChange":
@@ -2594,7 +2602,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > AppliedTemperatureChange_array.Count)
                                         noValues = AppliedTemperatureChange_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        AppliedTemperatureChange_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        AppliedTemperatureChange_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "AppliedUpliftRate":
@@ -2603,7 +2611,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > AppliedUpliftRate_array.Count)
                                         noValues = AppliedUpliftRate_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        AppliedUpliftRate_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        AppliedUpliftRate_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "StressArchingFactor":
@@ -2612,7 +2620,7 @@ namespace DFMGenerator_Standalone
                                     if (noValues > StressArchingFactor_array.Count)
                                         noValues = StressArchingFactor_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        StressArchingFactor_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        StressArchingFactor_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
                             case "DeformationEpisodeDuration":
@@ -2623,76 +2631,76 @@ namespace DFMGenerator_Standalone
                                     if (noValues > DeformationEpisodeDuration_array.Count)
                                         noValues = DeformationEpisodeDuration_array.Count;
                                     for (int valueNo = 1; valueNo < noValues; valueNo++)
-                                        DeformationEpisodeDuration_array[valueNo - 1][RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
+                                        DeformationEpisodeDuration_array[valueNo - 1][ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[valueNo]);
                                 }
                                 break;
 
                             case "YoungsMod":
-                                YoungsMod_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                YoungsMod_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PoissonsRatio":
-                                PoissonsRatio_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PoissonsRatio_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "Porosity":
-                                Porosity_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                Porosity_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "BiotCoefficient":
-                                BiotCoefficient_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                BiotCoefficient_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "ThermalExpansionCoefficient":
-                                ThermalExpansionCoefficient_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                ThermalExpansionCoefficient_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "CrackSurfaceEnergy":
-                                CrackSurfaceEnergy_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                CrackSurfaceEnergy_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "FrictionCoefficient":
-                                FrictionCoefficient_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                FrictionCoefficient_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "RockStrainRelaxation":
-                                RockStrainRelaxation_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                RockStrainRelaxation_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "FractureRelaxation":
-                                FractureRelaxation_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                FractureRelaxation_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "InitialMicrofractureDensity":
                             case "B": // For backwards compatibility
-                                InitialMicrofractureDensity_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                InitialMicrofractureDensity_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "InitialMicrofractureSizeDistribution":
                             case "c": // For backwards compatibility
-                                InitialMicrofractureSizeDistribution_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                InitialMicrofractureSizeDistribution_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "SubcriticalPropIndex":
                             case "b": // For backwards compatibility
-                                SubcriticalPropIndex_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                SubcriticalPropIndex_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "HostRock_kh":
-                                HostRock_kh_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                HostRock_kh_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "HostRock_kv":
-                                HostRock_kv_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                HostRock_kv_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "DepthAtDeformation":
                             case "DepthAtFracture": // For backwards compatibility
-                                DepthAtDeformation_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                DepthAtDeformation_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PresentDayEffectiveStress_XX":
-                                PresentDayEffectiveStress_XX_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PresentDayEffectiveStress_XX_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PresentDayEffectiveStress_YY":
-                                PresentDayEffectiveStress_YY_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PresentDayEffectiveStress_YY_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PresentDayEffectiveStress_ZZ":
-                                PresentDayEffectiveStress_ZZ_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PresentDayEffectiveStress_ZZ_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PresentDayEffectiveStress_XY":
-                                PresentDayEffectiveStress_XY_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PresentDayEffectiveStress_XY_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PresentDayEffectiveStress_YZ":
-                                PresentDayEffectiveStress_YZ_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PresentDayEffectiveStress_YZ_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "PresentDayEffectiveStress_ZX":
-                                PresentDayEffectiveStress_ZX_array[RowNo, ColNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                                PresentDayEffectiveStress_ZX_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
 
                             case "SWTopCorner":
@@ -2700,7 +2708,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo, ColNo, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo, RowNo, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "SWBottomCorner":
@@ -2708,7 +2716,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo, ColNo, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo, RowNo, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "NWTopCorner":
@@ -2716,7 +2724,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo + 1, ColNo, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo + 1, RowNo, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "NWBottomCorner":
@@ -2724,7 +2732,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo + 1, ColNo, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo + 1, RowNo, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "NETopCorner":
@@ -2732,7 +2740,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo + 1, ColNo + 1, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo + 1, RowNo + 1, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "NEBottomCorner":
@@ -2740,7 +2748,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo + 1, ColNo + 1, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo + 1, RowNo + 1, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "SETopCorner":
@@ -2748,7 +2756,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo, ColNo + 1, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo, RowNo + 1, LayerNo + 1] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
                             case "SEBottomCorner":
@@ -2756,7 +2764,7 @@ namespace DFMGenerator_Standalone
                                     if (line_split.Length < 4)
                                         Console.WriteLine(string.Format("Warning! Need to specify 3 coordinates for {0}", line_split[0]));
                                     else
-                                        CornerPoints[RowNo, ColNo + 1, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
+                                        CornerPoints[ColNo, RowNo + 1, LayerNo] = new PointXYZ(Convert.ToDouble(line_split[1]), Convert.ToDouble(line_split[2]), Convert.ToDouble(line_split[3]));
                                 }
                                 break;
 
@@ -2778,29 +2786,29 @@ namespace DFMGenerator_Standalone
             ConsoleProgressReporter progReporter = new ConsoleProgressReporter(10, true);
 
             // Create a grid and populate it with identical gridblocks
-            FractureGrid ModelGrid = new FractureGrid(NoRows, NoCols, NoLayers);
+            FractureGrid ModelGrid = new FractureGrid(NoCols, NoRows, NoLayers);
             for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
             {
-                for (int RowNo = 0; RowNo < NoRows; RowNo++)
+                for (int ColNo = 0; ColNo < NoCols; ColNo++)
                 {
-                    for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                    for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     {
                         // Get the cornerpoints for the new gridblock
                         PointXYZ SWtop, NWtop, NEtop, SEtop;
                         PointXYZ SWbottom, NWbottom, NEbottom, SEbottom;
-                        SWtop = CornerPoints[RowNo, ColNo, LayerNo + 1];
-                        NWtop = CornerPoints[RowNo + 1, ColNo, LayerNo + 1];
-                        NEtop = CornerPoints[RowNo + 1, ColNo + 1, LayerNo + 1];
-                        SEtop = CornerPoints[RowNo, ColNo + 1, LayerNo + 1];
-                        SWbottom = CornerPoints[RowNo, ColNo, LayerNo];
-                        NWbottom = CornerPoints[RowNo + 1, ColNo, LayerNo];
-                        NEbottom = CornerPoints[RowNo + 1, ColNo + 1, LayerNo];
-                        SEbottom = CornerPoints[RowNo, ColNo + 1, LayerNo];
+                        SWtop = CornerPoints[ColNo, RowNo, LayerNo + 1];
+                        NWtop = CornerPoints[ColNo, RowNo + 1, LayerNo + 1];
+                        NEtop = CornerPoints[ColNo + 1, RowNo + 1, LayerNo + 1];
+                        SEtop = CornerPoints[ColNo + 1, RowNo, LayerNo + 1];
+                        SWbottom = CornerPoints[ColNo, RowNo, LayerNo];
+                        NWbottom = CornerPoints[ColNo, RowNo + 1, LayerNo];
+                        NEbottom = CornerPoints[ColNo + 1, RowNo + 1, LayerNo];
+                        SEbottom = CornerPoints[ColNo + 1, RowNo, LayerNo];
 
                         // Calculate the mean depth of top surface and mean layer thickness at start of deformation - assume that these are equal to the current mean depth minus total specified uplift, and current layer thickness, respectively, unless the depth at the start of deformation has been specified
                         double local_LayerThickness = ((SWtop.Z - SWbottom.Z) + (NWtop.Z - NWbottom.Z) + (NEtop.Z - NEbottom.Z) + (SEtop.Z - SEbottom.Z)) / 4;
                         double local_Current_Depth = (SWtop.Depth + NWtop.Depth + NEtop.Depth + SEtop.Depth) / 4;
-                        double local_DepthAtDeformation = DepthAtDeformation_array[RowNo, ColNo, LayerNo];
+                        double local_DepthAtDeformation = DepthAtDeformation_array[ColNo, RowNo, LayerNo];
                         double local_Depth;
                         if (local_DepthAtDeformation > 0)
                         {
@@ -2814,8 +2822,8 @@ namespace DFMGenerator_Standalone
                             local_Depth = local_Current_Depth;
                             for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                             {
-                                double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : AppliedUpliftRate);
-                                double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : DeformationEpisodeDuration);
+                                double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : AppliedUpliftRate);
+                                double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : DeformationEpisodeDuration);
                                 if (local_DeformationEpisodeDuration > 0)
                                     local_Depth += (local_AppliedUpliftRate * local_DeformationEpisodeDuration);
                             }
@@ -2828,18 +2836,18 @@ namespace DFMGenerator_Standalone
                         gc.setGridblockCorners(SWtop, SWbottom, NWtop, NWbottom, NEtop, NEbottom, SEtop, SEbottom);
 
                         // Get the mechanical properties for the gridblock
-                        double local_YoungsMod = YoungsMod_array[RowNo, ColNo, LayerNo];
-                        double local_PoissonsRatio = PoissonsRatio_array[RowNo, ColNo, LayerNo];
-                        double local_Porosity = Porosity_array[RowNo, ColNo, LayerNo];
-                        double local_BiotCoefficient = BiotCoefficient_array[RowNo, ColNo, LayerNo];
-                        double local_ThermalExpansionCoefficient = ThermalExpansionCoefficient_array[RowNo, ColNo, LayerNo];
-                        double local_CrackSurfaceEnergy = CrackSurfaceEnergy_array[RowNo, ColNo, LayerNo];
-                        double local_FrictionCoefficient = FrictionCoefficient_array[RowNo, ColNo, LayerNo];
-                        double local_RockStrainRelaxation = RockStrainRelaxation_array[RowNo, ColNo, LayerNo];
-                        double local_FractureRelaxation = FractureRelaxation_array[RowNo, ColNo, LayerNo];
-                        double local_SubcriticalPropIndex = SubcriticalPropIndex_array[RowNo, ColNo, LayerNo];
-                        double local_HostRock_kh = HostRock_kh_array[RowNo, ColNo, LayerNo];
-                        double local_HostRock_kv = HostRock_kv_array[RowNo, ColNo, LayerNo];
+                        double local_YoungsMod = YoungsMod_array[ColNo, RowNo, LayerNo];
+                        double local_PoissonsRatio = PoissonsRatio_array[ColNo, RowNo, LayerNo];
+                        double local_Porosity = Porosity_array[ColNo, RowNo, LayerNo];
+                        double local_BiotCoefficient = BiotCoefficient_array[ColNo, RowNo, LayerNo];
+                        double local_ThermalExpansionCoefficient = ThermalExpansionCoefficient_array[ColNo, RowNo, LayerNo];
+                        double local_CrackSurfaceEnergy = CrackSurfaceEnergy_array[ColNo, RowNo, LayerNo];
+                        double local_FrictionCoefficient = FrictionCoefficient_array[ColNo, RowNo, LayerNo];
+                        double local_RockStrainRelaxation = RockStrainRelaxation_array[ColNo, RowNo, LayerNo];
+                        double local_FractureRelaxation = FractureRelaxation_array[ColNo, RowNo, LayerNo];
+                        double local_SubcriticalPropIndex = SubcriticalPropIndex_array[ColNo, RowNo, LayerNo];
+                        double local_HostRock_kh = HostRock_kh_array[ColNo, RowNo, LayerNo];
+                        double local_HostRock_kv = HostRock_kv_array[ColNo, RowNo, LayerNo];
 
                         // Set the mechanical properties for the gridblock
                         gc.MechProps.setMechanicalProperties(local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits);
@@ -2909,7 +2917,7 @@ namespace DFMGenerator_Standalone
 
                         // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
                         // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to the default minimum horizontal strain azimuth
-                        double local_DefaultFractureAzimuth = (EhminAzi_array.Count > 0 ? EhminAzi_array[0][RowNo, ColNo, LayerNo] : EhminAzi);
+                        double local_DefaultFractureAzimuth = (EhminAzi_array.Count > 0 ? EhminAzi_array[0][ColNo, RowNo, LayerNo] : EhminAzi);
 
                         // Set the propagation control data for the gridblock
                         gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
@@ -2920,7 +2928,7 @@ namespace DFMGenerator_Standalone
                         gc.PropControl.FolderPath = folderPath;
 
 #if DEBUG_FRACS
-                        Console.WriteLine(string.Format("Cell {0} {1} {2} ", RowNo, ColNo, LayerNo));
+                        Console.WriteLine(string.Format("Cell {0} {1} {2} ", ColNo, RowNo, LayerNo));
                         Console.WriteLine(string.Format("SWtop {0} {1} {2}", SWtop.X, SWtop.Y, SWtop.Z));
                         Console.WriteLine(string.Format("NWtop {0} {1} {2}", NWtop.X, NWtop.Y, NWtop.Z));
                         Console.WriteLine(string.Format("NEtop {0} {1} {2}", NEtop.X, NEtop.Y, NEtop.Z));
@@ -2941,24 +2949,24 @@ namespace DFMGenerator_Standalone
                         Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}, {25}); ",
                             CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
                              MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false));
-                        Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
+                        Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
                         // Add the deformation load data 
                         for (int deformationEpisodeNo = 0; deformationEpisodeNo < noDeformationEpisodes; deformationEpisodeNo++)
                         {
                             // Get the deformation load properties for this deformation episode in this gridblock
-                            double local_EhminAzi = (deformationEpisodeNo < EhminAzi_array.Count ? EhminAzi_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : EhminAzi);
-                            double local_EhminRate = (deformationEpisodeNo < EhminRate_array.Count ? EhminRate_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : EhminRate);
-                            double local_EhmaxRate = (deformationEpisodeNo < EhmaxRate_array.Count ? EhmaxRate_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : EhmaxRate);
-                            double local_AppliedOverpressureRate = (deformationEpisodeNo < AppliedOverpressureRate_array.Count ? AppliedOverpressureRate_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : AppliedOverpressureRate);
-                            double local_AppliedTemperatureChange = (deformationEpisodeNo < AppliedTemperatureChange_array.Count ? AppliedTemperatureChange_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : AppliedTemperatureChange);
-                            double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : AppliedUpliftRate);
-                            double local_StressArchingFactor = (deformationEpisodeNo < StressArchingFactor_array.Count ? StressArchingFactor_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : StressArchingFactor);
-                            double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : DeformationEpisodeDuration);
-                            Tensor2S local_AbsoluteStressRate = (deformationEpisodeNo < AbsoluteStressRate_array.Count ? AbsoluteStressRate_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : AbsoluteStressRate);
-                            double local_InitialFluidPressure = (deformationEpisodeNo < InitialFluidPressure_array.Count ? InitialFluidPressure_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : InitialFluidPressure);
-                            Tensor2S local_InitialAbsoluteStress = (deformationEpisodeNo < InitialAbsoluteStress_array.Count ? InitialAbsoluteStress_array[deformationEpisodeNo][RowNo, ColNo, LayerNo] : InitialAbsoluteStress);
+                            double local_EhminAzi = (deformationEpisodeNo < EhminAzi_array.Count ? EhminAzi_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : EhminAzi);
+                            double local_EhminRate = (deformationEpisodeNo < EhminRate_array.Count ? EhminRate_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : EhminRate);
+                            double local_EhmaxRate = (deformationEpisodeNo < EhmaxRate_array.Count ? EhmaxRate_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : EhmaxRate);
+                            double local_AppliedOverpressureRate = (deformationEpisodeNo < AppliedOverpressureRate_array.Count ? AppliedOverpressureRate_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : AppliedOverpressureRate);
+                            double local_AppliedTemperatureChange = (deformationEpisodeNo < AppliedTemperatureChange_array.Count ? AppliedTemperatureChange_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : AppliedTemperatureChange);
+                            double local_AppliedUpliftRate = (deformationEpisodeNo < AppliedUpliftRate_array.Count ? AppliedUpliftRate_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : AppliedUpliftRate);
+                            double local_StressArchingFactor = (deformationEpisodeNo < StressArchingFactor_array.Count ? StressArchingFactor_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : StressArchingFactor);
+                            double local_DeformationEpisodeDuration = (deformationEpisodeNo < DeformationEpisodeDuration_array.Count ? DeformationEpisodeDuration_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : DeformationEpisodeDuration);
+                            Tensor2S local_AbsoluteStressRate = (deformationEpisodeNo < AbsoluteStressRate_array.Count ? AbsoluteStressRate_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : AbsoluteStressRate);
+                            double local_InitialFluidPressure = (deformationEpisodeNo < InitialFluidPressure_array.Count ? InitialFluidPressure_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : InitialFluidPressure);
+                            Tensor2S local_InitialAbsoluteStress = (deformationEpisodeNo < InitialAbsoluteStress_array.Count ? InitialAbsoluteStress_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : InitialAbsoluteStress);
 
                         // Add the deformation episode to the deformation episode list in the PropControl object
                         if (local_AbsoluteStressRate is null)
@@ -2980,8 +2988,8 @@ namespace DFMGenerator_Standalone
                         }
 
                         // Create the fracture sets
-                        double local_InitialMicrofractureDensity = InitialMicrofractureDensity_array[RowNo, ColNo, LayerNo];
-                        double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_array[RowNo, ColNo, LayerNo];
+                        double local_InitialMicrofractureDensity = InitialMicrofractureDensity_array[ColNo, RowNo, LayerNo];
+                        double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_array[ColNo, RowNo, LayerNo];
                         if (Mode1Only)
                             gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
                         else if (Mode2Only)
@@ -3006,8 +3014,8 @@ namespace DFMGenerator_Standalone
                         // Set the present day effective stress tensor, if required
                         if (UsePresentDayStress)
                         {
-                            Tensor2S local_PresentDayEffectiveStress = new Tensor2S(PresentDayEffectiveStress_XX_array[RowNo, ColNo, LayerNo], PresentDayEffectiveStress_YY_array[RowNo, ColNo, LayerNo], PresentDayEffectiveStress_ZZ_array[RowNo, ColNo, LayerNo],
-                                PresentDayEffectiveStress_XY_array[RowNo, ColNo, LayerNo], PresentDayEffectiveStress_YZ_array[RowNo, ColNo, LayerNo], PresentDayEffectiveStress_ZX_array[RowNo, ColNo, LayerNo]);
+                            Tensor2S local_PresentDayEffectiveStress = new Tensor2S(PresentDayEffectiveStress_XX_array[ColNo, RowNo, LayerNo], PresentDayEffectiveStress_YY_array[ColNo, RowNo, LayerNo], PresentDayEffectiveStress_ZZ_array[ColNo, RowNo, LayerNo],
+                                PresentDayEffectiveStress_XY_array[ColNo, RowNo, LayerNo], PresentDayEffectiveStress_YZ_array[ColNo, RowNo, LayerNo], PresentDayEffectiveStress_ZX_array[ColNo, RowNo, LayerNo]);
                             gc.SetPresentDayStress(local_PresentDayEffectiveStress);
                             //gc.SetPresentDayStressFromStrain(0, 0, 0, 0, double.NaN, double.NaN, double.NaN, double.NaN);
                         }
@@ -3019,10 +3027,10 @@ namespace DFMGenerator_Standalone
 #endif
 
                         // Add the gridblock to the grid
-                        ModelGrid.AddGridblock(gc, RowNo, ColNo, LayerNo);
+                        ModelGrid.AddGridblock(gc, ColNo, RowNo, LayerNo);
 
 #if DEBUG_FRACS
-                        Console.WriteLine(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2});", RowNo, ColNo, LayerNo));
+                        Console.WriteLine(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2});", ColNo, RowNo, LayerNo));
 #endif
                     }
                 }
@@ -3031,6 +3039,25 @@ namespace DFMGenerator_Standalone
             DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 #if DEBUG_FRACS
             Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
+#endif
+
+#if DEBUG_FRACS
+            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                for (int RowNo = 0; RowNo < NoRows; RowNo++)
+                    for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
+                    {
+                        Console.WriteLine("");
+                        Console.WriteLine(string.Format("FractureGrid gridblock Col(I) {0}, Row(J) {1}, Layer(K) {2}", ColNo, RowNo, LayerNo));
+                        GridblockConfiguration gbc = ModelGrid.GetGridblock(ColNo, RowNo, LayerNo);
+                        Console.WriteLine(string.Format("SWtop = new PointXYZ({0}, {1}, {2});", gbc.SWtop.X, gbc.SWtop.Y, gbc.SWtop.Z));
+                        Console.WriteLine(string.Format("SWbottom = new PointXYZ({0}, {1}, {2});", gbc.SWbottom.X, gbc.SWbottom.Y, gbc.SWbottom.Z));
+                        Console.WriteLine(string.Format("NWtop = new PointXYZ({0}, {1}, {2});", gbc.NWtop.X, gbc.NWtop.Y, gbc.NWtop.Z));
+                        Console.WriteLine(string.Format("NWbottom = new PointXYZ({0}, {1}, {2});", gbc.NWbottom.X, gbc.NWbottom.Y, gbc.NWbottom.Z));
+                        Console.WriteLine(string.Format("NEtop = new PointXYZ({0}, {1}, {2});", gbc.NEtop.X, gbc.NEtop.Y, gbc.NEtop.Z));
+                        Console.WriteLine(string.Format("NEbottom = new PointXYZ({0}, {1}, {2});", gbc.NEbottom.X, gbc.NEbottom.Y, gbc.NEbottom.Z));
+                        Console.WriteLine(string.Format("SEtop = new PointXYZ({0}, {1}, {2});", gbc.SEtop.X, gbc.SEtop.Y, gbc.SEtop.Z));
+                        Console.WriteLine(string.Format("SEbottom = new PointXYZ({0}, {1}, {2});", gbc.SEbottom.X, gbc.SEbottom.Y, gbc.SEbottom.Z));
+                    }
 #endif
 
             // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times for this purpose and supply it to the DFNGenerationControl object

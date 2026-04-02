@@ -2687,8 +2687,18 @@ namespace DFMGenerator_SharedCode
                     LastUnconfinedFractureIndex--;
                     NoFracsRemaining--;
                 }
-
             }
+
+            // Remove zero length ray segments from all unconfined fractures in the DFN
+            removeZeroLengthUnconfinedFractureSegments();
+        }
+        /// <summary>
+        /// Remove zero length ray segments from all unconfined fractures in the DFN
+        /// </summary>
+        public void removeZeroLengthUnconfinedFractureSegments()
+        {
+            foreach (UnconfinedFractureXYZ UF in GlobalDFNUnconfinedFractures)
+                UF.RemoveZeroLengthSegments();
         }
 
         // Constructors

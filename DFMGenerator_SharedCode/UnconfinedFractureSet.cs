@@ -3714,7 +3714,7 @@ namespace DFMGenerator_SharedCode
             boundaries.Add(new BoundaryCornerpoints(GridDirection.S, gbc.SEtop, gbc.SWtop, gbc.SWbottom, gbc.SEbottom));
             boundaries.Add(new BoundaryCornerpoints(GridDirection.W, gbc.SWtop, gbc.NWtop, gbc.NWbottom, gbc.SWbottom));
             boundaries.Add(new BoundaryCornerpoints(GridDirection.D, gbc.NWbottom, gbc.NEbottom, gbc.SEbottom, gbc.SWbottom));
-            boundaries.Add(new BoundaryCornerpoints(GridDirection.U, gbc.SWtop, gbc.SEtop, gbc.NEtop, gbc.NWtop));
+            boundaries.Add(new BoundaryCornerpoints(GridDirection.U, gbc.NEtop, gbc.NWtop, gbc.SWtop, gbc.SEtop));
 
             // Loop through the six gridblock boundaries checking for intersection
             foreach (BoundaryCornerpoints boundary in boundaries)

@@ -39,13 +39,13 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Return reference to a specific gridblock in the grid
         /// </summary>
-        /// <param name="RowNo">Row number of gridblock to retrieve</param>
-        /// <param name="ColNo">Column number of gridblock to retrieve</param>
+        /// <param name="ColNo">Column number I of gridblock to retrieve</param>
+        /// <param name="RowNo">Row number J of gridblock to retrieve</param>
         /// <param name="LayerNo">Layer number of gridblock to retrieve</param>
         /// <returns>Reference to the specified GridblockConfiguration object</returns>
-        public GridblockConfiguration GetGridblock(int RowNo, int ColNo, int LayerNo)
+        public GridblockConfiguration GetGridblock(int ColNo, int RowNo, int LayerNo)
         {
-            return Gridblocks[RowNo, ColNo, LayerNo];
+            return Gridblocks[ColNo, RowNo, LayerNo];
         }
 
         // Objects containing geomechanical, fracture property and calculation data relating to the grid
@@ -403,8 +403,8 @@ namespace DFMGenerator_SharedCode
             ImplicitCalculationException = 0;
 
             // Get the total number of grid rows and columns
-            int NoRows = Gridblocks.GetLength(0);
-            int NoCols = Gridblocks.GetLength(1);
+            int NoCols = Gridblocks.GetLength(0);
+            int NoRows = Gridblocks.GetLength(1);
 
             // If the top or bottom layer are out of the grid range, set them to the top and bottom layer of the grid respectively
             int NoLayers = Gridblocks.GetLength(2);
@@ -423,7 +423,7 @@ namespace DFMGenerator_SharedCode
             else
             {
                 // Calculate total number of gridblocks
-                int TotalNoGridblocksInLayer = NoRows * NoCols * NoLayers;
+                int TotalNoGridblocksInLayer = NoCols * NoRows * NoLayers;
 
                 // Set the total number of calculation elements in the progress reporter
                 progressReporter.SetNumberOfElements(TotalNoGridblocksInLayer);
@@ -431,8 +431,8 @@ namespace DFMGenerator_SharedCode
 
             // Loop through every gridblock in the grid
             int NoGridblocksCalculated = 0;
-            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     for (int LayerNo = TopLayerNo; LayerNo < NoLayers; LayerNo++)
                     {
                         // Check if calculation has been aborted
@@ -443,7 +443,7 @@ namespace DFMGenerator_SharedCode
                         }
 
                         // Get a reference to the GridblockConfiguration object
-                        GridblockConfiguration Gridblock = Gridblocks[RowNo, ColNo, LayerNo];
+                        GridblockConfiguration Gridblock = Gridblocks[ColNo, RowNo, LayerNo];
 
                         // Check if it is null
                         if (Gridblock != null)
@@ -560,12 +560,14 @@ namespace DFMGenerator_SharedCode
             double endTime = (calculationCompleted ? 0 : timestepList[totalNoCalculationElements - 1].EndTimestepTime);
 
             // Loop through the intermediate DFNs
-#if LOGGRIDBLOCKS
-            progressReporter.OutputMessage(string.Format("Generating explicit DFN stage {0}, end time {1}", nextStage, endTime));
-            progressReporter.OutputMessage(string.Format("Calculation element {0} of {1}", currentCalculationElement, totalNoCalculationElements));
-#endif
             while (!calculationCompleted)
             {
+
+#if LOGGRIDBLOCKS
+                progressReporter.OutputMessage(string.Format("Generating explicit DFN stage {0}, end time {1}", nextStage, endTime));
+                progressReporter.OutputMessage(string.Format("Calculation element {0} of {1}", currentCalculationElement, totalNoCalculationElements));
+#endif
+
                 // Run the calculation to the next required intermediate point, or to completion if no intermediates are required
                 if (separateIntermediatesBy == IntermediateOutputInterval.SpecifiedTime)
                 {
@@ -591,6 +593,7 @@ namespace DFMGenerator_SharedCode
                 DFNGrowthStages.Add(latestDFN);
 
                 // Remove all zero radius microfractures and zero length macrofractures and any above the specified maximum number from the latest DFN
+                // This will also remove zero length ray segments from unconfined fractures
                 // NB Since we have already made a copy of the CurrentDFN object, these fractures can still be activated in subsequent propagation stages
                 double minRadius = 0;
                 double minLength = 0;
@@ -1125,23 +1128,23 @@ namespace DFMGenerator_SharedCode
             double gridblockThicknessCutoff = DFNControl.MinimumLayerThickness;
 
             // Get the total number of grid rows, columns and layers
-            int NoRows = Gridblocks.GetLength(0);
-            int NoCols = Gridblocks.GetLength(1);
+            int NoCols = Gridblocks.GetLength(0);
+            int NoRows = Gridblocks.GetLength(1);
             int NoLayers = Gridblocks.GetLength(2);
 
 #if LOGGRIDBLOCKS
             // Write next gridblock details to logfile
-            string gridblockCount = string.Format("NoRows: {0}, NoCols: {1}, NoLayers: {2}", NoRows, NoCols, NoLayers);
+            string gridblockCount = string.Format("NoCols: {0}, NoRows: {1}, NoLayers: {2}", NoCols, NoRows, NoLayers);
             logFile.WriteLine(gridblockCount);
 #endif
 
             // Loop through every gridblock in the grid
-            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
                     {
                         // Get a reference to the GridblockConfiguration object
-                        GridblockConfiguration Gridblock = Gridblocks[RowNo, ColNo, LayerNo];
+                        GridblockConfiguration Gridblock = Gridblocks[ColNo, RowNo, LayerNo];
 
                         // Check if it is null
                         if (Gridblock != null)
@@ -1161,7 +1164,7 @@ namespace DFMGenerator_SharedCode
                             }
 #if LOGGRIDBLOCKS
                             // Write next gridblock details to logfile
-                            string timestepCount = string.Format("Gridblock {0},{1},{2}, SWTop corner {3},{4},{5}: added {6} timesteps", RowNo, ColNo, LayerNo, Gridblock.SWtop.X, Gridblock.SWtop.Y, Gridblock.SWtop.Z, NoTimesteps);
+                            string timestepCount = string.Format("Gridblock {0},{1},{2}, SWTop corner {3},{4},{5}: added {6} timesteps", ColNo, RowNo, LayerNo, Gridblock.SWtop.X, Gridblock.SWtop.Y, Gridblock.SWtop.Z, NoTimesteps);
                             logFile.WriteLine(timestepCount);
 #endif
                         }
@@ -1423,17 +1426,17 @@ namespace DFMGenerator_SharedCode
             List<double> timestepList = new List<double>();
 
             // Get the total number of grid rows, columns and layers
-            int NoRows = Gridblocks.GetLength(0);
-            int NoCols = Gridblocks.GetLength(1);
+            int NoCols = Gridblocks.GetLength(0);
+            int NoRows = Gridblocks.GetLength(1);
             int NoLayers = Gridblocks.GetLength(2);
 
             // Loop through every gridblock in the grid
-            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
                     {
                         // Get a reference to the GridblockConfiguration object
-                        GridblockConfiguration Gridblock = Gridblocks[RowNo, ColNo, LayerNo];
+                        GridblockConfiguration Gridblock = Gridblocks[ColNo, RowNo, LayerNo];
 
                         // Check if it is null
                         if (Gridblock != null)
@@ -1506,47 +1509,47 @@ namespace DFMGenerator_SharedCode
         /// Add a GridblockConfiguration object to a specified cell in the grid and set up references to adjecent cells. The specified cell in the grid must already exist.
         /// </summary>
         /// <param name="gridblock_in">GridblockConfiguration object to add to the grid</param>
-        /// <param name="RowNo">Row number of cell to place it in (zero referenced)</param>
-        /// <param name="ColNo">Column number of cell to place it in (zero referenced)</param>
-        /// <param name="LayerNo">Layer number of cell to place it in (zero referenced)</param>
-        public void AddGridblock(GridblockConfiguration gridblock_in, int RowNo, int ColNo, int LayerNo)
+        /// <param name="ColNo">Column number I of cell to place it in (zero referenced)</param>
+        /// <param name="RowNo">Row number J of cell to place it in (zero referenced)</param>
+        /// <param name="LayerNo">Layer number K of cell to place it in (zero referenced)</param>
+        public void AddGridblock(GridblockConfiguration gridblock_in, int ColNo, int RowNo, int LayerNo)
         {
-            AddGridblock(gridblock_in, RowNo, ColNo, LayerNo, true, true, true, true, true, true);
+            AddGridblock(gridblock_in, ColNo, RowNo, LayerNo, true, true, true, true, true, true);
         }
         /// <summary>
         /// Add a GridblockConfiguration object to a specified cell in the grid, and set up references to adjecent cells if required.
         /// </summary>
         /// <param name="gridblock_in">GridblockConfiguration object to add to the grid</param>
-        /// <param name="RowNo">Row number of cell to place it in (zero referenced)</param>
-        /// <param name="ColNo">Column number of cell to place it in (zero referenced)</param>
-        /// <param name="LayerNo">Layer number of cell to place it in (zero referenced)</param>
+        /// <param name="ColNo">Column number I of cell to place it in (zero referenced)</param>
+        /// <param name="RowNo">Row number J of cell to place it in (zero referenced)</param>
+        /// <param name="LayerNo">Layer number K of cell to place it in (zero referenced)</param>
         /// <param name="connectToWesternNeighbour">Flag to connect to western neighbouring gridblock; if false, the western corners of this gridblock will not match the eastern corners of the neighbouring gridblock</param>
         /// <param name="ConnectToSouthernNeighbour">Flag to connect to southern neighbouring gridblock; if false, the southern corners of this gridblock will not match the northern corners of the neighbouring gridblock</param>
         /// <param name="connectToEasternNeighbour">Flag to connect to eastern neighbouring gridblock; if false, the eastern corners of this gridblock will not match the western corners of the neighbouring gridblock</param>
         /// <param name="ConnectToNorthernNeighbour">Flag to connect to northern neighbouring gridblock; if false, the northern corners of this gridblock will not match the southern corners of the neighbouring gridblock</param>
         /// <param name="ConnectToUnderlyingNeighbour">Flag to connect to underlying neighbouring gridblock; if false, the bottom corners of this gridblock will not match the top corners of the underlying gridblock</param>
         /// <param name="connectToOverlyingNeighbour">Flag to connect to overlying neighbouring gridblock; if false, the top corners of this gridblock will not match the bottom corners of the overlying gridblock</param>
-        public void AddGridblock(GridblockConfiguration gridblock_in, int RowNo, int ColNo, int LayerNo, bool connectToWesternNeighbour, bool ConnectToSouthernNeighbour, bool connectToEasternNeighbour, bool ConnectToNorthernNeighbour, bool ConnectToUnderlyingNeighbour, bool connectToOverlyingNeighbour)
+        public void AddGridblock(GridblockConfiguration gridblock_in, int ColNo, int RowNo, int LayerNo, bool connectToWesternNeighbour, bool ConnectToSouthernNeighbour, bool connectToEasternNeighbour, bool ConnectToNorthernNeighbour, bool ConnectToUnderlyingNeighbour, bool connectToOverlyingNeighbour)
         {
             // Get the total number of grid rows, columns and layers
-            int NoRows = Gridblocks.GetLength(0);
-            int NoCols = Gridblocks.GetLength(1);
+            int NoCols = Gridblocks.GetLength(0);
+            int NoRows = Gridblocks.GetLength(1);
             int NoLayers = Gridblocks.GetLength(2);
-
-            // Check to see if the row number is within the bounds of the grid
-            if (RowNo < 0) RowNo = 0;
-            if (RowNo >= NoRows) RowNo = NoRows - 1;
 
             // Check to see if the column number is within the bounds of the grid
             if (ColNo < 0) ColNo = 0;
             if (ColNo >= NoCols) ColNo = NoCols - 1;
+
+            // Check to see if the row number is within the bounds of the grid
+            if (RowNo < 0) RowNo = 0;
+            if (RowNo >= NoRows) RowNo = NoRows - 1;
 
             // Check to see if the layer number is within the bounds of the grid
             if (LayerNo < 0) LayerNo = 0;
             if (LayerNo >= NoLayers) LayerNo = NoLayers - 1;
 
             // Add the GridblockConfiguration object to the grid and set the parent reference in the GridblockConfiguration object
-            Gridblocks[RowNo, ColNo, LayerNo] = gridblock_in;
+            Gridblocks[ColNo, RowNo, LayerNo] = gridblock_in;
             gridblock_in.setParentGrid(this);
 
             // Set the references to the adjacent gridblocks and cornerpoints: cornerpoints always reference to the southern, western and underlying neighbour gridblocks
@@ -1554,10 +1557,10 @@ namespace DFMGenerator_SharedCode
             // Check if there is a gridblock to the west
             if (connectToWesternNeighbour)
             {
-                if ((ColNo > 0) && (Gridblocks[RowNo, ColNo - 1, LayerNo] != null))
+                if ((ColNo > 0) && (Gridblocks[ColNo - 1, RowNo, LayerNo] != null))
                 {
                     // Get reference to western neighbour gridblock
-                    GridblockConfiguration W_neighbour = Gridblocks[RowNo, ColNo - 1, LayerNo];
+                    GridblockConfiguration W_neighbour = Gridblocks[ColNo - 1, RowNo, LayerNo];
 
                     // Set mutual references to neighbouring gridblocks
                     W_neighbour.NeighbourGridblocks[GridDirection.E] = gridblock_in;
@@ -1571,10 +1574,10 @@ namespace DFMGenerator_SharedCode
             // Check if there is a gridblock to the south
             if (ConnectToSouthernNeighbour)
             {
-                if ((RowNo > 0) && (Gridblocks[RowNo - 1, ColNo, LayerNo] != null))
+                if ((RowNo > 0) && (Gridblocks[ColNo, RowNo - 1, LayerNo] != null))
                 {
                     // Get reference to southern neighbour gridblock
-                    GridblockConfiguration S_neighbour = Gridblocks[RowNo - 1, ColNo, LayerNo];
+                    GridblockConfiguration S_neighbour = Gridblocks[ColNo, RowNo - 1, LayerNo];
 
                     // Set mutual references to neighbouring gridblocks
                     S_neighbour.NeighbourGridblocks[GridDirection.N] = gridblock_in;
@@ -1589,10 +1592,10 @@ namespace DFMGenerator_SharedCode
             // Check if there is a gridblock to the east
             if (connectToEasternNeighbour)
             {
-                if ((ColNo < (NoCols - 1)) && (Gridblocks[RowNo, ColNo + 1, LayerNo] != null))
+                if ((ColNo < (NoCols - 1)) && (Gridblocks[ColNo + 1, RowNo, LayerNo] != null))
                 {
                     // Get reference to eastern neighbour gridblock
-                    GridblockConfiguration E_neighbour = Gridblocks[RowNo, ColNo + 1, LayerNo];
+                    GridblockConfiguration E_neighbour = Gridblocks[ColNo + 1, RowNo, LayerNo];
 
                     // Set mutual references to neighbouring gridblocks
                     E_neighbour.NeighbourGridblocks[GridDirection.W] = gridblock_in;
@@ -1606,10 +1609,10 @@ namespace DFMGenerator_SharedCode
             // Check if there is a gridblock to the north
             if (ConnectToNorthernNeighbour)
             {
-                if ((RowNo < (NoRows - 1)) && (Gridblocks[RowNo + 1, ColNo, LayerNo] != null))
+                if ((RowNo < (NoRows - 1)) && (Gridblocks[ColNo, RowNo + 1, LayerNo] != null))
                 {
                     // Get reference to northern neighbour gridblock
-                    GridblockConfiguration N_neighbour = Gridblocks[RowNo + 1, ColNo, LayerNo];
+                    GridblockConfiguration N_neighbour = Gridblocks[ColNo, RowNo + 1, LayerNo];
 
                     // Set mutual references to neighbouring gridblocks
                     N_neighbour.NeighbourGridblocks[GridDirection.S] = gridblock_in;
@@ -1623,10 +1626,10 @@ namespace DFMGenerator_SharedCode
             // Check if there is an underlying gridblock
             if (ConnectToUnderlyingNeighbour)
             {
-                if ((LayerNo > 0) && (Gridblocks[RowNo, ColNo, LayerNo - 1] != null))
+                if ((LayerNo > 0) && (Gridblocks[ColNo, RowNo, LayerNo - 1] != null))
                 {
                     // Get reference to underlying neighbour gridblock
-                    GridblockConfiguration Underlying_neighbour = Gridblocks[RowNo, ColNo, LayerNo - 1];
+                    GridblockConfiguration Underlying_neighbour = Gridblocks[ColNo, RowNo, LayerNo - 1];
 
                     // Set mutual references to neighbouring gridblocks
                     Underlying_neighbour.NeighbourGridblocks[GridDirection.U] = gridblock_in;
@@ -1640,10 +1643,10 @@ namespace DFMGenerator_SharedCode
             // Check if there is an overlying gridblock
             if (connectToOverlyingNeighbour)
             {
-                if ((LayerNo < (NoLayers - 1)) && (Gridblocks[RowNo, ColNo, LayerNo + 1] != null))
+                if ((LayerNo < (NoLayers - 1)) && (Gridblocks[ColNo, RowNo, LayerNo + 1] != null))
                 {
                     // Get reference to overlying neighbour gridblock
-                    GridblockConfiguration Overlying_neighbour = Gridblocks[RowNo, ColNo, LayerNo + 1];
+                    GridblockConfiguration Overlying_neighbour = Gridblocks[ColNo, RowNo, LayerNo + 1];
 
                     // Set mutual references to neighbouring gridblocks
                     Overlying_neighbour.NeighbourGridblocks[GridDirection.D] = gridblock_in;
@@ -1661,15 +1664,15 @@ namespace DFMGenerator_SharedCode
 
         // Constructors
         /// <summary>
-        /// Constructor - create an LxMxN FractureGrid and fill with null objects
+        /// Constructor - create an IxJxK FractureGrid and fill with null objects
         /// </summary>
-        /// <param name="NoRows">Number of rows required in the grid</param>
-        /// <param name="NoCols">Number of columns required in the grid</param>
-        /// <param name="NoLayers">Number of layers required in the grid</param>
-        public FractureGrid(int NoRows, int NoCols, int NoLayers)
+        /// <param name="NoCols">Number of columns I required in the grid</param>
+        /// <param name="NoRows">Number of rows J required in the grid</param>
+        /// <param name="NoLayers">Number of layers K required in the grid</param>
+        public FractureGrid(int NoCols, int NoRows, int NoLayers)
         {
             // Create an empty gridblock array
-            Gridblocks = new GridblockConfiguration[NoRows, NoCols, NoLayers];
+            Gridblocks = new GridblockConfiguration[NoCols, NoRows, NoLayers];
 
             // Create a new DFN control object
             DFNControl = new DFNGenerationControl();

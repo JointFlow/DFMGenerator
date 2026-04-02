@@ -4,6 +4,7 @@
 // Set this flag to output detailed information on the behaviour of explicit fractures in the DFN
 // Use for debugging only; will significantly increase runtime
 //#define LOGDFNPOP
+//#define LOGUFRGROWTH
 
 using System;
 using System.Collections.Generic;
@@ -978,7 +979,7 @@ namespace DFMGenerator_SharedCode
             double pointY = point_in.Y;
             double pointZ = point_in.Z;
 
-            // To check whether the projection of the point lies within the gridblock on the XY plane, count the number of gridblock boundaries crossed by an infinite line projected north from the point, and the dircetion of crossing
+            // To check whether the projection of the point lies within the gridblock on the XY plane, count the number of gridblock boundaries crossed by an infinite line projected north from the point, and the direction of crossing
             // If the number of boundaries crossed outward is one more then the number of boundaries crossed inwards, the point must lie inside the gridblock
             // Otherwise the point must lie outside the gridblock
             // This is valid regardless of gridblock geometry - even for concave or inverted gridblocks (NB for inverted gridblocks, the inverted section is considered to lie outside the gridblock)
@@ -7495,6 +7496,23 @@ namespace DFMGenerator_SharedCode
                 tipDeactivationMechanism = SegmentNodeType.ConnectedGridblockBound;
             }
 
+#if LOGUFRGROWTH
+            //if (((UCRSegment.NonPropNode.Z <= 2000) && (UCRSegment.PropNode.Z >= 2000)) || ((UCRSegment.PropNode.Z <= 2000) && (UCRSegment.NonPropNode.Z >= 2000)) ||
+            //    ((UCRSegment.NonPropNode.Z <= 3000) && (UCRSegment.PropNode.Z >= 3000)) || ((UCRSegment.PropNode.Z <= 3000) && (UCRSegment.NonPropNode.Z >= 3000)))
+            if ((UCRSegment.PropNodeType == SegmentNodeType.ConnectedGridblockBound) && ((UCRSegment.PropNodeBoundary == GridDirection.U) || (UCRSegment.PropNodeBoundary == GridDirection.D)))
+            {
+                string outputline = "1\tAfter ufs.checkBoundaryIntersection\t";
+                outputline += string.Format("{0}\t{1}\t{2}\t", SWtop.X, SWtop.Y, SWtop.Z);
+                outputline += string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t",
+                    UCRSegment.UnconfinedFractureID, ufsIndex, UCRSegment.NonPropNodeType, UCRSegment.NonPropNodeBoundary, UCRSegment.NonPropNode.X, UCRSegment.NonPropNode.Y, UCRSegment.NonPropNode.Z,
+                    UCRSegment.PropNodeType, UCRSegment.PropNodeBoundary, UCRSegment.PropNode.X, UCRSegment.PropNode.Y, UCRSegment.PropNode.Z);
+                outputline += string.Format("{0}\t", UCRSegment.ufr.NoSegments);
+                foreach (PointXYZ node in UCRSegment.ufr.GetNodesInXYZ())
+                    outputline += string.Format("{0}\t{1}\t{2}\t", node.X, node.Y, node.Z);
+                Slb.Ocean.Petrel.PetrelLogger.InfoOutputWindow(outputline);
+            }
+#endif
+
             // Check if the segment will intersect an unconfined fracture from another set
             // Loop through every other fracture set, except this one
             for (int intersecting_ufs_index = 0; intersecting_ufs_index < NoUnconfinedFractureSets; intersecting_ufs_index++)
@@ -7557,12 +7575,45 @@ namespace DFMGenerator_SharedCode
             }
 #endif
 
+#if LOGUFRGROWTH
+            //if (((UCRSegment.NonPropNode.Z <= 2000) && (UCRSegment.PropNode.Z >= 2000)) || ((UCRSegment.PropNode.Z <= 2000) && (UCRSegment.NonPropNode.Z >= 2000)) ||
+            //    ((UCRSegment.NonPropNode.Z <= 3000) && (UCRSegment.PropNode.Z >= 3000)) || ((UCRSegment.PropNode.Z <= 3000) && (UCRSegment.NonPropNode.Z >= 3000)))
+            if ((UCRSegment.PropNodeType == SegmentNodeType.ConnectedGridblockBound) && ((UCRSegment.PropNodeBoundary == GridDirection.U) || (UCRSegment.PropNodeBoundary == GridDirection.D)))
+            {
+                string outputline = "2\tBefore UCRSegment.Length += maxPropLength\t";
+                outputline += string.Format("{0}\t{1}\t{2}\t", SWtop.X, SWtop.Y, SWtop.Z);
+                outputline += string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t",
+                    UCRSegment.UnconfinedFractureID, ufsIndex, UCRSegment.NonPropNodeType, UCRSegment.NonPropNodeBoundary, UCRSegment.NonPropNode.X, UCRSegment.NonPropNode.Y, UCRSegment.NonPropNode.Z,
+                    UCRSegment.PropNodeType, UCRSegment.PropNodeBoundary, UCRSegment.PropNode.X, UCRSegment.PropNode.Y, UCRSegment.PropNode.Z);
+                outputline += string.Format("{0}\t", UCRSegment.ufr.NoSegments);
+                foreach (PointXYZ node in UCRSegment.ufr.GetNodesInXYZ())
+                    outputline += string.Format("{0}\t{1}\t{2}\t", node.X, node.Y, node.Z);
+                Slb.Ocean.Petrel.PetrelLogger.InfoOutputWindow(outputline);
+            }
+#endif
+
             // Increment the propagating ray segment by the calculated propagation length
             // First cache the ray length and effective length prior to the increment
             double r_init = UCRSegment.RayLength;
             double reff_init = UCRSegment.EffectiveRayLength;
             UCRSegment.Length += maxPropLength;
 
+#if LOGUFRGROWTH
+            //if (((UCRSegment.NonPropNode.Z <= 2000) && (UCRSegment.PropNode.Z >= 2000)) || ((UCRSegment.PropNode.Z <= 2000) && (UCRSegment.NonPropNode.Z >= 2000)) ||
+            //    ((UCRSegment.NonPropNode.Z <= 3000) && (UCRSegment.PropNode.Z >= 3000)) || ((UCRSegment.PropNode.Z <= 3000) && (UCRSegment.NonPropNode.Z >= 3000)))
+            if ((UCRSegment.PropNodeType == SegmentNodeType.ConnectedGridblockBound) && ((UCRSegment.PropNodeBoundary == GridDirection.U) || (UCRSegment.PropNodeBoundary == GridDirection.D)))
+            {
+                string outputline = "3\tAfter UCRSegment.Length += maxPropLength\t";
+                outputline += string.Format("{0}\t{1}\t{2}\t", SWtop.X, SWtop.Y, SWtop.Z);
+                outputline += string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t",
+                    UCRSegment.UnconfinedFractureID, ufsIndex, UCRSegment.NonPropNodeType, UCRSegment.NonPropNodeBoundary, UCRSegment.NonPropNode.X, UCRSegment.NonPropNode.Y, UCRSegment.NonPropNode.Z,
+                    UCRSegment.PropNodeType, UCRSegment.PropNodeBoundary, UCRSegment.PropNode.X, UCRSegment.PropNode.Y, UCRSegment.PropNode.Z);
+                outputline += string.Format("{0}\t", UCRSegment.ufr.NoSegments);
+                foreach (PointXYZ node in UCRSegment.ufr.GetNodesInXYZ())
+                    outputline += string.Format("{0}\t{1}\t{2}\t", node.X, node.Y, node.Z);
+                Slb.Ocean.Petrel.PetrelLogger.InfoOutputWindow(outputline);
+            }
+#endif
             /*// If the segment terminated due to interaction with another fracture stress shadow, we also need to deactivate that segment
             if (tipDeactivationMechanism == SegmentNodeType.ConnectedStressShadow)
             {
@@ -7680,6 +7731,24 @@ namespace DFMGenerator_SharedCode
                     tipDeactivationMechanism = SegmentNodeType.NonconnectedGridblockBound;
 
                 } // End check if there is neighbouring gridblock
+
+#if LOGUFRGROWTH
+                //if (((UCRSegment.NonPropNode.Z <= 2000) && (UCRSegment.PropNode.Z >= 2000)) || ((UCRSegment.PropNode.Z <= 2000) && (UCRSegment.NonPropNode.Z >= 2000)) ||
+                //    ((UCRSegment.NonPropNode.Z <= 3000) && (UCRSegment.PropNode.Z >= 3000)) || ((UCRSegment.PropNode.Z <= 3000) && (UCRSegment.NonPropNode.Z >= 3000)))
+                if ((UCRSegment.PropNodeType == SegmentNodeType.ConnectedGridblockBound) && ((UCRSegment.PropNodeBoundary == GridDirection.U) || (UCRSegment.PropNodeBoundary == GridDirection.D)))
+                {
+                    string outputline = "4\tAfter PropagateUCRIntoGridblock\t";
+                    outputline += string.Format("{0}\t{1}\t{2}\t", SWtop.X, SWtop.Y, SWtop.Z);
+                    outputline += string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t",
+                        UCRSegment.UnconfinedFractureID, ufsIndex, UCRSegment.NonPropNodeType, UCRSegment.NonPropNodeBoundary, UCRSegment.NonPropNode.X, UCRSegment.NonPropNode.Y, UCRSegment.NonPropNode.Z,
+                        UCRSegment.PropNodeType, UCRSegment.PropNodeBoundary, UCRSegment.PropNode.X, UCRSegment.PropNode.Y, UCRSegment.PropNode.Z);
+                    outputline += string.Format("{0}\t", UCRSegment.ufr.NoSegments);
+                    foreach (PointXYZ node in UCRSegment.ufr.GetNodesInXYZ())
+                        outputline += string.Format("{0}\t{1}\t{2}\t", node.X, node.Y, node.Z);
+                    Slb.Ocean.Petrel.PetrelLogger.InfoOutputWindow(outputline);
+                }
+#endif
+
             } // End if the segment propagated into a neighbouring gridblock
 
             return tipDeactivationMechanism;

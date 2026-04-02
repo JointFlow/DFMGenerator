@@ -2352,12 +2352,24 @@ namespace DFMGenerator_Ocean
                         generalInputParams += string.Format("Minimum radius for large fractures (considered to influence the entire grid when checking stress shadows): {0}{1}\n", LargeFractureMinimumRadius, FractureRadiusUnits);
 
                     // Calculation termination controls
-                    generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumMFClearZoneVolume);
-                    if (Current_HistoricMFP33TerminationRatio > 0)
-                        generalInputParams += string.Format("; Current:Peak active MFP33 ratio {0}", Current_HistoricMFP33TerminationRatio);
-                    if (Active_TotalMFP30TerminationRatio > 0)
-                        generalInputParams += string.Format("; Current active:total MFP30 ratio {0}", Active_TotalMFP30TerminationRatio);
-                    generalInputParams += "\n";
+                    if (NoFractureSets > 0)
+                    {
+                        generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumMFClearZoneVolume);
+                        if (Current_HistoricMFP33TerminationRatio > 0)
+                            generalInputParams += string.Format("; Current:Peak active MFP33 ratio {0}", Current_HistoricMFP33TerminationRatio);
+                        if (Active_TotalMFP30TerminationRatio > 0)
+                            generalInputParams += string.Format("; Current active:total MFP30 ratio {0}", Active_TotalMFP30TerminationRatio);
+                        generalInputParams += "\n";
+                    }
+                    else
+                    {
+                        generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumUCFClearZoneVolume);
+                        if (Current_HistoricUCFP32TerminationRatio > 0)
+                            generalInputParams += string.Format("; Current:Peak active UCFP32 ratio {0}", Current_HistoricUCFP32TerminationRatio);
+                        if (Active_TotalUCRP30TerminationRatio > 0)
+                            generalInputParams += string.Format("; Current active:total UCRPP30 ratio {0}", Active_TotalUCRP30TerminationRatio);
+                        generalInputParams += "\n";
+                    }
 
                     // DFN geometry controls
                     if (CropAtBoundary)
@@ -4019,7 +4031,7 @@ namespace DFMGenerator_Ocean
 
 #if DEBUG_FRAC_INPUT
                                                 if (local_StressRateTensor is null)
-                                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7});", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
+                                                    PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, EhminAzi {1}, EhminRate {2}, EhmaxRate {3}, OP rate {4}, Temp change {5}, Uplift rate {6}, Stress arching factor {7}", local_DeformationEpisodeDuration, local_EhminAzi, local_EhminRate, local_EhmaxRate, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor));
                                                 else
                                                     PetrelLogger.InfoOutputWindow(string.Format("New deformation episode: Duration {0}, Initial stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({1}, {2}, {3}, {4}, {5}, {6}), Initial FP {7}, Final stress (Sxx, Syy, Szz, Sxy, Syz, Szx) = ({8}, {9}, {10}, {11}, {12}, {13}), Final FP {14}", local_DeformationEpisodeDuration, initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx, initialFluidPressure, finalSxx, finalSyy, finalSzz, finalSxy, finalSyz, finalSzx, finalFluidPressure));
 #endif
@@ -5453,10 +5465,10 @@ namespace DFMGenerator_Ocean
 #endif
 
                                         // Add the gridblock to the grid
-                                        ModelGrid.AddGridblock(gc, FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo, !faultToWest, !faultToSouth, true, true, true, true);
+                                        ModelGrid.AddGridblock(gc, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo, !faultToWest, !faultToSouth, true, true, true, true);
 
 #if DEBUG_FRAC_INPUT
-                                        PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5});", FractureGrid_RowNo, FractureGrid_ColNo, !faultToWest, !faultToSouth, true, true));
+                                        PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.AddGridblock(gc, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8});", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo, !faultToWest, !faultToSouth, true, true, true, true));
 #endif
 
                                         // Update gridblock counter
@@ -5472,7 +5484,7 @@ namespace DFMGenerator_Ocean
 
 #if DEBUG_FRAC_INPUT
                             PetrelLogger.InfoOutputWindow("");
-                            PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, TimeUnits.{21});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, ModelTimeUnits));
+                            PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
 #endif
 
                             // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
@@ -5549,6 +5561,53 @@ namespace DFMGenerator_Ocean
                             PetrelLogger.InfoOutputWindow(string.Format("dfn_control.FolderPath = {0};", folderPath));
                             PetrelLogger.InfoOutputWindow(string.Format("ModelGrid.DFNControl = dfn_control;"));
 #endif
+
+#if DEBUG_FRAC_INPUT
+                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                    {
+                                        PetrelLogger.InfoOutputWindow("");
+                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock Col(I) {0}, Row(J) {1}, Layer(K) {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        GridblockConfiguration gbc = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                        PetrelLogger.InfoOutputWindow(string.Format("SWtop = new PointXYZ({0}, {1}, {2});", gbc.SWtop.X, gbc.SWtop.Y, gbc.SWtop.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("SWbottom = new PointXYZ({0}, {1}, {2});", gbc.SWbottom.X, gbc.SWbottom.Y, gbc.SWbottom.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("NWtop = new PointXYZ({0}, {1}, {2});", gbc.NWtop.X, gbc.NWtop.Y, gbc.NWtop.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("NWbottom = new PointXYZ({0}, {1}, {2});", gbc.NWbottom.X, gbc.NWbottom.Y, gbc.NWbottom.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("NEtop = new PointXYZ({0}, {1}, {2});", gbc.NEtop.X, gbc.NEtop.Y, gbc.NEtop.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("NEbottom = new PointXYZ({0}, {1}, {2});", gbc.NEbottom.X, gbc.NEbottom.Y, gbc.NEbottom.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("SEtop = new PointXYZ({0}, {1}, {2});", gbc.SEtop.X, gbc.SEtop.Y, gbc.SEtop.Z));
+                                        PetrelLogger.InfoOutputWindow(string.Format("SEbottom = new PointXYZ({0}, {1}, {2});", gbc.SEbottom.X, gbc.SEbottom.Y, gbc.SEbottom.Z));
+
+                                        PetrelLogger.InfoOutputWindow(string.Format("Gridblock above Col(I) {0}, Row(J) {1}, Layer(K) {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        GridblockConfiguration upper_gbc = gbc.NeighbourGridblocks[GridDirection.U];
+                                        if (!(upper_gbc is null))
+                                        {
+                                            PetrelLogger.InfoOutputWindow(string.Format("SWtop = new PointXYZ({0}, {1}, {2});", upper_gbc.SWtop.X, upper_gbc.SWtop.Y, upper_gbc.SWtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("SWbottom = new PointXYZ({0}, {1}, {2});", upper_gbc.SWbottom.X, upper_gbc.SWbottom.Y, upper_gbc.SWbottom.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NWtop = new PointXYZ({0}, {1}, {2});", upper_gbc.NWtop.X, upper_gbc.NWtop.Y, upper_gbc.NWtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NWbottom = new PointXYZ({0}, {1}, {2});", upper_gbc.NWbottom.X, upper_gbc.NWbottom.Y, upper_gbc.NWbottom.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NEtop = new PointXYZ({0}, {1}, {2});", upper_gbc.NEtop.X, upper_gbc.NEtop.Y, upper_gbc.NEtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NEbottom = new PointXYZ({0}, {1}, {2});", upper_gbc.NEbottom.X, upper_gbc.NEbottom.Y, upper_gbc.NEbottom.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("SEtop = new PointXYZ({0}, {1}, {2});", upper_gbc.SEtop.X, upper_gbc.SEtop.Y, upper_gbc.SEtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("SEbottom = new PointXYZ({0}, {1}, {2});", upper_gbc.SEbottom.X, upper_gbc.SEbottom.Y, upper_gbc.SEbottom.Z));
+                                        }
+                                        PetrelLogger.InfoOutputWindow(string.Format("Gridblock below Col(I) {0}, Row(J) {1}, Layer(K) {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        GridblockConfiguration lower_gbc = gbc.NeighbourGridblocks[GridDirection.D];
+                                        if (!(lower_gbc is null))
+                                        {
+                                            PetrelLogger.InfoOutputWindow(string.Format("SWtop = new PointXYZ({0}, {1}, {2});", lower_gbc.SWtop.X, lower_gbc.SWtop.Y, lower_gbc.SWtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("SWbottom = new PointXYZ({0}, {1}, {2});", lower_gbc.SWbottom.X, lower_gbc.SWbottom.Y, lower_gbc.SWbottom.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NWtop = new PointXYZ({0}, {1}, {2});", lower_gbc.NWtop.X, lower_gbc.NWtop.Y, lower_gbc.NWtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NWbottom = new PointXYZ({0}, {1}, {2});", lower_gbc.NWbottom.X, lower_gbc.NWbottom.Y, lower_gbc.NWbottom.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NEtop = new PointXYZ({0}, {1}, {2});", lower_gbc.NEtop.X, lower_gbc.NEtop.Y, lower_gbc.NEtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("NEbottom = new PointXYZ({0}, {1}, {2});", lower_gbc.NEbottom.X, lower_gbc.NEbottom.Y, lower_gbc.NEbottom.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("SEtop = new PointXYZ({0}, {1}, {2});", lower_gbc.SEtop.X, lower_gbc.SEtop.Y, lower_gbc.SEtop.Z));
+                                            PetrelLogger.InfoOutputWindow(string.Format("SEbottom = new PointXYZ({0}, {1}, {2});", lower_gbc.SEbottom.X, lower_gbc.SEbottom.Y, lower_gbc.SEbottom.Z));
+                                        }
+                                    }
+#endif
+
 
                             // Calculate implicit fractures for all gridblocks - unless the calculation has already been cancelled
                             if (!progressBarWrapper.abortCalculation())
@@ -5736,7 +5795,7 @@ namespace DFMGenerator_Ocean
                                                                 }
 
                                                                 // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock( FractureGrid_ColNo, FractureGrid_RowNo,FractureGrid_LayerNo);
                                                                 if (fractureGridCell == null)
                                                                     continue;
 
@@ -5785,7 +5844,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow("");
                                                                 PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
-                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                                 // Loop through all the Petrel cells in the gridblock
@@ -5815,7 +5874,7 @@ namespace DFMGenerator_Ocean
                                                                 }
                                                                 catch (Exception e)
                                                                 {
-                                                                    string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                    string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", FractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                     errorMessage = errorMessage + string.Format(" cell_MF_P30_tot {0}", (float)cell_MF_P30_tot);
                                                                     errorMessage = errorMessage + string.Format(" cell_MF_P32_tot {0}", (float)cell_MF_P32_tot);
                                                                     errorMessage = errorMessage + string.Format(" cell_uF_P32_tot {0}", (float)cell_uF_P32_tot);
@@ -5871,7 +5930,7 @@ namespace DFMGenerator_Ocean
                                                                     }
 
                                                                     // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                                    GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                    GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                     if (fractureGridCell == null)
                                                                         continue;
 
@@ -5926,7 +5985,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                                     PetrelLogger.InfoOutputWindow("");
                                                                     PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
-                                                                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                                     // Loop through all the Petrel cells in the gridblock
@@ -5953,7 +6012,7 @@ namespace DFMGenerator_Ocean
                                                                     }
                                                                     catch (Exception e)
                                                                     {
-                                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", FractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                         errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                                         errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
                                                                         errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
@@ -5999,7 +6058,7 @@ namespace DFMGenerator_Ocean
                                                                     }
 
                                                                     // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                                    GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                    GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                     if (fractureGridCell == null)
                                                                         continue;
 
@@ -6032,7 +6091,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                                     PetrelLogger.InfoOutputWindow("");
                                                                     PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Set {0} dipset {1}", FractureSetNo, DipSetNo));
-                                                                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                                     // Loop through all the Petrel cells in the gridblock
@@ -6057,7 +6116,7 @@ namespace DFMGenerator_Ocean
                                                                     }
                                                                     catch (Exception e)
                                                                     {
-                                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                        string errorMessage = string.Format("Exception thrown when writing reactivation potential data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", FractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                         errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
                                                                         errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
                                                                         PetrelLogger.InfoOutputWindow(errorMessage);
@@ -6113,7 +6172,7 @@ namespace DFMGenerator_Ocean
                                                             }
 
                                                             // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                             if (fractureGridCell == null)
                                                                 continue;
 
@@ -6161,7 +6220,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                             PetrelLogger.InfoOutputWindow("");
                                                             PetrelLogger.InfoOutputWindow(string.Format("Base data: Set {0}", UnconfinedFractureSetNo));
-                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                             // Loop through all the Petrel cells in the gridblock
@@ -6190,7 +6249,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                             catch (Exception e)
                                                             {
-                                                                string errorMessage = string.Format("Exception thrown when writing density data for unconfined fracture set {0} to row {1}, column {2}:", UnconfinedFractureSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                string errorMessage = string.Format("Exception thrown when writing density data for unconfined fracture set {0} to column {1}, row {2}, layer {3}:", UnconfinedFractureSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                 errorMessage = errorMessage + string.Format(" cell_UCF_P30_tot {0}", (float)cell_UCF_P30_tot);
                                                                 errorMessage = errorMessage + string.Format(" cell_UCF_P32_tot {0}", (float)cell_UCF_P32_tot);
                                                                 errorMessage = errorMessage + string.Format(" cell_UCF_MeanRadius {0}", (float)cell_UCF_MeanArea);
@@ -6245,7 +6304,7 @@ namespace DFMGenerator_Ocean
                                                                 }
 
                                                                 // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                 if (fractureGridCell == null)
                                                                     continue;
 
@@ -6308,7 +6367,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow("");
                                                                 PetrelLogger.InfoOutputWindow(string.Format("Connectivity data: Set {0}", UnconfinedFractureSetNo));
-                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                                 // Loop through all the Petrel cells in the gridblock
@@ -6335,7 +6394,7 @@ namespace DFMGenerator_Ocean
                                                                 }
                                                                 catch (Exception e)
                                                                 {
-                                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} to row {2}, column {3}:", UnconfinedFractureSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data for unconfined fracture set {0} to column {1}, row {2}, layer {3}:", UnconfinedFractureSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                     errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                                     errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
                                                                     errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
@@ -6381,7 +6440,7 @@ namespace DFMGenerator_Ocean
                                                                 }
 
                                                                 // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                 if (fractureGridCell == null)
                                                                     continue;
 
@@ -6414,7 +6473,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                                 PetrelLogger.InfoOutputWindow("");
                                                                 PetrelLogger.InfoOutputWindow(string.Format("Reactivation potential: Unconfined set {0}", UnconfinedFractureSetNo));
-                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                                 // Loop through all the Petrel cells in the gridblock
@@ -6439,7 +6498,7 @@ namespace DFMGenerator_Ocean
                                                                 }
                                                                 catch (Exception e)
                                                                 {
-                                                                    string errorMessage = string.Format("Exception thrown when writing anisotropy data for unconfined fracture set {0} to row {2}, column {3}:", UnconfinedFractureSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                    string errorMessage = string.Format("Exception thrown when writing reactivation potential data for unconfined fracture set {0} to column {1}, row {2}, layer {3}:", UnconfinedFractureSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                     errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
                                                                     errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
                                                                     PetrelLogger.InfoOutputWindow(errorMessage);
@@ -6512,7 +6571,7 @@ namespace DFMGenerator_Ocean
                                                         }
 
                                                         // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                         if (fractureGridCell == null)
                                                             continue;
 
@@ -6633,7 +6692,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
                                                         PetrelLogger.InfoOutputWindow("Connectivity data: all sets");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                         // Loop through all the Petrel cells in the gridblock
@@ -6669,7 +6728,7 @@ namespace DFMGenerator_Ocean
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for all fracture sets to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                             errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
                                                             errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
                                                             errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
@@ -6754,7 +6813,7 @@ namespace DFMGenerator_Ocean
                                                             }
 
                                                             // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                             if (fractureGridCell == null)
                                                                 continue;
 
@@ -6798,7 +6857,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                             PetrelLogger.InfoOutputWindow("");
                                                             PetrelLogger.InfoOutputWindow("Porosity data: all sets");
-                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                                PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                             // Loop through all the Petrel cells in the gridblock
@@ -6827,7 +6886,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                             catch (Exception e)
                                                             {
-                                                                string errorMessage = string.Format("Exception thrown when writing porosity data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                string errorMessage = string.Format("Exception thrown when writing porosity data to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                 errorMessage = errorMessage + string.Format(" uF_P32_value {0}", (float)uF_P32_value);
                                                                 errorMessage = errorMessage + string.Format(" MF_P32_value {0}", (float)MF_P32_value);
                                                                 errorMessage = errorMessage + string.Format(" uF_Porosity_value {0}", (float)uF_Porosity_value);
@@ -6891,7 +6950,7 @@ namespace DFMGenerator_Ocean
                                                             }
 
                                                             // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                             if (fractureGridCell == null)
                                                                 continue;
 
@@ -6930,7 +6989,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                             PetrelLogger.InfoOutputWindow("");
                                                             PetrelLogger.InfoOutputWindow("Porosity data: all sets");
-                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                             // Loop through all the Petrel cells in the gridblock
@@ -6957,7 +7016,7 @@ namespace DFMGenerator_Ocean
                                                             }
                                                             catch (Exception e)
                                                             {
-                                                                string errorMessage = string.Format("Exception thrown when writing porosity data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                                string errorMessage = string.Format("Exception thrown when writing porosity data to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                 errorMessage = errorMessage + string.Format(" UCF_P32_value {0}", (float)UCF_P32_value);
                                                                 errorMessage = errorMessage + string.Format(" UCF_Porosity_value {0}", (float)UCF_Porosity_value);
                                                                 PetrelLogger.InfoOutputWindow(errorMessage);
@@ -7049,7 +7108,7 @@ namespace DFMGenerator_Ocean
                                                         }
 
                                                         // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                         if (fractureGridCell == null)
                                                             continue;
 
@@ -7138,7 +7197,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
                                                         PetrelLogger.InfoOutputWindow("Permability tensor: all sets");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                         // Loop through all the Petrel cells in the gridblock
@@ -7168,7 +7227,7 @@ namespace DFMGenerator_Ocean
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing fracture permeability tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            string errorMessage = string.Format("Exception thrown when writing fracture permeability tensor components to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                             errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, lastij, (float)gridblockPermeabilityTensor.Component(lastij));
                                                             errorMessage = errorMessage + string.Format(" {0}{1} {2}, ", PermeabilityTensorComponentName_base, "sigma", (float)gridblockSigmaFactor);
                                                             PetrelLogger.InfoOutputWindow(errorMessage);
@@ -7231,7 +7290,7 @@ namespace DFMGenerator_Ocean
                                                         }
 
                                                         // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_RowNo, FractureGrid_ColNo, FractureGrid_LayerNo);
+                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                         if (fractureGridCell == null)
                                                             continue;
 
@@ -7256,7 +7315,7 @@ namespace DFMGenerator_Ocean
 #if DEBUG_IMPLICIT_OUTPUT
                                                         PetrelLogger.InfoOutputWindow("");
                                                         PetrelLogger.InfoOutputWindow("Stiffness and compliance tensors: all sets");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}", FractureGrid_RowNo, FractureGrid_ColNo));
+                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                         // Loop through all the Petrel cells in the gridblock
@@ -7291,7 +7350,7 @@ namespace DFMGenerator_Ocean
                                                         }
                                                         catch (Exception e)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                            string errorMessage = string.Format("Exception thrown when writing bulk rock elastic tensor components to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                             errorMessage = errorMessage + string.Format(" S_{0}{1} {2}", lastij, lastkl, (float)gridblockComplianceTensor.Component(lastij, lastkl));
                                                             errorMessage = errorMessage + string.Format(" C_{0}{1} {2}", lastij, lastkl, (float)gridblockStiffnessTensor.Component(lastij, lastkl));
                                                             PetrelLogger.InfoOutputWindow(errorMessage);

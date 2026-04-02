@@ -21,7 +21,8 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Reference to parent UnconfinedFractureRay object
         /// </summary>
-        private UnconfinedFractureRay ufr;
+        //private UnconfinedFractureRay ufr;
+        public UnconfinedFractureRay ufr;
         /// <summary>
         /// Reference to grandparent UnconfinedFracture object
         /// </summary>
@@ -34,6 +35,10 @@ namespace DFMGenerator_SharedCode
         /// Reference to great-grandparent gridblock object
         /// </summary>
         private GridblockConfiguration gbc;
+        /// <summary>
+        /// Parent unconfined fracture ID 
+        /// </summary>
+        public int UnconfinedFractureID { get { return ucf.UnconfinedFractureID; } }
 
         // Geometric components
         /// <summary>
@@ -303,6 +308,10 @@ namespace DFMGenerator_SharedCode
         /// Reference to parent UnconfinedFractureXYZ object
         /// </summary>
         private UnconfinedFractureXYZ ucf;
+        /// <summary>
+        /// Parent unconfined fracture ID 
+        /// </summary>
+        public int UnconfinedFractureID { get { return ucf.UnconfinedFractureID; } }
 
         // List of segments
         /// <summary>
@@ -789,11 +798,17 @@ namespace DFMGenerator_SharedCode
 
         // Reset, data input, control and implementation functions
         /// <summary>
-        /// Clean up the fracture
+        /// Populate data: nothing is required as the fracture is already in XYZ coordinates and no bevelling is needed
         /// </summary>
         public void PopulateData()
         {
-            // Remove zero-length segments from each ray
+            // No action required
+        }
+        /// <summary>
+        /// Remove zero-length segments from each ray
+        /// </summary>
+        public void RemoveZeroLengthSegments()
+        {
             foreach (UnconfinedFractureRay ray in rays)
                 ray.RemoveZeroLengthSegments();
         }
