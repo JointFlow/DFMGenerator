@@ -889,14 +889,14 @@ namespace DFMGenerator_SharedCode
                             case DFNFileType.ASCII:
                                 {
                                     // Write header data
-                                    string FSheader1 = "FracNo\tSet\tCentre X\tCentre Y\tCentre Depth\tRadius\tDip\tAzimuth\tActive\t";
+                                    string FSheader1 = string.Format("FracNo\tSet\tCentre X\tCentre Y\tCentre Depth\tRadius\tDip\tAzimuth\tActive\tNucleation time ({0})\t", timeUnits);
                                     UCF_outputFile.WriteLine(FSheader1);
 
                                     // Loop through each unconfined fracture and write data to logfile
                                     foreach (UnconfinedFractureXYZ frac in latestDFN.GlobalDFNUnconfinedFractures)
                                     {
                                         PointXYZ centroid = frac.Centroid;
-                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t", frac.UnconfinedFractureID, frac.SetIndex, centroid.X, centroid.Y, centroid.Depth, frac.EffectiveRadius, frac.Dip, frac.Azimuth, !frac.FullyDeactivated);
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t", frac.UnconfinedFractureID, frac.SetIndex, centroid.X, centroid.Y, centroid.Depth, frac.EffectiveRadius, frac.Dip, frac.Azimuth, !frac.FullyDeactivated, frac.NucleationTime);
                                         UCF_outputFile.WriteLine(data);
 
                                         // Write output data for each of the fracture rays

@@ -1573,7 +1573,7 @@ namespace DFMGenerator_Ocean
                     if (!double.IsNaN(arguments.Argument_Active_UCRP30_TerminationRatio))
                         Active_TotalUCRP30TerminationRatio = arguments.Argument_Active_UCRP30_TerminationRatio;
                     // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-                    double MinimumUCFClearZoneVolume = 0.1;
+                    double MinimumUCFClearZoneVolume = 0;
                     if (!double.IsNaN(arguments.Argument_Minimum_UCFClearZone_Volume))
                         MinimumUCFClearZoneVolume = arguments.Argument_Minimum_UCFClearZone_Volume;
                     // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
