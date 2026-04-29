@@ -1,10 +1,10 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 using System;
 using System.Collections.Generic;
@@ -565,8 +565,8 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoCols = 2;// 3;
-            int NoRows = 4;// 3;
+            int NoCols = 3;
+            int NoRows = 3;
             int NoLayers = 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 1000;// 50;
@@ -577,7 +577,7 @@ namespace DFMGenerator_Standalone
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial of the top surface in metres, positive downwards
-            double Depth = 1000;// 2000;
+            double Depth = 2000;
             // Time units used in input load rates, time limits and strain relaxation time constants
             // These will be converted to SI units (s) by the gridblock objects
             TimeUnits ModelTimeUnits = TimeUnits.ma;
@@ -712,36 +712,6 @@ namespace DFMGenerator_Standalone
             InitialFluidPressure_list.Add(15000000);
             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
             BiazimuthalConjugate = false;*/
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(-0.001);
-            EhmaxRate_list.Add(-0.001);
-            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
-            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-            AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(1);
-            /*EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(EhminRate);
-            EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
-            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-            AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(1);
-            AbsoluteStressRate_list.Add(new Tensor2S(0, 0, 0, 0, 0, 0));
-            InitialFluidPressure_list.Add(19620000);
-            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
-            EhminAzi_list.Add(EhminAzi);
-            EhminRate_list.Add(EhminRate);
-            EhmaxRate_list.Add(EhmaxRate);
-            AppliedOverpressureRate_list.Add(AppliedOverpressureRate);
-            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
-            AppliedUpliftRate_list.Add(AppliedUpliftRate);
-            StressArchingFactor_list.Add(StressArchingFactor);
-            DeformationEpisodeDuration_list.Add(10);
-            AbsoluteStressRate_list.Add(new Tensor2S(-1333333, -1333333, 0, 0, 0, 0));
-            InitialFluidPressure_list.Add(19620000);
-            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));*/
 #endif
 
             // Mechanical properties

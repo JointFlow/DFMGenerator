@@ -39,9 +39,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Return reference to a specific gridblock in the grid
         /// </summary>
-        /// <param name="ColNo">Column number I of gridblock to retrieve</param>
-        /// <param name="RowNo">Row number J of gridblock to retrieve</param>
-        /// <param name="LayerNo">Layer number of gridblock to retrieve</param>
+        /// <param name="ColNo">Column number I of gridblock to retrieve (indexed from west to east)</param>
+        /// <param name="RowNo">Row number J of gridblock to retrieve (indexed from south to north)</param>
+        /// <param name="LayerNo">Layer number K of gridblock to retrieve (indexed from bottom to top)</param>
         /// <returns>Reference to the specified GridblockConfiguration object</returns>
         public GridblockConfiguration GetGridblock(int ColNo, int RowNo, int LayerNo)
         {
@@ -382,10 +382,10 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Calculate fracture data for each gridblock in a specified stratigraphic interval based on existing GridblockConfiguration.PropagationControl objects 
         /// </summary>
-        /// <param name="TopLayerNo">Index of the uppermost layer to calculate</param>
         /// <param name="BottomLayerNo">Index of the lowermost layer to calculate</param>
+        /// <param name="TopLayerNo">Index of the uppermost layer to calculate</param>
         /// <param name="progressReporter">Reference to a progress reporter - can be any object implementing the IProgressReporterWrapper interface</param>
-        private void CalculateFractureDataInStratigraphicInterval(int TopLayerNo, int BottomLayerNo, IProgressReporterWrapper progressReporter)
+        private void CalculateFractureDataInStratigraphicInterval(int BottomLayerNo, int TopLayerNo, IProgressReporterWrapper progressReporter)
         {
 #if LOGGRIDBLOCKS
             // If the output folder does not exist, create it
@@ -393,7 +393,7 @@ namespace DFMGenerator_SharedCode
             if (!Directory.Exists(logFolderPath))
                 Directory.CreateDirectory(logFolderPath);
             // Open the log file
-            string logFileName = (TopLayerNo < 0) ? string.Format("ImplicitCalculation_AllLayers_LogFile.txt") : string.Format("ImplicitCalculation_TopLayer{0}_LogFile.txt", TopLayerNo);
+            string logFileName = (BottomLayerNo < 0) ? string.Format("ImplicitCalculation_AllLayers_LogFile.txt") : string.Format("ImplicitCalculation_BottomLayerNo{0}_LogFile.txt", BottomLayerNo);
             String logFileNameComb = logFolderPath + logFileName;
             StreamWriter logFile = new StreamWriter(logFileNameComb);
 #endif
@@ -408,11 +408,11 @@ namespace DFMGenerator_SharedCode
 
             // If the top or bottom layer are out of the grid range, set them to the top and bottom layer of the grid respectively
             int NoLayers = Gridblocks.GetLength(2);
-            if (TopLayerNo < 0)
-                TopLayerNo = 0;
-            if ((BottomLayerNo < 0) || (BottomLayerNo >= NoLayers))
-                BottomLayerNo = NoLayers - 1;
-            NoLayers = (BottomLayerNo - TopLayerNo) + 1;
+            if (BottomLayerNo < 0)
+                BottomLayerNo = 0;
+            if ((TopLayerNo < 0) || (TopLayerNo >= NoLayers))
+                TopLayerNo = NoLayers - 1;
+            NoLayers = (TopLayerNo - BottomLayerNo) + 1;
 
             // If the supplied progress reporter is null, create a new DefaultProgressReporter object (this will not actually report any progress)
             // Otherwise calculate the number of gridblocks and set the total number of calculation elements (= number of gridblocks)
@@ -433,7 +433,7 @@ namespace DFMGenerator_SharedCode
             int NoGridblocksCalculated = 0;
             for (int ColNo = 0; ColNo < NoCols; ColNo++)
                 for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                    for (int LayerNo = TopLayerNo; LayerNo < NoLayers; LayerNo++)
+                    for (int LayerNo = BottomLayerNo; LayerNo <= TopLayerNo; LayerNo++)
                     {
                         // Check if calculation has been aborted
                         if (progressReporter.abortCalculation())

@@ -5795,7 +5795,7 @@ namespace DFMGenerator_Ocean
                                                                 }
 
                                                                 // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock( FractureGrid_ColNo, FractureGrid_RowNo,FractureGrid_LayerNo);
+                                                                GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                 if (fractureGridCell == null)
                                                                     continue;
 

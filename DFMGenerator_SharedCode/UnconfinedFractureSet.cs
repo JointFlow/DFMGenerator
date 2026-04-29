@@ -2424,7 +2424,7 @@ namespace DFMGenerator_SharedCode
             {
                 // No calculation required
             }
-            // If the initial driving stress is positive or zero, there will be no fracture growth in this timestep so the optimal timestep duration will be the estimated minimum time taken for the fracture set to grow by the specified limiting amount d_rmax
+            // If the initial driving stress is positive or zero, there will be fracture growth in this timestep so the optimal timestep duration will be the estimated minimum time taken for the fracture set to grow by the specified limiting amount d_rmax
             // This can be calculated from the appropriate equations
             else
             {
@@ -2694,7 +2694,6 @@ namespace DFMGenerator_SharedCode
 
                     // Calculate the time until the next datapoint representing nucleating fractures will form
                     {
-
                         // Cache required data locally
                         double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
                         double cumGammaRmin_Nminus1 = rmin_beta + CurrentFractureData.Cum_Gamma_Mminus1;
@@ -2728,10 +2727,10 @@ namespace DFMGenerator_SharedCode
                             double timeToNextDatapoint;
                             double U_term = Math.Pow(U * sqrtpi_Kc_factor, b + 1);
                             double V_term = (nucleationWtime / CapA) * V * (b + 1) * sqrtpi_Kc_factor;
-                            double UV_term = Math.Pow(U_term + V_term, 1 / (b + 1));
+                            double UV_term = U_term + V_term;
                             if ((float)(UV_term / U_term) > 1f)
                             {
-                                timeToNextDatapoint = (UV_term / (V * sqrtpi_Kc_factor)) - (U / V);
+                                timeToNextDatapoint = (Math.Pow(UV_term, 1 / (b + 1)) / (V * sqrtpi_Kc_factor)) - (U / V);
                             }
                             else
                             {
@@ -2743,7 +2742,7 @@ namespace DFMGenerator_SharedCode
                         }
                     }
 
-                    // If the real time until the next detapoint will nucleate is less than the current timestep duration, set the current timestep duration to the real time until the next detapoint will nucleate
+                    // If the real time until the next datapoint will nucleate is less than the current timestep duration, set the current timestep duration to the real time until the next detapoint will nucleate
                     if (timeTodP33max < optdur)
                         optdur = timeTodP33max;
                 }
