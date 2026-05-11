@@ -1022,6 +1022,9 @@ namespace DFMGenerator_Ocean
                         PetrelLogger.InfoOutputWindow("Fracture strain relaxation property data is defined on a different grid; will use default value instead");
                     }
                     bool UseGridFor_FractureRelaxation = (FractureRelaxation_grid != null);
+                    // Initial microfracture distribution function
+                    // NB This is currently only used for unconfined fractures; for layer-bound fractures it is assumed to be power law
+                    InitialFractureDistribution InitialMicrofractureDistributionFunction = (InitialFractureDistribution)arguments.Argument_InitialMicrofractureDistributionFunction;
                     // Density of initial microfractures
                     double InitialMicrofractureDensity = 0;
                     if (!double.IsNaN(arguments.Argument_InitialMicrofractureDensity_default))
@@ -1044,6 +1047,17 @@ namespace DFMGenerator_Ocean
                         PetrelLogger.InfoOutputWindow("Initial microfracture size distribution property data is defined on a different grid; will use default value instead");
                     }
                     bool UseGridFor_InitialMicrofractureSizeDistribution = (InitialMicrofractureSizeDistribution_grid != null);
+                    // Median initial microfracture radius - this is only used for the log-normal distribution function
+                    // If undefined, will be set to layer thickness / 20
+                    double InitialMicrofractureMedianRadius = arguments.Argument_InitialMicrofractureMedianRadius_default;
+                    Property InitialMicrofractureMedianRadius_grid = arguments.Argument_InitialMicrofractureMedianRadius;
+                    if ((InitialMicrofractureMedianRadius_grid != null) && (InitialMicrofractureMedianRadius_grid.Grid != PetrelGrid))
+                    {
+                        InitialMicrofractureMedianRadius_grid = null;
+                        PetrelLogger.InfoOutputWindow("Initial microfracture median radius property data is defined on a different grid; will use default value instead");
+                    }
+                    bool UseGridFor_InitialMicrofractureMedianRadius = (InitialMicrofractureMedianRadius_grid != null);
+
                     // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
                     double SubcriticalPropIndex = 10;
                     if (!double.IsNaN(arguments.Argument_SubcriticalPropagationIndex_default))
@@ -1724,12 +1738,19 @@ namespace DFMGenerator_Ocean
                     double toSIUnits_Length = PetrelUnitSystem.ConvertFromUI(FractureRadiusTemplate, 1);
                     bool lengthUnitMetres = (toSIUnits_Length == 1);
                     string AUnit = "";
-                    if (InitialMicrofractureSizeDistribution < 3)
-                        AUnit = string.Format("fracs/{0}^{1}", FractureRadiusUnits, 3 - InitialMicrofractureSizeDistribution);
-                    else if (InitialMicrofractureSizeDistribution > 3)
-                        AUnit = string.Format("frac.{0}^{1}", FractureRadiusUnits, InitialMicrofractureSizeDistribution - 3);
+                    if (InitialMicrofractureDistributionFunction == InitialFractureDistribution.PowerLaw)
+                    {
+                        if (InitialMicrofractureSizeDistribution < 3)
+                            AUnit = string.Format("fracs/{0}^{1}", FractureRadiusUnits, 3 - InitialMicrofractureSizeDistribution);
+                        else if (InitialMicrofractureSizeDistribution > 3)
+                            AUnit = string.Format("frac.{0}^{1}", FractureRadiusUnits, InitialMicrofractureSizeDistribution - 3);
+                        else
+                            AUnit = "fracs";
+                    }
                     else
-                        AUnit = "fracs";
+                    {
+                        AUnit = string.Format("fracs/{0}^{1}", FractureRadiusUnits, 3);
+                    }
                     // Permeability
                     Template PermeabilityTemplate = PetrelProject.WellKnownTemplates.PetrophysicalGroup.Permeability;
                     IUnitConverter toProjectPermeabilityUnits = PetrelUnitSystem.GetConverterToUI(PermeabilityTemplate);
@@ -2043,15 +2064,45 @@ namespace DFMGenerator_Ocean
                     else
                         generalInputParams += "No strain relaxation applied\n";
                     // Initial microfracture density
-                    if (UseGridFor_InitialMicrofractureDensity)
-                        generalInputParams += string.Format("Initial fracture density: {0}, default {1}{2}; ", InitialMicrofractureDensity_grid.Name, InitialMicrofractureDensity, AUnit);
-                    else
-                        generalInputParams += string.Format("Initial fracture density: {0}{1}; ", InitialMicrofractureDensity, AUnit);
-                    if (UseGridFor_InitialMicrofractureSizeDistribution)
-                        generalInputParams += string.Format("exponent {0}, default {1}\n ", InitialMicrofractureSizeDistribution_grid.Name, InitialMicrofractureSizeDistribution);
-                    else
-                        generalInputParams += string.Format("exponent {0}\n", InitialMicrofractureSizeDistribution);
-
+                    switch (InitialMicrofractureDistributionFunction)
+                    {
+                        case InitialFractureDistribution.PowerLaw:
+                            if (UseGridFor_InitialMicrofractureDensity)
+                                generalInputParams += string.Format("Initial fracture density: Power Law; density {0}, default {1}{2}; ", InitialMicrofractureDensity_grid.Name, InitialMicrofractureDensity, AUnit);
+                            else
+                                generalInputParams += string.Format("Initial fracture density: Power Law; density {0}{1}; ", InitialMicrofractureDensity, AUnit);
+                            if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                generalInputParams += string.Format("exponent {0}, default {1}\n ", InitialMicrofractureSizeDistribution_grid.Name, InitialMicrofractureSizeDistribution);
+                            else
+                                generalInputParams += string.Format("exponent {0}\n", InitialMicrofractureSizeDistribution);
+                            break;
+                        case InitialFractureDistribution.Exponential:
+                            if (UseGridFor_InitialMicrofractureDensity)
+                                generalInputParams += string.Format("Initial fracture density: Exponential; density {0}, default {1}{2}; ", InitialMicrofractureDensity_grid.Name, InitialMicrofractureDensity, AUnit);
+                            else
+                                generalInputParams += string.Format("Initial fracture density: Exponential; density {0}{1}; ", InitialMicrofractureDensity, AUnit);
+                            if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                generalInputParams += string.Format("exponential coefficient {0}, default {1}\n ", InitialMicrofractureSizeDistribution_grid.Name, InitialMicrofractureSizeDistribution);
+                            else
+                                generalInputParams += string.Format("exponential coefficient {0}\n", InitialMicrofractureSizeDistribution);
+                            break;
+                        case InitialFractureDistribution.LogNormal:
+                            if (UseGridFor_InitialMicrofractureDensity)
+                                generalInputParams += string.Format("Initial fracture density: Log-normal; density {0}, default {1}{2}; ", InitialMicrofractureDensity_grid.Name, InitialMicrofractureDensity, AUnit);
+                            else
+                                generalInputParams += string.Format("Initial fracture density: Log-normal; density {0}{1}; ", InitialMicrofractureDensity, AUnit);
+                            if (UseGridFor_InitialMicrofractureMedianRadius)
+                                generalInputParams += string.Format("median radius {0}, default {1}{2}\n ", InitialMicrofractureMedianRadius_grid.Name, toProjectFractureRadiusUnits.Convert(InitialMicrofractureMedianRadius), FractureRadiusUnits);
+                            else
+                                generalInputParams += string.Format("median radius {0}{1}\n", toProjectFractureRadiusUnits.Convert(InitialMicrofractureMedianRadius), FractureRadiusUnits);
+                            if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                generalInputParams += string.Format("size distribution coefficient {0}, default {1}\n ", InitialMicrofractureSizeDistribution_grid.Name, InitialMicrofractureSizeDistribution);
+                            else
+                                generalInputParams += string.Format("size distribution coefficient {0}\n", InitialMicrofractureSizeDistribution);
+                            break;
+                        default:
+                            break;
+                    }
                     if (UseGridFor_SubcriticalPropIndex)
                         generalInputParams += string.Format("Subcritical propagation index: {0}, default {1}\n", SubcriticalPropIndex_grid.Name, SubcriticalPropIndex);
                     else
@@ -2431,9 +2482,9 @@ namespace DFMGenerator_Ocean
                     int NoFractureGridLayers = NoPetrelGridLayers / VerticalUpscalingFactor;
                     if ((NoPetrelGridLayers % VerticalUpscalingFactor) > 0)
                         NoFractureGridLayers++;
-                    FractureGrid ModelGrid = new FractureGrid(NoFractureGridRows, NoFractureGridCols, NoFractureGridLayers);
+                    FractureGrid ModelGrid = new FractureGrid(NoFractureGridCols, NoFractureGridRows, NoFractureGridLayers);
 #if DEBUG_FRAC_INPUT
-                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid ModelGrid = new FractureGrid({0}, {1}, {2});", NoFractureGridRows, NoFractureGridCols, NoFractureGridLayers));
+                    PetrelLogger.InfoOutputWindow(string.Format("FractureGrid ModelGrid = new FractureGrid({0}, {1}, {2});", NoFractureGridCols, NoFractureGridRows, NoFractureGridLayers));
 #endif
                     {
                         // Progress Bar
@@ -2798,6 +2849,7 @@ namespace DFMGenerator_Ocean
                                         // First we will create local variables for the property values in this gridblock; we can then recalculate these without altering the global default values
                                         double local_InitialMicrofractureDensity = InitialMicrofractureDensity;
                                         double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution;
+                                        double local_InitialMicrofractureMedianRadius = InitialMicrofractureMedianRadius;
                                         double local_SubcriticalPropIndex = SubcriticalPropIndex;
                                         double local_YoungsMod = YoungsMod;
                                         double local_PoissonsRatio = PoissonsRatio;
@@ -2818,6 +2870,8 @@ namespace DFMGenerator_Ocean
                                             int InitialMicrofractureDensity_novalues = 0;
                                             double InitialMicrofractureSizeDistribution_total = 0;
                                             int InitialMicrofractureSizeDistribution_novalues = 0;
+                                            double InitialMicrofractureMedianRadius_total = 0;
+                                            int InitialMicrofractureMedianRadius_novalues = 0;
                                             double SubcriticalPropIndex_total = 0;
                                             int SubcriticalPropIndex_novalues = 0;
                                             double YoungsMod_total = 0;
@@ -2869,6 +2923,17 @@ namespace DFMGenerator_Ocean
                                                             {
                                                                 InitialMicrofractureSizeDistribution_total += cell_smallc;
                                                                 InitialMicrofractureSizeDistribution_novalues++;
+                                                            }
+                                                        }
+
+                                                        // Update initial microfracture median radius total if defined
+                                                        if (UseGridFor_InitialMicrofractureMedianRadius)
+                                                        {
+                                                            double cell_uFrmedian = (double)InitialMicrofractureMedianRadius_grid[cellRef];
+                                                            if (!double.IsNaN(cell_uFrmedian))
+                                                            {
+                                                                InitialMicrofractureMedianRadius_total += cell_uFrmedian;
+                                                                InitialMicrofractureMedianRadius_novalues++;
                                                             }
                                                         }
 
@@ -3043,6 +3108,8 @@ namespace DFMGenerator_Ocean
                                                 local_InitialMicrofractureDensity = InitialMicrofractureDensity_total / (double)InitialMicrofractureDensity_novalues;
                                             if (InitialMicrofractureSizeDistribution_novalues > 0)
                                                 local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_total / (double)InitialMicrofractureSizeDistribution_novalues;
+                                            if (InitialMicrofractureMedianRadius_novalues > 0)
+                                                local_InitialMicrofractureMedianRadius = InitialMicrofractureMedianRadius_total / (double)InitialMicrofractureMedianRadius_novalues;
                                             if (SubcriticalPropIndex_novalues > 0)
                                                 local_SubcriticalPropIndex = SubcriticalPropIndex_total / (double)SubcriticalPropIndex_novalues;
                                             if (YoungsMod_novalues > 0)
@@ -3100,6 +3167,22 @@ namespace DFMGenerator_Ocean
                                                     if (!double.IsNaN(cell_InitialMicrofractureSizeDistribution))
                                                     {
                                                         local_InitialMicrofractureSizeDistribution = cell_InitialMicrofractureSizeDistribution;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+
+                                            // Update initial microfracture median radius total if defined
+                                            if (UseGridFor_InitialMicrofractureSizeDistribution)
+                                            {
+                                                // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                                {
+                                                    cellRef.K = PetrelGrid_DataCellK;
+                                                    double cell_InitialMicrofractureMedianRadius = (double)InitialMicrofractureMedianRadius_grid[cellRef];
+                                                    if (!double.IsNaN(cell_InitialMicrofractureMedianRadius))
+                                                    {
+                                                        local_InitialMicrofractureMedianRadius = cell_InitialMicrofractureMedianRadius;
                                                         break;
                                                     }
                                                 }
@@ -3319,14 +3402,19 @@ namespace DFMGenerator_Ocean
                                             }
                                         }
 
-                                        // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                                        // InitialMicrofractureDensity A is stored in project units rather than SI units, since in the power law distribution its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
                                         // Therefore unit conversion for InitialMicrofractureDensity A must be carried out now
                                         // Unit conversion must be done on a cell by cell basis, since the values of InitialMicrofractureSizeDistribution may vary between cells
                                         if (!lengthUnitMetres)
                                         {
-                                            double toSIUnits_InitialMicrofractureDensity = Math.Pow(toSIUnits_Length, local_InitialMicrofractureSizeDistribution - 3);
+                                            double uF_density_dimensionality = (InitialMicrofractureDistributionFunction == 0) ? local_InitialMicrofractureSizeDistribution - 3 : -3;
+                                            double toSIUnits_InitialMicrofractureDensity = Math.Pow(toSIUnits_Length, uF_density_dimensionality);
                                             local_InitialMicrofractureDensity *= toSIUnits_InitialMicrofractureDensity;
                                         }
+
+                                        // If the median initial microfracture size is not defined, set it to layer thickness / 20
+                                        if (!(local_InitialMicrofractureMedianRadius > 0))
+                                            local_InitialMicrofractureMedianRadius = local_LayerThickness / 20;
 
                                         // Check the elastic properties for physically unrealistic values, and if so warn the user
                                         // NB The code will actually generate a result with any input values except Young's Modulus = 0, Poisson's ratio = -1 or Poisson's ratio = 1
@@ -4696,7 +4784,7 @@ namespace DFMGenerator_Ocean
                                         else
                                             gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
                                         if (NoUnconfinedFractureStrikeSets > 0)
-                                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution);
+                                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius);
 
                                         // Update the number and names of the unconfined fracture sets
                                         if (NoUnconfinedFractureSets < gc.NoUnconfinedFractureSets)
@@ -4715,7 +4803,7 @@ namespace DFMGenerator_Ocean
                                         else
                                             PetrelLogger.InfoOutputWindow(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
                                         if (NoUnconfinedFractureStrikeSets > 0)
-                                            PetrelLogger.InfoOutputWindow(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, {5}, {6});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution));
+                                            PetrelLogger.InfoOutputWindow(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, InitialFractureDistribution.{5}, {6}, {7}, {8});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius));
 #endif
                                         // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
 
@@ -8672,7 +8760,8 @@ namespace DFMGenerator_Ocean
             private Droid argument_RockStrainRelaxation;
             private double argument_FractureStrainRelaxation_default = 0;
             private Droid argument_FractureStrainRelaxation;
-            // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+            private int argument_InitialMicrofractureDistributionFunction = 0;
+            // InitialMicrofractureDensity A is stored in project units rather than SI units, since in the power law distribution its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
             // However it is initialised with a default value equivalent to 0.001fracs/m, since this is calibrated empirically
             // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
             private double argument_InitialMicrofractureDensity_SI = 0.001;
@@ -8680,6 +8769,8 @@ namespace DFMGenerator_Ocean
             private Droid argument_InitialMicrofractureDensity;
             private double argument_InitialMicrofractureSizeDistribution_default = 3;
             private Droid argument_InitialMicrofractureSizeDistribution;
+            private double argument_InitialMicrofractureMedianRadius_default = double.NaN;
+            private Droid argument_InitialMicrofractureMedianRadius;
             private double argument_SubcriticalPropagationIndex_default = 10;
             private Droid argument_SubcriticalPropagationIndex;
             private double argument_CriticalPropagationRate = 2000;
@@ -8791,9 +8882,10 @@ namespace DFMGenerator_Ocean
             private int argument_SearchAdjacentGridblocks = 2;
             private double argument_MinimumExplicitMicrofractureRadius = double.NaN;
             private int argument_NoMicrofractureCornerpoints = 8;
+
             // Parameters for controlling unconfined fractures
             private bool argument_UseUnconfinedFractures = false;
-            private int argument_VerticalUpscalingFactor = 1;
+            private int argument_VerticalUpscalingFactor = 0;
             private int argument_NoRaysPerUnconfinedFracture = 8;
             private double argument_MinUnconfinedFractureRadius = double.NaN;
             private double argument_MaxUnconfinedFractureRadius = double.NaN;
@@ -9091,7 +9183,7 @@ namespace DFMGenerator_Ocean
             [Description("Default initial microfracture density; NB must use project units", "Default value for initial microfracture density; NB must use project units")]
             public double Argument_InitialMicrofractureDensity_default
             {
-                // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                // InitialMicrofractureDensity A is stored in project units rather than SI units, since in the power law distribution its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
                 // However it is initialised with a default value equivalent to 0.001(fracs>1m radius)/m3 (=0.001fracs/m), since this is calibrated empirically
                 // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
                 // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
@@ -9100,7 +9192,8 @@ namespace DFMGenerator_Ocean
                 {
                     if (double.IsNaN(this.argument_InitialMicrofractureDensity_default))
                     {
-                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, 1), 3 - Argument_InitialMicrofractureSizeDistribution_default);
+                        double uF_density_dimensionality = (Argument_InitialMicrofractureDistributionFunction == 0) ? 3 - Argument_InitialMicrofractureSizeDistribution_default : 3;
+                        double toProjectUnits_InitialMicrofractureDensity = Math.Pow(PetrelUnitSystem.ConvertFromUI(PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, 1), uF_density_dimensionality);
                         this.argument_InitialMicrofractureDensity_default = this.argument_InitialMicrofractureDensity_SI * toProjectUnits_InitialMicrofractureDensity;
                     }
                     return this.argument_InitialMicrofractureDensity_default;
@@ -13652,7 +13745,26 @@ namespace DFMGenerator_Ocean
                 internal get { return this.argument_PlanarUnconfinedFractures; }
                 set { this.argument_PlanarUnconfinedFractures = value; }
             }
+            [Description("Initial microfracture distribution function", "Initial microfracture distribution function; NB This is currently only used for unconfined fractures, for layer-bound fractures it is assumed to be power law")]
+            public int Argument_InitialMicrofractureDistributionFunction
+            {
+                internal get { return this.argument_InitialMicrofractureDistributionFunction; }
+                set { this.argument_InitialMicrofractureDistributionFunction = value; }
+            }
+            [Description("Default median initial microfracture radius", "Default median initial microfracture radius - this is only used for the log-normal distribution function")]
+            public double Argument_InitialMicrofractureMedianRadius_default
+            {
+                internal get { return this.argument_InitialMicrofractureMedianRadius_default; }
+                set { this.argument_InitialMicrofractureMedianRadius_default = value; }
+            }
 
+            [OptionalInWorkflow]
+            [Description("Median initial microfracture radius", "Median initial microfracture radius - this is only used for the log-normal distribution function")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_InitialMicrofractureMedianRadius
+            {
+                internal get { return DataManager.Resolve(this.argument_InitialMicrofractureMedianRadius) as Property; }
+                set { this.argument_InitialMicrofractureMedianRadius = (value == null ? null : value.Droid); }
+            }
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -13903,7 +14015,8 @@ namespace DFMGenerator_Ocean
                 argument_RockStrainRelaxation = null;
                 argument_FractureStrainRelaxation_default = 0;
                 argument_FractureStrainRelaxation = null;
-                // InitialMicrofractureDensity A is stored in project units rather than SI units, since its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
+                argument_InitialMicrofractureDistributionFunction = 0;
+                // InitialMicrofractureDensity A is stored in project units rather than SI units, since in the power law distribution its units will vary depending on the value of InitialMicrofractureSizeDistribution c: [A]=[L]^c-3 
                 // However it is initialised with a default value equivalent to 0.001fracs/m, since this is calibrated empirically
                 // We therefore set up a private variable (in project units) and a private initialising variable (in SI units); the project unit variable will only be set when first called
                 argument_InitialMicrofractureDensity_SI = 0.001;
@@ -13911,6 +14024,8 @@ namespace DFMGenerator_Ocean
                 argument_InitialMicrofractureDensity = null;
                 argument_InitialMicrofractureSizeDistribution_default = 3;
                 argument_InitialMicrofractureSizeDistribution = null;
+                argument_InitialMicrofractureMedianRadius_default = double.NaN;
+                argument_InitialMicrofractureMedianRadius = null;
                 argument_SubcriticalPropagationIndex_default = 10;
                 argument_SubcriticalPropagationIndex = null;
                 argument_CriticalPropagationRate = 2000;
@@ -14010,7 +14125,7 @@ namespace DFMGenerator_Ocean
 
                 // Parameters for controlling unconfined fractures
                 argument_UseUnconfinedFractures = false;
-                argument_VerticalUpscalingFactor = 1;
+                argument_VerticalUpscalingFactor = 0;
                 argument_NoRaysPerUnconfinedFracture = 8;
                 argument_MinUnconfinedFractureRadius = double.NaN;
                 argument_MaxUnconfinedFractureRadius = double.NaN;

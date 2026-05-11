@@ -1536,7 +1536,8 @@ namespace DFMGenerator_SharedCode
             int NoRows = Gridblocks.GetLength(1);
             int NoLayers = Gridblocks.GetLength(2);
 
-            // Check to see if the column number is within the bounds of the grid
+            // Do not check if the specified coordinates for the block lie within the grid - this way it will throw an Index Out Of Range exception when trying to place the gridblock in the grid, before running the model
+            /*// Check to see if the column number is within the bounds of the grid
             if (ColNo < 0) ColNo = 0;
             if (ColNo >= NoCols) ColNo = NoCols - 1;
 
@@ -1546,7 +1547,7 @@ namespace DFMGenerator_SharedCode
 
             // Check to see if the layer number is within the bounds of the grid
             if (LayerNo < 0) LayerNo = 0;
-            if (LayerNo >= NoLayers) LayerNo = NoLayers - 1;
+            if (LayerNo >= NoLayers) LayerNo = NoLayers - 1;*/
 
             // Add the GridblockConfiguration object to the grid and set the parent reference in the GridblockConfiguration object
             Gridblocks[ColNo, RowNo, LayerNo] = gridblock_in;

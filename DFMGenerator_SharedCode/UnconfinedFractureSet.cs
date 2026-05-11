@@ -263,17 +263,80 @@ namespace DFMGenerator_SharedCode
 
         // Fracture distribution control data
         /// <summary>
+        /// Allowable rounding error in dRP30 when calculating whether a new datapoint will be nucleated
+        /// </summary>
+        const double dRP30_rounding_error = 0.999;
+        /// <summary>
+        /// Factor a used in Winitzki's algorithms for approximating erf and inverse erf
+        /// </summary>
+        private const double Winitzki_a = (8 * (Math.PI - 3)) / (3 * Math.PI * (4 - Math.PI));
+        /// <summary>
+        /// Winitzki's algorithm for calculating an approximate value for the error function erf
+        /// </summary>
+        /// <param name="x_in">Input value</param>
+        /// <returns>~erf(x)</returns>
+        public static double erf(double x_in)
+        {
+            double erf = Math.Sign(x_in) * Math.Sqrt(1 - Math.Exp(-(x_in * x_in) * (((4 / Math.PI) + (Winitzki_a * x_in * x_in)) / (1 + (Winitzki_a * x_in * x_in)))));
+            return erf;
+        }
+        /// <summary>
+        /// Winitzki's algorithm for calculating an approximate value for the inverse of the error function erf
+        /// </summary>
+        /// <param name="erf_in">Value of the error function erf (between -1 and 1)</param>
+        /// <returns>Value of x such that erf(x)~erf_in</returns>
+        public static double inverse_erf(double erf_in)
+        {
+            double term1 = Math.Log(1 - (erf_in * erf_in));
+            double term2 = (2 / (Math.PI * Winitzki_a)) + (term1 / 2);
+            double x_out = Math.Sign(erf_in) * Math.Sqrt(Math.Sqrt((term2 * term2) - (term1 / Winitzki_a)) - term2);
+            return x_out;
+        }
+        /// <summary>
+        /// Winitzki's algorithm for calculating an approximate value for half of the complementary error function erfc
+        /// This represents the cumulative density distribution function for a log normal distribution
+        /// </summary>
+        /// <param name="x_in">Input value</param>
+        /// <returns>~erfc(x)/2</returns>
+        public static double CDDF_LogNormal(double x_in)
+        {
+            return (1 - UnconfinedFractureSet.erf(x_in)) / 2;
+        }
+        /// <summary>
+        /// Winitzki's algorithm for calculating an approximate value for the inverse of half of the complementary error function erfc
+        /// This gives the inverse of the cumulative density distribution function for a log normal distribution
+        /// </summary>
+        /// <param name="CumulativeDensity_in">Value of the cumulative density distribution function (between 0 and 1)</param>
+        /// <returns>Value of x such that erfc(x)/2~CumulativeDensity_in</returns>
+        public static double inverse_CDDF_LogNormal(double CumulativeDensity_in)
+        {
+            double erf = 1 - (CumulativeDensity_in * 2);
+            return UnconfinedFractureSet.inverse_erf(erf);
+        }
+        /// <summary>
         /// Initial microfracture distribution function - at present only Power Law is implemented
         /// </summary>
-        public InitialFractureDistribution InitialDistribution { get; set; }
+        public InitialFractureDistribution InitialDistribution { get; private set; }
         /// <summary>
         /// Initial microfracture density coefficient B (/m3)
         /// </summary>
-        public double CapB { get; set; }
+        public double CapB { get; private set; }
         /// <summary>
         /// Initial microfracture distribution coefficient c
         /// </summary>
-        public double c_coefficient { get; set; }
+        public double c_coefficient { get; private set; }
+        /// <summary>
+        /// Median initial microfracture radius - this is only used for the log-normal distribution function
+        /// </summary>
+        public double Median_uF_radius { get; private set; }
+        /// <summary>
+        /// Equal to log of the initial microfracture radius - this is only used for the log-normal distribution function
+        /// </summary>
+        public double M_term { get; private set; }
+        /// <summary>
+        /// Sqrt(2) * standard deviation of initial microfracture size S - this is only used for the log-normal distribution function
+        /// </summary>
+        public double Sqrt2_S { get; private set; }
         /// <summary>
         /// Get the volumetric density of the initial fractures
         /// </summary>
@@ -287,23 +350,58 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="radius">Specified fracture radius</param>
         /// <returns></returns>
-        private double InitialP30(double radius)
+        public double InitialP30(double radius)
         {
             double P30 = 0;
             switch (InitialDistribution)
             {
-                // Only Power Law is currently implemented
                 case InitialFractureDistribution.PowerLaw:
                     P30 = CapB * Math.Pow(radius, -c_coefficient);
                     break;
                 case InitialFractureDistribution.Exponential:
+                    P30 = CapB * Math.Exp(-radius * c_coefficient);
                     break;
                 case InitialFractureDistribution.LogNormal:
+                    P30 = CapB * UnconfinedFractureSet.CDDF_LogNormal((Math.Log(radius) - M_term) / Sqrt2_S);
                     break;
                 default:
                     break;
             }
             return P30;
+        }
+        /// <summary>
+        /// Get the value of the initial microfracture radius for a specified limiting volumetric fracture density
+        /// </summary>
+        /// <param name="LFP30">Limiting volumetric fracture density, i.e. assuming no stress shadow deactivation</param>
+        /// <returns>Minimum radius of the initial microfractures representing the specified limiting density</returns>
+        public double InitialRadius(double LFP30)
+        {
+            double radius = 0;
+            switch (InitialDistribution)
+            {
+                case InitialFractureDistribution.PowerLaw:
+                    radius = Math.Pow(LFP30 / CapB, -1 / c_coefficient);
+                    break;
+                case InitialFractureDistribution.Exponential:
+                    radius = -Math.Log(LFP30 / CapB) / c_coefficient;
+                    break;
+                case InitialFractureDistribution.LogNormal:
+                    radius = Median_uF_radius * Math.Exp(Sqrt2_S * UnconfinedFractureSet.inverse_CDDF_LogNormal(LFP30 / CapB));
+                    break;
+                default:
+                    break;
+            }
+            return radius;
+        }
+        /// <summary>
+        /// Get the value of the initial microfracture radius for a specified nucleating explicit fracture
+        /// </summary>
+        /// <param name="Ln">Index number of the nucleating explicit fracture, i.e. assuming no stress shadow deactivation</param>
+        /// <returns>Initial radius of the specified nucleating fracture</returns>
+        public double InitialRadius(int Ln)
+        {
+            double implied_LFP30 = (double)Ln / gbc.Volume;
+            return InitialRadius(Ln);
         }
 
         // Implicit fracture population data
@@ -336,17 +434,21 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double max_historic_a_UCFP32;
         /// <summary>
-        /// Cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated
+        /// Limiting RP30 (i.e. maximum potential RP30 with no stress shadow deactivation) at the last time a new implicit fracture datapoint was created
         /// </summary>
-        private double previous_CumGamma;
+        private double previous_LRP30;
         /// <summary>
-        /// Minimum UCRP30 value for a nucleating fracture datapoint - a new datapoint will not be created until the volumetric density of the nucleating fractures reaches this value
+        /// Limiting count of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures with no stress shadow deactivation) at the last time a new explicit fracture was created
         /// </summary>
-        private double min_NucleatingDatapoint_UCRP30;
+        private int previous_Ln;
         /// <summary>
-        /// Minimum UCRP30 value for a growing fracture datapoint to be included when determining the maximum timestep duration based on increase in ray length
+        /// Minimum RP30 value for a nucleating fracture datapoint - a new datapoint will not be created until the volumetric density of the nucleating fractures reaches this value
         /// </summary>
-        private double min_GrowingDatapoint_UCRP30;
+        private double min_NucleatingDatapoint_RP30;
+        /// <summary>
+        /// Minimum RP30 value for a growing fracture datapoint to be included when determining the maximum timestep duration based on increase in ray length
+        /// </summary>
+        private double min_GrowingDatapoint_RP30;
 
         // Fracture data for previous timesteps
         /// <summary>
@@ -1869,7 +1971,7 @@ namespace DFMGenerator_SharedCode
 
             // If the stress shadow width has changed, update the CurrentFractureData object and recalculate the stress shadow volume for each datapoint
             double previous_StressShadowWidthRatio = CurrentFractureData.StressShadowWidthRatio_M;
-            bool stressShadowWidthChanged = ((float) current_StressShadowWidthRatio != (float)previous_StressShadowWidthRatio);
+            bool stressShadowWidthChanged = ((float)current_StressShadowWidthRatio != (float)previous_StressShadowWidthRatio);
             if (stressShadowWidthChanged)
             {
                 // Calculate a multiplier for the stress shadow volume around each datapoint to represent the change in stress shadow width
@@ -2175,7 +2277,7 @@ namespace DFMGenerator_SharedCode
             return wtime;
         }
 
-        // Functions to calculate fracture population data
+        // Functions to calculate implicit fracture population data
         /// <summary>
         /// Create a new FractureCalculationData object for the current timestep, populate it with data from the end of the previous timestep, and add it to the list of previous timestep data
         /// </summary>
@@ -2457,7 +2559,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
                         double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.FullyActive][FADatapointNo].dRP30;
-                        if (dRP30 < min_GrowingDatapoint_UCRP30)
+                        if (dRP30 < min_GrowingDatapoint_RP30)
                         {
                             FADatapointNo++;
                             continue;
@@ -2511,7 +2613,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // If the dRP30 value for this datapoint is below the minimum, move on to the next datapoint
                         double dRP30 = Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted][RDatapointNo].dRP30;
-                        if (dRP30 < min_GrowingDatapoint_UCRP30)
+                        if (dRP30 < min_GrowingDatapoint_RP30)
                         {
                             RDatapointNo++;
                             continue;
@@ -2697,29 +2799,12 @@ namespace DFMGenerator_SharedCode
                         // Cache required data locally
                         double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
                         double cumGammaRmin_Nminus1 = rmin_beta + CurrentFractureData.Cum_Gamma_Mminus1;
-                        double cumGammaRmin_Nprev = rmin_beta + previous_CumGamma;
+                        double next_URP30 = previous_LRP30 + (min_NucleatingDatapoint_RP30 / CurrentFractureData.theta_Mminus1);
+                        double next_UP30 = next_URP30 / (double)RaysPerFracture;
 
                         // Get the weighted time until the next datapoint will nucleate
-                        // Only Power Law is currently implemented
-                        double nucleationWtime = double.PositiveInfinity;
-                        switch (InitialDistribution)
-                        {
-                            case InitialFractureDistribution.PowerLaw:
-                                {
-                                    // betac_factor is -beta*c if b<>2, -c if b=2
-                                    double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
-                                    double RP30term1 = min_NucleatingDatapoint_UCRP30 / (RaysPerFracture * CapB * CurrentFractureData.theta_Mminus1);
-                                    double RP30term2 = bis2 ? Math.Log(Math.Exp(betac_factor * cumGammaRmin_Nprev) + RP30term1) / betac_factor : Math.Pow(Math.Pow(cumGammaRmin_Nprev, betac_factor) + RP30term1, 1 / betac_factor);
-                                    nucleationWtime = bis2 ? (cumGammaRmin_Nminus1 - RP30term2) : beta * (cumGammaRmin_Nminus1 - RP30term2);
-                                }
-                                break;
-                            case InitialFractureDistribution.Exponential:
-                                break;
-                            case InitialFractureDistribution.LogNormal:
-                                break;
-                            default:
-                                break;
-                        }
+                        double r0 = InitialRadius(next_UP30);
+                        double nucleationWtime = bis2 ? -(Math.Log(r0) - cumGammaRmin_Nminus1) : -beta * (Math.Pow(r0, 1 / beta) - cumGammaRmin_Nminus1);
 
                         // Convert the weighted time into a real time
                         if (nucleationWtime > 0)
@@ -3004,42 +3089,26 @@ namespace DFMGenerator_SharedCode
             bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
             double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
             double cumGammaRmin_N = rmin_beta + CurrentFractureData.Cum_Gamma_M;
-            double cumGammaRmin_Nminus1 = rmin_beta + previous_CumGamma;// CurrentFractureData.Cum_Gamma_Mminus1;
 
-            // Get the incremental increase in volumetric density of fractures with radius > rmin for the current timestep, ignoring stress shadows
-            // Only Power Law is currently implemented
-            double dUCFP30 = 0;
-            switch (InitialDistribution)
-            {
-                case InitialFractureDistribution.PowerLaw:
-                    {
-                        // betac_factor is -beta*c if b<>2, -c if b=2
-                        double betac_factor = (bis2 ? -c_coefficient : -(beta * c_coefficient));
-                        dUCFP30 = CapB * (bis2 ? Math.Exp(cumGammaRmin_N * betac_factor) - Math.Exp(cumGammaRmin_Nminus1 * betac_factor) : Math.Pow(cumGammaRmin_N, betac_factor) - Math.Pow(cumGammaRmin_Nminus1, betac_factor));
-                    }
-                    break;
-                case InitialFractureDistribution.Exponential:
-                    break;
-                case InitialFractureDistribution.LogNormal:
-                    break;
-                default:
-                    break;
-            }
+            // Get the limiting volumetric ray density LRP30 (assuming no stress shadow deactivation) for fractures with radius > rmin at the end of the current timestep
+            double r0 = bis2 ? Math.Exp(cumGammaRmin_N) : Math.Pow(cumGammaRmin_N, beta);
+            double LFP30_N = InitialP30(r0);
+            double LRP30_N = LFP30_N * (double)RaysPerFracture;
 
-            // Multiply the volumetric density increment by the inverse stress shadow volume seen by fully active fractures with minimum radius
+            // Get the actual incremental increase in the volumetric ray density dRP30 from the time the previous datapoint nucleated
+            // To do this we must subtract the limiting ray density when the previous datapoint nucleated, and then multiply the volumetric density increment by the inverse stress shadow volume seen by fully active fractures with minimum radius
             // This will correct for the fact that fracture seed points located in a stress shadow cannot nucleate fractures
-            dUCFP30 *= CurrentFractureData.theta_Mminus1;
-
-            // Multiply by the number of rays per fracture to get the volumetric density of rays
-            double dRP30 = dUCFP30 * (double)RaysPerFracture;
+            double dRP30 = (LRP30_N - previous_LRP30) * CurrentFractureData.theta_Mminus1;
 
             // If the calculated dMFP30 value is less than the specified minimum, return null (no new datapoint will be created)
-            if ((float)dRP30 < (float)min_NucleatingDatapoint_UCRP30)
+            // Allow some leeway to account for rounding error, if the timestep duration has been calculated to exactly reach the datapoint nucleation threshold
+            // This is especially important in the early timesteps with a log-normal initial microfracture distribution, where the CDDF is very close to 1
+            if (dRP30 < (dRP30_rounding_error * min_NucleatingDatapoint_RP30))
                 return null;
 
             // Create a new datapoint and return it
-            // Also update the cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated
-            previous_CumGamma = CurrentFractureData.Cum_Gamma_M;
+            // Also update the cumulative value of the LRP30 at the last time new fractures nucleated
+            previous_LRP30 = LRP30_N;
             return new ImplicitFracturePopulationDatapoint(MinimumFractureRadius, dRP30, Fractures);
         }
         /// <summary>
@@ -3058,7 +3127,7 @@ namespace DFMGenerator_SharedCode
                 {
                     UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
                     for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
-                        orientationMultipliers[setNo, rayNo] = Math.Abs(ufs.normalVector & this.rayVectors[rayNo]) / (double)RaysPerFracture;
+                        orientationMultipliers[setNo, rayNo] = Math.Abs(ufs.normalVector & this.rayVectors[rayNo]);
                 }
             }
 
@@ -3091,14 +3160,22 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Get the probability that a fracture represented by this datapoint will not be deactivated due to intersecting a fracture from another set in the current timestep
-                // This is given by the inverse of the interaction zone volume around all other fractures in the current set
+                // This is given by the apparent P32 of the intersected fracture set, corrected for orientation of the intersected fracture and the propagating ray
                 double mean_apparent_P32 = 0;
                 double minIntersectionRadius = minIntersectionDeactivationRatio * datapoint.EffectiveRayLength;
                 for (int setNo = 0; setNo < noSets; setNo++)
                 {
                     UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
+                    double ufs_P32 = ufs.Fractures.cumulative_FP32(minIntersectionRadius);
+                    // For fully active fractures, we will take the maximum probability that any ray from the propagating fracture will hit a fracture from the other set
+                    // This is because a fully active fracture will become restricted if any of the rays hits another fracture
+                    double maxOrientationMultiplier = 0;
                     for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
-                        mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
+                    {
+                        if (maxOrientationMultiplier < orientationMultipliers[setNo, rayNo])
+                            maxOrientationMultiplier = orientationMultipliers[setNo, rayNo];
+                    }
+                    mean_apparent_P32 += (ufs_P32 * maxOrientationMultiplier);
                 }
                 double phiIJ_M = Math.Exp(-mean_apparent_P32 * datapoint.ActualRayLengthIncrement);
 
@@ -3137,8 +3214,14 @@ namespace DFMGenerator_SharedCode
                 for (int setNo = 0; setNo < noSets; setNo++)
                 {
                     UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[setNo];
+                    double ufs_P32 = ufs.Fractures.cumulative_FP32(minIntersectionRadius);
+                    // For restricted fractures, we will take the mean probability that any ray from the propagating fracture will hit a fracture from the other set
+                    // This is because any of the restricted fracture rays will become deactivated if they hit another fracture
+                    double meanOrientationMultiplier = 0;
                     for (int rayNo = 0; rayNo < RaysPerFracture; rayNo++)
-                        mean_apparent_P32 += (ufs.Fractures.cumulative_FP32(minIntersectionRadius) * orientationMultipliers[setNo, rayNo]);
+                        meanOrientationMultiplier += orientationMultipliers[setNo, rayNo];
+                    meanOrientationMultiplier /= (double)RaysPerFracture;
+                    mean_apparent_P32 += (ufs_P32 * meanOrientationMultiplier);
                 }
                 double phiIJ_M = Math.Exp(-mean_apparent_P32 * datapoint.ActualRayLengthIncrement);
 
@@ -3263,7 +3346,7 @@ namespace DFMGenerator_SharedCode
             double dP33 = gbc.PropControl.max_TS_UCFP33_increase;
             double maxRadius = (Fractures.MeanStaticRayLength > 0) ? Fractures.MeanStaticRayLength : MaximumFractureRadius;
             double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(maxRadius, 3);
-            min_NucleatingDatapoint_UCRP30 = (dP33 / maxFracVol) * (double)RaysPerFracture;
+            min_NucleatingDatapoint_RP30 = (dP33 / maxFracVol) * (double)RaysPerFracture;
         }
         /// <summary>
         /// Cull datapoints from the static fracture population distribution arrays
@@ -3340,7 +3423,28 @@ namespace DFMGenerator_SharedCode
             return false;
         }
 
-        // DFN fracture interaction functions: used to check if fractures interact with other fractures during DFN generation
+        // Functions to calculate explicit DFN fracture behaviour: used to check when fractures nucleate and if they interact with other fractures during DFN growth
+        /// <summary>
+        /// Get the initial radius (at time t=0) of the last explicit fracture to nucleate
+        /// </summary>
+        /// <returns></returns>
+        public double getPreviousNucleatingFractureInitialRadius()
+        {
+            double implied_P30 = (double)(previous_Ln) / gbc.Volume;
+            return InitialRadius(implied_P30);
+        }
+        /// <summary>
+        /// Get the initial radius (at time t=0) of the next explicit fracture to nucleate, and increment the limit of explicit fractures nucleated
+        /// </summary>
+        /// <param name="incrementCounter">If true, will increment the counter Ln for the limit of explicit fractures nucleated before calculating the initial radius of the next fracture to nucleate; if false, Ln will not be incremented</param>
+        /// <returns></returns>
+        public double getNextNucleatingFractureInitialRadius(bool incrementCounter)
+        {
+            if (incrementCounter)
+                previous_Ln++;
+            double implied_P30 = (double)(previous_Ln + 1) / gbc.Volume;
+            return InitialRadius(implied_P30);
+        }
         /// <summary>
         /// Check whether a specified point (in XYZ coordinates) lies within the stress shadow of any of the unconfined fractures in the explicit DFN associated with this fracture set
         /// </summary>
@@ -3816,12 +3920,16 @@ namespace DFMGenerator_SharedCode
         /// <param name="uFDistributionIn">Initial microfracture distribution function</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public void resetFractureData(ushort raysPerFracture_in, double rmin_in, double rmax_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in)
+        /// <param name="uFrmedian_in">Median initial microfracture radius - this is only used for the log-normal distribution function</param>
+        public void resetFractureData(ushort raysPerFracture_in, double rmin_in, double rmax_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in, double uFrmedian_in)
         {
             // Set the initial fracture distribution data
             InitialDistribution = uFDistributionIn;
             CapB = B_in;
             c_coefficient = c_in;
+            Median_uF_radius = uFrmedian_in;
+            M_term = Math.Log(uFrmedian_in);
+            Sqrt2_S = Math.Sqrt(2) * c_in;
 
             // Set the implicit fracture population data 
             // Number of rays comprising each fracture
@@ -3856,22 +3964,25 @@ namespace DFMGenerator_SharedCode
             // Set the counter for consecutive failed nucleation attempts to 0
             failedNucleationAttempts = 0;
 
-            // Set the cumulative value of gamma_InvBeta_K * K_duration at the last time new fractures nucleated to 0
-            previous_CumGamma = 0;
+            // Set the unrestricted RP30 (i.e. maximum potential RP30 with no stress shadow deactivation) to zero
+            previous_LRP30 = 0;
+            // Set the unrestricted count of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures with no stress shadow deactivation) to zero
+            previous_Ln = 0;
+
             // Set the minimum RP30 value for nucleating and growing fracture datapoints
             // Both these are initially set to the value that will generate the specified maximum dP33 increment with fractures of maximum size
             // The minimum RP30 value for growing fracture datapoints will not change, but the minimum RP30 value for nucleating fracture datapoints will be recalculated at each timestep based on the mean static ray length
             double dP33 = gbc.PropControl.max_TS_UCFP33_increase;
             double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
-            min_NucleatingDatapoint_UCRP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
-            min_GrowingDatapoint_UCRP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
+            min_NucleatingDatapoint_RP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
+            min_GrowingDatapoint_RP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
         }
         /// <summary>
         /// Set the fracture orientation data: dip, strike, normal vector and azimuth
         /// </summary>
         /// <param name="Strike_in">Fracture strike (radians)</param>
         /// <param name="Dip_in">Fracture dip (radians)</param>
-        public void setOrientation(double Strike_in, double Dip_in)
+        private void setOrientation(double Strike_in, double Dip_in)
         {
             // Trim values, and ensure azimuth is clockwise of strike
             if (Dip_in < 0)
@@ -3903,6 +4014,19 @@ namespace DFMGenerator_SharedCode
             dip = Dip_in;
             strike = Strike_in;
         }
+        /// <summary>
+        /// Set the   fracture aperture control data for uniform and size-dependent aperture
+        /// </summary>
+        /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
+        /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
+        public void SetFractureApertureControlData(double UniformAperture_in, double SizeDependentApertureMultiplier_in)
+        {
+            // Set fracture aperture control data for uniform and size-dependent aperture
+            // Fixed aperture for fractures in the uniform aperture case (m)
+            UniformAperture = UniformAperture_in;
+            // Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier
+            SizeDependentApertureMultiplier = SizeDependentApertureMultiplier_in;
+        }
 
         // Constructors
         /// <summary>
@@ -3910,7 +4034,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
         public UnconfinedFractureSet(GridblockConfiguration gbc_in)
-                    : this(gbc_in, 0, Math.PI / 2, 8, 0.1, 100, InitialFractureDistribution.PowerLaw, 0.001, 3d)
+                    : this(gbc_in, 0, Math.PI / 2, 8, 0.1, 100, InitialFractureDistribution.PowerLaw, 0.001, 3d, 0)
         {
             // Defaults:
 
@@ -3918,7 +4042,7 @@ namespace DFMGenerator_SharedCode
             // Number of rays per fracture: set to 8
             // Minimum fracture radius: set to 0.1
             // Minimum fracture radius: set to 100
-            // Initial microfracture distribution - set to power law, B=0.001, c=3
+            // Initial microfracture distribution - set to power law, B=0.001, c=3, M=0 (undefined)
         }
         /// <summary>
         /// Constructor: input fracture strike and dip, number of rays per fracture, minimum fracture radius, and initial microfracture distribution parameters
@@ -3932,29 +4056,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="uFDistributionIn">Initial microfracture distribution function</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public UnconfinedFractureSet(GridblockConfiguration gbc_in, double Strike_in, double Dip_in, int raysPerFracture_in, double rmin_in, double rmax_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in)
-            : this(gbc_in, Strike_in, Dip_in, raysPerFracture_in, rmin_in, rmax_in, uFDistributionIn, B_in, c_in, 0.0005, 1E-5)
-        {
-            // Defaults for fracture aperture control data for uniform and size-dependent aperture:
-
-            // Fixed aperture for fractures in the uniform aperture case: 0.5mm
-            // Multiplier for fracture aperture in the size-dependent aperture case: 1E-5 (gives 1mm aperture for 100m high fracture) 
-        }
-        /// <summary>
-        /// Constructor: input fracture strike and dip, number of rays per fracture, minimum fracture radius, initial microfracture distribution parameters, and fracture aperture control data for uniform and size-dependent aperture
-        /// </summary>
-        /// <param name="gbc_in">Reference to parent GridblockConfiguration object</param>
-        /// <param name="Strike_in">Fracture strike (radians)</param>
-        /// <param name="Dip_in">Fracture dip (radians)</param>
-        /// <param name="raysPerFracture_in">Number of rays comprising each fracture</param>
-        /// <param name="rmin_in">Minimum radius for a fracture; this will be the length of the rays at nucleation</param>
-        /// <param name="rmax_in">Maximum allowed radius for a fracture; rays will stop propagating when they reach this length</param>
-        /// <param name="uFDistributionIn">Initial microfracture distribution function</param>
-        /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
-        /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
-        /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public UnconfinedFractureSet(GridblockConfiguration gbc_in, double Strike_in, double Dip_in, int raysPerFracture_in, double rmin_in, double rmax_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
+        /// <param name="uFrmedian_in">Median initial microfracture radius - this is only used for the log-normal distribution function</param>
+        public UnconfinedFractureSet(GridblockConfiguration gbc_in, double Strike_in, double Dip_in, int raysPerFracture_in, double rmin_in, double rmax_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in, double uFrmedian_in)
         {
             // Reference to parent GridblockConfiguration object
             gbc = gbc_in;
@@ -3980,13 +4083,7 @@ namespace DFMGenerator_SharedCode
             RecalculateComplianceTensorBase(false, false);
 
             // Reset implicit fracture population data
-            resetFractureData((ushort)raysPerFracture_in, rmin_in, rmax_in, uFDistributionIn, B_in, c_in);
-
-            // Set fracture aperture control data for uniform and size-dependent aperture
-            // Fixed aperture for fractures in the uniform aperture case (m)
-            UniformAperture = UniformAperture_in;
-            // Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier
-            SizeDependentApertureMultiplier = SizeDependentApertureMultiplier_in;
+            resetFractureData((ushort)raysPerFracture_in, rmin_in, rmax_in, uFDistributionIn, B_in, c_in, uFrmedian_in);
 
             // Create an empty list for the local gridblock DFN
             LocalDFNUnconfinedFractures = new List<UnconfinedFractureXYZ>();

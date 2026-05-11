@@ -339,6 +339,9 @@ namespace DFMGenerator_Ocean
             UpdatePropertyPresentationBox(args.Argument_PropertyToFilter, presentationBox_FilterByProperty);
             UpdateTextBox(args.Argument_FilterByPropertyMinCutoff, unitTextBox_FilterByPropertyMinCutoff, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_FilterByPropertyMaxCutoff, unitTextBox_FilterByPropertyMaxCutoff, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateComboBox(args.Argument_InitialMicrofractureDistributionFunction, comboBox_InitialMicrofractureDistributionFunction);
+            UpdatePropertyPresentationBox(args.Argument_InitialMicrofractureMedianRadius, presentationBox_InitialMicrofractureMedianRadius);
+            UpdateTextBox(args.Argument_InitialMicrofractureMedianRadius_default, unitTextBox_InitialMicrofractureMedianRadius_default, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_InitialMicrofractureMedianRadius_units);
         }
 
         private void updateArgsFromUI()
@@ -524,6 +527,9 @@ namespace DFMGenerator_Ocean
             args.Argument_PropertyToFilter = presentationBox_FilterByProperty.Tag as Property;
             args.Argument_FilterByPropertyMinCutoff = GetDoubleFromTextBox(unitTextBox_FilterByPropertyMinCutoff);
             args.Argument_FilterByPropertyMaxCutoff = GetDoubleFromTextBox(unitTextBox_FilterByPropertyMaxCutoff);
+            args.Argument_InitialMicrofractureDistributionFunction = comboBox_InitialMicrofractureDistributionFunction.SelectedIndex;
+            args.Argument_InitialMicrofractureMedianRadius = presentationBox_InitialMicrofractureMedianRadius.Tag as Property;
+            args.Argument_InitialMicrofractureMedianRadius_default = GetDoubleFromTextBox(unitTextBox_InitialMicrofractureMedianRadius_default);
 
             // tell fwk to update LineUI:
             context.OnArgumentPackageChanged(this, new WorkflowContext.ArgumentPackageChangedEventArgs());
@@ -838,6 +844,29 @@ namespace DFMGenerator_Ocean
             }
         }
 
+        private void EnableInitialMicrofractureMedianRadius()
+        {
+            // Enable the controls for initial microfracture median radius if the selected initial microfracture distribution function requires these; otherwise disable them
+            if (comboBox_InitialMicrofractureDistributionFunction.SelectedIndex == 2)
+            {
+                label_InitialMicrofractureMedianRadius.Enabled = true;
+                dropTarget_InitialMicrofractureMedianRadius.Enabled = true;
+                presentationBox_InitialMicrofractureMedianRadius.Enabled = true;
+                label_InitialMicrofractureMedianRadius_default.Enabled = true;
+                unitTextBox_InitialMicrofractureMedianRadius_default.Enabled = true;
+                label_InitialMicrofractureMedianRadius_units.Enabled = true;
+            }
+            else
+            {
+                label_InitialMicrofractureMedianRadius.Enabled = false;
+                dropTarget_InitialMicrofractureMedianRadius.Enabled = false;
+                presentationBox_InitialMicrofractureMedianRadius.Enabled = false;
+                label_InitialMicrofractureMedianRadius_default.Enabled = false;
+                unitTextBox_InitialMicrofractureMedianRadius_default.Enabled = false;
+                label_InitialMicrofractureMedianRadius_units.Enabled = false;
+            }
+        }
+
         private void EnableNoFractureSets()
         {
             // Disable the numeric box for selecting the number of fracture sets and the checkbox for checking all microfracture stress shadows on the Control parameters tab,
@@ -857,17 +886,25 @@ namespace DFMGenerator_Ocean
         }
         private void SetInitialMicrofractureDensityUnits()
         {
+            int uFDistFn = comboBox_InitialMicrofractureDistributionFunction.SelectedIndex;
             double c = GetDoubleFromTextBox(unitTextBox_InitialMicrofractureSizeDistribution_default);
             // NB Length units are taken from the PetrelProject.WellKnownTemplates.GeometricalGroup.MeasuredDepth template rather than the PetrelProject.WellKnownTemplates.GeometricalGroup.Distance template,
             // because with a UTM coordinate reference system, the Distance template may be set to metric when the project length units are in ft
             string lengthUnit = PetrelUnitSystem.GetDisplayUnit(PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth).Symbol;
             string AUnit = "";
-            if (c < 3)
-                AUnit = string.Format("fracs/{0}^{1}", lengthUnit, 3 - c);
-            else if (c > 3)
-                AUnit = string.Format("frac.{0}^{1}", lengthUnit, c - 3);
+            if (uFDistFn == 0)
+            {
+                if (c < 3)
+                    AUnit = string.Format("fracs/{0}^{1}", lengthUnit, 3 - c);
+                else if (c > 3)
+                    AUnit = string.Format("frac.{0}^{1}", lengthUnit, c - 3);
+                else
+                    AUnit = "fracs";
+            }
             else
-                AUnit = "fracs";
+            {
+                AUnit = string.Format("fracs/{0}^{1}", lengthUnit, 3);
+            }
             label_InitialMicrofractureDensity_Units.Text = AUnit;
         }
         #endregion
@@ -1051,6 +1088,11 @@ namespace DFMGenerator_Ocean
             Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
             UpdatePropertyPresentationBox(droppedProperty, presentationBox_FilterByProperty);
         }
+        private void dropTarget_InitialMicrofractureMedianRadius_DragDrop(object sender, DragEventArgs e)
+        {
+            Property droppedProperty = e.Data.GetData(typeof(object)) as Property;
+            UpdatePropertyPresentationBox(droppedProperty, presentationBox_InitialMicrofractureMedianRadius);
+        }
 
         private void presentationBox_Grid_KeyDown(object sender, KeyEventArgs e)
         {
@@ -1196,6 +1238,15 @@ namespace DFMGenerator_Ocean
             }
         }
 
+        private void presentationBox_InitialMicrofractureMedianRadius_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                UpdatePropertyPresentationBox(Property.NullObject, presentationBox_InitialMicrofractureMedianRadius);
+                e.Handled = true;
+            }
+        }
+
         private void presentationBox_DepthAtDeformation_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Delete)
@@ -1224,6 +1275,15 @@ namespace DFMGenerator_Ocean
         {
             // Enable the controls for horizontal and vertical host rock permeability if the selected fracture permeability algorithm requires these; otherwise disable them
             EnableHostRockPermeability();
+        }
+
+        private void comboBox_InitialMicrofractureDistributionFunction_SelectedValueChanged(object sender, EventArgs e)
+        {
+            // Enable the controls for median initial microfracture size if the log-normal initial microfracture distribution function is selected; otherwise disable them
+            EnableInitialMicrofractureMedianRadius();
+
+            // Update the units label for the initial microfracture density - this will change depending on whether the power law distribution function is selected
+            SetInitialMicrofractureDensityUnits();
         }
 
         private void checkBox_IncludeObliqueFracs_CheckedChanged(object sender, EventArgs e)
