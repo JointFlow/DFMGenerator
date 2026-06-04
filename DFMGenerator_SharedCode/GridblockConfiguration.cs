@@ -1603,7 +1603,7 @@ namespace DFMGenerator_SharedCode
             if (ufs_index < NoUnconfinedFractureSets)
             {
                 UnconfinedFractureSet ufs = UnconfinedFractureSets[ufs_index];
-                setName = string.Format("Unconfined set {0}: Azimuth {1} Dip {2}", ufs_index, (int)(ufs.Azimuth * 180 / Math.PI), (int)(ufs.Dip * 180 / Math.PI));
+                setName = string.Format("Unconfined set {0}: Azimuth {1} Dip {2}", ufs_index, Math.Round(ufs.Azimuth * 180 / Math.PI), Math.Round(ufs.Dip * 180 / Math.PI));
             }
             else
             {
@@ -4308,7 +4308,9 @@ namespace DFMGenerator_SharedCode
                     if (checkAlluFStressShadows && MFStressShadowWidthChanged)
                         setCrossFSStressShadows();
                     // If any unconfined fracture stress shadow widths have changed, the unconfined fracture clear zone volume will be updated later
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
                     bool UCFStressShadowWidthChanged = false;
+#pragma warning restore CS0219 // Variable is assigned but its value is never used
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
                         if (ufs.setStressShadowWidthData())
@@ -4549,7 +4551,7 @@ namespace DFMGenerator_SharedCode
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
                             //    ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
                             fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), 1-ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
+                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), 1 - ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
 #if LOGIMPPOP
                             //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
@@ -4704,7 +4706,7 @@ namespace DFMGenerator_SharedCode
                     // Calculate the maximum length for the macrofracture cumulative population distribution function index values based on orientation
                     // If this has not been specified, calculate this by applying a multiplier to the mean macrofracture length
                     double maxIndexLength;
-                    if ((maxHMinLength <= 0) || (maxHMaxLength <= 0))
+                    if (!(maxHMinLength > 0) || !(maxHMaxLength > 0))
                     {
                         double denominator = fs.combined_T_MFP30_total() * ThicknessAtDeformation;
                         maxIndexLength = (denominator > 0 ? fs.combined_T_MFP32_total() / denominator : 0);
@@ -4856,7 +4858,7 @@ namespace DFMGenerator_SharedCode
                         // Calculate the maximum radius for the unconfined fracture ray cumulative population distribution function index values based on orientation
                         // If this has not been specified, use the maximum unconfined fracture radius
                         double maxIndexRadius;
-                        if ((maxHMinLength <= 0) || (maxHMaxLength <= 0))
+                        if (!(maxHMinLength > 0) || !(maxHMaxLength > 0))
                         {
                             maxIndexRadius = ufs.MaximumFractureRadius;
                         }
@@ -4867,25 +4869,28 @@ namespace DFMGenerator_SharedCode
                             double HMaxComponent = Math.Pow(VectorXYZ.Sin_trim(relativeAngle), 2);
                             maxIndexRadius = (maxHMinLength * HMinComponent) + (maxHMaxLength * HMaxComponent);
                         }
+                        // Get the minimum fracture radius
+                        double minIndexRadius = ufs.MinimumFractureRadius;
 
                         // Create a local unconfined fracture ray index array
-                        // Create a local halflength array
                         List<double> indexRadii = new List<double>();
 
-                        // Add the required number of intermediate index points on a logarithmic scale
-                        double logMaxRadius = Math.Log(maxIndexRadius + 1d);
+                        // Add the first index point at zero
+                        indexRadii.Add(0);
 
-                        for (int radius_no = 0; radius_no < no_l_IndexPoints; radius_no++)
+                        // Add the required number of intermediate index points on a logarithmic scale
+                        for (int indexPoint_no = 1; indexPoint_no < no_l_IndexPoints; indexPoint_no++)
                         {
+                            double indexRatio = (double)(indexPoint_no - 1) / (double)(no_l_IndexPoints - 1);
                             if (ufs.FractureDistribution == StressDistribution.EvenlyDistributedStress)
                             {
-                                double logNewValue = ((double)(no_l_IndexPoints - radius_no) / (double)no_l_IndexPoints) * logMaxRadius;
-                                indexRadii.Add(maxIndexRadius + 1d - Math.Exp(logNewValue));
+                                double logNewValue = (1 - indexRatio) * Math.Log(1 + maxIndexRadius - minIndexRadius);
+                                indexRadii.Add(maxIndexRadius + 1 - Math.Exp(logNewValue));
                             }
                             else
                             {
-                                double logNewValue = ((double)radius_no / (double)no_l_IndexPoints) * logMaxRadius;
-                                indexRadii.Add(Math.Exp(logNewValue) - 1);
+                                double logNewValue = (indexRatio * Math.Log(maxIndexRadius)) + ((1 - indexRatio) * Math.Log(minIndexRadius));
+                                indexRadii.Add(Math.Exp(logNewValue));
                             }
                         }
 
@@ -5144,9 +5149,12 @@ namespace DFMGenerator_SharedCode
             List<double> ufsGrowthFactors = new List<double>();
 
 #if LOGDFNPOP
-            // Create flag to log this gridblock
-            bool writeLoggingData = (((float)SWtop.X == 50f) && ((float)SWtop.Y == 50f) && ((float)SWtop.Depth == 2050f));
+            // Select a gridblock to log
+            bool writeLoggingData = (((float)SWtop.X == 1000f) && ((float)SWtop.Y == 1000f) && ((float)SWtop.Depth == 2000f));
             //bool writeLoggingData = (((float)SWtop.X == 0f) && ((float)SWtop.Y == 0f) && ((float)SWtop.Depth == 2000f));
+
+            // Create a list of unconfined fracture sets to log
+            List<int> setsToLog = new List<int> { 2 };
 
             // Create lists for the output files for each fracture set
             List<StreamWriter> DFN_MFPopLogFiles = new List<StreamWriter>();
@@ -6038,7 +6046,7 @@ namespace DFMGenerator_SharedCode
                 String namecomb = PropControl.FolderPath + fileName;
 
                 StreamWriter DFN_UCFPopLogFile;
-                if (writeLoggingData)
+                if (writeLoggingData && setsToLog.Contains(ufs_index))
                 {
                     Console.WriteLine(string.Format("TS {0}, {1}", CurrentExplicitTimestep, fileName));
                     if (CurrentExplicitTimestep == 1)
@@ -6087,7 +6095,7 @@ namespace DFMGenerator_SharedCode
                     int NoInStressShadow = 0;
                     int NoInExclusionZone = 0;
                     // The actual calculation is time consuming so we will only do this for active fracture sets
-                    if ((ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.Growing) || (ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.ResidualActivity))
+                    if ((setsToLog.Contains(ufs_index)) && ((ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.Growing) || (ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.ResidualActivity)))
                     {
                         // Create points in random locations and check if they are in stress shadow and exclusion zone, if so update counters
                         for (int PointNo = 0; PointNo < NoTestPoints; PointNo++)
@@ -6160,185 +6168,30 @@ namespace DFMGenerator_SharedCode
                     continue;
 
                 // Add new unconfined fractures if required
+                    // This will include initial unconfined fractures in timestep 1
                 if (calc_UCF && ufs.ExplicitNucleationActive)
                 {
-                    // Calculate local helper variables
+                    // Helper variables - used to calculate the fracture nucleation time 
                     double Cum_Gamma_Mminus1 = ufs.getCumGamma(CurrentExplicitTimestep - 1);
                     double ts_CumrminGammaMminus1 = (bis2 ? Math.Log(UCF_minRadius) : Math.Pow(UCF_minRadius, 1 / beta)) + Cum_Gamma_Mminus1;
 
-                    // If this is the first timestep, we need to add initial unconfined fractures
-                    /*if (CurrentExplicitTimestep == 1)
-                    {
-                        // Weighted time (WTime) at t=0 is zero
-                        double initialWTime = 0;
+                    // Calculate the expected maximum potential number of fractures in the gridblock at the end of the current timestep (i.e. if there is no stress shadow deactivation)
+                    // This will probably not be an integer - the fractional value will represent the probability that an additional fracture will nucleate in this gridblock at the end of the timestep
+                    double Cum_Gamma_M = ufs.getCumGamma(CurrentExplicitTimestep);
+                    double ts_CumrminGammaM = (bis2 ? Math.Log(UCF_minRadius) : Math.Pow(UCF_minRadius, 1 / beta)) + Cum_Gamma_M;
+                    double r0_M = bis2 ? Math.Exp(ts_CumrminGammaM) : Math.Pow(ts_CumrminGammaM, beta);
+                    double LP30_M = ufs.InitialP30(r0_M);
+                    double expectedLn_M = LP30_M * Volume;
 
-                        // We can now calculate the total number of fractures in the population described by the specified initial fracture population distribution function
-                        // with radius greater than the specified minimum - this is the total number of microfractures that we need to add
-                        double no_UCF_actual = Volume * ufs.InitialP30();
-                        int no_UCF_toAdd = (int)no_UCF_actual;
-
-                        // If we are adding fractures probabilistically, determine randomly whether we should add an extra fracture
-                        if (allowProbabilisticFractureNucleation)
-                        {
-                            if ((no_UCF_actual - (double)no_UCF_toAdd) > randGen.NextDouble())
-                                no_UCF_toAdd++;
-                        }
-
-                        while (no_UCF_toAdd > 0)
-                        {
-#if LOGDFNPOP
-                            Dict_UCF_NoTotalNucleating[ufs_index] += ufs.RaysPerFracture;
-#endif
-                            // Get random location for the new fracture
-                            PointXYZ new_UCF_centrepointXYZ = getRandomPoint(false);
-
-                            // If we are including stress shadow effects, check whether this point lies in the stress shadow of an existing unconfined fracture and if so set flag to ignore it
-                            bool addThisFracture = true;
-                            if (checkStressShadow)
-                            {
-                                // First check other unconfined fractures from this gridblock
-                                if (checkAllUCFStressShadows)
-                                    addThisFracture = !checkInUCFStressShadow(new_UCF_centrepointXYZ, ufs_index, ref UCFStressShadowWidthRatios);
-                                else
-                                    addThisFracture = !ufs.checkInUCFStressShadow(new_UCF_centrepointXYZ);
-
-                                // Then, if required, check unconfined fractures from adjacent gridblocks
-                                // NB we do not need to do this if we have already found a stress shadow interaction
-                                if (addThisFracture && searchNeighbouringGridblocks)
-                                {
-                                    // Create a list of neighbouring gridblocks to search - include diagonal neighbours
-                                    List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
-
-                                    // Loop through each gridblock in the list
-                                    foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
-                                    {
-                                        if (checkAllUCFStressShadows)
-                                        {
-                                            // Find the index number of the equivalent unconfined fracture set in the neighbouring gridblock
-                                            int neighbourGB_ufs_index = neighbour_gb.getClosestUnconfinedFractureSetIndex(ufs.NormalVector);
-
-                                            // Now check the unconfined fractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
-                                            // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
-                                            // We will therefore use the list generated for this gridblock to speed up the calculation
-                                            if (neighbour_gb.checkInUCFStressShadow(new_UCF_centrepointXYZ, neighbourGB_ufs_index, ref UCFStressShadowWidthRatios))
-                                            {
-                                                addThisFracture = false;
-                                                break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // Find the correct unconfined fracture set in the neighbouring gridblock to search
-                                            UnconfinedFractureSet neighbourGB_ufs = neighbour_gb.getClosestUnconfinedFractureSet(ufs.NormalVector);
-
-                                            // Now check the unconfined fractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            if (neighbourGB_ufs.checkInUCFStressShadow(new_UCF_centrepointXYZ))
-                                            {
-                                                addThisFracture = false;
-                                            }
-                                        }
-                                    }
-
-                                } // End check unconfined fractures from adjacent gridblocks
-
-                                // Check against large fractures
-                                // NB we do not need to do this if we have already found a stress shadow interaction
-                                if (addThisFracture&& checkLargeFractures)
-                                {
-                                    if (gd.CheckInLargeUCFStressShadow(new_UCF_centrepointXYZ, this, ufs_index, checkAllUCFStressShadows, ref UCFStressShadowWidthRatios))
-                                        addThisFracture = false;
-                                }
-
-                            } // End check whether this point lies in the stress shadow of an existing unconfined fracture
-
-                            // Generate a new unconfined fracture and add it to the DFN
-                            if (addThisFracture)
-                            {
-                                // Create a new UnconfinedFractureXYZ object and add it to the list of unconfined fractures in the local fracture set - this is used to check for fracture intersection
-                                // Fractures will all be created with zero initial radius and then allowed to grow to the mininum unconfined fracture radius
-                                // This will ensure boundary intersections and other interactions are correctly modelled
-                                UnconfinedFractureXYZ new_UCF = new UnconfinedFractureXYZ(ufs, this, ufs_index, new_UCF_centrepointXYZ, ufs.NormalVector, ufs.RaysPerFracture, 0, initialWTime, 0);
-                                ufs.LocalDFNUnconfinedFractures.Add(new_UCF);
-                                // Also add it to the list of unconfined fractures in the global DFN - this is used to generate the DFN
-                                global_DFN.GlobalDFNUnconfinedFractures.Add(new_UCF);
-
-                                // Add the new fracture ray segments to the list of all unconfined fracture ray segments in the gridblock
-                                // Then extend them to the mininum unconfined fracture radius
-                                foreach (UnconfinedFractureRaySegment UCRSegment in new_UCF.GetRaySegmentsInGridblock(this))
-                                {
-                                    UnconfinedFractureRaySegments.Add(new UnconfinedFractureRaySegmentHolder(UCRSegment, ufs_index));
-                                    double maxPropLength = UCF_minRadius;
-
-#if LOGDFNPOP
-                                    Dict_UCF_NoActiveNucleating[ufs_index]++;
-                                    int NoStressShadowInteractions = Dict_UCF_NoStressShadowInteractions[ufs_index];
-                                    int NoIntersections = Dict_UCF_NoIntersections[ufs_index];
-                                    int NoPropagatingOut = Dict_UCF_NoPropagatingOut[ufs_index];
-                                    int NoReachingMaxRadius = Dict_UCF_NoReachingMaxRadius[ufs_index];
-                                    ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength, false, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut, ref NoReachingMaxRadius);
-                                    Dict_UCF_NoStressShadowInteractions[ufs_index] = NoStressShadowInteractions;
-                                    Dict_UCF_NoIntersections[ufs_index] = NoIntersections;
-                                    Dict_UCF_NoPropagatingOut[ufs_index] = NoPropagatingOut;
-                                    Dict_UCF_NoReachingMaxRadius[ufs_index] = NoReachingMaxRadius;
-#else
-                                    ExtendUnconfinedFracture(checkStressShadow, checkLargeFractures, TerminateAtGridBoundary, ufs_index, ufs, UCRSegment, ref maxPropLength);
-#endif
-                                }
-
-                                // Recalculate the fracture geometry
-                                new_UCF.RecalculateGeometry();
-
-                                // Reset the counter for the number of consecutive failed explicit fracture nucleation attempts to zero
-                                ufs.ResetFailedNucleationAttemptCounter();
-                            }
-                            else
-                            {
-                                // If the attempt to nucleate a new fracture failed, increment the counter for the number of consecutive failed explicit fracture nucleation attempts
-                                // If this causes the fracture set to be considered incapable of nucleating new explicit fractures, break out of the current loop of added new fractures
-                                ufs.IncrementFailedNucleationAttemptCounter();
-                                if (!ufs.ExplicitNucleationActive)
-                                    break;
-                            }
-
-                            // Update the number of unconfined fractures that we need to add - if there are no more to add we can break out of the loop
-                            no_UCF_toAdd--;
-                            ufs.getNextNucleatingFractureInitialRadius(true);
-
-                            // Update the number of new fractures that can be added this timestep; if this drops below zero, break out of the loop
-                            if (limitNewFractures && (--maxNewFractures < 0))
-                                break;
-                        }
-                    }*/
-
-                    // Add new fractures until we reach the end of the timestep
-                    // This will include initial unconfined fractures in timestep 1 - the weighted nucleation time of these will be negative so they will nucleate even if the timestep duration is zero
-
-                    // Calculate the weighted time (WTime) when the next unconfined fracture will nucleate
+                    // Get the maximum potential number of fractures when the next fracture nucleates (also assuming there is no stress shadow deactivation)
                     // At this point we will not increment the counter - we only do this once the fracture has actually nucleated
-                    double next_r0 = ufs.getNextNucleatingFractureInitialRadius(false);
-                    double nextUCF_r0_invbeta = Math.Pow(next_r0, 1 / beta);
-                    double NucleationWTime = -beta * (nextUCF_r0_invbeta - ts_CumrminGammaMminus1);
+                    // If we are adding fractures probabilistically, this will return a fractional value that will determine whether a new fracture will be nucleated
+                    // NB The fractional value is calculated only once per nucleating fracture, to avoid "multiple dice rolls"
+                    double nextFrac_Ln = ufs.getNextNucleatingFractureIndex(false, allowProbabilisticFractureNucleation);
 
-                    // If we are adding fractures probabilistically, determine randomly whether we need to add an extra fracture
-                    if (allowProbabilisticFractureNucleation)
-                    {
-                        // Calculate the total weighted time (WTime) interval between the previous and the next unconfined fracture nucleation
-                        double previousUCF_r0_invbeta = Math.Pow(ufs.getPreviousNucleatingFractureInitialRadius(), 1 / beta);
-                        double NucleationWTime_interval = -beta * (nextUCF_r0_invbeta - previousUCF_r0_invbeta);
-
-                        // If the total weighted time interval between unconfined fracture nucleation is greater than the limiting value (expressed in terms of the weighted timestep duration), determine randomly whether to nucleate a fracture
-                        if (NucleationWTime_interval > (WTime_M / probabilisticFractureNucleationLimit))
-                        {
-                            // We set the weighted time for nucleation of the next fracture to be a random time up to the calculated weighted time (WTime) of next unconfined fracture nucleation
-                            // The fracture will only actually nucleate in this timestep if this value is less than the weighted timestep duration
-                            NucleationWTime *= randGen.NextDouble();
-                        }
-                    }
-
-                    while (NucleationWTime < WTime_M)
+                    // If the maximum potential P30 when the next unconfined fracture nucleates is less than or equal to the maximum potential P30 at the end of the timestep, then a new fracture can nucleate (subject to stress shadow deactivation)
+                    // We will continue to add new fractures until the maximum potential P30 when the next unconfined fracture nucleates is greater than the maximum potential P30 at the end of the timestep
+                    while ((float)nextFrac_Ln <= (float)expectedLn_M)
                     {
 #if LOGDFNPOP
                         Dict_UCF_NoTotalNucleating[ufs_index] += ufs.RaysPerFracture;
@@ -6410,6 +6263,11 @@ namespace DFMGenerator_SharedCode
                         // If the point is not in a stress shadow or we are not including stress shadow effects, generate a new unconfined fracture and add it to the DFN
                         if (addThisFracture)
                         {
+                            // Calculate the fracture nucleation time
+                            double next_r0 = ufs.InitialRadius(nextFrac_Ln / Volume);
+                            double nextUCF_r0_invbeta = Math.Pow(next_r0, 1 / beta);
+                            double NucleationWTime = -beta * (nextUCF_r0_invbeta - ts_CumrminGammaMminus1);
+
                             // Create a new UnconfinedFractureXYZ object and add it to the list of unconfined fractures in the local fracture set - this is used to check for fracture intersection
                             // Fractures will all be created with zero initial radius and then allowed to grow to the mininum unconfined fracture radius
                             // This will ensure boundary intersections and other interactions are correctly modelled
@@ -6454,34 +6312,16 @@ namespace DFMGenerator_SharedCode
                                 break;
                         }
 
-                        // Calculate the weighted time (WTime) when the next unconfined fracture will nucleate
-                        // This time we do need to increment the counter
-                        next_r0 = ufs.getNextNucleatingFractureInitialRadius(true);
-                        nextUCF_r0_invbeta = Math.Pow(next_r0, 1 / beta);
-                        NucleationWTime = -beta * (nextUCF_r0_invbeta - ts_CumrminGammaMminus1);
-
-                        // If we are adding fractures probabilistically, determine randomly whether we need to add an extra fracture
-                        if (allowProbabilisticFractureNucleation)
-                        {
-                            // Calculate the total weighted time (WTime) interval between the previous and the next unconfined fracture nucleation
-                            double previousUCF_r0_invbeta = Math.Pow(ufs.getPreviousNucleatingFractureInitialRadius(), 1 / beta);
-                            double NucleationWTime_interval = -beta * (nextUCF_r0_invbeta - previousUCF_r0_invbeta);
-
-                            // If the total weighted time interval between unconfined fracture nucleation is greater than the limiting value (expressed in terms of the weighted timestep duration), determine randomly whether to nucleate a fracture
-                            if (NucleationWTime_interval > (WTime_M / probabilisticFractureNucleationLimit))
-                            {
-                                // We set the weighted time for nucleation of the next fracture to be a random time up to the calculated weighted time (WTime) of next unconfined fracture nucleation
-                                // The fracture will only actually nucleate in this timestep if this value is less than the weighted timestep duration
-                                NucleationWTime *= randGen.NextDouble();
-                            }
-                        }
+                        // Get the maximum potential number of fractures when the next fracture nucleates (also assuming there is no stress shadow deactivation)
+                        // This time we do need to increment the counter - even if the fracture did not actually nucleate (the counter represents maximum potential nucleated fractures)
+                        nextFrac_Ln = ufs.getNextNucleatingFractureIndex(true, allowProbabilisticFractureNucleation);
 
                         // Update the number of new fractures that can be added this timestep; if this drops below zero, break out of the loop
                         if (limitNewFractures && (--maxNewFractures < 0))
                             break;
-                    }
+                    } // Loop back to check whether to add another fracture
                 } // End add unconfined fractures
-            }
+            } // End loop through unconfined fracture sets
 
             // If required, sort the list of all macrofracture segments and unconfined fracture ray segments in the gridblock in order of nucleation time
             // This will propagate macrofractures in strict order of nucleation, regardless of fracture set
@@ -6727,7 +6567,7 @@ namespace DFMGenerator_SharedCode
             for (int ufs_index = 0; ufs_index < NoUnconfinedFractureSets; ufs_index++)
             {
                 StreamWriter DFNPopLogFile = DFN_UCFPopLogFiles[ufs_index];
-                if (writeLoggingData)
+                if (writeLoggingData && setsToLog.Contains(ufs_index))
                     DFNPopLogFile.WriteLine(string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}{17}", CurrentExplicitTimestep, Dict_UCF_NoTotalFracRays[ufs_index], Dict_UCF_NoActiveFracRays[ufs_index], Dict_UCF_NoTotalExistingFracRays[ufs_index], Dict_UCF_NoActiveExistingFracRays[ufs_index], Dict_UCF_NoStressShadowInteractions[ufs_index], Dict_UCF_NoIntersections[ufs_index], Dict_UCF_NoPropagatingOut[ufs_index], Dict_UCF_NoReachingMaxRadius[ufs_index], Dict_UCF_NoTotalNucleating[ufs_index], Dict_UCF_NoActiveNucleating[ufs_index], Dict_UCF_CumulativeIncomingRays[ufs_index], Dict_UCF_CumulativeOutgoingRays[ufs_index], Dict_UCF_TotalFractureArea[ufs_index], Dict_UCF_TotalFractureVolume[ufs_index], Dict_UCF_MeasuredStressShadowVol[ufs_index], Dict_UCF_MeasuredExclusionZoneVol[ufs_index], Dict_UCF_RayLengths[ufs_index]));
                 DFNPopLogFile.Close();
             }

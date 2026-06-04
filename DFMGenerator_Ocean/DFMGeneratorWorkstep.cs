@@ -13745,12 +13745,15 @@ namespace DFMGenerator_Ocean
                 internal get { return this.argument_PlanarUnconfinedFractures; }
                 set { this.argument_PlanarUnconfinedFractures = value; }
             }
+
             [Description("Initial microfracture distribution function", "Initial microfracture distribution function; NB This is currently only used for unconfined fractures, for layer-bound fractures it is assumed to be power law")]
             public int Argument_InitialMicrofractureDistributionFunction
             {
                 internal get { return this.argument_InitialMicrofractureDistributionFunction; }
                 set { this.argument_InitialMicrofractureDistributionFunction = value; }
             }
+
+            [OptionalInWorkflow]
             [Description("Default median initial microfracture radius", "Default median initial microfracture radius - this is only used for the log-normal distribution function")]
             public double Argument_InitialMicrofractureMedianRadius_default
             {
@@ -13765,6 +13768,7 @@ namespace DFMGenerator_Ocean
                 internal get { return DataManager.Resolve(this.argument_InitialMicrofractureMedianRadius) as Property; }
                 set { this.argument_InitialMicrofractureMedianRadius = (value == null ? null : value.Droid); }
             }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>

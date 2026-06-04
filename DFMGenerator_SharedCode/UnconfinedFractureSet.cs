@@ -332,11 +332,11 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Equal to log of the initial microfracture radius - this is only used for the log-normal distribution function
         /// </summary>
-        public double M_term { get; private set; }
+        private double M_term { get; set; }
         /// <summary>
         /// Sqrt(2) * standard deviation of initial microfracture size S - this is only used for the log-normal distribution function
         /// </summary>
-        public double Sqrt2_S { get; private set; }
+        private double Sqrt2_S { get; set; }
         /// <summary>
         /// Get the volumetric density of the initial fractures
         /// </summary>
@@ -401,7 +401,7 @@ namespace DFMGenerator_SharedCode
         public double InitialRadius(int Ln)
         {
             double implied_LFP30 = (double)Ln / gbc.Volume;
-            return InitialRadius(Ln);
+            return InitialRadius(implied_LFP30);
         }
 
         // Implicit fracture population data
@@ -438,9 +438,15 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private double previous_LRP30;
         /// <summary>
-        /// Limiting count of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures with no stress shadow deactivation) at the last time a new explicit fracture was created
+        /// Limiting number of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures until now, if there is no stress shadow deactivation)
         /// </summary>
         private int previous_Ln;
+        /// <summary>
+        /// Counter for the index number of the next fracture to be nucleated, based on the limiting number of explicit fractures in this gridblock
+        /// This may be fractional if probabilistic fracture nucleation is used
+        /// In this case the fractional value is calculated only once per nucleating fracture, to avoid "multiple dice rolls"
+        /// </summary>
+        private double next_Ln;
         /// <summary>
         /// Minimum RP30 value for a nucleating fracture datapoint - a new datapoint will not be created until the volumetric density of the nucleating fractures reaches this value
         /// </summary>
@@ -2799,11 +2805,11 @@ namespace DFMGenerator_SharedCode
                         // Cache required data locally
                         double rmin_beta = bis2 ? Math.Log(MinimumFractureRadius) : Math.Pow(MinimumFractureRadius, 1 / beta);
                         double cumGammaRmin_Nminus1 = rmin_beta + CurrentFractureData.Cum_Gamma_Mminus1;
-                        double next_URP30 = previous_LRP30 + (min_NucleatingDatapoint_RP30 / CurrentFractureData.theta_Mminus1);
-                        double next_UP30 = next_URP30 / (double)RaysPerFracture;
+                        double next_LRP30 = previous_LRP30 + (min_NucleatingDatapoint_RP30 / CurrentFractureData.theta_Mminus1);
+                        double next_LP30 = next_LRP30 / (double)RaysPerFracture;
 
                         // Get the weighted time until the next datapoint will nucleate
-                        double r0 = InitialRadius(next_UP30);
+                        double r0 = InitialRadius(next_LP30);
                         double nucleationWtime = bis2 ? -(Math.Log(r0) - cumGammaRmin_Nminus1) : -beta * (Math.Pow(r0, 1 / beta) - cumGammaRmin_Nminus1);
 
                         // Convert the weighted time into a real time
@@ -3236,8 +3242,6 @@ namespace DFMGenerator_SharedCode
         {
             // Cache the proportion of the ray length increment to apply to deactivating fractures before they deactivate, fracture growth deactivation cutoff and minimum fracture activation probability locally
             double proportionalIncrementToApply = gbc.PropControl.proportionalIncrementToApply;
-            if (!(proportionalIncrementToApply >= 0))
-                proportionalIncrementToApply = 1 - Fractures.StressShadowVolume_total;
             double max_R_deactivation = gbc.PropControl.max_R_DeactivationCheck_interval;
             double min_R_activation = gbc.PropControl.min_R_ActivationProbability;
 
@@ -3425,7 +3429,39 @@ namespace DFMGenerator_SharedCode
 
         // Functions to calculate explicit DFN fracture behaviour: used to check when fractures nucleate and if they interact with other fractures during DFN growth
         /// <summary>
-        /// Get the initial radius (at time t=0) of the last explicit fracture to nucleate
+        /// Get the limiting number of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures until now, if there is no stress shadow deactivation)
+        /// </summary>
+        /// <param name="incrementCounter">If true, the counter Ln for the limiting number of explicit fractures nucleated will be incremented before returning it; if false, Ln will not be incremented</param>
+        /// <returns></returns>
+        private int getPreviousNucleatingFractureIndex(bool incrementCounter)
+        {
+            if (incrementCounter)
+                return ++previous_Ln;
+            else
+                return previous_Ln;
+        }
+        /// <summary>
+        /// Get the index number of the next fracture to be nucleated
+        /// This is based on the limiting number of explicit fractures in this gridblock, and may be fractional if probabilistic fracture nucleation is used
+        /// </summary>
+        /// <param name="incrementCounter">If true, the counter Ln for the limiting number of explicit fractures nucleated will be incremented before returning it; if false, Ln will not be incremented</param>
+        /// <param name="useProbabilisticNucleation">Flag to use probabilistic fracture nucleation</param>
+        /// <returns></returns>
+        public double getNextNucleatingFractureIndex(bool incrementCounter, bool useProbabilisticNucleation)
+        {
+            // If required, increment the counter for the previous nucleating fracture index
+            if (incrementCounter)
+                ++previous_Ln;
+
+            // If the counter for the previous nucleating fracture index has been incremented or the counter for the previous nucleating fracture index is not set, recalculate the index of the next nucleating fracture
+            if (incrementCounter || double.IsNaN(next_Ln))
+                next_Ln = useProbabilisticNucleation ? (double)previous_Ln + gbc.RandGen.NextDouble() : (double)(previous_Ln + 1);
+
+            // Return the index of the next nucleating fracture
+            return next_Ln;
+        }
+        /*/// <summary>
+        /// Get the initial radius (at time t=0) of the last potential explicit fracture to nucleate (i.e. if there is no stress shadow deactivation) 
         /// </summary>
         /// <returns></returns>
         public double getPreviousNucleatingFractureInitialRadius()
@@ -3444,7 +3480,7 @@ namespace DFMGenerator_SharedCode
                 previous_Ln++;
             double implied_P30 = (double)(previous_Ln + 1) / gbc.Volume;
             return InitialRadius(implied_P30);
-        }
+        }*/
         /// <summary>
         /// Check whether a specified point (in XYZ coordinates) lies within the stress shadow of any of the unconfined fractures in the explicit DFN associated with this fracture set
         /// </summary>
@@ -3966,8 +4002,10 @@ namespace DFMGenerator_SharedCode
 
             // Set the unrestricted RP30 (i.e. maximum potential RP30 with no stress shadow deactivation) to zero
             previous_LRP30 = 0;
-            // Set the unrestricted count of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures with no stress shadow deactivation) to zero
+            // Set the counter for the limiting number of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures with no stress shadow deactivation) to zero
+            // Set the counter for the index number of the next fracture to nucleate to NaN - this will force it to be recalculated when fractures start nucleating, thus incorporating proabilistic nucleation if required
             previous_Ln = 0;
+            next_Ln = double.NaN;
 
             // Set the minimum RP30 value for nucleating and growing fracture datapoints
             // Both these are initially set to the value that will generate the specified maximum dP33 increment with fractures of maximum size

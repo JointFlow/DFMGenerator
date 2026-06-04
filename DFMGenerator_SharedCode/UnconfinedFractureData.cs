@@ -260,10 +260,9 @@ namespace DFMGenerator_SharedCode
         /// <returns>List of ImplicitFracturePopulationDatapoints representing the originally active rays that became restricted or deactivated rays</returns>
         public ImplicitFracturePopulationDatapoint[] DeactivateRays()
         {
-            // Set the proportion of the ray length increment for the original fully active datapoint to apply to the deactivated and restricted datapoints to 1
-            // The full increment will therefore be applied to the derived deactivated and restricted datapoints
-            // This implies deactivation at the end of the current timestep
-            return DeactivateRays(1);
+            // The proportion of the ray length increment for the original fully active datapoint applied to the deactivated and restricted datapoints
+            // will be set to the mean distance that the fracture propagates before being deavtivated
+            return DeactivateRays(double.NaN);
         }
         /// <summary>
         /// Deactivate a proportion of currently active rays based on the current fracture activation probabilities, applying a specified proportion of the original increment to the deactivated rays
@@ -278,11 +277,14 @@ namespace DFMGenerator_SharedCode
             // Calculate the probabilities of deactivation due to stress shadow interaction of intersection during the timestep
             double Phi = PhiII * PhiIJ;
             double PhiII_ratio = (PhiII > 0) ? Math.Log(PhiII) / Math.Log(Phi) : 1;
-            double PhiIJ_ratio = 1 - PhiII_ratio;// (PhiIJ_Ray_M > 0) ? Math.Log(PhiIJ_Ray_M) / Math.Log(Phi_Ray_M) : 1;
+            double PhiIJ_ratio = 1 - PhiII_ratio;
             double F_II_M = (PhiII_ratio > 0) ? (1 - Phi) * PhiII_ratio : 0;
             double F_IJ_M = (PhiIJ_ratio > 0) ? (1 - Phi) * PhiIJ_ratio : 0;
 
             // Calculate the proportion of the original fully active ray increment to be applied before deactivation occurs
+            // If not specified, this will be the mean distance that the fracture propagates before being deavtivated
+            if (!(proportionalIncrementAtDeactivation >= 0))
+                proportionalIncrementAtDeactivation = -((Phi / (1 - Phi)) + (1 / Math.Log(Phi)));
             double preDeactivationIncrement = proportionalIncrementAtDeactivation * CalculatedRayLengthIncrement;
             double lengthAtDeactivation = Math.Min(RayLength + preDeactivationIncrement, ufd.MaximumAllowedRayLength);
             switch (Status)
@@ -848,7 +850,7 @@ namespace DFMGenerator_SharedCode
         public void CalculateStressShadowIncrementsFromRayLengthIncrement()
         {
             // Cache the stress shadow width ratio locally
-            double stressShadowWidthRatio = ufs.Max_F_StressShadowWidthRatio;
+            double stressShadowHalfWidthRatio = ufs.Max_F_StressShadowWidthRatio / 2;
 
             // Loop through each datapoint and calculate the stress shadow increment from the ray length increment
             // Because stress shadows can overlap, an increase in the stress shadow volume of one datapoint will cause a decrease in the stress shadow volume of all datapoints with which it can overlap
@@ -861,7 +863,7 @@ namespace DFMGenerator_SharedCode
                     if (datapoint.ActualRayLengthIncrement > 0)
                     {
                         // Calculate the increment in stress shadow volume due to growth of this fracture
-                        double stressShadowVolumeIncrement = datapoint.dP33factorIncrement * stressShadowWidthRatio * (4d / 3d) * Math.PI / (double)RaysPerFracture;
+                        double stressShadowVolumeIncrement = datapoint.dP33factorIncrement * stressShadowHalfWidthRatio * (4d / 3d) * Math.PI / (double)RaysPerFracture;
                         datapoint.StressShadowVolume += stressShadowVolumeIncrement;
 
                         // The stress shadow increment for this datapoint may overlap the stress shadows around any other datapoint with effective radius less than the minimum radius needed to deactivate this ray
