@@ -2420,6 +2420,8 @@ namespace DFMGenerator_Ocean
                         generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumUCFClearZoneVolume);
                         if (MinimumStaticUCRLength > 0)
                             generalInputParams += string.Format("; Minimum mean static unconfined fracture ray length {0}{1}", MinimumStaticUCRLength, FractureRadiusUnits);
+                        else if ((MinimumStaticUCRLength < 0) || double.IsNaN(MinimumStaticUCRLength))
+                            generalInputParams += string.Format("; Minimum mean static unconfined fracture ray length {0}{1}", MinUnconfinedFractureRadius, FractureRadiusUnits);
                         if (Current_HistoricUCFP32TerminationRatio > 0)
                             generalInputParams += string.Format("; Current:Peak active UCFP32 ratio {0}", Current_HistoricUCFP32TerminationRatio);
                         if (Active_TotalUCRP30TerminationRatio > 0)
