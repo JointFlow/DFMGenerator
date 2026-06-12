@@ -322,6 +322,10 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value");
                 input_file.WriteLine("% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers");
                 input_file.WriteLine("MinimumLayerThickness 0");
+                input_file.WriteLine("% Maximum number of new fractures that can be generated per gridblock per timestep");
+                input_file.WriteLine("% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason");
+                input_file.WriteLine("MaximumNewFracturesPerTimestep 100000");
+
                 input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
                 input_file.WriteLine("% Set to 0 to disable probabilistic fracture nucleation");
                 input_file.WriteLine("% Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)");
@@ -361,6 +365,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("%      - When the total volumetric ratio of active (propagating)  unconfined fractures (a_UCFP33) drops below a specified proportion of the peak historic value");
                 input_file.WriteLine("%      - When the total volumetric density of active (propagating) unconfined fracture rays (a_UCRP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (UCRP30)");
                 input_file.WriteLine("%      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume");
+                input_file.WriteLine("%      - When the mean static unconfined fracture ray length drops below a specified value (this prevents brecciation - large numbers of small UCFs terminating against each other, filling the voids between stress shadows of larger UCFs)");
                 input_file.WriteLine("% Increase these cutoffs to reduce the sensitivity and stop the calculation earlier");
                 input_file.WriteLine("% Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime");
                 input_file.WriteLine("% To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits");
@@ -370,6 +375,8 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("Active_TotalUCRP30TerminationRatio -1");
                 input_file.WriteLine("% Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated");
                 input_file.WriteLine("MinimumUCFClearZoneVolume 0.1");
+                input_file.WriteLine("% Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius");
+                input_file.WriteLine("% MinimumStaticUCRLength -1");
                 input_file.WriteLine("% Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration");
                 input_file.WriteLine("% Increase this to run calculation faster, with fewer but longer timesteps");
                 input_file.WriteLine("MaxTimestepUCFP33Increase 0.02");
@@ -661,7 +668,7 @@ namespace DFMGenerator_Standalone
             List<double> InitialFluidPressure_list = new List<double>();
             List<Tensor2S> InitialAbsoluteStress_list = new List<Tensor2S>();
 #if !READINPUTFROMFILE
-            // Add a deformation episode with default values
+            /*// Add a deformation episode with default values
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
@@ -670,7 +677,7 @@ namespace DFMGenerator_Standalone
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.ma;
-            DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);
+            DeformationEpisodeDuration_list.Add(DeformationEpisodeDuration);*/
             /*// Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
             EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(-0.001);
@@ -721,7 +728,7 @@ namespace DFMGenerator_Standalone
             InitialFluidPressure_list.Add(15000000);
             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
             BiazimuthalConjugate = false;*/
-            /*EhminAzi_list.Add(EhminAzi);
+            EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(0);
@@ -733,7 +740,7 @@ namespace DFMGenerator_Standalone
             AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
             InitialFluidPressure_list.Add(19620000);
             InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
-            BiazimuthalConjugate = false;*/
+            BiazimuthalConjugate = false;
 #endif
 
             // Mechanical properties
@@ -789,8 +796,8 @@ namespace DFMGenerator_Standalone
             // Median initial microfracture size - this is only used for the log-normal distribution function
             // Set to -1 to use layer thickness / 20
             double InitialMicrofractureMedianSize = 0.05;
-             // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
-             double SubcriticalPropIndex = 10;
+            // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
+            double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
             // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
             double HostRock_kh = 9.869233e-16;// 1mD in m2
@@ -961,9 +968,9 @@ namespace DFMGenerator_Standalone
             // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value
             // Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
             double MinimumLayerThickness = 0;
-            // Maximum number of new fractures that can be generated per gridblock per timestep: set automatically to 100,000
+            // Maximum number of new fractures that can be generated per gridblock per timestep
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaximumNewFracturesPerTimestep = 100000;
+            int MaximumNewFracturesPerTimestep = 100;// 100000;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -1003,6 +1010,7 @@ namespace DFMGenerator_Standalone
             //      - When the total volumetric ratio of active (propagating)  unconfined fractures (a_UCFP33) drops below a specified proportion of the peak historic value
             //      - When the total volumetric density of active (propagating) unconfined fracture rays (a_UCRP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (UCRP30)
             //      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
+            //      - When the mean static unconfined fracture ray length drops below a specified value (this prevents brecciation - large numbers of small UCFs terminating against each other, filling the voids between stress shadows of larger UCFs)
             // Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
             // Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
             // To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
@@ -1012,6 +1020,8 @@ namespace DFMGenerator_Standalone
             double Active_TotalUCRP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
             double MinimumUCFClearZoneVolume = 0.1;
+            // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
+            double MinimumStaticUCRLength = -1;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
             double MaxTimestepUCFP33Increase = 0.01;
@@ -1041,7 +1051,7 @@ namespace DFMGenerator_Standalone
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
             double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-            double MinIntersectionDeactivationRatio = 10000;
+            double MinIntersectionDeactivationRatio = 0.5;
 
             // Create a random number generator for randomising properties, if required
             Random RandomNumberGenerator = new Random();
@@ -1710,6 +1720,11 @@ namespace DFMGenerator_Standalone
                         case "MinimumLayerThickness":
                             MinimumLayerThickness = Convert.ToDouble(line_split[1]);
                             break;
+                        // Maximum number of new fractures that can be generated per gridblock per timestep
+                        // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
+                        case "MaximumNewFracturesPerTimestep":
+                            MaximumNewFracturesPerTimestep = Convert.ToInt32(line_split[1]);
+                            break;
                         // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
                         // Set to 0 to disable probabilistic fracture nucleation
                         // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -1782,6 +1797,7 @@ namespace DFMGenerator_Standalone
                         //      - When the total volumetric ratio of active (propagating)  unconfined fractures (a_UCFP33) drops below a specified proportion of the peak historic value
                         //      - When the total volumetric density of active (propagating) unconfined fracture rays (a_UCRP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (UCRP30)
                         //      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
+                        //      - When the mean static unconfined fracture ray length drops below a specified value (this prevents brecciation - large numbers of small UCFs terminating against each other, filling the voids between stress shadows of larger UCFs)
                         // Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
                         // Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
                         // To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
@@ -1796,6 +1812,10 @@ namespace DFMGenerator_Standalone
                         // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
                         case "MinimumUCFClearZoneVolume":
                             MinimumUCFClearZoneVolume = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
+                        case "MinimumStaticUCRLength":
+                            MinimumStaticUCRLength = Convert.ToDouble(line_split[1]);
                             break;
                         // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
                         // Increase this to run calculation faster, with fewer but longer timesteps
@@ -1936,8 +1956,8 @@ namespace DFMGenerator_Standalone
                 Tensor2S[,,] nextInitialAbsoluteStess_array = new Tensor2S[NoCols, NoRows, NoLayers];
 
                 // Populate the new arrays with default values
-                    for (int ColNo = 0; ColNo < NoCols; ColNo++)
-                for (int RowNo = 0; RowNo < NoRows; RowNo++)
+                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                    for (int RowNo = 0; RowNo < NoRows; RowNo++)
                         for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
                         {
                             if (TestComplexGeometry)
@@ -2968,7 +2988,7 @@ namespace DFMGenerator_Standalone
                         // Set the propagation control data for the gridblock
                         gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
                              MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false);
-                        gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
+                        gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
 
                         // Set folder path for output files
                         gc.PropControl.FolderPath = folderPath;
@@ -2995,7 +3015,7 @@ namespace DFMGenerator_Standalone
                         Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}, {25}); ",
                             CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
                              MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false));
-                        Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
+                        Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
                         // Add the deformation load data 
@@ -3014,17 +3034,17 @@ namespace DFMGenerator_Standalone
                             double local_InitialFluidPressure = (deformationEpisodeNo < InitialFluidPressure_array.Count ? InitialFluidPressure_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : InitialFluidPressure);
                             Tensor2S local_InitialAbsoluteStress = (deformationEpisodeNo < InitialAbsoluteStress_array.Count ? InitialAbsoluteStress_array[deformationEpisodeNo][ColNo, RowNo, LayerNo] : InitialAbsoluteStress);
 
-                        // Add the deformation episode to the deformation episode list in the PropControl object
-                        if (local_AbsoluteStressRate is null)
-                        {
-                            gc.PropControl.AddDeformationEpisode_StrainLoad(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
+                            // Add the deformation episode to the deformation episode list in the PropControl object
+                            if (local_AbsoluteStressRate is null)
+                            {
+                                gc.PropControl.AddDeformationEpisode_StrainLoad(local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration);
 #if DEBUG_FRACS
                                 Console.WriteLine(string.Format("gc.PropControl.AddDeformationEpisode({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", local_EhminRate, local_EhmaxRate, local_EhminAzi, local_AppliedOverpressureRate, local_AppliedTemperatureChange, local_AppliedUpliftRate, local_StressArchingFactor, local_DeformationEpisodeDuration));
 #endif
-                        }
-                        else
-                        {
-                            gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
+                            }
+                            else
+                            {
+                                gc.PropControl.AddDeformationEpisode_AbsoluteStressLoad(local_AbsoluteStressRate, local_AppliedOverpressureRate, local_DeformationEpisodeDuration, local_InitialAbsoluteStress, local_InitialFluidPressure);
 #if DEBUG_FRACS
                             string local_AbsoluteStressRate_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_AbsoluteStressRate.Component(Tensor2SComponents.XX), local_AbsoluteStressRate.Component(Tensor2SComponents.YY), local_AbsoluteStressRate.Component(Tensor2SComponents.ZZ), local_AbsoluteStressRate.Component(Tensor2SComponents.XY), local_AbsoluteStressRate.Component(Tensor2SComponents.YZ), local_AbsoluteStressRate.Component(Tensor2SComponents.ZX));
                             string local_InitialAbsoluteStress_info = string.Format("Tensor2S({0}, {1}, {2}, {3}, {4}, {5})", local_InitialAbsoluteStress.Component(Tensor2SComponents.XX), local_InitialAbsoluteStress.Component(Tensor2SComponents.YY), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.XY), local_InitialAbsoluteStress.Component(Tensor2SComponents.YZ), local_InitialAbsoluteStress.Component(Tensor2SComponents.ZX));

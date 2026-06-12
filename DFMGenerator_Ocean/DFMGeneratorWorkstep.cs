@@ -1513,9 +1513,9 @@ namespace DFMGenerator_Ocean
                     double MinimumLayerThickness = 0;
                     if (!double.IsNaN(arguments.Argument_MinimumLayerThickness))
                         MinimumLayerThickness = arguments.Argument_MinimumLayerThickness;
-                    // Maximum number of new fractures that can be generated per gridblock per timestep: set automatically to 100,000
+                    // Maximum number of new fractures that can be generated per gridblock per timestep
                     // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-                    int MaximumNewFracturesPerTimestep = 100000;
+                    int MaximumNewFracturesPerTimestep = arguments.Argument_MaximumNewFracturesPerTimestep;
                     // Flag to create triangular instead of quadrilateral macrofracture segments; will increase the total number of segments but generation algorithm may run faster
                     // If set to true, microfractures will comprise a series of coplanar triangles with vertices at the centre, rather than a single polygon
                     bool CreateTriangularFractureSegments = arguments.Argument_CreateTriangularFractureSegments;
@@ -1575,6 +1575,7 @@ namespace DFMGenerator_Ocean
                     //      - When the total volumetric ratio of active (propagating)  unconfined fractures (a_UCFP33) drops below a specified proportion of the peak historic value
                     //      - When the total volumetric density of active (propagating) unconfined fracture rays (a_UCRP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (UCRP30)
                     //      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
+                    //      - When the mean static unconfined fracture ray length drops below a specified value (this prevents brecciation - large numbers of small UCFs terminating against each other, filling the voids between stress shadows of larger UCFs)
                     // Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
                     // Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
                     // To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
@@ -1590,6 +1591,8 @@ namespace DFMGenerator_Ocean
                     double MinimumUCFClearZoneVolume = 0;
                     if (!double.IsNaN(arguments.Argument_Minimum_UCFClearZone_Volume))
                         MinimumUCFClearZoneVolume = arguments.Argument_Minimum_UCFClearZone_Volume;
+                    // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
+                    double MinimumStaticUCRLength = -1;
                     // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
                     // Increase this to run calculation faster, with fewer but longer timesteps
                     double MaxTimestepUCFP33Increase = -1;
@@ -2415,6 +2418,8 @@ namespace DFMGenerator_Ocean
                     else
                     {
                         generalInputParams += string.Format("Calculation termination control: Max timesteps {0}; Min clear zone volume {1}", MaxTimesteps, MinimumUCFClearZoneVolume);
+                        if (MinimumStaticUCRLength > 0)
+                            generalInputParams += string.Format("; Minimum mean static unconfined fracture ray length {0}{1}", MinimumStaticUCRLength, FractureRadiusUnits);
                         if (Current_HistoricUCFP32TerminationRatio > 0)
                             generalInputParams += string.Format("; Current:Peak active UCFP32 ratio {0}", Current_HistoricUCFP32TerminationRatio);
                         if (Active_TotalUCRP30TerminationRatio > 0)
@@ -2435,6 +2440,8 @@ namespace DFMGenerator_Ocean
                         explicitInputParams += "Do not link fractures across relay zones\n";
                     explicitInputParams += string.Format("Maximum bend across cell boundaries (Max Consistency Angle): {0}{1}\n", toProjectAzimuthUnits.Convert(arguments.Argument_MaxConsistencyAngle), AzimuthUnits);
                     explicitInputParams += string.Format("Minimum layer thickness cutoff: {0}{1}\n", toProjectLayerThicknessUnits.Convert(MinimumLayerThickness), LayerThicknessUnits);
+                    if (MaximumNewFracturesPerTimestep>0)
+                        explicitInputParams += string.Format("Maximum number of new fractures that can be generated per gridblock per timestep: {0}\n", MaximumNewFracturesPerTimestep);
                     if (CreateTriangularFractureSegments)
                         explicitInputParams += "Fractures represented by triangular segments\n";
                     if (ProbabilisticFractureNucleationLimit > 0)
@@ -4659,7 +4666,7 @@ namespace DFMGenerator_Ocean
                                         // Set the propagation control data for the gridblock
                                         gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
                                              MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures);
-                                        gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
+                                        gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
 
                                         // Set folder path for output files
                                         gc.PropControl.FolderPath = folderPath;
@@ -4681,7 +4688,7 @@ namespace DFMGenerator_Ocean
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}); ",
                                             CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
                                              MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
                                         // Add the deformation load data 
@@ -8876,6 +8883,7 @@ namespace DFMGenerator_Ocean
             private bool argument_LinkParallelFractures = true;
             private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
+            private int argument_MaximumNewFracturesPerTimestep = 100;
             private bool argument_CreateTriangularFractureSegments = false;
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
             private bool argument_PropagateFracturesInNucleationOrder = true;
@@ -8892,6 +8900,7 @@ namespace DFMGenerator_Ocean
             private double argument_Historic_UCFP32_TerminationRatio = double.NaN;
             private double argument_Active_UCRP30_TerminationRatio = double.NaN;
             private double argument_Minimum_UCFClearZone_Volume = 0.1;
+            private double argument_MinimumStaticUCRLength = double.NaN;
             private double argument_Max_TS_UCFP33_increase = 0.02;
             private double argument_Max_R_timestep_increase = double.NaN;
             private double argument_Max_R_DeactivationCheck_interval = 0.2;
@@ -13768,6 +13777,22 @@ namespace DFMGenerator_Ocean
                 internal get { return DataManager.Resolve(this.argument_InitialMicrofractureMedianRadius) as Property; }
                 set { this.argument_InitialMicrofractureMedianRadius = (value == null ? null : value.Droid); }
             }
+            // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
+
+            [Description("Maximum number of new fractures that can be generated per gridblock per timestep", "Maximum number of new fractures that can be generated per gridblock per timestep; set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason")]
+            public int Argument_MaximumNewFracturesPerTimestep
+            {
+                internal get { return this.argument_MaximumNewFracturesPerTimestep; }
+                set { this.argument_MaximumNewFracturesPerTimestep = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Minimum allowed mean static unconfined fracture ray length", "Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius")]
+            public double Argument_MinimumStaticUCRLength
+            {
+                internal get { return this.argument_MinimumStaticUCRLength; }
+                set { this.argument_MinimumStaticUCRLength = value; }
+            }
 
             /// <summary>
             /// Reset all arguments to default values
@@ -14120,6 +14145,7 @@ namespace DFMGenerator_Ocean
                 argument_LinkParallelFractures = true;
                 argument_MaxConsistencyAngle = Math.PI / 4;
                 argument_MinimumLayerThickness = 1;
+                argument_MaximumNewFracturesPerTimestep = 100;
                 argument_CreateTriangularFractureSegments = false;
                 argument_ProbabilisticFractureNucleationLimit = double.NaN;
                 argument_PropagateFracturesInNucleationOrder = true;
@@ -14136,6 +14162,7 @@ namespace DFMGenerator_Ocean
                 argument_Historic_UCFP32_TerminationRatio = double.NaN;
                 argument_Active_UCRP30_TerminationRatio = double.NaN;
                 argument_Minimum_UCFClearZone_Volume = 0.1;
+                argument_MinimumStaticUCRLength = double.NaN;
                 argument_Max_TS_UCFP33_increase = 0.02;
                 argument_Max_R_timestep_increase = double.NaN;
                 argument_Max_R_DeactivationCheck_interval = 0.2;
