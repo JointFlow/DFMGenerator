@@ -306,6 +306,7 @@ namespace DFMGenerator_Ocean
             UpdateCheckBox(args.Argument_LinkParallelFractures, checkBox_LinkParallelFractures);
             UpdateTextBox(args.Argument_MaxConsistencyAngle, unitTextBox_MaxConsistencyAngle, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_MaxConsistencyAngle_Units);
             UpdateTextBox(args.Argument_MinimumLayerThickness, unitTextBox_MinimumLayerThickness, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumLayerThickness_Units);
+            UpdateTextBox(args.Argument_MaximumNewFracturesPerTimestep, textBox_MaximumNewFracturesPerTimestep);
             UpdateCheckBox(args.Argument_CreateTriangularFractureSegments, checkBox_CreateTriangularFractureSegments);
             UpdateTextBox(args.Argument_ProbabilisticFractureNucleationLimit, unitTextBox_ProbabilisticFractureNucleationLimit, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_PropagateFracturesInNucleationOrder, checkBox_PropagateFracturesInNucleationOrder);
@@ -322,6 +323,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_Historic_UCFP32_TerminationRatio, unitTextBox_Historic_UCFP32_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Active_UCRP30_TerminationRatio, unitTextBox_Active_UCRP30_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Minimum_UCFClearZone_Volume, unitTextBox_Minimum_UCFClearZone_Volume, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_MinimumStaticUCRLength, unitTextBox_MinimumStaticUCRLength, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumStaticUCRLength_Units);
             UpdateTextBox(args.Argument_Max_TS_UCFP33_increase, unitTextBox_MaxUCFP33TSincrease, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Max_R_timestep_increase, unitTextBox_MaxUCFRTSIncrease, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Max_R_DeactivationCheck_interval, unitTextBox_MaxDeactivationCheckInterval, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -494,6 +496,7 @@ namespace DFMGenerator_Ocean
             args.Argument_LinkParallelFractures = checkBox_LinkParallelFractures.Checked;
             args.Argument_MaxConsistencyAngle = GetDoubleFromTextBox(unitTextBox_MaxConsistencyAngle);
             args.Argument_MinimumLayerThickness = GetDoubleFromTextBox(unitTextBox_MinimumLayerThickness);
+            args.Argument_MaximumNewFracturesPerTimestep = GetIntFromTextBox(textBox_MaximumNewFracturesPerTimestep);
             args.Argument_CreateTriangularFractureSegments = checkBox_CreateTriangularFractureSegments.Checked;
             args.Argument_ProbabilisticFractureNucleationLimit = GetDoubleFromTextBox(unitTextBox_ProbabilisticFractureNucleationLimit);
             args.Argument_PropagateFracturesInNucleationOrder = checkBox_PropagateFracturesInNucleationOrder.Checked;
@@ -510,6 +513,7 @@ namespace DFMGenerator_Ocean
             args.Argument_Historic_UCFP32_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Historic_UCFP32_TerminationRatio);
             args.Argument_Active_UCRP30_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Active_UCRP30_TerminationRatio);
             args.Argument_Minimum_UCFClearZone_Volume = GetDoubleFromTextBox(unitTextBox_Minimum_UCFClearZone_Volume);
+            args.Argument_MinimumStaticUCRLength = GetDoubleFromTextBox(unitTextBox_MinimumStaticUCRLength);
             args.Argument_Max_TS_UCFP33_increase = GetDoubleFromTextBox(unitTextBox_MaxUCFP33TSincrease);
             args.Argument_Max_R_timestep_increase = GetDoubleFromTextBox(unitTextBox_MaxUCFRTSIncrease);
             args.Argument_Max_R_DeactivationCheck_interval = GetDoubleFromTextBox(unitTextBox_MaxDeactivationCheckInterval);

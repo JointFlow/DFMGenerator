@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -1027,7 +1027,7 @@ namespace DFMGenerator_Standalone
             double MaxTimestepUCFP33Increase = 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
-            double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;
+            double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;//
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint

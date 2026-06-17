@@ -96,6 +96,21 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Phi { get { return PhiII * PhiIJ; } }
         /// <summary>
+        /// Probability that no rays in a fully active fracture have been deactivated due to stress shadow interaction since the last deactivation check
+        /// Will be set to NaN if Status is no FullyActive
+        /// </summary>
+        public double PhiII_Fracture { get; private set; }
+        /// <summary>
+        /// Probability that no rays in a fully active fracture have been deactivated due to intersecting a fracture from another set since the last deactivation check
+        /// Will be set to NaN if Status is no FullyActive
+        /// </summary>
+        public double PhiIJ_Fracture { get; private set; }
+        /// <summary>
+        /// Probability that no rays in a fully active fracture have been deactivated for any reason since the last deactivation check
+        /// Will be set to NaN if Status is no FullyActive
+        /// </summary>
+        public double Phi_Fracture { get { return PhiII_Fracture * PhiIJ_Fracture; } }
+        /// <summary>
         /// Effective ray length at the last deactivation check
         /// </summary>
         private double EffectiveRayLengthAtLastDeactivationCheck { get; set; }
@@ -235,12 +250,30 @@ namespace DFMGenerator_SharedCode
         /// <param name="PhiIJ_M">Probability that an active ray will not be deactivated due to intersecting a fracture from another set during the current timestep</param>
         public void UpdateFractureActivationProbabilities(double PhiII_M, double PhiIJ_M)
         {
+            UpdateFractureActivationProbabilities(PhiII_M, PhiIJ_M, double.NaN, double.NaN);
+        }
+        /// <summary>
+        /// Update the fracture activation probabilities for the current timestep
+        /// </summary>
+        /// <param name="PhiII_M">Probability that an active ray will not be deactivated due to stress shadow interaction during the current timestep</param>
+        /// <param name="PhiIJ_M">Probability that an active ray will not be deactivated due to intersecting a fracture from another set during the current timestep</param>
+        /// <param name="PhiII_Fracture_M">Probability that no rays in a fully active fracture have been deactivated due to stress shadow interaction during the current timestep</param>
+        /// <param name="PhiIJ_Fracture_M">Probability that no rays in a fully active fracture have been deactivated due to intersecting a fracture from another set during the current timestep</param>
+        public void UpdateFractureActivationProbabilities(double PhiII_M, double PhiIJ_M, double PhiII_Fracture_M, double PhiIJ_Fracture_M)
+        {
             PhiII *= PhiII_M;
             PhiIJ *= PhiIJ_M;
             if (PhiII < 0)
                 PhiII = 0;
             if (PhiIJ < 0)
                 PhiIJ = 0;
+            PhiII_Fracture *= PhiII_Fracture_M;
+            PhiIJ_Fracture *= PhiIJ_Fracture_M;
+            if (PhiII_Fracture < 0)
+                PhiII_Fracture = 0;
+            if (PhiIJ_Fracture < 0)
+                PhiIJ_Fracture = 0;
+
 #if DEBUG
             CumulativePhiII *= PhiII_M;
             CumulativePhiIJ *= PhiIJ_M;
@@ -254,6 +287,16 @@ namespace DFMGenerator_SharedCode
         {
             PhiII = 1;
             PhiIJ = 1;
+            if (Status == RayPropagationStatus.FullyActive)
+            {
+                PhiII_Fracture = 1;
+                PhiIJ_Fracture = 1;
+            }
+            else
+            {
+                PhiII_Fracture = double.NaN;
+                PhiIJ_Fracture = double.NaN;
+            }
             EffectiveRayLengthAtLastDeactivationCheck = EffectiveRayLength;
         }
         /// <summary>
@@ -277,7 +320,6 @@ namespace DFMGenerator_SharedCode
             ImplicitFracturePopulationDatapoint[] outputDatapoints;
 
             // Calculate the probabilities of deactivation due to stress shadow interaction of intersection during the timestep
-            double Phi = PhiII * PhiIJ;
             double PhiII_ratio = (PhiII > 0) ? Math.Log(PhiII) / Math.Log(Phi) : 1;
             double PhiIJ_ratio = 1 - PhiII_ratio;
             double F_II_M = (PhiII_ratio > 0) ? (1 - Phi) * PhiII_ratio : 0;
@@ -294,21 +336,18 @@ namespace DFMGenerator_SharedCode
                 case RayPropagationStatus.FullyActive:
                     // There will be three datapoints in the output array, representing the rays that become restricted and deactivated due to stress shadow interaction and intersection respectively
                     outputDatapoints = new ImplicitFracturePopulationDatapoint[3];
-                    // Calculate the total proportion of fully active fractures for which no rays will be deactivated during the current timestep
-                    // This will be the probability that a single ray will not be deactivated (Phi_Ray_M) to the power of the number of rays per fracture
-                    double Phi_Fracture_M = Math.Pow(Phi, ufd.RaysPerFracture);
                     // The first datapoint in the output array represents the new restricted rays
                     // Note that this function will only increment the restricted rays until the point of deactivation
                     // This is because this object does not have access to the mechanical property data needed to calculate the increment to the end of the timestep
                     // The full increment to the end of the timestep must therefore be calculated in the grandparent UnconfinedFractureSet object
-                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, preDeactivationIncrement, dRP30 * (Phi - Phi_Fracture_M), StressShadowVolume * (Phi - Phi_Fracture_M), RayPropagationStatus.Restricted, lengthAtDeactivation, ufd);
+                    outputDatapoints[0] = new ImplicitFracturePopulationDatapoint(RayLength, preDeactivationIncrement, dRP30 * (Phi - Phi_Fracture), StressShadowVolume * (Phi - Phi_Fracture), RayPropagationStatus.Restricted, lengthAtDeactivation, ufd);
                     // The second datapoint in the output array represents the new static rays due to stress shadow interaction
                     outputDatapoints[1] = new ImplicitFracturePopulationDatapoint(RayLength, preDeactivationIncrement, dRP30 * F_II_M, StressShadowVolume * F_II_M, RayPropagationStatus.StaticStressShadow, lengthAtDeactivation, ufd);
                     // The third datapoint in the output array represents the new static rays due to intersection
                     outputDatapoints[2] = new ImplicitFracturePopulationDatapoint(RayLength, preDeactivationIncrement, dRP30 * F_IJ_M, StressShadowVolume * F_IJ_M, RayPropagationStatus.StaticIntersection, lengthAtDeactivation, ufd);
                     // Reduce the volumetric density and stress shadow volume of fully active rays represented by this datapoint
-                    dRP30 *= Phi_Fracture_M;
-                    StressShadowVolume *= Phi_Fracture_M;
+                    dRP30 *= Phi_Fracture;
+                    StressShadowVolume *= Phi_Fracture;
                     break;
                 case RayPropagationStatus.Restricted:
                     // There will be two datapoints in the output array, representing the rays that become deactivated due to stress shadow interaction and intersection respectively
