@@ -22,6 +22,15 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private UnconfinedFractureData ufd;
 
+#if DEBUG
+        // Counter for the total number of datapoints - used to generate the datapoint index number
+        static int NoDatapoints = 0;
+        /// <summary>
+        /// Index number for the datapoint
+        /// </summary>
+        public int DatapointIndexNo { get; private set; }
+#endif
+
         // Control and implementation functions
         /// <summary>
         /// Compare ImplicitFracturePopulationDatapoint objects based on effective ray length
@@ -428,6 +437,7 @@ namespace DFMGenerator_SharedCode
                 PropagationControllingLength = propagationControllingLength_in;
             ResetFractureActivationProbabilities();
 #if DEBUG
+            DatapointIndexNo = ImplicitFracturePopulationDatapoint.NoDatapoints++;
             CumulativePhiII = 1;
             CumulativePhiIJ = 1;
 #endif
@@ -622,13 +632,12 @@ namespace DFMGenerator_SharedCode
         /// <returns>Cumulative P30 density of all fractures with effective radius greater than or equal to the specified minimum</returns>
         public double cumulative_FP30(double CutoffRadius)
         {
-            // NB this calculation assumes that the population data arrays have already been sorted from largest to smallest
             double RP30 = 0;
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                 foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
                 {
                     if (datapoint.EffectiveRayLength < CutoffRadius)
-                        break;
+                        continue;
                     RP30 += datapoint.dRP30;
                 }
 
@@ -660,14 +669,13 @@ namespace DFMGenerator_SharedCode
         /// <returns>Cumulative P32 density of all fractures with effective radius greater than or equal to the specified minimum</returns>
         public double cumulative_FP32(double CutoffRadius)
         {
-            // NB this calculation assumes that the population data arrays have already been sorted from largest to smallest
-            // It also ignores the adjustment factors - these are only calculated for the entire fracture population
+            // NB this calculation ignores the adjustment factors - these are only calculated for the entire fracture population
             double RP32 = 0;
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                 foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
                 {
                     if (datapoint.EffectiveRayLength < CutoffRadius)
-                        break;
+                        continue;
                     RP32 += datapoint.dP32factor;
                 }
 
@@ -683,14 +691,13 @@ namespace DFMGenerator_SharedCode
         /// <returns>Cumulative P33 density of all fractures with effective radius greater than or equal to the specified minimum</returns>
         public double cumulative_FP33(double CutoffRadius)
         {
-            // NB this calculation assumes that the population data arrays have already been sorted from largest to smallest
-            // It also ignores the adjustment factors - these are only calculated for the entire fracture population
+            // NB this calculation ignores the adjustment factors - these are only calculated for the entire fracture population
             double RP33 = 0;
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                 foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
                 {
                     if (datapoint.EffectiveRayLength < CutoffRadius)
-                        break;
+                        continue;
                     RP33 += datapoint.dP33factor;
                 }
 
@@ -705,25 +712,48 @@ namespace DFMGenerator_SharedCode
         /// <returns>Cumulative stress shadow volume of all fractures with effective radius greater than or equal to the specified minimum</returns>
         public double cumulative_StressShadowVolume(double CutoffRadius)
         {
-            // NB this calculation assumes that the population data arrays have already been sorted from largest to smallest
-            // It also ignores the adjustment factors - these are only calculated for the entire fracture population
+            // NB this calculation ignores the adjustment factors - these are only calculated for the entire fracture population
             double psi = 0;
             foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                 foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
                 {
                     if (datapoint.EffectiveRayLength < CutoffRadius)
-                    {
-                        if (datapoint.EffectiveRayLength < CutoffRadius)
-                            break;
-                        psi += datapoint.StressShadowVolume;
-                    }
+                        continue;
+                    psi += datapoint.StressShadowVolume;
                 }
 
-            // Stress shadw volume is a ratio to total volume so cannot exceed 1
+            // Stress shadow volume is a ratio to total volume so cannot exceed 1
             if (psi > 1) 
                 psi = 1;
 
             return psi;
+        }
+        /// <summary>
+        /// Get the total true area of all fractures in the set that a propagating fracture ray can intersect
+        /// This is similar to the cumulative_FP32 but includes the incremental area of fractures with greater effective radius than the propagating ray
+        /// This is used to calculate the probability of termination by intersection PhiIJ, to make it consistent with the PhiIJ calculated for explicit rays where fracture growth is calculating in descending order of effective radius
+        /// </summary>
+        /// <param name="CutoffRadius">Minimum effective radius of fractures visible to the propagating ray</param>
+        /// <param name="PrePropagationEffectiveRayLength">Effective length of the propagating ray</param>
+        /// <returns>Cumulative P32 density of all fractures with effective radius greater than or equal to the specified minimum, plus P32 increments for fractures with effective radius longer than the propagating ray</returns>
+        public double IntersectionArea(double CutoffRadius, double PrePropagationEffectiveRayLength)
+        {
+            // NB this calculation ignores the adjustment factors - these are only calculated for the entire fracture population
+            double RP32 = 0;
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                foreach (ImplicitFracturePopulationDatapoint datapoint in fracturePopulationDatapoints[status])
+                {
+                    if ((float)datapoint.EffectiveRayLength < (float)CutoffRadius)
+                        continue;
+                    else if ((float)datapoint.EffectiveRayLength < (float)PrePropagationEffectiveRayLength)
+                        RP32 += datapoint.dP32factor;
+                    else if ((float)datapoint.EffectiveRayLength == (float)PrePropagationEffectiveRayLength)
+                        RP32 += (datapoint.dP32factor + (datapoint.dP32factorIncrement / 2));
+                    else
+                        RP32 += (datapoint.dP32factor + datapoint.dP32factorIncrement);
+                }
+
+            return RP32 * (Math.PI / (double)RaysPerFracture);
         }
 
         /// <summary>
@@ -769,14 +799,6 @@ namespace DFMGenerator_SharedCode
         /// It represents the difference in volume between the actual size of fractures represented by datapoints that are removed and the size represented by the datapoint they are reassigned to
         /// </summary>
         private Dictionary<RayPropagationStatus, double> RP33_total_adjustment;
-        /// <summary>
-        /// Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-        /// </summary>
-        private double minStressShadowDeactivationRatio;
-        /// <summary>
-        /// Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
-        /// </summary>
-        private double minIntersectionDeactivationRatio;
         /// <summary>
         /// Recalculate the total population data from the piecewise population distribution function arrays
         /// </summary>
@@ -914,7 +936,7 @@ namespace DFMGenerator_SharedCode
                         double stressShadowReductionFactor = 1 - stressShadowVolumeIncrement;
                         if (stressShadowReductionFactor < 0)
                             stressShadowReductionFactor = 0;
-                        double minStressShadowDeactivationRadius = minStressShadowDeactivationRatio * datapoint.EffectiveRayLength;
+                        double minStressShadowDeactivationRadius = ufs.MinimumStressShadowDeactivationRatio(datapoint.EffectiveRayLength);
                         foreach (RayPropagationStatus status2 in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
                             foreach (ImplicitFracturePopulationDatapoint datapoint2 in fracturePopulationDatapoints[status2])
                             {
@@ -1074,19 +1096,15 @@ namespace DFMGenerator_SharedCode
             // Defaults
             // Initial volumetric fracture density set to zero
             // Initial fracture radius set to zero
-            // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction: set to 1
-            // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection: set to 1
 
-            ResetPopulationDistributionData(0, 0, 1, 1);
+            ResetPopulationDistributionData(0, 0);
         }
         /// <summary>
         /// Reset the total population values and the arrays for the piecewise population distribution functions
         /// </summary>
         /// <param name="a_RP30_initial">Initial volumetric density of fracture rays</param>
         /// <param name="rmin">Radius of initial fractures</param>
-        /// <param name="minStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
-        /// <param name="minIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
-        public void ResetPopulationDistributionData(double a_RP30_initial, double rmin, double minStressShadowDeactivationRatio_in, double minIntersectionDeactivationRatio_in)
+        public void ResetPopulationDistributionData(double a_RP30_initial, double rmin)
         {
             // Reset the population total population adjustment factors
             // The adjustment factors arise when the size of the population distribution function arrays are reduced by amalgamating datapoints
@@ -1100,11 +1118,6 @@ namespace DFMGenerator_SharedCode
                 RP32_total_adjustment[status] = 0;
                 RP33_total_adjustment[status] = 0;
             }
-
-            // Set the variables for the minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction and intersection, as a ratio of the propagating fracture radius
-            // These are used to calculate the minimum effective radius for overlapping static fracture rays
-            minStressShadowDeactivationRatio = minStressShadowDeactivationRatio_in;
-            minIntersectionDeactivationRatio = minIntersectionDeactivationRatio_in;
 
             // Reset the population arrays
             fracturePopulationDatapoints = new Dictionary<RayPropagationStatus, List<ImplicitFracturePopulationDatapoint>>();
@@ -1297,13 +1310,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="a_RP30_initial">Initial volumetric density of fractures</param>
         /// <param name="rmin">Radius of initial fractures</param>
-        /// <param name="minStressShadowDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius</param>
-        /// <param name="minIntersectionDeactivationRatio_in">Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius</param>
         /// <param name="ufs_in">Reference to parent UnconfinedFractureSet object</param>
-        public UnconfinedFractureData(double a_RP30_initial, double rmin, double minStressShadowDeactivationRatio_in, double minIntersectionDeactivationRatio_in, UnconfinedFractureSet ufs_in)
+        public UnconfinedFractureData(double a_RP30_initial, double rmin, UnconfinedFractureSet ufs_in)
         {
             ufs = ufs_in;
-            ResetPopulationDistributionData(a_RP30_initial, rmin, minStressShadowDeactivationRatio_in, minIntersectionDeactivationRatio_in);
+            ResetPopulationDistributionData(a_RP30_initial, rmin);
         }
     }
 }

@@ -209,7 +209,7 @@ namespace DFMGenerator_SharedCode
                 return false;
 
             // Get the minimum effective radius of fractures that can deactivate the current ray by stress shadow interaction
-            double minStressShadowInteractionRadius = propagating_gbc.PropControl.MinStressShadowDeactivationRatio * propagatingSegment.EffectiveRayLength;
+            double minStressShadowInteractionRadius = propagating_gbc.PropControl.MinimumStressShadowDeactivationRatio(propagatingSegment.EffectiveRayLength);
 
             // Cache useful data locally
             VectorXYZ fractureNormalVector = propagating_ufs.NormalVector;
@@ -231,6 +231,9 @@ namespace DFMGenerator_SharedCode
             double propagatingSegmentStressShadowMultiplier = (stressShadowWidthRatio / 2) * StressShadowWidthMultiplier * propagatingSegmentRayLengthRatio;
             PointXYZ edgeOfRayStressShadow = new PointXYZ(projectedRayOrigin);
             edgeOfRayStressShadow.AddVector((finalRayLength * propagatingSegmentStressShadowMultiplier) * fractureNormalVector);
+
+            // Get the plane of the ray stress shadow
+            PlaneXYZ propatingSegmentStressShadowPlane = new PlaneXYZ(projectedRayOrigin, projectedFinalRayTip, edgeOfRayStressShadow);
 
             // Loop through every fracture on the large fracture list
             foreach (UnconfinedFractureXYZ UCF in LargeFractures)
@@ -254,11 +257,10 @@ namespace DFMGenerator_SharedCode
 
                 // Determine whether the point of intersection of the fracture axis vector and the plane of the ray stress shadow lies within the fracture stress shadow
                 // If it does not, the stress shadows do not interact and we can move on to the next fracture
-                double distanceToAxisIntersection = PointXYZ.getIntersectionDistance(fractureCentrepoint, segmentAxis, projectedRayOrigin, projectedFinalRayTip, edgeOfRayStressShadow, CrossoverType.Extend);
+                double distanceToAxisIntersection;
+                PointXYZ axis_rayStressShadow_intersection = PointXYZ.getIntersectionPoint(fractureCentrepoint, segmentAxis, propatingSegmentStressShadowPlane, out distanceToAxisIntersection);
                 if (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius)
                     continue;
-                PointXYZ axis_rayStressShadow_intersection = new PointXYZ(fractureCentrepoint);
-                axis_rayStressShadow_intersection.AddVector(distanceToAxisIntersection * segmentAxis);
 
                 // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +/-90degrees) of the propagation direction
                 // This will be the case if the scalar product of the two vectors is positive
@@ -1265,7 +1267,7 @@ namespace DFMGenerator_SharedCode
                             case PropagateDFNReturnCode.DrivingStressError:
                                 DFNStressErrors++;
                                 break;
-                            case PropagateDFNReturnCode.NewFractureLimitExceeded:
+                            case PropagateDFNReturnCode.FractureLimitExceeded:
                                 DFNFractureLimitErrors++;
                                 break;
                             default:
@@ -1382,7 +1384,7 @@ namespace DFMGenerator_SharedCode
                             case PropagateDFNReturnCode.DrivingStressError:
                                 DFNStressErrors++;
                                 break;
-                            case PropagateDFNReturnCode.NewFractureLimitExceeded:
+                            case PropagateDFNReturnCode.FractureLimitExceeded:
                                 DFNFractureLimitErrors++;
                                 break;
                             default:

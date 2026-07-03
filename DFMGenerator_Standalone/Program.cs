@@ -322,9 +322,9 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value");
                 input_file.WriteLine("% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers");
                 input_file.WriteLine("MinimumLayerThickness 0");
-                input_file.WriteLine("% Maximum number of new fractures that can be generated per gridblock per timestep");
+                input_file.WriteLine("% Maximum number of fracture segments that can be generated per gridblock");
                 input_file.WriteLine("% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason");
-                input_file.WriteLine("MaximumNewFracturesPerTimestep 100000");
+                input_file.WriteLine("MaxNoFractureSegments 10000");
 
                 input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
                 input_file.WriteLine("% Set to 0 to disable probabilistic fracture nucleation");
@@ -374,7 +374,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Ratio of active to total unconfined fracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control");
                 input_file.WriteLine("Active_TotalUCRP30TerminationRatio -1");
                 input_file.WriteLine("% Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated");
-                input_file.WriteLine("MinimumUCFClearZoneVolume 0.1");
+                input_file.WriteLine("MinimumUCFClearZoneVolume 0.2");
                 input_file.WriteLine("% Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius");
                 input_file.WriteLine("% MinimumStaticUCRLength -1");
                 input_file.WriteLine("% Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration");
@@ -968,9 +968,9 @@ namespace DFMGenerator_Standalone
             // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value
             // Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
             double MinimumLayerThickness = 0;
-            // Maximum number of new fractures that can be generated per gridblock per timestep
+            // Maximum number of fracture segments that can be generated per gridblock
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaximumNewFracturesPerTimestep = 100;// 100000;
+            int MaxNoFractureSegments = 10000;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -1000,10 +1000,10 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 16;// 8;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 100;// -1;
+            double MinUnconfinedFractureRadius = 10;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 1000;// -1;
+            double MaxUnconfinedFractureRadius = 100;// -1;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -1019,15 +1019,15 @@ namespace DFMGenerator_Standalone
             // Ratio of active to total unconfined fracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
             double Active_TotalUCRP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double MinimumUCFClearZoneVolume = 0.1;
+            double MinimumUCFClearZoneVolume = 0.2;
             // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
             double MinimumStaticUCRLength = -1;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepUCFP33Increase = 0.01;
+            double MaxTimestepUCFP33Increase = 0.01;// 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
-            double Max_R_timestep_increase = double.NaN;// 0.2;// 0.05;//
+            double Max_R_timestep_increase = 0.2;// double.NaN;// 0.05;//
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
@@ -1049,7 +1049,7 @@ namespace DFMGenerator_Standalone
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
             double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-            double MinStressShadowDeactivationRatio = 0.5;
+            double MinStressShadowDeactivationRatio = 0.5;// 
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
             double MinIntersectionDeactivationRatio = 0.5;
 
@@ -1720,10 +1720,10 @@ namespace DFMGenerator_Standalone
                         case "MinimumLayerThickness":
                             MinimumLayerThickness = Convert.ToDouble(line_split[1]);
                             break;
-                        // Maximum number of new fractures that can be generated per gridblock per timestep
+                        // Maximum number of fracture segments that can be generated per gridblock
                         // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-                        case "MaximumNewFracturesPerTimestep":
-                            MaximumNewFracturesPerTimestep = Convert.ToInt32(line_split[1]);
+                        case "MaxNoFractureSegments":
+                            MaxNoFractureSegments = Convert.ToInt32(line_split[1]);
                             break;
                         // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
                         // Set to 0 to disable probabilistic fracture nucleation
@@ -3105,9 +3105,9 @@ namespace DFMGenerator_Standalone
                 }
             }
             // Set the DFN generation data
-            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
+            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 #if DEBUG_FRACS
-            Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
+            Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinDFNMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
 #endif
 
 #if DEBUG_FRACS

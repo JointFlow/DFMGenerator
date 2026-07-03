@@ -1513,9 +1513,9 @@ namespace DFMGenerator_Ocean
                     double MinimumLayerThickness = 0;
                     if (!double.IsNaN(arguments.Argument_MinimumLayerThickness))
                         MinimumLayerThickness = arguments.Argument_MinimumLayerThickness;
-                    // Maximum number of new fractures that can be generated per gridblock per timestep
+                    // Maximum number of fracture segments that can be generated per gridblock
                     // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-                    int MaximumNewFracturesPerTimestep = arguments.Argument_MaximumNewFracturesPerTimestep;
+                    int MaxNoFractureSegments = arguments.Argument_MaxNoFractureSegments;
                     // Flag to create triangular instead of quadrilateral macrofracture segments; will increase the total number of segments but generation algorithm may run faster
                     // If set to true, microfractures will comprise a series of coplanar triangles with vertices at the centre, rather than a single polygon
                     bool CreateTriangularFractureSegments = arguments.Argument_CreateTriangularFractureSegments;
@@ -2442,8 +2442,8 @@ namespace DFMGenerator_Ocean
                         explicitInputParams += "Do not link fractures across relay zones\n";
                     explicitInputParams += string.Format("Maximum bend across cell boundaries (Max Consistency Angle): {0}{1}\n", toProjectAzimuthUnits.Convert(arguments.Argument_MaxConsistencyAngle), AzimuthUnits);
                     explicitInputParams += string.Format("Minimum layer thickness cutoff: {0}{1}\n", toProjectLayerThicknessUnits.Convert(MinimumLayerThickness), LayerThicknessUnits);
-                    if (MaximumNewFracturesPerTimestep>0)
-                        explicitInputParams += string.Format("Maximum number of new fractures that can be generated per gridblock per timestep: {0}\n", MaximumNewFracturesPerTimestep);
+                    if (MaxNoFractureSegments>0)
+                        explicitInputParams += string.Format("Maximum number of new fractures that can be generated per gridblock per timestep: {0}\n", MaxNoFractureSegments);
                     if (CreateTriangularFractureSegments)
                         explicitInputParams += "Fractures represented by triangular segments\n";
                     if (ProbabilisticFractureNucleationLimit > 0)
@@ -5577,11 +5577,11 @@ namespace DFMGenerator_Ocean
                                     } // End loop through all gridblocks in the Fracture Grid
 
                             // Set the DFN generation data
-                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
+                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 
 #if DEBUG_FRAC_INPUT
                             PetrelLogger.InfoOutputWindow("");
-                            PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaximumNewFracturesPerTimestep, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
+                            PetrelLogger.InfoOutputWindow(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
 #endif
 
                             // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
@@ -8885,7 +8885,7 @@ namespace DFMGenerator_Ocean
             private bool argument_LinkParallelFractures = true;
             private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
-            private int argument_MaximumNewFracturesPerTimestep = 100;
+            private int argument_MaxNoFractureSegments = 10000;
             private bool argument_CreateTriangularFractureSegments = false;
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
             private bool argument_PropagateFracturesInNucleationOrder = true;
@@ -8901,7 +8901,7 @@ namespace DFMGenerator_Ocean
             private double argument_MaxUnconfinedFractureRadius = double.NaN;
             private double argument_Historic_UCFP32_TerminationRatio = double.NaN;
             private double argument_Active_UCRP30_TerminationRatio = double.NaN;
-            private double argument_Minimum_UCFClearZone_Volume = 0.1;
+            private double argument_Minimum_UCFClearZone_Volume = 0.2;
             private double argument_MinimumStaticUCRLength = double.NaN;
             private double argument_Max_TS_UCFP33_increase = 0.02;
             private double argument_Max_R_timestep_increase = double.NaN;
@@ -13781,11 +13781,11 @@ namespace DFMGenerator_Ocean
             }
             // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
 
-            [Description("Maximum number of new fractures that can be generated per gridblock per timestep", "Maximum number of new fractures that can be generated per gridblock per timestep; set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason")]
-            public int Argument_MaximumNewFracturesPerTimestep
+            [Description("Maximum number of fracture segments that can be generated per gridblock", "Maximum number of fracture segments that can be generated per gridblock per timestep; set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason")]
+            public int Argument_MaxNoFractureSegments
             {
-                internal get { return this.argument_MaximumNewFracturesPerTimestep; }
-                set { this.argument_MaximumNewFracturesPerTimestep = value; }
+                internal get { return this.argument_MaxNoFractureSegments; }
+                set { this.argument_MaxNoFractureSegments = value; }
             }
 
             [OptionalInWorkflow]
@@ -14147,7 +14147,7 @@ namespace DFMGenerator_Ocean
                 argument_LinkParallelFractures = true;
                 argument_MaxConsistencyAngle = Math.PI / 4;
                 argument_MinimumLayerThickness = 1;
-                argument_MaximumNewFracturesPerTimestep = 100;
+                argument_MaxNoFractureSegments = 10000;
                 argument_CreateTriangularFractureSegments = false;
                 argument_ProbabilisticFractureNucleationLimit = double.NaN;
                 argument_PropagateFracturesInNucleationOrder = true;
@@ -14163,7 +14163,7 @@ namespace DFMGenerator_Ocean
                 argument_MaxUnconfinedFractureRadius = double.NaN;
                 argument_Historic_UCFP32_TerminationRatio = double.NaN;
                 argument_Active_UCRP30_TerminationRatio = double.NaN;
-                argument_Minimum_UCFClearZone_Volume = 0.1;
+                argument_Minimum_UCFClearZone_Volume = 0.2;
                 argument_MinimumStaticUCRLength = double.NaN;
                 argument_Max_TS_UCFP33_increase = 0.02;
                 argument_Max_R_timestep_increase = double.NaN;

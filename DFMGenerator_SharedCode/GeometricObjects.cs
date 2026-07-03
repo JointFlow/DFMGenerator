@@ -196,6 +196,19 @@ namespace DFMGenerator_SharedCode
                 return Math.PI - directDifference;
         }
         /// <summary>
+        /// Return the distance between two points
+        /// </summary>
+        /// <param name="Point1">First point</param>
+        /// <param name="Point2">Second point</param>
+        /// <returns>Distance between the two specified points</returns>
+        public static double getDistance(PointXYZ Point1, PointXYZ Point2)
+        {
+            double dX = Point2.X - Point1.X;
+            double dY = Point2.Y - Point1.Y;
+            double dZ = Point2.Z - Point1.Z;
+            return Math.Sqrt((dX * dX) + (dY * dY) + (dZ * dZ));
+        }
+        /// <summary>
         /// Find the midpoint between two specified points
         /// </summary>
         /// <param name="Point1">First point</param>
@@ -460,23 +473,61 @@ namespace DFMGenerator_SharedCode
             return returnPoint;
         }
         /// <summary>
-        /// Calculate the relative position of the intersection point between a vector and a plane defined by three points
+        /// Calculate the intersection point between a line and a specified plane
         /// </summary>
-        /// <param name="InitialPoint">Start point of the vector</param>
-        /// <param name="Vector">Vector</param>
+        /// <param name="InitialPoint">Start point of the line</param>
+        /// <param name="LineVector">Line vector</param>
+        /// <param name="PlaneToIntersect">PlaneXYZ object representing the plane to be intersected</param>
+        /// <param name="IntersectionDistance">Reference to return the distance between the start point of the line and the intersection point; returns zero if the start point of the line is on the plane, returns +/-Infinity if the line is parallel to the plane, and returns NaN if the line is parallel to and lies on the plane</param>
+        /// <returns>The intersection point between the specified line and the specified plane, as a PointXYZ object; returns null if the line is parallel to the plane</returns>
+        public static PointXYZ getIntersectionPoint(PointXYZ InitialPoint, VectorXYZ LineVector, PlaneXYZ PlaneToIntersect, out double IntersectionDistance)
+        {
+            // Normalise the line vector, so the ratio of the intersection distance to the line vector will give the true intersection distance 
+            VectorXYZ normalisedLineVector = LineVector.GetNormalisedVector();
+            // Convert the start point of the line and the point on the plane to vectors, so we can perform vector operations on them
+            VectorXYZ initialPoint = VectorXYZ.GetPointVector(InitialPoint);
+            VectorXYZ pointOnPlane = VectorXYZ.GetPointVector(PlaneToIntersect.PointOnPlane);
+            VectorXYZ NormalToPlane = PlaneToIntersect.NormalVector;
+
+            // Calculate the intersection distance
+            IntersectionDistance = ((pointOnPlane & NormalToPlane) - (initialPoint & NormalToPlane)) / (normalisedLineVector & NormalToPlane);
+
+            // If the intersection distance is +/-Infinity, the line is parallel to the plane, so return null for the intersection point
+            if (double.IsInfinity(IntersectionDistance))
+                return null;
+            // If the intersection distance is NaN, the line is parallel to and lies on the plane, so return null
+            else if (double.IsNaN(IntersectionDistance))
+                return null;
+            // Otherwise calculate the intersection point from the initial point, the line vector and the intersection distance
+            else
+            {
+                PointXYZ intersectionPoint = new PointXYZ(InitialPoint);
+                intersectionPoint.AddVector(IntersectionDistance * normalisedLineVector);
+                return intersectionPoint;
+            }
+        }
+        /// <summary>
+        /// Calculate the intersection point between a line and a plane defined by three points
+        /// NB You should generally use the getIntersectionPoint(PointXYZ, VectorXYZ, PlaneXYZ, out double) function unless it is important whether the intersection point lies within the defined triangle, as that version of the function is more efficient
+        /// </summary>
+        /// <param name="InitialPoint">Start point of the line</param>
+        /// <param name="LineVector">Line vector</param>
         /// <param name="PlanePoint1">Point 1 defining the plane to intersect</param>
         /// <param name="PlanePoint2">Point 2 defining the plane to intersect</param>
         /// <param name="PlanePoint3">Point 3 defining the plane to intersect</param>
-        /// <param name="XOType">Controls calculation: Extend will return the location of intersection wherever it occurs on the plane; Restrict will only return the location of intersection if it lies within the triangle defined by the three plane points, otherwise it will return NaN</param>
-        /// <returns>Distance from the start point of the vector to the intersection with the plane, along the line of the propagation vector</returns>
-        public static double getIntersectionDistance(PointXYZ InitialPoint, VectorXYZ Vector, PointXYZ PlanePoint1, PointXYZ PlanePoint2, PointXYZ PlanePoint3, CrossoverType XOType)
+        /// <param name="XOType">Controls calculation: Extend will return the location of intersection wherever it occurs on the plane; Trim will return a location on the boundary of the triangle defined by the three plane points if the location of intersection lies outside this triangle; Restrict will only return the location of intersection if it lies within the triangle defined by the three plane points, otherwise it will return NaN</param>
+        /// <returns>Distance from the start point of the line to the intersection with the plane</returns>
+        public static PointXYZ getIntersectionPoint(PointXYZ InitialPoint, VectorXYZ LineVector, PointXYZ PlanePoint1, PointXYZ PlanePoint2, PointXYZ PlanePoint3, CrossoverType XOType, out double IntersectionDistance)
         {
-            VectorXYZ lineVector = Vector.GetNormalisedVector();
+            // Normalise the line vector, so the ratio of the intersection distance to the line vector will give the true intersection distance 
+            VectorXYZ normalisedLineVector = LineVector.GetNormalisedVector();
+            // Get the components of the normalised line vector
+            double LX = normalisedLineVector.Component(VectorComponents.X);
+            double LY = normalisedLineVector.Component(VectorComponents.Y);
+            double LZ = normalisedLineVector.Component(VectorComponents.Z);
 
-            double LX = lineVector.Component(VectorComponents.X);
-            double LY = lineVector.Component(VectorComponents.Y);
-            double LZ = lineVector.Component(VectorComponents.Z);
-
+            // Calculate the intersection point in terms of the vectors defined by the three points on the plane
+            // The intersection point will be given by (alpha * Point1) + (beta * Point2) + ((1 - alpha - beta) * Point3)
             double axy = (LY * (PlanePoint1.X - PlanePoint3.X)) - (LX * (PlanePoint1.Y - PlanePoint3.Y));
             double ayz = (LZ * (PlanePoint1.Y - PlanePoint3.Y)) - (LY * (PlanePoint1.Z - PlanePoint3.Z));
             double azx = (LX * (PlanePoint1.Z - PlanePoint3.Z)) - (LZ * (PlanePoint1.X - PlanePoint3.X));
@@ -507,25 +558,53 @@ namespace DFMGenerator_SharedCode
                 beta = ((czx * axy) - (cxy * azx)) / alphabeta_denominator_zxxy;
             }
 
-            // If alpha, beta or alpha + beta lie outside the range 0 to 1, the intersection point will not lie within a triangle defiend by the three specified points
-            // If the crossover type restrict is selected, in this case we should return NaN
+            // If alpha, beta or alpha + beta lie outside the range 0 to 1, the intersection point will not lie within a triangle deifend by the three specified points
+            // If the crossover type Restrict is selected, in this case we should set the intersection distance to NaN and return null
             if (XOType == CrossoverType.Restrict)
             {
-                if ((alpha < 0) || (alpha > 1) || (beta < 0) || (beta > 1) || (alpha + beta > 1))
-                    return double.NaN;
+                if ((alpha < 0) || (beta < 0) || (alpha + beta > 1))
+                {
+                    IntersectionDistance = double.NaN;
+                    return null;
+                }
+            }
+            // If the crossover type Trim is selected, in this case we should modify alpha and/or beta so the intersection point lies on the boundary of the triangle
+            else if (XOType == CrossoverType.Trim)
+            {
+                if (alpha < 0)
+                    alpha = 0;
+                if (beta < 0)
+                    beta = 0;
+                double alphabeta = alpha + beta;
+                if (alphabeta > 1)
+                {
+                    alpha /= alphabeta;
+                    beta /= alphabeta;
+                }
             }
 
-            // Otherwise we can calculate the distance from the initial point to the intersection point as a multiple of the propagation vector
+            // Now we can calculate the distance from the initial point to the intersection point
             // First we will select the most advantageous coordinate to use
-            double gamma;
             if ((Math.Abs(LX) > Math.Abs(LY)) && (Math.Abs(LX) > Math.Abs(LZ)))
-                gamma = ((alpha * (PlanePoint1.X - PlanePoint3.X)) + (beta * (PlanePoint2.X - PlanePoint3.X)) + (PlanePoint3.X - InitialPoint.X)) / LX;
+                IntersectionDistance = ((alpha * (PlanePoint1.X - PlanePoint3.X)) + (beta * (PlanePoint2.X - PlanePoint3.X)) + (PlanePoint3.X - InitialPoint.X)) / LX;
             else if (Math.Abs(LY) > Math.Abs(LZ))
-                gamma = ((alpha * (PlanePoint1.Y - PlanePoint3.Y)) + (beta * (PlanePoint2.Y - PlanePoint3.Y)) + (PlanePoint3.Y - InitialPoint.Y)) / LY;
+                IntersectionDistance = ((alpha * (PlanePoint1.Y - PlanePoint3.Y)) + (beta * (PlanePoint2.Y - PlanePoint3.Y)) + (PlanePoint3.Y - InitialPoint.Y)) / LY;
             else
-                gamma = ((alpha * (PlanePoint1.Z - PlanePoint3.Z)) + (beta * (PlanePoint2.Z - PlanePoint3.Z)) + (PlanePoint3.Z - InitialPoint.Z)) / LZ;
+                IntersectionDistance = ((alpha * (PlanePoint1.Z - PlanePoint3.Z)) + (beta * (PlanePoint2.Z - PlanePoint3.Z)) + (PlanePoint3.Z - InitialPoint.Z)) / LZ;
 
-            return gamma;
+            // If the intersection distance is +/-Infinity, the line is parallel to the plane, so return null for the intersection point
+            if (double.IsInfinity(IntersectionDistance))
+                return null;
+            // If the intersection distance is NaN, the line is parallel to and lies on the plane, so return null
+            else if (double.IsNaN(IntersectionDistance))
+                return null;
+            // Otherwise calculate the intersection point from the initial point, the line vector and the intersection distance
+            else
+            {
+                PointXYZ intersectionPoint = new PointXYZ(InitialPoint);
+                intersectionPoint.AddVector(IntersectionDistance * normalisedLineVector);
+                return intersectionPoint;
+            }
         }
         /// <summary>
         /// Check if two points have the same coordinates
@@ -595,7 +674,104 @@ namespace DFMGenerator_SharedCode
     }
 
     /// <summary>
-    /// Vector specified a global 3D Cartesian reference frame (i.e. X, Y, Z)
+    /// Plane with coordinates specified in the global reference frame of the grid (i.e. XYZ coordinates)
+    /// </summary>
+    class PlaneXYZ
+    {
+        // The plane is defined as a normal vector and a single point
+        /// <summary>
+        /// A point lying on the plane
+        /// </summary>
+        public PointXYZ PointOnPlane { get; private set; }
+        /// <summary>
+        /// The unit length normal vector to the plane
+        /// </summary>
+        public VectorXYZ NormalVector { get; private set; }
+        /// <summary>
+        /// The shortest distance from the origin to the plane
+        /// </summary>
+        public double DistanceFromOrigin { get { return (VectorXYZ.GetPointVector(PointOnPlane) & NormalVector); } }
+
+        // Geometric functions
+        /// <summary>
+        /// Check if a specified point lies on the plane
+        /// </summary>
+        /// <param name="PointToCheck">PointXYZ object representing the point to check</param>
+        /// <returns>True if the specified point lies on the plane, otherwise false</returns>
+        public bool IsPointOnPlane(PointXYZ PointToCheck)
+        {
+            return ((float)(VectorXYZ.GetPointVector(PointToCheck) & NormalVector) == (float)DistanceFromOrigin);
+        }
+        /// <summary>
+        /// Check if a specified vector is parallel to the plane
+        /// </summary>
+        /// <param name="VectorToCheck">VectorXYZ object representing the vector to check</param>
+        /// <returns>True if the specified vector is parallel to the plane, otherwise false</returns>
+        public bool IsVectorParallelToPlane(VectorXYZ VectorToCheck)
+        {
+            return ((float)(VectorToCheck & NormalVector) == 0f);
+        }
+
+        // Constructors
+        /// <summary>
+        /// Constructor to create a new plane from a specified point and normal vector
+        /// </summary>
+        /// <param name="pointOnPlane_in">PointXYZ object representing a point lying on the plane</param>
+        /// <param name="normalVector_in">VectorXYZ object representing a vector normal to the plane; this will be normalised if it is not already unit length</param>
+        public PlaneXYZ(PointXYZ pointOnPlane_in, VectorXYZ normalVector_in)
+        {
+            PointOnPlane = new PointXYZ(pointOnPlane_in);
+            NormalVector = normalVector_in.GetNormalisedVector();
+        }
+        /// <summary>
+        /// Constructor to create a new plane from three points
+        /// </summary>
+        /// <param name="point1">PointXYZ object representing the first point on the plane</param>
+        /// <param name="point2">PointXYZ object representing the second point on the plane</param>
+        /// <param name="point3">PointXYZ object representing the third point on the plane</param>
+        public PlaneXYZ(PointXYZ point1, PointXYZ point2, PointXYZ point3)
+        {
+            // Use the specified point 1 as the point on the plane
+            PointOnPlane = new PointXYZ(point1);
+
+            // Multiply the vectors between point1, point 2 and point 3 to generate a vector perpendicular to the plane
+            VectorXYZ vector1 = new VectorXYZ(point1, point2);
+            VectorXYZ vector2 = new VectorXYZ(point1, point3);
+            NormalVector = (vector1 * vector2).GetNormalisedVector();
+        }
+        /// <summary>
+        /// Constructor to create a new plane from four points; if these are not coplanar, the best fit plane will be obtained
+        /// </summary>
+        /// <param name="point1">PointXYZ object representing the first point</param>
+        /// <param name="point2">PointXYZ object representing the second point</param>
+        /// <param name="point3">PointXYZ object representing the third point</param>
+        /// <param name="point4">PointXYZ object representing the fourth point</param>
+        public PlaneXYZ(PointXYZ point1, PointXYZ point2, PointXYZ point3, PointXYZ point4)
+        {
+            // Get the midpoint of the four specified points
+            PointOnPlane = PointXYZ.getCentroid(new List<PointXYZ>() { point1, point2, point3, point4 });
+
+            // Get the mean of the vectors normal to each triplet of three points
+            VectorXYZ vectorA = new VectorXYZ(point1, point2);
+            VectorXYZ vectorB = new VectorXYZ(point2, point3);
+            VectorXYZ vectorC = new VectorXYZ(point3, point4);
+            VectorXYZ vectorD = new VectorXYZ(point4, point1);
+            VectorXYZ combinedVector = (vectorD * vectorA) + (vectorA * vectorB) + (vectorB * vectorC) + (vectorC * vectorD);
+            NormalVector = combinedVector.GetNormalisedVector();
+        }
+        /// <summary>
+        /// Constructor to create a copy of an existing plane 
+        /// </summary>
+        /// <param name="plane_in">PlaneXYZ object to copy</param>
+        public PlaneXYZ(PlaneXYZ plane_in)
+        {
+            PointOnPlane = new PointXYZ(plane_in.PointOnPlane);
+            NormalVector = new VectorXYZ(plane_in.NormalVector);
+        }
+    }
+
+    /// <summary>
+    /// Vector specified in the global 3D Cartesian reference frame (i.e. X, Y, Z)
     /// </summary>
     class VectorXYZ
     {
@@ -944,6 +1120,15 @@ namespace DFMGenerator_SharedCode
                 return 1;
             else
                 return output;
+        }
+        /// <summary>
+        /// Return a vector representing the position of a specified point
+        /// </summary>
+        /// <param name="point">Specified point</param>
+        /// <returns>Vector connecting the origin to the specified point</returns>
+        public static VectorXYZ GetPointVector(PointXYZ point)
+        {
+            return new VectorXYZ(point.X, point.Y, point.Z);
         }
         /// <summary>
         /// Return a unit length vector with the specified orientation
