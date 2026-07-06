@@ -2167,8 +2167,8 @@ namespace DFMGenerator_SharedCode
 
                     // Calculate the total stress shadow volume of set I and the mean stress shadow width of a set I fracture, as seen by fracture set K
                     // To do this we will need to loop through each dip set in fracture set I, calculating the stress shadow volume of each
-                    double inverseStressShadowVolumeIK;
-                    double ClearZoneVolume_IK = ufsI.getStressShadowClearZoneVolume(ufsK.MinimumFractureRadius, ufsK.MinimumFractureRadius, UCFW_IK, true, out inverseStressShadowVolumeIK);
+                    double inverseStressShadowVolumeIK = 1 - (UCFW_IK * ufsI.getStressShadowVolume());
+                    double ClearZoneVolume_IK = ufsI.getStressShadowClearZoneVolume(ufsK.MinimumFractureRadius, ufsK.MinimumFractureRadius, UCFW_IK);
                     inverseStressShadowVolumeK *= inverseStressShadowVolumeIK;
                     clearZoneVolumeK *= ClearZoneVolume_IK;
                 }

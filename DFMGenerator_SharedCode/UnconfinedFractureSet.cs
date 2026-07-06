@@ -2103,10 +2103,8 @@ namespace DFMGenerator_SharedCode
         /// <param name="dtc_rayLength">Length of the specified fracture rays</param>
         /// <param name="dtc_effectiveRaylength">Effective length of the specified fracture rays</param>
         /// <param name="stressShadowWidthMultiplier">Multiplier to take account of cross fault set stress shadows</param>
-        /// <param name="ignoreCutoffForStressShadows">Flag to ignore minimum stress shadow deactivation radius when calculating stress shadow volume; if true, stress shadow volume will be calculated for all fractures, but the minimum radius cutoff will still be applied when calculating outer exclusion zone volume</param>
-        /// <param name="InverseStressShadowVolume">Reference variable to return the inverse stress shadow volume as well, if this is required</param>
         /// <returns>Clear zone volume seen by rays represented by a specified datapoint; this is the volume in which the centre of the specified fracture could be placed without its stress shadow overlapping the stress shadow of any other fractures</returns>
-        public double getStressShadowClearZoneVolume(double dtc_rayLength, double dtc_effectiveRaylength, double stressShadowWidthMultiplier, bool ignoreCutoffForStressShadows, out double InverseStressShadowVolume)
+        public double getStressShadowClearZoneVolume(double dtc_rayLength, double dtc_effectiveRaylength, double stressShadowWidthMultiplier)
         {
             // Cache the ray length, stress shadow width and minimum stress shadow deactivation radius of the specified datapoint locally
             double minStressShadowDeactivationRadius = MinimumStressShadowDeactivationRatio(dtc_effectiveRaylength);
@@ -2132,18 +2130,20 @@ namespace DFMGenerator_SharedCode
                     exclusiveOuterExclusionZoneVolume += (datapoint.dP33ShellFactor(dtc_rayLength, dtc_stressShadowHalfWidth) * (4d / 3d) * Math.PI / (double)RaysPerFracture);
                 }
             }
-            // If we are using all stress shadows, set the stress shadow volume to include all datapoints
-            if (ignoreCutoffForStressShadows)
-                stressShadowVolume = Fractures.StressShadowVolume_total;
 
-            // Calculate the inverse stress shadow volume, and the clear zone volume taking into account overlap of the outer shells, and also taking into account the multiplier for cross fault set stress shadows
+            // Calculate the total exclusion zone volume, applying the multiplier for cross fault set stress shadows
             // The multiplier for cross fault set stress shadows is applied only to the stress shadow volume, not to the outer exclusion zone volume
             // This is because the outer exclusion zone volume represents the stress shadow around the fracture being tested, not around a fracture from a different set
-            // NB This will not be exact as the multiplier for cross fault set stress shadows (assuming it is < 1) will mean that some of the outer exclusion zone volume lies within the stress shadow volume so cannot overlap
-            InverseStressShadowVolume = 1 - (stressShadowVolume * stressShadowWidthMultiplier);
-            if (InverseStressShadowVolume < 0)
-                InverseStressShadowVolume = 0;
-            double clearZoneVolume = InverseStressShadowVolume * Math.Exp(-exclusiveOuterExclusionZoneVolume);
+            double totalExclusiveExclusionZoneVolume = exclusiveOuterExclusionZoneVolume + (stressShadowVolume * stressShadowWidthMultiplier);
+
+            // Calculate the clear zone volume taking into account overlap of the outer shells, and also taking into account the multiplier for cross fault set stress shadows
+            // If the total exclusion zone volume ignoring overlap is less than the stress shadow volume ignoring the cross fault set multiplier, there will be no overlap
+            // Otherwise, the part of the exclusion zone lying outside the stress shadows without the cross fault set multiplier can overlap
+            double clearZoneVolume;
+            if (totalExclusiveExclusionZoneVolume <= stressShadowVolume)
+                clearZoneVolume = 1 - totalExclusiveExclusionZoneVolume;
+            else
+                clearZoneVolume = (1 - stressShadowVolume) * Math.Exp(-(totalExclusiveExclusionZoneVolume - stressShadowVolume));
 
             // Return the clear zone volume
             return clearZoneVolume;
@@ -3603,8 +3603,8 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public void setFractureExclusionZoneData()
         {
-            double theta;
-            double theta_dashed = getStressShadowClearZoneVolume(MinimumFractureRadius, MinimumFractureRadius, 1, true, out theta);
+            double theta = 1 - Fractures.StressShadowVolume_total;
+            double theta_dashed = getStressShadowClearZoneVolume(MinimumFractureRadius, MinimumFractureRadius, 1);
             CurrentFractureData.SetFractureExclusionZoneData(theta, theta_dashed);
         }
         /// <summary>
@@ -3912,10 +3912,10 @@ namespace DFMGenerator_SharedCode
                 double fractureEffectiveRadius = UCF.MeanRayLength;
 
                 // Determine whether the point of intersection of the fracture axis vector and the plane of the ray stress shadow lies within the fracture stress shadow
-                // If it does not, the stress shadows do not interact and we can move on to the next fracture
+                // If it does not, or if it is not possible to calculate an intersection point, the stress shadows do not interact and we can move on to the next fracture
                 double distanceToAxisIntersection;
                 PointXYZ axis_rayStressShadow_intersection = PointXYZ.getIntersectionPoint(fractureCentrepoint, segmentAxis, propatingSegmentStressShadowPlane, out distanceToAxisIntersection);
-                if (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius)
+                if ((axis_rayStressShadow_intersection is null) || (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius))
                     continue;
 
                 // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +/-90degrees) of the propagation direction
@@ -3947,7 +3947,7 @@ namespace DFMGenerator_SharedCode
                 double intersectionToRayOriginZ = axis_rayStressShadow_intersection.Z - projectedRayOrigin.Z;
                 double frxy_factor = Math.Abs((fx * ry) - (fy * rx));
                 double fryz_factor = Math.Abs((fy * rz) - (fz * ry));
-                double frzx_factor = Math.Abs((fy * rx) - (fx * rz));
+                double frzx_factor = Math.Abs((fz * rx) - (fx * rz));
                 // Find the best set of axes to calculate the distance from the ray origin to the intersection point, taking into account the squashing of the ray circle
                 double adjustedIntersectionPointDistanceFromRayOrigin;
                 if ((frxy_factor > fryz_factor) && (frxy_factor > frzx_factor))

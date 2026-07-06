@@ -8885,7 +8885,7 @@ namespace DFMGenerator_Ocean
             private bool argument_LinkParallelFractures = true;
             private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
-            private int argument_MaxNoFractureSegments = 10000;
+            private int argument_MaxNoFractureSegments = 1000;
             private bool argument_CreateTriangularFractureSegments = false;
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
             private bool argument_PropagateFracturesInNucleationOrder = true;
@@ -14147,7 +14147,7 @@ namespace DFMGenerator_Ocean
                 argument_LinkParallelFractures = true;
                 argument_MaxConsistencyAngle = Math.PI / 4;
                 argument_MinimumLayerThickness = 1;
-                argument_MaxNoFractureSegments = 10000;
+                argument_MaxNoFractureSegments = 1000;
                 argument_CreateTriangularFractureSegments = false;
                 argument_ProbabilisticFractureNucleationLimit = double.NaN;
                 argument_PropagateFracturesInNucleationOrder = true;

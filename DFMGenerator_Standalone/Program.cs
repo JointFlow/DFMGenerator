@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-//#define READINPUTFROMFILE
+#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -324,7 +324,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("MinimumLayerThickness 0");
                 input_file.WriteLine("% Maximum number of fracture segments that can be generated per gridblock");
                 input_file.WriteLine("% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason");
-                input_file.WriteLine("MaxNoFractureSegments 10000");
+                input_file.WriteLine("MaxNoFractureSegments 1000");
 
                 input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
                 input_file.WriteLine("% Set to 0 to disable probabilistic fracture nucleation");
@@ -379,7 +379,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% MinimumStaticUCRLength -1");
                 input_file.WriteLine("% Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration");
                 input_file.WriteLine("% Increase this to run calculation faster, with fewer but longer timesteps");
-                input_file.WriteLine("MaxTimestepUCFP33Increase 0.02");
+                input_file.WriteLine("MaxTimestepUCFP33Increase 0.005");
                 input_file.WriteLine("% Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)");
                 input_file.WriteLine("% Set to -1 for no limit");
                 input_file.WriteLine("Max_R_timestep_increase -1");
@@ -970,7 +970,7 @@ namespace DFMGenerator_Standalone
             double MinimumLayerThickness = 0;
             // Maximum number of fracture segments that can be generated per gridblock
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaxNoFractureSegments = 100;
+            int MaxNoFractureSegments = 1000;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -1003,7 +1003,7 @@ namespace DFMGenerator_Standalone
             double MinUnconfinedFractureRadius = 10;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 100;// -1;
+            double MaxUnconfinedFractureRadius = 1000;// -1;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -1024,7 +1024,7 @@ namespace DFMGenerator_Standalone
             double MinimumStaticUCRLength = -1;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
             // Increase this to run calculation faster, with fewer but longer timesteps
-            double MaxTimestepUCFP33Increase = 0.01;// 0.01;
+            double MaxTimestepUCFP33Increase = 0.005;// 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
             double Max_R_timestep_increase = 0.2;// double.NaN;// 0.05;//
@@ -1049,7 +1049,7 @@ namespace DFMGenerator_Standalone
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
             double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
-            double MinStressShadowDeactivationRatio = 0.5;// 
+            double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
             double MinIntersectionDeactivationRatio = 0.5;
 
