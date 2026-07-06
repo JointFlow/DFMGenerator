@@ -1927,49 +1927,54 @@ namespace DFMGenerator_SharedCode
             De_ee_Ratio = CurrentFractureData.Displacement_Strain_Ratio;
         }
         /// <summary>
-        /// Return the current ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J; i.e. DI.eJ / DJ.eJ
-        /// UCFW_IJ * W_J gives the width of stress shadows around a set I fracture as seen by a set J fracture
+        /// Return the current ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J; i.e. (DI.eI * eJ.eJ) / (DJ.eJ * eI.eI)
+        /// UCFW_IJ * W_I gives the width of stress shadows around a set I fracture as seen by a set J fracture
         /// </summary>
         /// <param name="J">Reference to unconfined fracture set J</param>
-        /// <returns>The ratio DI.eJ / DJ.eJ, or 0 if DJ.eJ is zero (i.e. the applied strain on J is 0)</returns>
+        /// <returns>The ratio (DI.eI * eJ.eJ) / (DJ.eJ * eI.eI), or 0 if DJ.eJ or eI.eI are zero (i.e. the applied strain on J is 0)</returns>
         public double getUFSW_IJ(UnconfinedFractureSet J)
         {
-            // Get the displacement increment and applied stress increment on fracture set J
+            // Get the displacement increment and applied stress increment on fracture sets I and J
+            VectorXYZ displacementIncrement_I = CurrentFractureData.IncrementalDisplacement_M;
+            VectorXYZ strainOnFractureI = CurrentFractureData.IncrementalStrainOnFracture_M;
             VectorXYZ displacementIncrement_J = J.CurrentFractureData.IncrementalDisplacement_M;
             VectorXYZ strainOnFractureJ = J.CurrentFractureData.IncrementalStrainOnFracture_M;
 
-            // Calculate DIeJ and DJeJ
-            double DIeJ = CurrentFractureData.IncrementalDisplacement_M & strainOnFractureJ;
+            // Calculate DI.eI, DJ.eJ, eI.eI and eJ.eJ
+            double DIeI = displacementIncrement_I & strainOnFractureI;
             double DJeJ = displacementIncrement_J & strainOnFractureJ;
+            double eIeI = strainOnFractureI & strainOnFractureI;
+            double eJeJ = strainOnFractureJ & strainOnFractureJ;
 
-            if (DJeJ > 0)
-                return Math.Abs(DIeJ / DJeJ);
+            if ((DJeJ * eIeI) > 0)
+                return Math.Abs((DIeI * eJeJ) / (DJeJ * eIeI));
             else
                 return 0;
         }
         /// <summary>
-        /// Return the ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J, in a specified timestep M; i.e. DI.eJ / DJ.eJ
+        /// Return the ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J, in a specified timestep M; i.e. (DI.eI * eJ.eJ) / (DJ.eJ * eI.eI)
         /// </summary>
         /// <param name="J">Reference to unconfined fracture set J</param>
         /// <param name="Timestep_M">Index number of the specified timestep; set to -1 to use the current timestep in the explicit fracture calculation</param>
-        /// <returns>The ratio DI.eJ / DJ.eJ, or 0 if DJ.eJ is zero (i.e. the applied strain on J is 0)</returns>
+        /// <returns>The ratio (DI.eI * eJ.eJ) / (DJ.eJ * eI.eI), or 0 if DJ.eJ or eI.eI are zero (i.e. the applied strain on J is 0)</returns>
         public double getUFSW_IJ(UnconfinedFractureSet J, int Timestep_M)
         {
             if (Timestep_M < 0) Timestep_M = gbc.CurrentExplicitTimestep;
 
-            // Get the displacement increment and applied stress increment on fracture set J in timestep M
+            // Get the displacement increment and applied stress increment on fracture sets I and J in timestep M
+            VectorXYZ displacementIncrement_I = PreviousFractureData.getIncrementalDisplacement_M(Timestep_M);
+            VectorXYZ strainOnFractureI = PreviousFractureData.getIncrementalStrainOnFracture_M(Timestep_M);
             VectorXYZ displacementIncrement_J = J.PreviousFractureData.getIncrementalDisplacement_M(Timestep_M);
             VectorXYZ strainOnFractureJ = J.PreviousFractureData.getIncrementalStrainOnFracture_M(Timestep_M);
 
-            // Get the displacement increment on this fracture set I in timestep M
-            VectorXYZ displacementIncrement_I = PreviousFractureData.getIncrementalDisplacement_M(Timestep_M);
-
-            // Calculate DIeJ and DJeJ
-            double DIeJ = displacementIncrement_I & strainOnFractureJ;
+            // Calculate DI.eI, DJ.eJ, eI.eI and eJ.eJ
+            double DIeI = displacementIncrement_I & strainOnFractureI;
             double DJeJ = displacementIncrement_J & strainOnFractureJ;
+            double eIeI = strainOnFractureI & strainOnFractureI;
+            double eJeJ = strainOnFractureJ & strainOnFractureJ;
 
-            if (DJeJ > 0)
-                return Math.Abs(DIeJ / DJeJ);
+            if ((DJeJ * eIeI) > 0)
+                return Math.Abs((DIeI * eJeJ) / (DJeJ * eIeI));
             else
                 return 0;
         }

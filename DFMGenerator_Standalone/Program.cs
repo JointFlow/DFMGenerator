@@ -970,7 +970,7 @@ namespace DFMGenerator_Standalone
             double MinimumLayerThickness = 0;
             // Maximum number of fracture segments that can be generated per gridblock
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaxNoFractureSegments = 10000;
+            int MaxNoFractureSegments = 100;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)

@@ -7504,7 +7504,6 @@ namespace DFMGenerator_SharedCode
                     if (gd.checkLargeUCFStressShadowInteraction(UCRSegment, ufs, this, ref maxPropLength, 1, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
                 }
 
-
             } // End check if the segment will interact with another unconfined fracture stress shadow
 
             // Check the maximum propagation length is not negative (this can happen if the propagating node is already outside the gridblock)
