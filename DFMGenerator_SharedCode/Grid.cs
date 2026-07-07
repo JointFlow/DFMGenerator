@@ -47,6 +47,91 @@ namespace DFMGenerator_SharedCode
         {
             return Gridblocks[ColNo, RowNo, LayerNo];
         }
+        /// <summary>
+        /// Get the total number of rows in the grid
+        /// </summary>
+        /// <returns>Number of rows in the Gridblocks array</returns>
+        public int NoRows() { return Gridblocks.Count; }
+        /// <summary>
+        /// Get the total number of columns in the grid
+        /// </summary>
+        /// <returns>Number of columns in the largest row in the Gridblocks array</returns>
+        public int NoCols() { int NoCols = 0; foreach (List<GridblockConfiguration> row in Gridblocks) if (NoCols < row.Count) NoCols = row.Count; return NoCols; }
+        /// <summary>
+        /// Get the total number of gridblocks in the grid
+        /// </summary>
+        /// <returns>Number of gridblocks in the Gridblocks array</returns>
+        public int NoGridblocks() { int NoGridblocks = 0; foreach (List<GridblockConfiguration> row in Gridblocks) NoGridblocks += row.Count; return NoGridblocks; }
+        /// <summary>
+        /// Return a representative gridblock - i.e. one that contains the maximum number of fracture sets
+        /// Will also return the number of fracture sets and dipsets
+        /// </summary>
+        /// <param name="NoFractureSets">Reference variable for the maximum number of fracture sets in any gridblock in the grid</param>
+        /// <param name="NoDipsets">Reference variable for the maximum number of dipsets in any fracture set in any gridblock in the grid</param>
+        /// <returns>Reference to the first gridblock object encountered that contains the maximum number of fracture sets and dipsets</returns>
+        public GridblockConfiguration GetRepresentativeGridblock(out int NoFractureSets, out int NoDipsets)
+        {
+            GridblockConfiguration output = null;
+            NoFractureSets = 0;
+            NoDipsets = 0;
+            foreach (List<GridblockConfiguration> row in Gridblocks)
+                foreach (GridblockConfiguration gbc in row)
+                {
+                    if (gbc is null)
+                        continue;
+                    if (NoFractureSets < gbc.NoFractureSets)
+                    {
+                        NoFractureSets = gbc.NoFractureSets;
+                        foreach (Gridblock_FractureSet fs in gbc.FractureSets)
+                            if (NoDipsets < fs.FractureDipSets.Count)
+                                NoDipsets = fs.FractureDipSets.Count;
+                        output = gbc;
+                    }
+                }
+            return output;
+        }
+        /// <summary>
+        /// Point representing the grid origin, with the minimum X, Y and Z values of all corners of the grid
+        /// </summary>
+        /// <returns>PointXYZ object representing the grid origin</returns>
+        public PointXYZ GetGridOrigin()
+        {
+            double MinX = double.PositiveInfinity;
+            double MinY = double.PositiveInfinity;
+            double MinZ = double.PositiveInfinity;
+            foreach (List<GridblockConfiguration> row in Gridblocks)
+                foreach (GridblockConfiguration gbc in row)
+                {
+                    if (gbc is null)
+                        continue;
+                    PointXYZ gbc_origin = gbc.Gridblock_Origin;
+                    if (MinX > gbc_origin.X) MinX = gbc_origin.X;
+                    if (MinY > gbc_origin.Y) MinY = gbc_origin.Y;
+                    if (MinZ > gbc_origin.Z) MinZ = gbc_origin.Z;
+                }
+            return new PointXYZ(MinX, MinY, MinZ);
+        }
+        /// <summary>
+        /// Point representing the grid maximum, with the maximum X, Y and Z values of all corners of the grid
+        /// </summary>
+        /// <returns>PointXYZ object representing the grid maximum</returns>
+        public PointXYZ GetGridMaximum()
+        {
+            double MaxX = double.NegativeInfinity;
+            double MaxY = double.NegativeInfinity;
+            double MaxZ = double.NegativeInfinity;
+            foreach (List<GridblockConfiguration> row in Gridblocks)
+                foreach (GridblockConfiguration gbc in row)
+                {
+                    if (gbc is null)
+                        continue;
+                    PointXYZ gbc_maximum = gbc.Gridblock_Maximum;
+                    if (MaxX < gbc_maximum.X) MaxX = gbc_maximum.X;
+                    if (MaxY < gbc_maximum.Y) MaxY = gbc_maximum.Y;
+                    if (MaxZ < gbc_maximum.Z) MaxZ = gbc_maximum.Z;
+                }
+            return new PointXYZ(MaxX, MaxY, MaxZ);
+        }
 
         // Objects containing geomechanical, fracture property and calculation data relating to the grid
         /// <summary>
@@ -634,7 +719,7 @@ namespace DFMGenerator_SharedCode
                     // Write microfracture data to file
                     if (latestDFN.GlobalDFNMicrofractures.Count > 0)
                     {
-                        // Create file for microfractures
+                        // Create output file for microfractures
                         string fileName = "Microfractures_" + outputLabel + fractureFileExtension;
                         String namecomb = DFNControl.FolderPath + fileName;
                         StreamWriter uF_outputFile = new StreamWriter(namecomb);
@@ -751,7 +836,11 @@ namespace DFMGenerator_SharedCode
                             case DFNFileType.ASCII:
                                 {
                                     // Write header data
+#if LOGGRIDBLOCKS
+                                    string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tNucleation timestep\tNucleation timestep\tNucleation time ({0})\t", timeUnits);
+#else
                                     string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
+#endif
                                     MF_outputFile.WriteLine(FSheader1);
 
                                     // Loop through each macrofracture and write data to logfile
@@ -762,7 +851,11 @@ namespace DFMGenerator_SharedCode
                                         int NoPoints = CornerPoints.Count();
 
                                         // Write general fracture data to logfile
+#if LOGGRIDBLOCKS
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.MF_segments[PropagationDirection.IPlus][0].NucleationTimestep, frac.MF_segments[PropagationDirection.IMinus][0].NucleationTimestep, frac.NucleationTime / timeUnits_Modifier);
+#else
                                         string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
+#endif
                                         MF_outputFile.WriteLine(data);
 
                                         // Write cornerpoint coordinates to logfile - one row per point
@@ -1027,13 +1120,17 @@ namespace DFMGenerator_SharedCode
                             String namecomb = DFNControl.FolderPath + fileName;
                             StreamWriter CP_outputFile = new StreamWriter(namecomb);
 
-                            switch (DFNControl.OutputFileType)
-                            {
-                                case DFNFileType.ASCII:
-                                    {
-                                        // Write header data
-                                        string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
-                                        CP_outputFile.WriteLine(FSheader1);
+                        switch (DFNControl.OutputFileType)
+                        {
+                            case DFNFileType.ASCII:
+                                {
+                                    // Write header data
+#if LOGGRIDBLOCKS
+                                    string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tNucleation timestep\tNucleation timestep\tNucleation time ({0})\t", timeUnits);
+#else
+                                    string FSheader1 = string.Format("FracNo\tSet\tIPlusHalfLength\tIMinusHalfLength\tNumber of points\tDip\tIPlusTipType\tIMinusTipType\tIPlusTerminatingFracture\tIMinusTerminatingFracture\tNucleation time ({0})\t", timeUnits);
+#endif
+                                    CP_outputFile.WriteLine(FSheader1);
 
                                         // Loop through each macrofracture and write data to logfile
                                         foreach (MacrofractureXYZ frac in latestDFN.GlobalDFNMacrofractures)
@@ -1042,9 +1139,13 @@ namespace DFMGenerator_SharedCode
                                             List<PointXYZ> CentrePoints = frac.SegmentCentrePoints;
                                             int NoPoints = CentrePoints.Count();
 
-                                            // Write general fracture data to logfile
-                                            string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
-                                            CP_outputFile.WriteLine(data);
+                                        // Write general fracture data to logfile
+#if LOGGRIDBLOCKS
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.MF_segments[PropagationDirection.IPlus][0].NucleationTimestep, frac.MF_segments[PropagationDirection.IMinus][0].NucleationTimestep, frac.NucleationTime / timeUnits_Modifier);
+#else
+                                        string data = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t", frac.MacrofractureID, frac.SetIndex, frac.StrikeHalfLength(PropagationDirection.IPlus), frac.StrikeHalfLength(PropagationDirection.IMinus), NoPoints, frac.Dip, frac.TipTypes(PropagationDirection.IPlus), frac.TipTypes(PropagationDirection.IMinus), frac.TerminatingFracture(PropagationDirection.IPlus), frac.TerminatingFracture(PropagationDirection.IMinus), frac.NucleationTime / timeUnits_Modifier);
+#endif
+                                        CP_outputFile.WriteLine(data);
 
                                             // Write cornerpoint coordinates to logfile - one row per point
                                             CP_outputFile.WriteLine("Start Points");

@@ -53,6 +53,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("OriginYOffset 0");
                 input_file.WriteLine("% Current depth of burial of the top surface in metres, positive downwards");
                 input_file.WriteLine("Depth 2000");
+                input_file.WriteLine("% Time units used in input load rates, time limits and strain relaxation time constants");
                 input_file.WriteLine("% Set time units to ma, year or second");
                 input_file.WriteLine("ModelTimeUnits ma");
                 input_file.WriteLine("% Deformation load");
@@ -176,6 +177,10 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)");
                 input_file.WriteLine("%      - FAB (FAB files can be loaded directly into Petrel)");
                 input_file.WriteLine("OutputDFNFileType ASCII");
+                input_file.WriteLine("% Flag to write implicit fracture data to a GRDECL file");
+                input_file.WriteLine("% This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups");
+                input_file.WriteLine("WriteGRDECLFiles false");
+                input_file.WriteLine("WriteSeparateGRDECLPropertyFiles true");
                 input_file.WriteLine("% Output DFM at intermediate stages of fracture growth");
                 input_file.WriteLine("NoIntermediateOutputs 0");
                 input_file.WriteLine("% Flag to control interval between output of intermediate stage DFMs:");
@@ -185,19 +190,19 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("IntermediateOutputIntervalControl EqualArea");
                 input_file.WriteLine("% Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints");
                 input_file.WriteLine("OutputCentrepoints false");
-                input_file.WriteLine("% Flag to output the bulk rock compliance and stiffness tensors");
+                input_file.WriteLine("% Flag to calculate and output the bulk rock compliance and stiffness tensors");
                 input_file.WriteLine("OutputBulkRockElasticTensors false");
                 input_file.WriteLine("% Flag to calculate and output fracture porosity");
-                input_file.WriteLine("CalculateFracturePorosity true");
+                input_file.WriteLine("OutputFracturePorosity true");
                 input_file.WriteLine("% Flag to calculate and output fracture permeability tensors");
-                input_file.WriteLine("CalculateFracturePermeabilityTensor false");
+                input_file.WriteLine("OutputFracturePermeabilityTensor false");
                 input_file.WriteLine("% Algorithm to use for calculating fracture permeability");
                 input_file.WriteLine("%      - Oda1986 (The Oda 1986 model assumes fractures of infinite size and connectivity)");
                 input_file.WriteLine("%      - OdaCorrected1987 (This algorithm adds a correction factor to account for fracture connectivity)");
                 input_file.WriteLine("%      - SizeConnectivityCorrected (This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock; for the latter, host rock permeability must be specified)");
                 input_file.WriteLine("PermeabilityAlgorithm Oda1986");
-                input_file.WriteLine("% Flag to calculate implicit fracture population distribution functions");
-                input_file.WriteLine("CalculatePopulationDistribution true");
+                input_file.WriteLine("% Flag to calculate and output implicit fracture population distribution functions");
+                input_file.WriteLine("OutputPopulationDistribution true");
                 input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
                 input_file.WriteLine("No_l_indexPoints 20");
                 input_file.WriteLine("% MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively");
@@ -832,6 +837,10 @@ namespace DFMGenerator_Standalone
             bool WriteDFNFiles = true;
             // Output file type for explicit DFN data: ASCII or FAB (NB FAB files can be loaded directly into Petrel)
             DFNFileType OutputDFNFileType = DFNFileType.ASCII;
+            // Flag to write implicit fracture data to a GRDECL file
+            // This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups
+            bool WriteGRDECLFiles = false;
+            bool WriteSeparateGRDECLPropertyFiles = true;
             // Output DFM at intermediate stages of fracture growth
             int NoIntermediateOutputs = 0;
             // Flag to control interval between output of intermediate stage DFMs:
@@ -840,17 +849,17 @@ namespace DFMGenerator_Standalone
             // - SpecifiedTime (output at the end of each specified deformation episode)
             IntermediateOutputInterval IntermediateOutputIntervalControl = IntermediateOutputInterval.EqualArea;
             // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
-            bool OutputCentrepoints = false;
-            // Flag to output the bulk rock compliance and stiffness tensors
+            bool OutputCentrepoints = true;// false;
+            // Flag to calculate and output the bulk rock compliance and stiffness tensors
             bool OutputBulkRockElasticTensors = false;
             // Flag to calculate and output fracture porosity
-            bool CalculateFracturePorosity = true;
+            bool OutputFracturePorosity = true;
             // Flag to calculate and output fracture permeability tensors
-            bool CalculateFracturePermeabilityTensor = true;
+            bool OutputFracturePermeabilityTensor = true;
             // Algorithm to use for calculating fracture permeability
             PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;
-            // Flag to calculate implicit fracture population distribution functions
-            bool CalculatePopulationDistribution = true;
+            // Flag to calculate and output implicit fracture population distribution functions
+            bool OutputPopulationDistribution = true;
             // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
             int No_l_indexPoints = 20;
             // MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
@@ -897,7 +906,7 @@ namespace DFMGenerator_Standalone
             // Present day effective stress parameters
             // Flag to use present day effective stress tensor, instead of stress at the time of deformation, to calculate fracture aperture and permeability
             bool UsePresentDayStress = false;
-            // Present Terzaghi effective day stress tensor - define this to override stress at the time of deformation when calculating fracture aperture and permeability
+            // Present day Terzaghi effective stress tensor - define this to override stress at the time of deformation when calculating fracture aperture and permeability
             double PresentDayEffectiveStress_XX = 0;
             double PresentDayEffectiveStress_YY = 0;
             double PresentDayEffectiveStress_ZZ = 0;
@@ -986,8 +995,8 @@ namespace DFMGenerator_Standalone
             // Number of cornerpoints defining the microfracture polygons in the explicit DFN
             // Set to zero to output microfractures as just a centrepoint and radius; set to 3 or greater to output microfractures as polygons defined by a list of cornerpoints
             int Number_uF_Points = 8;
-            // Not yet implemented - keep this at 0
-            double MinDFNMacrofractureLength = 0;
+            // Minimum macrofracture length cutoff is not yet implemented - keep this at 0
+            double MinMacrofractureLength = 0;
 
             // Parameters for controlling unconfined fractures
             // Use NoUnconfinedFractureStrikeSets and NoUnconfinedFractureDipSets to create unconfined fracture sets, which can propagate and interact vertically as well as horizontally
@@ -1412,6 +1421,14 @@ namespace DFMGenerator_Standalone
                                     OutputDFNFileType = DFNFileType.FAB;
                             }
                             break;
+                        // Flag to write implicit fracture data to a GRDECL file
+                        // This can be written to a single file including the grid geometry, or to separate files for the geometry and different property groups
+                        case "WriteGRDECLFiles":
+                            WriteGRDECLFiles = true;
+                            break;
+                        case "WriteSeparateGRDECLPropertyFiles":
+                            WriteSeparateGRDECLPropertyFiles = true;
+                            break;
                         // Output DFM at intermediate stages of fracture growth
                         case "NoIntermediateOutputs":
                         case "noIntermediateOutputs": // For backwards compatibility
@@ -1439,19 +1456,21 @@ namespace DFMGenerator_Standalone
                         case "outputCentrepoints": // For backwards compatibility
                             OutputCentrepoints = (line_split[1] == "true");
                             break;
-                        // Flag to output the bulk rock compliance and stiffness tensors
+                        // Flag to calculate and output the bulk rock compliance and stiffness tensors
                         case "OutputBulkRockElasticTensors":
                         case "OutputComplianceTensor": // For backwards compatibility
                             OutputBulkRockElasticTensors = (line_split[1] == "true");
                             break;
                         // Flag to calculate and output fracture porosity
-                        case "CalculateFracturePorosity":
+                        case "OutputFracturePorosity":
+                        case "CalculateFracturePorosity": // For backwards compatibility
                         case "CalculateFracturePorosity_in": // For backwards compatibility
-                            CalculateFracturePorosity = (line_split[1] == "true");
+                            OutputFracturePorosity = (line_split[1] == "true");
                             break;
                         // Flag to calculate and output fracture permeability tensors
-                        case "CalculateFracturePermeabilityTensor":
-                            CalculateFracturePermeabilityTensor = (line_split[1] == "true");
+                        case "OutputFracturePermeabilityTensor":
+                        case "CalculateFracturePermeabilityTensor": // For backwards compatibility
+                            OutputFracturePermeabilityTensor = (line_split[1] == "true");
                             break;
                         // Algorithm to use for calculating fracture permeability
                         case "PermeabilityAlgorithm":
@@ -1462,10 +1481,11 @@ namespace DFMGenerator_Standalone
                             else
                                 PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;
                             break;
-                        // Flag to calculate implicit fracture population distribution functions
-                        case "CalculatePopulationDistribution":
+                        // Flag to calculate and output implicit fracture population distribution functions
+                        case "OutputPopulationDistribution":
+                        case "CalculatePopulationDistribution": // For backwards compatibility
                         case "CalculatePopulationDistribution_in": // For backwards compatibility
-                            CalculatePopulationDistribution = (line_split[1] == "true");
+                            OutputPopulationDistribution = (line_split[1] == "true");
                             break;
                         // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
                         case "No_l_indexPoints":
@@ -1763,7 +1783,7 @@ namespace DFMGenerator_Standalone
                             break;
                         // Not yet implemented - keep this at 0
                         case "MinDFNMacrofractureLength":
-                            MinDFNMacrofractureLength = 0;
+                            MinMacrofractureLength = 0;
                             break;
 
                         // Parameters for controlling unconfined fractures
@@ -3176,6 +3196,15 @@ namespace DFMGenerator_Standalone
             if (dfn_control.GenerateExplicitDFN)
                 Console.WriteLine("DFN Generated");
             Console.WriteLine("Calculation completed!");
+
+            // If required, write property data to GRDECL files
+            if (WriteGRDECLFiles)
+            {
+            Console.WriteLine("Writing implicit data to GRDECL files");
+            EclipseImportExport Exporter = new EclipseImportExport(ModelGrid);
+            Exporter.WriteGRDECLFile("TestExportSeparate", progReporter, WriteSeparateGRDECLPropertyFiles, true, true, true, OutputFracturePorosity, OutputFracturePermeabilityTensor, OutputBulkRockElasticTensors, false);
+            Console.WriteLine("Data export completed!");
+            }
 
 #if !READINPUTFROMFILE
             // If running from hardcoded data, require a user key press before terminating and closing the console window

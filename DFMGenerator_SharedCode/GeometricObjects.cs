@@ -1088,38 +1088,67 @@ namespace DFMGenerator_SharedCode
 
         // Geometric functions
         /// <summary>
-        /// Minimum magnitude for nonzero sine and cosine values; smaller values will be rounded to zero. 
+        /// Round a double to 0, 1 or -1 if it is very close to these values
         /// </summary>
-        private static double roundToZero = 1E-10;
-        /// <summary>
-        /// Modified sin function that will return exactly zero for sin(pi) or multiples and exactly 1 for sin(pi/2) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
-        /// </summary>
-        /// <param name="angle">Angle to calculate sine of</param>
-        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple and 1d for angle=Math.Pi/2 or a multiple</returns>
-        public static double Sin_trim(double angle)
+        /// <param name="x">Number to trim</param>
+        /// <returns>0, 1 or -1 if x is very close to these values, otherwise x</returns>
+        private static double Trim(double x)
         {
-            double output = Math.Sin(angle);
-            if (Math.Abs(output) < roundToZero)
-                return 0;
-            else if (Math.Abs(1 - output) < roundToZero)
-                return 1;
+            if ((float)x == 1f)
+                return 1d;
+            else if ((float)x == -1f)
+                return -1d;
+            else if ((float)(x + 1d) == 1f)
+                return 0d;
             else
-                return output;
+                return x;
         }
         /// <summary>
-        /// Modified cos function that will return exactly zero for cos(pi/2) or multiples and exactly 1 for cos(pi) or multiples; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// Round a double to 0, 1, -1, positive or negative infinity if it is very close to these values
+        /// </summary>
+        /// <param name="x">Number to trim</param>
+        /// <returns>0, 1, -1, positive or negative infinity if x is very close to these values, otherwise x</returns>
+        private static double TrimInfinite(double x)
+        {
+            if ((float)x == 1f)
+                return 1d;
+            else if ((float)x == -1f)
+                return -1d;
+            else if (float.IsPositiveInfinity((float)x))
+                return double.PositiveInfinity;
+            else if (float.IsNegativeInfinity((float)x))
+                return double.NegativeInfinity;
+            else if ((float)(x + 1d) == 1f)
+                return 0d;
+            else
+                return x;
+        }
+        /// <summary>
+        /// Modified sin function that will return exactly zero for sin(pi) or multiples thereof and exactly 1 or -1 for sin(pi/2) or multiples thereof; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// </summary>
+        /// <param name="angle">Angle to calculate sine of</param>
+        /// <returns>Math.Sin(angle), except 0d for angle=Math.Pi or a multiple thereof and 1d or -1d for angle=Math.Pi/2 or a multiple thereof</returns>
+        public static double Sin_trim(double angle)
+        {
+            return Trim(Math.Sin(angle));
+        }
+        /// <summary>
+        /// Modified cos function that will return exactly zero for cos(pi/2) or multiples thereof and exactly 1 or -1 for cos(pi) or multiples thereof; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
         /// </summary>
         /// <param name="angle">Angle to calculate cosine of</param>
-        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple and 1d for angle=Math.Pi or a multiple</returns>
+        /// <returns>Math.Cos(angle), except 0d for angle=Math.Pi/2 or a multiple thereof and 1d or -1d for angle=Math.Pi or a multiple thereof</returns>
         public static double Cos_trim(double angle)
         {
-            double output = Math.Cos(angle);
-            if (Math.Abs(output) < roundToZero)
-                return 0;
-            else if (Math.Abs(1 - output) < roundToZero)
-                return 1;
-            else
-                return output;
+            return Trim(Math.Cos(angle));
+        }
+        /// <summary>
+        /// Modified tan function that will return exactly zero for tan(pi) or multiples thereof, and exactly 1 or -1 for tan(pi/4) or multiples thereof; this will give more accurate vector representations of lines with dip or azimuth orthogonal to the X, Y or Z axes
+        /// </summary>
+        /// <param name="angle">Angle to calculate tangent of</param>
+        /// <returns>Math.Tan(angle), except 0d for angle=Math.Pi/2 or a multiple thereof and 1d or -1d for angle=Math.Pi or a multiple thereof</returns>
+        public static double Tan_trim(double angle)
+        {
+            return TrimInfinite(Math.Tan(angle));
         }
         /// <summary>
         /// Return a vector representing the position of a specified point
@@ -1918,13 +1947,21 @@ namespace DFMGenerator_SharedCode
 
         // Functions to generate specific tensors
         /// <summary>
+        /// Create a tensor filled with NaNs (NB the default constructor will return a tensor where all components are 0)
+        /// </summary>
+        /// <returns>Tensor2S object with all components set to double.NaN</returns>
+        public static Tensor2S NullTensor()
+        {
+            return new Tensor2S(double.NaN, double.NaN, double.NaN, double.NaN, double.NaN, double.NaN);
+        }
+        /// <summary>
         /// Create a uniaxial second order tensor with a principal axis of arbitrary orientation and magnitude
         /// For example a permeability tensor for flow along parallel tubes
         /// </summary>
         /// <param name="Azimuth">Azimuth of the principal axis</param>
         /// <param name="Dip">Dip of the principal axis</param>
         /// <param name="Magnitude">Magnitude of the quantity along the principal axis; magnitude of the quantity along other two axes is 0</param>
-        /// <returns>Tensor2D object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S UniaxialTensor(double Azimuth, double Dip, double Magnitude)
         {
             double sinazi = VectorXYZ.Sin_trim(Azimuth);
@@ -1951,7 +1988,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Axis">VectorXYZ object representing the principal axis; NB if the supplied axis vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the axis vector</param>
         /// <param name="Magnitude">Magnitude of the quantity along the principal axis; magnitude of the quantity along other two axes is 0</param>
-        /// <returns>Tensor2D object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a uniaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S UniaxialTensor(VectorXYZ Axis, double Magnitude)
         {
             double x = Axis.Component(VectorComponents.X);
@@ -1974,7 +2011,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Azimuth">Azimuth of the plane containing the two principal axes</param>
         /// <param name="Dip">Dip of the plane containing the two principal axes</param>
         /// <param name="Magnitude">Magnitude of the quantity along the two principal axes; magnitude of the quantity along the third axis is 0</param>
-        /// <returns>Tensor2D object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S BiaxialTensor(double Azimuth, double Dip, double Magnitude)
         {
             double sinazi = VectorXYZ.Sin_trim(Azimuth);
@@ -2001,7 +2038,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="Normal">VectorXYZ object representing the normal to the plane containing the two principal axes; NB if the supplied normal vector does not have unit length, the magnitude of the tensor components will be multiplied by the square of the length of the normal vector</param>
         /// <param name="Magnitude">Magnitude of the quantity along the two principal axes; magnitude of the quantity along the third axis is 0</param>
-        /// <returns>Tensor2D object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
+        /// <returns>Tensor2S object representing a biaxial tensor with specified principal axis orientation and magnitude</returns>
         public static Tensor2S BiaxialTensor(VectorXYZ Normal, double Magnitude)
         {
             double x = Normal.Component(VectorComponents.X);
@@ -2024,7 +2061,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Epsilon_hmin">Minimum horizontal strain (negative for extensional)</param>
         /// <param name="Epsilon_hmax">Maximum horizontal strain (negative for extensional)</param>
         /// <param name="Epsilon_hmin_azimuth">Azimuth of minimum horizontal strain (rad)<</param>
-        /// <returns>Tensor2D object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
+        /// <returns>Tensor2S object with the required components of horizontal strain (XZ, ZY and ZZ components zero)</returns>
         public static Tensor2S HorizontalStrainTensor(double Epsilon_hmin, double Epsilon_hmax, double Epsilon_hmin_azimuth)
         {
             if (double.IsNaN(Epsilon_hmin_azimuth) || double.IsNaN(Epsilon_hmax) || double.IsNaN(Epsilon_hmin_azimuth))

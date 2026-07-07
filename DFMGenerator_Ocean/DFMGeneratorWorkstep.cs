@@ -1099,7 +1099,7 @@ namespace DFMGenerator_Ocean
                         HostRock_kv_grid = HostRock_kh_grid;
                     bool UseGridFor_HostRock_kv = (HostRock_kv_grid != null);
 
-                    // Flags for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
+                    // Flag for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageMechanicalPropertyData = arguments.Argument_AverageMechanicalPropertyData;
 
                     // Stress state
@@ -1141,7 +1141,7 @@ namespace DFMGenerator_Ocean
                     double InitialStressRelaxation = -1;
                     if (!double.IsNaN(arguments.Argument_InitialStressRelaxation))
                         InitialStressRelaxation = arguments.Argument_InitialStressRelaxation;
-                    // Flags for whether to average stress and strain data across the Petrel grid cells, or take the value from the top middle cell
+                    // Flag for whether to average stress and strain data across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageStressStrainData = arguments.Argument_AverageStressStrainData;
 
                     // Outputs
@@ -1171,17 +1171,17 @@ namespace DFMGenerator_Ocean
                     // Flag to calculate and output density, mean length and connectivity data (if selected) for individual fracture sets
                     bool CalculateFractureSets = arguments.Argument_CalculateFractureSets;
                     // Flag to calculate and output fracture connectivity and anisotropy indices
-                    bool CalculateFractureConnectivityAnisotropy = arguments.Argument_CalculateFractureConnectivityAnisotropy;
+                    bool OutputFractureConnectivityAnisotropy = arguments.Argument_OutputFractureConnectivityAnisotropy;
                     // Flag to calculate and output fracture porosity
-                    bool CalculateFracturePorosity = arguments.Argument_CalculateFracturePorosity;
+                    bool OutputFracturePorosity = arguments.Argument_OutputFracturePorosity;
                     // Flag to calculate and output fracture permeability tensors
-                    bool CalculateFracturePermeabilityTensor = arguments.Argument_CalculateFracturePermeabilityTensor;
+                    bool OutputFracturePermeabilityTensor = arguments.Argument_OutputFracturePermeabilityTensor;
                     // Algorithm to use for calculating fracture permeability
                     PermeabilityCalculationAlgorithm PermeabilityAlgorithm = (PermeabilityCalculationAlgorithm)arguments.Argument_PermeabilityAlgorithm;
                     // Fracture types included in the fracture permeability tensor: Microfractures only; Macrofractures only; All fractures
                     FractureType FractureTypesInPermeabilityTensor = (FractureType)arguments.Argument_FractureTypesInPermeabilityTensor;
-                    // Implicit fracture population distribution functions will only be calculated if the implicit data is written to file
-                    bool CalculatePopulationDistribution = WriteImplicitDataFiles;
+                    // Implicit fracture population distribution functions will only be calculated and output if the implicit data is written to file
+                    bool OutputPopulationDistribution = WriteImplicitDataFiles;
                     // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
                     int No_l_indexPoints = 20;
                     // MaxHMinLength and MaxHMaxLength control the range of fracture lengths in the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
@@ -2250,7 +2250,7 @@ namespace DFMGenerator_Ocean
                     }
 
                     // Fracture aperture
-                    if (CalculateFracturePorosity || CalculateFracturePermeabilityTensor || CalculateFractureReactivationPotential)
+                    if (OutputFracturePorosity || OutputFracturePermeabilityTensor || OutputFractureReactivationPotential)
                     {
                         switch (FractureApertureControl)
                         {
@@ -2292,7 +2292,7 @@ namespace DFMGenerator_Ocean
                     }
 
                     // Fracture permeability
-                    if (CalculateFracturePermeabilityTensor)
+                    if (OutputFracturePermeabilityTensor)
                     {
                         string permeabilityLabel = "Calculate permeability tensor for ";
                         string permeabilityLabel2 = "";
@@ -4017,77 +4017,78 @@ namespace DFMGenerator_Ocean
                                                 double local_szxRate = 0;
                                                 double local_syzRate = 0;
 
-                                                // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
-                                                if (double.IsNaN(initialSzz))
-                                                    initialSzz = finalSzz;
-                                                else
-                                                    local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                if (double.IsNaN(initialSxx))
-                                                    initialSxx = finalSxx;
-                                                else
-                                                    local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
-                                                if (double.IsNaN(initialSyy))
-                                                    initialSyy = finalSyy;
-                                                else
-                                                    local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
-                                                if (double.IsNaN(initialSxy))
-                                                    initialSxy = finalSxy;
-                                                else
-                                                    local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
-                                                if (overideShvComponents)
-                                                {
-                                                    if (double.IsNaN(initialSzx))
-                                                        initialSzx = finalSzx;
-                                                    else
-                                                        local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
-                                                    if (double.IsNaN(initialSyz))
-                                                        initialSyz = finalSyz;
-                                                    else
-                                                        local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
-                                                }
-                                                else
-                                                {
-                                                    initialSzx = 0;
-                                                    initialSyz = 0;
-                                                    finalSzx = 0;
-                                                    finalSyz = 0;
-                                                }
-                                                local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
-                                                local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
-                                            }
-                                            bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
-                                            if (overrideFluidPressure)
-                                            {
-                                                double local_FluidPressureRate = 0;
-                                                if (double.IsNaN(initialFluidPressure))
-                                                    initialFluidPressure = finalFluidPressure;
-                                                else
-                                                    local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
-                                                double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
-                                                local_InitialFluidPressure = initialFluidPressure;
-                                                local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
-                                            }
-                                            // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
-                                            // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
-                                            bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
-                                            if (overrideStressArchingFactor)
-                                            {
-                                                double dSigmazz_dt = 0;
-                                                if (double.IsNaN(initialSzz))
-                                                    initialSzz = finalSzz;
-                                                else
-                                                    dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                                double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
-                                                double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
-                                                double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
-                                                local_InitialVerticalStress = initialSzz;
-                                                local_StressArchingFactor = (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt);
-                                                // Trim the result so it lies between 0 and 1 inclusive
-                                                if (local_StressArchingFactor < 0)
-                                                    local_StressArchingFactor = 0;
-                                                if (local_StressArchingFactor > 1)
-                                                    local_StressArchingFactor = 1;
-                                            }
+                                        // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
+                                        if (double.IsNaN(initialSzz))
+                                            initialSzz = finalSzz;
+                                        else
+                                            local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSxx))
+                                            initialSxx = finalSxx;
+                                        else
+                                            local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSyy))
+                                            initialSyy = finalSyy;
+                                        else
+                                            local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                        if (double.IsNaN(initialSxy))
+                                            initialSxy = finalSxy;
+                                        else
+                                            local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                        if (overideShvComponents)
+                                        {
+                                            if (double.IsNaN(initialSzx))
+                                                initialSzx = finalSzx;
+                                            else
+                                                local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                            if (double.IsNaN(initialSyz))
+                                                initialSyz = finalSyz;
+                                            else
+                                                local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                        }
+                                        else
+                                        {
+                                            initialSzx = 0;
+                                            initialSyz = 0;
+                                            finalSzx = 0;
+                                            finalSyz = 0;
+                                        }
+                                        local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
+                                        local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                    }
+                                    bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
+                                    if (overrideFluidPressure)
+                                    {
+                                        double local_FluidPressureRate = 0;
+                                        if (double.IsNaN(initialFluidPressure))
+                                            initialFluidPressure = finalFluidPressure;
+                                        else
+                                            local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                        local_InitialFluidPressure = initialFluidPressure;
+                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
+                                    }
+                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
+                                    // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
+                                    bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
+                                    if (overrideStressArchingFactor)
+                                    {
+                                        double dSigmazz_dt = 0;
+                                        if (double.IsNaN(initialSzz))
+                                            initialSzz = finalSzz;
+                                        else
+                                            dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                        local_InitialVerticalStress = initialSzz;
+                                        double local_OP_Thermal_factor = (local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt;
+                                        local_StressArchingFactor = (local_OP_Thermal_factor != 0) ? (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt) : 1;
+                                        // Trim the result so it lies between 0 and 1 inclusive
+                                        if (local_StressArchingFactor < 0)
+                                            local_StressArchingFactor = 0;
+                                        if (local_StressArchingFactor > 1)
+                                            local_StressArchingFactor = 1;
+                                    }
 
                                             // If the final stress tensor and fluid pressure values are not defined, reset them to NaN so they will not be picked up by the next deformation episode
                                             if (!overideStressRate)
@@ -5858,15 +5859,17 @@ namespace DFMGenerator_Ocean
                                                     string CollectionName = string.Format("{0}_{1}_FracSetData", FractureSetName, dipsetLabel);
                                                     PropertyCollection FracSetData = FracData.CreatePropertyCollection(CollectionName);
 
-                                                    // Create properties and set templates for each property
-                                                    Property MF_P30_tot = FracSetData.CreateProperty(P30Template);
-                                                    MF_P30_tot.Name = "Layer_bound_fracture_P30";
-                                                    Property MF_P32_tot = FracSetData.CreateProperty(P32Template);
-                                                    MF_P32_tot.Name = "Layer_bound_fracture_P32";
-                                                    Property uF_P32_tot = FracSetData.CreateProperty(P32Template);
-                                                    uF_P32_tot.Name = "Microfracture_P32";
-                                                    Property MF_MeanLength = FracSetData.CreateProperty(LengthTemplate);
-                                                    MF_MeanLength.Name = "Mean_fracture_length";
+                                            // Write fracture density and length data to Petrel grid
+                                            {
+                                                // Create properties and set templates for each property
+                                                Property MF_P30_tot = FracSetData.CreateProperty(P30Template);
+                                                MF_P30_tot.Name = "Layer_bound_fracture_P30";
+                                                Property MF_P32_tot = FracSetData.CreateProperty(P32Template);
+                                                MF_P32_tot.Name = "Layer_bound_fracture_P32";
+                                                Property uF_P32_tot = FracSetData.CreateProperty(P32Template);
+                                                uF_P32_tot.Name = "Microfracture_P32";
+                                                Property MF_MeanLength = FracSetData.CreateProperty(LengthTemplate);
+                                                MF_MeanLength.Name = "Mean_fracture_length";
 
                                                     // Add creation event to each property
                                                     IHistoryInfoEditor MF_P30_totHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_P30_tot);
@@ -5984,7 +5987,8 @@ namespace DFMGenerator_Ocean
                                                                 // Update progress bar
                                                                 progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
 
-                                                            } // End loop through all columns and rows in the Fracture Grid
+                                                    } // End loop through all columns and rows in the Fracture Grid
+                                            } // End write fracture density and length data to Petrel grid
 
                                                     // If required, write fracture connectivity data to Petrel grid
                                                     if (CalculateFractureConnectivityAnisotropy)
@@ -8079,8 +8083,9 @@ namespace DFMGenerator_Ocean
                                             // Create a new collection for the polyline set
                                             CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
 
-                                            // Write the input parameters for the model run to the collection comments string
-                                            CentrelineCollection.Comments = headerInputParams + generalInputParams + explicitInputParams;
+                                        // Write the input parameters for the model run to the collection comments string
+                                        string outputStageParams = string.Format("Model name: {0}\n\n", ModelName);
+                                        CentrelineCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
 
                                             // Commit the changes to the Petrel database
                                             transactionCreateCentrelineCollection.Commit();
@@ -8813,10 +8818,10 @@ namespace DFMGenerator_Ocean
             private bool argument_CalculateFracturePorosity = true;
             private bool argument_CalculateBulkRockElasticTensors = false;
             private bool argument_PopulateEmptyGridblocks = true;
-            private bool argument_CalculateFracturePermeabilityTensor = false;
+            private bool argument_OutputFracturePermeabilityTensor = false;
             private int argument_PermeabilityAlgorithm = 0;
             private int argument_FractureTypesInPermeabilityTensor = 2;
-            private bool argument_CalculateFractureReactivationPotential = false;
+            private bool argument_OutputFractureReactivationPotential = false;
 
             // Fracture aperture control parameters
             private int argument_FractureApertureControl = 0;
@@ -9380,24 +9385,24 @@ namespace DFMGenerator_Ocean
 
             // Fracture connectivity and anisotropy index control parameters
             [Description("Calculate fracture connectivity and anisotropy?", "Calculate fracture connectivity and anisotropy?")]
-            public bool Argument_CalculateFractureConnectivityAnisotropy
+            public bool Argument_OutputFractureConnectivityAnisotropy
             {
-                internal get { return this.argument_CalculateFractureConnectivityAnisotropy; }
-                set { this.argument_CalculateFractureConnectivityAnisotropy = value; }
+                internal get { return this.argument_OutputFractureConnectivityAnisotropy; }
+                set { this.argument_OutputFractureConnectivityAnisotropy = value; }
             }
 
             [Description("Calculate fracture porosity?", "Calculate fracture porosity?")]
-            public bool Argument_CalculateFracturePorosity
+            public bool Argument_OutputFracturePorosity
             {
-                internal get { return this.argument_CalculateFracturePorosity; }
-                set { this.argument_CalculateFracturePorosity = value; }
+                internal get { return this.argument_OutputFracturePorosity; }
+                set { this.argument_OutputFracturePorosity = value; }
             }
 
             [Description("Calculate bulk rock elastic tensors?", "Calculate bulk rock compliance and stiffness tensors, taking into account the fractures")]
-            public bool Argument_CalculateBulkRockElasticTensors
+            public bool Argument_OutputBulkRockElasticTensors
             {
-                internal get { return this.argument_CalculateBulkRockElasticTensors; }
-                set { this.argument_CalculateBulkRockElasticTensors = value; }
+                internal get { return this.argument_OutputBulkRockElasticTensors; }
+                set { this.argument_OutputBulkRockElasticTensors = value; }
             }
 
             // Fracture aperture control parameters
@@ -12566,10 +12571,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Calculate fracture permeability tensor?", "Calculate fracture permeability tensor?")]
-            public bool Argument_CalculateFracturePermeabilityTensor
+            public bool Argument_OutputFracturePermeabilityTensor
             {
-                internal get { return this.argument_CalculateFracturePermeabilityTensor; }
-                set { this.argument_CalculateFracturePermeabilityTensor = value; }
+                internal get { return this.argument_OutputFracturePermeabilityTensor; }
+                set { this.argument_OutputFracturePermeabilityTensor = value; }
             }
 
             [Description("Fracture permeability algorithm", "Algorithm to use for calculating fracture permeability")]
@@ -12587,10 +12592,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Calculate fracture reactivation potential?", "Calculate the fracture reactivation potential? This represents the fracture driving stress if positive, and the cohesionless distance to failure if negative")]
-            public bool Argument_CalculateFractureReactivationPotential
+            public bool Argument_OutputFractureReactivationPotential
             {
-                internal get { return this.argument_CalculateFractureReactivationPotential; }
-                set { this.argument_CalculateFractureReactivationPotential = value; }
+                internal get { return this.argument_OutputFractureReactivationPotential; }
+                set { this.argument_OutputFractureReactivationPotential = value; }
             }
 
             // Present day effective stress parameters
@@ -14090,10 +14095,10 @@ namespace DFMGenerator_Ocean
                 argument_CalculateFracturePorosity = true;
                 argument_CalculateBulkRockElasticTensors = false;
                 argument_PopulateEmptyGridblocks = true;
-                argument_CalculateFracturePermeabilityTensor = false;
+                argument_OutputFracturePermeabilityTensor = false;
                 argument_PermeabilityAlgorithm = 0;
                 argument_FractureTypesInPermeabilityTensor = 2;
-                argument_CalculateFractureReactivationPotential = false;
+                argument_OutputFractureReactivationPotential = false;
 
                 // Fracture aperture control parameters
                 argument_FractureApertureControl = 0;

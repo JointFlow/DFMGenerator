@@ -4195,7 +4195,7 @@ namespace DFMGenerator_SharedCode
                     if ((float)MF_segment.StrikeLength == 0f)
                         continue;
 
-                    // Get the I coordinates of the segment nodes
+                    // Get the coordinates of the segment nodes
                     double segment_Imin, segment_Imax;
                     if (MF_PropDir == PropagationDirection.IPlus)
                     {
@@ -4207,6 +4207,12 @@ namespace DFMGenerator_SharedCode
                         segment_Imin = MF_segment.PropNode.I;
                         segment_Imax = MF_segment.NonPropNode.I;
                     }
+                    double segment_J = MF_segment.PropNode.J;
+
+                    // If the point we are checking is the same as one of the segment nodes, move on to the next point
+                    if ((float)point_J == (float)segment_J)
+                        if (((float)point_I == (float)segment_Imin) || ((float)point_I == (float)segment_Imax))
+                            continue;
 
                     // Get the J coordinates of the segment nodes +- proximity zone width
                     double segment_proximityzonehalfwidth = proximityZoneHalfWidths[MF_segment.FractureDipSetIndex];
@@ -4285,12 +4291,13 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="propagatingSegment">Reference to a MacrofractureSegmentIJK object representing the propagating fracture segment</param>
         /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment interacts with another macrofracture stress shadow (m)</param>
+        /// <param name="ignoreZeroLengthMFStressShadows">If true, do not record a stress shadow interaction if the second fracture segment has zero length</param>
         /// <param name="checkRelayCrossing">If true, do not record a stress shadow interaction if the relay zone between the two fracture tips is cut by a third fracture</param>
         /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
-        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, ref double propagationLength, bool checkRelayCrossing, bool terminateIfInteracts)
+        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, ref double propagationLength, bool ignoreZeroLengthMFStressShadows, bool checkRelayCrossing, bool terminateIfInteracts)
         {
-            return checkStressShadowInteraction(propagatingSegment, this, ref propagationLength, checkRelayCrossing, terminateIfInteracts);
+            return checkStressShadowInteraction(propagatingSegment, this, ref propagationLength, ignoreZeroLengthMFStressShadows, checkRelayCrossing, terminateIfInteracts);
         }
         /// <summary>
         /// Check whether a propagating macrofracture segment from this fracture set will terminate due to stress shadow interaction with of any of the other macrofracture segments in the explicit DFN associated with a fracture set in another gridblock
@@ -4298,10 +4305,11 @@ namespace DFMGenerator_SharedCode
         /// <param name="propagatingSegment">Reference to a MacrofractureSegmentIJK object representing the propagating fracture segment</param>
         /// <param name="interacting_fs">Reference to a Gridblock_FractureSet object representing the fracture set which the propagating fracture segment will interact with</param>
         /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment interacts with another macrofracture stress shadow (m)</param>
+        /// <param name="ignoreZeroLengthMFStressShadows">If true, do not record a stress shadow interaction if the second fracture segment has zero length</param>
         /// <param name="checkRelayCrossing">If true, do not record a stress shadow interaction if the relay zone between the two fracture tips is cut by a third fracture</param>
         /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
-        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet interacting_fs, ref double propagationLength, bool checkRelayCrossing, bool terminateIfInteracts)
+        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet interacting_fs, ref double propagationLength, bool ignoreZeroLengthMFStressShadows, bool checkRelayCrossing, bool terminateIfInteracts)
         {
             // Set return value to false initially
             bool interacts = false;
@@ -4344,56 +4352,68 @@ namespace DFMGenerator_SharedCode
                 // Loop through every macrofracture segment with the opposite propagation direction (even if currently inactive) and check if the specified point lies in its stress shadow
                 foreach (MacrofractureSegmentIJK interacting_MF_segment in interacting_fs.LocalDFNMacrofractureSegments[interactingNode_dir])
                 {
-                    // Get the I and J coordinates of the outer (i.e. propagating) node of the interacting segment
-                    double segmentnode_I, segmentnode_J;
+                    // If required, check whether the segment length is zero, and if so, move on to the next segment
+                    if (ignoreZeroLengthMFStressShadows && (interacting_MF_segment.StrikeLength == 0))
+                        continue;
+
+                    // Normally we only need to check the propagating node; however if the non-propagating node lies on a grdiblock boundary, we will also check that
+                    List<PointIJK> nodesToCheck = new List<PointIJK>();
                     if (sameSet) // If the propagating and interacting segments are from the same set, we can use the IJK coordinates of the interacting node directly
                     {
-                        segmentnode_I = interacting_MF_segment.PropNode.I;
-                        segmentnode_J = interacting_MF_segment.PropNode.J;
+                        nodesToCheck.Add(interacting_MF_segment.PropNode);
+                        if (interacting_MF_segment.NonPropNodeType == SegmentNodeType.ConnectedGridblockBound)
+                            nodesToCheck.Add(interacting_MF_segment.NonPropNode);
                     }
                     else // Otherwise we will need to convert the IJK coordinates of the interacting node to the frame of the propagating fracture set
                     {
-                        PointXYZ interacting_segment_PropNode_XYZ = interacting_MF_segment.getPropNodeinXYZ();
-                        segmentnode_I = getICoordinate(interacting_segment_PropNode_XYZ);
-                        segmentnode_J = getJCoordinate(interacting_segment_PropNode_XYZ);
+                        nodesToCheck.Add(convertXYZtoIJK(interacting_MF_segment.getPropNodeinXYZ()));
+                        if (interacting_MF_segment.NonPropNodeType == SegmentNodeType.ConnectedGridblockBound)
+                            nodesToCheck.Add(convertXYZtoIJK(interacting_MF_segment.getNonPropNodeinXYZ()));
                     }
 
-                    // Get the J coordinates of the stress shadow interaction box
-                    double stressshadowintboxhalfwidth = stressshadowhalfwidths[interacting_MF_segment.FractureDipSetIndex];
-                    double stressshadowintbox_Jmin = propNode_J - stressshadowintboxhalfwidth;
-                    double stressshadowintbox_Jmax = propNode_J + stressshadowintboxhalfwidth;
+                    foreach (PointIJK node in nodesToCheck)
+                    {
+                        // Get the I and J coordinates of the node to check
+                        double segmentnode_I = node.I;
+                        double segmentnode_J = node.J;
 
-                    // Check if the outer (i.e. propagating) node of the interacting segment lies within the stress shadow interaction box
-                    // NB we do not record an interaction if the propagating node of the interacting segment lies on the far boundary of the stress shadow interaction box (i.e. segmentnode_I = stressshadowintbox_Imax)
-                    // This is so that there will be no interaction whenever the function returns a propagation length equal to the input length
-                    // We also need to check the propagating and interacting segments do not belong to the same fracture
-                    if ((segmentnode_I >= stressshadowintbox_Imin) && (segmentnode_I < stressshadowintbox_Imax))
-                        if ((segmentnode_J >= stressshadowintbox_Jmin) && (segmentnode_J <= stressshadowintbox_Jmax))
-                            if (propagatingSegment.NonPropNode != interacting_MF_segment.NonPropNode)
-                            {
-                                // If required, check if the relay zone between the two fracture tips is cut by a third fracture, and if so, move on to the next segment 
-                                if (checkRelayCrossing && checkCrossingFractures(new PointIJK(segmentnode_I, propNode_J, 0), interacting_MF_segment.PropNode, interacting_fs))
-                                    continue;
+                        // Get the J coordinates of the stress shadow interaction box
+                        double stressshadowintboxhalfwidth = stressshadowhalfwidths[interacting_MF_segment.FractureDipSetIndex];
+                        double stressshadowintbox_Jmin = propNode_J - stressshadowintboxhalfwidth;
+                        double stressshadowintbox_Jmax = propNode_J + stressshadowintboxhalfwidth;
 
-                                // Set the return value to true
-                                interacts = true;
-
-                                // Reduce the maximum propagation distance and stress shadow interaction box dimensions accordingly
-                                stressshadowintbox_Imax = segmentnode_I;
-                                propagationLength = segmentnode_I - stressshadowintbox_Imin;
-
-                                // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
-                                if (terminateIfInteracts)
+                        // Check if the outer (i.e. propagating) node of the interacting segment lies within the stress shadow interaction box
+                        // NB we do not record an interaction if the propagating node of the interacting segment lies on the far boundary of the stress shadow interaction box (i.e. segmentnode_I = stressshadowintbox_Imax)
+                        // This is so that there will be no interaction whenever the function returns a propagation length equal to the input length
+                        // We also need to check the propagating and interacting segments do not belong to the same fracture
+                        if ((segmentnode_I >= stressshadowintbox_Imin) && (segmentnode_I < stressshadowintbox_Imax))
+                            if ((segmentnode_J >= stressshadowintbox_Jmin) && (segmentnode_J <= stressshadowintbox_Jmax))
+                                if (propagatingSegment.NonPropNode != interacting_MF_segment.NonPropNode)
                                 {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedStressShadow;
-                                    propagatingSegment.TerminatingSegment = interacting_MF_segment;
+                                    // If required, check if the relay zone between the two fracture tips is cut by a third fracture, and if so, move on to the next segment 
+                                    if (checkRelayCrossing && checkCrossingFractures(new PointIJK(segmentnode_I, propNode_J, 0), interacting_MF_segment.PropNode, interacting_fs))
+                                        continue;
+
+                                    // Set the return value to true
+                                    interacts = true;
+
+                                    // Reduce the maximum propagation distance and stress shadow interaction box dimensions accordingly
+                                    stressshadowintbox_Imax = segmentnode_I;
+                                    propagationLength = segmentnode_I - stressshadowintbox_Imin;
+
+                                    // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
+                                    if (terminateIfInteracts)
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.ConnectedStressShadow;
+                                        propagatingSegment.TerminatingSegment = interacting_MF_segment;
+                                    }
+
+                                    // NB the calling function will be responsible for setting the activity and termination type of the interacting segment
+                                    // We cannot do this here since it may be that the propagating fracture is terminated by another mechanism first
+
+                                    // We also need to continue looping through all remaining macrofracture segments with the opposite propagation direction - one of them may interact earlier than the selected segment
                                 }
-
-                                // NB the calling function will be responsible for setting the activity and termination type of the interacting segment
-                                // We cannot do this here since it may be that the propagating fracture is terminated by another mechanism first
-
-                                // We also need to continue looping through all remaining macrofracture segments with the opposite propagation direction - one of them may interact earlier than the selected segment
-                            }
+                    }
                 }
             }
             else // Propagating fracture is propagating in the IMinus direction, interacting fractures are propagating in the IPlus direction
@@ -4405,56 +4425,68 @@ namespace DFMGenerator_SharedCode
                 // Loop through every macrofracture segment with the opposite propagation direction (even if currently inactive) and check if the specified point lies in its stress shadow
                 foreach (MacrofractureSegmentIJK interacting_MF_segment in interacting_fs.LocalDFNMacrofractureSegments[interactingNode_dir])
                 {
-                    // Get the I and J coordinates of the outer (i.e. propagating) node of the interacting segment
-                    double segmentnode_I, segmentnode_J;
+                    // If required, check whether the segment length is zero, and if so, move on to the next segment
+                    if (ignoreZeroLengthMFStressShadows && (interacting_MF_segment.StrikeLength == 0))
+                        continue;
+
+                    // Normally we only need to check the propagating node; however if the non-propagating node lies on a grdiblock boundary, we will also check that
+                    List<PointIJK> nodesToCheck = new List<PointIJK>();
                     if (sameSet) // If the propagating and interacting segments are from the same set, we can use the IJK coordinates of the interacting node directly
                     {
-                        segmentnode_I = interacting_MF_segment.PropNode.I;
-                        segmentnode_J = interacting_MF_segment.PropNode.J;
+                        nodesToCheck.Add(interacting_MF_segment.PropNode);
+                        if (interacting_MF_segment.NonPropNodeType == SegmentNodeType.ConnectedGridblockBound)
+                            nodesToCheck.Add(interacting_MF_segment.NonPropNode);
                     }
                     else // Otherwise we will need to convert the IJK coordinates of the interacting node to the frame of the propagating fracture set
                     {
-                        PointXYZ interacting_segment_PropNode_XYZ = interacting_MF_segment.getPropNodeinXYZ();
-                        segmentnode_I = getICoordinate(interacting_segment_PropNode_XYZ);
-                        segmentnode_J = getJCoordinate(interacting_segment_PropNode_XYZ);
+                        nodesToCheck.Add(convertXYZtoIJK(interacting_MF_segment.getPropNodeinXYZ()));
+                        if (interacting_MF_segment.NonPropNodeType == SegmentNodeType.ConnectedGridblockBound)
+                            nodesToCheck.Add(convertXYZtoIJK(interacting_MF_segment.getNonPropNodeinXYZ()));
                     }
 
-                    // Get the J coordinates of the stress shadow interaction box
-                    double stressshadowintboxhalfwidth = stressshadowhalfwidths[interacting_MF_segment.FractureDipSetIndex];
-                    double stressshadowintbox_Jmin = propNode_J - stressshadowintboxhalfwidth;
-                    double stressshadowintbox_Jmax = propNode_J + stressshadowintboxhalfwidth;
+                    foreach (PointIJK node in nodesToCheck)
+                    {
+                        // Get the I and J coordinates of the node to check
+                        double segmentnode_I = node.I;
+                        double segmentnode_J = node.J;
 
-                    // Check if the outer (i.e. propagating) node of the interacting segment lies within the stress shadow interaction box
-                    // NB we do not record an interaction if the propagating node of the interacting segment lies on the far boundary of the stress shadow interaction box (i.e. segmentnode_I = stressshadowintbox_Imin)
-                    // This is so that there will be no interaction whenever the function returns a propagation length equal to the input length
-                    // We also need to check the propagating and interacting segments do not belong to the same fracture
-                    if ((segmentnode_I > stressshadowintbox_Imin) && (segmentnode_I <= stressshadowintbox_Imax))
-                        if ((segmentnode_J >= stressshadowintbox_Jmin) && (segmentnode_J <= stressshadowintbox_Jmax))
-                            if (propagatingSegment.NonPropNode != interacting_MF_segment.NonPropNode)
-                            {
-                                // If required, check if the relay zone between the two fracture tips is cut by a third fracture, and if so, move on to the next segment 
-                                if (checkRelayCrossing && checkCrossingFractures(new PointIJK(segmentnode_I, propNode_J, 0), interacting_MF_segment.PropNode, interacting_fs))
-                                    continue;
+                        // Get the J coordinates of the stress shadow interaction box
+                        double stressshadowintboxhalfwidth = stressshadowhalfwidths[interacting_MF_segment.FractureDipSetIndex];
+                        double stressshadowintbox_Jmin = propNode_J - stressshadowintboxhalfwidth;
+                        double stressshadowintbox_Jmax = propNode_J + stressshadowintboxhalfwidth;
 
-                                // Set the return value to true
-                                interacts = true;
-
-                                // Reduce the maximum propagation distance and stress shadow interaction box dimensions accordingly
-                                stressshadowintbox_Imin = segmentnode_I;
-                                propagationLength = stressshadowintbox_Imax - segmentnode_I;
-
-                                // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
-                                if (terminateIfInteracts)
+                        // Check if the outer (i.e. propagating) node of the interacting segment lies within the stress shadow interaction box
+                        // NB we do not record an interaction if the propagating node of the interacting segment lies on the far boundary of the stress shadow interaction box (i.e. segmentnode_I = stressshadowintbox_Imin)
+                        // This is so that there will be no interaction whenever the function returns a propagation length equal to the input length
+                        // We also need to check the propagating and interacting segments do not belong to the same fracture
+                        if ((segmentnode_I > stressshadowintbox_Imin) && (segmentnode_I <= stressshadowintbox_Imax))
+                            if ((segmentnode_J >= stressshadowintbox_Jmin) && (segmentnode_J <= stressshadowintbox_Jmax))
+                                if (propagatingSegment.NonPropNode != interacting_MF_segment.NonPropNode)
                                 {
-                                    propagatingSegment.PropNodeType = SegmentNodeType.ConnectedStressShadow;
-                                    propagatingSegment.TerminatingSegment = interacting_MF_segment;
+                                    // If required, check if the relay zone between the two fracture tips is cut by a third fracture, and if so, move on to the next segment 
+                                    if (checkRelayCrossing && checkCrossingFractures(new PointIJK(segmentnode_I, propNode_J, 0), interacting_MF_segment.PropNode, interacting_fs))
+                                        continue;
+
+                                    // Set the return value to true
+                                    interacts = true;
+
+                                    // Reduce the maximum propagation distance and stress shadow interaction box dimensions accordingly
+                                    stressshadowintbox_Imin = segmentnode_I;
+                                    propagationLength = stressshadowintbox_Imax - segmentnode_I;
+
+                                    // Set the propagating macrofracture segment to inactive, due to stress shadow interaction, and set reference to terminating macrofracture segment
+                                    if (terminateIfInteracts)
+                                    {
+                                        propagatingSegment.PropNodeType = SegmentNodeType.ConnectedStressShadow;
+                                        propagatingSegment.TerminatingSegment = interacting_MF_segment;
+                                    }
+
+                                    // NB the calling function will be responsible for setting the activity and termination type of the interacting segment
+                                    // We cannot do this here since it may be that the propagating fracture is terminated by another mechanism first
+
+                                    // We also need to continue looping through all remaining macrofracture segments with the opposite propagation direction - one of them may interact earlier than the selected segment
                                 }
-
-                                // NB the calling function will be responsible for setting the activity and termination type of the interacting segment
-                                // We cannot do this here since it may be that the propagating fracture is terminated by another mechanism first
-
-                                // We also need to continue looping through all remaining macrofracture segments with the opposite propagation direction - one of them may interact earlier than the selected segment
-                            }
+                    }
                 }
             }
 
