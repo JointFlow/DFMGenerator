@@ -1165,11 +1165,11 @@ namespace DFMGenerator_Ocean
                     // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
                     bool OutputCentrepoints = arguments.Argument_OutputCentrepoints;
                     // Flag to calculate and output the fracture reactivation potential: this represents the fracture driving stress if positive, and the cohesionless distance to failure if negative
-                    bool CalculateFractureReactivationPotential = arguments.Argument_CalculateFractureReactivationPotential;
+                    bool OutputFractureReactivationPotential = arguments.Argument_OutputFractureReactivationPotential;
                     // Flag to output the bulk rock compliance and stiffness tensors
-                    bool OutputBulkRockElasticTensors = arguments.Argument_CalculateBulkRockElasticTensors;
+                    bool OutputBulkRockElasticTensors = arguments.Argument_OutputBulkRockElasticTensors;
                     // Flag to calculate and output density, mean length and connectivity data (if selected) for individual fracture sets
-                    bool CalculateFractureSets = arguments.Argument_CalculateFractureSets;
+                    bool OutputFractureSets = arguments.Argument_OutputFractureSets;
                     // Flag to calculate and output fracture connectivity and anisotropy indices
                     bool OutputFractureConnectivityAnisotropy = arguments.Argument_OutputFractureConnectivityAnisotropy;
                     // Flag to calculate and output fracture porosity
@@ -4667,8 +4667,8 @@ namespace DFMGenerator_Ocean
                                         }
 
                                         // Set the propagation control data for the gridblock
-                                        gc.PropControl.setPropagationControl(CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures);
+                                        gc.PropControl.setPropagationControl(OutputPopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
+                                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures);
                                         gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
 
                                         // Set folder path for output files
@@ -4689,8 +4689,8 @@ namespace DFMGenerator_Ocean
                                             PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.SetInitialStressStrainState({0}, {1}, {2}, {3});", MeanOverlyingSedimentDensity, FluidDensity, InitialOverpressure, local_InitialStressRelaxation));
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}); ",
-                                            CalculatePopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, CalculateFracturePorosity, FractureApertureControl, CalculateFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
+                                            OutputPopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
+                                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth));
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
@@ -5778,7 +5778,7 @@ namespace DFMGenerator_Ocean
                                     int NoStages = NoIntermediateOutputs + 1;
                                     int NoCalculationElementsCompleted = 0;
                                     int TotalNoSets = (NoFractureSets * NoDipSets) + NoUnconfinedFractureSets;
-                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (CalculateFractureConnectivityAnisotropy ? TotalNoSets + 1 : 0) + (CalculateFractureReactivationPotential ? TotalNoSets : 0) + (CalculateFracturePorosity ? 1 : 0) + (CalculateFracturePermeabilityTensor ? 1 : 0));
+                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? 1 : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
                                     NoElements *= NoStages;
                                     // Bulk rock elastic tensors are only output for the final stage
                                     if (OutputBulkRockElasticTensors)
@@ -5845,7 +5845,7 @@ namespace DFMGenerator_Ocean
                                         FracData.Comments = headerInputParams + outputStageParams + generalInputParams + implicitInputParams;
 
                                         // If required, loop through each fracture set and write density, mean size and connectivity data
-                                        if (CalculateFractureSets)
+                                        if (OutputFractureSets)
                                         {
                                             for (int FractureSetNo = 0; FractureSetNo < NoFractureSets; FractureSetNo++)
                                             {
@@ -5991,7 +5991,7 @@ namespace DFMGenerator_Ocean
                                             } // End write fracture density and length data to Petrel grid
 
                                                     // If required, write fracture connectivity data to Petrel grid
-                                                    if (CalculateFractureConnectivityAnisotropy)
+                                                    if (OutputFractureConnectivityAnisotropy)
                                                     {
                                                         // Create properties and set templates for each property
                                                         Property MF_UnconnectedTipRatio = FracSetData.CreateProperty(ConnectivityTemplate);
@@ -6131,7 +6131,7 @@ namespace DFMGenerator_Ocean
                                                     } // End write fracture connectivity data to Petrel grid
 
                                                     // Write fracture reactivity data to Petrel grid
-                                                    if (CalculateFractureReactivationPotential)
+                                                    if (OutputFractureReactivationPotential)
                                                     {
                                                         // Create properties and set templates for each property
                                                         Property FDS_ReactivationPotential = FracSetData.CreateProperty(FractureReactivationPotentialTemplate);
@@ -6365,7 +6365,7 @@ namespace DFMGenerator_Ocean
                                                         } // End loop through all columns and rows in the Fracture Grid
 
                                                 // If required, write fracture connectivity data to Petrel grid
-                                                if (CalculateFractureConnectivityAnisotropy)
+                                                if (OutputFractureConnectivityAnisotropy)
                                                 {
                                                     // Create properties and set templates for each property
                                                     Property UCF_UnconnectedTipRatio = UnconfinedFracSetData.CreateProperty(ConnectivityTemplate);
@@ -6513,7 +6513,7 @@ namespace DFMGenerator_Ocean
                                                 } // End write fracture connectivity data to Petrel grid
 
                                                 // Write fracture reactivity data to Petrel grid
-                                                if (CalculateFractureReactivationPotential)
+                                                if (OutputFractureReactivationPotential)
                                                 {
                                                     // Create properties and set templates for each property
                                                     Property UFS_ReactivationPotential = UnconfinedFracSetData.CreateProperty(FractureReactivationPotentialTemplate);
@@ -6617,7 +6617,7 @@ namespace DFMGenerator_Ocean
                                         } // End write fracture set data
 
                                         // If required, write fracture anisotropy data to Petrel grid
-                                        if (CalculateFractureConnectivityAnisotropy)
+                                        if (OutputFractureConnectivityAnisotropy)
                                         {
                                             // Create a subfolder for the fracture anisotropy data
                                             string CollectionName = "Fracture_Anisotropy";
@@ -6627,7 +6627,7 @@ namespace DFMGenerator_Ocean
                                             Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
                                             P32_Anisotropy.Name = "P32_anisotropy";
                                             Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
-                                            if (CalculateFracturePorosity)
+                                            if (OutputFracturePorosity)
                                                 P33_Anisotropy.Name = "FracturePorosity_anisotropy";
                                             else
                                                 P33_Anisotropy.Name = "P33_anisotropy";
@@ -6697,7 +6697,7 @@ namespace DFMGenerator_Ocean
                                                         {
                                                             // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
                                                             P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                                            if (CalculateFracturePorosity)
+                                                            if (OutputFracturePorosity)
                                                                 P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
                                                             else
                                                                 P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
@@ -6733,7 +6733,7 @@ namespace DFMGenerator_Ocean
                                                                 foreach (FractureDipSet fds in fractureGridCell.FractureSets[0].FractureDipSets)
                                                                 {
                                                                     Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                                    if (CalculateFracturePorosity)
+                                                                    if (OutputFracturePorosity)
                                                                         Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                                     else
                                                                         Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
@@ -6748,7 +6748,7 @@ namespace DFMGenerator_Ocean
                                                                     foreach (FractureDipSet fds in fractureGridCell.FractureSets[fs_Index].FractureDipSets)
                                                                     {
                                                                         fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                                        if (CalculateFracturePorosity)
+                                                                        if (OutputFracturePorosity)
                                                                             fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                                         else
                                                                             fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
@@ -6850,7 +6850,7 @@ namespace DFMGenerator_Ocean
                                         } // End write fracture anisotropy data
 
                                         // Write fracture porosity data to Petrel grid
-                                        if (CalculateFracturePorosity)
+                                        if (OutputFracturePorosity)
                                         {
                                             // Create a subfolder for the fracture porosity data
                                             string CollectionName = "Fracture_Porosity";
@@ -7005,7 +7005,7 @@ namespace DFMGenerator_Ocean
                                             } // End write fracture porosity data
 
                                             // Then write unconfined fracture data, if present
-                                            if (CalculateFracturePorosity && (NoUnconfinedFractureStrikeSets > 0))
+                                            if (OutputFracturePorosity && (NoUnconfinedFractureStrikeSets > 0))
                                             {
                                                 // Create properties and set templates for microfracture and macrofracture porosity and combined P32 values
                                                 Property UCF_P32combined = FracPorosityData.CreateProperty(P32Template);
@@ -7134,7 +7134,7 @@ namespace DFMGenerator_Ocean
                                         } // End write unconfined fracture porosity data
 
                                         // Write fracture permeability tensor and sigma factor data to Petrel grid
-                                        if (CalculateFracturePermeabilityTensor)
+                                        if (OutputFracturePermeabilityTensor)
                                         {
                                             // Create a subfolder for the fracture permeability tensor components and sigma factors
                                             string FracturePermeabilityTensorCollectionName;
@@ -8813,10 +8813,10 @@ namespace DFMGenerator_Ocean
             private int argument_DFNFileType = 1;
             private int argument_IntermediateOutputIntervalControl = 2;
             private bool argument_OutputCentrepoints = false;
-            private bool argument_CalculateFractureSets = true;
-            private bool argument_CalculateFractureConnectivityAnisotropy = true;
-            private bool argument_CalculateFracturePorosity = true;
-            private bool argument_CalculateBulkRockElasticTensors = false;
+            private bool argument_OutputFractureSets = true;
+            private bool argument_OutputFractureConnectivityAnisotropy = true;
+            private bool argument_OutputFracturePorosity = true;
+            private bool argument_OutputBulkRockElasticTensors = false;
             private bool argument_PopulateEmptyGridblocks = true;
             private bool argument_OutputFracturePermeabilityTensor = false;
             private int argument_PermeabilityAlgorithm = 0;
@@ -13749,10 +13749,10 @@ namespace DFMGenerator_Ocean
             }
 
             [Description("Output data for fracture sets", "Calculate and output density, mean length and connectivity data (if selected) for individual fracture sets")]
-            public bool Argument_CalculateFractureSets
+            public bool Argument_OutputFractureSets
             {
-                internal get { return this.argument_CalculateFractureSets; }
-                set { this.argument_CalculateFractureSets = value; }
+                internal get { return this.argument_OutputFractureSets; }
+                set { this.argument_OutputFractureSets = value; }
             }
 
             [Description("Make unconfined fractures planar", "Make unconfined fractures completely planar, even when crossing gridblock boundaries")]
@@ -14090,10 +14090,10 @@ namespace DFMGenerator_Ocean
                 argument_DFNFileType = 1;
                 argument_IntermediateOutputIntervalControl = 2;
                 argument_OutputCentrepoints = false;
-                argument_CalculateFractureSets = true;
-                argument_CalculateFractureConnectivityAnisotropy = true;
-                argument_CalculateFracturePorosity = true;
-                argument_CalculateBulkRockElasticTensors = false;
+                argument_OutputFractureSets = true;
+                argument_OutputFractureConnectivityAnisotropy = true;
+                argument_OutputFracturePorosity = true;
+                argument_OutputBulkRockElasticTensors = false;
                 argument_PopulateEmptyGridblocks = true;
                 argument_OutputFracturePermeabilityTensor = false;
                 argument_PermeabilityAlgorithm = 0;

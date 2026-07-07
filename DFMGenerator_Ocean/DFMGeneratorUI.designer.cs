@@ -407,14 +407,14 @@ namespace DFMGenerator_Ocean
             this.label_FractureApertureControl = new System.Windows.Forms.Label();
             this.tabOutputs = new Slb.Ocean.Petrel.UI.Controls.TabPage();
             this.toolTipHotspot_CalculateFractureSets = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.checkBox_CalculateFractureSets = new System.Windows.Forms.CheckBox();
+            this.checkBox_OutputFractureSets = new System.Windows.Forms.CheckBox();
             this.toolTipHotspot_PopulateEmptyGridblocks = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.checkBox_PopulateEmptyGridblocks = new System.Windows.Forms.CheckBox();
             this.button_DefinePresentDayStress = new System.Windows.Forms.Button();
             this.toolTipHotspot_UsePresentDayStress = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.checkBox_UsePresentDayStress = new System.Windows.Forms.CheckBox();
             this.toolTipHotspot_CalculateFractureReactivationPotential = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.checkBox_CalculateFractureReactivationPotential = new System.Windows.Forms.CheckBox();
+            this.checkBox_OutputFractureReactivationPotential = new System.Windows.Forms.CheckBox();
             this.groupBox_FracturePermeability = new System.Windows.Forms.GroupBox();
             this.label_kv_units = new System.Windows.Forms.Label();
             this.unitTextBox_kv_default = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
@@ -432,18 +432,18 @@ namespace DFMGenerator_Ocean
             this.label_FractureTypesInPermeabilityTensor = new System.Windows.Forms.Label();
             this.comboBox_FractureTypesInPermeabilityTensor = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
             this.label_PermeabilityAlgorithm = new System.Windows.Forms.Label();
-            this.checkBox_CalculateFracturePermeabilityTensor = new System.Windows.Forms.CheckBox();
+            this.checkBox_OutputFracturePermeabilityTensor = new System.Windows.Forms.CheckBox();
             this.comboBox_PermeabilityAlgorithm = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
             this.comboBox_IntermediateOutputInterval = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
             this.label_IntermediateOutputInterval = new System.Windows.Forms.Label();
             this.toolTip_CalculateBulkRockElasticTensors = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.checkBox_CalculateBulkRockElasticTensors = new System.Windows.Forms.CheckBox();
+            this.checkBox_OutputBulkRockElasticTensors = new System.Windows.Forms.CheckBox();
             this.toolTipHotspot_CalculateFractureConnectivityAnisotropy = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_OutputCentrepoints = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_CalculateFracturePorosity = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.toolTipHotspot_OutputIntermediatesByTime = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
-            this.checkBox_CalculateFracturePorosity = new System.Windows.Forms.CheckBox();
-            this.checkBox_CalculateFractureConnectivityAnisotropy = new System.Windows.Forms.CheckBox();
+            this.checkBox_OutputFracturePorosity = new System.Windows.Forms.CheckBox();
+            this.checkBox_OutputFractureConnectivityAnisotropy = new System.Windows.Forms.CheckBox();
             this.groupBox_FileOutput = new System.Windows.Forms.GroupBox();
             this.checkBox_WriteToProjectFolder = new System.Windows.Forms.CheckBox();
             this.comboBox_DFNFileType = new Slb.Ocean.Petrel.UI.Controls.ComboBox();
@@ -670,7 +670,7 @@ namespace DFMGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 5;
+            this.tabControl1.SelectedIndex = 4;
             this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
@@ -2480,25 +2480,25 @@ namespace DFMGenerator_Ocean
             // tabOutputs
             // 
             this.tabOutputs.Controls.Add(this.toolTipHotspot_CalculateFractureSets);
-            this.tabOutputs.Controls.Add(this.checkBox_CalculateFractureSets);
+            this.tabOutputs.Controls.Add(this.checkBox_OutputFractureSets);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_PopulateEmptyGridblocks);
             this.tabOutputs.Controls.Add(this.checkBox_PopulateEmptyGridblocks);
             this.tabOutputs.Controls.Add(this.button_DefinePresentDayStress);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_UsePresentDayStress);
             this.tabOutputs.Controls.Add(this.checkBox_UsePresentDayStress);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_CalculateFractureReactivationPotential);
-            this.tabOutputs.Controls.Add(this.checkBox_CalculateFractureReactivationPotential);
+            this.tabOutputs.Controls.Add(this.checkBox_OutputFractureReactivationPotential);
             this.tabOutputs.Controls.Add(this.groupBox_FracturePermeability);
             this.tabOutputs.Controls.Add(this.comboBox_IntermediateOutputInterval);
             this.tabOutputs.Controls.Add(this.label_IntermediateOutputInterval);
             this.tabOutputs.Controls.Add(this.toolTip_CalculateBulkRockElasticTensors);
-            this.tabOutputs.Controls.Add(this.checkBox_CalculateBulkRockElasticTensors);
+            this.tabOutputs.Controls.Add(this.checkBox_OutputBulkRockElasticTensors);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_CalculateFractureConnectivityAnisotropy);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_OutputCentrepoints);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_CalculateFracturePorosity);
             this.tabOutputs.Controls.Add(this.toolTipHotspot_OutputIntermediatesByTime);
-            this.tabOutputs.Controls.Add(this.checkBox_CalculateFracturePorosity);
-            this.tabOutputs.Controls.Add(this.checkBox_CalculateFractureConnectivityAnisotropy);
+            this.tabOutputs.Controls.Add(this.checkBox_OutputFracturePorosity);
+            this.tabOutputs.Controls.Add(this.checkBox_OutputFractureConnectivityAnisotropy);
             this.tabOutputs.Controls.Add(this.groupBox_FileOutput);
             this.tabOutputs.Controls.Add(this.checkBox_OutputCentrepoints);
             this.tabOutputs.Name = "tabOutputs";
@@ -2515,15 +2515,15 @@ namespace DFMGenerator_Ocean
             toolTipItem34});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureSets, toolTipInfo28);
             // 
-            // checkBox_CalculateFractureSets
+            // checkBox_OutputFractureSets
             // 
-            this.checkBox_CalculateFractureSets.AutoSize = true;
-            this.checkBox_CalculateFractureSets.Location = new System.Drawing.Point(20, 55);
-            this.checkBox_CalculateFractureSets.Name = "checkBox_CalculateFractureSets";
-            this.checkBox_CalculateFractureSets.Size = new System.Drawing.Size(180, 17);
-            this.checkBox_CalculateFractureSets.TabIndex = 59;
-            this.checkBox_CalculateFractureSets.Text = "Output data for each fracture set";
-            this.checkBox_CalculateFractureSets.UseVisualStyleBackColor = true;
+            this.checkBox_OutputFractureSets.AutoSize = true;
+            this.checkBox_OutputFractureSets.Location = new System.Drawing.Point(20, 55);
+            this.checkBox_OutputFractureSets.Name = "checkBox_OutputFractureSets";
+            this.checkBox_OutputFractureSets.Size = new System.Drawing.Size(180, 17);
+            this.checkBox_OutputFractureSets.TabIndex = 59;
+            this.checkBox_OutputFractureSets.Text = "Output data for each fracture set";
+            this.checkBox_OutputFractureSets.UseVisualStyleBackColor = true;
             // 
             // toolTipHotspot_PopulateEmptyGridblocks
             // 
@@ -2587,15 +2587,15 @@ namespace DFMGenerator_Ocean
             toolTipItem37});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_CalculateFractureReactivationPotential, toolTipInfo31);
             // 
-            // checkBox_CalculateFractureReactivationPotential
+            // checkBox_OutputFractureReactivationPotential
             // 
-            this.checkBox_CalculateFractureReactivationPotential.AutoSize = true;
-            this.checkBox_CalculateFractureReactivationPotential.Location = new System.Drawing.Point(20, 106);
-            this.checkBox_CalculateFractureReactivationPotential.Name = "checkBox_CalculateFractureReactivationPotential";
-            this.checkBox_CalculateFractureReactivationPotential.Size = new System.Drawing.Size(210, 17);
-            this.checkBox_CalculateFractureReactivationPotential.TabIndex = 26;
-            this.checkBox_CalculateFractureReactivationPotential.Text = "Calculate fracture reactivation potential";
-            this.checkBox_CalculateFractureReactivationPotential.UseVisualStyleBackColor = true;
+            this.checkBox_OutputFractureReactivationPotential.AutoSize = true;
+            this.checkBox_OutputFractureReactivationPotential.Location = new System.Drawing.Point(20, 106);
+            this.checkBox_OutputFractureReactivationPotential.Name = "checkBox_OutputFractureReactivationPotential";
+            this.checkBox_OutputFractureReactivationPotential.Size = new System.Drawing.Size(210, 17);
+            this.checkBox_OutputFractureReactivationPotential.TabIndex = 26;
+            this.checkBox_OutputFractureReactivationPotential.Text = "Calculate fracture reactivation potential";
+            this.checkBox_OutputFractureReactivationPotential.UseVisualStyleBackColor = true;
             // 
             // groupBox_FracturePermeability
             // 
@@ -2615,7 +2615,7 @@ namespace DFMGenerator_Ocean
             this.groupBox_FracturePermeability.Controls.Add(this.label_FractureTypesInPermeabilityTensor);
             this.groupBox_FracturePermeability.Controls.Add(this.comboBox_FractureTypesInPermeabilityTensor);
             this.groupBox_FracturePermeability.Controls.Add(this.label_PermeabilityAlgorithm);
-            this.groupBox_FracturePermeability.Controls.Add(this.checkBox_CalculateFracturePermeabilityTensor);
+            this.groupBox_FracturePermeability.Controls.Add(this.checkBox_OutputFracturePermeabilityTensor);
             this.groupBox_FracturePermeability.Controls.Add(this.comboBox_PermeabilityAlgorithm);
             this.groupBox_FracturePermeability.Location = new System.Drawing.Point(14, 181);
             this.groupBox_FracturePermeability.Name = "groupBox_FracturePermeability";
@@ -2783,15 +2783,15 @@ namespace DFMGenerator_Ocean
             this.label_PermeabilityAlgorithm.TabIndex = 25;
             this.label_PermeabilityAlgorithm.Text = "Permeability calculation algorithm:";
             // 
-            // checkBox_CalculateFracturePermeabilityTensor
+            // checkBox_OutputFracturePermeabilityTensor
             // 
-            this.checkBox_CalculateFracturePermeabilityTensor.AutoSize = true;
-            this.checkBox_CalculateFracturePermeabilityTensor.Location = new System.Drawing.Point(6, 19);
-            this.checkBox_CalculateFracturePermeabilityTensor.Name = "checkBox_CalculateFracturePermeabilityTensor";
-            this.checkBox_CalculateFracturePermeabilityTensor.Size = new System.Drawing.Size(199, 17);
-            this.checkBox_CalculateFracturePermeabilityTensor.TabIndex = 24;
-            this.checkBox_CalculateFracturePermeabilityTensor.Text = "Calculate fracture permeability tensor";
-            this.checkBox_CalculateFracturePermeabilityTensor.UseVisualStyleBackColor = true;
+            this.checkBox_OutputFracturePermeabilityTensor.AutoSize = true;
+            this.checkBox_OutputFracturePermeabilityTensor.Location = new System.Drawing.Point(6, 19);
+            this.checkBox_OutputFracturePermeabilityTensor.Name = "checkBox_OutputFracturePermeabilityTensor";
+            this.checkBox_OutputFracturePermeabilityTensor.Size = new System.Drawing.Size(199, 17);
+            this.checkBox_OutputFracturePermeabilityTensor.TabIndex = 24;
+            this.checkBox_OutputFracturePermeabilityTensor.Text = "Calculate fracture permeability tensor";
+            this.checkBox_OutputFracturePermeabilityTensor.UseVisualStyleBackColor = true;
             // 
             // comboBox_PermeabilityAlgorithm
             // 
@@ -2845,15 +2845,15 @@ namespace DFMGenerator_Ocean
             toolTipItem43});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTip_CalculateBulkRockElasticTensors, toolTipInfo33);
             // 
-            // checkBox_CalculateBulkRockElasticTensors
+            // checkBox_OutputBulkRockElasticTensors
             // 
-            this.checkBox_CalculateBulkRockElasticTensors.AutoSize = true;
-            this.checkBox_CalculateBulkRockElasticTensors.Location = new System.Drawing.Point(20, 132);
-            this.checkBox_CalculateBulkRockElasticTensors.Name = "checkBox_CalculateBulkRockElasticTensors";
-            this.checkBox_CalculateBulkRockElasticTensors.Size = new System.Drawing.Size(273, 17);
-            this.checkBox_CalculateBulkRockElasticTensors.TabIndex = 19;
-            this.checkBox_CalculateBulkRockElasticTensors.Text = "Calculate bulk rock compliance and stiffness tensors";
-            this.checkBox_CalculateBulkRockElasticTensors.UseVisualStyleBackColor = true;
+            this.checkBox_OutputBulkRockElasticTensors.AutoSize = true;
+            this.checkBox_OutputBulkRockElasticTensors.Location = new System.Drawing.Point(20, 132);
+            this.checkBox_OutputBulkRockElasticTensors.Name = "checkBox_OutputBulkRockElasticTensors";
+            this.checkBox_OutputBulkRockElasticTensors.Size = new System.Drawing.Size(273, 17);
+            this.checkBox_OutputBulkRockElasticTensors.TabIndex = 19;
+            this.checkBox_OutputBulkRockElasticTensors.Text = "Calculate bulk rock compliance and stiffness tensors";
+            this.checkBox_OutputBulkRockElasticTensors.UseVisualStyleBackColor = true;
             // 
             // toolTipHotspot_CalculateFractureConnectivityAnisotropy
             // 
@@ -2913,25 +2913,25 @@ namespace DFMGenerator_Ocean
             toolTipItem50});
             this.toolTipManager_DFMGenerator.SetToolTip(this.toolTipHotspot_OutputIntermediatesByTime, toolTipInfo37);
             // 
-            // checkBox_CalculateFracturePorosity
+            // checkBox_OutputFracturePorosity
             // 
-            this.checkBox_CalculateFracturePorosity.AutoSize = true;
-            this.checkBox_CalculateFracturePorosity.Location = new System.Drawing.Point(20, 158);
-            this.checkBox_CalculateFracturePorosity.Name = "checkBox_CalculateFracturePorosity";
-            this.checkBox_CalculateFracturePorosity.Size = new System.Drawing.Size(148, 17);
-            this.checkBox_CalculateFracturePorosity.TabIndex = 8;
-            this.checkBox_CalculateFracturePorosity.Text = "Calculate fracture porosity";
-            this.checkBox_CalculateFracturePorosity.UseVisualStyleBackColor = true;
+            this.checkBox_OutputFracturePorosity.AutoSize = true;
+            this.checkBox_OutputFracturePorosity.Location = new System.Drawing.Point(20, 158);
+            this.checkBox_OutputFracturePorosity.Name = "checkBox_OutputFracturePorosity";
+            this.checkBox_OutputFracturePorosity.Size = new System.Drawing.Size(148, 17);
+            this.checkBox_OutputFracturePorosity.TabIndex = 8;
+            this.checkBox_OutputFracturePorosity.Text = "Calculate fracture porosity";
+            this.checkBox_OutputFracturePorosity.UseVisualStyleBackColor = true;
             // 
-            // checkBox_CalculateFractureConnectivityAnisotropy
+            // checkBox_OutputFractureConnectivityAnisotropy
             // 
-            this.checkBox_CalculateFractureConnectivityAnisotropy.AutoSize = true;
-            this.checkBox_CalculateFractureConnectivityAnisotropy.Location = new System.Drawing.Point(20, 81);
-            this.checkBox_CalculateFractureConnectivityAnisotropy.Name = "checkBox_CalculateFractureConnectivityAnisotropy";
-            this.checkBox_CalculateFractureConnectivityAnisotropy.Size = new System.Drawing.Size(241, 17);
-            this.checkBox_CalculateFractureConnectivityAnisotropy.TabIndex = 7;
-            this.checkBox_CalculateFractureConnectivityAnisotropy.Text = "Calculate fracture connectivity and anisotropy";
-            this.checkBox_CalculateFractureConnectivityAnisotropy.UseVisualStyleBackColor = true;
+            this.checkBox_OutputFractureConnectivityAnisotropy.AutoSize = true;
+            this.checkBox_OutputFractureConnectivityAnisotropy.Location = new System.Drawing.Point(20, 81);
+            this.checkBox_OutputFractureConnectivityAnisotropy.Name = "checkBox_OutputFractureConnectivityAnisotropy";
+            this.checkBox_OutputFractureConnectivityAnisotropy.Size = new System.Drawing.Size(241, 17);
+            this.checkBox_OutputFractureConnectivityAnisotropy.TabIndex = 7;
+            this.checkBox_OutputFractureConnectivityAnisotropy.Text = "Calculate fracture connectivity and anisotropy";
+            this.checkBox_OutputFractureConnectivityAnisotropy.UseVisualStyleBackColor = true;
             // 
             // groupBox_FileOutput
             // 
@@ -4707,8 +4707,8 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_FluidDensity;
         private System.Windows.Forms.Label label_MeanOverlyingSedimentDensity;
         private System.Windows.Forms.Label label_DepthAtDeformation;
-        private System.Windows.Forms.CheckBox checkBox_CalculateFracturePorosity;
-        private System.Windows.Forms.CheckBox checkBox_CalculateFractureConnectivityAnisotropy;
+        private System.Windows.Forms.CheckBox checkBox_OutputFracturePorosity;
+        private System.Windows.Forms.CheckBox checkBox_OutputFractureConnectivityAnisotropy;
         private System.Windows.Forms.GroupBox groupBox_FileOutput;
         private System.Windows.Forms.CheckBox checkBox_LogCalculation;
         private System.Windows.Forms.CheckBox checkBox_WriteDFNFiles;
@@ -4817,7 +4817,7 @@ namespace DFMGenerator_Ocean
         private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_FractureApertureControl;
         private System.Windows.Forms.Label label_FractureApertureControl;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTip_CalculateBulkRockElasticTensors;
-        private System.Windows.Forms.CheckBox checkBox_CalculateBulkRockElasticTensors;
+        private System.Windows.Forms.CheckBox checkBox_OutputBulkRockElasticTensors;
         private System.Windows.Forms.Label label_CriticalPropagationRate_Units;
         private System.Windows.Forms.Label label_InitialOverpressure_Units;
         private System.Windows.Forms.Label label_FluidDensity_Units;
@@ -4904,7 +4904,7 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_FractureNucleationPosition;
         private System.Windows.Forms.GroupBox groupBox_FracturePermeability;
         private System.Windows.Forms.Label label_PermeabilityAlgorithm;
-        private System.Windows.Forms.CheckBox checkBox_CalculateFracturePermeabilityTensor;
+        private System.Windows.Forms.CheckBox checkBox_OutputFracturePermeabilityTensor;
         private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_PermeabilityAlgorithm;
         private System.Windows.Forms.Label label_FractureTypesInPermeabilityTensor;
         private Slb.Ocean.Petrel.UI.Controls.ComboBox comboBox_FractureTypesInPermeabilityTensor;
@@ -4913,7 +4913,7 @@ namespace DFMGenerator_Ocean
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_UsePresentDayStress;
         private System.Windows.Forms.CheckBox checkBox_UsePresentDayStress;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_CalculateFractureReactivationPotential;
-        private System.Windows.Forms.CheckBox checkBox_CalculateFractureReactivationPotential;
+        private System.Windows.Forms.CheckBox checkBox_OutputFractureReactivationPotential;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_PopulateEmptyGridblocks;
         private System.Windows.Forms.CheckBox checkBox_PopulateEmptyGridblocks;
         private System.Windows.Forms.Label label_kv_units;
@@ -4981,7 +4981,7 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_FilterByPropertyMaxCutoff;
         private System.Windows.Forms.Label label_FilterByPropertyMinCutoff;
         private Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot toolTipHotspot_CalculateFractureSets;
-        private System.Windows.Forms.CheckBox checkBox_CalculateFractureSets;
+        private System.Windows.Forms.CheckBox checkBox_OutputFractureSets;
         private System.Windows.Forms.Label label_LargeFractureMinimumRadius_Units;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_LargeFractureMinimumRadius;
         private System.Windows.Forms.Label label_LargeFractureMinimumRadius;

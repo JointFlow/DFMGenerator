@@ -450,6 +450,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double Area { get; private set; }
         /// <summary>
+        /// Volume of the gridblock at the time of deformation
+        /// </summary>
+        public double Volume { get { return Area * ThicknessAtDeformation; } }
+        /// <summary>
         /// Point representing the local gridblock origin, with the minimum X, Y and Z values of all corners of the gridblock
         /// </summary>
         public PointXYZ Gridblock_Origin { get { return new PointXYZ(MinX, MinY, MinZ); } }
@@ -5398,7 +5402,7 @@ namespace DFMGenerator_SharedCode
                     // Check whether this point lies in the stress shadow of an existing macrofracture and if so update counter
                     if (checkAlluFStressShadows)
                     {
-                        if (checkInMFStressShadow(testPointXYZ, fs_index, ref StressShadowHalfWidthsIJ))
+                        if (checkInMFStressShadow(testPointXYZ, fs_index, ref SetI_StressShadowHalfWidthsIJ))
                             NoInStressShadow++;
                     }
                     else
@@ -5410,7 +5414,7 @@ namespace DFMGenerator_SharedCode
                     // Check whether this point lies in the exclusion zone of an existing macrofracture and if so update counter
                     if (checkAlluFStressShadows)
                     {
-                        if (checkInMFExclusionZone(testPointXYZ, fs_index, MostPopulousDipSetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
+                        if (checkInMFExclusionZone(testPointXYZ, fs_index, MostPopulousDipSetIndex, ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI))
                             NoInExclusionZone++;
                     }
                     else
@@ -5583,54 +5587,9 @@ namespace DFMGenerator_SharedCode
                             bool addThisFracture = true;
                             if (checkStressShadow)
                             {
-                                // First check other macrofractures from this gridblock
-                                if (checkAlluFStressShadows)
-                                    addThisFracture = !checkInMFStressShadow(new_uf_centrepointXYZ, fs_index, ref StressShadowHalfWidthsIJ);
-                                else
-                                    addThisFracture = !fs.checkInMFStressShadow(new_uF_centrepointIJK);
-
-                                // Then, if required, check macrofractures from adjacent gridblocks
-                                // NB we do not need to do this if we have already found a stress shadow interaction
-                                if (addThisFracture && searchNeighbouringGridblocks)
-                                {
-                                    // Create a list of neighbouring gridblocks to search - include diagonal neighbours
-                                    List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
-
-                                    // Loop through each gridblock in the list
-                                    foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
-                                    {
-                                        if (checkAlluFStressShadows)
-                                        {
-                                            // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                                            int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, fs.Strike);
-
-                                            // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
-                                            // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
-                                            // We will therefore use the list generated for this gridblock to speed up the calculation
-                                            if (neighbour_gb.checkInMFStressShadow(new_uf_centrepointXYZ, neighbourGB_fs_index, ref StressShadowHalfWidthsIJ))
-                                            {
-                                                addThisFracture = false;
-                                                break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // Find the correct fracture set in the neighbouring gridblock to search
-                                            Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, fs.Strike);
-
-                                            // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                            // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
-                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            if (neighbourGB_fs.checkInMFStressShadow(new_uf_centrepointXYZ))
-                                            {
-                                                addThisFracture = false;
-                                            }
-                                        }
-                                    }
-                                } // End check macrofractures from adjacent gridblocks
-                            } // End check whether this point lies in the stress shadow of an existing macrofracture
+                                // Check if the propagating node of the macrofracture segment lies in a stress shadow
+                                addThisFracture = !checkInMFStressShadow(new_uf_centrepointXYZ, fs_index, checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ);
+                            }
 
                             // If the point is not in a stress shadow or we are not including stress shadow effects, generate a new microfracture and add it to the DFN
                             if (addThisFracture)
@@ -5808,42 +5767,9 @@ namespace DFMGenerator_SharedCode
                             bool addThisFracture = true;
                             if (checkStressShadow)
                             {
-                                // First check other macrofractures from this gridblock
-                                if (checkAlluFStressShadows)
-                                    addThisFracture = !checkInMFExclusionZone(new_MF_nucleationpointXYZ, fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI);
-                                else
-                                    addThisFracture = !fs.checkInMFExclusionZone(new_MF_nucleationpointIJK, MF_StressShadowWidth);
-
-                                // Then, if required, check macrofractures from adjacent gridblocks
-                                // NB we do not need to do this if we have already found a stress shadow interaction
-                                if (addThisFracture && searchNeighbouringGridblocks)
-                                {
-                                    // Create a list of neighbouring gridblocks to search - include diagonal neighbours
-                                    List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
-
-                                    // Loop through each gridblock in the list
-                                    foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
-                                    {
-                                        if (checkAlluFStressShadows)
-                                        {
-                                            // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                                            int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, fs.Strike);
-
-                                            // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                            // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
-                                            // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
-                                            // We will therefore use the list generated for this gridblock to speed up the calculation
-                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            if (neighbour_gb.checkInMFExclusionZone(new_MF_nucleationpointXYZ, neighbourGB_fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
-                                            {
-                                                addThisFracture = false;
-                                                break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // Find the correct fracture set in the neighbouring gridblock to search
-                                            Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, fs.Strike);
+                                // Check if the propagating node of the macrofracture segment lies in an exclusion zone
+                                addThisFracture = !checkInMFExclusionZone(new_MF_nucleationpointXYZ, fs_index, dipsetIndex, checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
+                            }
 
                             // If we are applying a minimum macrofracture length cutoff we also need to check if it intersects another macrofracture, interacts with another stress shadow, or propagates out of the gridblock before it reaches the minimum length
                             if (use_MF_min_length_cutoff)
@@ -5915,58 +5841,9 @@ namespace DFMGenerator_SharedCode
                             // Check if it is in a macrofracture stress shadow, if so deactivate it and move straight onto the next microfracture
                             if (checkStressShadow)
                             {
-                                // First check other macrofractures from this gridblock
-                                // If we find a stress shadow interaction, deactivate this microfracture and move on to the next one
-                                if (checkAlluFStressShadows)
-                                {
-                                    if (checkInMFStressShadow(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, ref StressShadowHalfWidthsIJ))
-                                    {
-                                        uF.Active = false;
-                                        continue;
-                                    }
-                                }
-                                else
-                                {
-                                    if (fs.checkInMFStressShadow(uF.CentrePoint))
-                                    {
-                                        uF.Active = false;
-                                        continue;
-                                    }
-                                }
-
-                                // Then, if required, check macrofractures from adjacent gridblocks
-                                if (searchNeighbouringGridblocks)
-                                {
-                                    // Convert the microfracture centrepoint to global (XYZ) coordinates
-                                    PointXYZ uFcentrepointXYZ = fs.convertIJKtoXYZ(uF.CentrePoint);
-
-                                    // Create a list of neighbouring gridblocks to search - include diagonal neighbours
-                                    List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
-
-                                    // Loop through each gridblock in the list
-                                    bool deactivateFracture = false;
-                                    foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
-                                    {
-                                        if (checkAlluFStressShadows)
-                                        {
-                                            // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                                            int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, fs.Strike);
-
-                                            // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                            // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
-                                            // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
-                                            // We will therefore use the list generated for this gridblock to speed up the calculation
-                                            // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                            if (neighbour_gb.checkInMFStressShadow(uFcentrepointXYZ, neighbourGB_fs_index, ref StressShadowHalfWidthsIJ))
-                                            {
-                                                deactivateFracture = true;
-                                                break;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            // Find the correct fracture set in the neighbouring gridblock to search
-                                            Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, fs.Strike);
+                                // Check if the propagating node of the macrofracture segment lies in a stress shadow
+                                PointXYZ uFcentrepointXYZ = fs.convertIJKtoXYZ(uF.CentrePoint);
+                                bool deactivateFracture = checkInMFStressShadow(uFcentrepointXYZ, fs_index, checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ);
 
                                 // If we find a stress shadow interaction with a macrofracture from another gridblock, deactivate this microfracture and move on to the next one
                                 if (deactivateFracture)
@@ -5974,7 +5851,7 @@ namespace DFMGenerator_SharedCode
                                     uF.Active = false;
                                     continue;
                                 }
-                            } 
+                            }
 
                             // Get the microfracture dip set index
                             int dipsetIndex = uF.FractureDipSetIndex;
@@ -6015,55 +5892,9 @@ namespace DFMGenerator_SharedCode
                                 bool addThisFracture = true;
                                 if (checkStressShadow)
                                 {
-                                    // First check other macrofractures from this gridblock
-                                    if (checkAlluFStressShadows)
-                                        addThisFracture = !checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI);
-                                    else
-                                        addThisFracture = !fs.checkInMFExclusionZone(uF.CentrePoint, MF_StressShadowWidth);
-
-                                    // Then, if required, check macrofractures from adjacent gridblocks
-                                    // NB we do not need to do this if we have already found a stress shadow interaction
-                                    if (addThisFracture && searchNeighbouringGridblocks)
-                                    {
-                                        // Create a list of neighbouring gridblocks to search - include diagonal neighbours
-                                        List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
-
-                                        // Loop through each gridblock in the list
-                                        foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
-                                        {
-                                            if (checkAlluFStressShadows)
-                                            {
-                                                // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                                                int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, fs.Strike);
-
-                                                // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
-                                                // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
-                                                // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
-                                                // We will therefore use the list generated for this gridblock to speed up the calculation
-                                                // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                                if (neighbour_gb.checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), neighbourGB_fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
-                                                {
-                                                    addThisFracture = false;
-                                                    break;
-                                                }
-                                            }
-                                            else
-                                            {
-                                                // Find the correct fracture set in the neighbouring gridblock to search
-                                                Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, fs.Strike);
-
-                                                // Now check the macrofractures in the identified neighbouring gridblock fracture set for stress shadow interaction
-                                                // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
-                                                // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
-                                                if (neighbourGB_fs.checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), MF_StressShadowWidth))
-                                                {
-                                                    addThisFracture = false;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    } // End check macrofractures from adjacent gridblocks
-                                } // End check whether this point lies in the stress shadow of an existing macrofracture
+                                    // Check if the propagating node of the macrofracture segment lies in an exclusion zone
+                                    addThisFracture = !checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, dipsetIndex, checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
+                                }
 
                                 // If the number of new fracture segments that can be added this timestep has dropped to zero, do not add this fracture
                                 if (limitNewFractures && (maxNewFractureSegments <= 0))
@@ -6482,22 +6313,8 @@ namespace DFMGenerator_SharedCode
                                 List<List<double>> SetI_StressShadowHalfWidthsIJ = StressShadowHalfWidthsIJ[fs_index];
                                 List<List<double>> SetI_StressShadowHalfWidthsJI = StressShadowHalfWidthsJI[fs_index];
 
-                                // First check other macrofractures from this gridblock
-                                PointXYZ segmentPropNodeXYZ = MFSegment.getPropNodeinXYZ();
-                                bool deactivateThisFracture = checkInMFExclusionZone(segmentPropNodeXYZ, fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI);
-
-                                // Then, if required, check macrofractures from adjacent gridblocks
-                                // NB we do not need to do this if we have already found a stress shadow interaction
-                                if (!deactivateThisFracture && searchNeighbouringGridblocks)
-                                {
-                                    // Create a list of neighbouring gridblocks to search - include diagonal neighbours
-                                    List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
-
-                                    // Loop through each gridblock in the list
-                                    foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
-                                    {
-                                        // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, fs.Strike);
+                                // Check if the propagating node of the macrofracture segment lies in an exclusion zone
+                                bool deactivateThisFracture = checkInMFExclusionZone(MFSegment.getPropNodeinXYZ(), fs_index, dipsetIndex, checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
 
                                 // If the segment does lie in the exclusion zone of another macrofracture, deactivate it and move on to the next
                                 // NB Although this will deactivate the macrofracture segment, it will not record a reference to the deactivating segment or link it up
@@ -6571,13 +6388,13 @@ namespace DFMGenerator_SharedCode
 
                             // The process of extending the fracture, after checking for stress shadow interaction, intersection or propagating across a gridblock boundary, is handled by a separate function
 #if LOGDFNPOP
-                            int NoStressShadowInteractions = Dict_NoStressShadowInteractions[fs_index];
-                            int NoIntersections = Dict_NoIntersections[fs_index];
-                            int NoPropagatingOut = Dict_NoPropagatingOut[fs_index];
+                            int NoStressShadowInteractions = Dict_MF_NoStressShadowInteractions[fs_index];
+                            int NoIntersections = Dict_MF_NoIntersections[fs_index];
+                            int NoPropagatingOut = Dict_MF_NoPropagatingOut[fs_index];
                             ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fs_index, fs, MFSegment, dipsetIndex, ref maxPropLength, fromPreviousTS, ref NoStressShadowInteractions, ref NoIntersections, ref NoPropagatingOut);
-                            Dict_NoStressShadowInteractions[fs_index] = NoStressShadowInteractions;
-                            Dict_NoIntersections[fs_index] = NoIntersections;
-                            Dict_NoPropagatingOut[fs_index] = NoPropagatingOut;
+                            Dict_MF_NoStressShadowInteractions[fs_index] = NoStressShadowInteractions;
+                            Dict_MF_NoIntersections[fs_index] = NoIntersections;
+                            Dict_MF_NoPropagatingOut[fs_index] = NoPropagatingOut;
 #else
                             ExtendFracture(use_MF_min_length_cutoff, checkStressShadow, ignoreZeroLengthMFStressShadows, TerminateAtGridBoundary, fs_index, fs, MFSegment, dipsetIndex, ref maxPropLength);
 #endif
@@ -7299,7 +7116,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoIntersections">Counter for fracture intersections - used for debugging only</param>
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
+        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
         private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
@@ -7735,6 +7552,137 @@ namespace DFMGenerator_SharedCode
             } // End if the segment propagated into a neighbouring gridblock
 
             return tipDeactivationMechanism;
+        }
+        /// <summary>
+        /// Check whether a specified point (in global XYZ coordinates) lies within the stress shadow of another macrofracture segment
+        /// </summary>
+        /// <param name="point">Point to check in XYZ coordinates</param>
+        /// <param name="fs_index">Index of the main fracture set to check</param>
+        /// <param name="checkAllFractureSets">Flag to check against stress shadows of all macrofractures, regardless of set; if false will only check against stress shadows of macrofractures in the same set</param>
+        /// <param name="searchNeighbouringGridblocks">Flag to check against stress shadows of macrofractures in neighbouring gridblocks; if false will only check against stress shadows of macrofractures in this gridblock</param>
+        /// <param name="StressShadowHalfWidthsIJ">Reference to a list of stress shadow half-widths of other fracture sets as seen by this fracture set</param>
+        /// <returns>true if the specified point lies within a macrofracture stress shadow, otherwise false</returns>
+        private bool checkInMFStressShadow(PointXYZ point, int fs_index, bool checkAllFractureSets, bool searchNeighbouringGridblocks, ref List<List<double>> StressShadowHalfWidthsIJ)
+        {
+            // First check other macrofractures from this gridblock
+            bool fractureLiesInStressShadow;
+            if (checkAllFractureSets)
+                fractureLiesInStressShadow = checkInMFStressShadow(point, fs_index, ref StressShadowHalfWidthsIJ);
+            else
+                fractureLiesInStressShadow = FractureSets[fs_index].checkInMFStressShadow(point);
+
+            // Then, if required, check macrofractures from adjacent gridblocks
+            // NB we do not need to do this if we have already found a stress shadow interaction
+            if (!fractureLiesInStressShadow && searchNeighbouringGridblocks)
+            {
+                // Create a list of neighbouring gridblocks to search - include diagonal neighbours
+                List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
+
+                // Loop through each gridblock in the list
+                foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
+                {
+                    if (checkAllFractureSets)
+                    {
+                        // Find the index number of the equivalent fracture set in the neighbouring gridblock
+                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, FractureSets[fs_index].Strike);
+
+                        // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
+                        // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
+                        // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
+                        // We will therefore use the list generated for this gridblock to speed up the calculation
+                        // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
+                        if (neighbour_gb.checkInMFStressShadow(point, neighbourGB_fs_index, ref StressShadowHalfWidthsIJ))
+                        {
+                            fractureLiesInStressShadow = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // Find the correct fracture set in the neighbouring gridblock to search
+                        Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, FractureSets[fs_index].Strike);
+
+                        // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
+                        // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
+                        // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
+                        if (neighbourGB_fs.checkInMFStressShadow(point))
+                        {
+                            fractureLiesInStressShadow = true;
+                            break;
+                        }
+                    }
+                }
+            } // End check macrofractures from adjacent gridblocks
+
+            return fractureLiesInStressShadow;
+        }
+        /// <summary>
+        /// Check whether a specified point (in global XYZ coordinates) lies within the exclusion zone of another macrofracture segment
+        /// </summary>
+        /// <param name="point">Point to check in XYZ coordinates</param>
+        /// <param name="fs_index">Index of the main fracture set to check</param>
+        /// <param name="dipsetIndex">Index of the main fracture dipset to check</param>
+        /// <param name="checkAllFractureSets">Flag to check against stress shadows of all macrofractures, regardless of set; if false will only check against stress shadows of macrofractures in the same set</param>
+        /// <param name="searchNeighbouringGridblocks">Flag to check against stress shadows of macrofractures in neighbouring gridblocks; if false will only check against stress shadows of macrofractures in this gridblock</param>
+        /// <param name="StressShadowHalfWidthsIJ">Reference to a list of stress shadow half-widths of other fracture sets as seen by this fracture set</param>
+        /// <param name="StressShadowHalfWidthsJI">Reference to a list of stress shadow half-widths of this fracture set as seen by other fracture sets</param>
+        /// <returns>true if the specified point lies within a macrofracture exclusion zone, otherwise false</returns>
+        private bool checkInMFExclusionZone(PointXYZ point, int fs_index, int dipsetIndex, bool checkAllFractureSets, bool searchNeighbouringGridblocks, ref List<List<double>> StressShadowHalfWidthsIJ, ref List<List<double>> StressShadowHalfWidthsJI)
+        {
+            // First check other macrofractures from this gridblock
+            bool fractureLiesInExclusionZone;
+            if (checkAllFractureSets)
+                fractureLiesInExclusionZone = checkInMFExclusionZone(point, fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsIJ);
+            else
+                fractureLiesInExclusionZone = FractureSets[fs_index].checkInMFExclusionZone(point, FractureSets[fs_index].FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth);
+
+            // Then, if required, check macrofractures from adjacent gridblocks
+            // NB we do not need to do this if we have already found a stress shadow interaction
+            if (!fractureLiesInExclusionZone && searchNeighbouringGridblocks)
+            {
+                // Create a list of neighbouring gridblocks to search - include diagonal neighbours
+                List<GridblockConfiguration> gridblocksToSearch = getNeighbourGridblocks(true);
+
+                // Loop through each gridblock in the list
+                foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
+                {
+                    if (checkAllFractureSets)
+                    {
+                        // Find the index number of the equivalent fracture set in the neighbouring gridblock
+                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, FractureSets[fs_index].Strike);
+
+                        // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
+                        // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
+                        // However we will assume that the differences between stress shadow widths in neighbouring gridblocks is small (and will in any case be gradual)
+                        // We will therefore use the list generated for this gridblock to speed up the calculation
+                        // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
+                        if (neighbour_gb.checkInMFExclusionZone(point, neighbourGB_fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsJI))
+                        {
+                            fractureLiesInExclusionZone = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        // Get the width of the stress shadow of this segment
+                        double MF_StressShadowWidth = FractureSets[fs_index].FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth;
+
+                        // Find the correct fracture set in the neighbouring gridblock to search
+                        Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, FractureSets[fs_index].Strike);
+
+                        // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
+                        // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
+                        // If a stress shadow interaction is found, we do not need to check the remaining gridblocks
+                        if (neighbourGB_fs.checkInMFExclusionZone(point, MF_StressShadowWidth))
+                        {
+                            fractureLiesInExclusionZone = true;
+                            break;
+                        }
+                    }
+                }
+            } // End check macrofractures from adjacent gridblocks
+
+            return fractureLiesInExclusionZone;
         }
         /// <summary>
         /// Check whether a specified point (in global XYZ coordinates) lies within the stress shadow of a macrofracture segment from any fracture set
