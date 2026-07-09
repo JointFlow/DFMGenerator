@@ -13,9 +13,9 @@ namespace DFMGenerator_SharedCode
     public enum IntersectionAngle { Orthogonal_Plus, Orthogonal_Minus, Oblique, Parallel }
 
     /// <summary>
-    /// Representation of a fracture set in a single gridblock
+    /// Representation of a layer-bound fracture set in a single gridblock
     /// </summary>
-    class Gridblock_FractureSet
+    class LayerBoundFractureSet
     {
         // References to external objects
         /// <summary>
@@ -459,7 +459,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="J">Fracture set for which to calculate azimuthal stress shadow multiplier</param>
         /// <returns>Azimuthal stress shadow multiplier between this fracture set (I) and fracture set J</returns>
-        public double getFaaIJ(Gridblock_FractureSet J)
+        public double getFaaIJ(LayerBoundFractureSet J)
         {
             double angle_IJ = Azimuth - J.Azimuth;
             double cos2IJ = Math.Pow(VectorXYZ.Cos_trim(angle_IJ), 2);
@@ -478,7 +478,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="J">Fracture set for which to calculate strike-slip shear stress shadow multiplier</param>
         /// <returns>Strike-slip shear stress shadow multiplier between this fracture set (I) and fracture set J</returns>
-        public double getFasIJ(Gridblock_FractureSet J)
+        public double getFasIJ(LayerBoundFractureSet J)
         {
             double angle_IJ = Azimuth - J.Azimuth;
             double sincosIJ = VectorXYZ.Sin_trim(angle_IJ) * VectorXYZ.Cos_trim(angle_IJ);
@@ -2597,7 +2597,7 @@ namespace DFMGenerator_SharedCode
             // Loop through all other fracture sets to calculate total_fb_MFP30 and total_fb_apparentMFP32
             double fb_MFP30 = 0;
             double app_fb_MFP32 = 0;
-            foreach (Gridblock_FractureSet fb_fs in gbc.FractureSets)
+            foreach (LayerBoundFractureSet fb_fs in gbc.LayerBoundFractureSets)
                 if (fb_fs != this)
                 {
                     double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - fb_fs.Strike));
@@ -2692,7 +2692,7 @@ namespace DFMGenerator_SharedCode
             double PhiIJ = 1;
 
             // Loop through every other fracture set in the gridblock
-            foreach (Gridblock_FractureSet fb_fs in gbc.FractureSets)
+            foreach (LayerBoundFractureSet fb_fs in gbc.LayerBoundFractureSets)
                 if (fb_fs != this)
                 {
                     // Get the positive sine of the angle of intersection between the two fracture sets
@@ -2819,7 +2819,7 @@ namespace DFMGenerator_SharedCode
 
             // Calculate the probability of deactivation due to intersection with other fracture sets (Phi_IJ) for each of the specified propagation distances and recalculate the output values accordingly
             // Loop through every other fracture set in the gridblock
-            foreach (Gridblock_FractureSet fb_fs in gbc.FractureSets)
+            foreach (LayerBoundFractureSet fb_fs in gbc.LayerBoundFractureSets)
                 if (fb_fs != this)
                 {
                     // Get the positive sine of the angle of intersection between the two fracture sets
@@ -2923,8 +2923,8 @@ namespace DFMGenerator_SharedCode
                 // First find the fracture set with the highest P32 density (except for this one)
                 double maxP32 = 0;
                 double totalP32 = 0;
-                Gridblock_FractureSet fb_fs = null;
-                foreach (Gridblock_FractureSet fs in gbc.FractureSets)
+                LayerBoundFractureSet fb_fs = null;
+                foreach (LayerBoundFractureSet fs in gbc.LayerBoundFractureSets)
                     if (fs != this)
                     {
                         double fsP32 = 0;
@@ -2962,7 +2962,7 @@ namespace DFMGenerator_SharedCode
                     // We assume that fractures in all sets other than the highest density set (and this set) are distributed randomly
                     // Therefore the instantaneous probability of intersection as a function of distance is just the mean linear density corrected for intersection angle
                     double F_byDistance = FII_byDistance;
-                    foreach (Gridblock_FractureSet fs in gbc.FractureSets)
+                    foreach (LayerBoundFractureSet fs in gbc.LayerBoundFractureSets)
                         if ((fs != this) && (fs != fb_fs))
                         {
                             double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - fs.Strike));
@@ -3860,8 +3860,8 @@ namespace DFMGenerator_SharedCode
                 meanPropagationDistances.Add(0);
 
             // Create a list of references to all other fracture sets
-            List<Gridblock_FractureSet> otherFractureSets = new List<Gridblock_FractureSet>();
-            foreach (Gridblock_FractureSet fs in gbc.FractureSets)
+            List<LayerBoundFractureSet> otherFractureSets = new List<LayerBoundFractureSet>();
+            foreach (LayerBoundFractureSet fs in gbc.LayerBoundFractureSets)
                 if (fs != this)
                     otherFractureSets.Add(fs);
             int noOtherFS = otherFractureSets.Count;
@@ -3876,7 +3876,7 @@ namespace DFMGenerator_SharedCode
             integrationPoints.Add(0);
             for (int otherFSIndex = 0; otherFSIndex < noOtherFS; otherFSIndex++)
             {
-                Gridblock_FractureSet otherFS = otherFractureSets[otherFSIndex];
+                LayerBoundFractureSet otherFS = otherFractureSets[otherFSIndex];
                 double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(Strike - otherFS.Strike));
                 intersectionAngleSins[otherFSIndex] = intersectionAngleSin;
                 // trueEZWidth represents the mean exclusion zone width for fractures from otherFS as seen by fractures from dipset mp_fds (in this fracture set), measured perpendicular to the strike of otherFS
@@ -3898,7 +3898,7 @@ namespace DFMGenerator_SharedCode
             // The former control the spacing of the fractures in the other set; the latter the minimum propagation distance of this fracture set from the other set
             for (int otherFSIndex = 0; otherFSIndex < noOtherFS; otherFSIndex++)
             {
-                Gridblock_FractureSet otherFS = otherFractureSets[otherFSIndex];
+                LayerBoundFractureSet otherFS = otherFractureSets[otherFSIndex];
                 double intersectionAngleSin = intersectionAngleSins[otherFSIndex];
                 foreach (FractureDipSet otherFDS in otherFS.FractureDipSets)
                 {
@@ -3940,7 +3940,7 @@ namespace DFMGenerator_SharedCode
             // Calculate PhiIJ for each of the other fracture sets for each integration point
             for (int otherFSIndex = 0; otherFSIndex < noOtherFS; otherFSIndex++)
             {
-                Gridblock_FractureSet otherFS = otherFractureSets[otherFSIndex];
+                LayerBoundFractureSet otherFS = otherFractureSets[otherFSIndex];
                 double intersectionAngleSin = intersectionAngleSins[otherFSIndex];
                 double PhiIJ_MinPropDist = PhiIJ_MinPropDists[otherFSIndex];
                 for (int IPNo = 0; IPNo < noIntegrationPoints; IPNo++)
@@ -3965,7 +3965,7 @@ namespace DFMGenerator_SharedCode
             double BB_tot = FII_byDistance;
             for (int otherFSIndex = 0; otherFSIndex < noOtherFS; otherFSIndex++)
             {
-                Gridblock_FractureSet otherFS = otherFractureSets[otherFSIndex];
+                LayerBoundFractureSet otherFS = otherFractureSets[otherFSIndex];
                 FractureDipSet Dipset_1 = otherFS.FractureDipSets_SortedByW[0];
                 double intersectionAngleSin = intersectionAngleSins[otherFSIndex];
                 double BB_fs = (UseCurrentData ? Dipset_1.getBB() : Dipset_1.getBB(Timestep_Mminus1)) * intersectionAngleSin;
@@ -4051,7 +4051,7 @@ namespace DFMGenerator_SharedCode
             // Calculate PhiIJ for each of the other fracture sets for each cutoff point
             for (int otherFSIndex = 0; otherFSIndex < noOtherFS; otherFSIndex++)
             {
-                Gridblock_FractureSet otherFS = otherFractureSets[otherFSIndex];
+                LayerBoundFractureSet otherFS = otherFractureSets[otherFSIndex];
                 double intersectionAngleSin = intersectionAngleSins[otherFSIndex];
                 double PhiIJ_MinPropDist = PhiIJ_MinPropDists[otherFSIndex];
                 for (int cutoffNo = 0; cutoffNo < noCutoffs; cutoffNo++)
@@ -4309,7 +4309,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="checkRelayCrossing">If true, do not record a stress shadow interaction if the relay zone between the two fracture tips is cut by a third fracture</param>
         /// <param name="terminateIfInteracts">If true, automatically flag propagating fracture segment as inactive due to stress shadow interaction; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment interacts with another macrofracture stress shadow, otherwise false</returns>
-        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet interacting_fs, ref double propagationLength, bool ignoreZeroLengthMFStressShadows, bool checkRelayCrossing, bool terminateIfInteracts)
+        public bool checkStressShadowInteraction(MacrofractureSegmentIJK propagatingSegment, LayerBoundFractureSet interacting_fs, ref double propagationLength, bool ignoreZeroLengthMFStressShadows, bool checkRelayCrossing, bool terminateIfInteracts)
         {
             // Set return value to false initially
             bool interacts = false;
@@ -4500,14 +4500,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="FractureTip2">Second fracture tip; may belong to a fracture in another fracture set</param>
         /// <param name="Tip2Set">Fracture set that the second fracture tip belongs to</param>
         /// <returns>True if any other fracture segment intersects the line between the two specified fracture tips, otherwise false</returns>
-        private bool checkCrossingFractures(PointIJK FractureTip1, PointIJK FractureTip2, Gridblock_FractureSet Tip2Set)
+        private bool checkCrossingFractures(PointIJK FractureTip1, PointIJK FractureTip2, LayerBoundFractureSet Tip2Set)
         {
             // Convert the two specified fracture tips to XYZ coordinates
             PointXYZ fractureTip1XYZ = convertIJKtoXYZ(FractureTip1);
             PointXYZ fractureTip2XYZ = Tip2Set.convertIJKtoXYZ(FractureTip2);
 
             // Loop through every other fracture set in this gridblock, apart from this one and the tip 2 set
-            foreach (Gridblock_FractureSet intersecting_fs in this.gbc.FractureSets)
+            foreach (LayerBoundFractureSet intersecting_fs in this.gbc.LayerBoundFractureSets)
             {
                 if ((intersecting_fs == this) || (intersecting_fs == Tip2Set))
                     continue;
@@ -4528,7 +4528,7 @@ namespace DFMGenerator_SharedCode
 
             // If fracture tip 2 lies in another gridblock, check against other fracture sets in that gridblock as well
             if (Tip2Set.gbc != this.gbc)
-                foreach (Gridblock_FractureSet intersecting_fs in Tip2Set.gbc.FractureSets)
+                foreach (LayerBoundFractureSet intersecting_fs in Tip2Set.gbc.LayerBoundFractureSets)
                 {
                     if ((intersecting_fs == this) || (intersecting_fs == Tip2Set))
                         continue;
@@ -4663,7 +4663,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment intersects another macrofracture segment (m)</param>
         /// <param name="terminateIfIntersects">If true, automatically flag propagating fracture segment as inactive due to intersection; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment intersects another macrofracture segment, otherwise false</returns>
-        public bool checkFractureIntersection(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet intersecting_fs, ref double propagationLength, bool terminateIfIntersects)
+        public bool checkFractureIntersection(MacrofractureSegmentIJK propagatingSegment, LayerBoundFractureSet intersecting_fs, ref double propagationLength, bool terminateIfIntersects)
         {
             // Check if the propagating segment is tracking a boundary - if so call the checkBoundaryTrackingFractureIntersection function
             if (propagatingSegment.TrackingBoundary != GridDirection.None)
@@ -4869,7 +4869,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="propagationLength">Reference to variable containing the maximum length that this segment will propagate; this will be altered if the propagating fracture segment intersects another macrofracture segment (m)</param>
         /// <param name="terminateIfIntersects">If true, automatically flag propagating fracture segment as inactive due to intersection; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment intersects another macrofracture segment, otherwise false</returns>
-        public bool checkBoundaryTrackingFractureIntersection(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet intersecting_fs, ref double propagationLength, bool terminateIfIntersects)
+        public bool checkBoundaryTrackingFractureIntersection(MacrofractureSegmentIJK propagatingSegment, LayerBoundFractureSet intersecting_fs, ref double propagationLength, bool terminateIfIntersects)
         {
             // Get the tracking boundary
             GridDirection trackingBoundary = propagatingSegment.TrackingBoundary;
@@ -5022,7 +5022,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="checkPropagatingNode">If true, check the propagating node of the propagating fracture; if false, check the non-propagating node of the propagating fracture</param>
         /// <param name="terminateIfIntersects">If true, automatically flag propagating fracture segment as inactive due to intersection; if false only update maximum propagation length</param>
         /// <returns>True if the propagating fracture segment intersects another macrofracture segment, otherwise false</returns>
-        public bool checkFractureIntersectionOnBoundary(MacrofractureSegmentIJK propagatingSegment, Gridblock_FractureSet intersecting_fs, bool checkPropagatingNode, bool terminateIfIntersects)
+        public bool checkFractureIntersectionOnBoundary(MacrofractureSegmentIJK propagatingSegment, LayerBoundFractureSet intersecting_fs, bool checkPropagatingNode, bool terminateIfIntersects)
         {
             // Get the correct node from the propagating segment, and check it lies on a boundary
             PointIJK nodeToCheck;
@@ -5829,7 +5829,7 @@ namespace DFMGenerator_SharedCode
         /// Default constructor: Create an empty fracture set
         /// </summary>
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in)
+        public LayerBoundFractureSet(GridblockConfiguration gbc_in)
         {
             // Reference to grandparent GridblockConfiguration object
             gbc = gbc_in;
@@ -5873,7 +5873,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="BiazimuthalConjugate_in">Flag for a biazimuthal conjugate dipset: if true, one dip set will be created containing equal numbers of fractures dipping in both directions; if false, the two dip sets will be created containing fractures dipping in opposite directions</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in) : this(gbc_in)
+        public LayerBoundFractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in) : this(gbc_in)
         {
             // Fracture strike
             Strike = Strike_in;
@@ -5938,7 +5938,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in) : this(gbc_in)
+        public LayerBoundFractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in) : this(gbc_in)
         {
             // Fracture strike
             Strike = Strike_in;
@@ -5964,7 +5964,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Mode2_UniformAperture_in">Fixed aperture for Mode 2 fractures in the uniform aperture case (m)</param>
         /// <param name="Mode1_SizeDependentApertureMultiplier_in">Multiplier for Mode 1 fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
         /// <param name="Mode2_SizeDependentApertureMultiplier_in">Multiplier for Mode 2 fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Mode1_UniformAperture_in, double Mode2_UniformAperture_in, double Mode1_SizeDependentApertureMultiplier_in, double Mode2_SizeDependentApertureMultiplier_in)
+        public LayerBoundFractureSet(GridblockConfiguration gbc_in, double Strike_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Mode1_UniformAperture_in, double Mode2_UniformAperture_in, double Mode1_SizeDependentApertureMultiplier_in, double Mode2_SizeDependentApertureMultiplier_in)
             : this(gbc_in, Strike_in, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in)
         {
             // Set the fracture aperture control data for uniform and size-dependent aperture
@@ -5982,7 +5982,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
         /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public Gridblock_FractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
+        public LayerBoundFractureSet(GridblockConfiguration gbc_in, double Strike_in, FractureMode Mode_in, double Dip_in, double B_in, double c_in, bool IncludeReverseFractures_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
             : this(gbc_in, Strike_in, Mode_in, Dip_in, B_in, c_in, IncludeReverseFractures_in)
         {
             // Set the fracture aperture control data for uniform and size-dependent aperture

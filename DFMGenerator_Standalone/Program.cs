@@ -132,9 +132,9 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures");
                 input_file.WriteLine("% This will be used as the S parameter (standard deviation) for the log-normal distribution");
                 input_file.WriteLine("InitialMicrofractureSizeDistribution 3");
-                input_file.WriteLine("% Median initial microfracture size - this is only used for the log-normal distribution");
+                input_file.WriteLine("% Median initial microfracture radius - this is only used for the log-normal distribution");
                 input_file.WriteLine("% Set to -1 to use layer thickness / 20");
-                input_file.WriteLine("InitialMicrofractureMedianSize -1");
+                input_file.WriteLine("InitialMicrofractureMedianRadius -1");
                 input_file.WriteLine("% Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation");
                 input_file.WriteLine("SubcriticalPropIndex 10");
                 input_file.WriteLine("% Critical fracture propagation rate in m/s");
@@ -188,7 +188,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("%      - EqualTime (output at equal intervals of time)");
                 input_file.WriteLine("%      - SpecifiedTime (output at the end of each specified deformation episode)");
                 input_file.WriteLine("IntermediateOutputIntervalControl EqualArea");
-                input_file.WriteLine("% Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints");
+                input_file.WriteLine("% Flag to output the layer-bound fracture centrepoints and the unconfined fracture rays as polylines");
                 input_file.WriteLine("OutputCentrepoints false");
                 input_file.WriteLine("% Flag to calculate and output the bulk rock compliance and stiffness tensors");
                 input_file.WriteLine("OutputBulkRockElasticTensors false");
@@ -203,10 +203,10 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("PermeabilityAlgorithm Oda1986");
                 input_file.WriteLine("% Flag to calculate and output implicit fracture population distribution functions");
                 input_file.WriteLine("OutputPopulationDistribution true");
-                input_file.WriteLine("% Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions");
+                input_file.WriteLine("% Number of fracture or ray length values to calculate for each of the implicit fracture population distribution functions");
                 input_file.WriteLine("No_l_indexPoints 20");
-                input_file.WriteLine("% MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively");
-                input_file.WriteLine("% Set these values to the approximate maximum length of macrofractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
+                input_file.WriteLine("% MaxHMinLength and MaxHMaxLength control the range of fracture or ray lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively");
+                input_file.WriteLine("% Set these values to the approximate maximum length of fractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
                 input_file.WriteLine("MaxHMinLength 0");
                 input_file.WriteLine("MaxHMaxLength 0");
                 input_file.WriteLine();
@@ -268,16 +268,16 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Set to 1 to generate a single fracture set, perpendicular to ehmin");
                 input_file.WriteLine("% Set to 2 to generate two orthogonal fracture sets, perpendicular to the minimum and maximum horizontal strain directions; this is typical of a single stage of tectonic deformation in intact rock");
                 input_file.WriteLine("% Set to 6 to model polygonal or strike-slip fractures, or multiple deformation episodes where there are pre-existing fractures oblique to the principal horizontal stresses");
-                input_file.WriteLine("NoFractureSets 2");
+                input_file.WriteLine("NoLayerBoundFractureSets 2");
                 input_file.WriteLine("% Layer-bound fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal");
                 input_file.WriteLine("Mode1Only false");
                 input_file.WriteLine("Mode2Only false");
                 input_file.WriteLine("% Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer");
                 input_file.WriteLine("FractureNucleationPosition -1");
                 input_file.WriteLine("% Flag to check microfractures against stress shadows of all macrofractures, regardless of set: can be set to None, All or Automatic");
-                input_file.WriteLine("% If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures");
-                input_file.WriteLine("% If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor");
-                input_file.WriteLine("% If Automatic, microfractures in the stress shadow zone of oblique or perpendicular macrofractures will be deactivated only if there are more than two fracture sets");
+                input_file.WriteLine("%      - If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures");
+                input_file.WriteLine("%      - If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor");
+                input_file.WriteLine("%      - If Automatic, microfractures in the stress shadow zone of oblique or perpendicular macrofractures will be deactivated only if there are more than two fracture sets");
                 input_file.WriteLine("CheckAlluFStressShadows Automatic");
                 input_file.WriteLine("% Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes");
                 input_file.WriteLine("AnisotropyCutoff 1");
@@ -327,10 +327,24 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value");
                 input_file.WriteLine("% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers");
                 input_file.WriteLine("MinimumLayerThickness 0");
+                input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
+                input_file.WriteLine("% Set to 0 to disable probabilistic fracture nucleation");
+                input_file.WriteLine("% Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)");
+                input_file.WriteLine("ProbabilisticFractureNucleationLimit -1");
+                input_file.WriteLine("% Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set");
+                input_file.WriteLine("% Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time");
+                input_file.WriteLine("PropagateFracturesInNucleationOrder true");
+                input_file.WriteLine("% Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry");
+                input_file.WriteLine("SearchAdjacentGridblocks Automatic");
+                input_file.WriteLine("% Minimum radius for microfractures to be included in explicit DFN (in metres)");
+                input_file.WriteLine("% Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN");
+                input_file.WriteLine("MinExplicitMicrofractureRadius 0");
+                input_file.WriteLine("% Number of cornerpoints defining the microfracture polygons in the explicit DFN");
+                input_file.WriteLine("% Set to zero to output microfractures as just a centrepoint and radius; set to 3 or greater to output microfractures as polygons defined by a list of cornerpoints");
+                input_file.WriteLine("Number_uF_Points 8");
                 input_file.WriteLine("% Maximum number of fracture segments that can be generated per gridblock");
                 input_file.WriteLine("% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason");
                 input_file.WriteLine("MaxNoFractureSegments 1000");
-
                 input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
                 input_file.WriteLine("% Set to 0 to disable probabilistic fracture nucleation");
                 input_file.WriteLine("% Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)");
@@ -364,6 +378,9 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length");
                 input_file.WriteLine("% If set to -1, will use 0.5 * layer thickness");
                 input_file.WriteLine("MaxUnconfinedFractureRadius -1");
+                input_file.WriteLine("% Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth");
+                input_file.WriteLine("% If set to -1, there will be no limit on effective fracture radius");
+                input_file.WriteLine("MaxEffectiveUnconfinedFractureRadius -1");
                 input_file.WriteLine("% Calculation termination controls");
                 input_file.WriteLine("% The calculation is set to stop automatically when fractures stop growing");
                 input_file.WriteLine("% This can be defined in one of three ways:");
@@ -387,7 +404,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("MaxTimestepUCFP33Increase 0.005");
                 input_file.WriteLine("% Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)");
                 input_file.WriteLine("% Set to -1 for no limit");
-                input_file.WriteLine("Max_R_timestep_increase -1");
+                input_file.WriteLine("MaxTimestepRadiusIncrease -1");
                 input_file.WriteLine("% Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)");
                 input_file.WriteLine("Max_R_DeactivationCheck_interval 0.2");
                 input_file.WriteLine("% Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint");
@@ -396,22 +413,25 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Set to -1 to use the mean distance that a fracture propagates before being deactivated");
                 input_file.WriteLine("ProportionalIncrementToApply -1");
                 input_file.WriteLine("% Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point");
-                input_file.WriteLine("Min_R_staticDatapointSizeRatio 0.02");
+                input_file.WriteLine("Min_R_StaticDatapointSizeRatio 0.02");
                 input_file.WriteLine("% Frequency (in timesteps) with which static unconfined fracture datapoints are culled");
                 input_file.WriteLine("CullTSFrequency 10");
                 input_file.WriteLine("% Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures");
                 input_file.WriteLine("CalculateImplicitUCFData true");
                 input_file.WriteLine("% Flag to check unconfined fractures against stress shadows of all other unconfined fractures, regardless of set: can be set to None, All or Automatic");
-                input_file.WriteLine("% If None, unconfined fractures will only be deactivated if they lie in the stress shadow zone of parallel unconfined fractures");
-                input_file.WriteLine("% If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor");
-                input_file.WriteLine("% If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets");
+                input_file.WriteLine("%      - If None, unconfined fractures will only be deactivated if they lie in the stress shadow zone of parallel unconfined fractures");
+                input_file.WriteLine("%      - If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor");
+                input_file.WriteLine("%      - If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets");
                 input_file.WriteLine("CheckAllUCFStressShadows Automatic");
+                input_file.WriteLine("% Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries");
+                input_file.WriteLine("PlanarUnconfinedFractures false");
                 input_file.WriteLine("% Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows");
                 input_file.WriteLine("LargeFractureMinimumRadius -1");
                 input_file.WriteLine("% Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius");
                 input_file.WriteLine("MinStressShadowDeactivationRatio 0.5");
                 input_file.WriteLine("% Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius");
                 input_file.WriteLine("MinIntersectionDeactivationRatio 0.5");
+                input_file.WriteLine();
 
                 input_file.WriteLine("% Add property and geometry overrides for individual gridblocks here");
                 input_file.WriteLine("% Overrides for individual gridblocks should be nested between a Gridblock Col Row statement and an End Gridblock statement");
@@ -424,7 +444,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% End Gridblock");
                 input_file.WriteLine("% Properties that can be overridden are EhminAzi, EhminRate, EhmaxRate, AppliedOverpressureRate, AppliedTemperatureChange, AppliedUpliftRate, DepthAtDeformation, ");
                 input_file.WriteLine("% YoungsMod, PoissonsRatio, Porosity, BiotCoefficient, GeothermalGradient, FrictionCoefficient, CrackSurfaceEnergy,");
-                input_file.WriteLine("% SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution, InitialMicrofractureMedianSize");
+                input_file.WriteLine("% SubcriticalPropIndex, RockStrainRelaxation, FractureRelaxation, InitialMicrofractureDensity, InitialMicrofractureSizeDistribution, InitialMicrofractureMedianRadius");
                 input_file.WriteLine("% HostRock_kh, HostRock_kv");
                 input_file.WriteLine("% PresentDayEffectiveStress_XX, PresentDayEffectiveStress_YY, PresentDayEffectiveStress_ZZ, PresentDayEffectiveStress_XY, PresentDayEffectiveStress_YZ, PresentDayEffectiveStress_ZX");
                 input_file.WriteLine("% Additional deformation episodes can be overwritten by listing multiple values after the deformation load keywords");
@@ -778,7 +798,7 @@ namespace DFMGenerator_Standalone
             double InitialMicrofractureSizeDistribution = 3;
             // Median initial microfracture size - this is only used for the log-normal distribution function
             // Set to -1 to use layer thickness / 20
-            double InitialMicrofractureMedianSize = 1;*/
+            double InitialMicrofractureMedianRadius = 1;*/
             /*// Initial microfracture distribution function: Exponential
             // NB This is currently only used for unconfined fractures; for layer-bound fractures it is assumed to be power law
             InitialFractureDistribution InitialMicrofractureDistributionFunction = InitialFractureDistribution.Exponential;
@@ -789,7 +809,7 @@ namespace DFMGenerator_Standalone
             double InitialMicrofractureSizeDistribution = 15;
             // Median initial microfracture size - this is only used for the log-normal distribution function
             // Set to -1 to use layer thickness / 20
-            double InitialMicrofractureMedianSize = 1;*/
+            double InitialMicrofractureMedianRadius = 1;*/
             // Initial microfracture distribution function: Log-normal
             // NB This is currently only used for unconfined fractures; for layer-bound fractures it is assumed to be power law
             InitialFractureDistribution InitialMicrofractureDistributionFunction = InitialFractureDistribution.LogNormal;
@@ -798,9 +818,9 @@ namespace DFMGenerator_Standalone
             // Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
             // This will be used as the S parameter (standard deviation) for the log-normal distribution function
             double InitialMicrofractureSizeDistribution = 0.6;
-            // Median initial microfracture size - this is only used for the log-normal distribution function
+            // Median initial microfracture radius - this is only used for the log-normal distribution function
             // Set to -1 to use layer thickness / 20
-            double InitialMicrofractureMedianSize = 0.05;
+            double InitialMicrofractureMedianRadius = 0.05;
             // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
             double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
@@ -848,7 +868,7 @@ namespace DFMGenerator_Standalone
             // - EqualTime (output at equal intervals of time)
             // - SpecifiedTime (output at the end of each specified deformation episode)
             IntermediateOutputInterval IntermediateOutputIntervalControl = IntermediateOutputInterval.EqualArea;
-            // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
+            // Flag to output the layer-bound fracture centrepoints and the unconfined fracture rays as polylines
             bool OutputCentrepoints = true;// false;
             // Flag to calculate and output the bulk rock compliance and stiffness tensors
             bool OutputBulkRockElasticTensors = false;
@@ -860,9 +880,9 @@ namespace DFMGenerator_Standalone
             PermeabilityCalculationAlgorithm PermeabilityAlgorithm = PermeabilityCalculationAlgorithm.SizeConnectivityCorrected;
             // Flag to calculate and output implicit fracture population distribution functions
             bool OutputPopulationDistribution = true;
-            // Number of macrofracture length values to calculate for each of the implicit fracture population distribution functions
+            // Number of fracture or ray length values to calculate for each of the implicit fracture population distribution functions
             int No_l_indexPoints = 20;
-            // MaxHMinLength and MaxHMaxLength control the range of macrofracture lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
+            // MaxHMinLength and MaxHMaxLength control the range of fracture or ray lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
             // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
             double MaxHMinLength = 0;
             double MaxHMaxLength = 0;
@@ -919,7 +939,7 @@ namespace DFMGenerator_Standalone
             // Set to 1 to generate a single fracture set, perpendicular to ehmin
             // Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehmax; this is typical of a single stage of deformation in intact rock
             // Set to 6 or more to generate oblique fractures; this is typical of multiple stages of deformation with fracture reactivation, or transtensional strain
-            int NoFractureSets = 0;// 2;
+            int NoLayerBoundFractureSets = 0;// 2;
             // Layer-bound fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
             bool Mode1Only = false;
             bool Mode2Only = false;
@@ -947,6 +967,8 @@ namespace DFMGenerator_Standalone
             // Number of bins used in numerical integration of uFP32
             // This controls accuracy of numerical calculation of microfracture populations - increase this to increase accuracy of the numerical integration at expense of runtime 
             int No_r_bins = 10;
+            // Minimum macrofracture length cutoff is not yet implemented - keep this at 0
+            double MinMacrofractureLength = 0;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -995,8 +1017,6 @@ namespace DFMGenerator_Standalone
             // Number of cornerpoints defining the microfracture polygons in the explicit DFN
             // Set to zero to output microfractures as just a centrepoint and radius; set to 3 or greater to output microfractures as polygons defined by a list of cornerpoints
             int Number_uF_Points = 8;
-            // Minimum macrofracture length cutoff is not yet implemented - keep this at 0
-            double MinMacrofractureLength = 0;
 
             // Parameters for controlling unconfined fractures
             // Use NoUnconfinedFractureStrikeSets and NoUnconfinedFractureDipSets to create unconfined fracture sets, which can propagate and interact vertically as well as horizontally
@@ -1013,6 +1033,9 @@ namespace DFMGenerator_Standalone
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
             double MaxUnconfinedFractureRadius = 1000;// -1;
+            // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
+            // If set to -1, there will be no limit on effective fracture radius
+            double MaxEffectiveUnconfinedFractureRadius = MaxUnconfinedFractureRadius;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -1036,7 +1059,7 @@ namespace DFMGenerator_Standalone
             double MaxTimestepUCFP33Increase = 0.005;// 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
-            double Max_R_timestep_increase = 0.2;// double.NaN;// 0.05;//
+            double MaxTimestepRadiusIncrease = 0.2;// double.NaN;// 0.05;//
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
@@ -1045,7 +1068,7 @@ namespace DFMGenerator_Standalone
             // Set to -1 to use the mean distance that a fracture propagates before being deactivated
             double ProportionalUCRIncrementToApply = -1;
             // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
-            double Min_R_staticDatapointSizeRatio = 0.02;
+            double Min_R_StaticDatapointSizeRatio = 0.02;
             // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
             int CullTSFrequency = 10;
             // Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures
@@ -1055,6 +1078,8 @@ namespace DFMGenerator_Standalone
             // If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor
             // If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
             AutomaticFlag CheckAllUCFStressShadows = AutomaticFlag.Automatic;
+            // Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries
+            bool PlanarUnconfinedFractures = false;
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
             double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
@@ -1333,10 +1358,10 @@ namespace DFMGenerator_Standalone
                         case "c": // For backwards compatibility
                             InitialMicrofractureSizeDistribution = Convert.ToDouble(line_split[1]);
                             break;
-                        // Median initial microfracture size - this is only used for the log-normal distribution
+                        // Median initial microfracture radius - this is only used for the log-normal distribution
                         // Set to -1 to use layer thickness / 20
-                        case "InitialMicrofractureMedianSize":
-                            InitialMicrofractureMedianSize = Convert.ToDouble(line_split[1]);
+                        case "InitialMicrofractureMedianRadius":
+                            InitialMicrofractureMedianRadius = Convert.ToDouble(line_split[1]);
                             break;
                         // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
                         case "SubcriticalPropIndex":
@@ -1451,7 +1476,7 @@ namespace DFMGenerator_Standalone
                                     IntermediateOutputIntervalControl = IntermediateOutputInterval.EqualArea;
                             }
                             break;
-                        // Flag to output the macrofracture centrepoints as a polyline, in addition to the macrofracture cornerpoints
+                        // Flag to output the layer-bound fracture centrepoints and the unconfined fracture rays as polylines
                         case "OutputCentrepoints":
                         case "outputCentrepoints": // For backwards compatibility
                             OutputCentrepoints = (line_split[1] == "true");
@@ -1621,12 +1646,13 @@ namespace DFMGenerator_Standalone
                             break;
 
                         // Calculation control parameters
-                        // Number of fracture sets
+                        // Number of layer-bound fracture sets
                         // Set to 1 to generate a single fracture set, perpendicular to ehmin
                         // Set to 2 to generate two orthogonal fracture sets, perpendicular to ehmin and ehmax; this is typical of a single stage of deformation in intact rock
                         // Set to 6 or more to generate oblique fractures; this is typical of multiple stages of deformation with fracture reactivation, or transtensional strain
-                        case "NoFractureSets":
-                            NoFractureSets = Convert.ToInt32(line_split[1]);
+                        case "NoLayerBoundFractureSets":
+                        case "NoFractureSets": // For backwards compatibility
+                            NoLayerBoundFractureSets = Convert.ToInt32(line_split[1]);
                             break;
                         // Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
                         case "Mode1Only":
@@ -1811,6 +1837,11 @@ namespace DFMGenerator_Standalone
                         case "MaxUnconfinedFractureRadius":
                             MaxUnconfinedFractureRadius = Convert.ToDouble(line_split[1]);
                             break;
+                        // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
+                        // If set to -1, there will be no limit on effective fracture radius
+                        case "MaxEffectiveUnconfinedFractureRadius":
+                            MaxEffectiveUnconfinedFractureRadius = Convert.ToDouble(line_split[1]);
+                            break;
                         // Calculation termination controls
                         // The calculation is set to stop automatically when fractures stop growing
                         // This can be defined in one of three ways:
@@ -1844,8 +1875,8 @@ namespace DFMGenerator_Standalone
                             break;
                         // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
                         // Set to -1 for no limit 
-                        case "Max_R_timestep_increase":
-                            Max_R_timestep_increase = Convert.ToDouble(line_split[1]);
+                        case "MaxTimestepRadiusIncrease":
+                            MaxTimestepRadiusIncrease = Convert.ToDouble(line_split[1]);
                             break;
                         // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
                         case "Max_R_DeactivationCheck_interval":
@@ -1860,8 +1891,8 @@ namespace DFMGenerator_Standalone
                             ProportionalUCRIncrementToApply = Convert.ToDouble(line_split[1]);
                             break;
                         // Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
-                        case "Min_R_staticDatapointSizeRatio":
-                            Min_R_staticDatapointSizeRatio = Convert.ToDouble(line_split[1]);
+                        case "Min_R_StaticDatapointSizeRatio":
+                            Min_R_StaticDatapointSizeRatio = Convert.ToDouble(line_split[1]);
                             break;
                         // Frequency (in timesteps) with which static unconfined fracture datapoints are culled
                         case "CullTSFrequency":
@@ -1884,6 +1915,10 @@ namespace DFMGenerator_Standalone
                                 else if (line_split[1] == "Automatic")
                                     CheckAllUCFStressShadows = AutomaticFlag.Automatic;
                             }
+                            break;
+                        // Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries
+                        case "PlanarUnconfinedFractures":
+                            PlanarUnconfinedFractures = (line_split[1] == "true");
                             break;
                         // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
                         case "LargeFractureMinimumRadius":
@@ -2078,7 +2113,7 @@ namespace DFMGenerator_Standalone
             double[,,] FractureRelaxation_array = new double[NoCols, NoRows, NoLayers];
             double[,,] InitialMicrofractureDensity_array = new double[NoCols, NoRows, NoLayers];
             double[,,] InitialMicrofractureSizeDistribution_array = new double[NoCols, NoRows, NoLayers];
-            double[,,] InitialMicrofractureMedianSize_array = new double[NoCols, NoRows, NoLayers];
+            double[,,] InitialMicrofractureMedianRadius_array = new double[NoCols, NoRows, NoLayers];
             double[,,] HostRock_kh_array = new double[NoCols, NoRows, NoLayers];
             double[,,] HostRock_kv_array = new double[NoCols, NoRows, NoLayers];
             double[,,] DepthAtDeformation_array = new double[NoCols, NoRows, NoLayers];
@@ -2146,7 +2181,7 @@ namespace DFMGenerator_Standalone
                         FractureRelaxation_array[ColNo, RowNo, LayerNo] = FractureRelaxation;
                         InitialMicrofractureDensity_array[ColNo, RowNo, LayerNo] = InitialMicrofractureDensity;
                         InitialMicrofractureSizeDistribution_array[ColNo, RowNo, LayerNo] = InitialMicrofractureSizeDistribution;
-                        InitialMicrofractureMedianSize_array[ColNo, RowNo, LayerNo] = InitialMicrofractureMedianSize;
+                        InitialMicrofractureMedianRadius_array[ColNo, RowNo, LayerNo] = InitialMicrofractureMedianRadius;
                         HostRock_kh_array[ColNo, RowNo, LayerNo] = HostRock_kh;
                         HostRock_kv_array[ColNo, RowNo, LayerNo] = HostRock_kv;
                         DepthAtDeformation_array[ColNo, RowNo, LayerNo] = DepthAtDeformation;
@@ -2466,8 +2501,8 @@ namespace DFMGenerator_Standalone
                                 case "c": // For backwards compatibility
                                     propertyArray = InitialMicrofractureSizeDistribution_array;
                                     break;
-                                case "InitialMicrofractureMedianSize":
-                                    propertyArray = InitialMicrofractureMedianSize_array;
+                                case "InitialMicrofractureMedianRadius":
+                                    propertyArray = InitialMicrofractureMedianRadius_array;
                                     break;
                                 case "SubcriticalPropIndex":
                                 case "b": // For backwards compatibility
@@ -2753,8 +2788,8 @@ namespace DFMGenerator_Standalone
                             case "c": // For backwards compatibility
                                 InitialMicrofractureSizeDistribution_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
-                            case "InitialMicrofractureMedianSize":
-                                InitialMicrofractureMedianSize_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
+                            case "InitialMicrofractureMedianRadius":
+                                InitialMicrofractureMedianRadius_array[ColNo, RowNo, LayerNo] = Convert.ToDouble(line_split[1]);
                                 break;
                             case "SubcriticalPropIndex":
                             case "b": // For backwards compatibility
@@ -2966,6 +3001,7 @@ namespace DFMGenerator_Standalone
                         // Calculate the minimum and maximum unconfined fracture radius from the layer thickness, if required
                         double local_minUnconfinedFractureRadius = (MinUnconfinedFractureRadius > 0) ? MinUnconfinedFractureRadius : 0.01 * local_LayerThickness;
                         double local_maxUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : 0.5 * local_LayerThickness;
+                        double local_maxEffectiveUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : local_maxUnconfinedFractureRadius;
 
                         // Determine whether to check for stress shadows from other fracture sets
                         bool local_checkAlluFStressShadows;
@@ -2978,7 +3014,7 @@ namespace DFMGenerator_Standalone
                                 local_checkAlluFStressShadows = true;
                                 break;
                             case AutomaticFlag.Automatic:
-                                local_checkAlluFStressShadows = (NoFractureSets > 2);
+                                local_checkAlluFStressShadows = (NoLayerBoundFractureSets > 2);
                                 break;
                             default:
                                 local_checkAlluFStressShadows = false;
@@ -3001,14 +3037,14 @@ namespace DFMGenerator_Standalone
                                 break;
                         }
 
-                        // The default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
+                        // Unless the fractures are forced to be planar, the default fracture azimuth for the gridblock will be defined based on the minimum horizontal strain azimuth for the first deformation episode
                         // If the minimum horizontal strain azimuth is not specified for the first deformation episode, it will be set to the default minimum horizontal strain azimuth
-                        double local_DefaultFractureAzimuth = (EhminAzi_array.Count > 0 ? EhminAzi_array[0][ColNo, RowNo, LayerNo] : EhminAzi);
+                        double local_DefaultFractureAzimuth = PlanarUnconfinedFractures ? 0 : (EhminAzi_array.Count > 0 ? EhminAzi_array[0][ColNo, RowNo, LayerNo] : EhminAzi);
 
                         // Set the propagation control data for the gridblock
                         gc.PropControl.setPropagationControl(OutputPopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false);
-                        gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
+                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures);
+                        gc.PropControl.setUnconfinedFractureControl(Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, MaxTimestepRadiusIncrease, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_StaticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio);
 
                         // Set folder path for output files
                         gc.PropControl.FolderPath = folderPath;
@@ -3026,7 +3062,7 @@ namespace DFMGenerator_Standalone
                         Console.WriteLine(string.Format("LayerThickness = {0}; Depth = {1};", local_LayerThickness, local_Depth));
                         Console.WriteLine(string.Format("sv' {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
                         Console.WriteLine(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient {2}, Crack surface energy:{3}, Friction coefficient:{4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
-                        Console.WriteLine(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Depth, NoFractureSets));
+                        Console.WriteLine(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Depth, NoLayerBoundFractureSets));
                         Console.WriteLine(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                         Console.WriteLine(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                         Console.WriteLine(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
@@ -3034,7 +3070,7 @@ namespace DFMGenerator_Standalone
                         Console.WriteLine(string.Format("gc.StressStrain.GeothermalGradient = {0};", GeothermalGradient));
                         Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}, {25}); ",
                             OutputPopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
-                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, false));
+                             MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures));
                         Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
@@ -3076,27 +3112,27 @@ namespace DFMGenerator_Standalone
                         // Create the fracture sets
                         double local_InitialMicrofractureDensity = InitialMicrofractureDensity_array[ColNo, RowNo, LayerNo];
                         double local_InitialMicrofractureSizeDistribution = InitialMicrofractureSizeDistribution_array[ColNo, RowNo, LayerNo];
-                        double local_InitialMicrofractureMedianSize = InitialMicrofractureMedianSize_array[ColNo, RowNo, LayerNo];
-                        if (!(local_InitialMicrofractureMedianSize > 0))
-                            local_InitialMicrofractureMedianSize = local_LayerThickness / 20;
+                        double local_InitialMicrofractureMedianRadius = InitialMicrofractureMedianRadius_array[ColNo, RowNo, LayerNo];
+                        if (!(local_InitialMicrofractureMedianRadius > 0))
+                            local_InitialMicrofractureMedianRadius = local_LayerThickness / 20;
                         if (Mode1Only)
-                            gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
+                            gc.resetLayerBoundFractures(NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures);
                         else if (Mode2Only)
-                            gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
+                            gc.resetLayerBoundFractures(NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures);
                         else
-                            gc.resetLayerBoundFractures(NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
+                            gc.resetLayerBoundFractures(NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
                         if (NoUnconfinedFractureStrikeSets > 0)
-                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianSize);
+                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius);
 
 #if DEBUG_FRACS
                         if (Mode1Only)
-                            Console.WriteLine(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
+                            Console.WriteLine(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode1, AllowReverseFractures));
                         else if (Mode2Only)
-                            Console.WriteLine(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
+                            Console.WriteLine(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, FractureMode.{3}, {4});", NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, FractureMode.Mode2, AllowReverseFractures));
                         else
-                            Console.WriteLine(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
+                            Console.WriteLine(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
                         if (NoUnconfinedFractureStrikeSets > 0)
-                            Console.WriteLine(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, InitialFractureDistribution.{5}, {6}, {7}, {8});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianSize));
+                            Console.WriteLine(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, InitialFractureDistribution.{5}, {6}, {7}, {8});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius));
 #endif
                         // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
 

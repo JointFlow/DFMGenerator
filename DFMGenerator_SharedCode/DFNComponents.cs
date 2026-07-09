@@ -38,7 +38,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Reference to parent FractureSet object
         /// </summary>
-        private Gridblock_FractureSet fs;
+        private LayerBoundFractureSet fs;
         /// <summary>
         /// Reference to corresponding FractureDipSet object
         /// </summary>
@@ -178,7 +178,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipdir_in">Fracture dip direction (JPlus is anticlockwise from strike direction IPlus)</param>
         /// <param name="currentLTime">Weighted time of fracture nucleation, calculated as the ts_PropLength of macrofracture propagation since the start of the timestep = integral alpha_MF * sigmad_b * t</param>
         /// <param name="currentTimestep">Timestep of fracture nucleation</param>
-        public MicrofractureIJK(Gridblock_FractureSet fs_in, int FractureDipSetIndex_in, PointIJK nucleationPoint, double radius_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
+        public MicrofractureIJK(LayerBoundFractureSet fs_in, int FractureDipSetIndex_in, PointIJK nucleationPoint, double radius_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
         {
             // Reference to parent FractureSet object
             fs = fs_in;
@@ -212,7 +212,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipdir_in">Fracture dip direction (JPlus is anticlockwise from strike direction IPlus)</param>
         /// <param name="currentLTime">Weighted time of fracture nucleation, calculated as the ts_PropLength of macrofracture propagation since the start of the timestep = integral alpha_MF * sigmad_b * t</param>
         /// <param name="currentTimestep">Timestep of fracture nucleation</param>
-        public MicrofractureIJK(Gridblock_FractureSet fs_in, int FractureDipSetIndex_in, PointXYZ nucleationPoint, double radius_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
+        public MicrofractureIJK(LayerBoundFractureSet fs_in, int FractureDipSetIndex_in, PointXYZ nucleationPoint, double radius_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
             : this(fs_in, FractureDipSetIndex_in, fs_in.convertXYZtoIJK(nucleationPoint), radius_in, dipdir_in, currentLTime, currentTimestep)
         {
             // Reference to parent FractureSet object
@@ -448,7 +448,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Reference to parent FractureSet object
         /// </summary>
-        private Gridblock_FractureSet fs;
+        private LayerBoundFractureSet fs;
         /// <summary>
         /// Reference to corresponding FractureDipSet object
         /// </summary>
@@ -1012,7 +1012,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipdir_in">Fracture dip direction (JPlus is anticlockwise from strike direction IPlus)</param>
         /// <param name="currentLTime">Weighted time of fracture segment nucleation, calculated as the ts_PropLength of macrofracture propagation since the start of the timestep = integral alpha_MF * sigmad_b * t</param>
         /// <param name="currentTimestep">Timestep of fracture segment nucleation</param>
-        public MacrofractureSegmentIJK(Gridblock_FractureSet fs_in, int FractureDipSetIndex_in, PointIJK nucleationPoint, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
+        public MacrofractureSegmentIJK(LayerBoundFractureSet fs_in, int FractureDipSetIndex_in, PointIJK nucleationPoint, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
         {
             // Reference to parent FractureSet object
             fs = fs_in;
@@ -1059,7 +1059,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipdir_in">Fracture dip direction (JPlus is anticlockwise from strike direction IPlus)</param>
         /// <param name="currentLTime">Weighted time of fracture segment nucleation, calculated as the ts_PropLength of macrofracture propagation since the start of the timestep = integral alpha_MF * sigmad_b * t</param>
         /// <param name="currentTimestep">Timestep of fracture segment nucleation</param>
-        public MacrofractureSegmentIJK(Gridblock_FractureSet fs_in, int FractureDipSetIndex_in, PointIJK insertionPoint, GridDirection nonpropnodeboundary_in, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep) 
+        public MacrofractureSegmentIJK(LayerBoundFractureSet fs_in, int FractureDipSetIndex_in, PointIJK insertionPoint, GridDirection nonpropnodeboundary_in, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep) 
             : this(fs_in, FractureDipSetIndex_in, insertionPoint, current_propdir_in, original_propdir_in, dipdir_in, currentLTime, currentTimestep)
         {
             // Check whether a boundary has been specified
@@ -1081,7 +1081,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipdir_in">Fracture dip direction (JPlus is anticlockwise from strike direction IPlus)</param>
         /// <param name="currentLTime">Weighted time of fracture segment nucleation, calculated as the ts_PropLength of macrofracture propagation since the start of the timestep = integral alpha_MF * sigmad_b * t</param>
         /// <param name="currentTimestep">Timestep of fracture segment nucleation</param>
-        public MacrofractureSegmentIJK(Gridblock_FractureSet fs_in, int FractureDipSetIndex_in, PointXYZ nucleationPoint, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
+        public MacrofractureSegmentIJK(LayerBoundFractureSet fs_in, int FractureDipSetIndex_in, PointXYZ nucleationPoint, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
             : this(fs_in, FractureDipSetIndex_in, fs_in.convertXYZtoIJK(nucleationPoint), current_propdir_in, original_propdir_in, dipdir_in, currentLTime, currentTimestep)
         {
             // Reference to parent FractureSet object
@@ -1110,7 +1110,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipdir_in">Fracture dip direction (JPlus is anticlockwise from strike direction IPlus)</param>
         /// <param name="currentLTime">Weighted time of fracture segment nucleation, calculated as the ts_PropLength of macrofracture propagation since the start of the timestep = integral alpha_MF * sigmad_b * t</param>
         /// <param name="currentTimestep">Timestep of fracture segment nucleation</param>
-        public MacrofractureSegmentIJK(Gridblock_FractureSet fs_in, int FractureDipSetIndex_in, PointXYZ insertionPoint, GridDirection nonpropnodeboundary_in, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
+        public MacrofractureSegmentIJK(LayerBoundFractureSet fs_in, int FractureDipSetIndex_in, PointXYZ insertionPoint, GridDirection nonpropnodeboundary_in, PropagationDirection current_propdir_in, PropagationDirection original_propdir_in, DipDirection dipdir_in, double currentLTime, int currentTimestep)
             : this(fs_in, FractureDipSetIndex_in, fs_in.convertXYZtoIJK(insertionPoint), nonpropnodeboundary_in, current_propdir_in, original_propdir_in, dipdir_in, currentLTime, currentTimestep)
         {
             // Reference to parent FractureSet object

@@ -49,7 +49,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Reference to parent FractureSet object
         /// </summary>
-        private Gridblock_FractureSet fs;
+        private LayerBoundFractureSet fs;
 
         // Control and implementation functions
         /// <summary>
@@ -3815,7 +3815,7 @@ namespace DFMGenerator_SharedCode
             // Nor does it take into account restriction on the nucleation position of half-macrofractures
             // However this should not be a major problem as the instantaneous deactivation probabilities are mostly used during the residual activity stage when the fractures are short
             double inst_FIJ = 0;
-            foreach (Gridblock_FractureSet other_fs in gbc.FractureSets)
+            foreach (LayerBoundFractureSet other_fs in gbc.LayerBoundFractureSets)
                 if (other_fs != fs)
                 {
                     double intersectionAngleSin = Math.Abs(VectorXYZ.Sin_trim(fs.Strike - other_fs.Strike));
@@ -5735,7 +5735,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="gbc_in">Reference to grandparent GridblockConfiguration object</param>
         /// <param name="fs_in">Reference to parent FractureSet object</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in)
+        public FractureDipSet(GridblockConfiguration gbc_in, LayerBoundFractureSet fs_in)
                 : this(gbc_in, fs_in, FractureMode.Mode1, true, false, Math.PI / 2, 0.001, 3d)
         {
             // Defaults:
@@ -5757,7 +5757,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="Dip_in">Fracture dip (radians)</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in)
+        public FractureDipSet(GridblockConfiguration gbc_in, LayerBoundFractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in)
             : this(gbc_in, fs_in, Mode_in, BiazimuthalConjugate_in, IncludeReverseFractures_in, Dip_in, B_in, c_in, 0.0005, 1E-5)
         {
             // Defaults for fracture aperture control data for uniform and size-dependent aperture:
@@ -5778,7 +5778,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="UniformAperture_in">Fixed aperture for fractures in the uniform aperture case (m)</param>
         /// <param name="SizeDependentApertureMultiplier_in">Multiplier for fracture aperture in the size-dependent aperture case - layer-bound fracture aperture is given by layer thickness times this multiplier</param>
-        public FractureDipSet(GridblockConfiguration gbc_in, Gridblock_FractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
+        public FractureDipSet(GridblockConfiguration gbc_in, LayerBoundFractureSet fs_in, FractureMode Mode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in, double Dip_in, double B_in, double c_in, double UniformAperture_in, double SizeDependentApertureMultiplier_in)
         {
             // Reference to grandparent GridblockConfiguration object
             gbc = gbc_in;

@@ -282,7 +282,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_MaximumClosure, unitTextBox_MaximumClosure, PetrelProject.WellKnownTemplates.FracturePropertyGroup.FractureAperture, label_MaximumClosure_Units);
 
             // Calculation control parameters
-            UpdateNumericBox(args.Argument_NoFractureSets, numericUpDown_NoFractureSets);
+            UpdateNumericBox(args.Argument_NoLayerBoundFractureSets, numericUpDown_NoFractureSets);
             UpdateComboBox(args.Argument_FractureMode, comboBox_FractureMode);
             UpdateCheckBox(args.Argument_CheckAlluFStressShadows, checkBox_CheckAlluFStressShadows);
             UpdateTextBox(args.Argument_AnisotropyCutoff, unitTextBox_AnisotropyCutoff, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -325,11 +325,11 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_Minimum_UCFClearZone_Volume, unitTextBox_Minimum_UCFClearZone_Volume, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_MinimumStaticUCRLength, unitTextBox_MinimumStaticUCRLength, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumStaticUCRLength_Units);
             UpdateTextBox(args.Argument_Max_TS_UCFP33_increase, unitTextBox_MaxUCFP33TSincrease, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdateTextBox(args.Argument_Max_R_timestep_increase, unitTextBox_MaxUCFRTSIncrease, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_MaxTimestepRadiusIncrease, unitTextBox_MaxUCFRTSIncrease, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Max_R_DeactivationCheck_interval, unitTextBox_MaxDeactivationCheckInterval, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Min_R_ActivationProbability, unitTextBox_MinPhi, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_ProportionalUCRIncrementToApply, unitTextBox_ProportionalUCRIncrementToApply, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
-            UpdateTextBox(args.Argument_Min_R_staticDatapointSizeRatio, unitTextBox_MinStaticDPSizeRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
+            UpdateTextBox(args.Argument_Min_R_StaticDatapointSizeRatio, unitTextBox_MinStaticDPSizeRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_CullTSFrequency, textBox_StaticDPCullInterval);
             UpdateCheckBox(args.Argument_CheckAllUCFStressShadows, checkBox_CheckAllUCFStressShadows);
             UpdateCheckBox(args.Argument_PlanarUnconfinedFractures, checkBox_PlanarUnconfinedFractures);
@@ -474,7 +474,7 @@ namespace DFMGenerator_Ocean
             args.Argument_MaximumClosure = GetDoubleFromTextBox(unitTextBox_MaximumClosure);
 
             // Calculation control parameters
-            args.Argument_NoFractureSets = GetIntFromNumericBox(numericUpDown_NoFractureSets);
+            args.Argument_NoLayerBoundFractureSets = GetIntFromNumericBox(numericUpDown_NoFractureSets);
             args.Argument_FractureMode = comboBox_FractureMode.SelectedIndex;
             args.Argument_CheckAlluFStressShadows = checkBox_CheckAlluFStressShadows.Checked;
             args.Argument_AnisotropyCutoff = GetDoubleFromTextBox(unitTextBox_AnisotropyCutoff);
@@ -515,11 +515,11 @@ namespace DFMGenerator_Ocean
             args.Argument_Minimum_UCFClearZone_Volume = GetDoubleFromTextBox(unitTextBox_Minimum_UCFClearZone_Volume);
             args.Argument_MinimumStaticUCRLength = GetDoubleFromTextBox(unitTextBox_MinimumStaticUCRLength);
             args.Argument_Max_TS_UCFP33_increase = GetDoubleFromTextBox(unitTextBox_MaxUCFP33TSincrease);
-            args.Argument_Max_R_timestep_increase = GetDoubleFromTextBox(unitTextBox_MaxUCFRTSIncrease);
+            args.Argument_MaxTimestepRadiusIncrease = GetDoubleFromTextBox(unitTextBox_MaxUCFRTSIncrease);
             args.Argument_Max_R_DeactivationCheck_interval = GetDoubleFromTextBox(unitTextBox_MaxDeactivationCheckInterval);
             args.Argument_Min_R_ActivationProbability = GetDoubleFromTextBox(unitTextBox_MinPhi);
             args.Argument_ProportionalUCRIncrementToApply = GetDoubleFromTextBox(unitTextBox_ProportionalUCRIncrementToApply);
-            args.Argument_Min_R_staticDatapointSizeRatio = GetDoubleFromTextBox(unitTextBox_MinStaticDPSizeRatio);
+            args.Argument_Min_R_StaticDatapointSizeRatio = GetDoubleFromTextBox(unitTextBox_MinStaticDPSizeRatio);
             args.Argument_CullTSFrequency = GetIntFromTextBox(textBox_StaticDPCullInterval);
             args.Argument_CheckAllUCFStressShadows = checkBox_CheckAllUCFStressShadows.Checked;
             args.Argument_PlanarUnconfinedFractures = checkBox_PlanarUnconfinedFractures.Checked;

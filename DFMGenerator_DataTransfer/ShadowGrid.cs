@@ -1019,12 +1019,13 @@ namespace DFMGenerator_DataTransfer
         /// Data will be written for each specified intermediate stage as well as the final stage
         /// </summary>
         /// <param name="ModelName">Name of the model to output - will be included in the filenames</param>
-         /// <param name="FilePath">File path to write the output file to</param>
-       /// <param name="ModelGrid">Reference to the FractureGrid object containing the DFNs to be exported</param>
+        /// <param name="FilePath">File path to write the output file to</param>
+        /// <param name="ModelGrid">Reference to the FractureGrid object containing the DFNs to be exported</param>
         /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
         /// <param name="WriteuFData">Write data for microfractures in the DFN</param>
         /// <param name="WriteMFData">Write data for layer-bound macrofractures in the DFN</param>
-        public void WriteFABFiles(string ModelName, string FilePath, FractureGrid ModelGrid, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData)
+        /// <param name="WriteUCFData">Write data for unconfined fractures in the DFN</param>
+        public void WriteFABFiles(string ModelName, string FilePath, FractureGrid ModelGrid, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData, bool WriteUCFData)
         {
             // Get control data from DFNControl object
             // Number of intermediate DFNs to output and flag to control their separation
@@ -1184,10 +1185,10 @@ namespace DFMGenerator_DataTransfer
                             uF_outputFile.Close();
                         }
 
-                        // Write macrofracture data to file
+                        // Write layer-bound fracture data to file
                         if (WriteMFData)
                         {
-                            // Create file for microfractures
+                            // Create file for layer-bound fractures
                             string fileNameBase = ModelName + outputStageLabel + "_LayerBoundFractures";
                             string outputFileName = FilePath + fileNameBase + fileExtension;
                             StreamWriter MF_outputFile = new StreamWriter(outputFileName);
@@ -1294,6 +1295,88 @@ namespace DFMGenerator_DataTransfer
 
                             // Close macrofracture  output file
                             MF_outputFile.Close();
+                        }
+
+                        // Write unconfined fracture data to file
+                        if (WriteUCFData)
+                        {
+                            // Create file for unconfined fractures
+                            string fileNameBase = ModelName + outputStageLabel + "_UnconfinedFractures";
+                            string outputFileName = FilePath + fileNameBase + fileExtension;
+                            StreamWriter UCF_outputFile = new StreamWriter(outputFileName);
+                            outputFiles.Add(UCF_outputFile);
+
+                            {
+                                int No_UCFracs = DFN.NoUnconfinedFractureElements();
+                                int noElementCornerpoints = 3; // We are using triangular elements
+                                int No_Nodes = No_UCFracs * noElementCornerpoints;
+
+                                // Write general fracture FAB header data to logfile
+                                string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
+                                UCF_outputFile.WriteLine(FAB_header_1);
+                                string FAB_header5 = string.Format("{0} {1}", "No_Fractures =", No_UCFracs);
+                                string FAB_header6 = string.Format("No_TessFractures = 0");
+                                string FAB_header7 = string.Format("{0} {1}", "No_Nodes = ", No_Nodes);
+                                UCF_outputFile.WriteLine(FAB_header5);
+                                UCF_outputFile.WriteLine(FAB_header6);
+                                UCF_outputFile.WriteLine(FAB_header7);
+
+                                string FAB_header_3 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n", "No_RockBlocks = 0", "No_NodesRockBlock = 0", "No_Properties = 3", "END FORMAT");
+                                UCF_outputFile.WriteLine(FAB_header_3);
+                                string FAB_header_4 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}", "BEGIN PROPERTIES", "Prop1    =    (Real*4) \"Permeability\"", "Prop2    =    (Real*4) \"Compressibility\"", "Prop3    =    (Real*4) \"Aperture\"");
+                                UCF_outputFile.WriteLine(FAB_header_4);
+                                string FAB_header_5 = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n{3}\r\n\r\n{4}", "END PROPERTIES", "BEGIN SETS", "Set1    =    \"Discrete fractures\"", "END SETS", "BEGIN FRACTURE");
+                                UCF_outputFile.WriteLine(FAB_header_5);
+
+                                // Loop through each unconfined fracture and write data to logfile
+                                int UCFelementNo = 1;
+                                for (int UCFracNo = 0; UCFracNo < No_UCFracs; UCFracNo++)
+                                {
+                                    UnconfinedFractureXYZ frac = DFN.GlobalDFNUnconfinedFractures[UCFracNo];
+
+                                    // Set the fracture aperture
+                                    double aperture = 0;// frac.MeanAperture;
+                                    double permeability = 0;// Math.Pow(aperture, 2) / 12;
+                                    if (double.IsNaN(aperture))
+                                    {
+                                        aperture = DefaultFractureAperture;
+                                        permeability = DefaultFracturePermeability;
+                                    }
+                                    double compressibility = 0;// frac.Compressibility;
+                                    if (double.IsNaN(compressibility))
+                                        compressibility = DefaultFractureCompressibility;
+
+                                    // Get a list of triangular elements comprising this fracture
+                                    List<PointXYZ[]> elements = frac.GetTriangularFractureSegmentsInXYZ();
+
+                                    // Loop through each element in the list
+                                    // Each element will be output as a separate fracture
+                                    foreach (PointXYZ[] element in elements)
+                                    {
+                                        string data = string.Format("{0} {1} {2} {3} {4} {5}", UCFelementNo++, noElementCornerpoints, 1, permeability, compressibility, aperture);
+                                        UCF_outputFile.WriteLine(data);
+
+                                        // Loop through each cornerpoint and write the coordinates to file
+                                        int pointNo = 1;
+                                        foreach (PointXYZ cornerPoint in element)
+                                        {
+                                            string pointCoords = string.Format("{0} {1} {2} {3}", pointNo++, cornerPoint.X, cornerPoint.Y, cornerPoint.Z);
+                                            UCF_outputFile.WriteLine(pointCoords);
+                                        }
+
+                                        VectorXYZ fractureNormal = frac.NormalVector;
+                                        string lastLine = string.Format("{0} {1} {2} {3}", 0, fractureNormal.Component(VectorComponents.X), fractureNormal.Component(VectorComponents.Y), fractureNormal.Component(VectorComponents.Z));
+                                        UCF_outputFile.WriteLine(lastLine);
+                                    }
+                                }
+
+                                // Write FAB footer data to logfile
+                                string footer = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n\r\n{3}\r\n{4}", "END FRACTURE", "BEGIN TESSFRACTURE", "END TESSFRACTURE", "BEGIN ROCKBLOCK", "END ROCKBLOCK");
+                                UCF_outputFile.WriteLine(footer);
+                            }
+
+                            // Close unconfined fracture output file
+                            UCF_outputFile.Close();
                         }
                     }
                     catch (Exception e)

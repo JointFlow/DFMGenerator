@@ -42,13 +42,14 @@ namespace DFMGenerator_Standalone
         /// <param name="PopulateEmptyGridblocks">Flag to write implicit fracture data for gridblocks with no fractures; if false, null values will be written to implicit fracture properties in gridblocks with no fractures</param>
         public void WriteGRDECLFile(string ModelName, IProgressReporterWrapper progressReporter, bool WritePropertiesToSeparateFiles, bool OutputFractureSetData, bool OutputFractureConnectivityAnisotropy, bool OutputFractureReactivationPotential, bool OutputFracturePorosity, bool OutputFracturePermeabilityTensor, bool OutputBulkRockElasticTensors, bool PopulateEmptyGridblocks)
         {
-            // Get the number of rows, columns and gridblocks
-            int NoRows = gd.NoRows();
-            int NoCols = gd.NoCols();
-            int NoActiveGridblocks = gd.NoGridblocks();
+            // Get the number of rows, columns, layers and gridblocks
+            int NoCols = gd.NoCols;
+            int NoRows = gd.NoRows;
+            int NoLayers = gd.NoLayers;
+            int NoActiveGridblocks = gd.NoGridblocks;
             // Get a representative gridblock, and use it to count the number of fracture sets and dipsets
-            int NoFractureSets, NoDipSets;
-            GridblockConfiguration representative_gbc = gd.GetRepresentativeGridblock(out NoFractureSets, out NoDipSets);
+            int NoLayerBoundFractureSets, NoDipSets, NoUnconfinedFractureSets;
+            GridblockConfiguration representative_gbc = gd.GetRepresentativeGridblock(out NoLayerBoundFractureSets, out NoDipSets, out NoUnconfinedFractureSets);
             if (representative_gbc is null)
             {
                 progressReporter.OutputMessage("There are no gridblocks containing any data");
@@ -56,8 +57,8 @@ namespace DFMGenerator_Standalone
                 return;
             }
             List<string> DipSetLabels = new List<string>();
-            if (NoFractureSets > 0)
-                DipSetLabels = representative_gbc.FractureSets[0].DipSetLabels();
+            if (NoLayerBoundFractureSets > 0)
+                DipSetLabels = representative_gbc.LayerBoundFractureSets[0].DipSetLabels();
 
             // Get control data from DFNControl object
             // Folder to write output files in
@@ -105,7 +106,8 @@ namespace DFMGenerator_Standalone
                 // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
                 int NoStages = NoIntermediateOutputs + 1;
                 int NoCalculationElementsCompleted = 0;
-                int NoElements = NoActiveGridblocks * ((OutputFractureSetData ? (NoFractureSets * NoDipSets) : 0) + (OutputFractureConnectivityAnisotropy ? (OutputFractureSetData ? (NoFractureSets * NoDipSets) : 0) + 1 : 0) + (OutputFractureReactivationPotential ? (NoFractureSets * NoDipSets) : 0) + (OutputFracturePorosity ? 1 : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
+                int TotalNoSets = (NoLayerBoundFractureSets * NoDipSets) + NoUnconfinedFractureSets;
+                int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? 1 : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
                 NoElements *= NoStages;
                 // Bulk rock elastic tensors are only output for the final stage
                 if (OutputBulkRockElasticTensors)
@@ -125,7 +127,6 @@ namespace DFMGenerator_Standalone
 
                     // Get the endtime for the current stage
                     double stageEndTime = 0;
-                    string stageNameOverride = null;
                     switch (IntermediateOutputIntervalControl)
                     {
                         case IntermediateOutputInterval.SpecifiedTime:
@@ -148,14 +149,9 @@ namespace DFMGenerator_Standalone
                     }
 
                     // Create a stage-specific label and description for the output
-                    string outputStageLabel;
-                    if ((stageNameOverride is null) || (stageNameOverride.Length == 0))
-                        outputStageLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, (stageEndTime / timeUnits_Modifier).ToString("G3"), ProjectTimeUnits);
-                    else
-                        outputStageLabel = "_" + stageNameOverride;
+                    string outputStageLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, (stageEndTime / timeUnits_Modifier).ToString("G3"), ProjectTimeUnits);
                     string outputStageParams = string.Format("Model name: {0}\n", ModelName);
-                    outputStageParams += (stageNumber == NoStages) ? "Final stage" : string.Format("Stage {0}", stageNumber);
-                    outputStageParams += (stageNameOverride is null) ? "\n" : string.Format(": {0}\n", stageNameOverride);
+                    outputStageParams += (stageNumber == NoStages) ? "Final stage" : string.Format("Stage {0}\n", stageNumber);
                     outputStageParams += string.Format("Time {0}{1}\n", (stageEndTime / timeUnits_Modifier), ProjectTimeUnits);
                     outputStageParams += "\n";
                     string metadataSource = "";
@@ -198,9 +194,9 @@ namespace DFMGenerator_Standalone
                         gridMetadata += string.Format("GRIDUNIT\t-- Generated: {0}\n", metadataSource);
                         gridMetadata += string.Format("  METRES /\n\n");
                         gridMetadata += string.Format("DIMENS\t-- Generated: {0}\n", metadataSource);
-                        gridMetadata += string.Format("  {0} {1} {2}/\n\n", gd.NoCols(), gd.NoRows(), 1);
+                        gridMetadata += string.Format("  {0} {1} {2}/\n\n", gd.NoCols, gd.NoRows, 1);
                         gridMetadata += string.Format("SPECGRID\t-- Generated: {0}\n", metadataSource);
-                        gridMetadata += string.Format("  {0} {1} {2} {3} {4}/\n\n", gd.NoCols(), gd.NoRows(), 1, 1, "F");
+                        gridMetadata += string.Format("  {0} {1} {2} {3} {4}/\n\n", gd.NoCols, gd.NoRows, 1, 1, "F");
                         gridMetadata += string.Format("COORDSYS\t-- Generated: {0}\n", metadataSource);
                         gridMetadata += string.Format("  {0} {1}/\n\n", 1, 5);
                         outputFile.Write(gridMetadata);
@@ -212,122 +208,177 @@ namespace DFMGenerator_Standalone
                         string topzcoords = "";
                         string bottomzcoords = "";
                         string actnum = string.Format("ACTNUM\t-- Generated : {0}\n  ", metadataSource);
-                        PointXYZ TopPillar = new PointXYZ(0, 0, 0);
-                        PointXYZ BottomPillar = new PointXYZ(0, 0, 0);
+                        PointXYZ TopPoint = new PointXYZ(0, 0, 0);
+                        PointXYZ BottomPoint = new PointXYZ(0, 0, 0);
+                        // First loop through the rows and columns to get the pillar top and bottom coordinates
                         for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
                         {
-                            string row_topzcoords = "";
-                            string row_bottomzcoords = "";
-
-                            // Add the columns on the northern face of the gridblock
+                            // Add the pillars on the northern face of the gridblock
                             for (int ColNo = 0; ColNo < NoCols; ColNo++)
                             {
-                                GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-                                // Add the pillar and cornerpoints at the NW corner of the gridblock
+                                GridblockConfiguration gbcTop = gd.GetTopGridblock(ColNo, RowNo);
+                                GridblockConfiguration gbcBottom = gd.GetBottomGridblock(ColNo, RowNo);
+
+                                // Add the pillar at the NW corner of the gridblock
                                 {
-                                    if (gbc is null)
-                                    {
-                                        actnum += "0 ";
-                                    }
-                                    else
-                                    {
-                                        TopPillar = gbc.NWtop;
-                                        BottomPillar = gbc.NWbottom;
-                                        actnum += "1 ";
-                                    }
-                                    pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPillar.X, TopPillar.Y, TopPillar.Depth, BottomPillar.X, BottomPillar.Y, BottomPillar.Depth);
-                                    if (ColNo == 0)
-                                    {
-                                        row_topzcoords += string.Format("  {0}", TopPillar.Depth);
-                                        row_bottomzcoords += string.Format("  {0}", BottomPillar.Depth);
-                                    }
-                                    else
-                                    {
-                                        row_topzcoords += string.Format(" {0} {0}", TopPillar.Depth);
-                                        row_bottomzcoords += string.Format(" {0} {0}", BottomPillar.Depth);
-                                    }
+                                    if (!(gbcTop is null))
+                                        TopPoint = gbcTop.NWtop;
+                                    if (!(gbcBottom is null))
+                                        BottomPoint = gbcBottom.NWbottom;
+                                    pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPoint.X, TopPoint.Y, TopPoint.Depth, BottomPoint.X, BottomPoint.Y, BottomPoint.Depth);
                                 }
-                                // If this is the last column, add the pillar and cornerpoints at the NE corner of the gridblock
+                                // If this is the last column, add the pillar at the NE corner of the gridblock
                                 if (ColNo == (NoCols - 1))
                                 {
-                                    if (gbc is null)
-                                    {
-                                        actnum += "\n  ";
-                                    }
-                                    else
-                                    {
-                                        TopPillar = gbc.NEtop;
-                                        BottomPillar = gbc.NEbottom;
-                                        actnum += "\n  ";
-                                    }
-                                    pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPillar.X, TopPillar.Y, TopPillar.Depth, BottomPillar.X, BottomPillar.Y, BottomPillar.Depth);
-                                    row_topzcoords += string.Format(" {0}\n", TopPillar.Depth);
-                                    row_bottomzcoords += string.Format(" {0}\n", BottomPillar.Depth);
+                                    if (!(gbcTop is null))
+                                        TopPoint = gbcTop.NEtop;
+                                    if (!(gbcBottom is null))
+                                        BottomPoint = gbcBottom.NEbottom;
+                                    pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPoint.X, TopPoint.Y, TopPoint.Depth, BottomPoint.X, BottomPoint.Y, BottomPoint.Depth);
                                 }
                             }
 
-                            // Add the z coordinates of the top and bottom of the cells to the z coordinate strings
-                            // For all except the first and last rows, we need to double the top and bottom coordinates, first for the southern faces of the northern gridblocks, and then for the northern faces of the southern gridblocks
-                            if (RowNo > 0)
-                            {
-                                row_topzcoords += row_topzcoords;
-                                row_bottomzcoords += row_bottomzcoords;
-                            }
-
-                            // If this is the last row, add the columns on the southern face of the gridblock
+                            // If this is the last row, add the pillars on the southern face of the gridblock
                             if (RowNo == 0)
                                 for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                 {
-                                    GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-                                    // Add the pillar and cornerpoints at the SW corner of the gridblock
+                                    GridblockConfiguration gbcTop = gd.GetTopGridblock(ColNo, RowNo);
+                                    GridblockConfiguration gbcBottom = gd.GetBottomGridblock(ColNo, RowNo);
+                                    // Add the pillar at the SW corner of the gridblock
+                                    {
+                                        if (!(gbcTop is null))
+                                            TopPoint = gbcTop.SWtop;
+                                        if (!(gbcBottom is null))
+                                            BottomPoint = gbcBottom.SWbottom;
+                                        pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPoint.X, TopPoint.Y, TopPoint.Depth, BottomPoint.X, BottomPoint.Y, BottomPoint.Depth);
+                                    }
+                                    // If this is the last column, add the pillar at the SE corner of the gridblock
+                                    if (ColNo == (NoCols - 1))
+                                    {
+                                        if (!(gbcTop is null))
+                                            TopPoint = gbcTop.SEtop;
+                                        if (!(gbcBottom is null))
+                                            BottomPoint = gbcBottom.SEbottom;
+                                        pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPoint.X, TopPoint.Y, TopPoint.Depth, BottomPoint.X, BottomPoint.Y, BottomPoint.Depth);
+                                    }
+                                }
+                        }
+                        // Next loop through the layers, rows and columns to get the gridblock cornerpoints
+                        // Also set the ACTNUM values to 1 for null gridblocks
+                        for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                        {
+                            for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                            {
+                                string row_topzcoords = "";
+                                string row_bottomzcoords = "";
+
+                                // Add the cornerpoints on the northern face of the gridblock
+                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                                {
+                                    GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+                                    // Add the cornerpoints at the NW corner of the gridblock
                                     {
                                         if (gbc is null)
                                         {
-                                            //actnum += "0 ";
+                                            actnum += "0 ";
                                         }
                                         else
                                         {
-                                            TopPillar = gbc.SWtop;
-                                            BottomPillar = gbc.SWbottom;
-                                            //actnum += "1 ";
+                                            TopPoint = gbc.NWtop;
+                                            BottomPoint = gbc.NWbottom;
+                                            actnum += "1 ";
                                         }
-                                        pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPillar.X, TopPillar.Y, TopPillar.Depth, BottomPillar.X, BottomPillar.Y, BottomPillar.Depth);
                                         if (ColNo == 0)
                                         {
-                                            row_topzcoords += string.Format("  {0}", TopPillar.Depth);
-                                            row_bottomzcoords += string.Format("  {0}", BottomPillar.Depth);
+                                            row_topzcoords += string.Format("  {0}", TopPoint.Depth);
+                                            row_bottomzcoords += string.Format("  {0}", BottomPoint.Depth);
                                         }
                                         else
                                         {
-                                            row_topzcoords += string.Format(" {0} {0}", TopPillar.Depth);
-                                            row_bottomzcoords += string.Format(" {0} {0}", BottomPillar.Depth);
+                                            row_topzcoords += string.Format(" {0} {0}", TopPoint.Depth);
+                                            row_bottomzcoords += string.Format(" {0} {0}", BottomPoint.Depth);
                                         }
                                     }
-                                    // If this is the last column, add the pillar and cornerpoints at the SE corner of the gridblock
+                                    // If this is the last column, add the cornerpoints at the NE corner of the gridblock
                                     if (ColNo == (NoCols - 1))
                                     {
                                         if (gbc is null)
                                         {
-                                            //actnum += "\n";
+                                            actnum += "\n  ";
                                         }
                                         else
                                         {
-                                            TopPillar = gbc.SEtop;
-                                            BottomPillar = gbc.SEbottom;
-                                            //actnum += "\n  ";
+                                            TopPoint = gbc.NEtop;
+                                            BottomPoint = gbc.NEbottom;
+                                            actnum += "\n  ";
                                         }
-                                        pillars += string.Format("  {0} {1} {2} {3} {4} {5}\n", TopPillar.X, TopPillar.Y, TopPillar.Depth, BottomPillar.X, BottomPillar.Y, BottomPillar.Depth);
-                                        row_topzcoords += string.Format(" {0}\n", TopPillar.Depth);
-                                        row_bottomzcoords += string.Format(" {0}\n", BottomPillar.Depth);
+                                        row_topzcoords += string.Format(" {0}\n", TopPoint.Depth);
+                                        row_bottomzcoords += string.Format(" {0}\n", BottomPoint.Depth);
                                     }
                                 }
 
-                            // Add the z coordinates for the row to the appropriate strings
-                            topzcoords += row_topzcoords;
-                            bottomzcoords += row_bottomzcoords;
+                                // Add the z coordinates of the top and bottom of the cells to the z coordinate strings
+                                // For all except the first and last rows, we need to double the top and bottom coordinates, first for the southern faces of the northern gridblocks, and then for the northern faces of the southern gridblocks
+                                if (RowNo > 0)
+                                {
+                                    row_topzcoords += row_topzcoords;
+                                    row_bottomzcoords += row_bottomzcoords;
+                                }
+
+                                // If this is the last row, add the cornerpoints on the southern face of the gridblock
+                                if (RowNo == 0)
+                                    for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                                    {
+                                        GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+                                        // Add the cornerpoints at the SW corner of the gridblock
+                                        {
+                                            if (gbc is null)
+                                            {
+                                                //actnum += "0 ";
+                                            }
+                                            else
+                                            {
+                                                TopPoint = gbc.SWtop;
+                                                BottomPoint = gbc.SWbottom;
+                                                //actnum += "1 ";
+                                            }
+                                            if (ColNo == 0)
+                                            {
+                                                row_topzcoords += string.Format("  {0}", TopPoint.Depth);
+                                                row_bottomzcoords += string.Format("  {0}", BottomPoint.Depth);
+                                            }
+                                            else
+                                            {
+                                                row_topzcoords += string.Format(" {0} {0}", TopPoint.Depth);
+                                                row_bottomzcoords += string.Format(" {0} {0}", BottomPoint.Depth);
+                                            }
+                                        }
+                                        // If this is the last column, add the cornerpoints at the SE corner of the gridblock
+                                        if (ColNo == (NoCols - 1))
+                                        {
+                                            if (gbc is null)
+                                            {
+                                                //actnum += "\n";
+                                            }
+                                            else
+                                            {
+                                                TopPoint = gbc.SEtop;
+                                                BottomPoint = gbc.SEbottom;
+                                                //actnum += "\n  ";
+                                            }
+                                            row_topzcoords += string.Format(" {0}\n", TopPoint.Depth);
+                                            row_bottomzcoords += string.Format(" {0}\n", BottomPoint.Depth);
+                                        }
+                                    }
+
+                                // Add the z coordinates for the row to the appropriate strings
+                                topzcoords += row_topzcoords;
+                                bottomzcoords += row_bottomzcoords;
+                            }
+                            zcoords += topzcoords + bottomzcoords;
                         }
                         pillars += "  /\n\n";
-                        zcoords += topzcoords + bottomzcoords + "  /\n\n";
+                        zcoords += "  /\n\n";
                         actnum += "/\n\n";
                         outputFile.Write(pillars);
                         outputFile.Write(zcoords);
@@ -336,10 +387,11 @@ namespace DFMGenerator_Standalone
                         // Write property data
                         // Loop through each fracture set
                         if (OutputFractureSetData)
-                            for (int FractureSetNo = 0; FractureSetNo < NoFractureSets; FractureSetNo++)
+                        {
+                            for (int FractureSetNo = 0; FractureSetNo < NoLayerBoundFractureSets; FractureSetNo++)
                             {
                                 // Set a name for the fracture set
-                                string FractureSetName = GridblockConfiguration.getFractureSetName(FractureSetNo, NoFractureSets);
+                                string FractureSetName = GridblockConfiguration.getLayerBoundFractureSetName(FractureSetNo, NoLayerBoundFractureSets);
 
                                 for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                 {
@@ -372,89 +424,91 @@ namespace DFMGenerator_Standalone
                                         string uF_P32_tot = FDS_Label + string.Format("_Microfracture_P32\t-- Generated : {0}\n  ", outputDataSource);
                                         string MF_MeanLength = FDS_Label + string.Format("_Mean_fracture_length\t-- Generated : {0}\n  ", outputDataSource);
 
-                                        // Loop through all rows and columns in the grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                        // Loop through all gridblocks in the Fracture Grid
+                                        // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
                                         // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
                                         // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                                        for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                                            for (int ColNo = 0; ColNo < NoCols; ColNo++)
-                                            {
-                                                // Check if calculation has been aborted
-                                                if (progressReporter.abortCalculation())
+                                        // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                        for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                            for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                                 {
-                                                    // Clean up any resources or data
-                                                    break;
-                                                }
-
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-
-                                                // Get data from GridblockConfiguration object
-                                                // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
-                                                // In this case we will set all data to null value
-                                                double cell_MF_P30_tot, cell_MF_P32_tot, cell_uF_P32_tot, cell_MF_MeanLength;
-                                                if (gbc is null)
-                                                {
-                                                    cell_MF_P30_tot = NullValue;
-                                                    cell_MF_P32_tot = NullValue;
-                                                    cell_uF_P32_tot = NullValue;
-                                                    cell_MF_MeanLength = NullValue;
-                                                }
-                                                else if ((FractureSetNo >= gbc.NoFractureSets) || (DipSetNo >= gbc.FractureSets[FractureSetNo].FractureDipSets.Count))
-                                                {
-                                                    cell_MF_P30_tot = NullValue;
-                                                    cell_MF_P32_tot = NullValue;
-                                                    cell_uF_P32_tot = NullValue;
-                                                    cell_MF_MeanLength = NullValue;
-                                                }
-                                                else
-                                                {
-                                                    FractureDipSet fds = gbc.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
-
-                                                    if (finalStage)
+                                                    // Check if calculation has been aborted
+                                                    if (progressReporter.abortCalculation())
                                                     {
-                                                        cell_MF_P30_tot = (fds.a_MFP30_total() + fds.sII_MFP30_total() + fds.sIJ_MFP30_total()) / 2;
-                                                        cell_MF_P32_tot = fds.a_MFP32_total() + fds.s_MFP32_total();
-                                                        cell_uF_P32_tot = fds.a_uFP32_total() + fds.s_uFP32_total();
-                                                        cell_MF_MeanLength = fds.Mean_MF_HalfLength() * 2;
+                                                        // Clean up any resources or data
+                                                        break;
                                                     }
-                                                    else
-                                                    {
-                                                        int TSNo = gbc.getTimestepIndex(stageEndTime);
-                                                        cell_MF_P30_tot = fds.getTotalMFP30(TSNo);
-                                                        cell_MF_P32_tot = fds.getTotalMFP32(TSNo);
-                                                        cell_uF_P32_tot = fds.getTotaluFP32(TSNo);
-                                                        double MFP30_Thickness = cell_MF_P30_tot * gbc.ThicknessAtDeformation;
-                                                        cell_MF_MeanLength = (MFP30_Thickness > 0 ? 2 * (cell_MF_P32_tot / MFP30_Thickness) : 0);
-                                                    }
-                                                    if (!PopulateEmptyGridblocks && (cell_MF_P32_tot <= 0))
+
+                                                    // Get a reference to the gridblock
+                                                    GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                                    // Get data from GridblockConfiguration object
+                                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                                    // In this case we will set all data to null value
+                                                    double cell_MF_P30_tot, cell_MF_P32_tot, cell_uF_P32_tot, cell_MF_MeanLength;
+                                                    if (gbc is null)
                                                     {
                                                         cell_MF_P30_tot = NullValue;
                                                         cell_MF_P32_tot = NullValue;
+                                                        cell_uF_P32_tot = NullValue;
                                                         cell_MF_MeanLength = NullValue;
                                                     }
-                                                }
+                                                    else if ((FractureSetNo >= gbc.NoLayerBoundFractureSets) || (DipSetNo >= gbc.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                    {
+                                                        cell_MF_P30_tot = NullValue;
+                                                        cell_MF_P32_tot = NullValue;
+                                                        cell_uF_P32_tot = NullValue;
+                                                        cell_MF_MeanLength = NullValue;
+                                                    }
+                                                    else
+                                                    {
+                                                        FractureDipSet fds = gbc.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
 
-                                                // Update the output string for each property
-                                                MF_P30_tot += string.Format("{0} ", cell_MF_P30_tot);
-                                                MF_P32_tot += string.Format("{0} ", cell_MF_P32_tot);
-                                                uF_P32_tot += string.Format("{0} ", cell_uF_P32_tot);
-                                                MF_MeanLength += string.Format("{0} ", cell_MF_MeanLength);
+                                                        if (finalStage)
+                                                        {
+                                                            cell_MF_P30_tot = (fds.a_MFP30_total() + fds.sII_MFP30_total() + fds.sIJ_MFP30_total()) / 2;
+                                                            cell_MF_P32_tot = fds.a_MFP32_total() + fds.s_MFP32_total();
+                                                            cell_uF_P32_tot = fds.a_uFP32_total() + fds.s_uFP32_total();
+                                                            cell_MF_MeanLength = fds.Mean_MF_HalfLength() * 2;
+                                                        }
+                                                        else
+                                                        {
+                                                            int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                            cell_MF_P30_tot = fds.getTotalMFP30(TSNo);
+                                                            cell_MF_P32_tot = fds.getTotalMFP32(TSNo);
+                                                            cell_uF_P32_tot = fds.getTotaluFP32(TSNo);
+                                                            double MFP30_Thickness = cell_MF_P30_tot * gbc.ThicknessAtDeformation;
+                                                            cell_MF_MeanLength = (MFP30_Thickness > 0 ? 2 * (cell_MF_P32_tot / MFP30_Thickness) : 0);
+                                                        }
+                                                        if (!PopulateEmptyGridblocks && (cell_MF_P32_tot <= 0))
+                                                        {
+                                                            cell_MF_P30_tot = NullValue;
+                                                            cell_MF_P32_tot = NullValue;
+                                                            cell_MF_MeanLength = NullValue;
+                                                        }
+                                                    }
 
-                                                // If this is the final column in the row, add a line return to each of the output strings
-                                                // This will ensure each row of data starts on a new line
-                                                if (ColNo == (NoCols - 1))
-                                                {
-                                                    MF_P30_tot += "\n  ";
-                                                    MF_P32_tot += "\n  ";
-                                                    uF_P32_tot += "\n  ";
-                                                    MF_MeanLength += "\n  ";
-                                                }
+                                                    // Update the output string for each property
+                                                    MF_P30_tot += string.Format("{0} ", cell_MF_P30_tot);
+                                                    MF_P32_tot += string.Format("{0} ", cell_MF_P32_tot);
+                                                    uF_P32_tot += string.Format("{0} ", cell_uF_P32_tot);
+                                                    MF_MeanLength += string.Format("{0} ", cell_MF_MeanLength);
 
-                                                // Update progress bar
-                                                progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                                    // If this is the final column in the row, add a line return to each of the output strings
+                                                    // This will ensure each row of data starts on a new line
+                                                    if (ColNo == (NoCols - 1))
+                                                    {
+                                                        MF_P30_tot += "\n  ";
+                                                        MF_P32_tot += "\n  ";
+                                                        uF_P32_tot += "\n  ";
+                                                        MF_MeanLength += "\n  ";
+                                                    }
 
-                                            } // End loop through all columns and rows in the grid
+                                                    // Update progress bar
+                                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                } // End loop through all gridblocks in the Fracture Grid
 
                                         // Add the end to each output string then write them all to the output file
                                         MF_P30_tot += "/\n\n";
@@ -478,103 +532,105 @@ namespace DFMGenerator_Standalone
                                         string ConnectionsPerMF = FDS_Label + string.Format("_Connections_per_fracture\t-- Generated : {0}\n  ", outputDataSource);
                                         string EndDeformationTime = FDS_Label + string.Format("_Time_of_end_macrofracture_growth\t-- Generated : {0}\n  ", outputDataSource);
 
-                                        // Loop through all rows and columns in the grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                        // Loop through all gridblocks in the Fracture Grid
+                                        // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
                                         // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
                                         // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                                        for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                                            for (int ColNo = 0; ColNo < NoCols; ColNo++)
-                                            {
-                                                // Check if calculation has been aborted
-                                                if (progressReporter.abortCalculation())
+                                        // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                        for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                            for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                                 {
-                                                    // Clean up any resources or data
-                                                    break;
-                                                }
-
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-
-                                                // Get data from GridblockConfiguration object
-                                                // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
-                                                // In this case we will set all data to null value
-                                                double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
-                                                if (gbc is null)
-                                                {
-                                                    UnconnectedTipRatio = NullValue;
-                                                    RelayTipRatio = NullValue;
-                                                    IntersectingTipRatio = NullValue;
-                                                    NodesPerMF = NullValue;
-                                                    EndTime = NullValue;
-                                                }
-                                                else if ((FractureSetNo >= gbc.NoFractureSets) || (DipSetNo >= gbc.FractureSets[FractureSetNo].FractureDipSets.Count))
-                                                {
-                                                    UnconnectedTipRatio = NullValue;
-                                                    RelayTipRatio = NullValue;
-                                                    IntersectingTipRatio = NullValue;
-                                                    NodesPerMF = NullValue;
-                                                    EndTime = NullValue;
-                                                }
-                                                else
-                                                {
-                                                    FractureDipSet fds = gbc.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
-
-                                                    if (finalStage)
+                                                    // Check if calculation has been aborted
+                                                    if (progressReporter.abortCalculation())
                                                     {
-                                                        UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                                        RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                        IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                        NodesPerMF = gbc.ConnectionsPerMacrofracture(FractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
-                                                        EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
-                                                        if (double.IsNaN(UnconnectedTipRatio))
-                                                            UnconnectedTipRatio = NullValue;
-                                                        if (double.IsNaN(RelayTipRatio))
-                                                            RelayTipRatio = NullValue;
-                                                        if (double.IsNaN(IntersectingTipRatio))
-                                                            IntersectingTipRatio = NullValue;
-                                                        if (double.IsNaN(NodesPerMF))
-                                                            NodesPerMF = NullValue;
-                                                        if (double.IsNaN(EndTime))
-                                                            EndTime = NullValue;
+                                                        // Clean up any resources or data
+                                                        break;
+                                                    }
+
+                                                    // Get a reference to the gridblock
+                                                    GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                                    // Get data from GridblockConfiguration object
+                                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                                    // In this case we will set all data to null value
+                                                    double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
+                                                    if (gbc is null)
+                                                    {
+                                                        UnconnectedTipRatio = NullValue;
+                                                        RelayTipRatio = NullValue;
+                                                        IntersectingTipRatio = NullValue;
+                                                        NodesPerMF = NullValue;
+                                                        EndTime = NullValue;
+                                                    }
+                                                    else if ((FractureSetNo >= gbc.NoLayerBoundFractureSets) || (DipSetNo >= gbc.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                    {
+                                                        UnconnectedTipRatio = NullValue;
+                                                        RelayTipRatio = NullValue;
+                                                        IntersectingTipRatio = NullValue;
+                                                        NodesPerMF = NullValue;
+                                                        EndTime = NullValue;
                                                     }
                                                     else
                                                     {
-                                                        int TSNo = gbc.getTimestepIndex(stageEndTime);
-                                                        double INodes = fds.getActiveMFP30(TSNo);
-                                                        double RNodes = fds.getStaticRelayMFP30(TSNo);
-                                                        double YNodes = fds.getStaticIntersectMFP30(TSNo);
-                                                        double TotalNodes = INodes + RNodes + YNodes;
-                                                        double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + fds.getTerminatingFractureDensity(TSNo);
-                                                        UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : (PopulateEmptyGridblocks ? 1 : NullValue));
-                                                        RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
-                                                        IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
-                                                        NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
-                                                        EndTime = stageEndTime;
+                                                        FractureDipSet fds = gbc.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
+                                                        if (finalStage)
+                                                        {
+                                                            UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
+                                                            RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
+                                                            IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
+                                                            NodesPerMF = gbc.ConnectionsPerMacrofracture(FractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
+                                                            EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                                            if (double.IsNaN(UnconnectedTipRatio))
+                                                                UnconnectedTipRatio = NullValue;
+                                                            if (double.IsNaN(RelayTipRatio))
+                                                                RelayTipRatio = NullValue;
+                                                            if (double.IsNaN(IntersectingTipRatio))
+                                                                IntersectingTipRatio = NullValue;
+                                                            if (double.IsNaN(NodesPerMF))
+                                                                NodesPerMF = NullValue;
+                                                            if (double.IsNaN(EndTime))
+                                                                EndTime = NullValue;
+                                                        }
+                                                        else
+                                                        {
+                                                            int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                            double INodes = fds.getActiveMFP30(TSNo);
+                                                            double RNodes = fds.getStaticRelayMFP30(TSNo);
+                                                            double YNodes = fds.getStaticIntersectMFP30(TSNo);
+                                                            double TotalNodes = INodes + RNodes + YNodes;
+                                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + fds.getTerminatingFractureDensity(TSNo);
+                                                            UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : (PopulateEmptyGridblocks ? 1 : NullValue));
+                                                            RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
+                                                            IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
+                                                            NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
+                                                            EndTime = stageEndTime;
+                                                        }
                                                     }
-                                                }
 
-                                                // Update the output string for each property
-                                                MF_UnconnectedTipRatio += string.Format("{0} ", UnconnectedTipRatio);
-                                                MF_RelayTipRatio += string.Format("{0} ", RelayTipRatio);
-                                                MF_IntersectingTipRatio += string.Format("{0} ", IntersectingTipRatio);
-                                                ConnectionsPerMF += string.Format("{0} ", NodesPerMF);
-                                                EndDeformationTime += string.Format("{0} ", EndTime);
+                                                    // Update the output string for each property
+                                                    MF_UnconnectedTipRatio += string.Format("{0} ", UnconnectedTipRatio);
+                                                    MF_RelayTipRatio += string.Format("{0} ", RelayTipRatio);
+                                                    MF_IntersectingTipRatio += string.Format("{0} ", IntersectingTipRatio);
+                                                    ConnectionsPerMF += string.Format("{0} ", NodesPerMF);
+                                                    EndDeformationTime += string.Format("{0} ", EndTime);
 
-                                                // If this is the final column in the row, add a line return to each of the output strings
-                                                // This will ensure each row of data starts on a new line
-                                                if (ColNo == (NoCols - 1))
-                                                {
-                                                    MF_UnconnectedTipRatio += "\n  ";
-                                                    MF_RelayTipRatio += "\n  ";
-                                                    MF_IntersectingTipRatio += "\n  ";
-                                                    ConnectionsPerMF += "\n  ";
-                                                    EndDeformationTime += "\n  ";
-                                                }
+                                                    // If this is the final column in the row, add a line return to each of the output strings
+                                                    // This will ensure each row of data starts on a new line
+                                                    if (ColNo == (NoCols - 1))
+                                                    {
+                                                        MF_UnconnectedTipRatio += "\n  ";
+                                                        MF_RelayTipRatio += "\n  ";
+                                                        MF_IntersectingTipRatio += "\n  ";
+                                                        ConnectionsPerMF += "\n  ";
+                                                        EndDeformationTime += "\n  ";
+                                                    }
 
-                                                // Update progress bar
-                                                progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                                    // Update progress bar
+                                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
 
-                                            } // End loop through all columns and rows in the grid
+                                                } // End loop through all gridblocks in the Fracture Grid
 
                                         // Add the end to each output string then write them all to the output file
                                         MF_UnconnectedTipRatio += "/\n\n";
@@ -597,11 +653,114 @@ namespace DFMGenerator_Standalone
                                         string FDS_ReactivationPotential = FDS_Label + string.Format("_Reactivation_Potential\t-- Generated : {0}\n  ", outputDataSource);
                                         string FDS_SlipTendency = FDS_Label + string.Format("_Slip_Tendency\t-- Generated : {0}\n  ", outputDataSource);
 
-                                        // Loop through all rows and columns in the grid
-                                        // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                        // Loop through all gridblocks in the Fracture Grid
+                                        // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
                                         // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
                                         // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                                        for (int RowNo = 0; RowNo < NoRows; RowNo++)
+                                        // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                        for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                            for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                                                {
+                                                    // Check if calculation has been aborted
+                                                    if (progressReporter.abortCalculation())
+                                                    {
+                                                        // Clean up any resources or data
+                                                        break;
+                                                    }
+
+                                                    // Get a reference to the gridblock
+                                                    GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                                    // Get data from GridblockConfiguration object
+                                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                                    // In this case we will set all data to null value
+                                                    double ReactivationPotential, SlipTendency;
+                                                    if (gbc is null)
+                                                    {
+                                                        ReactivationPotential = NullValue;
+                                                        SlipTendency = NullValue;
+                                                    }
+                                                    else if ((FractureSetNo >= gbc.NoLayerBoundFractureSets) || (DipSetNo >= gbc.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                    {
+                                                        ReactivationPotential = NullValue;
+                                                        SlipTendency = NullValue;
+                                                    }
+                                                    else
+                                                    {
+                                                        FractureDipSet fds = gbc.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+
+                                                        ReactivationPotential = fds.PresentDayReactivationPotential;
+                                                        SlipTendency = fds.PresentDaySlipTendency;
+                                                    }
+
+                                                    // Update the output string for each property
+                                                    FDS_ReactivationPotential += string.Format("{0} ", ReactivationPotential);
+                                                    FDS_SlipTendency += string.Format("{0} ", SlipTendency);
+
+                                                    // If this is the final column in the row, add a line return to each of the output strings
+                                                    // This will ensure each row of data starts on a new line
+                                                    if (ColNo == (NoCols - 1))
+                                                    {
+                                                        FDS_ReactivationPotential += "\n  ";
+                                                        FDS_SlipTendency += "\n  ";
+                                                    }
+
+                                                    // Update progress bar
+                                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                } // End loop through all gridblocks in the Fracture Grid
+
+                                        // Add the end to each output string then write them all to the output file
+                                        FDS_ReactivationPotential += "/\n\n";
+                                        FDS_SlipTendency += "/\n\n";
+                                        fs_outputFile.Write(FDS_ReactivationPotential);
+                                        fs_outputFile.Write(FDS_SlipTendency);
+
+                                    } // End write fracture reactivity data
+
+                                } // End loop through fracture dip sets
+                            } // End loop through fracture sets
+
+                            for (int UnconfinedFractureSetNo = 0; UnconfinedFractureSetNo < NoUnconfinedFractureSets; UnconfinedFractureSetNo++)
+                            {
+                                // Set a name for the fracture set
+                                string FractureSetName = string.Format("UnconfinedFractureSet{0}", UnconfinedFractureSetNo);
+
+                                // Create a label for the fracture set
+                                string UFS_Label = FractureSetName;
+
+                                // If required, create a new file for the property output
+                                StreamWriter ufs_outputFile;
+                                if (WritePropertiesToSeparateFiles)
+                                {
+                                    string fs_outputFileName = filepath + fileNameBase + "_" + UFS_Label + fileExtension;
+                                    ufs_outputFile = new StreamWriter(fs_outputFileName);
+                                    outputFiles.Add(ufs_outputFile);
+                                    ufs_outputFile.Write(headerInfo);
+                                    ufs_outputFile.WriteLine(string.Format("-- Implicit fracture data for fracture set {0}", UFS_Label));
+                                    ufs_outputFile.WriteLine(string.Format("-- Generated : {0}", outputDataSource));
+                                    ufs_outputFile.WriteLine();
+                                }
+                                else
+                                {
+                                    ufs_outputFile = outputFile;
+                                }
+
+                                // Write fracture density and length data
+                                {
+                                    // Create output strings for each property
+                                    string UCF_P30_tot = UFS_Label + string.Format("_P30\t-- Generated : {0}\n  ", outputDataSource);
+                                    string UCF_P32_tot = UFS_Label + string.Format("_P32\t-- Generated : {0}\n  ", outputDataSource);
+                                    string UCF_MeanArea = UFS_Label + string.Format("_Mean_fracture_area\t-- Generated : {0}\n  ", outputDataSource);
+
+                                    // Loop through all gridblocks in the Fracture Grid
+                                    // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
+                                    // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
+                                    // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
+                                    // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                    for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                        for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
                                             for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                             {
                                                 // Check if calculation has been aborted
@@ -611,8 +770,225 @@ namespace DFMGenerator_Standalone
                                                     break;
                                                 }
 
-                                                // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
+                                                // Get a reference to the gridblock
+                                                GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                                // Get data from GridblockConfiguration object
+                                                // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                                // In this case we will set all data to null value
+                                                double cell_UCF_P30_tot, cell_UCF_P32_tot, cell_UCF_MeanArea;
+                                                if (gbc is null)
+                                                {
+                                                    cell_UCF_P30_tot = NullValue;
+                                                    cell_UCF_P32_tot = NullValue;
+                                                    cell_UCF_MeanArea = NullValue;
+                                                }
+                                                else if (UnconfinedFractureSetNo >= gbc.NoUnconfinedFractureSets)
+                                                {
+                                                    cell_UCF_P30_tot = NullValue;
+                                                    cell_UCF_P32_tot = NullValue;
+                                                    cell_UCF_MeanArea = NullValue;
+                                                }
+                                                else
+                                                {
+                                                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[UnconfinedFractureSetNo];
+
+                                                    if (finalStage)
+                                                    {
+                                                        cell_UCF_P30_tot = ufs.getTotalUCFP30();
+                                                        cell_UCF_P32_tot = ufs.getTotalUCFP32();
+                                                        cell_UCF_MeanArea = cell_UCF_P32_tot / cell_UCF_P30_tot;
+                                                    }
+                                                    else
+                                                    {
+                                                        int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                        cell_UCF_P30_tot = ufs.getTotalUCFP30(TSNo);
+                                                        cell_UCF_P32_tot = ufs.getTotalUCFP32(TSNo);
+                                                        cell_UCF_MeanArea = cell_UCF_P32_tot / cell_UCF_P30_tot;
+                                                    }
+                                                    if (!PopulateEmptyGridblocks && (cell_UCF_P32_tot <= 0))
+                                                    {
+                                                        cell_UCF_P30_tot = NullValue;
+                                                        cell_UCF_P32_tot = NullValue;
+                                                        cell_UCF_MeanArea = NullValue;
+                                                    }
+                                                }
+
+                                                // Update the output string for each property
+                                                UCF_P30_tot += string.Format("{0} ", cell_UCF_P30_tot);
+                                                UCF_P32_tot += string.Format("{0} ", cell_UCF_P32_tot);
+                                                UCF_MeanArea += string.Format("{0} ", cell_UCF_MeanArea);
+
+                                                // If this is the final column in the row, add a line return to each of the output strings
+                                                // This will ensure each row of data starts on a new line
+                                                if (ColNo == (NoCols - 1))
+                                                {
+                                                    UCF_P30_tot += "\n  ";
+                                                    UCF_P32_tot += "\n  ";
+                                                    UCF_MeanArea += "\n  ";
+                                                }
+
+                                                // Update progress bar
+                                                progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                            } // End loop through all gridblocks in the Fracture Grid
+
+                                    // Add the end to each output string then write them all to the output file
+                                    UCF_P30_tot += "/\n\n";
+                                    UCF_P32_tot += "/\n\n";
+                                    UCF_MeanArea += "/\n\n";
+                                    ufs_outputFile.Write(UCF_P30_tot);
+                                    ufs_outputFile.Write(UCF_P32_tot);
+                                    ufs_outputFile.Write(UCF_MeanArea);
+
+                                } // End write fracture density and length data
+
+                                // If required, write fracture connectivity data
+                                if (OutputFractureConnectivityAnisotropy)
+                                {
+                                    // Create output strings for each property
+                                    string UCF_UnconnectedTipRatio = UFS_Label + string.Format("_Unconnected_fracture_tip_ratio\t-- Generated : {0}\n  ", outputDataSource);
+                                    string UCF_RelayTipRatio = UFS_Label + string.Format("_Relay_zone_fracture_tip_ratio\t-- Generated : {0}\n  ", outputDataSource);
+                                    string UCF_IntersectingTipRatio = UFS_Label + string.Format("_Intersecting_fracture_tip_ratio\t-- Generated : {0}\n  ", outputDataSource);
+                                    string ConnectionsPerUCF = UFS_Label + string.Format("_Connections_per_fracture\t-- Generated : {0}\n  ", outputDataSource);
+                                    string EndDeformationTime = UFS_Label + string.Format("_Time_of_end_fracture_growth\t-- Generated : {0}\n  ", outputDataSource);
+
+                                    // Loop through all gridblocks in the Fracture Grid
+                                    // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
+                                    // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
+                                    // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
+                                    // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                    for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                        for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressReporter.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get a reference to the gridblock
+                                                GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                                // Get data from GridblockConfiguration object
+                                                // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                                // In this case we will set all data to null value
+                                                double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerUCF, EndTime;
+                                                if (gbc is null)
+                                                {
+                                                    UnconnectedTipRatio = NullValue;
+                                                    RelayTipRatio = NullValue;
+                                                    IntersectingTipRatio = NullValue;
+                                                    NodesPerUCF = NullValue;
+                                                    EndTime = NullValue;
+                                                }
+                                                else if (UnconfinedFractureSetNo >= gbc.NoUnconfinedFractureSets)
+                                                {
+                                                    UnconnectedTipRatio = NullValue;
+                                                    RelayTipRatio = NullValue;
+                                                    IntersectingTipRatio = NullValue;
+                                                    NodesPerUCF = NullValue;
+                                                    EndTime = NullValue;
+                                                }
+                                                else
+                                                {
+                                                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[UnconfinedFractureSetNo];
+
+                                                    if (finalStage)
+                                                    {
+                                                        double undefinedValue = PopulateEmptyGridblocks ? 0 : NullValue;
+                                                        double INodes = ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsRMax_RP30_M();
+                                                        double RNodes = ufs.getsII_RP30_M();
+                                                        double YNodes = ufs.getsIJ_RP30_M();
+                                                        double TotalFractures = INodes + RNodes + YNodes;
+                                                        double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity();
+                                                        UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);
+                                                        RelayTipRatio = (TotalFractures > 0 ? RNodes / TotalFractures : undefinedValue);
+                                                        IntersectingTipRatio = (TotalFractures > 0 ? YNodes / TotalFractures : undefinedValue);
+                                                        NodesPerUCF = (TotalFractures > 0 ? NoConnections / TotalFractures : undefinedValue);
+                                                        EndTime = ufs.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                                    }
+                                                    else
+                                                    {
+                                                        int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                        double undefinedValue = PopulateEmptyGridblocks ? 0 : NullValue;
+                                                        double INodes = ufs.geta_RP30_M(TSNo) + ufs.getr_RP30_M(TSNo) + ufs.getsRMax_RP30_M(TSNo);
+                                                        double RNodes = ufs.getsII_RP30_M(TSNo);
+                                                        double YNodes = ufs.getsIJ_RP30_M(TSNo);
+                                                        double TotalFractures = INodes + RNodes + YNodes;
+                                                        double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity(TSNo);
+                                                        UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);
+                                                        RelayTipRatio = (TotalFractures > 0 ? RNodes / TotalFractures : undefinedValue);
+                                                        IntersectingTipRatio = (TotalFractures > 0 ? YNodes / TotalFractures : undefinedValue);
+                                                        NodesPerUCF = (TotalFractures > 0 ? NoConnections / TotalFractures : undefinedValue);
+                                                        EndTime = stageEndTime;
+                                                    }
+                                                }
+
+                                                // Update the output string for each property
+                                                UCF_UnconnectedTipRatio += string.Format("{0} ", UnconnectedTipRatio);
+                                                UCF_RelayTipRatio += string.Format("{0} ", RelayTipRatio);
+                                                UCF_IntersectingTipRatio += string.Format("{0} ", IntersectingTipRatio);
+                                                ConnectionsPerUCF += string.Format("{0} ", NodesPerUCF);
+                                                EndDeformationTime += string.Format("{0} ", EndTime);
+
+                                                // If this is the final column in the row, add a line return to each of the output strings
+                                                // This will ensure each row of data starts on a new line
+                                                if (ColNo == (NoCols - 1))
+                                                {
+                                                    UCF_UnconnectedTipRatio += "\n  ";
+                                                    UCF_RelayTipRatio += "\n  ";
+                                                    UCF_IntersectingTipRatio += "\n  ";
+                                                    ConnectionsPerUCF += "\n  ";
+                                                    EndDeformationTime += "\n  ";
+                                                }
+
+                                                // Update progress bar
+                                                progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                            } // End loop through all gridblocks in the Fracture Grid
+
+                                    // Add the end to each output string then write them all to the output file
+                                    UCF_UnconnectedTipRatio += "/\n\n";
+                                    UCF_RelayTipRatio += "/\n\n";
+                                    UCF_IntersectingTipRatio += "/\n\n";
+                                    ConnectionsPerUCF += "/\n\n";
+                                    EndDeformationTime += "/\n\n";
+                                    ufs_outputFile.Write(UCF_UnconnectedTipRatio);
+                                    ufs_outputFile.Write(UCF_RelayTipRatio);
+                                    ufs_outputFile.Write(UCF_IntersectingTipRatio);
+                                    ufs_outputFile.Write(ConnectionsPerUCF);
+                                    ufs_outputFile.Write(EndDeformationTime);
+
+                                } // End write fracture connectivity data
+
+                                // If required, write fracture reactivity data
+                                if (OutputFractureReactivationPotential)
+                                {
+                                    // Create output strings for each property
+                                    string UCF_ReactivationPotential = UFS_Label + string.Format("_Reactivation_Potential\t-- Generated : {0}\n  ", outputDataSource);
+                                    string UCF_SlipTendency = UFS_Label + string.Format("_Slip_Tendency\t-- Generated : {0}\n  ", outputDataSource);
+
+                                    // Loop through all gridblocks in the Fracture Grid
+                                    // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
+                                    // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
+                                    // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
+                                    // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                    for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                        for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                            for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressReporter.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get a reference to the gridblock
+                                                GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
 
                                                 // Get data from GridblockConfiguration object
                                                 // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
@@ -623,46 +999,46 @@ namespace DFMGenerator_Standalone
                                                     ReactivationPotential = NullValue;
                                                     SlipTendency = NullValue;
                                                 }
-                                                else if ((FractureSetNo >= gbc.NoFractureSets) || (DipSetNo >= gbc.FractureSets[FractureSetNo].FractureDipSets.Count))
+                                                else if (UnconfinedFractureSetNo >= gbc.NoUnconfinedFractureSets)
                                                 {
                                                     ReactivationPotential = NullValue;
                                                     SlipTendency = NullValue;
                                                 }
                                                 else
                                                 {
-                                                    FractureDipSet fds = gbc.FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                    UnconfinedFractureSet ufs = gbc.UnconfinedFractureSets[UnconfinedFractureSetNo];
 
-                                                    ReactivationPotential = fds.PresentDayReactivationPotential;
-                                                    SlipTendency = fds.PresentDaySlipTendency;
+                                                    ReactivationPotential = ufs.PresentDayReactivationPotential;
+                                                    SlipTendency = ufs.PresentDaySlipTendency;
                                                 }
 
                                                 // Update the output string for each property
-                                                FDS_ReactivationPotential += string.Format("{0} ", ReactivationPotential);
-                                                FDS_SlipTendency += string.Format("{0} ", SlipTendency);
+                                                UCF_ReactivationPotential += string.Format("{0} ", ReactivationPotential);
+                                                UCF_SlipTendency += string.Format("{0} ", SlipTendency);
 
                                                 // If this is the final column in the row, add a line return to each of the output strings
                                                 // This will ensure each row of data starts on a new line
                                                 if (ColNo == (NoCols - 1))
                                                 {
-                                                    FDS_ReactivationPotential += "\n  ";
-                                                    FDS_SlipTendency += "\n  ";
+                                                    UCF_ReactivationPotential += "\n  ";
+                                                    UCF_SlipTendency += "\n  ";
                                                 }
 
                                                 // Update progress bar
                                                 progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
 
-                                            } // End loop through all columns and rows in the grid
+                                            } // End loop through all gridblocks in the Fracture Grid
 
-                                        // Add the end to each output string then write them all to the output file
-                                        FDS_ReactivationPotential += "/\n\n";
-                                        FDS_SlipTendency += "/\n\n";
-                                        fs_outputFile.Write(FDS_ReactivationPotential);
-                                        fs_outputFile.Write(FDS_SlipTendency);
+                                    // Add the end to each output string then write them all to the output file
+                                    UCF_ReactivationPotential += "/\n\n";
+                                    UCF_SlipTendency += "/\n\n";
+                                    ufs_outputFile.Write(UCF_ReactivationPotential);
+                                    ufs_outputFile.Write(UCF_SlipTendency);
 
-                                    } // End write fracture reactivity data to Petrel grid
+                                } // End write fracture reactivity data
 
-                                } // End loop through fracture dip sets
-                            } // End loop through fracture sets
+                            }
+                        }
 
                         // If required, write fracture anisotropy data for the whole fracture network
                         if (OutputFractureConnectivityAnisotropy)
@@ -697,181 +1073,183 @@ namespace DFMGenerator_Standalone
                             string ConnectionsPerMF = string.Format("Connections_per_fracture\t-- Generated : {0}\n  ", outputDataSource);
                             string EndDeformationTime = string.Format("Time_of_end_macrofracture_growth\t-- Generated : {0}\n  ", outputDataSource);
 
-                            // Loop through all rows and columns in the grid
-                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                            // Loop through all gridblocks in the Fracture Grid
+                            // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
                             // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
                             // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
-                                {
-                                    // Check if calculation has been aborted
-                                    if (progressReporter.abortCalculation())
+                            // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                            for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                    for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                     {
-                                        // Clean up any resources or data
-                                        break;
-                                    }
-
-                                    // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                    GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-
-                                    // Get data from GridblockConfiguration object
-                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
-                                    // In this case we will set all data to null value
-                                    double P32_anisotropy, P33_anisotropy;
-                                    double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
-                                    if (gbc is null)
-                                    {
-                                        P32_anisotropy = NullValue;
-                                        P33_anisotropy = NullValue;
-                                        UnconnectedTipRatio = NullValue;
-                                        RelayTipRatio = NullValue;
-                                        IntersectingTipRatio = NullValue;
-                                        NodesPerMF = NullValue;
-                                        EndTime = NullValue;
-                                    }
-                                    else
-                                    {
-                                        // Calculate fracture anisotropy and connectivity for the entire fracture network
-                                        if (finalStage)
+                                        // Check if calculation has been aborted
+                                        if (progressReporter.abortCalculation())
                                         {
-                                            // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
-                                            P32_anisotropy = gbc.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                            if (OutputFracturePorosity)
-                                                P33_anisotropy = gbc.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                            else
-                                                P33_anisotropy = gbc.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                            // Clean up any resources or data
+                                            break;
+                                        }
 
-                                            // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
-                                            UnconnectedTipRatio = gbc.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                            RelayTipRatio = gbc.RelayTipRatio(!PopulateEmptyGridblocks);
-                                            IntersectingTipRatio = gbc.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                            NodesPerMF = gbc.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
+                                        // Get a reference to the gridblock
+                                        GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
 
-                                            // Calculate end deformation time using the function in the GridblockConfiguration object
-                                            // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
-                                            EndTime = gbc.getFinalActiveTime(!PopulateEmptyGridblocks);
-
-                                            // Set any NaNs to the default null value
-                                            if (double.IsNaN(P32_anisotropy))
-                                                P32_anisotropy = NullValue;
-                                            if (double.IsNaN(P33_anisotropy))
-                                                P33_anisotropy = NullValue;
-                                            if (double.IsNaN(UnconnectedTipRatio))
-                                                UnconnectedTipRatio = NullValue;
-                                            if (double.IsNaN(RelayTipRatio))
-                                                RelayTipRatio = NullValue;
-                                            if (double.IsNaN(IntersectingTipRatio))
-                                                IntersectingTipRatio = NullValue;
-                                            if (double.IsNaN(NodesPerMF))
-                                                NodesPerMF = NullValue;
-                                            if (double.IsNaN(EndTime))
-                                                EndTime = NullValue;
+                                        // Get data from GridblockConfiguration object
+                                        // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                        // In this case we will set all data to null value
+                                        double P32_anisotropy, P33_anisotropy;
+                                        double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
+                                        if (gbc is null)
+                                        {
+                                            P32_anisotropy = NullValue;
+                                            P33_anisotropy = NullValue;
+                                            UnconnectedTipRatio = NullValue;
+                                            RelayTipRatio = NullValue;
+                                            IntersectingTipRatio = NullValue;
+                                            NodesPerMF = NullValue;
+                                            EndTime = NullValue;
                                         }
                                         else
                                         {
-                                            int TSNo = gbc.getTimestepIndex(stageEndTime);
-                                            double undefinedValue = (PopulateEmptyGridblocks ? 0 : NullValue);
-
-                                            // Calculate fracture anisotropy data using the data cached in the FCDList
-                                            double Min_P32 = 0;
-                                            double Max_P32 = 0;
-                                            double Min_P33 = 0;
-                                            double Max_P33 = 0;
-                                            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-                                            if (NoFractureSets < 2)
+                                            // Calculate fracture anisotropy and connectivity for the entire fracture network
+                                            if (finalStage)
                                             {
-                                                Max_P32 = 1;
-                                                Max_P33 = 1;
+                                                // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
+                                                P32_anisotropy = gbc.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                if (OutputFracturePorosity)
+                                                    P33_anisotropy = gbc.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                else
+                                                    P33_anisotropy = gbc.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
+
+                                                // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
+                                                UnconnectedTipRatio = gbc.UnconnectedTipRatio(!PopulateEmptyGridblocks);
+                                                RelayTipRatio = gbc.RelayTipRatio(!PopulateEmptyGridblocks);
+                                                IntersectingTipRatio = gbc.IntersectingTipRatio(!PopulateEmptyGridblocks);
+                                                NodesPerMF = gbc.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
+
+                                                // Calculate end deformation time using the function in the GridblockConfiguration object
+                                                // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
+                                                EndTime = gbc.getFinalActiveTime(!PopulateEmptyGridblocks);
+
+                                                // Set any NaNs to the default null value
+                                                if (double.IsNaN(P32_anisotropy))
+                                                    P32_anisotropy = NullValue;
+                                                if (double.IsNaN(P33_anisotropy))
+                                                    P33_anisotropy = NullValue;
+                                                if (double.IsNaN(UnconnectedTipRatio))
+                                                    UnconnectedTipRatio = NullValue;
+                                                if (double.IsNaN(RelayTipRatio))
+                                                    RelayTipRatio = NullValue;
+                                                if (double.IsNaN(IntersectingTipRatio))
+                                                    IntersectingTipRatio = NullValue;
+                                                if (double.IsNaN(NodesPerMF))
+                                                    NodesPerMF = NullValue;
+                                                if (double.IsNaN(EndTime))
+                                                    EndTime = NullValue;
                                             }
                                             else
                                             {
-                                                foreach (FractureDipSet fds in gbc.FractureSets[0].FractureDipSets)
-                                                {
-                                                    Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                    if (OutputFracturePorosity)
-                                                        Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
-                                                    else
-                                                        Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
-                                                }
-                                                Min_P32 = Max_P32;
-                                                Min_P33 = Max_P33;
+                                                int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                double undefinedValue = (PopulateEmptyGridblocks ? 0 : NullValue);
 
-                                                for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
+                                                // Calculate fracture anisotropy data using the data cached in the FCDList
+                                                double Min_P32 = 0;
+                                                double Max_P32 = 0;
+                                                double Min_P33 = 0;
+                                                double Max_P33 = 0;
+                                                // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+                                                if (NoLayerBoundFractureSets < 2)
                                                 {
-                                                    double fs_P32 = 0;
-                                                    double fs_P33 = 0;
-                                                    foreach (FractureDipSet fds in gbc.FractureSets[fs_Index].FractureDipSets)
+                                                    Max_P32 = 1;
+                                                    Max_P33 = 1;
+                                                }
+                                                else
+                                                {
+                                                    foreach (FractureDipSet fds in gbc.LayerBoundFractureSets[0].FractureDipSets)
                                                     {
-                                                        fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                        Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
                                                         if (OutputFracturePorosity)
-                                                            fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                            Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                         else
-                                                            fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                            Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
                                                     }
-                                                    if (fs_P32 > Max_P32)
-                                                        Max_P32 = fs_P32;
-                                                    if (fs_P32 < Min_P32)
-                                                        Min_P32 = fs_P32;
-                                                    if (fs_P33 > Max_P33)
-                                                        Max_P33 = fs_P33;
-                                                    if (fs_P33 < Min_P33)
-                                                        Min_P33 = fs_P33;
+                                                    Min_P32 = Max_P32;
+                                                    Min_P33 = Max_P33;
+
+                                                    for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
+                                                    {
+                                                        double fs_P32 = 0;
+                                                        double fs_P33 = 0;
+                                                        foreach (FractureDipSet fds in gbc.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                        {
+                                                            fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                            if (OutputFracturePorosity)
+                                                                fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                            else
+                                                                fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                        }
+                                                        if (fs_P32 > Max_P32)
+                                                            Max_P32 = fs_P32;
+                                                        if (fs_P32 < Min_P32)
+                                                            Min_P32 = fs_P32;
+                                                        if (fs_P33 > Max_P33)
+                                                            Max_P33 = fs_P33;
+                                                        if (fs_P33 < Min_P33)
+                                                            Min_P33 = fs_P33;
+                                                    }
                                                 }
+                                                double Combined_P32 = Min_P32 + Max_P32;
+                                                P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : (PopulateEmptyGridblocks ? 0 : NullValue));
+                                                double Combined_P33 = Min_P33 + Max_P33;
+                                                P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : (PopulateEmptyGridblocks ? 0 : NullValue));
+
+                                                // Calculate fracture connectivity data using the data cached in the FCDList
+                                                double INodes = 0;
+                                                double RNodes = 0;
+                                                double YNodes = 0;
+                                                foreach (LayerBoundFractureSet fs in gbc.LayerBoundFractureSets)
+                                                    foreach (FractureDipSet fds in fs.FractureDipSets)
+                                                    {
+                                                        INodes += fds.getActiveMFP30(TSNo);
+                                                        RNodes += fds.getStaticRelayMFP30(TSNo);
+                                                        YNodes += fds.getStaticIntersectMFP30(TSNo);
+                                                    }
+                                                double TotalNodes = INodes + RNodes + YNodes;
+                                                UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : (PopulateEmptyGridblocks ? 1 : NullValue));
+                                                RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
+                                                IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
+                                                double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
+                                                NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
+
+                                                // Get the time at the end of this intermediate stage
+                                                EndTime = stageEndTime;
                                             }
-                                            double Combined_P32 = Min_P32 + Max_P32;
-                                            P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : (PopulateEmptyGridblocks ? 0 : NullValue));
-                                            double Combined_P33 = Min_P33 + Max_P33;
-                                            P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : (PopulateEmptyGridblocks ? 0 : NullValue));
-
-                                            // Calculate fracture connectivity data using the data cached in the FCDList
-                                            double INodes = 0;
-                                            double RNodes = 0;
-                                            double YNodes = 0;
-                                            foreach (Gridblock_FractureSet fs in gbc.FractureSets)
-                                                foreach (FractureDipSet fds in fs.FractureDipSets)
-                                                {
-                                                    INodes += fds.getActiveMFP30(TSNo);
-                                                    RNodes += fds.getStaticRelayMFP30(TSNo);
-                                                    YNodes += fds.getStaticIntersectMFP30(TSNo);
-                                                }
-                                            double TotalNodes = INodes + RNodes + YNodes;
-                                            UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : (PopulateEmptyGridblocks ? 1 : NullValue));
-                                            RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
-                                            IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
-                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
-                                            NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : (PopulateEmptyGridblocks ? 0 : NullValue));
-
-                                            // Get the time at the end of this intermediate stage
-                                            EndTime = stageEndTime;
                                         }
-                                    }
 
-                                    // Update the output string for each property
-                                    P32_Anisotropy += string.Format("{0} ", P32_anisotropy);
-                                    P33_Anisotropy += string.Format("{0} ", P33_anisotropy);
-                                    MF_UnconnectedTipRatio += string.Format("{0} ", UnconnectedTipRatio);
-                                    MF_RelayTipRatio += string.Format("{0} ", RelayTipRatio);
-                                    MF_IntersectingTipRatio += string.Format("{0} ", IntersectingTipRatio);
-                                    ConnectionsPerMF += string.Format("{0} ", NodesPerMF);
-                                    EndDeformationTime += string.Format("{0} ", EndTime);
+                                        // Update the output string for each property
+                                        P32_Anisotropy += string.Format("{0} ", P32_anisotropy);
+                                        P33_Anisotropy += string.Format("{0} ", P33_anisotropy);
+                                        MF_UnconnectedTipRatio += string.Format("{0} ", UnconnectedTipRatio);
+                                        MF_RelayTipRatio += string.Format("{0} ", RelayTipRatio);
+                                        MF_IntersectingTipRatio += string.Format("{0} ", IntersectingTipRatio);
+                                        ConnectionsPerMF += string.Format("{0} ", NodesPerMF);
+                                        EndDeformationTime += string.Format("{0} ", EndTime);
 
-                                    // If this is the final column in the row, add a line return to each of the output strings
-                                    // This will ensure each row of data starts on a new line
-                                    if (ColNo == (NoCols - 1))
-                                    {
-                                        P32_Anisotropy += "\n  ";
-                                        P33_Anisotropy += "\n  ";
-                                        MF_UnconnectedTipRatio += "\n  ";
-                                        MF_RelayTipRatio += "\n  ";
-                                        MF_IntersectingTipRatio += "\n  ";
-                                        ConnectionsPerMF += "\n  ";
-                                        EndDeformationTime += "\n  ";
-                                    }
+                                        // If this is the final column in the row, add a line return to each of the output strings
+                                        // This will ensure each row of data starts on a new line
+                                        if (ColNo == (NoCols - 1))
+                                        {
+                                            P32_Anisotropy += "\n  ";
+                                            P33_Anisotropy += "\n  ";
+                                            MF_UnconnectedTipRatio += "\n  ";
+                                            MF_RelayTipRatio += "\n  ";
+                                            MF_IntersectingTipRatio += "\n  ";
+                                            ConnectionsPerMF += "\n  ";
+                                            EndDeformationTime += "\n  ";
+                                        }
 
-                                    // Update progress bar
-                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                        // Update progress bar
+                                        progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
 
-                                } // End loop through all columns and rows in the grid
+                                    } // End loop through all gridblocks in the Fracture Grid
 
                             // Add the end to each output string then write them all to the output file
                             P32_Anisotropy += "/\n\n";
@@ -911,119 +1289,223 @@ namespace DFMGenerator_Standalone
                                 poro_outputFile = outputFile;
                             }
 
-                            // Create output strings for each property
-                            string uF_P32combined = string.Format("Microfracture_combined_P32\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                            string MF_P32combined = string.Format("Layer_bound_fracture_combined_P32\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                            string uF_Porosity = string.Format("Microfracture_porosity");
-                            string MF_Porosity = string.Format("Layer_bound_fracture_porosity");
-                            switch (FractureApertureControl)
+                            // First write microfracture and layer-bound fracture data, if present
+                            if (NoLayerBoundFractureSets > 0)
                             {
-                                case FractureApertureType.Uniform:
-                                    uF_Porosity += string.Format("_UniformAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    MF_Porosity += string.Format("_UniformAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    break;
-                                case FractureApertureType.SizeDependent:
-                                    uF_Porosity += string.Format("_SizeDependentAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    MF_Porosity += string.Format("_SizeDependentAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    break;
-                                case FractureApertureType.Dynamic:
-                                    uF_Porosity += string.Format("_DynamicAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    MF_Porosity += string.Format("_DynamicAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    break;
-                                case FractureApertureType.BartonBandis:
-                                    uF_Porosity += string.Format("_BartonBandisAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    MF_Porosity += string.Format("_BartonBandisAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    break;
-                                default:
-                                    uF_Porosity += string.Format("\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    MF_Porosity += string.Format("\t-- Generated : DFM_Generator\n  ", outputDataSource);
-                                    break;
-                            }
-
-                            // Loop through all rows and columns in the grid
-                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                            // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
-                            // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
+                                // Create output strings for each property
+                                string uF_P32combined = string.Format("Microfracture_combined_P32\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                string MF_P32combined = string.Format("Layer_bound_fracture_combined_P32\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                string uF_Porosity = string.Format("Microfracture_porosity");
+                                string MF_Porosity = string.Format("Layer_bound_fracture_porosity");
+                                switch (FractureApertureControl)
                                 {
-                                    // Check if calculation has been aborted
-                                    if (progressReporter.abortCalculation())
-                                    {
-                                        // Clean up any resources or data
+                                    case FractureApertureType.Uniform:
+                                        uF_Porosity += string.Format("_UniformAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        MF_Porosity += string.Format("_UniformAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
                                         break;
-                                    }
+                                    case FractureApertureType.SizeDependent:
+                                        uF_Porosity += string.Format("_SizeDependentAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        MF_Porosity += string.Format("_SizeDependentAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    case FractureApertureType.Dynamic:
+                                        uF_Porosity += string.Format("_DynamicAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        MF_Porosity += string.Format("_DynamicAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    case FractureApertureType.BartonBandis:
+                                        uF_Porosity += string.Format("_BartonBandisAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        MF_Porosity += string.Format("_BartonBandisAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    default:
+                                        uF_Porosity += string.Format("\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        MF_Porosity += string.Format("\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                }
 
-                                    // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                    GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-
-                                    // Get data from GridblockConfiguration object
-                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
-                                    // In this case we will set all data to null value
-                                    double uF_P32_value, MF_P32_value, uF_Porosity_value, MF_Porosity_value;
-                                    if (gbc is null)
-                                    {
-                                        uF_P32_value = NullValue;
-                                        MF_P32_value = NullValue;
-                                        uF_Porosity_value = NullValue;
-                                        MF_Porosity_value = NullValue;
-                                    }
-                                    else
-                                    {
-                                        if (finalStage)
+                                // Loop through all gridblocks in the Fracture Grid
+                                // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
+                                // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
+                                // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
+                                // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                    for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                        for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                         {
-                                            uF_P32_value = gbc.MicrofractureDensity_P32();
-                                            MF_P32_value = gbc.LayerBoundFractureDensity_P32();
-                                            uF_Porosity_value = gbc.MicrofracturePorosity();
-                                            MF_Porosity_value = gbc.LayerBoundFracturePorosity();
-                                        }
-                                        else
+                                            // Check if calculation has been aborted
+                                            if (progressReporter.abortCalculation())
+                                            {
+                                                // Clean up any resources or data
+                                                break;
+                                            }
+
+                                            // Get a reference to the gridblock
+                                            GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                            // Get data from GridblockConfiguration object
+                                            // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                            // In this case we will set all data to null value
+                                            double uF_P32_value, MF_P32_value, uF_Porosity_value, MF_Porosity_value;
+                                            if (gbc is null)
+                                            {
+                                                uF_P32_value = NullValue;
+                                                MF_P32_value = NullValue;
+                                                uF_Porosity_value = NullValue;
+                                                MF_Porosity_value = NullValue;
+                                            }
+                                            else
+                                            {
+                                                if (finalStage)
+                                                {
+                                                    uF_P32_value = gbc.MicrofractureDensity_P32();
+                                                    MF_P32_value = gbc.LayerBoundFractureDensity_P32();
+                                                    uF_Porosity_value = gbc.MicrofracturePorosity();
+                                                    MF_Porosity_value = gbc.LayerBoundFracturePorosity();
+                                                }
+                                                else
+                                                {
+                                                    int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                    uF_P32_value = gbc.MicrofractureDensity_P32(TSNo);
+                                                    MF_P32_value = gbc.LayerBoundFractureDensity_P32(TSNo);
+                                                    uF_Porosity_value = gbc.MicrofracturePorosity(TSNo);
+                                                    MF_Porosity_value = gbc.LayerBoundFracturePorosity(TSNo);
+                                                }
+                                                if (!PopulateEmptyGridblocks && (MF_P32_value <= 0))
+                                                {
+                                                    MF_P32_value = NullValue;
+                                                    MF_Porosity_value = NullValue;
+                                                }
+                                            }
+
+                                            // Update the output string for each property
+                                            uF_P32combined += string.Format("{0} ", uF_P32_value);
+                                            MF_P32combined += string.Format("{0} ", MF_P32_value);
+                                            uF_Porosity += string.Format("{0} ", uF_Porosity_value);
+                                            MF_Porosity += string.Format("{0} ", MF_Porosity_value);
+
+                                            // If this is the final column in the row, add a line return to each of the output strings
+                                            // This will ensure each row of data starts on a new line
+                                            if (ColNo == (NoCols - 1))
+                                            {
+                                                uF_P32combined += "\n  ";
+                                                MF_P32combined += "\n  ";
+                                                uF_Porosity += "\n  ";
+                                                MF_Porosity += "\n  ";
+                                            }
+
+                                            // Update progress bar
+                                            progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                        } // End loop through all gridblocks in the Fracture Grid
+
+                                // Add the end to each output string then write them all to the output file
+                                uF_P32combined += "/\n\n";
+                                MF_P32combined += "/\n\n";
+                                uF_Porosity += "/\n\n";
+                                MF_Porosity += "/\n\n";
+                                poro_outputFile.Write(uF_P32combined);
+                                poro_outputFile.Write(MF_P32combined);
+                                poro_outputFile.Write(uF_Porosity);
+                                poro_outputFile.Write(MF_Porosity);
+
+                            } // End write fracture porosity data
+
+                            // Then write unconfined fracture porosity data, if present
+                            if (NoUnconfinedFractureSets > 0)
+                            {
+                                // Create output strings for each property
+                                string UCF_P32combined = string.Format("Unconfined_fracture_combined_P32\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                string UCF_Porosity = string.Format("Unconfined_fracture_porosity");
+                                switch (FractureApertureControl)
+                                {
+                                    case FractureApertureType.Uniform:
+                                        UCF_Porosity += string.Format("_UniformAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    case FractureApertureType.SizeDependent:
+                                        UCF_Porosity += string.Format("_SizeDependentAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    case FractureApertureType.Dynamic:
+                                        UCF_Porosity += string.Format("_DynamicAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    case FractureApertureType.BartonBandis:
+                                        UCF_Porosity += string.Format("_BartonBandisAperture\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                    default:
+                                        UCF_Porosity += string.Format("\t-- Generated : DFM_Generator\n  ", outputDataSource);
+                                        break;
+                                }
+
+                                // Loop through all gridblocks in the Fracture Grid
+                                // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
+                                // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
+                                // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
+                                // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                                for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                    for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                        for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                         {
-                                            int TSNo = gbc.getTimestepIndex(stageEndTime);
-                                            uF_P32_value = gbc.MicrofractureDensity_P32(TSNo);
-                                            MF_P32_value = gbc.LayerBoundFractureDensity_P32(TSNo);
-                                            uF_Porosity_value = gbc.MicrofracturePorosity(TSNo);
-                                            MF_Porosity_value = gbc.LayerBoundFracturePorosity(TSNo);
-                                        }
-                                        if (!PopulateEmptyGridblocks && (MF_P32_value <= 0))
-                                        {
-                                            MF_P32_value = NullValue;
-                                            MF_Porosity_value = NullValue;
-                                        }
-                                    }
+                                            // Check if calculation has been aborted
+                                            if (progressReporter.abortCalculation())
+                                            {
+                                                // Clean up any resources or data
+                                                break;
+                                            }
 
-                                    // Update the output string for each property
-                                    uF_P32combined += string.Format("{0} ", uF_P32_value);
-                                    MF_P32combined += string.Format("{0} ", MF_P32_value);
-                                    uF_Porosity += string.Format("{0} ", uF_Porosity_value);
-                                    MF_Porosity += string.Format("{0} ", MF_Porosity_value);
+                                            // Get a reference to the gridblock
+                                            GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
 
-                                    // If this is the final column in the row, add a line return to each of the output strings
-                                    // This will ensure each row of data starts on a new line
-                                    if (ColNo == (NoCols - 1))
-                                    {
-                                        uF_P32combined += "\n  ";
-                                        MF_P32combined += "\n  ";
-                                        uF_Porosity += "\n  ";
-                                        MF_Porosity += "\n  ";
-                                    }
+                                            // Get data from GridblockConfiguration object
+                                            // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                            // In this case we will set all data to null value
+                                            double UCF_P32_value, UCF_Porosity_value;
+                                            if (gbc is null)
+                                            {
+                                                UCF_P32_value = NullValue;
+                                                UCF_Porosity_value = NullValue;
+                                            }
+                                            else
+                                            {
+                                                if (finalStage)
+                                                {
+                                                    UCF_P32_value = gbc.UnconfinedFractureDensity_P32();
+                                                    UCF_Porosity_value = gbc.UnconfinedFracturePorosity();
+                                                }
+                                                else
+                                                {
+                                                    int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                    UCF_P32_value = gbc.UnconfinedFractureDensity_P32(TSNo);
+                                                    UCF_Porosity_value = gbc.UnconfinedFracturePorosity(TSNo);
+                                                }
+                                                if (!PopulateEmptyGridblocks && (UCF_P32_value <= 0))
+                                                {
+                                                    UCF_P32_value = NullValue;
+                                                    UCF_Porosity_value = NullValue;
+                                                }
+                                            }
 
-                                    // Update progress bar
-                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                            // Update the output string for each property
+                                            UCF_P32combined += string.Format("{0} ", UCF_P32_value);
+                                            UCF_Porosity += string.Format("{0} ", UCF_Porosity_value);
 
-                                } // End loop through all columns and rows in the grid
+                                            // If this is the final column in the row, add a line return to each of the output strings
+                                            // This will ensure each row of data starts on a new line
+                                            if (ColNo == (NoCols - 1))
+                                            {
+                                                UCF_P32combined += "\n  ";
+                                                UCF_Porosity += "\n  ";
+                                            }
 
-                            // Add the end to each output string then write them all to the output file
-                            uF_P32combined += "/\n\n";
-                            MF_P32combined += "/\n\n";
-                            uF_Porosity += "/\n\n";
-                            MF_Porosity += "/\n\n";
-                            poro_outputFile.Write(uF_P32combined);
-                            poro_outputFile.Write(MF_P32combined);
-                            poro_outputFile.Write(uF_Porosity);
-                            poro_outputFile.Write(MF_Porosity);
+                                            // Update progress bar
+                                            progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
 
-                        } // End write fracture porosity data
+                                        } // End loop through all gridblocks in the Fracture Grid
+
+                                // Add the end to each output string then write them all to the output file
+                                UCF_P32combined += "/\n\n";
+                                UCF_Porosity += "/\n\n";
+                                poro_outputFile.Write(UCF_P32combined);
+                                poro_outputFile.Write(UCF_Porosity);
+
+                            } //End write unconfined fracture porosity data
+                        }
 
                         // Write fracture permeability tensor and sigma factor data
                         if (OutputFracturePermeabilityTensor)
@@ -1057,6 +1539,10 @@ namespace DFMGenerator_Standalone
                                 case FractureType.LayerBoundFractures:
                                     FracturePermeabilityTensorCollectionName = "Macrofracture permeability tensor";
                                     PermeabilityTensorComponentName_base = "k_MF_";
+                                    break;
+                                case FractureType.UnconfinedFractures:
+                                    FracturePermeabilityTensorCollectionName = "Unconfined fracture permeability tensor";
+                                    PermeabilityTensorComponentName_base = "k_UCF_";
                                     break;
                                 case FractureType.AllFractures:
                                     FracturePermeabilityTensorCollectionName = "Fracture permeability tensor";
@@ -1095,110 +1581,120 @@ namespace DFMGenerator_Standalone
                             string SigmaFactorProperty = string.Format("{0}Sigma\t", PermeabilityTensorComponentName_base);
                             SigmaFactorProperty += string.Format("-- {0}\n", FracturePermeabilityTensorCollectionName);
 
-                            // Loop through all rows and columns in the grid
-                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                            // Loop through all gridblocks in the Fracture Grid
+                            // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
                             // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
                             // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
-                                {
-                                    // Check if calculation has been aborted
-                                    if (progressReporter.abortCalculation())
+                            // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                            for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                    for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                     {
-                                        // Clean up any resources or data
-                                        break;
-                                    }
-
-                                    // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                    GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
-
-                                    // Get data from GridblockConfiguration object
-                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
-                                    // In this case we will set all data to null value
-                                    Tensor2S gridblockPermeabilityTensor;
-                                    double gridblockSigmaFactor;
-                                    if (gbc is null)
-                                    {
-                                        gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
-                                        gridblockSigmaFactor = NullValue;
-                                    }
-                                    else
-                                    {
-                                        // Get the appropriate permeability tensor for this gridblock
-                                        if (finalStage)
+                                        // Check if calculation has been aborted
+                                        if (progressReporter.abortCalculation())
                                         {
-                                            switch (FractureTypesInPermeabilityTensor)
-                                            {
-                                                case FractureType.Microfractures:
-                                                    gridblockPermeabilityTensor = gbc.MicrofracturePermeability();
-                                                    gridblockSigmaFactor = gbc.MicrofractureSigmaFactor();
-                                                    break;
-                                                case FractureType.LayerBoundFractures:
-                                                    gridblockPermeabilityTensor = gbc.MacrofracturePermeability();
-                                                    gridblockSigmaFactor = gbc.MacrofractureSigmaFactor();
-                                                    break;
-                                                case FractureType.AllFractures:
-                                                    gridblockPermeabilityTensor = gbc.TotalFracturePermeability();
-                                                    gridblockSigmaFactor = gbc.TotalFractureSigmaFactor();
-                                                    break;
-                                                default:
-                                                    gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
-                                                    gridblockSigmaFactor = NullValue;
-                                                    break;
-                                            }
+                                            // Clean up any resources or data
+                                            break;
+                                        }
+
+                                        // Get a reference to the gridblock
+                                        GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
+
+                                        // Get data from GridblockConfiguration object
+                                        // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                        // In this case we will set all data to null value
+                                        Tensor2S gridblockPermeabilityTensor;
+                                        double gridblockSigmaFactor;
+                                        if (gbc is null)
+                                        {
+                                            gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
+                                            gridblockSigmaFactor = NullValue;
                                         }
                                         else
                                         {
-                                            int TSNo = gbc.getTimestepIndex(stageEndTime);
-                                            switch (FractureTypesInPermeabilityTensor)
+                                            // Get the appropriate permeability tensor for this gridblock
+                                            if (finalStage)
                                             {
-                                                case FractureType.Microfractures:
-                                                    gridblockPermeabilityTensor = gbc.MicrofracturePermeability(TSNo);
-                                                    gridblockSigmaFactor = gbc.MicrofractureSigmaFactor(TSNo);
-                                                    break;
-                                                case FractureType.LayerBoundFractures:
-                                                    gridblockPermeabilityTensor = gbc.MacrofracturePermeability(TSNo);
-                                                    gridblockSigmaFactor = gbc.MacrofractureSigmaFactor(TSNo);
-                                                    break;
-                                                case FractureType.AllFractures:
-                                                    gridblockPermeabilityTensor = gbc.TotalFracturePermeability(TSNo);
-                                                    gridblockSigmaFactor = gbc.TotalFractureSigmaFactor(TSNo);
-                                                    break;
-                                                default:
+                                                switch (FractureTypesInPermeabilityTensor)
+                                                {
+                                                    case FractureType.Microfractures:
+                                                        gridblockPermeabilityTensor = gbc.MicrofracturePermeability();
+                                                        gridblockSigmaFactor = gbc.MicrofractureSigmaFactor();
+                                                        break;
+                                                    case FractureType.LayerBoundFractures:
+                                                        gridblockPermeabilityTensor = gbc.MacrofracturePermeability();
+                                                        gridblockSigmaFactor = gbc.MacrofractureSigmaFactor();
+                                                        break;
+                                                    case FractureType.UnconfinedFractures:
+                                                        gridblockPermeabilityTensor = gbc.UnconfinedFracturePermeability();
+                                                        gridblockSigmaFactor = gbc.UnconfinedFractureSigmaFactor();
+                                                        break;
+                                                    case FractureType.AllFractures:
+                                                        gridblockPermeabilityTensor = gbc.TotalFracturePermeability();
+                                                        gridblockSigmaFactor = gbc.TotalFractureSigmaFactor();
+                                                        break;
+                                                    default:
+                                                        gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
+                                                        gridblockSigmaFactor = NullValue;
+                                                        break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                int TSNo = gbc.getTimestepIndex(stageEndTime);
+                                                switch (FractureTypesInPermeabilityTensor)
+                                                {
+                                                    case FractureType.Microfractures:
+                                                        gridblockPermeabilityTensor = gbc.MicrofracturePermeability(TSNo);
+                                                        gridblockSigmaFactor = gbc.MicrofractureSigmaFactor(TSNo);
+                                                        break;
+                                                    case FractureType.LayerBoundFractures:
+                                                        gridblockPermeabilityTensor = gbc.MacrofracturePermeability(TSNo);
+                                                        gridblockSigmaFactor = gbc.MacrofractureSigmaFactor(TSNo);
+                                                        break;
+                                                    case FractureType.UnconfinedFractures:
+                                                        gridblockPermeabilityTensor = gbc.UnconfinedFracturePermeability(TSNo);
+                                                        gridblockSigmaFactor = gbc.UnconfinedFractureSigmaFactor(TSNo);
+                                                        break;
+                                                    case FractureType.AllFractures:
+                                                        gridblockPermeabilityTensor = gbc.TotalFracturePermeability(TSNo);
+                                                        gridblockSigmaFactor = gbc.TotalFractureSigmaFactor(TSNo);
+                                                        break;
+                                                    default:
+                                                        gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
+                                                        gridblockSigmaFactor = NullValue;
+                                                        break;
+                                                }
+                                            }
+                                            if (!PopulateEmptyGridblocks)
+                                            {
+                                                double P32_value = finalStage ? gbc.LayerBoundFractureDensity_P32() + gbc.UnconfinedFractureDensity_P32() : gbc.LayerBoundFractureDensity_P32(gbc.getTimestepIndex(stageEndTime)) + gbc.UnconfinedFractureDensity_P32(gbc.getTimestepIndex(stageEndTime));
+                                                if (!(P32_value > 0))
+                                                {
                                                     gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
                                                     gridblockSigmaFactor = NullValue;
-                                                    break;
+                                                }
                                             }
                                         }
-                                        if (!PopulateEmptyGridblocks && (FractureTypesInPermeabilityTensor == FractureType.LayerBoundFractures))
-                                        {
-                                            double MF_P32_value = finalStage ? gbc.LayerBoundFractureDensity_P32() : gbc.LayerBoundFractureDensity_P32(gbc.getTimestepIndex(stageEndTime));
-                                            if (!(MF_P32_value > 0))
-                                            {
-                                                gridblockPermeabilityTensor = new Tensor2S(NullValue, NullValue, NullValue, NullValue, NullValue, NullValue);
-                                                gridblockSigmaFactor = NullValue;
-                                            }
-                                        }
-                                    }
 
-                                    // Update the output string for each property
-                                    foreach (Tensor2SComponents ij in tensorComponents)
-                                        PermeabilityTensorProperties[ij] += string.Format("{0} ", gridblockPermeabilityTensor.Component(ij));
-                                    SigmaFactorProperty += string.Format("{0} ", gridblockSigmaFactor);
-
-                                    // If this is the final column in the row, add a line return to each of the output strings
-                                    // This will ensure each row of data starts on a new line
-                                    if (ColNo == (NoCols - 1))
-                                    {
+                                        // Update the output string for each property
                                         foreach (Tensor2SComponents ij in tensorComponents)
-                                            PermeabilityTensorProperties[ij] += "\n  ";
-                                        SigmaFactorProperty += "\n  ";
-                                    }
+                                            PermeabilityTensorProperties[ij] += string.Format("{0} ", gridblockPermeabilityTensor.Component(ij));
+                                        SigmaFactorProperty += string.Format("{0} ", gridblockSigmaFactor);
 
-                                    // Update progress bar
-                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                        // If this is the final column in the row, add a line return to each of the output strings
+                                        // This will ensure each row of data starts on a new line
+                                        if (ColNo == (NoCols - 1))
+                                        {
+                                            foreach (Tensor2SComponents ij in tensorComponents)
+                                                PermeabilityTensorProperties[ij] += "\n  ";
+                                            SigmaFactorProperty += "\n  ";
+                                        }
 
-                                } // End loop through all columns and rows in the grid
+                                        // Update progress bar
+                                        progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                    } // End loop through all gridblocks in the Fracture Grid
 
                             // Add the end to each output string then write them all to the output file
                             foreach (Tensor2SComponents ij in tensorComponents)
@@ -1250,47 +1746,31 @@ namespace DFMGenerator_Standalone
                                 }
                             }
 
-                            // Loop through all rows and columns in the grid
-                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                            // Loop through all gridblocks in the Fracture Grid
+                            // ColNo corresponds to the I index, RowNo corresponds to the J index, and LayerNo corresponds to the K index
                             // In GRDECL format we must increment ColNo must be incremented first, then RowNo, and finally LayerNo (if there is more than one layer)
                             // Therefore we should place ColNo in the innermost loop, then RowNo, and LayerNo in the outermost loop (if there is more than one layer)
-                            for (int RowNo = 0; RowNo < NoRows; RowNo++)
-                                for (int ColNo = 0; ColNo < NoCols; ColNo++)
-                                {
-                                    // Check if calculation has been aborted
-                                    if (progressReporter.abortCalculation())
+                            // However rows and layers are indexed in the opposite order to the Fracture Grid so we must loop through these in reverse
+                            for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+                                for (int RowNo = NoRows - 1; RowNo >= 0; RowNo--)
+                                    for (int ColNo = 0; ColNo < NoCols; ColNo++)
                                     {
-                                        // Clean up any resources or data
-                                        break;
-                                    }
+                                        // Check if calculation has been aborted
+                                        if (progressReporter.abortCalculation())
+                                        {
+                                            // Clean up any resources or data
+                                            break;
+                                        }
 
-                                    // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                    GridblockConfiguration gbc = gd.GetGridblock(RowNo, ColNo);
+                                        // Get a reference to the gridblock
+                                        GridblockConfiguration gbc = gd.GetGridblock(ColNo, RowNo, LayerNo);
 
-                                    // Get data from GridblockConfiguration object
-                                    // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
-                                    // In this case we will set all data to null value
-                                    Tensor4_2Sx2S gridblockComplianceTensor = new Tensor4_2Sx2S();
-                                    Tensor4_2Sx2S gridblockStiffnessTensor = new Tensor4_2Sx2S();
-                                    if (gbc is null)
-                                    {
-                                        foreach (Tensor2SComponents ij in tensorComponents)
-                                            foreach (Tensor2SComponents kl in tensorComponents)
-                                            {
-                                                gridblockComplianceTensor.Component(ij, kl, NullValue);
-                                                gridblockStiffnessTensor.Component(ij, kl, NullValue);
-                                            }
-                                    }
-                                    else
-                                    {
-                                        // Get the compliance and stiffness tensors for this gridblock
-                                        gridblockComplianceTensor = gbc.S_b;
-                                        gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
-                                    }
-                                    if (!PopulateEmptyGridblocks && (FractureTypesInPermeabilityTensor == FractureType.LayerBoundFractures))
-                                    {
-                                        double MF_P32_value = finalStage ? gbc.LayerBoundFractureDensity_P32() : gbc.LayerBoundFractureDensity_P32(gbc.getTimestepIndex(stageEndTime));
-                                        if (!(MF_P32_value > 0))
+                                        // Get data from GridblockConfiguration object
+                                        // If the gridblock does not exist or if the fracture sets do not exist we must still write an entry in the data lists
+                                        // In this case we will set all data to null value
+                                        Tensor4_2Sx2S gridblockComplianceTensor = new Tensor4_2Sx2S();
+                                        Tensor4_2Sx2S gridblockStiffnessTensor = new Tensor4_2Sx2S();
+                                        if (gbc is null)
                                         {
                                             foreach (Tensor2SComponents ij in tensorComponents)
                                                 foreach (Tensor2SComponents kl in tensorComponents)
@@ -1299,32 +1779,50 @@ namespace DFMGenerator_Standalone
                                                     gridblockStiffnessTensor.Component(ij, kl, NullValue);
                                                 }
                                         }
-                                    }
-
-                                    // Update the output string for each property
-                                    foreach (Tensor2SComponents ij in tensorComponents)
-                                        foreach (Tensor2SComponents kl in tensorComponents)
+                                        else
                                         {
-                                            ComplianceTensorProperties[ij][kl] += string.Format("{0} ", gridblockComplianceTensor.Component(ij, kl));
-                                            StiffnessTensorProperties[ij][kl] += string.Format("{0} ", gridblockStiffnessTensor.Component(ij, kl));
+                                            // Get the compliance and stiffness tensors for this gridblock
+                                            gridblockComplianceTensor = gbc.S_b;
+                                            gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
+                                        }
+                                        if (!PopulateEmptyGridblocks && (FractureTypesInPermeabilityTensor == FractureType.LayerBoundFractures))
+                                        {
+                                            double MF_P32_value = finalStage ? gbc.LayerBoundFractureDensity_P32() : gbc.LayerBoundFractureDensity_P32(gbc.getTimestepIndex(stageEndTime));
+                                            if (!(MF_P32_value > 0))
+                                            {
+                                                foreach (Tensor2SComponents ij in tensorComponents)
+                                                    foreach (Tensor2SComponents kl in tensorComponents)
+                                                    {
+                                                        gridblockComplianceTensor.Component(ij, kl, NullValue);
+                                                        gridblockStiffnessTensor.Component(ij, kl, NullValue);
+                                                    }
+                                            }
                                         }
 
-                                    // If this is the final column in the row, add a line return to each of the output strings
-                                    // This will ensure each row of data starts on a new line
-                                    if (ColNo == (NoCols - 1))
-                                    {
+                                        // Update the output string for each property
                                         foreach (Tensor2SComponents ij in tensorComponents)
                                             foreach (Tensor2SComponents kl in tensorComponents)
                                             {
-                                                ComplianceTensorProperties[ij][kl] += "\n  ";
-                                                StiffnessTensorProperties[ij][kl] += "\n  ";
+                                                ComplianceTensorProperties[ij][kl] += string.Format("{0} ", gridblockComplianceTensor.Component(ij, kl));
+                                                StiffnessTensorProperties[ij][kl] += string.Format("{0} ", gridblockStiffnessTensor.Component(ij, kl));
                                             }
-                                    }
 
-                                    // Update progress bar
-                                    progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                        // If this is the final column in the row, add a line return to each of the output strings
+                                        // This will ensure each row of data starts on a new line
+                                        if (ColNo == (NoCols - 1))
+                                        {
+                                            foreach (Tensor2SComponents ij in tensorComponents)
+                                                foreach (Tensor2SComponents kl in tensorComponents)
+                                                {
+                                                    ComplianceTensorProperties[ij][kl] += "\n  ";
+                                                    StiffnessTensorProperties[ij][kl] += "\n  ";
+                                                }
+                                        }
 
-                                } // End loop through all columns and rows in the grid
+                                        // Update progress bar
+                                        progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                    } // End loop through all gridblocks in the Fracture Grid
 
                             // Add the end to each output string then write them all to the output file
                             foreach (Tensor2SComponents ij in tensorComponents)
@@ -1366,7 +1864,8 @@ namespace DFMGenerator_Standalone
         /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
         /// <param name="WriteuFData">Write data for microfractures in the DFN</param>
         /// <param name="WriteMFData">Write data for layer-bound macrofractures in the DFN</param>
-        public void WriteFABFile(string ModelName, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData)
+        /// <param name="WriteUCFData">Write data for unconfined fractures in the DFN</param>
+        public void WriteFABFile(string ModelName, IProgressReporterWrapper progressReporter, bool WriteuFData, bool WriteMFData, bool WriteUCFData)
         {
             // Get control data from DFNControl object
             // Folder to write output files in
@@ -1526,10 +2025,10 @@ namespace DFMGenerator_Standalone
                             uF_outputFile.Close();
                         }
 
-                        // Write macrofracture data to file
+                        // Write layer-bound fracture data to file
                         if (WriteMFData)
                         {
-                            // Create file for microfractures
+                            // Create file for layer-bound fractures
                             string fileNameBase = ModelName + outputStageLabel + "_LayerBoundFractures";
                             string outputFileName = filepath + fileNameBase + fileExtension;
                             StreamWriter MF_outputFile = new StreamWriter(outputFileName);
@@ -1633,6 +2132,88 @@ namespace DFMGenerator_Standalone
 
                             // Close macrofracture  output file
                             MF_outputFile.Close();
+                        }
+
+                        // Write unconfined fracture data to file
+                        if (WriteUCFData)
+                        {
+                            // Create file for unconfined fractures
+                            string fileNameBase = ModelName + outputStageLabel + "_UnconfinedFractures";
+                            string outputFileName = filepath + fileNameBase + fileExtension;
+                            StreamWriter UCF_outputFile = new StreamWriter(outputFileName);
+                            outputFiles.Add(UCF_outputFile);
+
+                            {
+                                int No_UCFracs = DFN.NoUnconfinedFractureElements();
+                                int noElementCornerpoints = 3; // We are using triangular elements
+                                int No_Nodes = No_UCFracs * noElementCornerpoints;
+
+                                // Write general fracture FAB header data to logfile
+                                string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
+                                UCF_outputFile.WriteLine(FAB_header_1);
+                                string FAB_header5 = string.Format("{0} {1}", "No_Fractures =", No_UCFracs);
+                                string FAB_header6 = string.Format("No_TessFractures = 0");
+                                string FAB_header7 = string.Format("{0} {1}", "No_Nodes = ", No_Nodes);
+                                UCF_outputFile.WriteLine(FAB_header5);
+                                UCF_outputFile.WriteLine(FAB_header6);
+                                UCF_outputFile.WriteLine(FAB_header7);
+
+                                string FAB_header_3 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n", "No_RockBlocks = 0", "No_NodesRockBlock = 0", "No_Properties = 3", "END FORMAT");
+                                UCF_outputFile.WriteLine(FAB_header_3);
+                                string FAB_header_4 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}", "BEGIN PROPERTIES", "Prop1    =    (Real*4) \"Permeability\"", "Prop2    =    (Real*4) \"Compressibility\"", "Prop3    =    (Real*4) \"Aperture\"");
+                                UCF_outputFile.WriteLine(FAB_header_4);
+                                string FAB_header_5 = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n{3}\r\n\r\n{4}", "END PROPERTIES", "BEGIN SETS", "Set1    =    \"Discrete fractures\"", "END SETS", "BEGIN FRACTURE");
+                                UCF_outputFile.WriteLine(FAB_header_5);
+
+                                // Loop through each unconfined fracture and write data to logfile
+                                int UCFelementNo = 1;
+                                for (int UCFracNo = 0; UCFracNo < No_UCFracs; UCFracNo++)
+                                {
+                                    UnconfinedFractureXYZ frac = DFN.GlobalDFNUnconfinedFractures[UCFracNo];
+
+                                    // Set the fracture aperture
+                                    double aperture = 0;// frac.MeanAperture;
+                                    double permeability = 0;// Math.Pow(aperture, 2) / 12;
+                                    if (double.IsNaN(aperture))
+                                    {
+                                        aperture = DefaultFractureAperture;
+                                        permeability = DefaultFracturePermeability;
+                                    }
+                                    double compressibility = 0;// frac.Compressibility;
+                                    if (double.IsNaN(compressibility))
+                                        compressibility = DefaultFractureCompressibility;
+
+                                    // Get a list of triangular elements comprising this fracture
+                                    List<PointXYZ[]> elements = frac.GetTriangularFractureSegmentsInXYZ();
+
+                                    // Loop through each element in the list
+                                    // Each element will be output as a separate fracture
+                                    foreach (PointXYZ[] element in elements)
+                                    {
+                                        string data = string.Format("{0} {1} {2} {3} {4} {5}", UCFelementNo++, noElementCornerpoints, 1, permeability, compressibility, aperture);
+                                        UCF_outputFile.WriteLine(data);
+
+                                        // Loop through each cornerpoint and write the coordinates to file
+                                        int pointNo = 1;
+                                        foreach (PointXYZ cornerPoint in element)
+                                        {
+                                            string pointCoords = string.Format("{0} {1} {2} {3}", pointNo++, cornerPoint.X, cornerPoint.Y, cornerPoint.Z);
+                                            UCF_outputFile.WriteLine(pointCoords);
+                                        }
+
+                                        VectorXYZ fractureNormal = frac.NormalVector;
+                                        string lastLine = string.Format("{0} {1} {2} {3}", 0, fractureNormal.Component(VectorComponents.X), fractureNormal.Component(VectorComponents.Y), fractureNormal.Component(VectorComponents.Z));
+                                        UCF_outputFile.WriteLine(lastLine);
+                                    }
+                                }
+
+                                // Write FAB footer data to logfile
+                                string footer = string.Format("{0}\r\n\r\n{1}\r\n{2}\r\n\r\n{3}\r\n{4}", "END FRACTURE", "BEGIN TESSFRACTURE", "END TESSFRACTURE", "BEGIN ROCKBLOCK", "END ROCKBLOCK");
+                                UCF_outputFile.WriteLine(footer);
+                            }
+
+                            // Close unconfined fracture output file
+                            UCF_outputFile.Close();
                         }
                     }
                     catch (Exception e)

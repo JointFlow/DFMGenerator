@@ -1057,7 +1057,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="thisGB_fs">Reference to the input fracture set</param>
         /// <param name="inputFS_strike">Strike of the input fracture set</param>
         /// <returns></returns>
-        public Gridblock_FractureSet getClosestFractureSet(Gridblock_FractureSet thisGB_fs, double inputFS_strike)
+        public LayerBoundFractureSet getClosestFractureSet(LayerBoundFractureSet thisGB_fs, double inputFS_strike)
         {
             // Check if the strike of this equivalent set lies within the allowed range
             double maxStrikeDifference = gd.DFNControl.MaxConsistencyAngle;
@@ -1066,7 +1066,7 @@ namespace DFMGenerator_SharedCode
             {
                 // If the strike of the equivalent set lies outside the allowed range, loop through all fracture sets to find the best fit
                 // NB this may still be the equivalent set
-                foreach (Gridblock_FractureSet test_fs in FractureSets)
+                foreach (LayerBoundFractureSet test_fs in LayerBoundFractureSets)
                 {
                     // Check if the difference between the previous propagation direction and this configuration is less than the minimum found so far
                     double test_StrikeDifference = PointXYZ.getStrikeDifference(inputFS_strike, test_fs.Strike);
@@ -1088,10 +1088,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="inputFS_index">Index number of the input fracture set</param>
         /// <param name="inputFS_strike">Strike of the input fracture set</param>
         /// <returns></returns>
-        public Gridblock_FractureSet getClosestFractureSet(int inputFS_index, double inputFS_strike)
+        public LayerBoundFractureSet getClosestFractureSet(int inputFS_index, double inputFS_strike)
         {
             // First we will try the equivalent set to that of the input fracture set
-            Gridblock_FractureSet thisGB_fs = FractureSets[inputFS_index];
+            LayerBoundFractureSet thisGB_fs = LayerBoundFractureSets[inputFS_index];
 
             // Check if the strike of this equivalent set lies within the allowed range
             double maxStrikeDifference = gd.DFNControl.MaxConsistencyAngle;
@@ -1100,7 +1100,7 @@ namespace DFMGenerator_SharedCode
             {
                 // If the strike of the equivalent set lies outside the allowed range, loop through all fracture sets to find the best fit
                 // NB this may still be the equivalent set
-                foreach (Gridblock_FractureSet test_fs in FractureSets)
+                foreach (LayerBoundFractureSet test_fs in LayerBoundFractureSets)
                 {
                     // Check if the difference between the previous propagation direction and this configuration is less than the minimum found so far
                     double test_StrikeDifference = PointXYZ.getStrikeDifference(inputFS_strike, test_fs.Strike);
@@ -1125,7 +1125,7 @@ namespace DFMGenerator_SharedCode
         public int getClosestFractureSetIndex(int inputFS_index, double inputFS_strike)
         {
             // First we will try the equivalent set to that of the input fracture set
-            Gridblock_FractureSet thisGB_fs = FractureSets[inputFS_index];
+            LayerBoundFractureSet thisGB_fs = LayerBoundFractureSets[inputFS_index];
 
             // Check if the strike of this equivalent set lies within the allowed range
             double maxStrikeDifference = gd.DFNControl.MaxConsistencyAngle;
@@ -1134,9 +1134,9 @@ namespace DFMGenerator_SharedCode
             {
                 // If the strike of the equivalent set lies outside the allowed range, loop through all fracture sets to find the best fit
                 // NB this may still be the equivalent set
-                for (int FS_index = 0; FS_index < NoFractureSets; FS_index++)
+                for (int FS_index = 0; FS_index < NoLayerBoundFractureSets; FS_index++)
                 {
-                    Gridblock_FractureSet test_fs = FractureSets[FS_index];
+                    LayerBoundFractureSet test_fs = LayerBoundFractureSets[FS_index];
 
                     // Check if the difference between the previous propagation direction and this configuration is less than the minimum found so far
                     double test_StrikeDifference = PointXYZ.getStrikeDifference(inputFS_strike, test_fs.Strike);
@@ -1569,16 +1569,21 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private void UpdatePresentDayStressOnFractures()
         {
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     fds.UsePresentDayStress(PresentDayStress);
         }
 
-        // List containing fracture sets
+        // Lists containing fracture sets
         /// <summary>
-        /// Number of layer-bound fracture sets: set to 2 for two orthogonal sets perpendicular to ehmin and ehmax
+        /// Total number of fracture sets of all types
         /// </summary>
-        public int NoFractureSets { get { return FractureSets.Count; } }
+        public int NoFractureSets { get { return NoLayerBoundFractureSets + NoUnconfinedFractureSets; } }
+        /// <summary>
+        /// Number of layer-bound fracture sets
+        /// These are defined by fracture strike, and subdivided into dipset by dip
+        /// </summary>
+        public int NoLayerBoundFractureSets { get { return LayerBoundFractureSets.Count; } }
         /// <summary>
         /// Number of unconfined fracture sets
         /// NB Unconfined fracture sets are not subdivided into dipsets; unconfined fractures with the same strike but different dips are counted as different sets
@@ -1591,23 +1596,23 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Index number of the fracture set perpendicular to HMax (or the closest set, if the total number of fracture sets is odd)
         /// </summary>
-        public int HMax_FractureSet_Index { get { return NoFractureSets / 2; } }
+        public int HMax_FractureSet_Index { get { return NoLayerBoundFractureSets / 2; } }
         /// <summary>
-        /// Get a name for a specified fracture set in this gridblock, indicating its orientation
+        /// Get a name for a specified layer-bound fracture set in this gridblock, indicating its orientation
         /// </summary>
-        /// <param name="indexNo">Index number of the fracture set</param>
+        /// <param name="indexNo">Index number of the layer-bound fracture set</param>
         /// <returns>String representing the fracture set name</returns>
-        public string getFractureSetName(int indexNo)
+        public string getLayerBoundFractureSetName(int indexNo)
         {
-            return getFractureSetName(indexNo, NoFractureSets);
+            return getLayerBoundFractureSetName(indexNo, NoLayerBoundFractureSets);
         }
         /// <summary>
-        /// Get a name for a specified fracture set in a generic gridblock, indicating its orientation
+        /// Get a name for a specified layer-bound fracture set in a generic gridblock, indicating its orientation
         /// </summary>
-        /// <param name="indexNo">Index number of the fracture set</param>
-        /// <param name="noFractureSets">Total number of fracture sets in the gridblock</param>
+        /// <param name="indexNo">Index number of the layer-bound fracture set</param>
+        /// <param name="noFractureSets">Total number of layer-bound fracture sets in the gridblock</param>
         /// <returns>String representing the fracture set name</returns>
-        public static string getFractureSetName(int indexNo, int noFractureSets)
+        public static string getLayerBoundFractureSetName(int indexNo, int noFractureSets)
         {
             int hMin_FractureSet_Index = 0;
             int hMax_FractureSet_Index = noFractureSets / 2;
@@ -1681,9 +1686,9 @@ namespace DFMGenerator_SharedCode
         private void updateMFTerminations()
         {
             // Loop through every set of propagating fractures I
-            for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+            for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
             {
-                Gridblock_FractureSet fsI = FractureSets[fsI_Index];
+                LayerBoundFractureSet fsI = LayerBoundFractureSets[fsI_Index];
 
                 // Get the increment in sIJMFP30 for set I
                 double dsIJ_MFP30 = 0;
@@ -1693,12 +1698,12 @@ namespace DFMGenerator_SharedCode
                 // Get the total apparent MFP32 for all terminating fracture sets J
                 // This includes all fracture sets except set I
                 double totalApparentMFP32J = 0;
-                double[][] apparentMFP32J = new double[NoFractureSets][];
-                for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                double[][] apparentMFP32J = new double[NoLayerBoundFractureSets][];
+                for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                 {
                     if (fsI_Index == fsJ_Index)
                         continue;
-                    Gridblock_FractureSet fsJ = FractureSets[fsJ_Index];
+                    LayerBoundFractureSet fsJ = LayerBoundFractureSets[fsJ_Index];
 
                     // Orientation multiplier to project the length of the terminating set J fracture perpendicular to the propagating set I fracture
                     double sinIJ = Math.Abs(VectorXYZ.Sin_trim(fsI.Strike - fsJ.Strike));
@@ -1717,13 +1722,13 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Loop through every other set of terminating fractures J and apportion sIJMFP30 values
-                for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                 {
                     if (fsI_Index == fsJ_Index)
                         continue;
 
                     // Loop through each dipset Jm in J
-                    int noDipSetsJ = FractureSets[fsJ_Index].FractureDipSets.Count;
+                    int noDipSetsJ = LayerBoundFractureSets[fsJ_Index].FractureDipSets.Count;
                     for (int dipSetIndexJm = 0; dipSetIndexJm < noDipSetsJ; dipSetIndexJm++)
                     {
                         // Calculate the apparent MFP32 of dipset Jm as a proportion of the total apparent MFP32 for all terminating fracture sets
@@ -1737,9 +1742,9 @@ namespace DFMGenerator_SharedCode
             } // End loop through every fracture set I
 
             // Loop through every fracture dipset Jm and set the total number of fractures I terminating against them
-            for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+            for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
             {
-                Gridblock_FractureSet fsJ = FractureSets[fsJ_Index];
+                LayerBoundFractureSet fsJ = LayerBoundFractureSets[fsJ_Index];
 
                 // Loop through each dipset Jm in J
                 int noDipSetsJ = fsJ.FractureDipSets.Count;
@@ -1749,7 +1754,7 @@ namespace DFMGenerator_SharedCode
 
                     // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
                     double sIJm_MFP30 = 0;
-                    for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                    for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                         sIJm_MFP30 += MFTerminations[fsI_Index, fsJ_Index][dipSetIndexJm];
 
                     // Set the mean number of fractures from all fracture sets I terminating against dipset Jm
@@ -1848,10 +1853,10 @@ namespace DFMGenerator_SharedCode
         {
             // Fracture set K represents the fractures to which the stress shadows will apply
             // The stress shadow and exclusion zone widths will therefore be as seen by fracture set K
-            for (int fsK_Index = 0; fsK_Index < NoFractureSets; fsK_Index++)
+            for (int fsK_Index = 0; fsK_Index < NoLayerBoundFractureSets; fsK_Index++)
             {
                 // Get a handle to fracture set K, and get the number of dipsets in set K
-                Gridblock_FractureSet fsK = FractureSets[fsK_Index];
+                LayerBoundFractureSet fsK = LayerBoundFractureSets[fsK_Index];
                 int noDipSetsK = fsK.FractureDipSets.Count;
 
                 // We must calculate:
@@ -1864,10 +1869,10 @@ namespace DFMGenerator_SharedCode
                     clearZoneVolumeKn[dipSetIndexKn] = 1;
 
                 // Fracture set I represents the fractures which the stress shadows and exclusion zones surround
-                for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                 {
                     // Get a handle to fracture set I
-                    Gridblock_FractureSet fsI = FractureSets[fsI_Index];
+                    LayerBoundFractureSet fsI = LayerBoundFractureSets[fsI_Index];
                     int noDipSetsI = fsI.FractureDipSets.Count;
 
                     // Cache the appropriate azimuthal and strike-slip shear stress shadow multipliers for sets I and K locally
@@ -1952,11 +1957,11 @@ namespace DFMGenerator_SharedCode
         private void setCrossFSStressShadows_anisotropic()
         {
             // Create a matrix of proportional stress shadow and exclusion zone overlaps between all fracture sets
-            double[,][] tipOverlaps = new double[NoFractureSets, NoFractureSets][];
+            double[,][] tipOverlaps = new double[NoLayerBoundFractureSets, NoLayerBoundFractureSets][];
             // Fracture set I represents the propagating fracture
-            for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+            for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
             {
-                Gridblock_FractureSet fsI = FractureSets[fsI_Index];
+                LayerBoundFractureSet fsI = LayerBoundFractureSets[fsI_Index];
 
                 // Get the total area of static set I fractures
                 // NB we will ignore active macrofractures as these may overlap the stress shadow or exclusion zones of other fracture sets without terminating against them
@@ -1965,9 +1970,9 @@ namespace DFMGenerator_SharedCode
                     IMFP32 += dipSetIm.s_MFP32_total();
 
                 // Fracture dipset Jm represents the terminating fracture
-                for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                 {
-                    Gridblock_FractureSet fsJ = FractureSets[fsJ_Index];
+                    LayerBoundFractureSet fsJ = LayerBoundFractureSets[fsJ_Index];
                     int noDipSetsJ = fsJ.FractureDipSets.Count;
                     tipOverlaps[fsI_Index, fsJ_Index] = new double[noDipSetsJ];
 
@@ -1994,10 +1999,10 @@ namespace DFMGenerator_SharedCode
 
             // Fracture set K represents the fractures to which the stress shadows will apply
             // The stress shadow and exclusion zone widths will therefore be as seen by fracture set K
-            for (int fsK_Index = 0; fsK_Index < NoFractureSets; fsK_Index++)
+            for (int fsK_Index = 0; fsK_Index < NoLayerBoundFractureSets; fsK_Index++)
             {
                 // Get a handle to fracture set K, and get the number of dipsets in set K
-                Gridblock_FractureSet fsK = FractureSets[fsK_Index];
+                LayerBoundFractureSet fsK = LayerBoundFractureSets[fsK_Index];
                 int noDipSetsK = fsK.FractureDipSets.Count;
 
                 // First we will calculate:
@@ -2005,16 +2010,16 @@ namespace DFMGenerator_SharedCode
                 // - the total stress shadow volume of every set I as seen by set K (not including overlaps),
                 // - the maximum exclusion zone width of every dipset Im as seen by dipset Kn, and
                 // - the total exclusion zone volume of every set I as seen by dipset Kn (not including overlaps)
-                double[][] stressShadowWidthImK = new double[NoFractureSets][];
-                double[] stressShadowVolumeIK = new double[NoFractureSets];
-                double[][][] exclusionZoneWidthImKn = new double[NoFractureSets][][];
-                double[][] exclusionZoneVolumeIKn = new double[NoFractureSets][];
+                double[][] stressShadowWidthImK = new double[NoLayerBoundFractureSets][];
+                double[] stressShadowVolumeIK = new double[NoLayerBoundFractureSets];
+                double[][][] exclusionZoneWidthImKn = new double[NoLayerBoundFractureSets][][];
+                double[][] exclusionZoneVolumeIKn = new double[NoLayerBoundFractureSets][];
 
                 // Fracture set I represents the fractures which the stress shadows and exclusion zones surround
-                for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                 {
                     // Get a handle to fracture set I
-                    Gridblock_FractureSet fsI = FractureSets[fsI_Index];
+                    LayerBoundFractureSet fsI = LayerBoundFractureSets[fsI_Index];
                     int noDipSetsI = fsI.FractureDipSets.Count;
                     stressShadowWidthImK[fsI_Index] = new double[noDipSetsI];
                     exclusionZoneWidthImKn[fsI_Index] = new double[noDipSetsI][];
@@ -2098,16 +2103,16 @@ namespace DFMGenerator_SharedCode
 
                 // Now we can adjust the stress shadow volumes around each set I for overlaps with other sets J before summing them to get the total stress shadow volume seen by set K
                 double totalStressShadowVolumeK = 0;
-                for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                 {
                     // Calculate the proportional overlap of stress shadows around fracture set I with every other dipset Jm
                     double stressShadowIOverlap = 0;
                     // Fracture dipset Jm represents the terminating fracture
-                    for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                    for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                     {
                         if (fsJ_Index == fsI_Index)
                             continue;
-                        int noDipSetsJ = FractureSets[fsJ_Index].FractureDipSets.Count;
+                        int noDipSetsJ = LayerBoundFractureSets[fsJ_Index].FractureDipSets.Count;
                         for (int dipSetIndexJm = 0; dipSetIndexJm < noDipSetsJ; dipSetIndexJm++)
                         {
                             // The volume of stress shadow overlap with dipset Jm is given by the orientation-adjusted proportion of set I fracture tips terminating against dipset Jm,
@@ -2127,16 +2132,16 @@ namespace DFMGenerator_SharedCode
                 {
                     // Now we can adjust the exclusion zone volumes around each set I for overlaps with other sets J before summing them to get the total exclusion zone volume seen by dipset Kn
                     double totalExclusionZoneVolumeKn = 0;
-                    for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                    for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                     {
                         // Calculate the proportional overlap of exclusion zones around fracture set I with every other dipset Jm
                         double exclusionZoneIOverlap = 0;
                         // Fracture dipset Jm represents the terminating fracture
-                        for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                        for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                         {
                             if (fsJ_Index == fsI_Index)
                                 continue;
-                            int noDipSetsJ = FractureSets[fsJ_Index].FractureDipSets.Count;
+                            int noDipSetsJ = LayerBoundFractureSets[fsJ_Index].FractureDipSets.Count;
                             for (int dipSetIndexJm = 0; dipSetIndexJm < noDipSetsJ; dipSetIndexJm++)
                             {
                                 // The volume of exclusion zone overlap with dipset Jm is given by the orientation-adjusted proportion of set I fracture tips terminating against dipset Jm,
@@ -2247,7 +2252,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="dipSetJ">Fracture dipset containing the propagating fracture</param>
         /// <param name="Timestep_M">Timestep during which the fractures are propagating; set to -1 to use current data</param>
         /// <returns></returns>
-        public double getCrossFSExclusionZoneWidth(Gridblock_FractureSet fsI, Gridblock_FractureSet fsJ, FractureDipSet dipSetJ, int Timestep_M)
+        public double getCrossFSExclusionZoneWidth(LayerBoundFractureSet fsI, LayerBoundFractureSet fsJ, FractureDipSet dipSetJ, int Timestep_M)
         {
             // Get the index number of timestep M-1, so we can retrieve MFP32 values for the end of the previous timestep
             // If a valid timestep number is not supplied, use the current data
@@ -2257,11 +2262,11 @@ namespace DFMGenerator_SharedCode
             // Get the index numbers of the two sets; if we cannot find them, return NaN
             int fsI_Index = -1;
             int fsJ_Index = -1;
-            for (int fs_Index = 0; fs_Index < NoFractureSets; fs_Index++)
+            for (int fs_Index = 0; fs_Index < NoLayerBoundFractureSets; fs_Index++)
             {
-                if (fsI == FractureSets[fs_Index])
+                if (fsI == LayerBoundFractureSets[fs_Index])
                     fsI_Index = fs_Index;
-                if (fsJ == FractureSets[fs_Index])
+                if (fsJ == LayerBoundFractureSets[fs_Index])
                     fsJ_Index = fs_Index;
             }
             if ((fsI_Index < 0) || (fsJ_Index < 0))
@@ -2333,11 +2338,11 @@ namespace DFMGenerator_SharedCode
             return maxEZWidth;
         }
         /// <summary>
-        /// Collection of fracture sets referenced by Orientation
+        /// Collection of layer-bound fracture sets defined by orientation
         /// </summary>
-        public List<Gridblock_FractureSet> FractureSets;
+        public List<LayerBoundFractureSet> LayerBoundFractureSets;
         /// <summary>
-        /// Collection of unconfined fracture sets referenced by Orientation
+        /// Collection of unconfined fracture sets defined by orientation
         /// </summary>
         public List<UnconfinedFractureSet> UnconfinedFractureSets;
         /// <summary>
@@ -2471,7 +2476,7 @@ namespace DFMGenerator_SharedCode
             for (int TimestepNo = FinalTimestep; TimestepNo > 0; TimestepNo--)
             {
                 // Loop through each fracture dipset
-                foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 {
                     foreach (FractureDipSet fds in fs.FractureDipSets)
                     {
@@ -2536,7 +2541,7 @@ namespace DFMGenerator_SharedCode
         public double MicrofractureDensity_P32()
         {
             double uF_P32_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 uF_P32_value += fs.combined_T_uFP32_total();
             return uF_P32_value;
         }
@@ -2547,7 +2552,7 @@ namespace DFMGenerator_SharedCode
         public double LayerBoundFractureDensity_P32()
         {
             double MF_P32_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 MF_P32_value += fs.combined_T_MFP32_total();
             return MF_P32_value;
         }
@@ -2571,7 +2576,7 @@ namespace DFMGenerator_SharedCode
         public double TotalFractureDensity_P32()
         {
             double P32_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 P32_value += (fs.combined_T_uFP32_total() + fs.combined_T_MFP32_total());
             // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
             // we must always take data from the FractureCalculationData list
@@ -2586,7 +2591,7 @@ namespace DFMGenerator_SharedCode
         public double MicrofracturePorosity()
         {
             double uF_Porosity_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 uF_Porosity_value += fs.combined_uF_Porosity();
             return uF_Porosity_value;
         }
@@ -2597,7 +2602,7 @@ namespace DFMGenerator_SharedCode
         public double LayerBoundFracturePorosity()
         {
             double MF_Porosity_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 MF_Porosity_value += fs.combined_MF_Porosity();
             return MF_Porosity_value;
         }
@@ -2621,7 +2626,7 @@ namespace DFMGenerator_SharedCode
         public double TotalFracturePorosity()
         {
             double Porosity_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 Porosity_value += (fs.combined_uF_Porosity() + fs.combined_MF_Porosity());
             // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
             // we must always take data from the FractureCalculationData list
@@ -2637,7 +2642,7 @@ namespace DFMGenerator_SharedCode
         public double MicrofractureDensity_P32(int Timestep_M)
         {
             double uF_P32_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     uF_P32_value += fds.getTotaluFP32(Timestep_M);
             return uF_P32_value;
@@ -2650,7 +2655,7 @@ namespace DFMGenerator_SharedCode
         public double LayerBoundFractureDensity_P32(int Timestep_M)
         {
             double MF_P32_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     MF_P32_value += fds.getTotalMFP32(Timestep_M);
             return MF_P32_value;
@@ -2675,7 +2680,7 @@ namespace DFMGenerator_SharedCode
         public double TotalFractureDensity_P32(int Timestep_M)
         {
             double P32_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     P32_value += (fds.getTotaluFP32(Timestep_M) + fds.getTotalMFP32(Timestep_M));
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
@@ -2690,7 +2695,7 @@ namespace DFMGenerator_SharedCode
         public double MicrofracturePorosity(int Timestep_M)
         {
             double uF_Porosity_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     uF_Porosity_value += fds.getTotaluFPorosity(Timestep_M);
             return uF_Porosity_value;
@@ -2703,7 +2708,7 @@ namespace DFMGenerator_SharedCode
         public double LayerBoundFracturePorosity(int Timestep_M)
         {
             double MF_Porosity_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     MF_Porosity_value += fds.getTotalMFPorosity(Timestep_M);
             return MF_Porosity_value;
@@ -2728,7 +2733,7 @@ namespace DFMGenerator_SharedCode
         public double TotalFracturePorosity(int Timestep_M)
         {
             double Porosity_value = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                     Porosity_value += (fds.getTotaluFPorosity(Timestep_M) + fds.getTotalMFPorosity(Timestep_M));
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
@@ -2746,19 +2751,19 @@ namespace DFMGenerator_SharedCode
         public double P32AnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
             // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-            if (NoFractureSets < 2)
+            if (NoLayerBoundFractureSets < 2)
                 return 1;
 
             // Otherwise we will need to calculate the ratio of P32 values of the two specified sets
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
-            double Max_P32 = FractureSets[hmin_index].combined_T_MFP32_total() + FractureSets[hmin_index].combined_T_uFP32_total();
+            double Max_P32 = LayerBoundFractureSets[hmin_index].combined_T_MFP32_total() + LayerBoundFractureSets[hmin_index].combined_T_uFP32_total();
             double Min_P32 = Max_P32;
             // If required we will find and compare the sets with the highest and lowest P32 values
             if (FindMinMaxSets)
-                for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
+                for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                 {
-                    double fs_P32 = FractureSets[fs_Index].combined_T_MFP32_total() + FractureSets[fs_Index].combined_T_uFP32_total();
+                    double fs_P32 = LayerBoundFractureSets[fs_Index].combined_T_MFP32_total() + LayerBoundFractureSets[fs_Index].combined_T_uFP32_total();
                     if (fs_P32 > Max_P32)
                         Max_P32 = fs_P32;
                     if (fs_P32 < Min_P32)
@@ -2767,8 +2772,8 @@ namespace DFMGenerator_SharedCode
             // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
             else
             {
-                int hmax_index = NoFractureSets / 2;
-                Min_P32 = FractureSets[hmax_index].combined_T_MFP32_total() + FractureSets[hmax_index].combined_T_uFP32_total();
+                int hmax_index = NoLayerBoundFractureSets / 2;
+                Min_P32 = LayerBoundFractureSets[hmax_index].combined_T_MFP32_total() + LayerBoundFractureSets[hmax_index].combined_T_uFP32_total();
             }
 
             double Combined_P32 = Max_P32 + Min_P32;
@@ -2783,19 +2788,19 @@ namespace DFMGenerator_SharedCode
         public double P33AnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
             // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-            if (NoFractureSets < 2)
+            if (NoLayerBoundFractureSets < 2)
                 return 1;
 
             // Otherwise we will need to calculate the ratio of P33 values of the two specified sets
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
-            double Max_P33 = FractureSets[hmin_index].combined_T_MFP33_total() + FractureSets[hmin_index].combined_T_uFP33_total();
+            double Max_P33 = LayerBoundFractureSets[hmin_index].combined_T_MFP33_total() + LayerBoundFractureSets[hmin_index].combined_T_uFP33_total();
             double Min_P33 = Max_P33;
             // If required we will find and compare the sets with the highest and lowest P33 values
             if (FindMinMaxSets)
-                for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
+                for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                 {
-                    double fs_P33 = FractureSets[fs_Index].combined_T_MFP33_total() + FractureSets[fs_Index].combined_T_uFP33_total();
+                    double fs_P33 = LayerBoundFractureSets[fs_Index].combined_T_MFP33_total() + LayerBoundFractureSets[fs_Index].combined_T_uFP33_total();
                     if (fs_P33 > Max_P33)
                         Max_P33 = fs_P33;
                     if (fs_P33 < Min_P33)
@@ -2804,8 +2809,8 @@ namespace DFMGenerator_SharedCode
             // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
             else
             {
-                int hmax_index = NoFractureSets / 2;
-                Min_P33 = FractureSets[hmax_index].combined_T_MFP33_total() + FractureSets[hmax_index].combined_T_uFP33_total();
+                int hmax_index = NoLayerBoundFractureSets / 2;
+                Min_P33 = LayerBoundFractureSets[hmax_index].combined_T_MFP33_total() + LayerBoundFractureSets[hmax_index].combined_T_uFP33_total();
             }
 
             double Combined_P33 = Max_P33 + Min_P33;
@@ -2820,19 +2825,19 @@ namespace DFMGenerator_SharedCode
         public double FracturePorosityAnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
             // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-            if (NoFractureSets < 2)
+            if (NoLayerBoundFractureSets < 2)
                 return 1;
 
             // Otherwise we will need to calculate the ratio of porosity values of the two specified sets
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
-            double Max_Porosity = FractureSets[hmin_index].combined_MF_Porosity() + FractureSets[hmin_index].combined_uF_Porosity();
+            double Max_Porosity = LayerBoundFractureSets[hmin_index].combined_MF_Porosity() + LayerBoundFractureSets[hmin_index].combined_uF_Porosity();
             double Min_Porosity = Max_Porosity;
             // If required we will find and compare the sets with the highest and lowest porosity values
             if (FindMinMaxSets)
-                for (int fs_Index = 1; fs_Index < NoFractureSets; fs_Index++)
+                for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                 {
-                    double fs_Porosity = FractureSets[fs_Index].combined_MF_Porosity() + FractureSets[fs_Index].combined_uF_Porosity();
+                    double fs_Porosity = LayerBoundFractureSets[fs_Index].combined_MF_Porosity() + LayerBoundFractureSets[fs_Index].combined_uF_Porosity();
                     if (fs_Porosity > Max_Porosity)
                         Max_Porosity = fs_Porosity;
                     if (fs_Porosity < Min_Porosity)
@@ -2841,8 +2846,8 @@ namespace DFMGenerator_SharedCode
             // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
             else
             {
-                int hmax_index = NoFractureSets / 2;
-                Min_Porosity = FractureSets[hmax_index].combined_MF_Porosity() + FractureSets[hmax_index].combined_uF_Porosity();
+                int hmax_index = NoLayerBoundFractureSets / 2;
+                Min_Porosity = LayerBoundFractureSets[hmax_index].combined_MF_Porosity() + LayerBoundFractureSets[hmax_index].combined_uF_Porosity();
             }
 
             double Combined_Porosity = Max_Porosity + Min_Porosity;
@@ -2858,7 +2863,7 @@ namespace DFMGenerator_SharedCode
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 1;
             double TotalUnconnectedTips = 0;
             double TotalAllTips = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 TotalUnconnectedTips += fs.combined_a_MFP30_total();
                 TotalAllTips += fs.combined_T_MFP30_total();
@@ -2876,7 +2881,7 @@ namespace DFMGenerator_SharedCode
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalRelayTips = 0;
             double TotalAllTips = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 TotalRelayTips += fs.combined_sII_MFP30_total();
                 TotalAllTips += fs.combined_T_MFP30_total();
@@ -2894,7 +2899,7 @@ namespace DFMGenerator_SharedCode
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalIntersectingTips = 0;
             double TotalAllTips = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 TotalIntersectingTips += fs.combined_sIJ_MFP30_total();
                 TotalAllTips += fs.combined_T_MFP30_total();
@@ -2912,7 +2917,7 @@ namespace DFMGenerator_SharedCode
         public double getTerminatingFracturesPerMF(int FractureSetNo, int DipSetNo, bool ReturnNanForUndefined)
         {
             // Check if the sepcified fracture dipset exists - if not return NaN
-            if ((FractureSetNo < 0) || (FractureSetNo >= NoFractureSets) || (DipSetNo < 0) || (DipSetNo >= FractureSets[FractureSetNo].FractureDipSets.Count))
+            if ((FractureSetNo < 0) || (FractureSetNo >= NoLayerBoundFractureSets) || (DipSetNo < 0) || (DipSetNo >= LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
                 return double.NaN;
 
             // Set the return value if there are no fractures in the specified dipset
@@ -2920,11 +2925,11 @@ namespace DFMGenerator_SharedCode
 
             // Calculate the total number of fractures from all fracture sets I terminating against dipset Jm
             double sIJm_MFP30 = 0;
-            for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+            for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                 sIJm_MFP30 += MFTerminations[fsI_Index, FractureSetNo][DipSetNo];
 
             // Calculate the total number of fractures in dipset Jm
-            FractureDipSet Jm = FractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+            FractureDipSet Jm = LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
             double I_MFP30 = Jm.a_MFP30_total() + Jm.sII_MFP30_total() + Jm.sIJ_MFP30_total();
 
             return (I_MFP30 > 0) ? (sIJm_MFP30 / I_MFP30) : undefinedReturn;
@@ -2939,7 +2944,7 @@ namespace DFMGenerator_SharedCode
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalConnections = 0;
             double TotalFractures = 0;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 // Only hard-linked relays will be counted
                 if (gd.DFNControl.LinkFracturesInStressShadow)
@@ -2964,7 +2969,7 @@ namespace DFMGenerator_SharedCode
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalConnections = 0;
-            Gridblock_FractureSet fs = FractureSets[FractureSetNo];
+            LayerBoundFractureSet fs = LayerBoundFractureSets[FractureSetNo];
             double TotalFractures = fs.combined_T_MFP30_total() / 2;
 
             // Calculate the number of connections at the fracture tips
@@ -3073,7 +3078,7 @@ namespace DFMGenerator_SharedCode
         {
             bool useCurrentDensityData = (Timestep_M < 0);
             Tensor2S FTensor = new Tensor2S();
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                 {
                     Tensor2S orientationTensor = fds.NormalVector ^ fds.NormalVector;
@@ -3177,7 +3182,7 @@ namespace DFMGenerator_SharedCode
                 // There is therefore no network connectivity correction required, and we can just use the sum of the uncorrected microfracture permeability tensors
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
                     }
@@ -3186,7 +3191,7 @@ namespace DFMGenerator_SharedCode
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     {
                         // First we must get the sum of the uncorrected microfracture permeability tensors
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 microfracturePermeability += fds.Total_uF_Permeability(Timestep_M);
 
@@ -3200,7 +3205,7 @@ namespace DFMGenerator_SharedCode
                 // The host rock permeability is required to calculate the latter
                 case PermeabilityCalculationAlgorithm.SizeConnectivityCorrected:
                     {
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 microfracturePermeability += fds.Total_uF_Permeability_Corrected(Timestep_M);
                     }
@@ -3229,7 +3234,7 @@ namespace DFMGenerator_SharedCode
                 case PermeabilityCalculationAlgorithm.Oda1986:
                     {
                         // Get the basic macrofracture permeability tensor
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
                     }
@@ -3238,7 +3243,7 @@ namespace DFMGenerator_SharedCode
                 case PermeabilityCalculationAlgorithm.OdaCorrected1987:
                     {
                         // First we must get the sum of the uncorrected macrofracture permeability tensors
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 macrofracturePermeability += fds.Total_MF_Permeability(Timestep_M);
 
@@ -3253,7 +3258,7 @@ namespace DFMGenerator_SharedCode
                     {
                         // In this case the correction is applied to individual components of the permeability tensors for each fracture set
                         // This is based on the size and connectivity data for the fracture sets
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                                 macrofracturePermeability += fds.Total_MF_Permeability_Corrected(Timestep_M);
                     }
@@ -3348,7 +3353,7 @@ namespace DFMGenerator_SharedCode
         private void GetBlockDimensions(FractureType FracType, int Timestep_M, out double MinL, out double MaxL)
         {
             // The block dimensions for unconfined fractures are calculated in a separate function
-            if ((FracType == FractureType.UnconfinedFractures) || ((FracType == FractureType.AllFractures) && (NoFractureSets == 0)))
+            if ((FracType == FractureType.UnconfinedFractures) || ((FracType == FractureType.AllFractures) && (NoLayerBoundFractureSets == 0)))
             {
                 GetUCFBlockDimensions(Timestep_M, out MinL, out MaxL);
                 return;
@@ -3360,11 +3365,11 @@ namespace DFMGenerator_SharedCode
             MaxL = double.PositiveInfinity;
 
             // Get the respective P32 values for each fracture set
-            double[] P32_values = new double[NoFractureSets];
+            double[] P32_values = new double[NoLayerBoundFractureSets];
             // Loop through every set of propagating fractures I
-            for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+            for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
             {
-                Gridblock_FractureSet fsI = FractureSets[fsI_Index];
+                LayerBoundFractureSet fsI = LayerBoundFractureSets[fsI_Index];
 
                 switch (FracType)
                 {
@@ -3384,17 +3389,17 @@ namespace DFMGenerator_SharedCode
             }
 
             // If there are no fracture sets, both block dimensions will be infinite
-            if (NoFractureSets == 0)
+            if (NoLayerBoundFractureSets == 0)
             {
                 return;
             }
             // If there is only one fracture set, we can only define the minimum block dimension
-            else if (NoFractureSets == 1)
+            else if (NoLayerBoundFractureSets == 1)
             {
                 MinL = 1 / P32_values[0];
             }
             // If there are only two fracture sets, one will determine the minimum block dimension and the other will determine the maximum block dimension
-            else if (NoFractureSets == 2)
+            else if (NoLayerBoundFractureSets == 2)
             {
                 if (P32_values[0] > P32_values[1])
                 {
@@ -3415,13 +3420,13 @@ namespace DFMGenerator_SharedCode
                 // This need not coincide with the azimuth of any specific set; however for convenience we will only calculate density along set azimuths
                 double maxP32_azimuth = 0;
                 double maxP32 = 0;
-                for (int fsI_Index = 0; fsI_Index < NoFractureSets; fsI_Index++)
+                for (int fsI_Index = 0; fsI_Index < NoLayerBoundFractureSets; fsI_Index++)
                 {
-                    double fsI_azimuth = FractureSets[fsI_Index].Azimuth;
+                    double fsI_azimuth = LayerBoundFractureSets[fsI_Index].Azimuth;
                     double P32_I = 0;
-                    for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                    for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                     {
-                        double fsJ_azimuth = FractureSets[fsJ_Index].Azimuth;
+                        double fsJ_azimuth = LayerBoundFractureSets[fsJ_Index].Azimuth;
                         double cosIJ = Math.Abs(VectorXYZ.Cos_trim(fsI_azimuth - fsJ_azimuth));
                         P32_I += cosIJ * P32_values[fsJ_Index];
                     }
@@ -3437,9 +3442,9 @@ namespace DFMGenerator_SharedCode
                 // Get the combined apparent P32 densities of all sets in this orientation 
                 double minP32_azimuth = maxP32_azimuth + (Math.PI / 2);
                 double minP32 = 0;
-                for (int fsJ_Index = 0; fsJ_Index < NoFractureSets; fsJ_Index++)
+                for (int fsJ_Index = 0; fsJ_Index < NoLayerBoundFractureSets; fsJ_Index++)
                 {
-                    double fsJ_azimuth = FractureSets[fsJ_Index].Azimuth;
+                    double fsJ_azimuth = LayerBoundFractureSets[fsJ_Index].Azimuth;
                     double cosIJ = Math.Abs(VectorXYZ.Cos_trim(minP32_azimuth - fsJ_azimuth));
                     minP32 += cosIJ * P32_values[fsJ_Index];
                 }
@@ -3666,7 +3671,7 @@ namespace DFMGenerator_SharedCode
             get
             {
                 Tensor4_2Sx2S s_F = new Tensor4_2Sx2S();
-                foreach (Gridblock_FractureSet fs in FractureSets)
+                foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     s_F += fs.S_set;
                 foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     s_F += ufs.S_set;
@@ -3767,7 +3772,7 @@ namespace DFMGenerator_SharedCode
             // Maximum radius of microfractures in the smallest bin - used in determining fracture set deactivation
             double minrb_maxRad = (1 / (double)no_r_bins) * MaximumMicrofractureRadius;
             // Reset the microfracture index array for each fracture dipset
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 foreach (FractureDipSet fds in fs.FractureDipSets)
                 {
@@ -3852,14 +3857,14 @@ namespace DFMGenerator_SharedCode
                 FSheader3 = "Fracture stage\tDriving stress\tStress shadow width ratio\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\tRP31_active\tRP31_static\tRP32_active\tRP32_static\tRP33_active\tRP33_static\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t";
 #endif
                 string TS0data = "0\t0\t0\t0\t0\t0\t0\t";
-                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                for (int fs_index = 0; fs_index < NoLayerBoundFractureSets; fs_index++)
                 {
-                    Gridblock_FractureSet fs = FractureSets[fs_index];
+                    LayerBoundFractureSet fs = LayerBoundFractureSets[fs_index];
                     int NoDipSets = fs.FractureDipSets.Count;
                     List<string> dipSetLabels = fs.DipSetLabels();
                     for (int dipsetIndex = 0; dipsetIndex < NoDipSets; dipsetIndex++)
                     {
-                        headerLine1 += string.Format("FS {0} {1}", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex))) + FSheader1;
+                        headerLine1 += string.Format("FS {0} {1}", (useSetNames ? getLayerBoundFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex))) + FSheader1;
                         headerLine2 += FSheader2;
                         TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
                     }
@@ -3952,7 +3957,7 @@ namespace DFMGenerator_SharedCode
 #endif
 
             // Set the fracture distribution flags for each fracture set, based on the specified stress distribution case
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 fs.FractureDistribution = SD;
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                 ufs.FractureDistribution = SD;
@@ -4103,14 +4108,14 @@ namespace DFMGenerator_SharedCode
                 // If the applied strain rate is zero, use the total applied strain
                 if (appliedStrainRate.IsZeroValued())
                 {
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                         fs.RecalculateHorizontalStrainRatios(StressStrain.el_Epsilon_noncompactional);
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         ufs.RecalculateStrainRatios(StressStrain.el_Epsilon_noncompactional);
                 }
                 else
                 {
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                         fs.RecalculateHorizontalStrainRatios(appliedStrainRate);
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         ufs.RecalculateStrainRatios(appliedStrainRate);
@@ -4119,14 +4124,14 @@ namespace DFMGenerator_SharedCode
                 // If required, populate the azimuthal and strike-slip shear stress shadow multiplier arrays and the unconfined fracture set stress shadow multiplier array
                 if (checkAlluFStressShadows)
                 {
-                    for (int I = 0; I < NoFractureSets; I++)
+                    for (int I = 0; I < NoLayerBoundFractureSets; I++)
                     {
-                        Gridblock_FractureSet FSI = FractureSets[I];
-                        for (int J = 0; J < NoFractureSets; J++)
+                        LayerBoundFractureSet FSI = LayerBoundFractureSets[I];
+                        for (int J = 0; J < NoLayerBoundFractureSets; J++)
                         {
                             if (I != J)
                             {
-                                Gridblock_FractureSet FSJ = FractureSets[J];
+                                LayerBoundFractureSet FSJ = LayerBoundFractureSets[J];
                                 FaaIJ[I, J] = FSI.getFaaIJ(FSJ);
                                 FasIJ[I, J] = FSI.getFasIJ(FSJ);
                             }
@@ -4177,7 +4182,7 @@ namespace DFMGenerator_SharedCode
                     // This is mostly done within the FractureDipSet objects, when the FractureDipSet.S_Dipset compliance tensor is retrieved
                     // First we must recalculate the displacement vector and base for the compliance tensor for each fracture dipset
                     // This may have changed as the in situ stress tensor has changed since the previous timestep
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4380,7 +4385,7 @@ namespace DFMGenerator_SharedCode
                     }*/
 
                     // Create a new FractureCalculationData object for the current timestep, and populate it with data from the end of the previous timestep
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4395,7 +4400,7 @@ namespace DFMGenerator_SharedCode
                     // Update the macrofracture and unconfined fracture stress shadow widths (which may have changed due to changes in the in situ stress)
                     // If any macrofracture stress shadow widths have changed, this will also update the macrofracture spacing distribution data and clear zone volume
                     bool MFStressShadowWidthChanged = false;
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         if (fs.setStressShadowWidthData())
                             MFStressShadowWidthChanged = true;
@@ -4415,7 +4420,7 @@ namespace DFMGenerator_SharedCode
 
                     // Check if any of the fracture sets meet the deactivation criteria, after in situ stress and stress shadow widths have been recalculated 
                     AllSetsDeactivated = true;
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         AllSetsDeactivated &= fs.CheckFractureDeactivation(historic_a_MFP33_termination_ratio, active_total_MFP30_termination_ratio, minimum_MFClearZone_Volume, minrb_maxRad);
                     }
@@ -4425,7 +4430,7 @@ namespace DFMGenerator_SharedCode
                     }
 
                     // Reset the current Fracture Calculation Data, calculate the U and V values and optimal timestep duration for each fracture dip set
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4460,7 +4465,7 @@ namespace DFMGenerator_SharedCode
                     }
 
                     // Calculate calculate the driving stress and propagation rate data for each fracture dip set
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4473,7 +4478,7 @@ namespace DFMGenerator_SharedCode
                     }
 
                     // Calculate the macrofracture deactivation probabilities Phi_II_M and Phi_IJ_M for each fracture dip set
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4487,7 +4492,7 @@ namespace DFMGenerator_SharedCode
                         }
 
                     // Calculate the total half-macrofracture population data for this timestep for each fracture dip set
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4506,7 +4511,7 @@ namespace DFMGenerator_SharedCode
                     // Calculate and update the macrofracture density, macrofracture spacing distribution and clear zone volume data in the CurrentFractureData object
                     // NB we cannot do this as we calculate the new macrofracture density data for the timestep, because we need to keep the previous values until all macrofracture sets have been calculated
                     // Otherwise we will introduce a bias in the calculation of residual fracture populations based on the order of calculation
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4536,7 +4541,7 @@ namespace DFMGenerator_SharedCode
                     // Calculate the new total linear microfracture population data for each fracture dip set, and update the CurrentFractureData object
                     // NB the microfracture densities from one set do not affect the microfracture density calculations for the other sets
                     // so we do not need to calculate the population data for all sets before we can update the CurrentFractureData objects
-                    foreach (Gridblock_FractureSet fs in FractureSets)
+                    foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                     {
                         foreach (FractureDipSet fds in fs.FractureDipSets)
                         {
@@ -4619,7 +4624,7 @@ namespace DFMGenerator_SharedCode
                         //timestepData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t", CurrentImplicitTimestep, TimestepDuration / timeUnits_Modifier, CurrentImplicitTime / timeUnits_Modifier, StressStrain.Sigma_dashed.Component(Tensor2SComponents.XX), StressStrain.Sigma_dashed.Component(Tensor2SComponents.YY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.XY), StressStrain.Sigma_dashed.Component(Tensor2SComponents.ZZ));
 #endif
                         // Write data for each fracture set
-                        foreach (Gridblock_FractureSet fs in FractureSets)
+                        foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                         {
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                             {
@@ -4691,7 +4696,7 @@ namespace DFMGenerator_SharedCode
 
                             foreach (FractureApertureType apertureType in Enum.GetValues(typeof(FractureApertureType)).Cast<FractureApertureType>())
                             {
-                                foreach (Gridblock_FractureSet fs in FractureSets)
+                                foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                                 {
                                     uFPorosity[apertureType] += fs.combined_uF_Porosity(apertureType);
                                     MFPorosity[apertureType] += fs.combined_MF_Porosity(apertureType);
@@ -4811,9 +4816,9 @@ namespace DFMGenerator_SharedCode
                 double maxHMaxLength = PropControl.max_HMax_l_indexPoint_Length;
 
                 // Loop through all layer-bound fracture sets
-                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                for (int fs_index = 0; fs_index < NoLayerBoundFractureSets; fs_index++)
                 {
-                    Gridblock_FractureSet fs = FractureSets[fs_index];
+                    LayerBoundFractureSet fs = LayerBoundFractureSets[fs_index];
 
                     // Calculate the maximum length for the macrofracture cumulative population distribution function index values based on orientation
                     // If this has not been specified, calculate this by applying a multiplier to the mean macrofracture length
@@ -4839,13 +4844,13 @@ namespace DFMGenerator_SharedCode
                     {
                         maxIndexLength = maxHMinLength;
                     }
-                    else if ((fs_index == (NoFractureSets / 2)) && ((NoFractureSets % 2) == 0))
+                    else if ((fs_index == (NoLayerBoundFractureSets / 2)) && ((NoLayerBoundFractureSets % 2) == 0))
                     {
                         maxIndexLength = maxHMaxLength;
                     }
                     else
                     {
-                        double relativeAngle = Math.PI * ((double)fs_index / (double)NoFractureSets);
+                        double relativeAngle = Math.PI * ((double)fs_index / (double)NoLayerBoundFractureSets);
                         double HMinComponent = Math.Pow(VectorXYZ.Cos_trim(relativeAngle), 2);
                         double HMaxComponent = Math.Pow(VectorXYZ.Sin_trim(relativeAngle), 2);
                         maxIndexLength = (maxHMinLength * HMinComponent) + (maxHMaxLength * HMaxComponent);
@@ -4875,7 +4880,7 @@ namespace DFMGenerator_SharedCode
                         if (writeImplicitDataToFile)
                         {
                             // Create strings for header data and write to file
-                            string headerData = string.Format("FS {0} {1}", (useSetNames ? getFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex)));
+                            string headerData = string.Format("FS {0} {1}", (useSetNames ? getLayerBoundFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex)));
                             outputFile.WriteLine(headerData);
 
                             // Write macrofracture data
@@ -5095,7 +5100,7 @@ namespace DFMGenerator_SharedCode
                 // If using the present day stress to calculate fracture aperture, output the present day aperture and reactivation potential of each fracture dip set
                 bool outputApertureReactivationPotentialTable = UsePresentDayStress;
                 // If we have more than 2 fracture sets, output a table of connectivity between fracture sets for the final fracture network
-                bool outputConnectivityTable = (NoFractureSets > 2);
+                bool outputConnectivityTable = (NoLayerBoundFractureSets > 2);
 
                 string tableTitle = "";
                 string headerLine1 = "";
@@ -5113,11 +5118,11 @@ namespace DFMGenerator_SharedCode
                     tableTitle += "Fracture interconnectivity: volumetric density (P30) of macrofracture tips from fracture set I terminating against macrofractures from dipset Jm\t";
                     headerLine1 += "Terminating fracture dipset(Jm):\tPropagating fracture set(I):";
                     headerLine2 += "\t";
-                    for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
+                    for (int fsI_index = 0; fsI_index < NoLayerBoundFractureSets; fsI_index++)
                     {
                         tableTitle += "\t";
                         headerLine1 += "\t";
-                        headerLine2 += string.Format("FS {0}\t", (useSetNames ? getFractureSetName(fsI_index) : fsI_index.ToString()));
+                        headerLine2 += string.Format("FS {0}\t", (useSetNames ? getLayerBoundFractureSetName(fsI_index) : fsI_index.ToString()));
                     }
                 }
                 outputFile.WriteLine();
@@ -5126,9 +5131,9 @@ namespace DFMGenerator_SharedCode
                 outputFile.WriteLine(headerLine2);
 
                 // Write table data
-                for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+                for (int fs_index = 0; fs_index < NoLayerBoundFractureSets; fs_index++)
                 {
-                    Gridblock_FractureSet fs = FractureSets[fs_index];
+                    LayerBoundFractureSet fs = LayerBoundFractureSets[fs_index];
                     int noDipSets = fs.FractureDipSets.Count;
                     for (int dipSetIndex = 0; dipSetIndex < noDipSets; dipSetIndex++)
                     {
@@ -5144,7 +5149,7 @@ namespace DFMGenerator_SharedCode
                         if (outputConnectivityTable)
                         {
                             tableRow += dipsetName + "\t";
-                            for (int fsI_index = 0; fsI_index < NoFractureSets; fsI_index++)
+                            for (int fsI_index = 0; fsI_index < NoLayerBoundFractureSets; fsI_index++)
                                 tableRow += string.Format("{0}\t", MFTerminations[fsI_index, fs_index][dipSetIndex]);
                         }
                         outputFile.WriteLine(tableRow);
@@ -5238,7 +5243,7 @@ namespace DFMGenerator_SharedCode
             bool checkLargeFractures = searchNeighbouringGridblocks && (Minimum_Large_UCF_Radius >= 0);
             // Set the maximum number of new fracture segments that can nucleate as the maximum number of fracture segments per the gridblock minus the number of fracture segments currently in the gridblock
             int currentNoFractureSegments = MacrofractureSegments.Count + UnconfinedFractureRaySegments.Count;
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 currentNoFractureSegments += fs.LocalDFNMicrofractures.Count;
             int maxNewFractureSegments = DFNControl.MaxNoFractureSegments - currentNoFractureSegments;
             bool limitNewFractures = (maxNewFractureSegments > 0);
@@ -5324,9 +5329,9 @@ namespace DFMGenerator_SharedCode
 
             // Propagate microfractures and nucleate macrofractures, for each fracture set
             // Loop through each fracture set
-            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+            for (int fs_index = 0; fs_index < NoLayerBoundFractureSets; fs_index++)
             {
-                Gridblock_FractureSet fs = FractureSets[fs_index];
+                LayerBoundFractureSet fs = LayerBoundFractureSets[fs_index];
 
                 // The lists of stress shadow half-widths of all fracture sets as seen by all other fracture sets and vice versa need to be recalculated every timestep
                 // Create a null reference to a list of stress shadow half-widths of other fracture sets as seen by this fracture set, and to the stress shadow half-widths of this fracture set as seen by other fracture sets
@@ -6298,7 +6303,7 @@ namespace DFMGenerator_SharedCode
                         {
                             // Get the macrofracture set and dipset indices
                             int fs_index = segmentHolder.FractureSetIndex;
-                            Gridblock_FractureSet fs = FractureSets[fs_index];
+                            LayerBoundFractureSet fs = LayerBoundFractureSets[fs_index];
                             int dipsetIndex = MFSegment.FractureDipSetIndex;
 
                             // Calculate maximum propagation distance - given by integral of alpha_MF * sigmad_b * t for duration of growth
@@ -6335,7 +6340,7 @@ namespace DFMGenerator_SharedCode
                 {
                     MacrofractureSegmentIJK MFSegment = segmentHolder.Segment;
                     int fs_index = segmentHolder.FractureSetIndex;
-                    Gridblock_FractureSet fs = FractureSets[fs_index];
+                    LayerBoundFractureSet fs = LayerBoundFractureSets[fs_index];
 #if LOGDFNPOP
                     // Update counter for total number of fractures and total excluding fractures nucleating during this timestep, relay segments and zero length fractures
                     Dict_MF_NoTotalFracSegments[fs_index]++;
@@ -6502,7 +6507,7 @@ namespace DFMGenerator_SharedCode
 
 #if LOGDFNPOP
             // Write fracture counts to logfiles and close them
-            for (int fs_index = 0; fs_index < NoFractureSets; fs_index++)
+            for (int fs_index = 0; fs_index < NoLayerBoundFractureSets; fs_index++)
             {
                 StreamWriter DFNPopLogFile = DFN_MFPopLogFiles[fs_index];
                 if (writeLoggingData)
@@ -6619,8 +6624,8 @@ namespace DFMGenerator_SharedCode
 #endif
         {
             // Check that the fracture set index for the incoming fracture is not higher than the total number of sets in this gridblock
-            if (segmentFSIndex >= NoFractureSets)
-                segmentFSIndex = NoFractureSets - 1;
+            if (segmentFSIndex >= NoLayerBoundFractureSets)
+                segmentFSIndex = NoLayerBoundFractureSets - 1;
             // If the fracture set index for the incoming fracture is less than 0 (or there are no fracture sets in this gridblock) then abort
             if (segmentFSIndex < 0)
                 return;
@@ -6633,7 +6638,7 @@ namespace DFMGenerator_SharedCode
             int newSegment_FSIndex = segmentFSIndex;
             PropagationDirection newSegment_PropDir = initiatorSegment.LocalPropDir;
             DipDirection newSegment_DipDir = initiatorSegment.DipDir;
-            Gridblock_FractureSet newSegment_fs = FractureSets[segmentFSIndex];
+            LayerBoundFractureSet newSegment_fs = LayerBoundFractureSets[segmentFSIndex];
             double currentPropagationDirection = newSegment_fs.getPropagationAzimuth(newSegment_PropDir);
 
             // Check if the propagation direction of the equivalent set in this gridblock lies within the allowed range
@@ -6642,9 +6647,9 @@ namespace DFMGenerator_SharedCode
             if (angularVariability > maxAngularDifference)
             {
                 // If the propagation direction lies within the allowed range, loop through all fracture sets and propagation directions to find the best fit (which may still be the equivalent)
-                for (int test_fs_index = 0; test_fs_index < NoFractureSets; test_fs_index++)
+                for (int test_fs_index = 0; test_fs_index < NoLayerBoundFractureSets; test_fs_index++)
                 {
-                    Gridblock_FractureSet test_fs = FractureSets[test_fs_index];
+                    LayerBoundFractureSet test_fs = LayerBoundFractureSets[test_fs_index];
 
                     foreach (PropagationDirection test_propDir in Enum.GetValues(typeof(PropagationDirection)).Cast<PropagationDirection>())
                     {
@@ -6714,7 +6719,7 @@ namespace DFMGenerator_SharedCode
             // Check if there is a boundary-tracking fracture at the insertion point
             // If so, do not add this fracture segment, and set the initiator node fracture deactivation mechanism to Intersection
             // Loop through every fracture set, including this one
-            foreach (Gridblock_FractureSet intersecting_fs in FractureSets)
+            foreach (LayerBoundFractureSet intersecting_fs in LayerBoundFractureSets)
             {
                 // Call the function to check intersection
                 if (newSegment_fs.checkFractureIntersectionOnBoundary(newSegment, intersecting_fs, false, true))
@@ -6889,10 +6894,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoIntersections">Counter for fracture intersections - used for debugging only</param>
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
+        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, LayerBoundFractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
+        private SegmentNodeType ExtendFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, LayerBoundFractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
 #endif
         {
             // Check if a tracking boundary has been specified - if so call the ExtendBoundaryTrackingFracture function
@@ -6911,11 +6916,11 @@ namespace DFMGenerator_SharedCode
 
             // Check if the segment will intersect a macrofracture from another set
             // Loop through every other fracture set, except this one
-            for (int intersecting_fs_index = 0; intersecting_fs_index < NoFractureSets; intersecting_fs_index++)
+            for (int intersecting_fs_index = 0; intersecting_fs_index < NoLayerBoundFractureSets; intersecting_fs_index++)
             {
                 if (intersecting_fs_index != fsIndex)
                 {
-                    Gridblock_FractureSet intersecting_fs = FractureSets[intersecting_fs_index];
+                    LayerBoundFractureSet intersecting_fs = LayerBoundFractureSets[intersecting_fs_index];
                     if (fs.checkFractureIntersection(MFSegment, intersecting_fs, ref maxPropLength, true)) tipDeactivationMechanism = SegmentNodeType.Intersection;
                 }
             }
@@ -6940,7 +6945,7 @@ namespace DFMGenerator_SharedCode
                     foreach (GridblockConfiguration neighbour_gb in gridblocksToSearch)
                     {
                         // Find the correct fracture set in the neighbouring gridblock to search
-                        Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fsIndex, fs.Strike);
+                        LayerBoundFractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fsIndex, fs.Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
                         if (fs.checkStressShadowInteraction(MFSegment, neighbourGB_fs, ref maxPropLength, ignoreZeroLengthMFStressShadows, checkRelayCrossing, true)) tipDeactivationMechanism = SegmentNodeType.ConnectedStressShadow;
@@ -6961,11 +6966,11 @@ namespace DFMGenerator_SharedCode
                 // Check if there is a boundary-tracking fracture at the point of intersection
                 // If so, set the fracture deactivation mechanism to Intersection
                 // Loop through every other fracture set, except this one
-                for (int intersecting_fs_index = 0; intersecting_fs_index < NoFractureSets; intersecting_fs_index++)
+                for (int intersecting_fs_index = 0; intersecting_fs_index < NoLayerBoundFractureSets; intersecting_fs_index++)
                 {
                     if (intersecting_fs_index != fsIndex)
                     {
-                        Gridblock_FractureSet intersecting_fs = FractureSets[intersecting_fs_index];
+                        LayerBoundFractureSet intersecting_fs = LayerBoundFractureSets[intersecting_fs_index];
                         if (fs.checkFractureIntersectionOnBoundary(MFSegment, intersecting_fs, true, true)) tipDeactivationMechanism = SegmentNodeType.Intersection;
                     }
                 }
@@ -7116,10 +7121,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoIntersections">Counter for fracture intersections - used for debugging only</param>
         /// <param name="NoPropagatingOut">Counter for fractures propagating across gridblock boundaries - used for debugging only</param>
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
+        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, LayerBoundFractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength, bool fromPreviousTS, ref int NoStressShadowInteractions, ref int NoIntersections, ref int NoPropagatingOut)
 #else
         /// <returns>Flag specifying whether and how fracture terminates early</returns>
-        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, Gridblock_FractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
+        private SegmentNodeType ExtendBoundaryTrackingFracture(bool use_MF_min_length_cutoff, bool checkStressShadow, bool ignoreZeroLengthMFStressShadows, bool TerminateAtGridBoundary, int fsIndex, LayerBoundFractureSet fs, MacrofractureSegmentIJK MFSegment, int dipsetIndex, ref double maxPropLength)
 #endif
         {
             // Get the tracking boundary
@@ -7148,11 +7153,11 @@ namespace DFMGenerator_SharedCode
 
             // Check if the segment will intersect a macrofracture from another set
             // Loop through every other fracture set, except this one
-            for (int intersecting_fs_index = 0; intersecting_fs_index < NoFractureSets; intersecting_fs_index++)
+            for (int intersecting_fs_index = 0; intersecting_fs_index < NoLayerBoundFractureSets; intersecting_fs_index++)
             {
                 if (intersecting_fs_index != fsIndex)
                 {
-                    Gridblock_FractureSet intersecting_fs = FractureSets[intersecting_fs_index];
+                    LayerBoundFractureSet intersecting_fs = LayerBoundFractureSets[intersecting_fs_index];
                     if (fs.checkBoundaryTrackingFractureIntersection(MFSegment, intersecting_fs, ref projected_maxPropLength, true)) tipDeactivationMechanism = SegmentNodeType.Intersection;
                 }
             }
@@ -7170,11 +7175,11 @@ namespace DFMGenerator_SharedCode
                 // Check if there is a boundary-tracking fracture at the point of intersection
                 // If so, set the fracture deactivation mechanism to Intersection
                 // Loop through every other fracture set, except this one
-                for (int intersecting_fs_index = 0; intersecting_fs_index < NoFractureSets; intersecting_fs_index++)
+                for (int intersecting_fs_index = 0; intersecting_fs_index < NoLayerBoundFractureSets; intersecting_fs_index++)
                 {
                     if (intersecting_fs_index != fsIndex)
                     {
-                        Gridblock_FractureSet intersecting_fs = FractureSets[intersecting_fs_index];
+                        LayerBoundFractureSet intersecting_fs = LayerBoundFractureSets[intersecting_fs_index];
                         if (fs.checkFractureIntersectionOnBoundary(MFSegment, intersecting_fs, true, true)) tipDeactivationMechanism = SegmentNodeType.Intersection;
                     }
                 }
@@ -7569,7 +7574,7 @@ namespace DFMGenerator_SharedCode
             if (checkAllFractureSets)
                 fractureLiesInStressShadow = checkInMFStressShadow(point, fs_index, ref StressShadowHalfWidthsIJ);
             else
-                fractureLiesInStressShadow = FractureSets[fs_index].checkInMFStressShadow(point);
+                fractureLiesInStressShadow = LayerBoundFractureSets[fs_index].checkInMFStressShadow(point);
 
             // Then, if required, check macrofractures from adjacent gridblocks
             // NB we do not need to do this if we have already found a stress shadow interaction
@@ -7584,7 +7589,7 @@ namespace DFMGenerator_SharedCode
                     if (checkAllFractureSets)
                     {
                         // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, FractureSets[fs_index].Strike);
+                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, LayerBoundFractureSets[fs_index].Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
                         // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
@@ -7600,7 +7605,7 @@ namespace DFMGenerator_SharedCode
                     else
                     {
                         // Find the correct fracture set in the neighbouring gridblock to search
-                        Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, FractureSets[fs_index].Strike);
+                        LayerBoundFractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, LayerBoundFractureSets[fs_index].Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
                         // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
@@ -7634,7 +7639,7 @@ namespace DFMGenerator_SharedCode
             if (checkAllFractureSets)
                 fractureLiesInExclusionZone = checkInMFExclusionZone(point, fs_index, dipsetIndex, ref StressShadowHalfWidthsIJ, ref StressShadowHalfWidthsIJ);
             else
-                fractureLiesInExclusionZone = FractureSets[fs_index].checkInMFExclusionZone(point, FractureSets[fs_index].FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth);
+                fractureLiesInExclusionZone = LayerBoundFractureSets[fs_index].checkInMFExclusionZone(point, LayerBoundFractureSets[fs_index].FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth);
 
             // Then, if required, check macrofractures from adjacent gridblocks
             // NB we do not need to do this if we have already found a stress shadow interaction
@@ -7649,7 +7654,7 @@ namespace DFMGenerator_SharedCode
                     if (checkAllFractureSets)
                     {
                         // Find the index number of the equivalent fracture set in the neighbouring gridblock
-                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, FractureSets[fs_index].Strike);
+                        int neighbourGB_fs_index = neighbour_gb.getClosestFractureSetIndex(fs_index, LayerBoundFractureSets[fs_index].Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
                         // NB Strictly speaking, we should generate a new list of stress shadow half-widths, as the current list is not applicable to the neighbouring gridblocks
@@ -7665,10 +7670,10 @@ namespace DFMGenerator_SharedCode
                     else
                     {
                         // Get the width of the stress shadow of this segment
-                        double MF_StressShadowWidth = FractureSets[fs_index].FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth;
+                        double MF_StressShadowWidth = LayerBoundFractureSets[fs_index].FractureDipSets[dipsetIndex].Mean_MF_StressShadowWidth;
 
                         // Find the correct fracture set in the neighbouring gridblock to search
-                        Gridblock_FractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, FractureSets[fs_index].Strike);
+                        LayerBoundFractureSet neighbourGB_fs = neighbour_gb.getClosestFractureSet(fs_index, LayerBoundFractureSets[fs_index].Strike);
 
                         // Now check the macrofractures in the identified adjacent gridblock fracture set for stress shadow interaction
                         // Since the neighbouring gridblock will have different local coordinates, we must supply the location of the new macrofracture nucleation point in global XYZ coordinates
@@ -7695,21 +7700,21 @@ namespace DFMGenerator_SharedCode
         {
             // Check the specified fracture set number lies within the range of fracture sets
             // Otherwise return false
-            if ((FSJ_Index < 0) || (FSJ_Index >= NoFractureSets))
+            if ((FSJ_Index < 0) || (FSJ_Index >= NoLayerBoundFractureSets))
                 return false;
 
             // Get a handle to the fracture set to which the specified point belongs (set J)
-            Gridblock_FractureSet FSJ = FractureSets[FSJ_Index];
+            LayerBoundFractureSet FSJ = LayerBoundFractureSets[FSJ_Index];
 
             // Create a new list for stress shadow half-widths if one does not already exist
             if (StressShadowHalfWidthsIJ == null)
                 StressShadowHalfWidthsIJ = new List<List<double>>();
 
             // Loop through all the fracture sets
-            for (int FSI_Index = 0; FSI_Index < NoFractureSets; FSI_Index++)
+            for (int FSI_Index = 0; FSI_Index < NoLayerBoundFractureSets; FSI_Index++)
             {
                 // Get a handle to fracture set I
-                Gridblock_FractureSet FSI = FractureSets[FSI_Index];
+                LayerBoundFractureSet FSI = LayerBoundFractureSets[FSI_Index];
 
                 // Check if we already have a list of IJ stress shadow half-widths for this fracture set, and if not, create one
                 while (StressShadowHalfWidthsIJ.Count <= FSI_Index)
@@ -7760,11 +7765,11 @@ namespace DFMGenerator_SharedCode
         {
             // Check the specified fracture set number lies within the range of fracture sets
             // Otherwise return false
-            if ((FSJ_Index < 0) || (FSJ_Index >= NoFractureSets))
+            if ((FSJ_Index < 0) || (FSJ_Index >= NoLayerBoundFractureSets))
                 return false;
 
             // Get a handle to the fracture set to which the specified point belongs (set J)
-            Gridblock_FractureSet FSJ = FractureSets[FSJ_Index];
+            LayerBoundFractureSet FSJ = LayerBoundFractureSets[FSJ_Index];
 
             // Check the specified fracture dip set number lies within the range of fracture dip sets
             // Otherwise return false
@@ -7778,10 +7783,10 @@ namespace DFMGenerator_SharedCode
                 StressShadowHalfWidthsJI = new List<List<double>>();
 
             // Loop through all the fracture sets
-            for (int FSI_Index = 0; FSI_Index < NoFractureSets; FSI_Index++)
+            for (int FSI_Index = 0; FSI_Index < NoLayerBoundFractureSets; FSI_Index++)
             {
                 // Get a handle to fracture set I
-                Gridblock_FractureSet FSI = FractureSets[FSI_Index];
+                LayerBoundFractureSet FSI = LayerBoundFractureSets[FSI_Index];
 
                 // Check if we already have a list of IJ stress shadow half-widths for this fracture set, and if not, create one
                 while (StressShadowHalfWidthsIJ.Count <= FSI_Index)
@@ -7982,7 +7987,7 @@ namespace DFMGenerator_SharedCode
             recalculateGeometry();
 
             // Set the centrepoints of corner pillars in local (IJK) coordinates, for each fracture set
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 fs.setCornerPoints();
             }
@@ -8014,7 +8019,7 @@ namespace DFMGenerator_SharedCode
             recalculateGeometry();
 
             // Set the centrepoints of corner pillars in local (IJK) coordinates, for each fracture set
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 fs.setCornerPoints();
             }
@@ -8090,7 +8095,7 @@ namespace DFMGenerator_SharedCode
             recalculateGeometry();
 
             // Set the centrepoints of corner pillars in local (IJK) coordinates, for each fracture set
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 fs.setCornerPoints();
             }
@@ -8152,8 +8157,8 @@ namespace DFMGenerator_SharedCode
             for (int fs_index = 0; fs_index < NoFractureSets_in; fs_index++)
             {
                 double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets_in));
-                Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
-                FractureSets.Add(new_FractureSet);
+                LayerBoundFractureSet new_FractureSet = new LayerBoundFractureSet(this, strike, B_in, c_in, BiazimuthalConjugate_in, IncludeReverseFractures_in);
+                LayerBoundFractureSets.Add(new_FractureSet);
             }
         }
         /// <summary>
@@ -8185,8 +8190,8 @@ namespace DFMGenerator_SharedCode
             for (int fs_index = 0; fs_index < NoFractureSets_in; fs_index++)
             {
                 double strike = Hmin_azimuth + (Math.PI / 2) + (Math.PI * ((double)fs_index / (double)NoFractureSets_in));
-                Gridblock_FractureSet new_FractureSet = new Gridblock_FractureSet(this, strike, FractureMode_in, opt_dip, B_in, c_in, IncludeReverseFractures_in);
-                FractureSets.Add(new_FractureSet);
+                LayerBoundFractureSet new_FractureSet = new LayerBoundFractureSet(this, strike, FractureMode_in, opt_dip, B_in, c_in, IncludeReverseFractures_in);
+                LayerBoundFractureSets.Add(new_FractureSet);
             }
         }
         /// <summary>
@@ -8294,10 +8299,10 @@ namespace DFMGenerator_SharedCode
         private void ResetFractureSetArrays()
         {
             // Create the azimuthal and strike-slip shear stress shadow multiplier arrays
-            FaaIJ = new double[NoFractureSets, NoFractureSets];
-            FasIJ = new double[NoFractureSets, NoFractureSets];
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
+            FaaIJ = new double[NoLayerBoundFractureSets, NoLayerBoundFractureSets];
+            FasIJ = new double[NoLayerBoundFractureSets, NoLayerBoundFractureSets];
+            for (int I = 0; I < NoLayerBoundFractureSets; I++)
+                for (int J = 0; J < NoLayerBoundFractureSets; J++)
                 {
                     if (I == J)
                     {
@@ -8326,12 +8331,16 @@ namespace DFMGenerator_SharedCode
                     }
                 }
 
+            // Recreate the holders for the list of stress shadow half-widths of all fracture sets as seen by all other fracture sets, and vice versa
+            StressShadowHalfWidthsIJ = new List<List<double>>[NoFractureSets];
+            StressShadowHalfWidthsJI = new List<List<double>>[NoFractureSets];
+
             // Create the macrofracture termination array
-            MFTerminations = new double[NoFractureSets, NoFractureSets][];
-            for (int I = 0; I < NoFractureSets; I++)
-                for (int J = 0; J < NoFractureSets; J++)
+            MFTerminations = new double[NoLayerBoundFractureSets, NoLayerBoundFractureSets][];
+            for (int I = 0; I < NoLayerBoundFractureSets; I++)
+                for (int J = 0; J < NoLayerBoundFractureSets; J++)
                 {
-                    int NoDipsetsJ = FractureSets[J].FractureDipSets.Count;
+                    int NoDipsetsJ = LayerBoundFractureSets[J].FractureDipSets.Count;
                     MFTerminations[I, J] = new double[NoDipsetsJ];
                     for (int fdsJ = 0; fdsJ < NoDipsetsJ; fdsJ++)
                         MFTerminations[I, J][fdsJ] = 0;
@@ -8366,7 +8375,7 @@ namespace DFMGenerator_SharedCode
             MacrofractureSegments.Clear();
 
             // Clear all current fracture sets: no fractures, no deformation history
-            FractureSets.Clear();
+            LayerBoundFractureSets.Clear();
             UnconfinedFractureSets.Clear();
 
             // Repopulate the fracture set arrays - these will be empty as we have not yet created any fracture sets
@@ -8390,7 +8399,7 @@ namespace DFMGenerator_SharedCode
             if (double.IsNaN(hMinAzi))
                 hMinAzi = Hmin_azimuth;
 
-            foreach (Gridblock_FractureSet fs in FractureSets)
+            foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
             {
                 double relativeAngle = hMinAzi - fs.Azimuth;
                 double HMinComponent = Math.Pow(VectorXYZ.Cos_trim(relativeAngle), 2);
@@ -8465,7 +8474,7 @@ namespace DFMGenerator_SharedCode
 
             // Create empty fracture set lists
             // The fracture sets themselves are created by calling the resetFractures or resetUnconfinedFractures functions
-            FractureSets = new List<Gridblock_FractureSet>();
+            LayerBoundFractureSets = new List<LayerBoundFractureSet>();
             UnconfinedFractureSets = new List<UnconfinedFractureSet>();
 
             // Repopulate the fracture set arrays - these will be empty as we have not yet created any fracture sets

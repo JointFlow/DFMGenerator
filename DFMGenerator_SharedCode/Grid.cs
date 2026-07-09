@@ -48,46 +48,87 @@ namespace DFMGenerator_SharedCode
             return Gridblocks[ColNo, RowNo, LayerNo];
         }
         /// <summary>
-        /// Get the total number of rows in the grid
+        /// Return reference to the uppermost non-null gridblock in a specific gridblock stack
         /// </summary>
-        /// <returns>Number of rows in the Gridblocks array</returns>
-        public int NoRows() { return Gridblocks.Count; }
+        /// <param name="ColNo">Column number I of gridblock to retrieve (indexed from west to east)</param>
+        /// <param name="RowNo">Row number J of gridblock to retrieve (indexed from south to north)</param>
+        /// <returns>Reference to the uppermost non-null GridblockConfiguration object in the specified stack, or null if all gridblocks in the stack are null</returns>
+        public GridblockConfiguration GetTopGridblock(int ColNo, int RowNo)
+        {
+            GridblockConfiguration TopGridblock = null;
+            for (int LayerNo = NoLayers - 1; LayerNo >= 0; LayerNo--)
+            {
+                TopGridblock = Gridblocks[ColNo, RowNo, LayerNo];
+                if (!(TopGridblock is null))
+                    return TopGridblock;
+            }
+
+            return TopGridblock;
+        }
         /// <summary>
-        /// Get the total number of columns in the grid
+        /// Return reference to the lowermost non-null gridblock in a specific gridblock stack
         /// </summary>
-        /// <returns>Number of columns in the largest row in the Gridblocks array</returns>
-        public int NoCols() { int NoCols = 0; foreach (List<GridblockConfiguration> row in Gridblocks) if (NoCols < row.Count) NoCols = row.Count; return NoCols; }
+        /// <param name="ColNo">Column number I of gridblock to retrieve (indexed from west to east)</param>
+        /// <param name="RowNo">Row number J of gridblock to retrieve (indexed from south to north)</param>
+        /// <returns>Reference to the lowermost non-null GridblockConfiguration object in the specified stack, or null if all gridblocks in the stack are null</returns>
+        public GridblockConfiguration GetBottomGridblock(int ColNo, int RowNo)
+        {
+            GridblockConfiguration BottomGridblock = null;
+            for (int LayerNo = 0; LayerNo< NoLayers; LayerNo--)
+            {
+                BottomGridblock = Gridblocks[ColNo, RowNo, LayerNo];
+                if (!(BottomGridblock is null))
+                    return BottomGridblock;
+            }
+
+            return BottomGridblock;
+        }
         /// <summary>
-        /// Get the total number of gridblocks in the grid
+        /// Total number of columns in the grid
         /// </summary>
-        /// <returns>Number of gridblocks in the Gridblocks array</returns>
-        public int NoGridblocks() { int NoGridblocks = 0; foreach (List<GridblockConfiguration> row in Gridblocks) NoGridblocks += row.Count; return NoGridblocks; }
+        public int NoCols { get { return Gridblocks.GetLength(0); } }
+        /// <summary>
+        /// Total number of rows in the grid
+        /// </summary>
+        public int NoRows { get { return Gridblocks.GetLength(1); } }
+        /// <summary>
+        /// Total number of layers in the grid
+        /// </summary>
+        public int NoLayers { get { return Gridblocks.GetLength(2); } }
+        /// <summary>
+        /// Total number of gridblocks in the grid
+        /// </summary>
+        public int NoGridblocks { get { return Gridblocks.Length; } }
         /// <summary>
         /// Return a representative gridblock - i.e. one that contains the maximum number of fracture sets
         /// Will also return the number of fracture sets and dipsets
         /// </summary>
-        /// <param name="NoFractureSets">Reference variable for the maximum number of fracture sets in any gridblock in the grid</param>
+        /// <param name="NoLayerBoundFractureSets">Reference variable for the maximum number of layer-bound fracture sets in any gridblock in the grid</param>
         /// <param name="NoDipsets">Reference variable for the maximum number of dipsets in any fracture set in any gridblock in the grid</param>
+        /// <param name="NoUnconfinedFractureSets">Reference variable for the maximum number of unconfined fracture sets in any gridblock in the grid</param>
         /// <returns>Reference to the first gridblock object encountered that contains the maximum number of fracture sets and dipsets</returns>
-        public GridblockConfiguration GetRepresentativeGridblock(out int NoFractureSets, out int NoDipsets)
+        public GridblockConfiguration GetRepresentativeGridblock(out int NoLayerBoundFractureSets, out int NoDipsets, out int NoUnconfinedFractureSets)
         {
             GridblockConfiguration output = null;
-            NoFractureSets = 0;
+            int TotalNoFractureSets = 0;
+            NoLayerBoundFractureSets = 0;
             NoDipsets = 0;
-            foreach (List<GridblockConfiguration> row in Gridblocks)
-                foreach (GridblockConfiguration gbc in row)
+            NoUnconfinedFractureSets = 0;
+            foreach (GridblockConfiguration gbc in Gridblocks)
+            {
+                if (gbc is null)
+                    continue;
+                if (TotalNoFractureSets < (gbc.NoFractureSets))
                 {
-                    if (gbc is null)
-                        continue;
-                    if (NoFractureSets < gbc.NoFractureSets)
-                    {
-                        NoFractureSets = gbc.NoFractureSets;
-                        foreach (Gridblock_FractureSet fs in gbc.FractureSets)
-                            if (NoDipsets < fs.FractureDipSets.Count)
-                                NoDipsets = fs.FractureDipSets.Count;
-                        output = gbc;
-                    }
+                    TotalNoFractureSets = gbc.NoFractureSets;
+                    NoLayerBoundFractureSets = gbc.NoFractureSets;
+                    foreach (LayerBoundFractureSet fs in gbc.LayerBoundFractureSets)
+                        if (NoDipsets < fs.FractureDipSets.Count)
+                            NoDipsets = fs.FractureDipSets.Count;
+                    NoUnconfinedFractureSets = gbc.NoUnconfinedFractureSets;
+                    output = gbc;
                 }
+            }
             return output;
         }
         /// <summary>
@@ -99,16 +140,15 @@ namespace DFMGenerator_SharedCode
             double MinX = double.PositiveInfinity;
             double MinY = double.PositiveInfinity;
             double MinZ = double.PositiveInfinity;
-            foreach (List<GridblockConfiguration> row in Gridblocks)
-                foreach (GridblockConfiguration gbc in row)
-                {
-                    if (gbc is null)
-                        continue;
-                    PointXYZ gbc_origin = gbc.Gridblock_Origin;
-                    if (MinX > gbc_origin.X) MinX = gbc_origin.X;
-                    if (MinY > gbc_origin.Y) MinY = gbc_origin.Y;
-                    if (MinZ > gbc_origin.Z) MinZ = gbc_origin.Z;
-                }
+            foreach (GridblockConfiguration gbc in Gridblocks)
+            {
+                if (gbc is null)
+                    continue;
+                PointXYZ gbc_origin = gbc.Gridblock_Origin;
+                if (MinX > gbc_origin.X) MinX = gbc_origin.X;
+                if (MinY > gbc_origin.Y) MinY = gbc_origin.Y;
+                if (MinZ > gbc_origin.Z) MinZ = gbc_origin.Z;
+            }
             return new PointXYZ(MinX, MinY, MinZ);
         }
         /// <summary>
@@ -120,16 +160,15 @@ namespace DFMGenerator_SharedCode
             double MaxX = double.NegativeInfinity;
             double MaxY = double.NegativeInfinity;
             double MaxZ = double.NegativeInfinity;
-            foreach (List<GridblockConfiguration> row in Gridblocks)
-                foreach (GridblockConfiguration gbc in row)
-                {
-                    if (gbc is null)
-                        continue;
-                    PointXYZ gbc_maximum = gbc.Gridblock_Maximum;
-                    if (MaxX < gbc_maximum.X) MaxX = gbc_maximum.X;
-                    if (MaxY < gbc_maximum.Y) MaxY = gbc_maximum.Y;
-                    if (MaxZ < gbc_maximum.Z) MaxZ = gbc_maximum.Z;
-                }
+            foreach (GridblockConfiguration gbc in Gridblocks)
+            {
+                if (gbc is null)
+                    continue;
+                PointXYZ gbc_maximum = gbc.Gridblock_Maximum;
+                if (MaxX < gbc_maximum.X) MaxX = gbc_maximum.X;
+                if (MaxY < gbc_maximum.Y) MaxY = gbc_maximum.Y;
+                if (MaxZ < gbc_maximum.Z) MaxZ = gbc_maximum.Z;
+            }
             return new PointXYZ(MaxX, MaxY, MaxZ);
         }
 
