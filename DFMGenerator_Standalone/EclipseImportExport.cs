@@ -1120,9 +1120,9 @@ namespace DFMGenerator_Standalone
                                                     P33_anisotropy = gbc.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
 
                                                 // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
-                                                UnconnectedTipRatio = gbc.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                                RelayTipRatio = gbc.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                IntersectingTipRatio = gbc.IntersectingTipRatio(!PopulateEmptyGridblocks);
+                                                UnconnectedTipRatio = gbc.UnconnectedMFTipRatio(!PopulateEmptyGridblocks);
+                                                RelayTipRatio = gbc.RelayMFTipRatio(!PopulateEmptyGridblocks);
+                                                IntersectingTipRatio = gbc.IntersectingMFTipRatio(!PopulateEmptyGridblocks);
                                                 NodesPerMF = gbc.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
 
                                                 // Calculate end deformation time using the function in the GridblockConfiguration object

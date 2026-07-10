@@ -5783,7 +5783,8 @@ namespace DFMGenerator_Ocean
                                     int NoStages = NoIntermediateOutputs + 1;
                                     int NoCalculationElementsCompleted = 0;
                                     int TotalNoSets = (NoLayerBoundFractureSets * NoDipSets) + NoUnconfinedFractureSets;
-                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? 1 : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
+                                    int NoSetTypes = (NoLayerBoundFractureSets > 0 ? 1 : 0) + (NoUnconfinedFractureSets > 0 ? 1 : 0);
+                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + NoSetTypes+ 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? NoSetTypes : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
                                     NoElements *= NoStages;
                                     // Bulk rock elastic tensors are only output for the final stage
                                     if (OutputBulkRockElasticTensors)
@@ -5852,10 +5853,10 @@ namespace DFMGenerator_Ocean
                                         // If required, loop through each fracture set and write density, mean size and connectivity data
                                         if (OutputFractureSets)
                                         {
-                                            for (int FractureSetNo = 0; FractureSetNo < NoLayerBoundFractureSets; FractureSetNo++)
+                                            for (int LayerBoundFractureSetNo = 0; LayerBoundFractureSetNo < NoLayerBoundFractureSets; LayerBoundFractureSetNo++)
                                             {
                                                 // Set a name for the fracture set
-                                                string FractureSetName = GridblockConfiguration.getLayerBoundFractureSetName(FractureSetNo, NoLayerBoundFractureSets);
+                                                string FractureSetName = GridblockConfiguration.getLayerBoundFractureSetName(LayerBoundFractureSetNo, NoLayerBoundFractureSets);
 
                                                 for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                                 {
@@ -5905,12 +5906,12 @@ namespace DFMGenerator_Ocean
                                                                         continue;
 
                                                                     // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                                    if ((FractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                                    if ((LayerBoundFractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets.Count))
                                                                     {
                                                                         progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
                                                                         continue;
                                                                     }
-                                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets[DipSetNo];
 
                                                                     // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                                     int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
@@ -5979,7 +5980,7 @@ namespace DFMGenerator_Ocean
                                                                     }
                                                                     catch (Exception e)
                                                                     {
-                                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", FractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", LayerBoundFractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                         errorMessage = errorMessage + string.Format(" cell_MF_P30_tot {0}", (float)cell_MF_P30_tot);
                                                                         errorMessage = errorMessage + string.Format(" cell_MF_P32_tot {0}", (float)cell_MF_P32_tot);
                                                                         errorMessage = errorMessage + string.Format(" cell_uF_P32_tot {0}", (float)cell_uF_P32_tot);
@@ -6041,12 +6042,12 @@ namespace DFMGenerator_Ocean
                                                                         continue;
 
                                                                     // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                                    if ((FractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                                    if ((LayerBoundFractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets.Count))
                                                                     {
                                                                         progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
                                                                         continue;
                                                                     }
-                                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets[DipSetNo];
 
                                                                     // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                                     int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
@@ -6069,7 +6070,7 @@ namespace DFMGenerator_Ocean
                                                                         UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
                                                                         RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
                                                                         IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                                        NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(FractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
+                                                                        NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(LayerBoundFractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
                                                                         EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
                                                                     }
                                                                     else
@@ -6118,7 +6119,7 @@ namespace DFMGenerator_Ocean
                                                                     }
                                                                     catch (Exception e)
                                                                     {
-                                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", FractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", LayerBoundFractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                         errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                                         errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
                                                                         errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
@@ -6169,12 +6170,12 @@ namespace DFMGenerator_Ocean
                                                                         continue;
 
                                                                     // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                                    if ((FractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                                    if ((LayerBoundFractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets.Count))
                                                                     {
                                                                         progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
                                                                         continue;
                                                                     }
-                                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets[DipSetNo];
 
                                                                     // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
                                                                     int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
@@ -6222,7 +6223,7 @@ namespace DFMGenerator_Ocean
                                                                     }
                                                                     catch (Exception e)
                                                                     {
-                                                                        string errorMessage = string.Format("Exception thrown when writing reactivation potential data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", FractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                                        string errorMessage = string.Format("Exception thrown when writing reactivation potential data for fracture set {0} dipset {1} to column {2}, row {3}, layer {4}:", LayerBoundFractureSetNo, DipSetNo, FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
                                                                         errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
                                                                         errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
                                                                         PetrelLogger.InfoOutputWindow(errorMessage);
@@ -6629,229 +6630,531 @@ namespace DFMGenerator_Ocean
                                             string CollectionName = "Fracture_Anisotropy";
                                             PropertyCollection FracAnisotropyData = FracData.CreatePropertyCollection(CollectionName);
 
-                                            // Create properties and set templates for each property
-                                            Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
-                                            P32_Anisotropy.Name = "P32_anisotropy";
-                                            Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
-                                            if (OutputFracturePorosity)
-                                                P33_Anisotropy.Name = "FracturePorosity_anisotropy";
-                                            else
-                                                P33_Anisotropy.Name = "P33_anisotropy";
-                                            Property MF_UnconnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                            MF_UnconnectedTipRatio.Name = "Unconnected_fracture_tip_ratio";
-                                            Property MF_RelayTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                            MF_RelayTipRatio.Name = "Relay_zone_fracture_tip_ratio";
-                                            Property MF_IntersectingTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
-                                            MF_IntersectingTipRatio.Name = "Intersecting_fracture_tip_ratio";
-                                            Property ConnectionsPerMF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
-                                            ConnectionsPerMF.Name = "Connections_per_fracture";
-                                            Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
-                                            EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+                                            // First write microfracture and layer-bound fracture anisotropy data, if present
+                                            if (NoLayerBoundFractureSets > 0)
+                                            {
+                                                // Create properties and set templates for each property
+                                                Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
+                                                P32_Anisotropy.Name = "P32_anisotropy";
+                                                Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
+                                                if (OutputFracturePorosity)
+                                                    P33_Anisotropy.Name = "FracturePorosity_anisotropy";
+                                                else
+                                                    P33_Anisotropy.Name = "P33_anisotropy";
+                                                Property MF_UnconnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                                MF_UnconnectedTipRatio.Name = "MF_Unconnected_fracture_tip_ratio";
+                                                Property MF_RelayTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                                MF_RelayTipRatio.Name = "MF_Relay_zone_fracture_tip_ratio";
+                                                Property MF_IntersectingTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                                MF_IntersectingTipRatio.Name = "MF_Intersecting_fracture_tip_ratio";
+                                                Property ConnectionsPerMF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
+                                                ConnectionsPerMF.Name = "Connections_per_macrofracture";
 
-                                            // Add creation event to each property
-                                            IHistoryInfoEditor P32_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P32_Anisotropy);
-                                            IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
-                                            IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
-                                            IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
-                                            IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
-                                            IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
-                                            IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
-                                            P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
-                                            EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                // Add creation event to each property
+                                                IHistoryInfoEditor P32_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P32_Anisotropy);
+                                                IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
+                                                IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_UnconnectedTipRatio);
+                                                IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_RelayTipRatio);
+                                                IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(MF_IntersectingTipRatio);
+                                                IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerMF);
+                                                P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
 
-                                            // Loop through all gridblocks in the Fracture Grid
-                                            // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
-                                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
-                                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
-                                                    {
-                                                        // Check if calculation has been aborted
-                                                        if (progressBarWrapper.abortCalculation())
+                                                // Loop through all gridblocks in the Fracture Grid
+                                                // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
                                                         {
-                                                            // Clean up any resources or data
-                                                            break;
-                                                        }
-
-                                                        // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
-                                                        if (fractureGridCell == null)
-                                                            continue;
-
-                                                        // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
-                                                        int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                                        int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                                        int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                                        if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
-                                                            PetrelGrid_LastCellI = PetrelGrid_EndCellI;
-                                                        int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-                                                        if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
-                                                            PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
-                                                        int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                        int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
-                                                        if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
-                                                            PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
-
-                                                        // Calculate fracture anisotropy and connectivity for the entire fracture network
-                                                        double P32_anisotropy, P33_anisotropy;
-                                                        double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
-                                                        if (finalStage)
-                                                        {
-                                                            // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
-                                                            P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                                            if (OutputFracturePorosity)
-                                                                P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                                            else
-                                                                P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
-
-                                                            // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
-                                                            UnconnectedTipRatio = fractureGridCell.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                                            RelayTipRatio = fractureGridCell.RelayTipRatio(!PopulateEmptyGridblocks);
-                                                            IntersectingTipRatio = fractureGridCell.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                            NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
-
-                                                            // Calculate end deformation time using the function in the GridblockConfiguration object
-                                                            // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
-                                                            EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
-                                                        }
-                                                        else
-                                                        {
-                                                            int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
-                                                            double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
-
-                                                            // Calculate fracture anisotropy data using the data cached in the FCDList
-                                                            double Min_P32 = 0;
-                                                            double Max_P32 = 0;
-                                                            double Min_P33 = 0;
-                                                            double Max_P33 = 0;
-                                                            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-                                                            if (NoLayerBoundFractureSets < 2)
+                                                            // Check if calculation has been aborted
+                                                            if (progressBarWrapper.abortCalculation())
                                                             {
-                                                                Max_P32 = 1;
-                                                                Max_P33 = 1;
+                                                                // Clean up any resources or data
+                                                                break;
+                                                            }
+
+                                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                            if (fractureGridCell == null)
+                                                                continue;
+
+                                                            // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                            int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                                PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                            int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                                PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                            int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                            int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                            if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                                PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                            // Calculate fracture anisotropy and connectivity for the entire fracture network
+                                                            double P32_anisotropy, P33_anisotropy;
+                                                            double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF;
+                                                            if (finalStage)
+                                                            {
+                                                                // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
+                                                                P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                                if (OutputFracturePorosity)
+                                                                    P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                                else
+                                                                    P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
+
+                                                                // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
+                                                                UnconnectedTipRatio = fractureGridCell.UnconnectedMFTipRatio(!PopulateEmptyGridblocks);
+                                                                RelayTipRatio = fractureGridCell.RelayMFTipRatio(!PopulateEmptyGridblocks);
+                                                                IntersectingTipRatio = fractureGridCell.IntersectingMFTipRatio(!PopulateEmptyGridblocks);
+                                                                NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
                                                             }
                                                             else
                                                             {
-                                                                foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[0].FractureDipSets)
-                                                                {
-                                                                    Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                                    if (OutputFracturePorosity)
-                                                                        Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
-                                                                    else
-                                                                        Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
-                                                                }
-                                                                Min_P32 = Max_P32;
-                                                                Min_P33 = Max_P33;
+                                                                int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                                double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
 
-                                                                for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
+                                                                // Calculate fracture anisotropy data using the data cached in the FCDList
+                                                                double Min_P32 = 0;
+                                                                double Max_P32 = 0;
+                                                                double Min_P33 = 0;
+                                                                double Max_P33 = 0;
+                                                                // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+                                                                if (NoLayerBoundFractureSets < 2)
                                                                 {
-                                                                    double fs_P32 = 0;
-                                                                    double fs_P33 = 0;
-                                                                    foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                                    Max_P32 = 1;
+                                                                    Max_P33 = 1;
+                                                                }
+                                                                else
+                                                                {
+                                                                    foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[0].FractureDipSets)
                                                                     {
-                                                                        fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                                        Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
                                                                         if (OutputFracturePorosity)
-                                                                            fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                                            Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                                         else
-                                                                            fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                                            Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
                                                                     }
-                                                                    if (fs_P32 > Max_P32)
-                                                                        Max_P32 = fs_P32;
-                                                                    if (fs_P32 < Min_P32)
-                                                                        Min_P32 = fs_P32;
-                                                                    if (fs_P33 > Max_P33)
-                                                                        Max_P33 = fs_P33;
-                                                                    if (fs_P33 < Min_P33)
-                                                                        Min_P33 = fs_P33;
+                                                                    Min_P32 = Max_P32;
+                                                                    Min_P33 = Max_P33;
+
+                                                                    for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
+                                                                    {
+                                                                        double fs_P32 = 0;
+                                                                        double fs_P33 = 0;
+                                                                        foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                                        {
+                                                                            fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                                            if (OutputFracturePorosity)
+                                                                                fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                                            else
+                                                                                fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                                        }
+                                                                        if (fs_P32 > Max_P32)
+                                                                            Max_P32 = fs_P32;
+                                                                        if (fs_P32 < Min_P32)
+                                                                            Min_P32 = fs_P32;
+                                                                        if (fs_P33 > Max_P33)
+                                                                            Max_P33 = fs_P33;
+                                                                        if (fs_P33 < Min_P33)
+                                                                            Min_P33 = fs_P33;
+                                                                    }
                                                                 }
+                                                                double Combined_P32 = Min_P32 + Max_P32;
+                                                                P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
+                                                                double Combined_P33 = Min_P33 + Max_P33;
+                                                                P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);
+
+                                                                // Calculate fracture connectivity data using the data cached in the FCDList
+                                                                double INodes = 0;
+                                                                double RNodes = 0;
+                                                                double YNodes = 0;
+                                                                foreach (LayerBoundFractureSet fs in fractureGridCell.LayerBoundFractureSets)
+                                                                    foreach (FractureDipSet fds in fs.FractureDipSets)
+                                                                    {
+                                                                        INodes += fds.getActiveMFP30(TSNo);
+                                                                        RNodes += fds.getStaticRelayMFP30(TSNo);
+                                                                        YNodes += fds.getStaticIntersectMFP30(TSNo);
+                                                                    }
+                                                                double TotalNodes = INodes + RNodes + YNodes;
+                                                                UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
+                                                                RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
+                                                                IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                                double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
+                                                                NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
                                                             }
-                                                            double Combined_P32 = Min_P32 + Max_P32;
-                                                            P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
-                                                            double Combined_P33 = Min_P33 + Max_P33;
-                                                            P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);
-
-                                                            // Calculate fracture connectivity data using the data cached in the FCDList
-                                                            double INodes = 0;
-                                                            double RNodes = 0;
-                                                            double YNodes = 0;
-                                                            foreach (LayerBoundFractureSet fs in fractureGridCell.LayerBoundFractureSets)
-                                                                foreach (FractureDipSet fds in fs.FractureDipSets)
-                                                                {
-                                                                    INodes += fds.getActiveMFP30(TSNo);
-                                                                    RNodes += fds.getStaticRelayMFP30(TSNo);
-                                                                    YNodes += fds.getStaticIntersectMFP30(TSNo);
-                                                                }
-                                                            double TotalNodes = INodes + RNodes + YNodes;
-                                                            UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
-                                                            RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
-                                                            IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
-                                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
-                                                            NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
-
-                                                            // Get the time at the end of this intermediate stage
-                                                            EndTime = stageEndTime;
-                                                        }
 
 #if DEBUG_IMPLICIT_OUTPUT
-                                                        PetrelLogger.InfoOutputWindow("");
-                                                        PetrelLogger.InfoOutputWindow("Connectivity data: all sets");
-                                                        PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                                            PetrelLogger.InfoOutputWindow("");
+                                                            PetrelLogger.InfoOutputWindow("Connectivity data: all layer-bound sets");
+                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
-                                                        // Loop through all the Petrel cells in the gridblock
-                                                        try
-                                                        {
-                                                            for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
-                                                                for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
-                                                                    for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
-                                                                    {
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            try
+                                                            {
+                                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                        for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                        {
 #if DEBUG_IMPLICIT_OUTPUT
                                                                         PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
 #endif
 
-                                                                        // Get index for cell in Petrel grid
-                                                                        Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+                                                                            // Get index for cell in Petrel grid
+                                                                            Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
 
-                                                                        // Write data to Petrel grid
-                                                                        if (!double.IsNaN(P32_anisotropy))
-                                                                            P32_Anisotropy[index_cell] = (float)P32_anisotropy;
-                                                                        if (!double.IsNaN(P33_anisotropy))
-                                                                            P33_Anisotropy[index_cell] = (float)P33_anisotropy;
-                                                                        if (!double.IsNaN(UnconnectedTipRatio))
-                                                                            MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
-                                                                        if (!double.IsNaN(RelayTipRatio))
-                                                                            MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
-                                                                        if (!double.IsNaN(IntersectingTipRatio))
-                                                                            MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
-                                                                        if (!double.IsNaN(NodesPerMF))
-                                                                            ConnectionsPerMF[index_cell] = (float)NodesPerMF;
-                                                                        if (!double.IsNaN(EndTime))
-                                                                            EndDeformationTime[index_cell] = (float)EndTime;
-                                                                    } // End loop through all the Petrel cells in the gridblock
-                                                        }
-                                                        catch (Exception e)
+                                                                            // Write data to Petrel grid
+                                                                            if (!double.IsNaN(P32_anisotropy))
+                                                                                P32_Anisotropy[index_cell] = (float)P32_anisotropy;
+                                                                            if (!double.IsNaN(P33_anisotropy))
+                                                                                P33_Anisotropy[index_cell] = (float)P33_anisotropy;
+                                                                            if (!double.IsNaN(UnconnectedTipRatio))
+                                                                                MF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
+                                                                            if (!double.IsNaN(RelayTipRatio))
+                                                                                MF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
+                                                                            if (!double.IsNaN(IntersectingTipRatio))
+                                                                                MF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
+                                                                            if (!double.IsNaN(NodesPerMF))
+                                                                                ConnectionsPerMF[index_cell] = (float)NodesPerMF;
+                                                                        } // End loop through all the Petrel cells in the gridblock
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing anisotropy data for all fracture sets to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                                errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
+                                                                errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
+                                                                errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
+                                                                errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                                errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
+                                                                errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
+
+                                                            // Update progress bar
+                                                            progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                        } // End loop through all columns and rows in the Fracture Grid
+                                            } // End write microfracture and layer-bound fracture anisotropy data
+
+                                            // Then write unconfined fracture anisotropy data, if present
+                                            if (NoUnconfinedFractureSets > 0)
+                                            {
+                                                // Anisotropy indices are not defined for unconfined fractures
+                                                // Create properties and set templates for each property
+                                                //Property P32_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
+                                                //P32_Anisotropy.Name = "P32_anisotropy";
+                                                //Property P33_Anisotropy = FracAnisotropyData.CreateProperty(AnisotropyTemplate);
+                                                //if (OutputFracturePorosity)
+                                                //    P33_Anisotropy.Name = "FracturePorosity_anisotropy";
+                                                //else
+                                                //    P33_Anisotropy.Name = "P33_anisotropy";
+                                                Property UCF_UnconnectedTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                                UCF_UnconnectedTipRatio.Name = "UCF_Unconnected_fracture_tip_ratio";
+                                                Property UCF_RelayTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                                UCF_RelayTipRatio.Name = "UCF_Relay_zone_fracture_tip_ratio";
+                                                Property UCF_IntersectingTipRatio = FracAnisotropyData.CreateProperty(ConnectivityTemplate);
+                                                UCF_IntersectingTipRatio.Name = "UCF_Intersecting_fracture_tip_ratio";
+                                                Property ConnectionsPerUCF = FracAnisotropyData.CreateProperty(ConnectionsPerFractureTemplate);
+                                                ConnectionsPerUCF.Name = "Connections_per_unconfined_fracture";
+
+                                                // Add creation event to each property
+                                                //IHistoryInfoEditor P32_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P32_Anisotropy);
+                                                //IHistoryInfoEditor P33_AnisotropyHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(P33_Anisotropy);
+                                                IHistoryInfoEditor MF_UnconnectedTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(UCF_UnconnectedTipRatio);
+                                                IHistoryInfoEditor MF_RelayTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(UCF_RelayTipRatio);
+                                                IHistoryInfoEditor MF_IntersectingTipRatioHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(UCF_IntersectingTipRatio);
+                                                IHistoryInfoEditor ConnectionsPerMFInfoEditor = HistoryService.GetHistoryInfoEditor(ConnectionsPerUCF);
+                                                //P32_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                //P33_AnisotropyHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_UnconnectedTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_RelayTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                MF_IntersectingTipRatioHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+                                                ConnectionsPerMFInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+
+                                                // Loop through all gridblocks in the Fracture Grid
+                                                // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
                                                         {
-                                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data for all fracture sets to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
-                                                            errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
-                                                            errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
-                                                            errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
-                                                            errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
-                                                            errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
-                                                            errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
-                                                            errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                        }
+                                                            // Check if calculation has been aborted
+                                                            if (progressBarWrapper.abortCalculation())
+                                                            {
+                                                                // Clean up any resources or data
+                                                                break;
+                                                            }
 
-                                                        // Update progress bar
-                                                        progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+                                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                            if (fractureGridCell == null)
+                                                                continue;
 
-                                                    } // End loop through all columns and rows in the Fracture Grid
+                                                            // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                            int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                                PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                            int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                                PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                            int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                            int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                            if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                                PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                            // Calculate fracture anisotropy and connectivity for the entire fracture network
+                                                            //double P32_anisotropy, P33_anisotropy;
+                                                            double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerUCF;
+                                                            if (finalStage)
+                                                            {
+                                                                /*// Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
+                                                                P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                                if (OutputFracturePorosity)
+                                                                    P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                                else
+                                                                    P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);*/
+
+                                                                // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
+                                                                UnconnectedTipRatio = fractureGridCell.UnconnectedUCFTipRatio(!PopulateEmptyGridblocks);
+                                                                RelayTipRatio = fractureGridCell.RelayUCFTipRatio(!PopulateEmptyGridblocks);
+                                                                IntersectingTipRatio = fractureGridCell.IntersectingUCFTipRatio(!PopulateEmptyGridblocks);
+                                                                NodesPerUCF = fractureGridCell.ConnectionsPerUnconfinedFracture(!PopulateEmptyGridblocks);
+                                                            }
+                                                            else
+                                                            {
+                                                                int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                                double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
+
+                                                                /*// Calculate fracture anisotropy data using the data cached in the FCDList
+                                                                double Min_P32 = 0;
+                                                                double Max_P32 = 0;
+                                                                double Min_P33 = 0;
+                                                                double Max_P33 = 0;
+                                                                // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+                                                                if (NoLayerBoundFractureSets < 2)
+                                                                {
+                                                                    Max_P32 = 1;
+                                                                    Max_P33 = 1;
+                                                                }
+                                                                else
+                                                                {
+                                                                    foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[0].FractureDipSets)
+                                                                    {
+                                                                        Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                                        if (OutputFracturePorosity)
+                                                                            Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                                        else
+                                                                            Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                                    }
+                                                                    Min_P32 = Max_P32;
+                                                                    Min_P33 = Max_P33;
+
+                                                                    for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
+                                                                    {
+                                                                        double fs_P32 = 0;
+                                                                        double fs_P33 = 0;
+                                                                        foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                                        {
+                                                                            fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                                            if (OutputFracturePorosity)
+                                                                                fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                                            else
+                                                                                fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                                        }
+                                                                        if (fs_P32 > Max_P32)
+                                                                            Max_P32 = fs_P32;
+                                                                        if (fs_P32 < Min_P32)
+                                                                            Min_P32 = fs_P32;
+                                                                        if (fs_P33 > Max_P33)
+                                                                            Max_P33 = fs_P33;
+                                                                        if (fs_P33 < Min_P33)
+                                                                            Min_P33 = fs_P33;
+                                                                    }
+                                                                }
+                                                                double Combined_P32 = Min_P32 + Max_P32;
+                                                                P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
+                                                                double Combined_P33 = Min_P33 + Max_P33;
+                                                                P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);*/
+
+                                                                // Calculate fracture connectivity data using the data cached in the FCDList
+                                                                double INodes = 0;
+                                                                double RNodes = 0;
+                                                                double YNodes = 0;
+                                                                foreach (UnconfinedFractureSet ufs in fractureGridCell.UnconfinedFractureSets)
+                                                                {
+                                                                    INodes += ufs.geta_RP30_M(TSNo) + ufs.getr_RP30_M(TSNo) + ufs.getsRMax_RP30_M(TSNo);
+                                                                    RNodes += ufs.getsII_RP30_M(TSNo);
+                                                                    YNodes += ufs.getsIJ_RP30_M(TSNo);
+                                                                }
+                                                                double TotalNodes = INodes + RNodes + YNodes;
+                                                                UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
+                                                                RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
+                                                                IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                                double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
+                                                                NodesPerUCF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
+                                                            }
+
+#if DEBUG_IMPLICIT_OUTPUT
+                                                            PetrelLogger.InfoOutputWindow("");
+                                                            PetrelLogger.InfoOutputWindow("Connectivity data: all unconfined sets");
+                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+#endif
+
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            try
+                                                            {
+                                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                        for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                        {
+#if DEBUG_IMPLICIT_OUTPUT
+                                                                        PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                            // Get index for cell in Petrel grid
+                                                                            Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                            // Write data to Petrel grid
+                                                                            /*if (!double.IsNaN(P32_anisotropy))
+                                                                                P32_Anisotropy[index_cell] = (float)P32_anisotropy;
+                                                                            if (!double.IsNaN(P33_anisotropy))
+                                                                                P33_Anisotropy[index_cell] = (float)P33_anisotropy;*/
+                                                                            if (!double.IsNaN(UnconnectedTipRatio))
+                                                                                UCF_UnconnectedTipRatio[index_cell] = (float)UnconnectedTipRatio;
+                                                                            if (!double.IsNaN(RelayTipRatio))
+                                                                                UCF_RelayTipRatio[index_cell] = (float)RelayTipRatio;
+                                                                            if (!double.IsNaN(IntersectingTipRatio))
+                                                                                UCF_IntersectingTipRatio[index_cell] = (float)IntersectingTipRatio;
+                                                                            if (!double.IsNaN(NodesPerUCF))
+                                                                                ConnectionsPerUCF[index_cell] = (float)NodesPerUCF;
+                                                                        } // End loop through all the Petrel cells in the gridblock
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing anisotropy data for all fracture sets to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                                //errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
+                                                                //errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
+                                                                errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
+                                                                errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                                errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
+                                                                errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerUCF);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
+
+                                                            // Update progress bar
+                                                            progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                        } // End loop through all columns and rows in the Fracture Grid
+                                            } // End write unconfined fracture anisotropy data
+
+                                            // Finally write end time data for all fracture sets
+                                            {
+                                                // Create properties and set templates for each property
+                                                Property EndDeformationTime = FracAnisotropyData.CreateProperty(DeformationTimeTemplate);
+                                                EndDeformationTime.Name = "Time_of_end_macrofracture_growth";
+
+                                                // Add creation event to each property
+                                                IHistoryInfoEditor EndDeformationTimeHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(EndDeformationTime);
+                                                EndDeformationTimeHistoryInfoEditor.AddHistoryEntry(new HistoryEntry("Create dynamic implicit fracture model", "", PetrelSystem.VersionInfo.ToString()));
+
+                                                // Loop through all gridblocks in the Fracture Grid
+                                                // ColNo corresponds to the Petrel grid I index, RowNo corresponds to the Petrel grid J index, and LayerNo corresponds to the Petrel grid K index
+                                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                                        {
+                                                            // Check if calculation has been aborted
+                                                            if (progressBarWrapper.abortCalculation())
+                                                            {
+                                                                // Clean up any resources or data
+                                                                break;
+                                                            }
+
+                                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                            if (fractureGridCell == null)
+                                                                continue;
+
+                                                            // Create indices for the all the Petrel grid cells corresponding to the fracture gridblock 
+                                                            int PetrelGrid_FirstCellI = PetrelGrid_StartCellI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_FirstCellJ = PetrelGrid_StartCellJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                                            int PetrelGrid_LastCellI = PetrelGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellI > PetrelGrid_EndCellI)
+                                                                PetrelGrid_LastCellI = PetrelGrid_EndCellI;
+                                                            int PetrelGrid_LastCellJ = PetrelGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                                            if (PetrelGrid_LastCellJ > PetrelGrid_EndCellJ)
+                                                                PetrelGrid_LastCellJ = PetrelGrid_EndCellJ;
+                                                            int PetrelGrid_LowestCellK = PetrelGrid_BaseCellK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                                            int PetrelGrid_HighestCellK = PetrelGrid_LowestCellK - (VerticalUpscalingFactor - 1);
+                                                            if (PetrelGrid_HighestCellK < PetrelGrid_TopCellK)
+                                                                PetrelGrid_HighestCellK = PetrelGrid_TopCellK;
+
+                                                            // Calculate end time for the entire fracture network
+                                                            double EndTime;
+                                                            if (finalStage)
+                                                            {
+                                                                // Calculate end deformation time using the function in the GridblockConfiguration object
+                                                                // This will represent either the end of the deformation episode or the time of fracture saturation, whichever is earliest
+                                                                EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                                            }
+                                                            else
+                                                            {
+                                                                // Get the end deformation time or the time at the end of this intermediate stage, if it is earlier
+                                                                EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                                                if (EndTime > stageEndTime)
+                                                                    EndTime = stageEndTime;
+                                                            }
+
+#if DEBUG_IMPLICIT_OUTPUT
+                                                            PetrelLogger.InfoOutputWindow("");
+                                                            PetrelLogger.InfoOutputWindow("End time data: all sets");
+                                                            PetrelLogger.InfoOutputWindow(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+#endif
+
+                                                            // Loop through all the Petrel cells in the gridblock
+                                                            try
+                                                            {
+                                                                for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                                    for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                                        for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                                        {
+#if DEBUG_IMPLICIT_OUTPUT
+                                                                        PetrelLogger.InfoOutputWindow(string.Format("PetrelGrid cell {0}, {1}, {2}", PetrelGrid_I, PetrelGrid_J, PetrelGrid_K));
+#endif
+
+                                                                            // Get index for cell in Petrel grid
+                                                                            Index3 index_cell = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                            // Write data to Petrel grid
+                                                                            if (!double.IsNaN(EndTime))
+                                                                                EndDeformationTime[index_cell] = (float)EndTime;
+                                                                        } // End loop through all the Petrel cells in the gridblock
+                                                            }
+                                                            catch (Exception e)
+                                                            {
+                                                                string errorMessage = string.Format("Exception thrown when writing anisotropy data for all fracture sets to column {0}, row {1}, layer {2}:", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                                                errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
+                                                                PetrelLogger.InfoOutputWindow(errorMessage);
+                                                                PetrelLogger.InfoOutputWindow(e.Message);
+                                                                PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            }
+
+                                                            // Update progress bar
+                                                            progressBarWrapper.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                                        } // End loop through all columns and rows in the Fracture Grid
+                                            } // End write end time data for all fracture sets
 
                                         } // End write fracture anisotropy data
 

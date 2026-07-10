@@ -4842,7 +4842,9 @@ namespace DFMGenerator_GRDECL
                     // Calculate the number of stages, the number of fracture sets and the total number of calculation elements
                     int NoStages = NoIntermediateOutputs + 1;
                     int NoCalculationElementsCompleted = 0;
-                    int NoElements = NoActiveGridblocks * ((NoLayerBoundFractureSets * NoDipSets) + (OutputFractureConnectivityAnisotropy ? (NoLayerBoundFractureSets * NoDipSets) + 1 : 0) + (OutputFractureReactivationPotential ? (NoLayerBoundFractureSets * NoDipSets) : 0) + (OutputFracturePorosity ? 1 : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
+                    int TotalNoSets = (NoLayerBoundFractureSets * NoDipSets) + NoUnconfinedFractureSets;
+                    int NoSetTypes = (NoLayerBoundFractureSets > 0 ? 1 : 0) + (NoUnconfinedFractureSets > 0 ? 1 : 0);
+                    int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + NoSetTypes + 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? NoSetTypes : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
                     NoElements *= NoStages;
                     // Bulk rock elastic tensors are only output for the final stage
                     if (OutputBulkRockElasticTensors)
@@ -4908,10 +4910,10 @@ namespace DFMGenerator_GRDECL
                         // If required, loop through each fracture set to output data
                         if (OutputFractureSets)
                         {
-                            for (int FractureSetNo = 0; FractureSetNo < NoLayerBoundFractureSets; FractureSetNo++)
+                            for (int LayerBoundFractureSetNo = 0; LayerBoundFractureSetNo < NoLayerBoundFractureSets; LayerBoundFractureSetNo++)
                             {
                                 // Set a name for the fracture set
-                                string FractureSetName = GridblockConfiguration.getLayerBoundFractureSetName(FractureSetNo, NoLayerBoundFractureSets);
+                                string FractureSetName = GridblockConfiguration.getLayerBoundFractureSetName(LayerBoundFractureSetNo, NoLayerBoundFractureSets);
 
                                 for (int DipSetNo = 0; DipSetNo < NoDipSets; DipSetNo++)
                                 {
@@ -4950,12 +4952,12 @@ namespace DFMGenerator_GRDECL
                                                         continue;
 
                                                     // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                    if ((FractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                    if ((LayerBoundFractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets.Count))
                                                     {
                                                         progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
                                                         continue;
                                                     }
-                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets[DipSetNo];
 
                                                     // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                                     int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
@@ -4993,7 +4995,7 @@ namespace DFMGenerator_GRDECL
 
 #if DEBUG_FRAC_OUTPUT
                                                     progressReporter.OutputMessage("");
-                                                    progressReporter.OutputMessage(string.Format("Base data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                    progressReporter.OutputMessage(string.Format("Base data: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
                                                     progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
@@ -5002,7 +5004,7 @@ namespace DFMGenerator_GRDECL
                                                     {
                                                         for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                             for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                                for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                                for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                                 {
 #if DEBUG_FRAC_OUTPUT
                                                                     progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5021,7 +5023,7 @@ namespace DFMGenerator_GRDECL
                                                     }
                                                     catch (Exception e)
                                                     {
-                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                        string errorMessage = string.Format("Exception thrown when writing density data for fracture set {0} dipset {1} to row {2}, column {3}:", LayerBoundFractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                         errorMessage = errorMessage + string.Format(" cell_MF_P30_tot {0}", (float)cell_MF_P30_tot);
                                                         errorMessage = errorMessage + string.Format(" cell_MF_P32_tot {0}", (float)cell_MF_P32_tot);
                                                         errorMessage = errorMessage + string.Format(" cell_uF_P32_tot {0}", (float)cell_uF_P32_tot);
@@ -5071,12 +5073,12 @@ namespace DFMGenerator_GRDECL
                                                         continue;
 
                                                     // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                    if ((FractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                    if ((LayerBoundFractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets.Count))
                                                     {
                                                         progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
                                                         continue;
                                                     }
-                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets[DipSetNo];
 
                                                     // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                                     int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
@@ -5099,7 +5101,7 @@ namespace DFMGenerator_GRDECL
                                                         UnconnectedTipRatio = fds.UnconnectedTipRatio(!PopulateEmptyGridblocks);
                                                         RelayTipRatio = fds.RelayTipRatio(!PopulateEmptyGridblocks);
                                                         IntersectingTipRatio = fds.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                                        NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(FractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
+                                                        NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(LayerBoundFractureSetNo, DipSetNo, !PopulateEmptyGridblocks);
                                                         EndTime = fds.getFinalActiveTime(!PopulateEmptyGridblocks);
                                                     }
                                                     else
@@ -5120,7 +5122,7 @@ namespace DFMGenerator_GRDECL
 
 #if DEBUG_FRAC_OUTPUT
                                                     progressReporter.OutputMessage("");
-                                                    progressReporter.OutputMessage(string.Format("Connectivity data: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                    progressReporter.OutputMessage(string.Format("Connectivity data: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
                                                     progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
@@ -5129,7 +5131,7 @@ namespace DFMGenerator_GRDECL
                                                     {
                                                         for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                             for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                                for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                                for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                                 {
 #if DEBUG_FRAC_OUTPUT
                                                                     progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5145,7 +5147,7 @@ namespace DFMGenerator_GRDECL
                                                     }
                                                     catch (Exception e)
                                                     {
-                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", LayerBoundFractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                         errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
                                                         errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
                                                         errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
@@ -5190,12 +5192,12 @@ namespace DFMGenerator_GRDECL
                                                         continue;
 
                                                     // Check if the fracture set and dipset exist in this gridblock - if so get a reference to the dipset object, otherwise update the progress bar and move on to the next gridblock
-                                                    if ((FractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets.Count))
+                                                    if ((LayerBoundFractureSetNo >= fractureGridCell.NoLayerBoundFractureSets) || (DipSetNo >= fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets.Count))
                                                     {
                                                         progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
                                                         continue;
                                                     }
-                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[FractureSetNo].FractureDipSets[DipSetNo];
+                                                    FractureDipSet fds = fractureGridCell.LayerBoundFractureSets[LayerBoundFractureSetNo].FractureDipSets[DipSetNo];
 
                                                     // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                                     int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
@@ -5217,7 +5219,7 @@ namespace DFMGenerator_GRDECL
 
 #if DEBUG_FRAC_OUTPUT
                                                     progressReporter.OutputMessage("");
-                                                    progressReporter.OutputMessage(string.Format("Reactivation potential: Set {0} dipset {1}", FractureSetNo, DipSetNo));
+                                                    progressReporter.OutputMessage(string.Format("Reactivation potential: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
                                                     progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
@@ -5226,7 +5228,7 @@ namespace DFMGenerator_GRDECL
                                                     {
                                                         for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                             for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                                for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                                for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                                 {
 #if DEBUG_FRAC_OUTPUT
                                                                     progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5239,7 +5241,7 @@ namespace DFMGenerator_GRDECL
                                                     }
                                                     catch (Exception e)
                                                     {
-                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", FractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
+                                                        string errorMessage = string.Format("Exception thrown when writing anisotropy data for fracture set {0} dipset {1} to row {2}, column {3}:", LayerBoundFractureSetNo, DipSetNo, FractureGrid_RowNo, FractureGrid_ColNo);
                                                         errorMessage = errorMessage + string.Format(" ReactivationPotential {0}", (float)ReactivationPotential);
                                                         errorMessage = errorMessage + string.Format(" SlipTendency {0}", (float)SlipTendency);
                                                         progressReporter.OutputMessage(errorMessage);
@@ -5254,7 +5256,7 @@ namespace DFMGenerator_GRDECL
                                     } // End write fracture reactivity data to shadow grid
 
                                 } // End loop through fracture dip sets
-                            } // End loop through fracture sets
+                            } // End loop through layer-bound fracture sets
 
                             for (int UnconfinedFractureSetNo = 0; UnconfinedFractureSetNo < NoUnconfinedFractureSets; UnconfinedFractureSetNo++)
                             {
@@ -5344,7 +5346,7 @@ namespace DFMGenerator_GRDECL
                                                 {
                                                     for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                         for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                            for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                            for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                             {
 #if DEBUG_FRAC_OUTPUT
                                                                 progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5477,7 +5479,7 @@ namespace DFMGenerator_GRDECL
                                                 {
                                                     for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                         for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                            for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                            for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                             {
 #if DEBUG_FRAC_OUTPUT
                                                                 progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5574,7 +5576,7 @@ namespace DFMGenerator_GRDECL
                                                 {
                                                     for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                         for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                            for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                            for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                             {
 #if DEBUG_FRAC_OUTPUT
                                                                 progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5608,200 +5610,488 @@ namespace DFMGenerator_GRDECL
                         // If required, write fracture anisotropy data to shadow grid
                         if (OutputFractureConnectivityAnisotropy)
                         {
-                            // Create properties and set templates for each property
-                            string CollectionName = "AllFractures_";
-                            string P32_Anisotropy = CollectionName + "P32_anisotropy";
-                            SourceDataGrid.CreateFloatingPointProperty(P32_Anisotropy);
-                            string P33_Anisotropy = CollectionName + (OutputFracturePorosity ? "FracturePorosity_anisotropy" : "P33_anisotropy");
-                            SourceDataGrid.CreateFloatingPointProperty(P33_Anisotropy);
-                            string MF_UnconnectedTipRatio = CollectionName + "Unconnected_fracture_tip_ratio";
-                            SourceDataGrid.CreateFloatingPointProperty(MF_UnconnectedTipRatio);
-                            string MF_RelayTipRatio = CollectionName + "Relay_zone_fracture_tip_ratio";
-                            SourceDataGrid.CreateFloatingPointProperty(MF_RelayTipRatio);
-                            string MF_IntersectingTipRatio = CollectionName + "Intersecting_fracture_tip_ratio";
-                            SourceDataGrid.CreateFloatingPointProperty(MF_IntersectingTipRatio);
-                            string ConnectionsPerMF = CollectionName + "Connections_per_fracture";
-                            SourceDataGrid.CreateFloatingPointProperty(ConnectionsPerMF);
-                            string EndDeformationTime = CollectionName + "Time_of_end_macrofracture_growth";
-                            SourceDataGrid.CreateFloatingPointProperty(EndDeformationTime);
+                            // First write microfracture and layer-bound fracture anisotropy data, if present
+                            if (NoLayerBoundFractureSets > 0)
+                            {
+                                // Create properties and set templates for each property
+                                string CollectionName = "LayerBoundFractures_";
+                                string P32_Anisotropy = CollectionName + "P32_anisotropy";
+                                SourceDataGrid.CreateFloatingPointProperty(P32_Anisotropy);
+                                string P33_Anisotropy = CollectionName + (OutputFracturePorosity ? "FracturePorosity_anisotropy" : "P33_anisotropy");
+                                SourceDataGrid.CreateFloatingPointProperty(P33_Anisotropy);
+                                string MF_UnconnectedTipRatio = CollectionName + "Unconnected_fracture_tip_ratio";
+                                SourceDataGrid.CreateFloatingPointProperty(MF_UnconnectedTipRatio);
+                                string MF_RelayTipRatio = CollectionName + "Relay_zone_fracture_tip_ratio";
+                                SourceDataGrid.CreateFloatingPointProperty(MF_RelayTipRatio);
+                                string MF_IntersectingTipRatio = CollectionName + "Intersecting_fracture_tip_ratio";
+                                SourceDataGrid.CreateFloatingPointProperty(MF_IntersectingTipRatio);
+                                string ConnectionsPerMF = CollectionName + "Connections_per_fracture";
+                                SourceDataGrid.CreateFloatingPointProperty(ConnectionsPerMF);
 
-                            // Loop through all gridblocks in the Fracture Grid
-                            // ColNo corresponds to the shadow grid I index, RowNo corresponds to the shadow grid J index, and LayerNo corresponds to the shadow grid K index
-                            for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
-                                for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
-                                    for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
-                                    {
-                                        // Check if calculation has been aborted
-                                        if (progressReporter.abortCalculation())
+                                // Loop through all gridblocks in the Fracture Grid
+                                // ColNo corresponds to the shadow grid I index, RowNo corresponds to the shadow grid J index, and LayerNo corresponds to the shadow grid K index
+                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
                                         {
-                                            // Clean up any resources or data
-                                            break;
-                                        }
-
-                                        // Get a reference to the gridblock and check if it exists - if not move on to the next one
-                                        GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
-                                        if (fractureGridCell == null)
-                                            continue;
-
-                                        // Create indices for the all the shadow grid cells corresponding to the fracture gridblock 
-                                        int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
-                                        int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
-                                        int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
-                                        int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
-
-                                        // Calculate fracture anisotropy and connectivity for the entire fracture network
-                                        double P32_anisotropy, P33_anisotropy;
-                                        double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF, EndTime;
-                                        if (finalStage)
-                                        {
-                                            // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
-                                            P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                            if (OutputFracturePorosity)
-                                                P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
-                                            else
-                                                P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
-
-                                            // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
-                                            UnconnectedTipRatio = fractureGridCell.UnconnectedTipRatio(!PopulateEmptyGridblocks);
-                                            RelayTipRatio = fractureGridCell.RelayTipRatio(!PopulateEmptyGridblocks);
-                                            IntersectingTipRatio = fractureGridCell.IntersectingTipRatio(!PopulateEmptyGridblocks);
-                                            NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
-
-                                            // Calculate end deformation time using the function in the GridblockConfiguration object
-                                            // This will represent either the end of the deformation episode or the time of macrofracture saturation, whichever is earliest
-                                            EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
-                                        }
-                                        else
-                                        {
-                                            int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
-                                            double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
-
-                                            // Calculate fracture anisotropy data using the data cached in the FCDList
-                                            double Min_P32 = 0;
-                                            double Max_P32 = 0;
-                                            double Min_P33 = 0;
-                                            double Max_P33 = 0;
-                                            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
-                                            if (NoLayerBoundFractureSets < 2)
+                                            // Check if calculation has been aborted
+                                            if (progressReporter.abortCalculation())
                                             {
-                                                Max_P32 = 1;
-                                                Max_P33 = 1;
+                                                // Clean up any resources or data
+                                                break;
+                                            }
+
+                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                            if (fractureGridCell == null)
+                                                continue;
+
+                                            // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
+                                            int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                            int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                            int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                                ShadowGrid_LastCellI = ShadowGrid_EndColI;
+                                            int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                                ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                            int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                                ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
+
+                                            // Calculate fracture anisotropy and connectivity for the entire fracture network
+                                            double P32_anisotropy, P33_anisotropy;
+                                            double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerMF;
+                                            if (finalStage)
+                                            {
+                                                // Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
+                                                P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                if (OutputFracturePorosity)
+                                                    P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                else
+                                                    P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);
+
+                                                // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
+                                                UnconnectedTipRatio = fractureGridCell.UnconnectedMFTipRatio(!PopulateEmptyGridblocks);
+                                                RelayTipRatio = fractureGridCell.RelayMFTipRatio(!PopulateEmptyGridblocks);
+                                                IntersectingTipRatio = fractureGridCell.IntersectingMFTipRatio(!PopulateEmptyGridblocks);
+                                                NodesPerMF = fractureGridCell.ConnectionsPerMacrofracture(!PopulateEmptyGridblocks);
                                             }
                                             else
                                             {
-                                                foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[0].FractureDipSets)
-                                                {
-                                                    Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
-                                                    if (OutputFracturePorosity)
-                                                        Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
-                                                    else
-                                                        Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
-                                                }
-                                                Min_P32 = Max_P32;
-                                                Min_P33 = Max_P33;
+                                                int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
 
-                                                for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
+                                                // Calculate fracture anisotropy data using the data cached in the FCDList
+                                                double Min_P32 = 0;
+                                                double Max_P32 = 0;
+                                                double Min_P33 = 0;
+                                                double Max_P33 = 0;
+                                                // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+                                                if (NoLayerBoundFractureSets < 2)
                                                 {
-                                                    double fs_P32 = 0;
-                                                    double fs_P33 = 0;
-                                                    foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                    Max_P32 = 1;
+                                                    Max_P33 = 1;
+                                                }
+                                                else
+                                                {
+                                                    foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[0].FractureDipSets)
                                                     {
-                                                        fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                        Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
                                                         if (OutputFracturePorosity)
-                                                            fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                            Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
                                                         else
-                                                            fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                            Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
                                                     }
-                                                    if (fs_P32 > Max_P32)
-                                                        Max_P32 = fs_P32;
-                                                    if (fs_P32 < Min_P32)
-                                                        Min_P32 = fs_P32;
-                                                    if (fs_P33 > Max_P33)
-                                                        Max_P33 = fs_P33;
-                                                    if (fs_P33 < Min_P33)
-                                                        Min_P33 = fs_P33;
-                                                }
-                                            }
-                                            double Combined_P32 = Min_P32 + Max_P32;
-                                            P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
-                                            double Combined_P33 = Min_P33 + Max_P33;
-                                            P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);
+                                                    Min_P32 = Max_P32;
+                                                    Min_P33 = Max_P33;
 
-                                            // Calculate fracture connectivity data using the data cached in the FCDList
-                                            double INodes = 0;
-                                            double RNodes = 0;
-                                            double YNodes = 0;
-                                            foreach (LayerBoundFractureSet fs in fractureGridCell.LayerBoundFractureSets)
-                                                foreach (FractureDipSet fds in fs.FractureDipSets)
-                                                {
-                                                    INodes += fds.getActiveMFP30(TSNo);
-                                                    RNodes += fds.getStaticRelayMFP30(TSNo);
-                                                    YNodes += fds.getStaticIntersectMFP30(TSNo);
-                                                }
-                                            double TotalNodes = INodes + RNodes + YNodes;
-                                            UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
-                                            RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
-                                            IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
-                                            double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
-                                            NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
-
-                                            // Get the time at the end of this intermediate stage
-                                            EndTime = stageEndTime;
-                                        }
-
-#if DEBUG_FRAC_OUTPUT
-                                        progressReporter.OutputMessage("");
-                                        progressReporter.OutputMessage("Connectivity data: all sets");
-                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
-#endif
-
-                                        // Loop through all the shadow grid cells in the gridblock
-                                        try
-                                        {
-                                            for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
-                                                for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                    for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                                                     {
+                                                        double fs_P32 = 0;
+                                                        double fs_P33 = 0;
+                                                        foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                        {
+                                                            fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                            if (OutputFracturePorosity)
+                                                                fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                            else
+                                                                fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                        }
+                                                        if (fs_P32 > Max_P32)
+                                                            Max_P32 = fs_P32;
+                                                        if (fs_P32 < Min_P32)
+                                                            Min_P32 = fs_P32;
+                                                        if (fs_P33 > Max_P33)
+                                                            Max_P33 = fs_P33;
+                                                        if (fs_P33 < Min_P33)
+                                                            Min_P33 = fs_P33;
+                                                    }
+                                                }
+                                                double Combined_P32 = Min_P32 + Max_P32;
+                                                P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
+                                                double Combined_P33 = Min_P33 + Max_P33;
+                                                P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);
+
+                                                // Calculate fracture connectivity data using the data cached in the FCDList
+                                                double INodes = 0;
+                                                double RNodes = 0;
+                                                double YNodes = 0;
+                                                foreach (LayerBoundFractureSet fs in fractureGridCell.LayerBoundFractureSets)
+                                                    foreach (FractureDipSet fds in fs.FractureDipSets)
+                                                    {
+                                                        INodes += fds.getActiveMFP30(TSNo);
+                                                        RNodes += fds.getStaticRelayMFP30(TSNo);
+                                                        YNodes += fds.getStaticIntersectMFP30(TSNo);
+                                                    }
+                                                double TotalNodes = INodes + RNodes + YNodes;
+                                                UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
+                                                RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
+                                                IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
+                                                NodesPerMF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
+                                            }
+
 #if DEBUG_FRAC_OUTPUT
-                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                            progressReporter.OutputMessage("");
+                                            progressReporter.OutputMessage("Connectivity data: all layer-bound sets");
+                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
-                                                        // Write data to shadow grid
-                                                        if (!double.IsNaN(P32_anisotropy))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, P32_Anisotropy, P32_anisotropy);
-                                                        if (!double.IsNaN(P33_anisotropy))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, P33_Anisotropy, P33_anisotropy);
-                                                        if (!double.IsNaN(UnconnectedTipRatio))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, MF_UnconnectedTipRatio, UnconnectedTipRatio);
-                                                        if (!double.IsNaN(RelayTipRatio))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, MF_RelayTipRatio, RelayTipRatio);
-                                                        if (!double.IsNaN(IntersectingTipRatio))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, MF_IntersectingTipRatio, IntersectingTipRatio);
-                                                        if (!double.IsNaN(NodesPerMF))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, ConnectionsPerMF, NodesPerMF);
-                                                        if (!double.IsNaN(EndTime))
-                                                            SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, EndDeformationTime, EndTime);
-                                                    } // End loop through all the shadow grid cells in the gridblock
-                                        }
-                                        catch (Exception e)
+                                            // Loop through all the shadow grid cells in the gridblock
+                                            try
+                                            {
+                                                for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
+                                                    for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
+                                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
+                                                        {
+#if DEBUG_FRAC_OUTPUT
+                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+#endif
+
+                                                            // Write data to shadow grid
+                                                            if (!double.IsNaN(P32_anisotropy))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, P32_Anisotropy, P32_anisotropy);
+                                                            if (!double.IsNaN(P33_anisotropy))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, P33_Anisotropy, P33_anisotropy);
+                                                            if (!double.IsNaN(UnconnectedTipRatio))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, MF_UnconnectedTipRatio, UnconnectedTipRatio);
+                                                            if (!double.IsNaN(RelayTipRatio))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, MF_RelayTipRatio, RelayTipRatio);
+                                                            if (!double.IsNaN(IntersectingTipRatio))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, MF_IntersectingTipRatio, IntersectingTipRatio);
+                                                            if (!double.IsNaN(NodesPerMF))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, ConnectionsPerMF, NodesPerMF);
+                                                        } // End loop through all the shadow grid cells in the gridblock
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
+                                                errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
+                                                errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
+                                                errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
+                                                errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
+                                                progressReporter.OutputMessage(errorMessage);
+                                                progressReporter.OutputMessage(e.Message);
+                                                progressReporter.OutputMessage(e.StackTrace);
+                                            }
+
+                                            // Update progress reporter
+                                            progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                        } // End loop through all gridblocks in the Fracture Grid
+                            } // End write microfracture and layer-bound fracture anisotropy data
+
+                            // Then write unconfined fracture anisotropy data, if present
+                            if (NoUnconfinedFractureSets > 0)
+                            {
+                                // Create properties and set templates for each property
+                                string CollectionName = "UnconfinedFractures_";
+                                // Anisotropy indices are not defined for unconfined fractures
+                                //string P32_Anisotropy = CollectionName + "P32_anisotropy";
+                                //SourceDataGrid.CreateFloatingPointProperty(P32_Anisotropy);
+                                //string P33_Anisotropy = CollectionName + (OutputFracturePorosity ? "FracturePorosity_anisotropy" : "P33_anisotropy");
+                                //SourceDataGrid.CreateFloatingPointProperty(P33_Anisotropy);
+                                string UCF_UnconnectedTipRatio = CollectionName + "Unconnected_fracture_tip_ratio";
+                                SourceDataGrid.CreateFloatingPointProperty(UCF_UnconnectedTipRatio);
+                                string UCF_RelayTipRatio = CollectionName + "Relay_zone_fracture_tip_ratio";
+                                SourceDataGrid.CreateFloatingPointProperty(UCF_RelayTipRatio);
+                                string UCF_IntersectingTipRatio = CollectionName + "Intersecting_fracture_tip_ratio";
+                                SourceDataGrid.CreateFloatingPointProperty(UCF_IntersectingTipRatio);
+                                string ConnectionsPerUCF = CollectionName + "Connections_per_fracture";
+                                SourceDataGrid.CreateFloatingPointProperty(ConnectionsPerUCF);
+
+                                // Loop through all gridblocks in the Fracture Grid
+                                // ColNo corresponds to the shadow grid I index, RowNo corresponds to the shadow grid J index, and LayerNo corresponds to the shadow grid K index
+                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
                                         {
-                                            string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
-                                            errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
-                                            errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
-                                            errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
-                                            errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
-                                            errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
-                                            errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerMF);
-                                            errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
-                                            progressReporter.OutputMessage(errorMessage);
-                                            progressReporter.OutputMessage(e.Message);
-                                            progressReporter.OutputMessage(e.StackTrace);
-                                        }
+                                            // Check if calculation has been aborted
+                                            if (progressReporter.abortCalculation())
+                                            {
+                                                // Clean up any resources or data
+                                                break;
+                                            }
 
-                                        // Update progress reporter
-                                        progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                            if (fractureGridCell == null)
+                                                continue;
 
-                                    } // End loop through all gridblocks in the Fracture Grid
+                                            // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
+                                            int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                            int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                            int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                                ShadowGrid_LastCellI = ShadowGrid_EndColI;
+                                            int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                                ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                            int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                                ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
+
+                                            // Calculate fracture connectivity for the entire fracture network
+                                            // Anisotropy indices are not defined for unconfined fractures
+                                            //double P32_anisotropy, P33_anisotropy;
+                                            double UnconnectedTipRatio, RelayTipRatio, IntersectingTipRatio, NodesPerUCF;
+                                            if (finalStage)
+                                            {
+                                                /*// Calculate fracture anisotropy data using the functions in the GridblockConfiguration object
+                                                P32_anisotropy = fractureGridCell.P32AnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                if (OutputFracturePorosity)
+                                                    P33_anisotropy = fractureGridCell.FracturePorosityAnisotropyIndex(true, !PopulateEmptyGridblocks);
+                                                else
+                                                    P33_anisotropy = fractureGridCell.P33AnisotropyIndex(true, !PopulateEmptyGridblocks);*/
+
+                                                // Calculate fracture connectivity data using the functions in the GridblockConfiguration object
+                                                UnconnectedTipRatio = fractureGridCell.UnconnectedUCFTipRatio(!PopulateEmptyGridblocks);
+                                                RelayTipRatio = fractureGridCell.RelayUCFTipRatio(!PopulateEmptyGridblocks);
+                                                IntersectingTipRatio = fractureGridCell.IntersectingUCFTipRatio(!PopulateEmptyGridblocks);
+                                                NodesPerUCF = fractureGridCell.ConnectionsPerUnconfinedFracture(!PopulateEmptyGridblocks);
+                                            }
+                                            else
+                                            {
+                                                int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
+                                                double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
+
+                                                /*// Calculate fracture anisotropy data using the data cached in the FCDList
+                                                double Min_P32 = 0;
+                                                double Max_P32 = 0;
+                                                double Min_P33 = 0;
+                                                double Max_P33 = 0;
+                                                // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+                                                if (NoLayerBoundFractureSets < 2)
+                                                {
+                                                    Max_P32 = 1;
+                                                    Max_P33 = 1;
+                                                }
+                                                else
+                                                {
+                                                    foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[0].FractureDipSets)
+                                                    {
+                                                        Max_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                        if (OutputFracturePorosity)
+                                                            Max_P33 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                        else
+                                                            Max_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                    }
+                                                    Min_P32 = Max_P32;
+                                                    Min_P33 = Max_P33;
+
+                                                    for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
+                                                    {
+                                                        double fs_P32 = 0;
+                                                        double fs_P33 = 0;
+                                                        foreach (FractureDipSet fds in fractureGridCell.LayerBoundFractureSets[fs_Index].FractureDipSets)
+                                                        {
+                                                            fs_P32 += (fds.getTotaluFP32(TSNo) + fds.getTotalMFP32(TSNo));
+                                                            if (OutputFracturePorosity)
+                                                                fs_P32 += (fds.getTotaluFPorosity(TSNo) + fds.getTotalMFPorosity(TSNo));
+                                                            else
+                                                                fs_P33 += (fds.getTotaluFP33(TSNo) + fds.getTotalMFP33(TSNo));
+                                                        }
+                                                        if (fs_P32 > Max_P32)
+                                                            Max_P32 = fs_P32;
+                                                        if (fs_P32 < Min_P32)
+                                                            Min_P32 = fs_P32;
+                                                        if (fs_P33 > Max_P33)
+                                                            Max_P33 = fs_P33;
+                                                        if (fs_P33 < Min_P33)
+                                                            Min_P33 = fs_P33;
+                                                    }
+                                                }
+                                                double Combined_P32 = Min_P32 + Max_P32;
+                                                P32_anisotropy = (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedValue);
+                                                double Combined_P33 = Min_P33 + Max_P33;
+                                                P33_anisotropy = (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedValue);*/
+
+                                                // Calculate fracture connectivity data using the data cached in the FCDList
+                                                double INodes = 0;
+                                                double RNodes = 0;
+                                                double YNodes = 0;
+                                                foreach (UnconfinedFractureSet ufs in fractureGridCell.UnconfinedFractureSets)
+                                                {
+                                                    INodes += ufs.geta_RP30_M(TSNo) + ufs.getr_RP30_M(TSNo) + ufs.getsRMax_RP30_M(TSNo);
+                                                    RNodes += ufs.getsII_RP30_M(TSNo);
+                                                    YNodes += ufs.getsIJ_RP30_M(TSNo);
+                                                }
+                                                double TotalNodes = INodes + RNodes + YNodes;
+                                                UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);
+                                                RelayTipRatio = (TotalNodes > 0 ? RNodes / TotalNodes : undefinedValue);
+                                                IntersectingTipRatio = (TotalNodes > 0 ? YNodes / TotalNodes : undefinedValue);
+                                                double NoConnections = (LinkStressShadows ? RNodes : 0) + (2 * YNodes);
+                                                NodesPerUCF = (TotalNodes > 0 ? NoConnections / TotalNodes : undefinedValue);
+                                            }
+
+#if DEBUG_FRAC_OUTPUT
+                                            progressReporter.OutputMessage("");
+                                            progressReporter.OutputMessage("Connectivity data: all unconfined sets");
+                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+#endif
+
+                                            // Loop through all the shadow grid cells in the gridblock
+                                            try
+                                            {
+                                                for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
+                                                    for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
+                                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
+                                                        {
+#if DEBUG_FRAC_OUTPUT
+                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+#endif
+
+                                                            // Write data to shadow grid
+                                                            /*if (!double.IsNaN(P32_anisotropy))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, P32_Anisotropy, P32_anisotropy);
+                                                            if (!double.IsNaN(P33_anisotropy))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, P33_Anisotropy, P33_anisotropy);*/
+                                                            if (!double.IsNaN(UnconnectedTipRatio))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, UCF_UnconnectedTipRatio, UnconnectedTipRatio);
+                                                            if (!double.IsNaN(RelayTipRatio))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, UCF_RelayTipRatio, RelayTipRatio);
+                                                            if (!double.IsNaN(IntersectingTipRatio))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, UCF_IntersectingTipRatio, IntersectingTipRatio);
+                                                            if (!double.IsNaN(NodesPerUCF))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, ConnectionsPerUCF, NodesPerUCF);
+                                                        } // End loop through all the shadow grid cells in the gridblock
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                string errorMessage = string.Format("Exception thrown when writing anisotropy data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                //errorMessage = errorMessage + string.Format(" P32_anisotropy {0}", (float)P32_anisotropy);
+                                                //errorMessage = errorMessage + string.Format(" P33_anisotropy {0}", (float)P33_anisotropy);
+                                                errorMessage = errorMessage + string.Format(" UnconnectedTipRatio {0}", (float)UnconnectedTipRatio);
+                                                errorMessage = errorMessage + string.Format(" RelayTipRatio {0}", (float)RelayTipRatio);
+                                                errorMessage = errorMessage + string.Format(" IntersectingTipRatio {0}", (float)IntersectingTipRatio);
+                                                errorMessage = errorMessage + string.Format(" ConnectionsPerMF {0}", (float)NodesPerUCF);
+                                                progressReporter.OutputMessage(errorMessage);
+                                                progressReporter.OutputMessage(e.Message);
+                                                progressReporter.OutputMessage(e.StackTrace);
+                                            }
+
+                                            // Update progress reporter
+                                            progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                        } // End loop through all gridblocks in the Fracture Grid
+                            } // End write unconfined fracture anisotropy data
+
+                            // Finally write end time data for all fracture sets
+                            {
+                                // Create properties and set templates for each property
+                                string CollectionName = "AllFractures_";
+                                string EndDeformationTime = CollectionName + "Time_of_end_fracture_growth";
+                                SourceDataGrid.CreateFloatingPointProperty(EndDeformationTime);
+
+                                // Loop through all gridblocks in the Fracture Grid
+                                // ColNo corresponds to the shadow grid I index, RowNo corresponds to the shadow grid J index, and LayerNo corresponds to the shadow grid K index
+                                for (int FractureGrid_ColNo = 0; FractureGrid_ColNo < NoFractureGridCols; FractureGrid_ColNo++)
+                                    for (int FractureGrid_RowNo = 0; FractureGrid_RowNo < NoFractureGridRows; FractureGrid_RowNo++)
+                                        for (int FractureGrid_LayerNo = 0; FractureGrid_LayerNo < NoFractureGridLayers; FractureGrid_LayerNo++)
+                                        {
+                                            // Check if calculation has been aborted
+                                            if (progressReporter.abortCalculation())
+                                            {
+                                                // Clean up any resources or data
+                                                break;
+                                            }
+
+                                            // Get a reference to the gridblock and check if it exists - if not move on to the next one
+                                            GridblockConfiguration fractureGridCell = ModelGrid.GetGridblock(FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo);
+                                            if (fractureGridCell == null)
+                                                continue;
+
+                                            // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
+                                            int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
+                                            int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
+                                            int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                                ShadowGrid_LastCellI = ShadowGrid_EndColI;
+                                            int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                                ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                            int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                                ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
+
+                                            // Calculate end time for the entire fracture network
+                                            double EndTime;
+                                            if (finalStage)
+                                            {
+                                                // Calculate end deformation time using the function in the GridblockConfiguration object
+                                                // This will represent either the end of the deformation episode or the time of fracture saturation, whichever is earliest
+                                                EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                            }
+                                            else
+                                            {
+                                                // Get the end deformation time or the time at the end of this intermediate stage, if it is earlier
+                                                EndTime = fractureGridCell.getFinalActiveTime(!PopulateEmptyGridblocks);
+                                                if (EndTime > stageEndTime)
+                                                    EndTime = stageEndTime;
+                                            }
+
+#if DEBUG_FRAC_OUTPUT
+                                            progressReporter.OutputMessage("");
+                                            progressReporter.OutputMessage("End time data: all sets");
+                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+#endif
+
+                                            // Loop through all the shadow grid cells in the gridblock
+                                            try
+                                            {
+                                                for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
+                                                    for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
+                                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
+                                                        {
+#if DEBUG_FRAC_OUTPUT
+                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+#endif
+
+                                                            // Write data to shadow grid
+                                                            if (!double.IsNaN(EndTime))
+                                                                SourceDataGrid.SetFloatingPointProperty(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, EndDeformationTime, EndTime);
+                                                        } // End loop through all the shadow grid cells in the gridblock
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                string errorMessage = string.Format("Exception thrown when writing end time data to row {0}, column {1}:", FractureGrid_RowNo, FractureGrid_ColNo);
+                                                errorMessage = errorMessage + string.Format(" EndTime {0}", (float)EndTime);
+                                                progressReporter.OutputMessage(errorMessage);
+                                                progressReporter.OutputMessage(e.Message);
+                                                progressReporter.OutputMessage(e.StackTrace);
+                                            }
+
+                                            // Update progress reporter
+                                            progressReporter.UpdateProgress(++NoCalculationElementsCompleted);
+
+                                        } // End loop through all gridblocks in the Fracture Grid
+                            } // End write end time data for all fracture sets
 
                         } // End write fracture anisotropy data
 
@@ -5860,11 +6150,19 @@ namespace DFMGenerator_GRDECL
                                             if (fractureGridCell == null)
                                                 continue;
 
-                                            // Create indices for the all the shadow grid cells corresponding to the fracture gridblock 
+                                            // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                             int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                             int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                             int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                                ShadowGrid_LastCellI = ShadowGrid_EndColI;
                                             int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                                ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                            int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                                ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
                                             // Get combined fracture porosity data from the FractureSet objects in the GridblockConfiguration object and combine them locally
                                             double uF_P32_value;
@@ -5900,7 +6198,7 @@ namespace DFMGenerator_GRDECL
                                             {
                                                 for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                     for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                        for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
                                                             progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -5961,11 +6259,19 @@ namespace DFMGenerator_GRDECL
                                             if (fractureGridCell == null)
                                                 continue;
 
-                                            // Create indices for the all the shadow grid cells corresponding to the fracture gridblock 
+                                            // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                             int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                             int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                             int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                                ShadowGrid_LastCellI = ShadowGrid_EndColI;
                                             int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                            if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                                ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                            int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                                ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
                                             // Get combined fracture porosity data from the FractureSet objects in the GridblockConfiguration object and combine them locally
                                             // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
@@ -5996,7 +6302,7 @@ namespace DFMGenerator_GRDECL
                                             {
                                                 for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                     for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                        for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
                                                             progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -6114,11 +6420,19 @@ namespace DFMGenerator_GRDECL
                                             }
                                         }
 
-                                        // Create indices for the all the shadow grid cells corresponding to the fracture gridblock 
+                                        // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                         int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                         int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                         int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                        if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                            ShadowGrid_LastCellI = ShadowGrid_EndColI;
                                         int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                        if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                            ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                        int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                        int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                        if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                            ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
                                         // Get the appropriate permeability tensor for this gridblock
                                         Tensor2S gridblockPermeabilityTensor;
@@ -6190,7 +6504,7 @@ namespace DFMGenerator_GRDECL
                                         {
                                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                 for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                    for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
 #if DEBUG_FRAC_OUTPUT
                                                         progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
@@ -6264,11 +6578,19 @@ namespace DFMGenerator_GRDECL
                                         if (fractureGridCell == null)
                                             continue;
 
-                                        // Create indices for the all the shadow grid cells corresponding to the fracture gridblock 
+                                        // Create indices for the all the shadow grid grid cells corresponding to the fracture gridblock 
                                         int ShadowGrid_FirstCellI = ShadowGrid_StartColI + (FractureGrid_ColNo * HorizontalUpscalingFactor);
                                         int ShadowGrid_FirstCellJ = ShadowGrid_StartRowJ + (FractureGrid_RowNo * HorizontalUpscalingFactor);
                                         int ShadowGrid_LastCellI = ShadowGrid_FirstCellI + (HorizontalUpscalingFactor - 1);
+                                        if (ShadowGrid_LastCellI > ShadowGrid_EndColI)
+                                            ShadowGrid_LastCellI = ShadowGrid_EndColI;
                                         int ShadowGrid_LastCellJ = ShadowGrid_FirstCellJ + (HorizontalUpscalingFactor - 1);
+                                        if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
+                                            ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
+                                        int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
+                                        int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                        if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
+                                            ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
                                         // Get the compliance and stiffness tensors for this gridblock
                                         Tensor4_2Sx2S gridblockComplianceTensor = fractureGridCell.S_b;
@@ -6288,7 +6610,7 @@ namespace DFMGenerator_GRDECL
                                         {
                                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                 for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                    for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
 #if DEBUG_FRAC_OUTPUT
                                                         progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));

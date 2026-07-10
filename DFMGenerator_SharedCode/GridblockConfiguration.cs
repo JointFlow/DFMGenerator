@@ -2475,7 +2475,7 @@ namespace DFMGenerator_SharedCode
             // Loop through the timesteps in reverse order
             for (int TimestepNo = FinalTimestep; TimestepNo > 0; TimestepNo--)
             {
-                // Loop through each fracture dipset
+                // Loop through each layer-bound fracture dipset
                 foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 {
                     foreach (FractureDipSet fds in fs.FractureDipSets)
@@ -2485,6 +2485,14 @@ namespace DFMGenerator_SharedCode
                         if ((CurrentStage == FractureEvolutionStage.Growing) || (CurrentStage == FractureEvolutionStage.ResidualActivity))
                             return TimestepEndTimes[TimestepNo] / timeUnits_Modifier;
                     }
+                }
+                // Loop through each uncoinfined fracture set
+                foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                {
+                    // Check if the set is active (or residual active); if so return the end time of the current timestep
+                    FractureEvolutionStage CurrentStage = ufs.getEvolutionStage(TimestepNo);
+                    if ((CurrentStage == FractureEvolutionStage.Growing) || (CurrentStage == FractureEvolutionStage.ResidualActivity))
+                        return TimestepEndTimes[TimestepNo] / timeUnits_Modifier;
                 }
             }
 
@@ -2743,23 +2751,23 @@ namespace DFMGenerator_SharedCode
 
         // Functions to return fracture anisotropy and connectivity indices
         /// <summary>
-        /// Fracture anisotropy index based on P32: (MaxP32 - MinP32) / (MaxP32 + MinP32)
+        /// Layer-bound fracture anisotropy index based on P32: (MaxP32 - MinP32) / (MaxP32 + MinP32)
         /// </summary>
-        /// <param name="FindMinMaxSets">If true, will find the two sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
-        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <param name="FindMinMaxSets">If true, will find the two layer-bound fracture sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no layer-bound fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>(MaxP32 - MinP32) / (MaxP32 + MinP32)</returns>
         public double P32AnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
-            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+            // If there is only one layer-bound fracture set, the anisotropy index will be 1 (completely anisotropic)
             if (NoLayerBoundFractureSets < 2)
                 return 1;
 
-            // Otherwise we will need to calculate the ratio of P32 values of the two specified sets
+            // Otherwise we will need to calculate the ratio of P32 values of the two specified layer-bound fracture sets
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
             double Max_P32 = LayerBoundFractureSets[hmin_index].combined_T_MFP32_total() + LayerBoundFractureSets[hmin_index].combined_T_uFP32_total();
             double Min_P32 = Max_P32;
-            // If required we will find and compare the sets with the highest and lowest P32 values
+            // If required we will find and compare the layer-bound fracture sets with the highest and lowest P32 values
             if (FindMinMaxSets)
                 for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                 {
@@ -2769,7 +2777,7 @@ namespace DFMGenerator_SharedCode
                     if (fs_P32 < Min_P32)
                         Min_P32 = fs_P32;
                 }
-            // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
+            // Otherwise we will just compare the layer-bound fracture sets orthogonal to ehmin and ehmax
             else
             {
                 int hmax_index = NoLayerBoundFractureSets / 2;
@@ -2780,23 +2788,23 @@ namespace DFMGenerator_SharedCode
             return (Combined_P32 > 0 ? (Max_P32 - Min_P32) / Combined_P32 : undefinedReturn);
         }
         /// <summary>
-        /// Fracture anisotropy index based on P33: (MaxP33 - MinP33) / (MaxP33 + MinP33)
+        /// Layer-bound fracture anisotropy index based on P33: (MaxP33 - MinP33) / (MaxP33 + MinP33)
         /// </summary>
-        /// <param name="FindMinMaxSets">If true, will find the two sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
-        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <param name="FindMinMaxSets">If true, will find the two layer-bound fracture sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no layer-bound fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>(MaxP33 - MinP33) / (MaxP33 + MinP33)</returns>
         public double P33AnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
-            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+            // If there is only one layer-bound fracture set, the anisotropy index will be 1 (completely anisotropic)
             if (NoLayerBoundFractureSets < 2)
                 return 1;
 
-            // Otherwise we will need to calculate the ratio of P33 values of the two specified sets
+            // Otherwise we will need to calculate the ratio of P33 values of the two specified layer-bound fracture sets
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
             double Max_P33 = LayerBoundFractureSets[hmin_index].combined_T_MFP33_total() + LayerBoundFractureSets[hmin_index].combined_T_uFP33_total();
             double Min_P33 = Max_P33;
-            // If required we will find and compare the sets with the highest and lowest P33 values
+            // If required we will find and compare the layer-bound fracture sets with the highest and lowest P33 values
             if (FindMinMaxSets)
                 for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                 {
@@ -2806,7 +2814,7 @@ namespace DFMGenerator_SharedCode
                     if (fs_P33 < Min_P33)
                         Min_P33 = fs_P33;
                 }
-            // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
+            // Otherwise we will just compare the layer-bound fracture sets orthogonal to ehmin and ehmax
             else
             {
                 int hmax_index = NoLayerBoundFractureSets / 2;
@@ -2817,23 +2825,23 @@ namespace DFMGenerator_SharedCode
             return (Combined_P33 > 0 ? (Max_P33 - Min_P33) / Combined_P33 : undefinedReturn);
         }
         /// <summary>
-        /// Fracture anisotropy index based on fracture porosity: (HMinPorosity - HMaxPorosity) / (HMinPorosity + HMaxPorosity)
+        /// Layer-bound fracture anisotropy index based on fracture porosity: (HMinPorosity - HMaxPorosity) / (HMinPorosity + HMaxPorosity)
         /// </summary>
-        /// <param name="FindMinMaxSets">If true, will find the two sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
-        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <param name="FindMinMaxSets">If true, will find the two layer-bound fracture sets with the largest and smallest P32 values; if false, will use the sets perpendicular to HMin and HMax respectively</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no layer-bound fractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>(HMinPorosity - HMaxPorosity) / (HMinPorosity + HMaxPorosity)</returns>
         public double FracturePorosityAnisotropyIndex(bool FindMinMaxSets, bool ReturnNanForUndefined)
         {
-            // If there is only one fracture set, the anisotropy index will be 1 (completely anisotropic)
+            // If there is only one layer-bound fracture set, the anisotropy index will be 1 (completely anisotropic)
             if (NoLayerBoundFractureSets < 2)
                 return 1;
 
-            // Otherwise we will need to calculate the ratio of porosity values of the two specified sets
+            // Otherwise we will need to calculate the ratio of porosity values of the two specified layer-bound fracture sets
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             int hmin_index = 0;
             double Max_Porosity = LayerBoundFractureSets[hmin_index].combined_MF_Porosity() + LayerBoundFractureSets[hmin_index].combined_uF_Porosity();
             double Min_Porosity = Max_Porosity;
-            // If required we will find and compare the sets with the highest and lowest porosity values
+            // If required we will find and compare the layer-bound fracture sets with the highest and lowest porosity values
             if (FindMinMaxSets)
                 for (int fs_Index = 1; fs_Index < NoLayerBoundFractureSets; fs_Index++)
                 {
@@ -2843,7 +2851,7 @@ namespace DFMGenerator_SharedCode
                     if (fs_Porosity < Min_Porosity)
                         Min_Porosity = fs_Porosity;
                 }
-            // Otherwise we will just compare the sets orthogonal to ehmin and ehmax
+            // Otherwise we will just compare the layer-bound fracture sets orthogonal to ehmin and ehmax
             else
             {
                 int hmax_index = NoLayerBoundFractureSets / 2;
@@ -2856,9 +2864,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Proportion of unconnected macrofracture tips - i.e. active macrofracture tips
         /// </summary>
-        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 1</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no macrofractures: if true, will return Nan; if false, will return 1</param>
         /// <returns>Ratio of a_MFP30_total to T_MFP30_total</returns>
-        public double UnconnectedTipRatio(bool ReturnNanForUndefined)
+        public double UnconnectedMFTipRatio(bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 1;
             double TotalUnconnectedTips = 0;
@@ -2874,9 +2882,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Proportion of macrofracture tips connected to relay zones - i.e. static macrofracture tips deactivated due to stress shadow interaction
         /// </summary>
-        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no macrofractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sII_MFP30_total to T_MFP30_total</returns>
-        public double RelayTipRatio(bool ReturnNanForUndefined)
+        public double RelayMFTipRatio(bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalRelayTips = 0;
@@ -2892,9 +2900,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Proportion of intersecting macrofracture tips - i.e. static macrofracture tips deactivated due to intersection with orthogonal or oblique fractures
         /// </summary>
-        /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no macrofractures: if true, will return Nan; if false, will return 0</param>
         /// <returns>Ratio of sIJ_MFP30_total to T_MFP30_total</returns>
-        public double IntersectingTipRatio(bool ReturnNanForUndefined)
+        public double IntersectingMFTipRatio(bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalIntersectingTips = 0;
@@ -2985,6 +2993,69 @@ namespace DFMGenerator_SharedCode
             return connectionsPerFracture;
         }
         /// <summary>
+        /// Proportion of unconnected unconfined fracture ray tips - i.e. active unconfined fracture ray tips and fracture rays that have reached the maximum length
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no unconfined fractures: if true, will return Nan; if false, will return 1</param>
+        /// <returns>Ratio of a_RP30 + r_RP30 + sRmax_RP30 to total RP30</returns>
+        public double UnconnectedUCFTipRatio(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 1;
+            double TotalUnconnectedTips = 0;
+            double TotalAllTips = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+            {
+                // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+                // we must always take data from the FractureCalculationData list
+                double unconnectedTips = ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsRMax_RP30_M();
+                TotalUnconnectedTips += unconnectedTips;
+                TotalAllTips += unconnectedTips + ufs.getsII_RP30_M() + ufs.getsIJ_RP30_M();
+            }
+
+            return (TotalAllTips > 0 ? TotalUnconnectedTips / TotalAllTips : undefinedReturn);
+        }
+        /// <summary>
+        /// Proportion of unconfined fracture ray tips connected to relay zones - i.e. static unconfined fracture ray tips deactivated due to stress shadow interaction
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no unconfined fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Ratio of sII_RP30 to total RP30</returns>
+        public double RelayUCFTipRatio(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double TotalRelayTips = 0;
+            double TotalAllTips = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+            {
+                // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+                // we must always take data from the FractureCalculationData list
+                double relayTips = ufs.getsII_RP30_M();
+                TotalRelayTips += relayTips;
+                TotalAllTips += ufs.geta_RP30_M() + ufs.getr_RP30_M() + relayTips + ufs.getsIJ_RP30_M() + ufs.getsRMax_RP30_M();
+            }
+
+            return (TotalAllTips > 0 ? TotalRelayTips / TotalAllTips : undefinedReturn);
+        }
+        /// <summary>
+        /// Proportion of intersecting unconfined fracture ray tips - i.e. static unconfined fracture rays deactivated due to intersection with orthogonal or oblique fractures
+        /// </summary>
+        /// <param name="ReturnNanForUndefined">Determine return value if there are no unconfined fractures: if true, will return Nan; if false, will return 0</param>
+        /// <returns>Ratio of sIJ_RP30 to total RP30</returns>
+        public double IntersectingUCFTipRatio(bool ReturnNanForUndefined)
+        {
+            double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
+            double TotalIntersectingTips = 0;
+            double TotalAllTips = 0;
+            foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+            {
+                // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+                // we must always take data from the FractureCalculationData list
+                double intersectingTips = ufs.getsIJ_RP30_M();
+                TotalIntersectingTips += intersectingTips;
+                TotalAllTips += ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsII_RP30_M() + intersectingTips + ufs.getsRMax_RP30_M();
+            }
+
+            return (TotalAllTips > 0 ? TotalIntersectingTips / TotalAllTips : undefinedReturn);
+        }
+        /// <summary>
         /// Get the mean number of unconfined fractures from other fracture sets that terminate against an unconfined fracture from a specified fracture set
         /// </summary>
         /// <param name="UnconfinedFractureSetNo">Index number of the specified fracture set</param>
@@ -3005,13 +3076,15 @@ namespace DFMGenerator_SharedCode
                 sIJm_UCFP30 += UCFTerminations[ufsI_Index, UnconfinedFractureSetNo];
 
             // Calculate the total number of fractures in dipset J
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             UnconfinedFractureSet ufsJ = UnconfinedFractureSets[UnconfinedFractureSetNo];
-            double I_UCFP30 = ufsJ.UCFP30_total();
+            double I_UCFP30 = ufsJ.getTotalUCFP30();
 
             return (I_UCFP30 > 0) ? (sIJm_UCFP30 / I_UCFP30) : undefinedReturn;
         }
         /// <summary>
-        /// Mean number of other fractures that each unconfined fracture is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of unconfined fractures
+        /// Mean number of other unconfined fractures that each unconfined fracture is connected to - i.e. total number of connections (intersections or hard-linked relays) divided by total number of unconfined fractures
         /// NB Total number of connections is defined as total number of connecting rays; multiple rays may connect to the same fracture
         /// </summary>
         /// <param name="ReturnNanForUndefined">Determine return value if there are no unconfined fractures: if true, will return Nan; if false, will return 0</param>
@@ -3021,15 +3094,16 @@ namespace DFMGenerator_SharedCode
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
             double TotalConnections = 0;
             double TotalFractures = 0;
+            // Calculate the number of connections at the ray tips
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
             {
                 // Only hard-linked relays will be counted
                 if (gd.DFNControl.LinkFracturesInStressShadow)
-                    TotalConnections += ufs.sII_UCRP30_total();
+                    TotalConnections += ufs.getsII_RP30_M();
                 // Intersections create two fracture connections, one on the terminating fracture and one on the terminated fracture
-                TotalConnections += (2 * ufs.sIJ_UCRP30_total());
-
-                // The total number of macrofractures is half of the total number of half-macrofractures
+                TotalConnections += (2 * ufs.getsIJ_RP30_M());
                 TotalFractures += ufs.getTotalUCFP30();
             }
 
@@ -3041,7 +3115,7 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         /// <param name="UnconfinedFractureSetNo">Index number of the specified unconfined fracture set</param>
         /// <param name="ReturnNanForUndefined">Determine return value if there are no fractures: if true, will return Nan; if false, will return 0</param>
-        /// <returns></returns>
+        /// <returns>Ratio of (sII_UCRP30 + ufs.sIJ_UCRP30) / TotalUCFP30</returns>
         public double ConnectionsPerUnconfinedFracture(int UnconfinedFractureSetNo, bool ReturnNanForUndefined)
         {
             double undefinedReturn = ReturnNanForUndefined ? double.NaN : 0;
@@ -3049,11 +3123,13 @@ namespace DFMGenerator_SharedCode
             UnconfinedFractureSet ufs = UnconfinedFractureSets[UnconfinedFractureSetNo];
             double TotalFractures = ufs.getTotalUCFP30();
 
-            // Calculate the number of connections at the fracture tips
+            // Calculate the number of connections at the ray tips
+            // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
+            // we must always take data from the FractureCalculationData list
             // Only hard-linked relays will be counted
             if (gd.DFNControl.LinkFracturesInStressShadow)
-                TotalConnections += ufs.sII_UCRP30_total();
-            TotalConnections += ufs.sIJ_UCRP30_total();
+                TotalConnections += ufs.getsII_RP30_M();
+            TotalConnections += ufs.getsIJ_RP30_M();
             double connectionsPerFracture = TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn;
 
             // Add the mean number of terminating fractures
