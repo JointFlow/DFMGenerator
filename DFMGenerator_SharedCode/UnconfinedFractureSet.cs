@@ -1234,11 +1234,11 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double SizeDependentApertureMultiplier { get; set; }
         /// <summary>
-        /// Current maximum aperture of a fracture of a specified radius
+        /// Current maximum aperture of a fracture of a specified effective radius
         /// </summary>
-        /// <param name="radius">Fracture radius (m)</param>
+        /// <param name="EffectiveRadius">Effective fracture radius (m)</param>
         /// <returns>Maximum fracture aperture (m)</returns>
-        public double getMaximumFractureAperture(double radius)
+        public double getMaximumFractureAperture(double EffectiveRadius)
         {
             double output;
 
@@ -1248,12 +1248,12 @@ namespace DFMGenerator_SharedCode
                     output = UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = 2 * radius * SizeDependentApertureMultiplier;
+                    output = 2 * EffectiveRadius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = 0;// -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = radius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = EffectiveRadius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = 0;// -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -1268,11 +1268,11 @@ namespace DFMGenerator_SharedCode
             return output;
         }
         /// <summary>
-        /// Current mean aperture of a fracture of a specified radius
+        /// Current mean aperture of a fracture of a specified effective radius
         /// </summary>
-        /// <param name="radius">Fracture radius (m)</param>
+        /// <param name="EffectiveRadius">Effective fracture radius (m)</param>
         /// <returns>Mean fracture aperture (m)</returns>
-        public double getMeanFractureAperture(double radius)
+        public double getMeanFractureAperture(double EffectiveRadius)
         {
             double output;
 
@@ -1282,12 +1282,12 @@ namespace DFMGenerator_SharedCode
                     output = UniformAperture;
                     break;
                 case FractureApertureType.SizeDependent:
-                    output = (4d / 3d) * radius * SizeDependentApertureMultiplier;
+                    output = (4d / 3d) * EffectiveRadius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = 0;// -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = radius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
+                    output = EffectiveRadius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = 0;// -(usePresentDayStress ? PresentDaySigmaNeff : CurrentFractureData.SigmaNeff_Final_M);
@@ -1302,12 +1302,12 @@ namespace DFMGenerator_SharedCode
             return output;
         }
         /// <summary>
-        /// Maximum aperture of a fracture of a specified radius at the end of a previous timestep
+        /// Maximum aperture of a fracture of a specified effective radius at the end of a previous timestep
         /// </summary>
-        /// <param name="radius">Fracture radius (m)</param>
+        /// <param name="EffectiveRadius">Effective fracture radius (m)</param>
         /// <param name="timestep">Index for a previous timestep</param>
         /// <returns>Maximum fracture aperture (m)</returns>
-        public double getMaximumFractureAperture(double radius, int timestep)
+        public double getMaximumFractureAperture(double EffectiveRadius, int timestep)
         {
             double output;
 
@@ -1318,12 +1318,12 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureApertureType.SizeDependent:
                     // Mean aperture 
-                    output = (4 / Math.PI) * radius * SizeDependentApertureMultiplier;
+                    output = (4 / Math.PI) * EffectiveRadius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = radius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
+                    output = EffectiveRadius * gbc.MechProps.DynamicApertureMultiplier * (8 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
@@ -1338,12 +1338,12 @@ namespace DFMGenerator_SharedCode
             return output;
         }
         /// <summary>
-        /// Mean aperture of a fracture of a specified radius at the end of a previous timestep
+        /// Mean aperture of a fracture of a specified effective radius at the end of a previous timestep
         /// </summary>
-        /// <param name="radius">Fracture radius (m)</param>
+        /// <param name="EffectiveRadius">Effective fracture radius (m)</param>
         /// <param name="timestep">Index for a previous timestep</param>
         /// <returns>Mean fracture aperture (m)</returns>
-        public double getMeanFractureAperture(double radius, int timestep)
+        public double getMeanFractureAperture(double EffectiveRadius, int timestep)
         {
             double output;
 
@@ -1354,12 +1354,12 @@ namespace DFMGenerator_SharedCode
                     break;
                 case FractureApertureType.SizeDependent:
                     // Mean aperture 
-                    output = radius * SizeDependentApertureMultiplier;
+                    output = EffectiveRadius * SizeDependentApertureMultiplier;
                     break;
                 case FractureApertureType.Dynamic:
                     double tensile_sigmaNeff = -PreviousFractureData.getFinalNormalStress(timestep);
                     if (tensile_sigmaNeff < 0) tensile_sigmaNeff = 0;
-                    output = radius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
+                    output = EffectiveRadius * gbc.MechProps.DynamicApertureMultiplier * (16 * tensile_sigmaNeff * (1 - Math.Pow(gbc.MechProps.Nu_r, 2))) / (3 * Math.PI * gbc.MechProps.E_r);
                     break;
                 case FractureApertureType.BartonBandis:
                     double compressive_sigmaNeff = PreviousFractureData.getFinalNormalStress(timestep);
@@ -1419,10 +1419,11 @@ namespace DFMGenerator_SharedCode
             return aperture;
         }
         /// <summary>
-        /// Get the Fracture compressibility, based on the aperture control data
+        /// Fracture compressibility, based on the aperture control data
         /// </summary>
+        /// <param name="EffectiveRadius">Effective fracture radius (m)</param>
         /// <returns>Elastic compressibility for Dynamic aperture, inverse of specified fracture normal stiffness for Barton-Bandis aperture, NaN for other apertures</returns>
-        public double getFractureCompressibility(double radius)
+        public double getFractureCompressibility(double EffectiveRadius)
         {
             switch (gbc.PropControl.FractureApertureControl)
             {
@@ -1436,7 +1437,7 @@ namespace DFMGenerator_SharedCode
                     // Calculate compressibility based on elastic closure
                     double geometricFactor = 8 / Math.PI;
                     double elasticMod = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
-                    double sizeFactor = radius;
+                    double sizeFactor = EffectiveRadius;
                     return geometricFactor * elasticMod * sizeFactor;
                 case FractureApertureType.BartonBandis:
                     // Use the inverse of the specified fracture normal stiffness
@@ -4055,23 +4056,23 @@ namespace DFMGenerator_SharedCode
                         continue;
                 }
 
-                // If the ray is likely to hit the fracture, we need to check each of the triangular segments comprising the fracture surface individually to get the exact intersection point
-                List<PointXYZ[]> fractureSegments = fracture.GetTriangularFractureSegmentsInXYZ();
+                // If the ray is likely to hit the fracture, we need to check each of the triangular patches comprising the fracture surface individually to get the exact intersection point
+                List<PointXYZ[]> fracturePatches = fracture.GetFracturePatchesInXYZ(true);
 
-                // Go through each triangular fracture segment and find the distance the propagating ray segment needs to propagate in order to intersect it
-                foreach (PointXYZ[] fractureSegment in fractureSegments)
+                // Go through each triangular fracture patch and find the distance the propagating ray segment needs to propagate in order to intersect it
+                foreach (PointXYZ[] fracturePatch in fracturePatches)
                 {
-                    if (fractureSegment.Length < 3)
+                    if (fracturePatch.Length < 3)
                         continue;
 
-                    // In this case we need to check if the intersection point lies within the triangle defined by the cornerpoints of the fracture segment
+                    // In this case we need to check if the intersection point lies within the triangle defined by the cornerpoints of the fracture patch
                     double distanceToIntersection;
-                    PointXYZ.getIntersectionPoint(startPoint, propagationVector, fractureSegment[0], fractureSegment[1], fractureSegment[2], CrossoverType.Restrict, out distanceToIntersection);
+                    PointXYZ.getIntersectionPoint(startPoint, propagationVector, fracturePatch[0], fracturePatch[1], fracturePatch[2], CrossoverType.Restrict, out distanceToIntersection);
 
-                    // If the propagating ray segment will never intersect the fracture segment, the function will return NaN or a negative value
+                    // If the propagating ray segment will never intersect the fracture patch, the function will return NaN or a negative value
                     if (distanceToIntersection > 0)
                     {
-                        // If it does intersect the fracture segment, check if the distance to the intersection point is less than the current maximum propagation distance
+                        // If it does intersect the fracture patch, check if the distance to the intersection point is less than the current maximum propagation distance
                         if (distanceToIntersection < MaxPropagationLength)
                         {
                             // If so, set the return value to true

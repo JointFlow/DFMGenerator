@@ -633,6 +633,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         private GridblockConfiguration nucleationGridblock;
         /// <summary>
+        /// Reference to parent UnconfinedFractureSet object of the initial nucleating segments
+        /// </summary>
+        private UnconfinedFractureSet ufs;
+        /// <summary>
         /// Check if the fracture nucleated in a specific gridblock
         /// </summary>
         /// <param name="GridblockToCheck">Reference to the gridblock to check for nucleation</param>
@@ -782,6 +786,16 @@ namespace DFMGenerator_SharedCode
             EffectiveRadius = volumeElements / areaElements;
         }
 
+        // Fracture properties
+        /// <summary>
+        /// Fracture aperture, averaged across the fracture surface
+        /// </summary>
+        public double MeanAperture { get; private set; }
+        /// <summary>
+        /// Fracture compressibility, based on the aperture control data
+        /// </summary>
+        public double Compressibility { get; private set; }
+
         // Dynamic data
         /// <summary>
         /// True if all rays are still active; otherwise false
@@ -802,7 +816,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public void PopulateData()
         {
-            // No action required
+            // Set the mean fracture aperture based on the current stress field
+            MeanAperture = ufs.getMeanFractureAperture(EffectiveRadius);
+            // Set the fracture compressibility based on the aperture control data
+            Compressibility = ufs.getFractureCompressibility(EffectiveRadius);
         }
         /// <summary>
         /// Remove zero-length segments from each ray
@@ -866,45 +883,115 @@ namespace DFMGenerator_SharedCode
             return nodeArray;
         }
         /// <summary>
-        /// Function to return a list of the XYZ coordinates of the cornerpoints of each segment of the fracture
+        /// Subdivide the fracture into planar patches and return total number of patches
         /// </summary>
-        /// <returns>A primary list, each item representing a fracture segment, containing nested arrays of cornerpoints as PointXYZ objects</returns>
-        public List<PointXYZ[]> GetFractureSegmentsInXYZ()
+        /// <param name="CreateTriangularPatches">Flag to create only triangular patches: if true, all patches will be triangular; if false, a single patch will be created representing the innermost segments, but the patches representing outer segments will still be triangular </param>
+        /// <returns>The number of planar patches comprising the fracture</returns>
+        public int GetNoFracturePatchesInXYZ(bool CreateTriangularPatches)
         {
-            // Create a new list object for the cornerpoint lists for each segment
+            // Create a counter for the number of patches
+            int noPatches = 0;
+
+            // Get a list of the position of the nodes along each ray
+            List<PointXYZ>[] nodeArray = GetRayNodes();
+
+            // If the CreateTriangularSegments flag is set to true, there will be one innermost patch per ray, unless the ray length is zero
+            if (CreateTriangularPatches)
+            {
+                foreach (List<PointXYZ> rayNodes in nodeArray)
+                    if (rayNodes.Count > 0)
+                        noPatches++;
+            }
+            // Otherwise there will be just one innermost patch
+            else
+            {
+                noPatches++;
+            }
+
+            // There will be two patches corresponding to each of the outer segments
+            foreach (List<PointXYZ> rayNodes in nodeArray)
+            {
+                int outerSegmentCount = rayNodes.Count - 2;
+                if (outerSegmentCount < 0)
+                    outerSegmentCount = 0;
+                noPatches += (outerSegmentCount * 2);
+            }
+
+            return noPatches;
+        }
+        /// <summary>
+        /// Subdivide the fracture into planar patches and return a list of the XYZ coordinates of the cornerpoints of each patch
+        /// </summary>
+        /// <param name="CreateTriangularPatches">Flag to create only triangular patches: if true, all patches will be triangular; if false, a single patch will be created representing the innermost segments, but the patches representing outer segments will still be triangular </param>
+        /// <returns>A primary list, each item representing a fracture patch, containing a nested array of cornerpoints as PointXYZ objects</returns>
+        public List<PointXYZ[]> GetFracturePatchesInXYZ(bool CreateTriangularPatches)
+        {
+            // Create a new list object for the cornerpoint lists for each patch
             // This will be populated with new objects, not references to the existing UnconfinedFractureXYZ member objects
-            List<PointXYZ[]> NewElementList = new List<PointXYZ[]>();
+            List<PointXYZ[]> NewPatchList = new List<PointXYZ[]>();
 
             // Get a list of the position of the nodes along each ray
             List<PointXYZ>[] nodeArray = GetRayNodes();
 
             // Move outwards from the centre of the fracture along the rays, one point at a time
-            // There is only one element representing the central segments
-            PointXYZ[] centralElement = new PointXYZ[NoRays];
+            PointXYZ[] centralPatch = new PointXYZ[NoRays];
             int nodeIndex = 1;
             List<PointXYZ> previousRayNodes = nodeArray[NoRays - 1];
-            for (int rayNo = 0; rayNo < NoRays; rayNo++)
+
+            // Create patch(es) corresponding to the innermost ray segments
+            // If the CreateTriangularSegments flag is set to true, we must create one triangular patch per ray, unless the ray length is zero
+            if (CreateTriangularPatches)
             {
-                List<PointXYZ> currentRayNodes = nodeArray[rayNo];
-
-                // Check if there are sufficient nodes on the rays to create this element
-                if ((previousRayNodes.Count > nodeIndex) && (currentRayNodes.Count > nodeIndex))
+                for (int rayNo = 0; rayNo < NoRays; rayNo++)
                 {
-                    // Add a copy of the first node on this ray to the array
-                    centralElement[rayNo] = new PointXYZ(currentRayNodes[nodeIndex]);
+                    List<PointXYZ> currentRayNodes = nodeArray[rayNo];
 
+                    // Check if there are sufficient nodes on the rays to create this patch
+                    if ((previousRayNodes.Count > nodeIndex) && (currentRayNodes.Count > nodeIndex))
+                    {
+                        // Create an array of three points to represent the patch
+                        PointXYZ[] nextPatch = new PointXYZ[3];
+                        // Add a copy of the fracture centrepoint to the array
+                        nextPatch[0] = new PointXYZ(NucleationPoint);
+                        // Add copies of the first node on this ray and the previous ray to the array
+                        nextPatch[1] = new PointXYZ(previousRayNodes[nodeIndex]);
+                        nextPatch[2] = new PointXYZ(currentRayNodes[nodeIndex]);
+
+                        // Add the new array to the list of patches
+                        NewPatchList.Add(nextPatch);
+                    }
+
+                    // Update the previous ray node list
+                    previousRayNodes = currentRayNodes;
+                }
+            }
+            // Otherwise just create one innermost patch
+            else
+            {
+                for (int rayNo = 0; rayNo < NoRays; rayNo++)
+                {
+                    List<PointXYZ> currentRayNodes = nodeArray[rayNo];
+
+                    // Check if there are sufficient nodes on the rays to create this element
+                    if ((previousRayNodes.Count > nodeIndex) || (currentRayNodes.Count > nodeIndex))
+                    {
+                        // Add a copy of the first node on this ray to the array
+                        centralPatch[rayNo] = new PointXYZ(currentRayNodes[nodeIndex]);
+                    }
+
+                    // Update the previous ray node list
+                    previousRayNodes = currentRayNodes;
                 }
 
-                // Update the previous ray node list
-                previousRayNodes = currentRayNodes;
+                // Add the new array to the list of patches
+                NewPatchList.Add(centralPatch);
             }
-            // Add the new array to the list of elements
-            NewElementList.Add(centralElement);
-            // Now move outwards
+
+            // Now create patches corresponding to the outer ray segments
             bool moveToNextNodeIndex;
             do
             {
-                // Increment the node index and set the next node index flag to false; this will only be set to true if there is at least one double element created
+                // Increment the node index and set the next node index flag to false; this will only be set to true if there is at least one new patch created
                 nodeIndex++;
                 moveToNextNodeIndex = false;
 
@@ -913,68 +1000,69 @@ namespace DFMGenerator_SharedCode
                 {
                     List<PointXYZ> currentRayNodes = nodeArray[rayNo];
 
-                    // Check if there are sufficient inner nodes on the rays to create one or more element
-                    if ((previousRayNodes.Count > nodeIndex - 1) && (currentRayNodes.Count > nodeIndex - 1))
+                    // Check if there are sufficient outer nodes to create one or two patches
+                    if ((previousRayNodes.Count > nodeIndex) && (currentRayNodes.Count > nodeIndex))
                     {
+                        PointXYZ outerNode1 = new PointXYZ(previousRayNodes[nodeIndex]);
+                        PointXYZ outerNode2 = new PointXYZ(currentRayNodes[nodeIndex]);
                         PointXYZ innerNode1 = new PointXYZ(previousRayNodes[nodeIndex - 1]);
                         PointXYZ innerNode2 = new PointXYZ(currentRayNodes[nodeIndex - 1]);
 
-                        // Check if there are sufficient outer nodes to create one or two elements
-                        if ((previousRayNodes.Count > nodeIndex) && (currentRayNodes.Count > nodeIndex))
+                        // With four points we can create two patches
+                        PointXYZ[] patch1 = new PointXYZ[3];
+                        patch1[0] = innerNode1;
+                        patch1[1] = innerNode2;
+                        patch1[2] = outerNode1;
+
+                        PointXYZ[] patch2 = new PointXYZ[3];
+                        patch2[0] = innerNode2;
+                        patch2[1] = outerNode1;
+                        patch2[2] = outerNode2;
+
+                        // Add the new arrays to the list of patches
+                        NewPatchList.Add(patch1);
+                        NewPatchList.Add(patch2);
+
+                        // Set the next node index flag to true
+                        moveToNextNodeIndex = true;
+                    }
+                    else if (previousRayNodes.Count > nodeIndex)
+                    {
+                        // With three points we can only create one new patch
+                        for (int nodeIndex2 = nodeIndex; nodeIndex2 < previousRayNodes.Count; nodeIndex2++)
                         {
-                            PointXYZ outerNode1 = new PointXYZ(previousRayNodes[nodeIndex]);
-                            PointXYZ outerNode2 = new PointXYZ(currentRayNodes[nodeIndex]);
+                            PointXYZ outerNode1 = new PointXYZ(previousRayNodes[nodeIndex2]);
+                            PointXYZ innerNode1 = new PointXYZ(previousRayNodes[nodeIndex - 1]);
+                            PointXYZ innerNode2 = new PointXYZ(currentRayNodes[currentRayNodes.Count - 1]);
 
-                            // With four points we can create two elements
-                            PointXYZ[] element1 = new PointXYZ[3];
-                            element1[0] = innerNode1;
-                            element1[1] = innerNode2;
-                            element1[2] = outerNode1;
+                            PointXYZ[] patch1 = new PointXYZ[3];
+                            patch1[0] = innerNode1;
+                            patch1[1] = innerNode2;
+                            patch1[2] = outerNode1;
 
-                            PointXYZ[] element2 = new PointXYZ[3];
-                            element2[0] = innerNode2;
-                            element2[1] = outerNode1;
-                            element2[2] = outerNode2;
+                            // Add the new array to the list of patches
+                            NewPatchList.Add(patch1);
+                        }
+                    }
+                    else if (currentRayNodes.Count > nodeIndex)
+                    {
+                        // With three points we can only create one new patch
+                        for (int nodeIndex2 = nodeIndex; nodeIndex2 < currentRayNodes.Count; nodeIndex2++)
+                        {
+                            PointXYZ outerNode2 = new PointXYZ(currentRayNodes[nodeIndex2]);
+                            PointXYZ innerNode1 = new PointXYZ(previousRayNodes[previousRayNodes.Count - 1]);
+                            PointXYZ innerNode2 = new PointXYZ(currentRayNodes[nodeIndex - 1]);
 
-                            // Add the new arrays to the list of elements
-                            NewElementList.Add(element1);
-                            NewElementList.Add(element2);
+                            PointXYZ[] patch1 = new PointXYZ[3];
+                            patch1[0] = innerNode1;
+                            patch1[1] = innerNode2;
+                            patch1[2] = outerNode2;
 
-                            // Set the next node index flag to false
+                            // Add the new array to the list of patches
+                            NewPatchList.Add(patch1);
+
+                            // Set the next node index flag to true
                             moveToNextNodeIndex = true;
-                        }
-                        else if (previousRayNodes.Count > nodeIndex)
-                        {
-                            // With three points we can only create elements bounding one ray - but there may be many of these
-                            for (int nodeIndex2 = nodeIndex; nodeIndex2 < previousRayNodes.Count; nodeIndex2++)
-                            {
-                                PointXYZ outerNode1 = new PointXYZ(previousRayNodes[nodeIndex2]);
-
-                                PointXYZ[] element1 = new PointXYZ[3];
-                                element1[0] = innerNode1;
-                                element1[1] = innerNode2;
-                                element1[2] = outerNode1;
-
-                                // Add the new array to the list of elements
-                                NewElementList.Add(element1);
-                            }
-                        }
-                        else if (currentRayNodes.Count > nodeIndex)
-                        {
-                            // With three points we can only create elements bounding one ray - but there may be many of these
-                            for (int nodeIndex2 = nodeIndex; nodeIndex2 < currentRayNodes.Count; nodeIndex2++)
-                            {
-                                PointXYZ outerNode2 = new PointXYZ(currentRayNodes[nodeIndex2]);
-
-                                // With three points we can only create one elements
-                                PointXYZ[] element1 = new PointXYZ[3];
-                                element1[0] = innerNode1;
-                                element1[1] = innerNode2;
-                                element1[2] = outerNode2;
-
-                                // Add the new array to the list of elements
-                                NewElementList.Add(element1);
-                            }
                         }
                     }
 
@@ -984,10 +1072,10 @@ namespace DFMGenerator_SharedCode
             }
             while (moveToNextNodeIndex);
 
-            // Return the new segment list object
-            return NewElementList;
+            // Return the new patch list object
+            return NewPatchList;
         }
-        /// <summary>
+        /*/// <summary>
         /// Function to return a list of the XYZ coordinates of the cornerpoints of each element of a triangular mesh representing the fracture
         /// </summary>
         /// <returns>A primary list, each item representing a triangular element, containing nested lists of cornerpoints as PointXYZ objects</returns>
@@ -1117,7 +1205,7 @@ namespace DFMGenerator_SharedCode
 
             // Return the new segment list object
             return NewElementList;
-        }
+        }*/
         /// <summary>
         /// Create a single list of all the outer cornerpoints of the fracture
         /// </summary>
@@ -1163,8 +1251,9 @@ namespace DFMGenerator_SharedCode
             // Assign the new object an ID number and increment the unconfined fracture counter
             UnconfinedFractureID = ++unconfinedfractureCounter;
 
-            // Set the reference to the gridblock in which the fracture nucleated
+            // Set the reference to the gridblock in which the fracture nucleated and parent unconfined fracture set
             nucleationGridblock = gbc_in;
+            ufs = ufs_in;
 
             // Fracture set index number - this will not change after fracture is initiated
             SetIndex = setIndex_in;
@@ -1217,8 +1306,9 @@ namespace DFMGenerator_SharedCode
             // Assign the new object an ID number and increment the unconfined fracture counter
             UnconfinedFractureID = ++unconfinedfractureCounter;
 
-            // Set the reference to the gridblock in which the fracture nucleated
+            // Set the reference to the gridblock in which the fracture nucleated and parent unconfined fracture set
             nucleationGridblock = fracture_in.nucleationGridblock;
+            ufs = fracture_in.ufs;
 
             // Fracture set index number - this will not change after fracture is initiated
             SetIndex = fracture_in.SetIndex;

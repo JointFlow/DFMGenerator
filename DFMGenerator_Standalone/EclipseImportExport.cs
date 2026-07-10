@@ -2166,36 +2166,28 @@ namespace DFMGenerator_Standalone
                                 UCF_outputFile.WriteLine(FAB_header_5);
 
                                 // Loop through each unconfined fracture and write data to logfile
-                                int UCFelementNo = 1;
+                                int UCFPatchNo = 1;
                                 for (int UCFracNo = 0; UCFracNo < No_UCFracs; UCFracNo++)
                                 {
                                     UnconfinedFractureXYZ frac = DFN.GlobalDFNUnconfinedFractures[UCFracNo];
-
-                                    // Set the fracture aperture
-                                    double aperture = 0;// frac.MeanAperture;
-                                    double permeability = 0;// Math.Pow(aperture, 2) / 12;
-                                    if (double.IsNaN(aperture))
-                                    {
-                                        aperture = DefaultFractureAperture;
-                                        permeability = DefaultFracturePermeability;
-                                    }
-                                    double compressibility = 0;// frac.Compressibility;
+                                    double aperture = frac.MeanAperture;
+                                    double permeability = Math.Pow(aperture, 2) / 12;
+                                    double compressibility = frac.Compressibility;
                                     if (double.IsNaN(compressibility))
                                         compressibility = DefaultFractureCompressibility;
 
-                                    // Get a list of triangular elements comprising this fracture
-                                    List<PointXYZ[]> elements = frac.GetTriangularFractureSegmentsInXYZ();
+                                    // Get a list of triangular patches comprising this fracture
+                                    List<PointXYZ[]> patches = frac.GetFracturePatchesInXYZ(true);
 
-                                    // Loop through each element in the list
-                                    // Each element will be output as a separate fracture
-                                    foreach (PointXYZ[] element in elements)
+                                    // Loop through each patch in the list
+                                    foreach (PointXYZ[] patch in patches)
                                     {
-                                        string data = string.Format("{0} {1} {2} {3} {4} {5}", UCFelementNo++, noElementCornerpoints, 1, permeability, compressibility, aperture);
+                                        string data = string.Format("{0} {1} {2} {3} {4} {5}", UCFPatchNo++, noElementCornerpoints, 1, permeability, compressibility, aperture);
                                         UCF_outputFile.WriteLine(data);
 
                                         // Loop through each cornerpoint and write the coordinates to file
                                         int pointNo = 1;
-                                        foreach (PointXYZ cornerPoint in element)
+                                        foreach (PointXYZ cornerPoint in patch)
                                         {
                                             string pointCoords = string.Format("{0} {1} {2} {3}", pointNo++, cornerPoint.X, cornerPoint.Y, cornerPoint.Z);
                                             UCF_outputFile.WriteLine(pointCoords);

@@ -509,7 +509,7 @@ namespace DFMGenerator_Ocean
             this.label_MinimumExplicitMicrofractureRadius = new System.Windows.Forms.Label();
             this.checkBox_PropagateFracturesInNucleationOrder = new System.Windows.Forms.CheckBox();
             this.label_ProbabilisticFractureNucleationLimit = new System.Windows.Forms.Label();
-            this.checkBox_CreateTriangularFractureSegments = new System.Windows.Forms.CheckBox();
+            this.checkBox_CreateTriangularFracturePatches = new System.Windows.Forms.CheckBox();
             this.label_MinimumLayerThickness = new System.Windows.Forms.Label();
             this.checkBox_LinkParallelFractures = new System.Windows.Forms.CheckBox();
             this.checkBox_CropAtGridBoundary = new System.Windows.Forms.CheckBox();
@@ -670,7 +670,7 @@ namespace DFMGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 4;
+            this.tabControl1.SelectedIndex = 5;
             this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
@@ -3360,7 +3360,7 @@ namespace DFMGenerator_Ocean
             this.groupBox_DFNGeometryControls.Controls.Add(this.label_MinimumExplicitMicrofractureRadius);
             this.groupBox_DFNGeometryControls.Controls.Add(this.checkBox_PropagateFracturesInNucleationOrder);
             this.groupBox_DFNGeometryControls.Controls.Add(this.label_ProbabilisticFractureNucleationLimit);
-            this.groupBox_DFNGeometryControls.Controls.Add(this.checkBox_CreateTriangularFractureSegments);
+            this.groupBox_DFNGeometryControls.Controls.Add(this.checkBox_CreateTriangularFracturePatches);
             this.groupBox_DFNGeometryControls.Controls.Add(this.label_MinimumLayerThickness);
             this.groupBox_DFNGeometryControls.Controls.Add(this.checkBox_LinkParallelFractures);
             this.groupBox_DFNGeometryControls.Controls.Add(this.checkBox_CropAtGridBoundary);
@@ -3692,15 +3692,15 @@ namespace DFMGenerator_Ocean
             this.label_ProbabilisticFractureNucleationLimit.TabIndex = 11;
             this.label_ProbabilisticFractureNucleationLimit.Text = "Probabilistic fracture nucleation limit:";
             // 
-            // checkBox_CreateTriangularFractureSegments
+            // checkBox_CreateTriangularFracturePatches
             // 
-            this.checkBox_CreateTriangularFractureSegments.AutoSize = true;
-            this.checkBox_CreateTriangularFractureSegments.Location = new System.Drawing.Point(6, 151);
-            this.checkBox_CreateTriangularFractureSegments.Name = "checkBox_CreateTriangularFractureSegments";
-            this.checkBox_CreateTriangularFractureSegments.Size = new System.Drawing.Size(190, 17);
-            this.checkBox_CreateTriangularFractureSegments.TabIndex = 10;
-            this.checkBox_CreateTriangularFractureSegments.Text = "Create triangular fracture segments";
-            this.checkBox_CreateTriangularFractureSegments.UseVisualStyleBackColor = true;
+            this.checkBox_CreateTriangularFracturePatches.AutoSize = true;
+            this.checkBox_CreateTriangularFracturePatches.Location = new System.Drawing.Point(6, 151);
+            this.checkBox_CreateTriangularFracturePatches.Name = "checkBox_CreateTriangularFracturePatches";
+            this.checkBox_CreateTriangularFracturePatches.Size = new System.Drawing.Size(183, 17);
+            this.checkBox_CreateTriangularFracturePatches.TabIndex = 10;
+            this.checkBox_CreateTriangularFracturePatches.Text = "Create triangular fracture patches";
+            this.checkBox_CreateTriangularFracturePatches.UseVisualStyleBackColor = true;
             // 
             // label_MinimumLayerThickness
             // 
@@ -4720,7 +4720,7 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_MinimumExplicitMicrofractureRadius;
         private System.Windows.Forms.CheckBox checkBox_PropagateFracturesInNucleationOrder;
         private System.Windows.Forms.Label label_ProbabilisticFractureNucleationLimit;
-        private System.Windows.Forms.CheckBox checkBox_CreateTriangularFractureSegments;
+        private System.Windows.Forms.CheckBox checkBox_CreateTriangularFracturePatches;
         private System.Windows.Forms.Label label_MinimumLayerThickness;
         private System.Windows.Forms.CheckBox checkBox_LinkParallelFractures;
         private System.Windows.Forms.CheckBox checkBox_CropAtGridBoundary;

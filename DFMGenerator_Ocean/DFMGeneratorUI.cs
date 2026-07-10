@@ -307,7 +307,7 @@ namespace DFMGenerator_Ocean
             UpdateTextBox(args.Argument_MaxConsistencyAngle, unitTextBox_MaxConsistencyAngle, PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth, label_MaxConsistencyAngle_Units);
             UpdateTextBox(args.Argument_MinimumLayerThickness, unitTextBox_MinimumLayerThickness, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinimumLayerThickness_Units);
             UpdateTextBox(args.Argument_MaxNoFractureSegments, textBox_MaximumFractureSegments);
-            UpdateCheckBox(args.Argument_CreateTriangularFractureSegments, checkBox_CreateTriangularFractureSegments);
+            UpdateCheckBox(args.Argument_CreateTriangularFracturePatches, checkBox_CreateTriangularFracturePatches);
             UpdateTextBox(args.Argument_ProbabilisticFractureNucleationLimit, unitTextBox_ProbabilisticFractureNucleationLimit, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateCheckBox(args.Argument_PropagateFracturesInNucleationOrder, checkBox_PropagateFracturesInNucleationOrder);
             UpdateComboBox(args.Argument_SearchAdjacentGridblocks, comboBox_SearchAdjacentGridblocks);
@@ -497,7 +497,7 @@ namespace DFMGenerator_Ocean
             args.Argument_MaxConsistencyAngle = GetDoubleFromTextBox(unitTextBox_MaxConsistencyAngle);
             args.Argument_MinimumLayerThickness = GetDoubleFromTextBox(unitTextBox_MinimumLayerThickness);
             args.Argument_MaxNoFractureSegments = GetIntFromTextBox(textBox_MaximumFractureSegments);
-            args.Argument_CreateTriangularFractureSegments = checkBox_CreateTriangularFractureSegments.Checked;
+            args.Argument_CreateTriangularFracturePatches = checkBox_CreateTriangularFracturePatches.Checked;
             args.Argument_ProbabilisticFractureNucleationLimit = GetDoubleFromTextBox(unitTextBox_ProbabilisticFractureNucleationLimit);
             args.Argument_PropagateFracturesInNucleationOrder = checkBox_PropagateFracturesInNucleationOrder.Checked;
             args.Argument_SearchAdjacentGridblocks = comboBox_SearchAdjacentGridblocks.SelectedIndex;

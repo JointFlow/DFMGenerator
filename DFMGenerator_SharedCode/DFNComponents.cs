@@ -121,6 +121,8 @@ namespace DFMGenerator_SharedCode
         {
             return fs.convertIJKtoXYZ(CentrePoint);
         }
+
+        // Microfracture properties
         /// <summary>
         /// Mean fracture aperture in the current stress field (averaged across fracture surface)
         /// </summary>
@@ -270,6 +272,8 @@ namespace DFMGenerator_SharedCode
         /// Fracture dip - this will not change after fracture is initiated
         /// </summary>
         public double Dip { get; private set; }
+
+        // Microfracture properties
         /// <summary>
         /// Fracture aperture, averaged across the fracture surface
         /// </summary>
@@ -308,7 +312,7 @@ namespace DFMGenerator_SharedCode
             // Fracture dip - this was set at object initialisation and will not have changed
             // Set the mean fracture aperture based on the current stress field
             MeanAperture = uF_local.MeanAperture();
-            // Set tracture compressibility based on the aperture control data
+            // Set the fracture compressibility based on the aperture control data
             Compressibility = uF_local.Compressibility();
 
             // Microfracture dynamic data - this will be fixed since all propagation calculations are carried out on the local DFNs
@@ -915,6 +919,8 @@ namespace DFMGenerator_SharedCode
         {
             fs.getBoundaryCorners(PropNodeBoundary, out UpperLeftCorner, out UpperRightCorner, out LowerLeftCorner, out LowerRightCorner);
         }
+
+        // Macrofracture segment properties
         /// <summary>
         /// Mean fracture aperture in the current stress field (averaged across fracture surface)
         /// </summary>
@@ -1261,6 +1267,8 @@ namespace DFMGenerator_SharedCode
         /// List of flags for zero length segments
         /// </summary>
         public Dictionary<PropagationDirection, List<bool>> ZeroLengthSegments { get; private set; }
+
+        // Macrofracture properties
         /// <summary>
         /// List of mean apertures (in current stress field) of each segment
         /// </summary>

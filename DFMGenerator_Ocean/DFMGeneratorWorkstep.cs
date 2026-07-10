@@ -1517,9 +1517,10 @@ namespace DFMGenerator_Ocean
                     // Maximum number of fracture segments that can be generated per gridblock
                     // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
                     int MaxNoFractureSegments = arguments.Argument_MaxNoFractureSegments;
-                    // Flag to create triangular instead of quadrilateral macrofracture segments; will increase the total number of segments but generation algorithm may run faster
-                    // If set to true, microfractures will comprise a series of coplanar triangles with vertices at the centre, rather than a single polygon
-                    bool CreateTriangularFractureSegments = arguments.Argument_CreateTriangularFractureSegments;
+                    // Flag to create only triangular DFN fracture patches; will increase the total number of patches but ensure no geometric errors due to flattening of patches
+                    // If set to true, all fractures will be subdivided into triangular patches
+                    // If set to false, microfractures and the innermost patches of unconfined fractures will comprise a single polygon, while layer-bound fractures will comprise quadrilateral patches
+                    bool CreateTriangularFracturePatches = arguments.Argument_CreateTriangularFracturePatches;
                     // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
                     // Set to 0 to disable probabilistic fracture nucleation
                     // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -2448,7 +2449,7 @@ namespace DFMGenerator_Ocean
                     explicitInputParams += string.Format("Minimum layer thickness cutoff: {0}{1}\n", toProjectLayerThicknessUnits.Convert(MinimumLayerThickness), LayerThicknessUnits);
                     if (MaxNoFractureSegments>0)
                         explicitInputParams += string.Format("Maximum number of new fractures that can be generated per gridblock per timestep: {0}\n", MaxNoFractureSegments);
-                    if (CreateTriangularFractureSegments)
+                    if (CreateTriangularFracturePatches)
                         explicitInputParams += "Fractures represented by triangular segments\n";
                     if (ProbabilisticFractureNucleationLimit > 0)
                         explicitInputParams += string.Format("Use probabilistic fracture nucleation if fewer than {0} fractures nucleate per timestep\n", ProbabilisticFractureNucleationLimit);
@@ -7879,14 +7880,14 @@ namespace DFMGenerator_Ocean
                                                 // Get a list of cornerpoints around the circumference of the fracture, as PointXYZ objects
                                                 List<PointXYZ> CornerPoints = uF.GetFractureCornerpointsInXYZ(Number_uF_Points);
 
-                                                if (CreateTriangularFractureSegments)
+                                                if (CreateTriangularFracturePatches)
                                                 {
                                                     try
                                                     {
                                                         // Get a reference to the centre of the fracture as a PointXYZ object
                                                         PointXYZ CP1 = uF.CentrePoint;
 
-                                                        // Loop through each cornerpoint creating a new triangular element
+                                                        // Loop through each cornerpoint creating a new triangular patch
                                                         for (int cornerPointNo = 0; cornerPointNo < Number_uF_Points; cornerPointNo++)
                                                         {
                                                             // Create a collection of Petrel Point3 objects
@@ -7977,7 +7978,7 @@ namespace DFMGenerator_Ocean
                                                         // Get a reference to the cornerpoint list for the segment
                                                         List<PointXYZ> segment = MF.SegmentCornerPoints[dir][segmentNo];
 
-                                                        if (CreateTriangularFractureSegments)
+                                                        if (CreateTriangularFracturePatches)
                                                         {
                                                             try
                                                             {
@@ -7986,8 +7987,8 @@ namespace DFMGenerator_Ocean
                                                                 List<Point3> Petrel_CornerPoints2 = new List<Point3>();
 
                                                                 // Convert each cornerpoint from a PointXYZ to a Point3 object and add it to the correct Petrel point collection
-                                                                // Since the four cornerpoints in the original list are arranged in order moving around the edge of the fracture segment, we will use the first, second and third points for the first triangular element
-                                                                // and the third, fourth and first points for the second triangular element
+                                                                // Since the four cornerpoints in the original list are arranged in order moving around the edge of the fracture segment, we will use the first, second and third points for the first triangular patch
+                                                                // and the third, fourth and first points for the second triangular patch
                                                                 PointXYZ CP1 = segment[0];
                                                                 PointXYZ CP2 = segment[1];
                                                                 PointXYZ CP3 = segment[2];
@@ -8071,76 +8072,36 @@ namespace DFMGenerator_Ocean
                                                 // Get the unconfined fracture set
                                                 int UCF_set = UCF.SetIndex;
 
-                                                if (CreateTriangularFractureSegments)
+                                                // Get a list of triangular patches comprising this fracture
+                                                List<PointXYZ[]> patches = UCF.GetFracturePatchesInXYZ(CreateTriangularFracturePatches);
+
+                                                // Loop through each patch in the list
+                                                foreach (PointXYZ[] patch in patches)
                                                 {
-                                                    // Get a list of triangular elements comprising this fracture
-                                                    List<PointXYZ[]> elements = UCF.GetTriangularFractureSegmentsInXYZ();
-
-                                                    // Loop through each element in the list
-                                                    // Each element will be output as a separate fracture
-                                                    foreach (PointXYZ[] element in elements)
+                                                    try
                                                     {
-                                                        try
-                                                        {
-                                                            // Create a collection of Petrel Point3 objects
-                                                            List<Point3> Petrel_CornerPoints = new List<Point3>();
+                                                        // Create a collection of Petrel Point3 objects
+                                                        List<Point3> Petrel_CornerPoints = new List<Point3>();
 
-                                                            // Add each cornerpoint in the element to the Petrel point collection
-                                                            foreach (PointXYZ CP in element)
-                                                                Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
+                                                        // Add each cornerpoint in the element to the Petrel point collection
+                                                        foreach (PointXYZ CP in patch)
+                                                            Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
 
-                                                            // Create a new fracture patch object
-                                                            FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
+                                                        // Create a new fracture patch object
+                                                        FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
 
-                                                            // Assign it to the correct set, if required
-                                                            if (assignOrientationSets)
-                                                                Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
-                                                        }
-                                                        catch (Exception e)
-                                                        {
-                                                            string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
-                                                            foreach (PointXYZ CornerPoint in element)
-                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                        }
+                                                        // Assign it to the correct set, if required
+                                                        if (assignOrientationSets)
+                                                            Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
                                                     }
-                                                }
-                                                else
-                                                {
-                                                    // Get a list of triangular elements comprising this fracture
-                                                    List<PointXYZ[]> elements = UCF.GetFractureSegmentsInXYZ();
-
-                                                    // Loop through each element in the list
-                                                    // Each element will be output as a separate fracture
-                                                    foreach (PointXYZ[] element in elements)
+                                                    catch (Exception e)
                                                     {
-                                                        try
-                                                        {
-                                                            // Create a collection of Petrel Point3 objects
-                                                            List<Point3> Petrel_CornerPoints = new List<Point3>();
-
-                                                            // Add each cornerpoint in the element to the Petrel point collection
-                                                            foreach (PointXYZ CP in element)
-                                                                Petrel_CornerPoints.Add(new Point3(CP.X, CP.Y, CP.Z));
-
-                                                            // Create a new fracture patch object
-                                                            FracturePatch Petrel_FractureSegment = fractureNetwork.CreateFracturePatch(Petrel_CornerPoints);
-
-                                                            // Assign it to the correct set, if required
-                                                            if (assignOrientationSets)
-                                                                Petrel_FractureSegment.FractureSetValue = (UCF_set + 1); // Gridblock fracture sets are zero referenced, Petrel fracture sets are not
-                                                        }
-                                                        catch (Exception e)
-                                                        {
-                                                            string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
-                                                            foreach (PointXYZ CornerPoint in element)
-                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
-                                                        }
+                                                        string errorMessage = string.Format("Exception thrown when writing unconfined fracture:");
+                                                        foreach (PointXYZ CornerPoint in patch)
+                                                            errorMessage = errorMessage + string.Format(" ({0},{1},{2})", CornerPoint.X, CornerPoint.Y, CornerPoint.Z);
+                                                        PetrelLogger.InfoOutputWindow(errorMessage);
+                                                        PetrelLogger.InfoOutputWindow(e.Message);
+                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
                                                     }
                                                 }
 
@@ -8219,12 +8180,9 @@ namespace DFMGenerator_Ocean
                                                 double uF_Permeability = Math.Pow(uF_Aperture, 2) / 12;
                                                 //double uF_Compressibility = uF.Compressibility;
 
-                                                if (CreateTriangularFractureSegments)
+                                                if (CreateTriangularFracturePatches)
                                                 {
-                                                    // Get a reference to the centre of the fracture as a PointXYZ object
-                                                    //PointXYZ CP1 = uF.CentrePoint;
-
-                                                    // Loop through each cornerpoint creating a new triangular element
+                                                    // Loop through each triangular patch
                                                     for (int cornerPointNo = 0; cornerPointNo < Number_uF_Points; cornerPointNo++)
                                                     {
                                                         // Assign the appropriate fracture properties to the new patch object
@@ -8305,7 +8263,7 @@ namespace DFMGenerator_Ocean
                                                         double MF_Permeability = Math.Pow(MF_Aperture, 2) / 12;
                                                         //double MF_Compressibility = MF.SegmentCompressibility[dir][segmentNo];
 
-                                                        if (CreateTriangularFractureSegments)
+                                                        if (CreateTriangularFracturePatches)
                                                         {
                                                             // Assign the appropriate fracture properties to the two new patch objects
                                                             try
@@ -8365,6 +8323,52 @@ namespace DFMGenerator_Ocean
                                                     }
 
                                                 }
+
+                                                // Update progress bar
+                                                progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                            }
+
+                                            // Loop through all the unconfined fractures in the DFN
+                                            foreach (UnconfinedFractureXYZ UCF in DFN.GlobalDFNUnconfinedFractures)
+                                            {
+                                                // Check if calculation has been aborted
+                                                if (progressBarWrapper.abortCalculation())
+                                                {
+                                                    // Clean up any resources or data
+                                                    break;
+                                                }
+
+                                                // Get the fracture aperture, permeability and compressibility
+                                                double UCF_Aperture = UCF.MeanAperture;
+                                                double UCF_Permeability = Math.Pow(UCF_Aperture, 2) / 12;
+                                                //double UCF_Compressibility = UCF.Compressibility;
+
+                                                // Get the number of unconfined fracture patches that were created for this fracture
+                                                int finalUCFPatchNo = PatchNo + UCF.GetNoFracturePatchesInXYZ(CreateTriangularFracturePatches);
+
+                                                    // Loop through each patch in the list
+                                                    for (; PatchNo < finalUCFPatchNo; PatchNo++)
+                                                    {
+                                                        try
+                                                        {
+                                                            if (PatchNo < NoPatches)
+                                                            {
+                                                                fractureAperture[PatchNo].Value = UCF_Aperture;
+                                                                fracturePermeability[PatchNo].Value = UCF_Permeability;
+                                                                //if (!double.IsNaN(uF_Compressibility))
+                                                                //    fractureCompressibility[PatchNo].Value = UCF_Compressibility;
+                                                            }
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing properties to unconfined fracture patch {0}:", PatchNo);
+                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", UCF_Aperture, UCF_Permeability);
+                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", UCF_Aperture, UCF_Permeability, UCF_Compressibility);
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+                                                    }
 
                                                 // Update progress bar
                                                 progressBarWrapper.UpdateProgress(++noFracturesGenerated);
@@ -9200,7 +9204,7 @@ namespace DFMGenerator_Ocean
             private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
             private int argument_MaxNoFractureSegments = 1000;
-            private bool argument_CreateTriangularFractureSegments = false;
+            private bool argument_CreateTriangularFracturePatches = false;
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
             private bool argument_PropagateFracturesInNucleationOrder = true;
             private int argument_SearchAdjacentGridblocks = 2;
@@ -9950,11 +9954,11 @@ namespace DFMGenerator_Ocean
                 set { this.argument_MinimumLayerThickness = value; }
             }
 
-            [Description("Create triangular fracture segments?", "Flag to create triangular instead of quadrilateral fracture segments; will increase the total number of segments but generation algorithm may run faster")]
-            public bool Argument_CreateTriangularFractureSegments
+            [Description("Create triangular fracture patches?", "Flag to create only triangular DFN fracture patches; will increase the total number of patches but ensure no geometric errors due to flattening of patches")]
+            public bool Argument_CreateTriangularFracturePatches
             {
-                internal get { return this.argument_CreateTriangularFractureSegments; }
-                set { this.argument_CreateTriangularFractureSegments = value; }
+                internal get { return this.argument_CreateTriangularFracturePatches; }
+                set { this.argument_CreateTriangularFracturePatches = value; }
             }
 
             [OptionalInWorkflow]
@@ -14471,7 +14475,7 @@ namespace DFMGenerator_Ocean
                 argument_MaxConsistencyAngle = Math.PI / 4;
                 argument_MinimumLayerThickness = 1;
                 argument_MaxNoFractureSegments = 1000;
-                argument_CreateTriangularFractureSegments = false;
+                argument_CreateTriangularFracturePatches = false;
                 argument_ProbabilisticFractureNucleationLimit = double.NaN;
                 argument_PropagateFracturesInNucleationOrder = true;
                 argument_SearchAdjacentGridblocks = 2;
