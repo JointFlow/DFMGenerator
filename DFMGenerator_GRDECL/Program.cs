@@ -707,6 +707,9 @@ namespace DFMGenerator_GRDECL
             // Flag for whether to average mechanical properties properties across the shadow grid cells, or take the value from the top middle cell
             bool AverageMechanicalPropertyData = true;
 
+            // Create a list of cleavage planes
+            List<Cleavage> Cleavages = new List<Cleavage>();
+
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
             // Do not use DuctileBoundary as this is not yet implemented
@@ -4736,6 +4739,17 @@ namespace DFMGenerator_GRDECL
                         gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
 #if DEBUG_FRAC_INPUT
                         progressReporter.OutputMessage(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
+#endif
+
+                        // Set the mechanical property overrides for any fracture sets parallel to the defined cleavages
+                        // NB Cleavage overrides are currently applied only to unconfined fracture sets, and not to layer-bound fracture sets
+                        List<Cleavage> local_Cleavages = new List<Cleavage>();
+                        foreach (Cleavage cleavage in Cleavages)
+                            local_Cleavages.Add(new Cleavage(cleavage));
+                        gc.SetCleavages(local_Cleavages, MaxConsistencyAngle);
+#if DEBUG_FRAC_INPUT
+                        foreach (Cleavage cleavage in local_Cleavages)
+                            progressReporter.OutputMessage(string.Format("Set cleavage normal to ({0},{1},{2}): Gc {3}, MuFr {4}", cleavage.NormalVector.Component(VectorComponents.X), cleavage.NormalVector.Component(VectorComponents.Y), cleavage.NormalVector.Component(VectorComponents.Z), cleavage.GcOverride, cleavage.MuFrOverride));
 #endif
 
                         // Add the gridblock to the grid

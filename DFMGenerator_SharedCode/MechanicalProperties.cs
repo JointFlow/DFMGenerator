@@ -15,6 +15,68 @@ namespace DFMGenerator_SharedCode
     /// </summary>
     public enum bType { LessThan2, Equals2, GreaterThan2 };
 
+    class Cleavage
+    {
+        /// <summary>
+        /// Crack surface energy (J/m2)
+        /// </summary>
+        public double GcOverride { get; private set; }
+        /// <summary>
+        /// Sliding friction coefficient on the fracture plane
+        /// </summary>
+        public double MuFrOverride { get; private set; }
+        /// <summary>
+        /// Unit vector normal to the cleavage orientation
+        /// </summary>
+        public VectorXYZ NormalVector { get; private set; }
+
+        // Constructors
+        /// <summary>
+        /// Define a cleavage by its normal vector 
+        /// </summary>
+        /// <param name="GcOverride_in">Crack surface energy for fractures parallel to the cleavage plane (J/m2)</param>
+        /// <param name="MuFrOverride_in">Sliding friction coefficient on fractures parallel to the cleavage plane</param>
+        /// <param name="NormalVector_in">Normal vector to the fracture plane</param>
+        public Cleavage (double GcOverride_in, double MuFrOverride_in, VectorXYZ NormalVector_in)
+        {
+            // Set the mechanical property overrides
+            GcOverride = GcOverride_in;
+            MuFrOverride = MuFrOverride_in;
+
+            // Set the cleavage orientation normal vector
+            NormalVector = NormalVector_in.GetNormalisedVector();
+        }
+        /// <summary>
+        /// Define a cleavage by its strike and dip 
+        /// </summary>
+        /// <param name="GcOverride_in">Crack surface energy for fractures parallel to the cleavage plane (J/m2)</param>
+        /// <param name="MuFrOverride_in">Sliding friction coefficient on fractures parallel to the cleavage plane</param>
+        /// <param name="Strike_in">Cleavage strike (radians)</param>
+        /// <param name="Dip_in">Cleavage dip (radians)</param>
+        public Cleavage(double GcOverride_in, double MuFrOverride_in, double Strike_in, double Dip_in)
+        {
+            // Set the mechanical property overrides
+            GcOverride = GcOverride_in;
+            MuFrOverride = MuFrOverride_in;
+
+            // Set the cleavage orientation normal vector
+            NormalVector = VectorXYZ.GetNormalToPlane(Strike_in + (Math.PI / 2), Dip_in);
+        }
+        /// <summary>
+        /// Constructor to create a copy of an existing Cleavage object 
+        /// </summary>
+        /// <param name="Cleavage_in"></param>
+        public Cleavage(Cleavage Cleavage_in)
+        {
+            // Set the mechanical property overrides
+            GcOverride = Cleavage_in.GcOverride;
+            MuFrOverride = Cleavage_in.MuFrOverride;
+
+            // Create a new copy of the cleavage orientation normal vector
+            NormalVector = new VectorXYZ(Cleavage_in.NormalVector);
+        }
+    }
+
     /// <summary>
     /// Contains data representing the mechanical properties of a single gridblock
     /// </summary>

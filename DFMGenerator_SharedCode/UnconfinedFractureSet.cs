@@ -1521,7 +1521,7 @@ namespace DFMGenerator_SharedCode
             bool sigmad_positive = false;
             if (normalStressMagnitude <= PreviousFractureData.MaxDrivingStressRoundingError)
                 sigmad_positive = true;
-            else if ((float)shearStressMagnitude - (float)(gbc.MechProps.MuFr * normalStressMagnitude) >= -PreviousFractureData.MaxDrivingStressRoundingError)
+            else if ((float)shearStressMagnitude - (float)(MuFr * normalStressMagnitude) >= -PreviousFractureData.MaxDrivingStressRoundingError)
                 sigmad_positive = true;
             bool sigmad_changed = (sigmad_positive != previous_sigmad_positive);
 
@@ -1603,7 +1603,7 @@ namespace DFMGenerator_SharedCode
                 else
                 {
                     // For shear fractures, the fracture compliance tensor base is most easily generated using a combination of outer vector product and outer tensor product operators on the normal and shear displacement vectors
-                    double mufr = gbc.MechProps.MuFr;
+                    double mufr = MuFr;
                     VectorXYZ strikeVector = StrikeVector;
                     Tensor2S normal_OP_mu_normal = normalVector ^ (mufr * normalVector);
                     Tensor2S normal_OP_dip = normalVector ^ dipVector;
@@ -1663,6 +1663,48 @@ namespace DFMGenerator_SharedCode
                 double elasticityMultiplier = (1 - Math.Pow(gbc.MechProps.Nu_r, 2)) / gbc.MechProps.E_r;
                 double fractureDensityMultiplier = (4 / Math.PI) * Fractures.FP33_total;
                 return elasticityMultiplier * fractureDensityMultiplier * Fracture_ComplianceTensorBase;
+            }
+        }
+        // Mechanical property overrides to account for fractures forming along cleavage planes; if these are not set, mechanical property values for the gridblock will be used
+        /// <summary>
+        /// Crack surface energy (J/m2)
+        /// </summary>
+        private double GcOverride;
+        /// <summary>
+        /// Crack surface energy (J/m2)
+        /// </summary>
+        public double Gc { get { return double.IsNaN(GcOverride) ? gbc.MechProps.Gc : GcOverride; } }
+        /// <summary>
+        /// Critical stress intensity factor (fracture toughness) 
+        /// </summary>
+        private double KcOverride;
+         /// <summary>
+        /// Critical stress intensity factor (fracture toughness) 
+        /// </summary>
+        public double Kc { get { return double.IsNaN(KcOverride) ? gbc.MechProps.Kc : KcOverride; } }
+        /// <summary>
+        /// Sliding friction coefficient on the fracture plane
+        /// </summary>
+        private double MuFrOverride;
+        /// <summary>
+        /// Sliding friction coefficient on the fracture plane
+        /// </summary>
+        public double MuFr { get { return double.IsNaN(MuFrOverride) ? gbc.MechProps.MuFr : MuFrOverride; } }
+        /// <summary>
+        /// Set the mechanical property overrides for this fracture set
+        /// </summary>
+        /// <param name="Gc_in">Override value for crack surface energy (J/m2); will also override Critical stress intensity factor; set to NaN to disable overrides for these properties</param>
+        /// <param name="MuFr_in">Override value for sliding friction coefficient on thefracture plane; set to NaN to disable override for this property</param>
+        public void SetMechanicalPropertyOverrides(double Gc_in, double MuFr_in)
+        {
+            if (Gc_in>0)
+            {
+                GcOverride = Gc_in;
+                KcOverride = Math.Sqrt((Gc_in * gbc.MechProps.E_r) / (1 - Math.Pow(gbc.MechProps.Nu_r, 2)));
+            }
+            if(MuFr_in >= 0)
+            {
+                MuFrOverride = MuFr_in;
             }
         }
 
@@ -1812,7 +1854,7 @@ namespace DFMGenerator_SharedCode
                 if (PresentDaySigmaNeff <= 0)
                     return PresentDayTau;
                 // If the fractures are closed, the shear driving stress and slip potential will equal the shear stress on the fractures minus the frictional traction
-                return PresentDayTau - (gbc.MechProps.MuFr * PresentDaySigmaNeff);
+                return PresentDayTau - (MuFr * PresentDaySigmaNeff);
             }
         }
         /// <summary>
@@ -2352,9 +2394,7 @@ namespace DFMGenerator_SharedCode
                 // Cache constants locally
                 double b = gbc.MechProps.b_factor;
                 double CapA = gbc.MechProps.CapA;
-                double Kc = gbc.MechProps.Kc;
-                double SqrtPi = Math.Sqrt(Math.PI);
-                double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+                double sqrtpi_Kc_factor = 2 / (Math.Sqrt(Math.PI) * Kc);
 
                 // Set start time to timestep
                 time = PreviousFractureData.getStartTime(timestep);
@@ -2403,9 +2443,7 @@ namespace DFMGenerator_SharedCode
                 // Cache constants locally
                 double b = gbc.MechProps.b_factor;
                 double CapA = gbc.MechProps.CapA;
-                double Kc = gbc.MechProps.Kc;
-                double SqrtPi = Math.Sqrt(Math.PI);
-                double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+                double sqrtpi_Kc_factor = 2 / (Math.Sqrt(Math.PI) * Kc);
 
                 // Subtract start time of timestep
                 time -= PreviousFractureData.getStartTime(timestep);
@@ -2578,6 +2616,10 @@ namespace DFMGenerator_SharedCode
             // Set the ratio for comparing initial and rate of change of stress values; if the initial value is less than the rate of change times the comparison ratio, we can round the initial value down to zero
             const double stress_comparator = 0.01;
 
+            // Cache the coefficient of friction on the fractures locally
+            // This may be overridden if the fracture set is parallel to a cleavage plane
+            double mufr = MuFr;
+
             // Get the magnitudes of the initial values and the rate of change of the normal and shear stresses acting on the fractures
             // NB sneff, taustrike and taudip represent three orthogonal components of the stress acting on the fault: normal, shear in the direction of strike, and shear in the downdip direction
             // These can be calculated by taking the dot product of the (initial or rate of change of) stress vector on the fracture and the normal, strike or downdip vector of the fracture
@@ -2639,14 +2681,11 @@ namespace DFMGenerator_SharedCode
                 if ((float)tau_cst > (float)tau_var)
                     tau_var = ((taudip_cst * taudip_var) + (taustrike_cst * taustrike_var)) / tau_cst;
 
-                // We also need to know the coefficient of friction on the fractures
-                double MuFr = gbc.MechProps.MuFr;
-
                 // We can now calculate U and V as the shear stress on the fractures minus the frictional traction
                 // NB the rate of change of driving stress may not be constant, since tau_var may change through time
                 // Here we set V to the rate of change of driving stress at the start of the timestep
-                U = tau_cst - (MuFr * sneff_cst);
-                V = tau_var - (MuFr * sneff_var);
+                U = tau_cst - (mufr * sneff_cst);
+                V = tau_var - (mufr * sneff_var);
             }
 
             // Set the constant and variable components of normal stress on the fracture in the current Fracture Calculation Data object
@@ -2671,7 +2710,7 @@ namespace DFMGenerator_SharedCode
                 // The rates of change of these components do not change through time
 
                 // Calculate the multiplier for the normal stress component
-                double mufr_squared = Math.Pow(gbc.MechProps.MuFr, 2);
+                double mufr_squared = mufr * mufr;
 
                 // Calculate the three quadratic terms
                 double a_term = Math.Pow(taustrike_var, 2) + Math.Pow(taudip_var, 2) - (mufr_squared * Math.Pow(sneff_var, 2));
@@ -2745,9 +2784,7 @@ namespace DFMGenerator_SharedCode
                 double beta = gbc.MechProps.beta;
                 bool bis2 = (gbc.MechProps.GetbType() == bType.Equals2);
                 double CapA = gbc.MechProps.CapA;
-                double Kc = gbc.MechProps.Kc;
-                double SqrtPi = Math.Sqrt(Math.PI);
-                double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+                double sqrtpi_Kc_factor = 2 / (Math.Sqrt(Math.PI) * Kc);
                 //double alpha = CapA * Math.Pow(sqrtpi_Kc_factor, b);
 
                 // If the fracture set has not yet been activated, activate the fracture set
@@ -3059,11 +3096,10 @@ namespace DFMGenerator_SharedCode
             }
             else
             {
-                double MuFr = gbc.MechProps.MuFr;
                 double sinpitch = VectorXYZ.Sin_trim(ShearStressPitch);
                 double cospitch = VectorXYZ.Cos_trim(ShearStressPitch);
 
-                DrivingStressVector = ((taudip_cst - (sinpitch * MuFr * sneff_cst)) * dipVector) + ((taustrike_cst - (cospitch * MuFr * sneff_cst)) * strikeVector);
+                DrivingStressVector = ((taudip_cst - (sinpitch * mufr * sneff_cst)) * dipVector) + ((taustrike_cst - (cospitch * mufr * sneff_cst)) * strikeVector);
             }
 
             // Return the calculated maximum duration
@@ -3142,9 +3178,7 @@ namespace DFMGenerator_SharedCode
             double beta = MechProps.beta;
             bType b_type = MechProps.GetbType();
             bool bis2 = (b_type == bType.Equals2);
-            double Kc = MechProps.Kc;
-            double SqrtPi = Math.Sqrt(Math.PI);
-            double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
+            double sqrtpi_Kc_factor = 2 / (Math.Sqrt(Math.PI) * Kc);
             //double alpha = CapA * Math.Pow(sqrtpi_Kc_factor, b);
             // Flag to show that the fracture set has not been deactivated
             bool FracturesActive = !(CurrentFractureData.EvolutionStage == FractureEvolutionStage.Deactivated);
@@ -4432,6 +4466,11 @@ namespace DFMGenerator_SharedCode
 
             // Set the maximum historic active fracture volumetric ratio to 0
             max_historic_a_UCFP32 = 0;
+
+            // Set the mechanical property overrides to NaN - this disables the mechanical property overrides
+            GcOverride = double.NaN;
+            KcOverride = double.NaN;
+            MuFrOverride = double.NaN;
         }
     }
 }

@@ -1654,6 +1654,37 @@ namespace DFMGenerator_SharedCode
             return setName;
         }
         /// <summary>
+        /// Set the mechanical property overrides for any fracture sets parallel to the defined cleavages
+        /// </summary>
+        /// <param name="Cleavages_in">List of Cleavage objects, one per cleavage orientation</param>
+        /// <param name="MaxConsistencyAngle_in">Maximum allowed variation in orientation between fracture sets and cleavages; if no fracture sets are found within this limit, no mechanical property overrides will be set</param>
+        public void SetCleavages(List<Cleavage> Cleavages_in, double MaxConsistencyAngle_in)
+        {
+            // NB Cleavage overrides are currently applied only to unconfined fracture sets, and not to layer-bound fracture sets
+            if (NoUnconfinedFractureSets > 0)
+                foreach (Cleavage cleavage in Cleavages_in)
+                {
+                    // Find the unconfined fracture set closest to the cleavage orientation
+                    double minimumOrientationMismatch = double.PositiveInfinity;
+                    UnconfinedFractureSet closestSet = null;
+                    foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
+                    {
+                        double orientationMismatch = Math.Abs(ufs.NormalVector & cleavage.NormalVector);
+                        if (minimumOrientationMismatch > orientationMismatch)
+                        {
+                            minimumOrientationMismatch = orientationMismatch;
+                            closestSet = ufs;
+                        }
+                    }
+
+                    // Check if the orientation mismatch for the closest set is less than the maximum consistency angle
+                    // If so set the mechanical property overrides
+                    // Otherwise no overrides will be set
+                    if ((Math.Acos(minimumOrientationMismatch) <= MaxConsistencyAngle_in) && !(closestSet is null))
+                        closestSet.SetMechanicalPropertyOverrides(cleavage.GcOverride, cleavage.MuFrOverride);
+                }
+        }
+        /// <summary>
         /// Array of azimuthal stress shadow multipliers relating stress shadows for different fracture sets
         /// </summary>
         private double[,] FaaIJ;
@@ -5282,8 +5313,6 @@ namespace DFMGenerator_SharedCode
             double b = MechProps.b_factor;
             bool bis2 = (MechProps.GetbType() == bType.Equals2);
             double beta = MechProps.beta;
-            double Kc = MechProps.Kc;
-            double sqrtpi_Kc_factor = 2 / (SqrtPi * Kc);
             // initial_uF_factor is a component related to the maximum microfracture radius rmax, included in Cum_hGamma to represent the initial population of seed macrofractures: ln(rmax) for b=2; rmax^(1/beta) for b!=2
             double initial_uF_factor = Initial_uF_factor;
             // hb1_factor is (h/2)^(b/2), = h/2 if b=2

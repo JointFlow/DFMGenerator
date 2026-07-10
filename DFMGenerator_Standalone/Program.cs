@@ -4,7 +4,7 @@
 #define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
-//#define DEBUG_FRACS
+#define DEBUG_FRACS
 
 using System;
 using System.Collections.Generic;
@@ -827,6 +827,11 @@ namespace DFMGenerator_Standalone
             // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
             double HostRock_kh = 9.869233e-16;// 1mD in m2
             double HostRock_kv = 9.869233e-16;// 1mD in m2
+
+            // Create a list of cleavage planes
+            List<Cleavage> Cleavages = new List<Cleavage>();
+            // Add a vertical N-S striking cleavage plane with Crack Surface Energy 100J/m2 and Friction Coefficient 0.1
+            //Cleavages.Add(new Cleavage(100, 0.1, 0, Math.PI / 2));
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -2123,6 +2128,7 @@ namespace DFMGenerator_Standalone
             double[,,] PresentDayEffectiveStress_XY_array = new double[NoCols, NoRows, NoLayers];
             double[,,] PresentDayEffectiveStress_YZ_array = new double[NoCols, NoRows, NoLayers];
             double[,,] PresentDayEffectiveStress_ZX_array = new double[NoCols, NoRows, NoLayers];
+            List<Cleavage>[,,] Cleavages_array = new List<Cleavage>[NoCols, NoRows, NoLayers];
             for (int ColNo = 0; ColNo < NoCols; ColNo++)
                 for (int RowNo = 0; RowNo < NoRows; RowNo++)
                     for (int LayerNo = 0; LayerNo < NoLayers; LayerNo++)
@@ -2191,6 +2197,9 @@ namespace DFMGenerator_Standalone
                         PresentDayEffectiveStress_XY_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_XY;
                         PresentDayEffectiveStress_YZ_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_YZ;
                         PresentDayEffectiveStress_ZX_array[ColNo, RowNo, LayerNo] = PresentDayEffectiveStress_ZX;
+                        Cleavages_array[ColNo, RowNo, LayerNo] = new List<Cleavage>();
+                        foreach (Cleavage cleavage in Cleavages)
+                            Cleavages_array[ColNo, RowNo, LayerNo].Add(new Cleavage(cleavage));
                     }
 
             // Create arrays for the gridblock cornerpoints and populate them
@@ -3071,7 +3080,7 @@ namespace DFMGenerator_Standalone
                         Console.WriteLine(string.Format("gc.PropControl.setPropagationControl({0}, {1}, {2}, {3}, {4}, {5}, StressDistribution.{6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, TimeUnits.{19}, {20}, FractureApertureType.{21}, {22}, PermeabilityAlgorithm.{23}, {24}, {25}); ",
                             OutputPopulationDistribution, No_l_indexPoints, MaxHMinLength, MaxHMaxLength, false, OutputBulkRockElasticTensors, StressDistributionScenario, MaxTimestepMFP33Increase, Current_HistoricMFP33TerminationRatio, Active_TotalMFP30TerminationRatio, MinimumMFClearZoneVolume,
                              MaxTimesteps, MaxTimestepDuration, No_r_bins, local_minImplicitMicrofractureRadius, FractureNucleationPosition, local_checkAlluFStressShadows, AnisotropyCutoff, WriteImplicitDataFiles, ModelTimeUnits, OutputFracturePorosity, FractureApertureControl, OutputFracturePermeabilityTensor, PermeabilityAlgorithm, local_DefaultFractureAzimuth, PlanarUnconfinedFractures));
-                        Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, Max_R_timestep_increase, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_staticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
+                        Console.WriteLine(string.Format("gc.PropControl.setUnconfinedFractureControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14});", Current_HistoricUCFP32TerminationRatio, Active_TotalUCRP30TerminationRatio, MinimumUCFClearZoneVolume, MinimumStaticUCRLength, MaxTimestepUCFP33Increase, MaxTimestepRadiusIncrease, Max_R_DeactivationCheck_interval, Min_R_ActivationProbability, ProportionalUCRIncrementToApply, Min_R_StaticDatapointSizeRatio, CullTSFrequency, CalculateImplicitUCFData, local_checkAllUCFStressShadows, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio));
 #endif
 
                         // Add the deformation load data 
@@ -3149,6 +3158,15 @@ namespace DFMGenerator_Standalone
                         gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
 #if DEBUG_FRACS
                         Console.WriteLine(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
+#endif
+
+                        // Set the mechanical property overrides for any fracture sets parallel to the defined cleavages
+                        // NB Cleavage overrides are currently applied only to unconfined fracture sets, and not to layer-bound fracture sets
+                        List<Cleavage> local_Cleavages = Cleavages_array[ColNo, RowNo, LayerNo];
+                        gc.SetCleavages(local_Cleavages, MaxConsistencyAngle);
+#if DEBUG_FRACS
+                        foreach (Cleavage cleavage in local_Cleavages)
+                            Console.WriteLine(string.Format("Set cleavage normal to ({0},{1},{2}): Gc {3}, MuFr {4}", cleavage.NormalVector.Component(VectorComponents.X), cleavage.NormalVector.Component(VectorComponents.Y), cleavage.NormalVector.Component(VectorComponents.Z), cleavage.GcOverride, cleavage.MuFrOverride));
 #endif
 
                         // Add the gridblock to the grid

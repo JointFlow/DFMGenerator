@@ -1,6 +1,6 @@
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-//#define DEBUG_FRAC_INPUT
+#define DEBUG_FRAC_INPUT
 //#define DEBUG_IMPLICIT_OUTPUT
 //#define DEBUG_EXPLICIT_OUTPUT
 
@@ -1098,9 +1098,11 @@ namespace DFMGenerator_Ocean
                     if (HostRock_kv_grid is null)
                         HostRock_kv_grid = HostRock_kh_grid;
                     bool UseGridFor_HostRock_kv = (HostRock_kv_grid != null);
-
                     // Flag for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageMechanicalPropertyData = arguments.Argument_AverageMechanicalPropertyData;
+
+                    // Create a list of cleavage planes
+                    List<Cleavage> Cleavages = new List<Cleavage>();
 
                     // Stress state
                     // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -4685,7 +4687,7 @@ namespace DFMGenerator_Ocean
                                         PetrelLogger.InfoOutputWindow(string.Format("sv': {0}", gc.StressStrain.LithostaticStress_eff_Terzaghi));
                                         PetrelLogger.InfoOutputWindow(string.Format("Young's Mod: {0}, Poisson's ratio: {1}, Biot coefficient: {2}, Crack surface energy: {3}, Friction coefficient: {4}", local_YoungsMod, local_PoissonsRatio, local_BiotCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient));
                                         PetrelLogger.InfoOutputWindow("Create gridblock");
-                                        PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1}, {2});", local_LayerThickness, local_Current_Depth, NoFractureSets));
+                                        PetrelLogger.InfoOutputWindow(string.Format("gc = new GridblockConfiguration({0}, {1});", local_LayerThickness, local_Current_Depth));
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setMechanicalProperties({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, TimeUnits.{11});", local_YoungsMod, local_PoissonsRatio, local_Porosity, local_BiotCoefficient, local_ThermalExpansionCoefficient, local_CrackSurfaceEnergy, local_FrictionCoefficient, local_RockStrainRelaxation, local_FractureRelaxation, CriticalPropagationRate, local_SubcriticalPropIndex, ModelTimeUnits));
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5});", DynamicApertureMultiplier, JRC, UCSRatio, InitialNormalStress, FractureNormalStiffness, MaximumClosure));
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.MechProps.setHostRockPermeability({0}, {1});", local_HostRock_kh, local_HostRock_kv));
@@ -5566,6 +5568,17 @@ namespace DFMGenerator_Ocean
                                         gc.SetFractureApertureControlData(Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier);
 #if DEBUG_FRAC_INPUT
                                         PetrelLogger.InfoOutputWindow(string.Format("gc.SetFractureApertureControlData({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7});", Mode1HMin_UniformAperture, Mode2HMin_UniformAperture, Mode1HMax_UniformAperture, Mode2HMax_UniformAperture, Mode1HMin_SizeDependentApertureMultiplier, Mode2HMin_SizeDependentApertureMultiplier, Mode1HMax_SizeDependentApertureMultiplier, Mode2HMax_SizeDependentApertureMultiplier));
+#endif
+
+                                        // Set the mechanical property overrides for any fracture sets parallel to the defined cleavages
+                                        // NB Cleavage overrides are currently applied only to unconfined fracture sets, and not to layer-bound fracture sets
+                                        List<Cleavage> local_Cleavages = new List<Cleavage>();
+                                        foreach (Cleavage cleavage in Cleavages)
+                                            local_Cleavages.Add(new Cleavage(cleavage));
+                                        gc.SetCleavages(local_Cleavages, MaxConsistencyAngle);
+#if DEBUG_FRAC_INPUT
+                                        foreach (Cleavage cleavage in local_Cleavages)
+                                            PetrelLogger.InfoOutputWindow(string.Format("Set cleavage normal to ({0},{1},{2}): Gc {3}, MuFr {4}", cleavage.NormalVector.Component(VectorComponents.X), cleavage.NormalVector.Component(VectorComponents.Y), cleavage.NormalVector.Component(VectorComponents.Z), cleavage.GcOverride, cleavage.MuFrOverride));
 #endif
 
                                         // Add the gridblock to the grid
