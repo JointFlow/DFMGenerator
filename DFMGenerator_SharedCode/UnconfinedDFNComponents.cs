@@ -855,19 +855,6 @@ namespace DFMGenerator_SharedCode
 
         // Output functions
         /// <summary>
-        /// Get the number of triangular elements required to represent this fracture
-        /// </summary>
-        /// <returns></returns>
-        public int NoTriangularElements()
-        {
-            int noElements = 0;
-            // Each segment in the ray will generate two triangular elements, except the innermost segment which will only generate 1
-            foreach (UnconfinedFractureRay ray in rays)
-                if (ray.NoSegments > 0)
-                    noElements += ((2 * ray.NoSegments) - 1);
-            return noElements;
-        }
-        /// <summary>
         /// Function to return a list of the XYZ coordinates of the nodes along each ray of the fracture
         /// </summary>
         /// <returns>A primary array, each item representing a ray, containing a nested list of nodes as PointXYZ objects</returns>

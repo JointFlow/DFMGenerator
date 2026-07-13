@@ -1,10 +1,10 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
-#define DEBUG_FRACS
+//#define DEBUG_FRACS
 
 using System;
 using System.Collections.Generic;
@@ -606,9 +606,9 @@ namespace DFMGenerator_Standalone
 
             // Main properties
             // Grid size
-            int NoCols = 3;
-            int NoRows = 3;
-            int NoLayers = 3;
+            int NoCols = 1;// 3;
+            int NoRows = 1;// 3;
+            int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
             double Width_EW = 1000;// 50;
             double Length_NS = 1000;// 50;
@@ -618,7 +618,7 @@ namespace DFMGenerator_Standalone
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial of the top surface in metres, positive downwards
-            double Depth = 1000;
+            double Depth = 2000;// 1000;
             // Time units used in input load rates, time limits and strain relaxation time constants
             // These will be converted to SI units (s) by the gridblock objects
             TimeUnits ModelTimeUnits = TimeUnits.ma;
@@ -831,7 +831,7 @@ namespace DFMGenerator_Standalone
             // Create a list of cleavage planes
             List<Cleavage> Cleavages = new List<Cleavage>();
             // Add a vertical N-S striking cleavage plane with Crack Surface Energy 100J/m2 and Friction Coefficient 0.1
-            //Cleavages.Add(new Cleavage(100, 0.1, 0, Math.PI / 2));
+            Cleavages.Add(new Cleavage(500, 0.4, 0, 1.01));// Math.PI / 2));
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -1027,14 +1027,14 @@ namespace DFMGenerator_Standalone
             // Use NoUnconfinedFractureStrikeSets and NoUnconfinedFractureDipSets to create unconfined fracture sets, which can propagate and interact vertically as well as horizontally
             // These are useful for modelling fractures in thick geobodies such as igneous plutons
             // NB Unconfined fracture sets are not subdivided into dipsets; unconfined fractures with the same strike but different dips are counted as different sets
-            // The total number of unconfined fracture sets generates will therefore be given by NoUnconfinedFractureStrikeSets * NoUnconfinedFractureDipSets
+            // The total number of unconfined fracture sets generated will therefore be given by NoUnconfinedFractureStrikeSets * NoUnconfinedFractureDipSets
             int NoUnconfinedFractureStrikeSets = 6;// 0;
             int NoUnconfinedFractureDipSets = 3;// 0;
             // Number of rays comprising each unconfined fracture
             int NoRaysPerUnconfinedFracture = 16;// 8;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 10;// -1;
+            double MinUnconfinedFractureRadius = 100;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
             double MaxUnconfinedFractureRadius = 1000;// -1;

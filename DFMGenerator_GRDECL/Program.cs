@@ -4,8 +4,8 @@
 #define READINPUTFROMFILE
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRAC_INPUT
-#define DEBUG_FRAC_OUTPUT
+//#define DEBUG_FRAC_INPUT
+//#define DEBUG_FRAC_OUTPUT
 
 using System;
 using System.Collections.Generic;
@@ -48,7 +48,7 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("% Following GRDECL format, columns are indexed from west to east but rows are indexed in reverse order, from north to south");
                 input_file.WriteLine("% Set to -1 to include all rows and columns");
                 input_file.WriteLine("StartColumnI -1");
-                input_file.WriteLine("EndColumnlI -1");
+                input_file.WriteLine("EndColumnI -1");
                 input_file.WriteLine("StartRowJ -1");
                 input_file.WriteLine("EndRowJ -1");
                 input_file.WriteLine("% Subset of layers from the GRDECL grid to include in the fracture grid (indexed from 1)");
@@ -486,11 +486,11 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("% Flag to filter cells by property; if true, cells with property values outside the specified range will not be included in the model");
                 input_file.WriteLine("FilterByProperty false");
                 input_file.WriteLine("% Property to filter cells by; cells with property values outside the specified range will not be included in the model");
-                input_file.WriteLine("PropertyToFilter PROPERTYNAME");
+                input_file.WriteLine("%PropertyToFilter PROPERTYNAME");
                 input_file.WriteLine("% Minimum cutoff for the property filter; cells where the spcified property value is lower than this will not be included in the model");
-                input_file.WriteLine("FilterByPropertyMinCutoff 0");
+                input_file.WriteLine("%FilterByPropertyMinCutoff 0");
                 input_file.WriteLine("% Maximum cutoff for the property filter; cells where the spcified property value is higher than this will not be included in the model");
-                input_file.WriteLine("FilterByPropertyMaxCutoff 1");
+                input_file.WriteLine("%FilterByPropertyMaxCutoff 1");
                 input_file.WriteLine();
 
                 input_file.Close();
@@ -1085,7 +1085,7 @@ namespace DFMGenerator_GRDECL
                             ModelName = line_split[1];
                             break;
                         // Grid size
-                        case "GridFile":
+                        case "GridFileName":
                             GridFileName = line_split[1];
                             break;
                         // Subset of rows and columns from the shadow grid to include in the fracture grid (indexed from 1)
@@ -2343,7 +2343,7 @@ namespace DFMGenerator_GRDECL
                 ShadowGrid_StartRowJ_temp = SourceDataGrid.NoJRows - ShadowGrid_EndRowJ;
             else
                 ShadowGrid_StartRowJ_temp = 0;
-            if (ShadowGrid_EndRowJ > 0)
+            if (ShadowGrid_StartRowJ > 0)
                 ShadowGrid_EndRowJ_temp = SourceDataGrid.NoJRows - ShadowGrid_StartRowJ;
             else
                 ShadowGrid_EndRowJ_temp = SourceDataGrid.NoJRows - 1;
@@ -2361,7 +2361,7 @@ namespace DFMGenerator_GRDECL
                 ShadowGrid_BottomLayerK--;
             else
                 ShadowGrid_BottomLayerK = SourceDataGrid.NoKLayers - 1;
-            int NoKLayers = ShadowGrid_TopLayerK - ShadowGrid_BottomLayerK + 1;
+            int NoKLayers = ShadowGrid_BottomLayerK - ShadowGrid_TopLayerK + 1;
             // If the vertical upscaling factor is 0, set it equal to the number of selected layers in the shadow grid
             // This will amalgamate all selected shadow grid layers into a single fracture grid layer
             if (VerticalUpscalingFactor <= 0)
@@ -2423,7 +2423,7 @@ namespace DFMGenerator_GRDECL
                         if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                             ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                         int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                        int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                        int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                         if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                             ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
                         // The DataCell indices indicate the cells from which to take data when we are taking data from a single cell
@@ -2442,8 +2442,8 @@ namespace DFMGenerator_GRDECL
                         }
 
 #if DEBUG_FRAC_INPUT
-                        progressReporter.OutputMessage(string.Format("ShadowGrid_FirstCellI {0}, ShadowGrid_FirstCellJ {1}, ShadowGrid_TopLayerK {2}", ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_TopLayerK));
-                        progressReporter.OutputMessage(string.Format("ShadowGrid_LastCellI {0}, ShadowGrid_LastCellJ {1}, ShadowGrid_BottomLayerK {2}", ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_BottomLayerK));
+                        progressReporter.OutputMessage(string.Format("ShadowGrid_FirstCellI {0}, ShadowGrid_FirstCellJ {1}, ShadowGrid_HighestCellK {2}", ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_HighestCellK));
+                        progressReporter.OutputMessage(string.Format("ShadowGrid_LastCellI {0}, ShadowGrid_LastCellJ {1}, ShadowGrid_LowestCellK {2}", ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_LowestCellK));
 #endif
 
                         // If we are filtering by property, get the value of the property to filter by in this gridblock and check whether it lies within the specified range
@@ -2459,12 +2459,12 @@ namespace DFMGenerator_GRDECL
                                 double PropertyToFilter_total = 0;
                                 int PropertyToFilter_novalues = 0;
 
-                                // Loop through all the Petrel cells in the gridblock
+                                // Loop through all the shadow grid cells in the gridblock
                                 for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                     for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                        for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                         {
-                                            // Update proeprty to filter by total if defined
+                                            // Update property to filter by total if defined
                                             if (FilterByProperty)
                                             {
                                                 double cell_PropertyToFilter = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, PropertyToFilter);
@@ -2488,7 +2488,7 @@ namespace DFMGenerator_GRDECL
                                 if (FilterByProperty)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_PropertyToFilter = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PropertyToFilter);
                                         if (!double.IsNaN(cell_PropertyToFilter))
@@ -2526,31 +2526,31 @@ namespace DFMGenerator_GRDECL
                         if (FractureGridStack_SWtopgrid_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_TopLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
                                 FractureGridStack_SWtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SWTop);
                                 if (!(FractureGridStack_SWtopgrid_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_SWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_TopLayerK, GridblockCornerpoint.SWTop);
+                        PointXYZ FractureGridBlock_SWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_HighestCellK, GridblockCornerpoint.SWTop);
                         // If the top cell is not defined, find the uppermost cell that is
                         if (FractureGridBlock_SWtop_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK + 1; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK + 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
                                 FractureGridBlock_SWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SWTop);
                                 if (!(FractureGridBlock_SWtop_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_SWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_BottomLayerK, GridblockCornerpoint.SWBottom);
+                        PointXYZ FractureGridBlock_SWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_LowestCellK, GridblockCornerpoint.SWBottom);
                         // If the bottom cell is not defined, find the lowermost cell that is
                         if (FractureGridBlock_SWbottom_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_BottomLayerK - 1; ShadowGrid_DataCellK >= ShadowGrid_TopLayerK; ShadowGrid_DataCellK--)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_LowestCellK - 1; ShadowGrid_DataCellK >= ShadowGrid_HighestCellK; ShadowGrid_DataCellK--)
                             {
                                 FractureGridBlock_SWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SWBottom);
                                 if (!(FractureGridBlock_SWbottom_corner is null))
@@ -2563,38 +2563,38 @@ namespace DFMGenerator_GRDECL
                         local_LayerThickness += (FractureGridBlock_SWtop_corner.Z - FractureGridBlock_SWbottom_corner.Z);
 
                         // Find NW cornerpoints; if the top or bottom cells in the NW corner are undefined, use the highest and lowest defined cells
-                        PointXYZ FractureGridStack_NWtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, 0, GridblockCornerpoint.NWTop);
+                        PointXYZ FractureGridStack_NWtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_LastCellJ, 0, GridblockCornerpoint.NWTop);
                         // If the top cell in the grid is not defined, find the uppermost cell that is
                         if (FractureGridStack_NWtopgrid_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_TopLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
-                                FractureGridStack_NWtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NWTop);
+                                FractureGridStack_NWtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_LastCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NWTop);
                                 if (!(FractureGridStack_NWtopgrid_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_NWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_TopLayerK, GridblockCornerpoint.NWTop);
+                        PointXYZ FractureGridBlock_NWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_LastCellJ, ShadowGrid_HighestCellK, GridblockCornerpoint.NWTop);
                         // If the top cell is not defined, find the uppermost cell that is
                         if (FractureGridBlock_NWtop_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK + 1; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK + 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
-                                FractureGridBlock_NWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NWTop);
+                                FractureGridBlock_NWtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_LastCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NWTop);
                                 if (!(FractureGridBlock_NWtop_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_NWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_BottomLayerK, GridblockCornerpoint.NWBottom);
+                        PointXYZ FractureGridBlock_NWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_LastCellJ, ShadowGrid_LowestCellK, GridblockCornerpoint.NWBottom);
                         // If the bottom cell is not defined, find the lowermost cell that is
                         if (FractureGridBlock_NWbottom_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_BottomLayerK - 1; ShadowGrid_DataCellK >= ShadowGrid_TopLayerK; ShadowGrid_DataCellK--)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_LowestCellK - 1; ShadowGrid_DataCellK >= ShadowGrid_HighestCellK; ShadowGrid_DataCellK--)
                             {
-                                FractureGridBlock_NWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NWBottom);
+                                FractureGridBlock_NWbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_LastCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NWBottom);
                                 if (!(FractureGridBlock_NWbottom_corner is null))
                                     break;
                             }
@@ -2605,38 +2605,38 @@ namespace DFMGenerator_GRDECL
                         local_LayerThickness += (FractureGridBlock_NWtop_corner.Z - FractureGridBlock_NWbottom_corner.Z);
 
                         // Find NE cornerpoints; if the top or bottom cells in the NE corner are undefined, use the highest and lowest defined cells
-                        PointXYZ FractureGridStack_NEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, 0, GridblockCornerpoint.NETop);
+                        PointXYZ FractureGridStack_NEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_LastCellJ, 0, GridblockCornerpoint.NETop);
                         // If the top cell in the grid is not defined, find the uppermost cell that is
                         if (FractureGridStack_NEtopgrid_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_TopLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
-                                FractureGridStack_NEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NETop);
+                                FractureGridStack_NEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NETop);
                                 if (!(FractureGridStack_NEtopgrid_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_NEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_TopLayerK, GridblockCornerpoint.NETop);
+                        PointXYZ FractureGridBlock_NEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_HighestCellK, GridblockCornerpoint.NETop);
                         // If the top cell is not defined, find the uppermost cell that is
                         if (FractureGridBlock_NEtop_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK + 1; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK + 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
-                                FractureGridBlock_NEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NETop);
+                                FractureGridBlock_NEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NETop);
                                 if (!(FractureGridBlock_NEtop_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_NEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_BottomLayerK, GridblockCornerpoint.NEBottom);
+                        PointXYZ FractureGridBlock_NEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_LowestCellK, GridblockCornerpoint.NEBottom);
                         // If the bottom cell is not defined, find the lowermost cell that is
                         if (FractureGridBlock_NEbottom_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_BottomLayerK - 1; ShadowGrid_DataCellK >= ShadowGrid_TopLayerK; ShadowGrid_DataCellK--)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_LowestCellK - 1; ShadowGrid_DataCellK >= ShadowGrid_HighestCellK; ShadowGrid_DataCellK--)
                             {
-                                FractureGridBlock_NEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NEBottom);
+                                FractureGridBlock_NEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_LastCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.NEBottom);
                                 if (!(FractureGridBlock_NEbottom_corner is null))
                                     break;
                             }
@@ -2647,38 +2647,38 @@ namespace DFMGenerator_GRDECL
                         local_LayerThickness += (FractureGridBlock_NEtop_corner.Z - FractureGridBlock_NEbottom_corner.Z);
 
                         // Find SE cornerpoints; if the top or bottom cells in the SE corner are undefined, use the highest and lowest defined cells
-                        PointXYZ FractureGridStack_SEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, 0, GridblockCornerpoint.SETop);
+                        PointXYZ FractureGridStack_SEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_FirstCellJ, 0, GridblockCornerpoint.SETop);
                         // If the top cell in the grid is not defined, find the uppermost cell that is
                         if (FractureGridStack_SEtopgrid_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_TopLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
-                                FractureGridStack_SEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SETop);
+                                FractureGridStack_SEtopgrid_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SETop);
                                 if (!(FractureGridStack_SEtopgrid_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_SEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_TopLayerK, GridblockCornerpoint.SETop);
+                        PointXYZ FractureGridBlock_SEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_FirstCellJ, ShadowGrid_HighestCellK, GridblockCornerpoint.SETop);
                         // If the top cell is not defined, find the uppermost cell that is
                         if (FractureGridBlock_SEtop_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to top down, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK + 1; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK + 1; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                             {
-                                FractureGridBlock_SEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SETop);
+                                FractureGridBlock_SEtop_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SETop);
                                 if (!(FractureGridBlock_SEtop_corner is null))
                                     break;
                             }
                         }
-                        PointXYZ FractureGridBlock_SEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_BottomLayerK, GridblockCornerpoint.SEBottom);
+                        PointXYZ FractureGridBlock_SEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_FirstCellJ, ShadowGrid_LowestCellK, GridblockCornerpoint.SEBottom);
                         // If the bottom cell is not defined, find the lowermost cell that is
                         if (FractureGridBlock_SEbottom_corner is null)
                         {
                             // Loop through all cells in the stack, from the second to bottom up, until we find one that contains valid data
-                            for (int ShadowGrid_DataCellK = ShadowGrid_BottomLayerK - 1; ShadowGrid_DataCellK >= ShadowGrid_TopLayerK; ShadowGrid_DataCellK--)
+                            for (int ShadowGrid_DataCellK = ShadowGrid_LowestCellK - 1; ShadowGrid_DataCellK >= ShadowGrid_HighestCellK; ShadowGrid_DataCellK--)
                             {
-                                FractureGridBlock_SEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_FirstCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SEBottom);
+                                FractureGridBlock_SEbottom_corner = SourceDataGrid.GetCellCornerpoint(ShadowGrid_LastCellI, ShadowGrid_FirstCellJ, ShadowGrid_DataCellK, GridblockCornerpoint.SEBottom);
                                 if (!(FractureGridBlock_SEbottom_corner is null))
                                     break;
                             }
@@ -2758,7 +2758,7 @@ namespace DFMGenerator_GRDECL
                             // Loop through all the shadow grid cells in the gridblock
                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                 for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                    for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                     {
                                         // Update initial microfracture density total if defined
                                         if (UseGridFor_InitialMicrofractureDensity)
@@ -2997,7 +2997,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_InitialMicrofractureDensity)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_InitialMicrofractureDensity = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, InitialMicrofractureDensityPropertyName);
                                     if (!double.IsNaN(cell_InitialMicrofractureDensity))
@@ -3012,7 +3012,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_InitialMicrofractureSizeDistribution)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_InitialMicrofractureSizeDistribution = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, InitialMicrofractureSizeDistributionPropertyName);
                                     if (!double.IsNaN(cell_InitialMicrofractureSizeDistribution))
@@ -3027,7 +3027,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_InitialMicrofractureMedianRadius)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_InitialMicrofractureMedianRadius = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, InitialMicrofractureMedianRadiusPropertyName);
                                     if (!double.IsNaN(cell_InitialMicrofractureMedianRadius))
@@ -3042,7 +3042,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_SubcriticalPropIndex)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_SubcriticalPropIndex = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, SubcriticalPropIndexPropertyName);
                                     if (!double.IsNaN(cell_SubcriticalPropIndex))
@@ -3057,7 +3057,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_YoungsMod)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_YoungsMod = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, YoungsModPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3075,7 +3075,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_PoissonsRatio)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_PoissonsRatio = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PoissonsRatioPropertyName);
                                     if (!double.IsNaN(cell_PoissonsRatio))
@@ -3090,7 +3090,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_Porosity)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_Porosity = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PorosityPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3108,7 +3108,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_BiotCoefficient)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_BiotCoefficient = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, BiotCoefficientPropertyName);
                                     if (!double.IsNaN(cell_BiotCoefficient))
@@ -3123,7 +3123,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_ThermalExpansionCoefficient)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_ThermalExpansionCoefficient = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, ThermalExpansionCoefficientPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3141,7 +3141,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_CrackSurfaceEnergy)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_CrackSurfaceEnergy = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, CrackSurfaceEnergyPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3159,7 +3159,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_FrictionCoefficient)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_FrictionCoefficient = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, FrictionCoefficientPropertyName);
                                     // If the property has a FrictionAngle template, convert this to a friction coefficient
@@ -3177,7 +3177,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_RockStrainRelaxation)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_RockStrainRelaxation = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, RockStrainRelaxationPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3195,7 +3195,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_FractureRelaxation)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_FractureRelaxation = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, FractureRelaxationPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3213,7 +3213,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_HostRock_kh)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_HostRock_kh = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, HostRock_khPropertyName);
                                     if (!double.IsNaN(cell_HostRock_kh))
@@ -3228,7 +3228,7 @@ namespace DFMGenerator_GRDECL
                             if (UseGridFor_HostRock_kv)
                             {
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_HostRock_kv = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, HostRock_kvPropertyName);
                                     if (!double.IsNaN(cell_HostRock_kv))
@@ -3343,7 +3343,7 @@ namespace DFMGenerator_GRDECL
                                 // Loop through all the shadow grid cells in the gridblock
                                 for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                     for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                        for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                         {
                                             // Update ehmin orientation total if defined
                                             if (UseGridFor_EhminAzi)
@@ -3475,7 +3475,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_EhminAzi)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_ehmin_orient = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, EhminAziProperty);
                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3493,7 +3493,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_EhminRate)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_ehmin_rate = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, EhminRateProperty);
                                         if (!double.IsNaN(cell_ehmin_rate))
@@ -3508,7 +3508,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_EhmaxRate)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_ehmax_rate = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, EhmaxRateProperty);
                                         if (!double.IsNaN(cell_ehmax_rate))
@@ -3523,7 +3523,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_AppliedOverpressureRate)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_OP_rate = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, AppliedOverpressureRateProperty);
                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3541,7 +3541,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_AppliedTemperatureChange)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_temp_rate = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, AppliedTemperatureChangeProperty);
                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3559,7 +3559,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_AppliedUpliftRate)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_uplift_rate = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, AppliedUpliftRateProperty);
                                         // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3624,7 +3624,7 @@ namespace DFMGenerator_GRDECL
                                 // Loop through all the shadow grid cells in the gridblock
                                 for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                     for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                        for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                         {
                                             // Update final absolute vertical stress total if defined
                                             if (UseGridFor_Szz)
@@ -3711,7 +3711,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_Szz)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_szz = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, SzzProperty);
                                         if (!double.IsNaN(cell_szz))
@@ -3727,7 +3727,7 @@ namespace DFMGenerator_GRDECL
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                     // We need valid data for all three horizontal components of the stress tensor
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_sxx = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, SxxProperty);
                                         double cell_syy = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, SyyProperty);
@@ -3747,7 +3747,7 @@ namespace DFMGenerator_GRDECL
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
                                     // We need valid data for both vertical shear components of the stress tensor
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_szx = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, SzxProperty);
                                         double cell_syz = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, SyzProperty);
@@ -3764,7 +3764,7 @@ namespace DFMGenerator_GRDECL
                                 if (UseGridFor_FluidPressure)
                                 {
                                     // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                    for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                    for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                     {
                                         double cell_fluidpressure = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, FluidPressureProperty);
                                         if (!double.IsNaN(cell_fluidpressure))
@@ -3925,7 +3925,7 @@ namespace DFMGenerator_GRDECL
                                 // Loop through all the shadow grid cells in the gridblock
                                 for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                     for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                        for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                        for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                         {
                                             // Update depth at deformation total if defined
                                             double cell_depthatdeformation = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, DepthAtDeformationPropertyName);
@@ -3949,7 +3949,7 @@ namespace DFMGenerator_GRDECL
                             {
                                 // Update depth at deformation total if defined
                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                 {
                                     double cell_depthatdeformation = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, DepthAtDeformationPropertyName);
                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -3991,20 +3991,20 @@ namespace DFMGenerator_GRDECL
                         GridblockConfiguration gc = new GridblockConfiguration(local_LayerThickness, local_Depth);
 
                         // Check if the western boundary if faulted
-                        // This will be the case if any of the Petrel cells on the southern boundary are faulted
+                        // This will be the case if any of the shadow grid cells on the southern boundary are faulted
                         bool faultToWest = false;
                         if (!IgnoreFaults)
                             for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                     if (SourceDataGrid.FaultedContact(ShadowGrid_FirstCellI, ShadowGrid_J, ShadowGrid_K, GridDirection.W))
                                         faultToWest = true;
 
                         // Check if the southern boundary is faulted
-                        // This will be the case if any of the Petrel cells on the southern boundary are faulted
+                        // This will be the case if any of the shadow grid cells on the southern boundary are faulted
                         bool faultToSouth = false;
                         if (!IgnoreFaults)
                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
-                                for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                     if (SourceDataGrid.FaultedContact(ShadowGrid_I, ShadowGrid_FirstCellJ, ShadowGrid_K, GridDirection.S))
                                         faultToSouth = true;
 
@@ -4293,7 +4293,7 @@ namespace DFMGenerator_GRDECL
                                             // Loop through all the shadow grid cells in the gridblock
                                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                 for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                    for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
                                                         // Update Biot coefficient total if defined
                                                         if (UseGridFor_PresentDayBiotCoefficient)
@@ -4318,7 +4318,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayBiotCoefficient)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_BiotCoeff = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayBiotCoefficientPropertyName);
                                                     if (!double.IsNaN(cell_BiotCoeff))
@@ -4393,7 +4393,7 @@ namespace DFMGenerator_GRDECL
                                             // Loop through all the Petrel cells in the gridblock
                                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                 for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                    for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
                                                         // Update XX stress component total if defined
                                                         if (UseGridFor_PresentDayStress_XX)
@@ -4517,7 +4517,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayStress_XX)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_Sxx_PresentDay = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayStress_XXPropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4535,7 +4535,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayStress_YY)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_Syy_PresentDay = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayStress_YYPropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4553,7 +4553,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayStress_ZZ)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_Szz_PresentDay = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayStress_ZZPropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4571,7 +4571,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayStress_XY)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_Sxy_PresentDay = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayStress_XYPropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4589,7 +4589,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayStress_YZ)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_Syz_PresentDay = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayStress_YZPropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4607,7 +4607,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayStress_ZX)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_Szx_PresentDay = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayStress_ZXPropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4625,7 +4625,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayFluidPressure)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_FluidPressure = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayFluidPressurePropertyName);
                                                     // If the property has a General template, carry out unit conversion as if it was supplied in project units
@@ -4656,7 +4656,7 @@ namespace DFMGenerator_GRDECL
                                             // Loop through all the shadow grid cells in the gridblock
                                             for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
                                                 for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
-                                                    for (int ShadowGrid_K = ShadowGrid_TopLayerK; ShadowGrid_K <= ShadowGrid_BottomLayerK; ShadowGrid_K++)
+                                                    for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
                                                         // Update Biot coefficient total if defined
                                                         if (UseGridFor_PresentDayBiotCoefficient)
@@ -4681,7 +4681,7 @@ namespace DFMGenerator_GRDECL
                                             if (UseGridFor_PresentDayBiotCoefficient)
                                             {
                                                 // Loop through all cells in the stack, from the top down, until we find one that contains valid data
-                                                for (int ShadowGrid_DataCellK = ShadowGrid_TopLayerK; ShadowGrid_DataCellK <= ShadowGrid_BottomLayerK; ShadowGrid_DataCellK++)
+                                                for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
                                                 {
                                                     double cell_BiotCoeff = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, PresentDayBiotCoefficientPropertyName);
                                                     if (!double.IsNaN(cell_BiotCoeff))
@@ -4983,7 +4983,7 @@ namespace DFMGenerator_GRDECL
                                                     if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                         ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                                     int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                    int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                                    int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                                     if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                         ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5104,7 +5104,7 @@ namespace DFMGenerator_GRDECL
                                                     if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                         ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                                     int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                    int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                                    int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                                     if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                         ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5223,7 +5223,7 @@ namespace DFMGenerator_GRDECL
                                                     if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                         ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                                     int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                    int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                                    int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                                     if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                         ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5326,7 +5326,7 @@ namespace DFMGenerator_GRDECL
                                                 if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                     ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                                 int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                                int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                                 if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                     ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5444,7 +5444,7 @@ namespace DFMGenerator_GRDECL
                                                 if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                     ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                                 int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                                int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                                 if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                     ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5571,7 +5571,7 @@ namespace DFMGenerator_GRDECL
                                                 if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                     ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                                 int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                                int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                                int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                                 if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                     ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5670,7 +5670,7 @@ namespace DFMGenerator_GRDECL
                                             if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                 ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                             int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                             if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                 ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -5866,7 +5866,7 @@ namespace DFMGenerator_GRDECL
                                             if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                 ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                             int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                             if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                 ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -6050,7 +6050,7 @@ namespace DFMGenerator_GRDECL
                                             if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                 ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                             int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                             if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                 ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -6174,7 +6174,7 @@ namespace DFMGenerator_GRDECL
                                             if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                 ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                             int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                             if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                 ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -6283,7 +6283,7 @@ namespace DFMGenerator_GRDECL
                                             if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                                 ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                             int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                            int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                            int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                             if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                                 ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -6444,7 +6444,7 @@ namespace DFMGenerator_GRDECL
                                         if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                             ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                         int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                        int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                        int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                         if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                             ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 
@@ -6602,7 +6602,7 @@ namespace DFMGenerator_GRDECL
                                         if (ShadowGrid_LastCellJ > ShadowGrid_EndRowJ)
                                             ShadowGrid_LastCellJ = ShadowGrid_EndRowJ;
                                         int ShadowGrid_LowestCellK = ShadowGrid_BottomLayerK - (FractureGrid_LayerNo * VerticalUpscalingFactor);
-                                        int ShadowGrid_HighestCellK = ShadowGrid_BottomLayerK - (VerticalUpscalingFactor - 1);
+                                        int ShadowGrid_HighestCellK = ShadowGrid_LowestCellK - (VerticalUpscalingFactor - 1);
                                         if (ShadowGrid_HighestCellK < ShadowGrid_TopLayerK)
                                             ShadowGrid_HighestCellK = ShadowGrid_TopLayerK;
 

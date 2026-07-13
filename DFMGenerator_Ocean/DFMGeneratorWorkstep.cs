@@ -1,6 +1,6 @@
 // Set these flags to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime
-#define DEBUG_FRAC_INPUT
+//#define DEBUG_FRAC_INPUT
 //#define DEBUG_IMPLICIT_OUTPUT
 //#define DEBUG_EXPLICIT_OUTPUT
 

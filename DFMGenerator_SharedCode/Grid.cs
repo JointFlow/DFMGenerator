@@ -1065,14 +1065,14 @@ namespace DFMGenerator_SharedCode
                                 break;
                             case DFNFileType.FAB:
                                 {
-                                    int No_UCFracs = latestDFN.NoUnconfinedFractureElements();
+                                    int No_UCFPatches = latestDFN.NoUnconfinedFracturePatches(true);
                                     int noElementCornerpoints = 3; // We are using triangular elements
-                                    int No_Nodes = No_UCFracs * noElementCornerpoints;
+                                    int No_Nodes = No_UCFPatches * noElementCornerpoints;
 
                                     // Write general fracture FAB header data to logfile
                                     string FAB_header_1 = string.Format("{0}\r\n{1}\r\n{2}\r\n{3}\r\n{4}", "BEGIN FORMAT", "Format = Ascii", "Length_Unit = M", "XAxis = East", "Scale = 8124.44");
                                     UCF_outputFile.WriteLine(FAB_header_1);
-                                    string FAB_header5 = string.Format("{0} {1}", "No_Fractures =", No_UCFracs);
+                                    string FAB_header5 = string.Format("{0} {1}", "No_Fractures =", No_UCFPatches);
                                     string FAB_header6 = string.Format("No_TessFractures = 0");
                                     string FAB_header7 = string.Format("{0} {1}", "No_Nodes = ", No_Nodes);
                                     UCF_outputFile.WriteLine(FAB_header5);
@@ -1088,17 +1088,16 @@ namespace DFMGenerator_SharedCode
 
                                     // Loop through each unconfined fracture and write data to logfile
                                     int UCFPatchNo = 1;
-                                    for (int UCFracNo = 0; UCFracNo < No_UCFracs; UCFracNo++)
+                                    foreach (UnconfinedFractureXYZ UCF in latestDFN.GlobalDFNUnconfinedFractures)
                                     {
-                                        UnconfinedFractureXYZ frac = latestDFN.GlobalDFNUnconfinedFractures[UCFracNo];
-                                        double aperture = frac.MeanAperture;
+                                        double aperture = UCF.MeanAperture;
                                         double permeability = Math.Pow(aperture, 2) / 12;
-                                        double compressibility = frac.Compressibility;
+                                        double compressibility = UCF.Compressibility;
                                         if (double.IsNaN(compressibility))
                                             compressibility = DFNControl.DefaultFractureCompressibility;
 
                                         // Get a list of triangular patches comprising this fracture
-                                        List<PointXYZ[]> patches = frac.GetFracturePatchesInXYZ(true);
+                                        List<PointXYZ[]> patches = UCF.GetFracturePatchesInXYZ(true);
 
                                         // Loop through each patch in the list
                                         foreach (PointXYZ[] patch in patches)
@@ -1114,7 +1113,7 @@ namespace DFMGenerator_SharedCode
                                                 UCF_outputFile.WriteLine(pointCoords);
                                             }
 
-                                            VectorXYZ fractureNormal = frac.NormalVector;
+                                            VectorXYZ fractureNormal = UCF.NormalVector;
                                             string lastLine = string.Format("{0} {1} {2} {3}", 0, fractureNormal.Component(VectorComponents.X), fractureNormal.Component(VectorComponents.Y), fractureNormal.Component(VectorComponents.Z));
                                             UCF_outputFile.WriteLine(lastLine);
                                         }

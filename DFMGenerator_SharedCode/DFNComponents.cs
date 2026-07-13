@@ -2496,15 +2496,16 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public int NoDFNFractures { get { return GlobalDFNMacrofractures.Count + GlobalDFNMicrofractures.Count + GlobalDFNUnconfinedFractures.Count; } }
         /// <summary>
-        /// Get the total number of triangular unconfined fracture elements in the DFN
+        /// Get the total number of unconfined fracture patches in the DFN
         /// </summary>
+        /// <param name="CreateTriangularPatches">Flag to create only triangular patches: if true, all patches will be triangular; if false, a single patch will be created representing the innermost segments, but the patches representing outer segments will still be triangular </param>
         /// <returns></returns>
-        public int NoUnconfinedFractureElements()
+        public int NoUnconfinedFracturePatches(bool CreateTriangularPatches)
         {
-            int noElements = 0;
+            int noPatches = 0;
             foreach (UnconfinedFractureXYZ ufc in GlobalDFNUnconfinedFractures)
-                noElements += ufc.NoTriangularElements();
-            return noElements;
+                noPatches += ufc.GetNoFracturePatchesInXYZ(CreateTriangularPatches);
+            return noPatches;
         }
 
         // Functions to populate and sort DFN

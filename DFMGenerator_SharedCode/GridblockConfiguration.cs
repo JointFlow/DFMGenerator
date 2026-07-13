@@ -1665,14 +1665,14 @@ namespace DFMGenerator_SharedCode
                 foreach (Cleavage cleavage in Cleavages_in)
                 {
                     // Find the unconfined fracture set closest to the cleavage orientation
-                    double minimumOrientationMismatch = double.PositiveInfinity;
+                    double bestOrientationMatch = 0;
                     UnconfinedFractureSet closestSet = null;
                     foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                     {
-                        double orientationMismatch = Math.Abs(ufs.NormalVector & cleavage.NormalVector);
-                        if (minimumOrientationMismatch > orientationMismatch)
+                        double orientationMatch = Math.Abs(ufs.NormalVector & cleavage.NormalVector);
+                        if (bestOrientationMatch < orientationMatch)
                         {
-                            minimumOrientationMismatch = orientationMismatch;
+                            bestOrientationMatch = orientationMatch;
                             closestSet = ufs;
                         }
                     }
@@ -1680,7 +1680,7 @@ namespace DFMGenerator_SharedCode
                     // Check if the orientation mismatch for the closest set is less than the maximum consistency angle
                     // If so set the mechanical property overrides
                     // Otherwise no overrides will be set
-                    if ((Math.Acos(minimumOrientationMismatch) <= MaxConsistencyAngle_in) && !(closestSet is null))
+                    if ((Math.Acos(bestOrientationMatch) <= MaxConsistencyAngle_in) && !(closestSet is null))
                         closestSet.SetMechanicalPropertyOverrides(cleavage.GcOverride, cleavage.MuFrOverride);
                 }
         }
