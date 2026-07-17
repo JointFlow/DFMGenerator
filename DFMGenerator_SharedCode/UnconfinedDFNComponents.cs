@@ -109,6 +109,10 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public double EffectiveRayLength { get { return ufr.EffectiveLength; } }
         /// <summary>
+        /// Maximum effective length that this ray can grow to; when this is reached, the ray will continue propagating but velocity and stress shadow width will be independent of fracture size
+        /// </summary>
+        public double MaximumEffectiveRayLength { get { return ufs.MaximumEffectiveFractureRadius; } }
+        /// <summary>
         /// The propagation controlling ray length is the length of the shortest ray comprising the fracture, and will limit propagation aperture, stress concentration and propagation rate of all rays
         /// </summary>
         public double PropagationControllingRayLength { get { return ucf.MinimumRayLength; } }
@@ -155,6 +159,10 @@ namespace DFMGenerator_SharedCode
         /// Fracture state - true if the fracture is fully active (all rays are active), otherwise false
         /// </summary>
         public bool FractureFullyActive { get { return ucf.FullyActive; } }
+        /// <summary>
+        /// True if the fracture has reached the maximum effective radius, in which case propagation rate and stress shadow width will no longer be dependent on fracture size
+        /// </summary>
+        public bool ConstantKi { get { return ucf.ConstantPropagationRate; } }
         /// <summary>
         /// Reference to the fracture that terminates this segment, by intersection, stress shadow interaction or propagation out of the gridblock; initially set to null
         /// </summary>
@@ -805,6 +813,10 @@ namespace DFMGenerator_SharedCode
         /// True if all rays are deactivated; false if any rays are still active
         /// </summary>
         public bool FullyDeactivated { get; private set; }
+        /// <summary>
+        /// True if the fracture has reached the maximum effective radius, in which case propagation rate and stress shadow width will no longer be dependent on fracture size
+        /// </summary>
+        public bool ConstantPropagationRate { get { return (EffectiveRadius > ufs.MaximumEffectiveFractureRadius); } }
         /// <summary>
         /// Time of fracture nucleation (real time) - this will not change after fracture is initiated
         /// </summary>

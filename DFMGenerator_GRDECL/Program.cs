@@ -4069,7 +4069,7 @@ namespace DFMGenerator_GRDECL
                         // Calculate the minimum and maximum unconfined fracture radius from the layer thickness, if required
                         double local_minUnconfinedFractureRadius = (MinUnconfinedFractureRadius > 0) ? MinUnconfinedFractureRadius : 0.01 * local_LayerThickness;
                         double local_maxUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : 0.5 * local_LayerThickness;
-                        double local_maxEffectiveUnconfinedFractureRadius = (MaxUnconfinedFractureRadius > 0) ? MaxUnconfinedFractureRadius : local_maxUnconfinedFractureRadius;
+                        double local_maxEffectiveUnconfinedFractureRadius = (MaxEffectiveUnconfinedFractureRadius > 0) ? MaxEffectiveUnconfinedFractureRadius : local_maxUnconfinedFractureRadius;
 
                         // Determine whether to check for stress shadows from other fracture sets
                         bool local_checkAlluFStressShadows;
@@ -4233,7 +4233,7 @@ namespace DFMGenerator_GRDECL
                         else
                             gc.resetLayerBoundFractures(NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures);
                         if (NoUnconfinedFractureStrikeSets > 0)
-                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius);
+                            gc.resetUnconfinedFractures(NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_maxEffectiveUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius);
 
                         // Update the number and names of the unconfined fracture sets
                         if (NoUnconfinedFractureSets < gc.NoUnconfinedFractureSets)
@@ -4252,7 +4252,7 @@ namespace DFMGenerator_GRDECL
                         else
                             progressReporter.OutputMessage(string.Format("gc.resetLayerBoundFractures({0}, {1}, {2}, {3}, {4});", NoLayerBoundFractureSets, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, BiazimuthalConjugate, AllowReverseFractures));
                         if (NoUnconfinedFractureStrikeSets > 0)
-                            progressReporter.OutputMessage(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, InitialFractureDistribution.{5}, {6}, {7}, {8});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius));
+                            progressReporter.OutputMessage(string.Format("gc.resetUnconfinedFractures({0}, {1}, {2}, {3}, {4}, {5}, InitialFractureDistribution.{6}, {7}, {8}, {9});", NoUnconfinedFractureStrikeSets, NoUnconfinedFractureDipSets, NoRaysPerUnconfinedFracture, local_minUnconfinedFractureRadius, local_maxUnconfinedFractureRadius, local_maxEffectiveUnconfinedFractureRadius, InitialMicrofractureDistributionFunction, local_InitialMicrofractureDensity, local_InitialMicrofractureSizeDistribution, local_InitialMicrofractureMedianRadius));
 #endif
                         // NB the fracture aperture control data must be set after the present day stress is defined, as it may be dependent on it
 
@@ -5455,9 +5455,9 @@ namespace DFMGenerator_GRDECL
                                                 if (finalStage)
                                                 {
                                                     double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
-                                                    double INodes = ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsRMax_RP30_M();
-                                                    double RNodes = ufs.getsII_RP30_M();
-                                                    double YNodes = ufs.getsIJ_RP30_M();
+                                                    double INodes = ufs.getActive_RP30_M() + ufs.get_RP30_M(RayPropagationStatus.StaticMaxRadius);
+                                                    double RNodes = ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow);
+                                                    double YNodes = ufs.get_RP30_M(RayPropagationStatus.StaticIntersection);
                                                     double TotalFractures = INodes + RNodes + YNodes;
                                                     double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity();
                                                     UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);
@@ -5470,9 +5470,9 @@ namespace DFMGenerator_GRDECL
                                                 {
                                                     int TSNo = fractureGridCell.getTimestepIndex(stageEndTime);
                                                     double undefinedValue = PopulateEmptyGridblocks ? 0 : double.NaN;
-                                                    double INodes = ufs.geta_RP30_M(TSNo) + ufs.getr_RP30_M(TSNo) + ufs.getsRMax_RP30_M(TSNo);
-                                                    double RNodes = ufs.getsII_RP30_M(TSNo);
-                                                    double YNodes = ufs.getsIJ_RP30_M(TSNo);
+                                                    double INodes = ufs.getActive_RP30_M(TSNo) + ufs.get_RP30_M(RayPropagationStatus.StaticMaxRadius, TSNo);
+                                                    double RNodes = ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow, TSNo);
+                                                    double YNodes = ufs.get_RP30_M(RayPropagationStatus.StaticIntersection, TSNo);
                                                     double TotalFractures = INodes + RNodes + YNodes;
                                                     double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity(TSNo);
                                                     UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);
@@ -5951,9 +5951,9 @@ namespace DFMGenerator_GRDECL
                                                 double YNodes = 0;
                                                 foreach (UnconfinedFractureSet ufs in fractureGridCell.UnconfinedFractureSets)
                                                 {
-                                                    INodes += ufs.geta_RP30_M(TSNo) + ufs.getr_RP30_M(TSNo) + ufs.getsRMax_RP30_M(TSNo);
-                                                    RNodes += ufs.getsII_RP30_M(TSNo);
-                                                    YNodes += ufs.getsIJ_RP30_M(TSNo);
+                                                    INodes += ufs.getActive_RP30_M(TSNo) + ufs.get_RP30_M(RayPropagationStatus.StaticMaxRadius, TSNo);
+                                                    RNodes += ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow, TSNo);
+                                                    YNodes += ufs.get_RP30_M(RayPropagationStatus.StaticIntersection, TSNo);
                                                 }
                                                 double TotalNodes = INodes + RNodes + YNodes;
                                                 UnconnectedTipRatio = (TotalNodes > 0 ? INodes / TotalNodes : undefinedValue + 1);

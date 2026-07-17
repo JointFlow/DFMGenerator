@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace DFMGenerator_SharedCode
@@ -135,29 +136,21 @@ namespace DFMGenerator_SharedCode
         public double theta_dashed_allFS_M { get { return Math.Max(theta_dashed_M - chi_otherFS_M, 0); } }
 #endif
         /// <summary>
-        /// Volumetric density of all fully active rays, at the end of timestep M
+        /// Volumetric density of all fracture rays by type, at the end of timestep M
         /// </summary>
-        public double a_RP30_M { get; private set; }
+        public Dictionary<RayPropagationStatus, double> RP30_M { get; private set; }
         /// <summary>
-        /// Volumetric density of all restricted rays, at the end of timestep M
+        /// Volumetric density of active fracture rays
         /// </summary>
-        public double r_RP30_M { get; private set; }
+        public double Active_RP30_M { get { return RP30_M[RayPropagationStatus.FullyActive] + RP30_M[RayPropagationStatus.Restricted] + RP30_M[RayPropagationStatus.ConstantKi]; } }
         /// <summary>
-        /// Volumetric density of all static rays terminated due to stress shadow interaction, at the end of timestep M
+        /// Volumetric density of static fracture rays, at the end of timestep M
         /// </summary>
-        public double sII_RP30_M { get; private set; }
+        public double Static_RP30_M { get { return RP30_M[RayPropagationStatus.StaticStressShadow] + RP30_M[RayPropagationStatus.StaticIntersection] + RP30_M[RayPropagationStatus.StaticMaxRadius]; } }
         /// <summary>
-        /// Volumetric density of all static rays terminated due to intersection, at the end of timestep M
+        /// Volumetric density of all fracture rays, at the end of timestep M
         /// </summary>
-        public double sIJ_RP30_M { get; private set; }
-        /// <summary>
-        /// Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
-        /// </summary>
-        public double sRMax_RP30_M { get; private set; }
-        /// <summary>
-        /// Volumetric density of all rays, static and dynamic, at the end of timestep M
-        /// </summary>
-        public double Total_RP30_M { get { return a_RP30_M + r_RP30_M + sII_RP30_M + sIJ_RP30_M + sRMax_RP30_M; } }
+        public double Total_RP30_M { get { return Active_RP30_M + Static_RP30_M; } }
         /// <summary>
         /// Volumetric density of all unconfined fractures from other fracture sets that terminate against fractures from this set, at the end of timestep M
         /// </summary>
@@ -195,7 +188,7 @@ namespace DFMGenerator_SharedCode
         public double Total_RP35_M { get; private set; }*/
         /// <summary>
         /// Piecewise population distribution function (not cumulative) for total ray volumetric density, at the end of timestep M
-        /// NB This list will only be instantiated if required to calculate microfracture permeability
+        /// NB This list will only be instantiated if required to calculate fracture permeability
         /// </summary>
         public double[] DRP30_distribution_M { get; private set; }
         /// <summary>
@@ -248,44 +241,32 @@ namespace DFMGenerator_SharedCode
             Cum_Gamma_Mminus1 = temp_Cum_Gamma;
         }
         /// <summary>
-        /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, sRMax_RP30, RP32, RP33Exclusive and RP33Overlapping at the end of the timestep
+        /// Set values for the ray density indices RP30, RP32, RP33Exclusive and RP33Overlapping at the end of the timestep
         /// </summary>
-        /// <param name="a_RP30_in">Volumetric density of fully active rays (a_RP30), at end of timestep M</param>
-        /// <param name="a_RP30_in">Volumetric density of restricted rays (r_RP30), at end of timestep M</param>
-        /// <param name="sII_RP30_in">Volumetric density of static rays terminated due to stress shadow interaction (sII_RP30), at end of timestep M</param>
-        /// <param name="sIJ_RP30_in">Volumetric density of static rays terminated due to intersection (sIJ_RP30), at end of timestep M</param>
-        /// <param name="sRMax_RP30_in">Volumetric density of static rays terminated due to exceeding the maximum radius (sRMax_RP30), at end of timestep M</param>
+        /// <param name="RP30_in">Dictionary containing volumetric density for all ray types rays, at end of timestep M</param>
         /// <param name="Total_RP32_in">Total mean linear density of rays (Total_RP32), at end of timestep M</param>
         /// <param name="Total_RP33_in">Maximum volumetric ratio of all rays, not accounting for overlap, at the end of timestep M</param>
-        public void SetFractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double sRMax_RP30_in, double Total_RP32_in, double Total_RP33_in)
+        public void SetFractureDensityData(Dictionary<RayPropagationStatus, double> RP30_in, double Total_RP32_in, double Total_RP33_in)
         {
             // Set the new values for all ray densities at the end of the timestep
-            a_RP30_M = a_RP30_in;
-            r_RP30_M = r_RP30_in;
-            sII_RP30_M = sII_RP30_in;
-            sIJ_RP30_M = sIJ_RP30_in;
-            sRMax_RP30_M = sRMax_RP30_in;
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                RP30_M[status] = RP30_in[status];
             Total_RP32_M = Total_RP32_in;
             Total_RP33_M = Total_RP33_in;
         }
         /*/// <summary>
-        /// Set values for the ray density indices a_RP30, r_RP30, sII_RP30, sIJ_RP30, RP31, RP32, RP33 and RP35 at the end of the timestep
+        /// Set values for the ray density indices RP30, RP31, RP32, RP33 and RP35 at the end of the timestep
         /// </summary>
-        /// <param name="a_RP30_in">Volumetric density of fully active rays (a_RP30) at end of timestep M</param>
-        /// <param name="a_RP30_in">Volumetric density of restricted rays (r_RP30) at end of timestep M</param>
-        /// <param name="sII_RP30_in">Volumetric density of static rays terminated due to stress shadow interaction (sII_RP30) at end of timestep M</param>
-        /// <param name="sIJ_RP30_in">Volumetric density of static rays terminated due to intersection (sIJ_RP30) at end of timestep M</param>
+        /// <param name="RP30_in">Dictionary containing volumetric density for all ray types rays, at end of timestep M</param>
         /// <param name="Total_RP31_in">Sum of the lengths of every ray in a unit volume at end of timestep M</param>
         /// <param name="Total_RP32_in">Total mean linear density of rays (Total_RP32) at end of timestep M</param>
         /// <param name="Total_RP33_in">Total volumetric ratio of rays (Total_RP33) at end of timestep M</param>
         /// <param name="Total_RP35_in">Sum of the integral of R^3 across the area of every fracture segment, where R is the ray length, at end of timestep M</param>
-        public void SetMacrofractureDensityData(double a_RP30_in, double r_RP30_in, double sII_RP30_in, double sIJ_RP30_in, double Total_RP31_in, double Total_RP32_in, double Total_RP33_in, double Total_RP35_in)
+        public void SetMacrofractureDensityData(Dictionary<RayPropagationStatus, double> RP30_in, double Total_RP31_in, double Total_RP32_in, double Total_RP33_in, double Total_RP35_in)
         {
             // Set the new values for all ray densities at the end of the timestep
-            a_RP30_M = a_RP30_in;
-            r_RP30_M = r_RP30_in;
-            sII_RP30_M = sII_RP30_in;
-            sIJ_RP30_M = sIJ_RP30_in;
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                RP30_M[status] = RP30_in[status];
             Total_RP31_M = Total_RP31_in;
             Total_RP32_M = Total_RP32_in;
             Total_RP33_M = Total_RP33_in;
@@ -455,6 +436,7 @@ namespace DFMGenerator_SharedCode
             //nextTimestepData.chi_otherFS_Mminus1 = chi_otherFS_M;
             // Volumetric density of all active rays: does not change
             // Volumetric density of all restricted rays: does not change
+            // Volumetric density of all with constant effective radius: does not change
             // Volumetric density of all static rays terminated due to stress shadow interaction: does not change
             // Volumetric density of all static rays terminated due to intersection: does not change
             // Volumetric density of all static rays terminated due to exceeding the maximum radius: does not change
@@ -514,16 +496,10 @@ namespace DFMGenerator_SharedCode
             // Total exclusion zone volume for all other fracture sets, excluding overlap with the exclusion zone of this dipset, at end of timestep M
             chi_otherFS_M = 0;
 #endif
-            // Volumetric density of all fully active rays
-            a_RP30_M = 0;
-            // Volumetric density of all restricted rays
-            r_RP30_M = 0;
-            // Volumetric density of all static rays terminated due to stress shadow interaction, at the end of timestep M
-            sII_RP30_M = 0;
-            // Volumetric density of all static rays terminated due to intersection, at the end of timestep M
-            sIJ_RP30_M = 0;
-            // Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
-            sRMax_RP30_M = 0;
+            // Volumetric density of fracture rays
+            RP30_M = new Dictionary<RayPropagationStatus, double>();
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                RP30_M.Add(status, 0);
             // Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
             //TerminatingFractureDensity_M = 0;
             // P31 of all rays, static and dynamic, at the end of timestep M
@@ -598,16 +574,10 @@ namespace DFMGenerator_SharedCode
             // Total exclusion zone volume for all other fracture sets, excluding overlap with the exclusion zone of this dipset, at end of timestep M
             chi_otherFS_M = fcd_in.chi_otherFS_M;
 #endif
-            // Volumetric density of all fully active rays
-            a_RP30_M = fcd_in.a_RP30_M;
-            // Volumetric density of all restricted rays
-            r_RP30_M = fcd_in.r_RP30_M;
-            // Volumetric density of all static rays terminated due to stress shadow interaction, at the end of timestep M
-            sII_RP30_M = fcd_in.sII_RP30_M;
-            // Volumetric density of all static rays terminated due to intersection, at the end of timestep M
-            sIJ_RP30_M = fcd_in.sIJ_RP30_M;
-            // Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
-            sRMax_RP30_M = fcd_in.sRMax_RP30_M;
+            // Volumetric density of fracture rays
+            RP30_M = new Dictionary<RayPropagationStatus, double>();
+            foreach (RayPropagationStatus status in Enum.GetValues(typeof(RayPropagationStatus)).Cast<RayPropagationStatus>())
+                RP30_M.Add(status, fcd_in.RP30_M[status]);
             // Volumetric density of all rays from other fracture sets that terminate against rays from this dipset, at the end of timestep M
             //TerminatingFractureDensity_M = fcd_in.TerminatingFractureDensity_M;
             // P31 of all rays, static and dynamic, at the end of timestep M

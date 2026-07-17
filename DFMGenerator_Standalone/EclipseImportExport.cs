@@ -899,9 +899,9 @@ namespace DFMGenerator_Standalone
                                                     if (finalStage)
                                                     {
                                                         double undefinedValue = PopulateEmptyGridblocks ? 0 : NullValue;
-                                                        double INodes = ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsRMax_RP30_M();
-                                                        double RNodes = ufs.getsII_RP30_M();
-                                                        double YNodes = ufs.getsIJ_RP30_M();
+                                                        double INodes = ufs.getActive_RP30_M() + ufs.get_RP30_M(RayPropagationStatus.StaticMaxRadius);
+                                                        double RNodes = ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow);
+                                                        double YNodes = ufs.get_RP30_M(RayPropagationStatus.StaticIntersection);
                                                         double TotalFractures = INodes + RNodes + YNodes;
                                                         double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity();
                                                         UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);
@@ -914,9 +914,9 @@ namespace DFMGenerator_Standalone
                                                     {
                                                         int TSNo = gbc.getTimestepIndex(stageEndTime);
                                                         double undefinedValue = PopulateEmptyGridblocks ? 0 : NullValue;
-                                                        double INodes = ufs.geta_RP30_M(TSNo) + ufs.getr_RP30_M(TSNo) + ufs.getsRMax_RP30_M(TSNo);
-                                                        double RNodes = ufs.getsII_RP30_M(TSNo);
-                                                        double YNodes = ufs.getsIJ_RP30_M(TSNo);
+                                                        double INodes = ufs.getActive_RP30_M(TSNo) + ufs.get_RP30_M(RayPropagationStatus.StaticMaxRadius, TSNo);
+                                                        double RNodes = ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow, TSNo);
+                                                        double YNodes = ufs.get_RP30_M(RayPropagationStatus.StaticIntersection, TSNo);
                                                         double TotalFractures = INodes + RNodes + YNodes;
                                                         double NoConnections = (LinkStressShadows ? RNodes : 0) + YNodes + ufs.getTerminatingFractureDensity(TSNo);
                                                         UnconnectedTipRatio = (TotalFractures > 0 ? INodes / TotalFractures : undefinedValue + 1);

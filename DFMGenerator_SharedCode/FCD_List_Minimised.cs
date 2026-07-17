@@ -146,37 +146,26 @@ namespace DFMGenerator_SharedCode
         public double getCumulativeThetaDashed_AllFS_M(int Timestep_M) { return dataList[Timestep_M].theta_dashed_allFS_M; }
 #endif
         /// <summary>
-        /// Volumetric density of all fully active rays, at the end of timestep M
+        /// Volumetric density of fracture rays with a specified ray propagation status status, at the end of timestep M
+        /// </summary>
+        /// <param name="PropagationStatus">Ray propagation status to return data for</param>
+        /// <param name="Timestep_M"></param>
+        /// <returns></returns>
+        public double get_RP30_M(RayPropagationStatus PropagationStatus, int Timestep_M) { return dataList[Timestep_M].RP30_M[PropagationStatus]; }
+        /// <summary>
+        /// Volumetric density of all active rays, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M"></param>
         /// <returns></returns>
-        public double geta_RP30_M(int Timestep_M) { return dataList[Timestep_M].a_RP30_M; }
+        public double getActive_RP30_M(int Timestep_M) { return dataList[Timestep_M].Active_RP30_M; }
         /// <summary>
-        /// Volumetric density of all restricted rays, at the end of timestep M
+        /// Volumetric density of all static rays, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M"></param>
         /// <returns></returns>
-        public double getr_RP30_M(int Timestep_M) { return dataList[Timestep_M].r_RP30_M; }
+        public double getStatic_RP30_M(int Timestep_M) { return dataList[Timestep_M].Static_RP30_M; }
         /// <summary>
-        /// Volumetric density of all static rays terminated due to stress shadow interaction, at the end of timestep M
-        /// </summary>
-        /// <param name="Timestep_M"></param>
-        /// <returns></returns>
-        public double getsII_RP30_M(int Timestep_M) { return dataList[Timestep_M].sII_RP30_M; }
-        /// <summary>
-        /// Volumetric density of all static rays terminated due to intersection, at the end of timestep M
-        /// </summary>
-        /// <param name="Timestep_M"></param>
-        /// <returns></returns>
-        public double getsIJ_RP30_M(int Timestep_M) { return dataList[Timestep_M].sIJ_RP30_M; }
-        /// <summary>
-        /// Volumetric density of all static rays terminated due to exceeding the maximum radius, at the end of timestep M
-        /// </summary>
-        /// <param name="Timestep_M"></param>
-        /// <returns></returns>
-        public double getsRMax_RP30_M(int Timestep_M) { return dataList[Timestep_M].sRMax_RP30_M; }
-        /// <summary>
-        /// Volumetric density of all rays, static and dynamic, at the end of timestep M
+        /// Volumetric density of all rays, active and static, at the end of timestep M
         /// </summary>
         /// <param name="Timestep_M">Timestep M</param>
         /// <returns></returns>

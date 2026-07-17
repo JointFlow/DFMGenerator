@@ -5861,6 +5861,11 @@ namespace DFMGenerator_SharedCode
 
             // Create new arrays for microfracture radii and macrofracture halflengths, Microfracture and Macrofracture objects, and fracture calculation data objects
             resetFractureData();
+
+            // Set the mechanical property overrides to NaN - this disables the mechanical property overrides
+            GcOverride = double.NaN;
+            KcOverride = double.NaN;
+            MuFrOverride = double.NaN;
         }
     }
 }

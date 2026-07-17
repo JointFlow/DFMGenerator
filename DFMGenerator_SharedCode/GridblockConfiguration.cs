@@ -1805,7 +1805,7 @@ namespace DFMGenerator_SharedCode
                 UnconfinedFractureSet ufsI = UnconfinedFractureSets[ufsI_Index];
 
                 // Get the increment in sIJUCRP30 for set I
-                double dsIJ_UCRP30 = ufsI.sIJ_UCRP30_total() - ((CurrentImplicitTimestep > 0) ? ufsI.getsIJ_RP30_M(CurrentImplicitTimestep - 1) : 0);
+                double dsIJ_UCRP30 = ufsI.get_RP30_M(RayPropagationStatus.StaticIntersection) - ((CurrentImplicitTimestep > 0) ? ufsI.get_RP30_M(RayPropagationStatus.StaticIntersection, CurrentImplicitTimestep - 1) : 0);
 
                 // Get the total apparent UCFP32 for all terminating fracture sets J
                 // This includes all fracture sets except set I
@@ -3037,9 +3037,8 @@ namespace DFMGenerator_SharedCode
             {
                 // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
                 // we must always take data from the FractureCalculationData list
-                double unconnectedTips = ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsRMax_RP30_M();
-                TotalUnconnectedTips += unconnectedTips;
-                TotalAllTips += unconnectedTips + ufs.getsII_RP30_M() + ufs.getsIJ_RP30_M();
+                TotalUnconnectedTips += ufs.getActive_RP30_M() + ufs.get_RP30_M(RayPropagationStatus.StaticMaxRadius);
+                TotalAllTips += ufs.getTotalUCRP30();
             }
 
             return (TotalAllTips > 0 ? TotalUnconnectedTips / TotalAllTips : undefinedReturn);
@@ -3058,9 +3057,8 @@ namespace DFMGenerator_SharedCode
             {
                 // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
                 // we must always take data from the FractureCalculationData list
-                double relayTips = ufs.getsII_RP30_M();
-                TotalRelayTips += relayTips;
-                TotalAllTips += ufs.geta_RP30_M() + ufs.getr_RP30_M() + relayTips + ufs.getsIJ_RP30_M() + ufs.getsRMax_RP30_M();
+                TotalRelayTips += ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow);
+                TotalAllTips += ufs.getTotalUCRP30();
             }
 
             return (TotalAllTips > 0 ? TotalRelayTips / TotalAllTips : undefinedReturn);
@@ -3079,9 +3077,8 @@ namespace DFMGenerator_SharedCode
             {
                 // Since the UCF implicit fracture population arrays are cleared at the end of the Gridblock.CalculateFractureData() function to save space, 
                 // we must always take data from the FractureCalculationData list
-                double intersectingTips = ufs.getsIJ_RP30_M();
-                TotalIntersectingTips += intersectingTips;
-                TotalAllTips += ufs.geta_RP30_M() + ufs.getr_RP30_M() + ufs.getsII_RP30_M() + intersectingTips + ufs.getsRMax_RP30_M();
+                TotalIntersectingTips += ufs.get_RP30_M(RayPropagationStatus.StaticIntersection);
+                TotalAllTips += ufs.getTotalUCRP30();
             }
 
             return (TotalAllTips > 0 ? TotalIntersectingTips / TotalAllTips : undefinedReturn);
@@ -3132,9 +3129,9 @@ namespace DFMGenerator_SharedCode
             {
                 // Only hard-linked relays will be counted
                 if (gd.DFNControl.LinkFracturesInStressShadow)
-                    TotalConnections += ufs.getsII_RP30_M();
+                    TotalConnections += ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow);
                 // Intersections create two fracture connections, one on the terminating fracture and one on the terminated fracture
-                TotalConnections += (2 * ufs.getsIJ_RP30_M());
+                TotalConnections += (2 * ufs.get_RP30_M(RayPropagationStatus.StaticIntersection));
                 TotalFractures += ufs.getTotalUCFP30();
             }
 
@@ -3159,8 +3156,8 @@ namespace DFMGenerator_SharedCode
             // we must always take data from the FractureCalculationData list
             // Only hard-linked relays will be counted
             if (gd.DFNControl.LinkFracturesInStressShadow)
-                TotalConnections += ufs.getsII_RP30_M();
-            TotalConnections += ufs.getsIJ_RP30_M();
+                TotalConnections += ufs.get_RP30_M(RayPropagationStatus.StaticStressShadow);
+            TotalConnections += ufs.get_RP30_M(RayPropagationStatus.StaticIntersection);
             double connectionsPerFracture = TotalFractures > 0 ? TotalConnections / TotalFractures : undefinedReturn;
 
             // Add the mean number of terminating fractures
@@ -3942,26 +3939,20 @@ namespace DFMGenerator_SharedCode
             {
                 string headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\tElastic ehmin\tElastic ehmax\tTotal ehmin\tTotal ehmax\t", timeUnits);
                 string headerLine2 = "\t\t\t\t\t\t\t";
-                string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
-                string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tMF Stress shadow width\tMF Stress shadow volume\tClear zone volume\t\t";
-                //string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tStress shadow width ratio\tStress shadow volume\tClear zone volume\t";
-                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tThis set Stress shadow volume\tAll sets Stress shadow volume\t\t";
+                string FSheader1 = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+                string FSheader2 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_uFP30\ts_uFP30\ta_uFP32\ts_uFP32\ta_MFP30\tsII_MFP30\tsIJ_MFP30\ta_MFP32\ts_MFP32\tMF Propagation Rate\tMF Deactivation Rate\tMF Stress shadow width\tMF Stress shadow volume\tClear zone volume\t\t\t";
+                string FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP30\tr_RP30\tc_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tc_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tStress shadow width:radius\tStress shadow volume\tClear zone volume\t\t";
 #if LOGIMPPOP
                 headerLine1 = string.Format("Timestep\tDuration ({0})\tEnd Time ({0})\t{1}\t{2}\t{3}\t{4}\t", timeUnits, "Sigma_eff.XX", "Sigma_eff.YY", "Sigma_eff.XY", "Sigma_eff.ZZ");
-                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
+                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "Mean_Azimuthal_MF_StressShadowWidth", "Mean_Shear_MF_StressShadowWidth", "Mean_MF_StressShadowWidth", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS",
                 //    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
-                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "U", "V", "MF Propagation Rate", "MF Propagation Distance", "MF Maximum Propagation Distance", 
+                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "U", "V", "MF Propagation Rate", "MF Propagation Distance", "MF Maximum Propagation Distance", 
                 //    "getClearZoneVolume", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
-                FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getPhi", "getInstantaneousFII", "getInstantaneousFIJ", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", 
+                FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getPhi", "getInstantaneousFII", "getInstantaneousFIJ", "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", 
                     "a_MFP30_total", "sII_MFP30_total", "sIJ_MFP30_total", "a_MFP32_total", "s_MFP32_total", "");
-                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getAA", "getBB", "getCCStep", "getMeanStressShadowWidth", "getMeanShearStressShadowWidth",
+                //FSheader2 = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", "getEvolutionStage", "getFinalDrivingStressSigmaD", "Mode", "getAA", "getBB", "getCCStep", "getMeanStressShadowWidth", "getMeanShearStressShadowWidth",
                 //    "getInverseStressShadowVolume", "getInverseStressShadowVolumeAllFS", "getClearZoneVolume", "a_MFP32_total", "s_MFP32_total", "getClearZoneVolumeAllFS");
-                //FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tRP33_exclusive\tRP33_overlapping\tClear zone volume\t";
-                //FSheader3 = "Fracture stage\tDriving stress\tDisplacement sense\tSlip pitch\ta_RP33\tr_RP33\tsII_RP33\tsIJ_RP33\tsMR_RP33\ttotal_RP32\tAzimuthal stress shadow width ratio\tShear stress shadow width ratio\tCombined stress shadow width ratio\tRP33\tStress shadow volume\tStress shadow volume\tClear zone volume\t";
-                //FSheader3 = "Fracture stage\tDriving stress\tGamma_Inv_beta\tCum_Gamma\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t";
-                //FSheader3 = "Fracture stage\tDriving stress\tCum_Gamma\tStress shadow width ratio\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP31\tr_RP31\tsII_RP31\tsIJ_RP31\tsMR_RP31\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t";
-                //FSheader3 = "Fracture stage\tDriving stress\tPrevious Ln\tMin dP30\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\ta_RP32\tr_RP32\tsII_RP32\tsIJ_RP32\tsMR_RP32\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t";
-                FSheader3 = "Fracture stage\tDriving stress\tStress shadow width ratio\ta_RP30\tr_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\tRP31_active\tRP31_static\tRP32_active\tRP32_static\tRP33_active\tRP33_static\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t";
+                FSheader3 = "Fracture stage\tDriving stress\tStress shadow width ratio\ta_RP30\tr_RP30\tc_RP30\tsII_RP30\tsIJ_RP30\tsMR_RP30\tRP31_active\tRP31_static\tRP32_active\tRP32_static\tRP33_active\tRP33_static\tThis set Stress shadow volume\tAll sets Stress shadow volume\tClear zone volume\t\t\t";
 #endif
                 string TS0data = "0\t0\t0\t0\t0\t0\t0\t";
                 for (int fs_index = 0; fs_index < NoLayerBoundFractureSets; fs_index++)
@@ -3973,7 +3964,7 @@ namespace DFMGenerator_SharedCode
                     {
                         headerLine1 += string.Format("FS {0} {1}", (useSetNames ? getLayerBoundFractureSetName(fs_index) : fs_index.ToString()), (useDipSetNames ? dipSetLabels[dipsetIndex] : string.Format("Dipset {0}", dipsetIndex))) + FSheader1;
                         headerLine2 += FSheader2;
-                        TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
+                        TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t\t\t";
                     }
                 }
                 for (int ufs_index = 0; ufs_index < NoUnconfinedFractureSets; ufs_index++)
@@ -3982,7 +3973,7 @@ namespace DFMGenerator_SharedCode
                     string setLabel = useUnconfinedSetNames ? getUnconfinedFractureSetName(ufs_index) : string.Format("UFS {0}", ufs_index);
                     headerLine1 += setLabel + FSheader1;
                     headerLine2 += FSheader3;
-                    TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t";
+                    TS0data += "NotActivated\t0\t\t\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t1\t\t";
                 }
                 if (CalculateFracturePorosity)
                 {
@@ -4736,19 +4727,19 @@ namespace DFMGenerator_SharedCode
                             foreach (FractureDipSet fds in fs.FractureDipSets)
                             {
                                 // Get fracture data and add to timestep log string
-                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
-                                    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getMeanStressShadowWidth(), 1 - fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolumeAllFS());
+                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t{17}\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.a_uFP30_total(), fds.s_uFP30_total(), fds.a_uFP32_total(), fds.s_uFP32_total(),
+                                    fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getMeanMFPropagationRate(), fds.getMeanF(), fds.getMeanStressShadowWidth(), 1 - fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolumeAllFS());
 #if LOGIMPPOP
-                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.Mean_Azimuthal_MF_StressShadowWidth, fds.Mean_Shear_MF_StressShadowWidth, fds.Mean_MF_StressShadowWidth, fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
                                 //    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
                                 //double ts_MeanMFLength = fs.Calculate_MeanPropagationDistance(fds, CurrentImplicitTimestep, new List<double>() { 0 }, PropControl.StressDistributionCase == StressDistribution.EvenlyDistributedStress)[0];
-                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getConstantDrivingStressU(), fds.getVariableDrivingStressV(), fds.getMeanMFPropagationRate(), fds.getMFPropagationDistance(), ts_MeanMFLength,
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getConstantDrivingStressU(), fds.getVariableDrivingStressV(), fds.getMeanMFPropagationRate(), fds.getMFPropagationDistance(), ts_MeanMFLength,
                                 //    fds.getClearZoneVolume(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
-                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getPhi(), fds.getInstantaneousFII(), fds.getInstantaneousFIJ(), fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), 
+                                fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getPhi(), fds.getInstantaneousFII(), fds.getInstantaneousFIJ(), fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), 
                                     fds.a_MFP30_total(), fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolume());
-                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.Mode, fds.getAA(), fds.getBB(), fds.getCCStep(), fds.getMeanStressShadowWidth(), fds.getMeanShearStressShadowWidth(),
                                 //    fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(), fds.getClearZoneVolume(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
-                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.getMeanAzimuthalStressShadowWidth(), fds.getMeanShearStressShadowWidth(), fds.getMeanStressShadowWidth(), fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
+                                //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t\t\t\t\t\t\t", fds.getEvolutionStage(), fds.getFinalDrivingStressSigmaD(), fds.DisplacementSense, fds.DisplacementPitch, fds.getMeanAzimuthalStressShadowWidth(), fds.getMeanShearStressShadowWidth(), fds.getMeanStressShadowWidth(), fds.getInverseStressShadowVolume(), fds.getInverseStressShadowVolumeAllFS(),
                                 //    fds.sII_MFP30_total(), fds.sIJ_MFP30_total(), fds.a_MFP32_total(), fds.s_MFP32_total(), fds.getClearZoneVolumeAllFS());
 #endif
                                 timestepData = timestepData + fractureSetData;
@@ -4758,22 +4749,20 @@ namespace DFMGenerator_SharedCode
                         foreach (UnconfinedFractureSet ufs in UnconfinedFractureSets)
                         {
                             // Get fracture data and add to timestep log string
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                            //    ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
-                                ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), 1 - ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
+                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t{17}\t{18}\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.get_UCRP30(RayPropagationStatus.FullyActive), ufs.get_UCRP30(RayPropagationStatus.Restricted), ufs.get_UCRP30(RayPropagationStatus.ConstantKi), ufs.get_UCRP30(RayPropagationStatus.StaticStressShadow), ufs.get_UCRP30(RayPropagationStatus.StaticIntersection), ufs.get_UCRP30(RayPropagationStatus.StaticMaxRadius),
+                                ufs.get_UCRP32(RayPropagationStatus.FullyActive), ufs.get_UCRP32(RayPropagationStatus.Restricted), ufs.get_UCRP32(RayPropagationStatus.ConstantKi), ufs.get_UCRP32(RayPropagationStatus.StaticStressShadow), ufs.get_UCRP32(RayPropagationStatus.StaticIntersection), ufs.get_UCRP32(RayPropagationStatus.StaticMaxRadius), ufs.getStressShadowWidthRatio(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
 #if LOGIMPPOP
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t\t\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_RP33_total(), ufs.r_RP33_total(), ufs.sII_RP33_total(), ufs.sIJ_RP33_total(), ufs.sMR_RP33_total(),
                             //    ufs.a_RP32_total(), ufs.r_RP32_total(), ufs.sII_RP32_total(), ufs.sIJ_RP32_total(), ufs.sMR_RP32_total(), ufs.RP33_exclusive_total(), ufs.RP33_overlapping_total(), ufs.getClearZoneVolume());
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP33_total(), ufs.r_UCRP33_total(), ufs.sII_UCRP33_total(), ufs.sIJ_UCRP33_total(), ufs.sMR_UCRP33_total(),
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t\t\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.DisplacementSense, ufs.ShearStressPitch, ufs.a_UCRP33_total(), ufs.r_UCRP33_total(), ufs.sII_UCRP33_total(), ufs.sIJ_UCRP33_total(), ufs.sMR_UCRP33_total(),
                             //    ufs.a_UCRP32_total() + ufs.r_UCRP32_total() + ufs.sII_UCRP32_total() + ufs.sIJ_UCRP32_total() + ufs.sMR_UCRP32_total(), ufs.Max_F_StressShadowWidthRatio, ufs.Max_F_StressShadowWidthRatio, ufs.Max_F_StressShadowWidthRatio, ufs.UCFP33_total(), ufs.StressShadowVolume_total(), 1 - ufs.getInverseStressShadowVolume(), ufs.getClearZoneVolume());
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.getFracturePropRateCoefficient(), ufs.getCumGamma(), ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t\t\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.getFracturePropRateCoefficient(), ufs.getCumGamma(), ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
                             //    ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), 1 - ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.getCumGamma(), ufs.Max_F_StressShadowWidthRatio, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t\t\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.getCumGamma(), ufs.Max_F_StressShadowWidthRatio, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
                             //    ufs.a_UCRP31_total(), ufs.r_UCRP31_total(), ufs.sII_UCRP31_total(), ufs.sIJ_UCRP31_total(), ufs.sMR_UCRP31_total(), 1 - ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
-                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.previous_LRP30, ufs.min_NucleatingDatapoint_RP30, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
+                            //fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t\t\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.previous_LRP30, ufs.min_NucleatingDatapoint_RP30, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
                             //    ufs.a_UCRP32_total(), ufs.r_UCRP32_total(), ufs.sII_UCRP32_total(), ufs.sIJ_UCRP32_total(), ufs.sMR_UCRP32_total(), 1 - ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
-                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.Max_F_StressShadowWidthRatio, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
+                            fractureSetData = string.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t\t\t\t", ufs.getEvolutionStage(), ufs.getFinalDrivingStressSigmaD(), ufs.Max_F_StressShadowWidthRatio, ufs.a_UCRP30_total(), ufs.r_UCRP30_total(), ufs.sII_UCRP30_total(), ufs.sIJ_UCRP30_total(), ufs.sMR_UCRP30_total(),
                                 ufs.a_UCRP31_total() + ufs.r_UCRP31_total(), ufs.sII_UCRP31_total() + ufs.sIJ_UCRP31_total() + ufs.sMR_UCRP31_total(), ufs.a_UCRP32_total() + ufs.r_UCRP32_total(), ufs.sII_UCRP32_total() + ufs.sIJ_UCRP32_total() + ufs.sMR_UCRP32_total(), ufs.a_UCRP33_total() + ufs.r_UCRP33_total(), ufs.sII_UCRP33_total() + ufs.sIJ_UCRP33_total() + ufs.sMR_UCRP33_total(), 1 - ufs.getInverseStressShadowVolume(), 1 - ufs.getInverseStressShadowVolumeAllFS(), ufs.getClearZoneVolumeAllFS());
 #endif
 
@@ -5140,12 +5129,14 @@ namespace DFMGenerator_SharedCode
                             string indexData = "Radius\t";
                             string a_RP30_data = "a_RP30\t";
                             string r_RP30_data = "r_RP30\t";
+                            string c_RP30_data = "r_RP30\t";
                             string sII_RP30_data = "sII_RP30\t";
                             string sIJ_RP30_data = "sIJ_RP30\t";
                             string sMR_RP30_data = "sMR_RP30\t";
                             string Total_RP30_data = "Total_RP30\t";
                             string a_RP32_data = "a_RP32\t";
                             string r_RP32_data = "r_RP32\t";
+                            string c_RP32_data = "r_RP32\t";
                             string sII_RP32_data = "sII_RP32\t";
                             string sIJ_RP32_data = "sIJ_RP32\t";
                             string sMR_RP32_data = "sMR_RP32\t";
@@ -5157,26 +5148,30 @@ namespace DFMGenerator_SharedCode
                             {
                                 double a_RP30 = P30values[RayPropagationStatus.FullyActive][indexPoint];
                                 double r_RP30 = P30values[RayPropagationStatus.Restricted][indexPoint];
+                                double c_RP30 = P30values[RayPropagationStatus.ConstantKi][indexPoint];
                                 double sII_RP30 = P30values[RayPropagationStatus.StaticStressShadow][indexPoint];
                                 double sIJ_RP30 = P30values[RayPropagationStatus.StaticIntersection][indexPoint];
                                 double sMR_RP30 = P30values[RayPropagationStatus.StaticMaxRadius][indexPoint];
-                                double Total_RP30 = a_RP30 + r_RP30 + sII_RP30 + sIJ_RP30 + sMR_RP30;
+                                double Total_RP30 = a_RP30 + r_RP30 + c_RP30 + sII_RP30 + sIJ_RP30 + sMR_RP30;
                                 double a_RP32 = P32values[RayPropagationStatus.FullyActive][indexPoint];
                                 double r_RP32 = P32values[RayPropagationStatus.Restricted][indexPoint];
+                                double c_RP32 = P32values[RayPropagationStatus.ConstantKi][indexPoint];
                                 double sII_RP32 = P32values[RayPropagationStatus.StaticStressShadow][indexPoint];
                                 double sIJ_RP32 = P32values[RayPropagationStatus.StaticIntersection][indexPoint];
                                 double sMR_RP32 = P32values[RayPropagationStatus.StaticMaxRadius][indexPoint];
-                                double Total_RP32 = a_RP32 + r_RP32 + sII_RP32 + sIJ_RP32 + sMR_RP32;
+                                double Total_RP32 = a_RP32 + r_RP32 + c_RP32 + sII_RP32 + sIJ_RP32 + sMR_RP32;
 
                                 indexData += string.Format("{0}\t", indexRadii[indexPoint]);
                                 a_RP30_data += string.Format("{0}\t", a_RP30);
                                 r_RP30_data += string.Format("{0}\t", r_RP30);
+                                c_RP30_data += string.Format("{0}\t", c_RP30);
                                 sII_RP30_data += string.Format("{0}\t", sII_RP30);
                                 sIJ_RP30_data += string.Format("{0}\t", sIJ_RP30);
                                 sMR_RP30_data += string.Format("{0}\t", sMR_RP30);
                                 Total_RP30_data += string.Format("{0}\t", Total_RP30);
                                 a_RP32_data += string.Format("{0}\t", a_RP32);
                                 r_RP32_data += string.Format("{0}\t", r_RP32);
+                                c_RP32_data += string.Format("{0}\t", c_RP32);
                                 sII_RP32_data += string.Format("{0}\t", sII_RP32);
                                 sIJ_RP32_data += string.Format("{0}\t", sIJ_RP32);
                                 sMR_RP32_data += string.Format("{0}\t", sMR_RP32);
@@ -5187,12 +5182,14 @@ namespace DFMGenerator_SharedCode
                             outputFile.WriteLine(indexData);
                             outputFile.WriteLine(a_RP30_data);
                             outputFile.WriteLine(r_RP30_data);
+                            outputFile.WriteLine(c_RP30_data);
                             outputFile.WriteLine(sII_RP30_data);
                             outputFile.WriteLine(sIJ_RP30_data);
                             outputFile.WriteLine(sMR_RP30_data);
                             outputFile.WriteLine(Total_RP30_data);
                             outputFile.WriteLine(a_RP32_data);
                             outputFile.WriteLine(r_RP32_data);
+                            outputFile.WriteLine(c_RP32_data);
                             outputFile.WriteLine(sII_RP32_data);
                             outputFile.WriteLine(sIJ_RP32_data);
                             outputFile.WriteLine(sMR_RP32_data);
@@ -5271,7 +5268,6 @@ namespace DFMGenerator_SharedCode
             foreach (RayPropagationStatus rayType in rayTypesToLog)
                 rayLogFiles[rayType].Close();
 #endif
-
 
             // To free space at the end of the run we will clear the implicit fracture population function datapoint arrays for the unconfined fractures
             // We must therefore ensure that any data that may be required later is saved in the FractureCalculationData list
@@ -6041,10 +6037,9 @@ namespace DFMGenerator_SharedCode
                                     if (limitNewFractures) maxNewFractureSegments -= 2;
                                 }
                             }
-                            else // Otherwise increment the microfracture radius and then deactivate the microfraccture
+                            else // Otherwise increment the microfracture radius
                             {
                                 uF.Radius = newRadius;
-                                uF.Active = false;
 
                                 // If the fracture nucleation position is undefined and the microfracture tip has reached one of the layer boundaries, move its centrepoint towards centre of layer
                                 // This will prevent the microfracture extending out of layer; however this is only geologically valid if the microfractures grow anisotropically and it may skew the microfracture volumetric distribution
@@ -6054,7 +6049,7 @@ namespace DFMGenerator_SharedCode
                                     if (uF.CentrePoint.K < (uF.Radius - max_uF_radius)) uF.CentrePoint.K = (uF.Radius - max_uF_radius);
                                     if (uF.CentrePoint.K > (max_uF_radius - uF.Radius)) uF.CentrePoint.K = (max_uF_radius - uF.Radius);
                                 }
-                            }
+                            } 
                         } // End if microfracture is active
                     } // Loop to next microfracture
                 } // End propagate microfractures
@@ -6654,31 +6649,40 @@ namespace DFMGenerator_SharedCode
 
             // Get helper variables
             double CapA = MechProps.CapA;
-            bool bis2 = (MechProps.GetbType() == bType.Equals2);
+            double b = MechProps.b_factor;
             double beta = MechProps.beta;
+            bool bis2 = (MechProps.GetbType() == bType.Equals2);
             double initialR = UCRSegment.RayLength;
+            double maximumEffectiveFractureRadius = UCRSegment.MaximumEffectiveRayLength;
             double finalR, incrementR;
 
+            // Set the growth rate if the fracture has reached the fracture has reached maximum effective radius
+            // In this case the stress intensity factor is constant so propagation rate is independent of fracture size
+            if (UCRSegment.ConstantKi)
+            {
+                // The maximum effective ray length has alreeady been reached, so the propagation rate is independent of fracture size
+                // However because it is subcritical propagation, the rate is still dependent on driving stress, which may vary during the timestep
+                incrementR = bis2 ? maximumEffectiveFractureRadius * (-growthFactor) : beta * Math.Pow(maximumEffectiveFractureRadius, b / 2) * (-growthFactor);
+                //finalR = incrementR + initialR;
+            }
             // Set the growth rate if the fracture is fully active
-            if (UCRSegment.FractureFullyActive)
+            else if (UCRSegment.FractureFullyActive)
             {
                 // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical
                 // First calculate the increment in ray length assuming subcritical fracture propagation
                 // Fully active subcritical propagation rate is dependent on driving stress and ray length, both of which may vary during the timestep
                 finalR = bis2 ? (initialR * Math.Exp(-growthFactor)) : Math.Pow(Math.Pow(initialR, 1 / beta) - growthFactor, beta);
-                incrementR = finalR - initialR;
 
-                // It is not possible to calculate analytically the onset of critical fracture propagation if the driving stress is varying during the timestep, as the fracture radius is also not constant
-                // Therefore we will check whether the increment in ray length is greater than that which would be achieved by critical fracture propagation, and if so reduce it to this amount
-                // This will overestimate the total fracture propagation if the fracture becomes critical during the timestep, but not by as much as if we only check for critical propagation at the start of the timestep
-                // NB If the fracture reaches the blow-up radius within this timestep then the finalR calculation will return NaN (this can only happen for R>2)
-                // It is therefore also important to check for NaNs
-                double criticalPropagationIncrement = CapA * propagatingTime;
-                if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
+                // If the maximum effective ray length is reached, subcritical propagation occurs at constant rate beyond this point
+                if (finalR > maximumEffectiveFractureRadius)
                 {
-                    incrementR = criticalPropagationIncrement;
-                    //finalR = initialR + incrementR;
+                    double constantRateIncrement = bis2 ? maximumEffectiveFractureRadius * ((Math.Log(initialR) - Math.Log(maximumEffectiveFractureRadius)) - growthFactor) :
+                        beta * Math.Pow(maximumEffectiveFractureRadius, b / 2) * ((Math.Pow(initialR, 1 / beta) - Math.Pow(maximumEffectiveFractureRadius, 1 / beta)) - growthFactor);
+                    finalR = maximumEffectiveFractureRadius + constantRateIncrement;
                 }
+
+                // Finally calculate the propagation increment
+                incrementR = finalR - initialR;
             }
             // Set the growth rate if the fracture is restricted
             else
@@ -6688,20 +6692,31 @@ namespace DFMGenerator_SharedCode
                 // Restricted subcritical propagation rate is dependent on driving stress and ray length, both of which may vary during the timestep, and on the length of the controlling ray, which is static and will not vary during the timestep
                 double initialReff = UCRSegment.EffectiveRayLength;
                 double initialRc = UCRSegment.PropagationControllingRayLength;
-                finalR = bis2 ? (2 * initialReff * Math.Exp(-growthFactor / 2)) - initialRc : (2 * Math.Pow(Math.Pow(initialReff, 1 / beta) - (growthFactor / 2), beta)) - initialRc;
-                incrementR = finalR - initialR;
+                double growthComponent = bis2 ? initialReff * Math.Exp(-growthFactor / 2) : Math.Pow(Math.Pow(initialReff, 1 / beta) - (growthFactor / 2), beta);
+                finalR = (2 * growthComponent) - initialRc;
 
-                // It is not possible to calculate analytically the onset of critical fracture propagation if the driving stress is varying during the timestep, as the fracture radius is also not constant
-                // Therefore we will check whether the increment in ray length is greater than that which would be achieved by critical fracture propagation, and if so reduce it to this amount
-                // This will overestimate the total fracture propagation if the fracture becomes critical during the timestep, but not by as much as if we only check for critical propagation at the start of the timestep
-                // NB If the fracture reaches the blow-up radius within this timestep then the finalR calculation will return NaN (this can only happen for R>2)
-                // It is therefore also important to check for NaNs
-                double criticalPropagationIncrement = CapA * propagatingTime;
-                if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
+                // If the maximum effective ray length is reached, subcritical propagation occurs at constant rate beyond this point
+                if (growthComponent > maximumEffectiveFractureRadius)
                 {
-                    incrementR = criticalPropagationIncrement;
-                    //finalR = initialR + incrementR;
+                    double constantRateIncrement = bis2 ? maximumEffectiveFractureRadius * ((2 * (Math.Log(initialR) - Math.Log(maximumEffectiveFractureRadius))) - growthFactor) :
+                        beta * Math.Pow(maximumEffectiveFractureRadius, b / 2) * ((2 * (Math.Pow(initialR, 1 / beta) - Math.Pow(maximumEffectiveFractureRadius, 1 / beta))) - growthFactor);
+                    finalR = (2 * maximumEffectiveFractureRadius) + constantRateIncrement - initialRc;
                 }
+
+                // Finally calculate the propagation increment
+                incrementR = finalR - initialR;
+            }
+
+            // It is not possible to calculate analytically the onset of critical fracture propagation if the driving stress is varying during the timestep, as the fracture radius is also not constant
+            // Therefore we will check whether the increment in ray length is greater than that which would be achieved by critical fracture propagation, and if so reduce it to this amount
+            // This will overestimate the total fracture propagation if the fracture becomes critical during the timestep, but not by as much as if we only check for critical propagation at the start of the timestep
+            // NB If the fracture reaches the blow-up radius within this timestep then the finalR calculation will return NaN (this can only happen for R>2)
+            // It is therefore also important to check for NaNs
+            double criticalPropagationIncrement = CapA * propagatingTime;
+            if (((float)incrementR >= (float)criticalPropagationIncrement) || double.IsNaN(incrementR))
+            {
+                incrementR = criticalPropagationIncrement;
+                //finalR = initialR + incrementR;
             }
 
             return incrementR;
@@ -8220,12 +8235,13 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoRaysPerUnconfinedFracture_in">Number of rays comprising each unconfined fracture</param>
         /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
         /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
+        /// <param name="MaxUnconfinedEffectiveFractureRadius_in">Maximum allowed effective radius for unconfined fractures; when this is reached, rays will continue propagating but velocity and stress shadow width will be independent of fracture size</param>
         /// <param name="UCF_InitialMicrofractureDistribution_in">Initial microfracture distribution function for unconfined fracture sets</param>
         /// <param name="UCF_B_in">Initial microfracture density coefficient B for unconfined fracture sets (/m3)</param>
         /// <param name="UCF_c_in">Initial microfracture distribution coefficient c for unconfined fracture sets</param>
         /// <param name="UCF_M_in">Median initial microfracture radius for the log-normal distribution function for unconfined fracture sets</param>
         private void resetFractures(int NoLayerBoundFractureSets_in, double MF_B_in, double MF_c_in, bool SpecifyMode, FractureMode FractureMode_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in,
-            int NoUnconfinedFractureStrikeSets_in, int NoUnconfinedFractureDipSets_in, int NoRaysPerUnconfinedFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, InitialFractureDistribution UCF_InitialMicrofractureDistribution_in, double UCF_B_in, double UCF_c_in, double UCF_M_in)
+            int NoUnconfinedFractureStrikeSets_in, int NoUnconfinedFractureDipSets_in, int NoRaysPerUnconfinedFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double MaxUnconfinedEffectiveFractureRadius_in, InitialFractureDistribution UCF_InitialMicrofractureDistribution_in, double UCF_B_in, double UCF_c_in, double UCF_M_in)
         {
             // Clear all existing data
             ClearFractureData();
@@ -8242,7 +8258,7 @@ namespace DFMGenerator_SharedCode
             // Create the unconfined fracture sets
             if (NoUnconfinedFractureStrikeSets_in > 0)
             {
-                createUnconfinedFractures(NoUnconfinedFractureStrikeSets_in, NoUnconfinedFractureDipSets_in, NoRaysPerUnconfinedFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, UCF_InitialMicrofractureDistribution_in, UCF_B_in, UCF_c_in, UCF_M_in);
+                createUnconfinedFractures(NoUnconfinedFractureStrikeSets_in, NoUnconfinedFractureDipSets_in, NoRaysPerUnconfinedFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, MaxUnconfinedEffectiveFractureRadius_in, UCF_InitialMicrofractureDistribution_in, UCF_B_in, UCF_c_in, UCF_M_in);
             }
 
             // Repopulate the fracture set arrays
@@ -8276,7 +8292,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures: if true, additional dip sets will be created in the optimal orientation for reverse displacement; if false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         public void resetLayerBoundFractures(int NoFractureSets_in, double B_in, double c_in, bool BiazimuthalConjugate_in, bool IncludeReverseFractures_in)
         {
-            resetFractures(NoFractureSets_in, B_in, c_in, false, FractureMode.Mode1, BiazimuthalConjugate_in, IncludeReverseFractures_in, 0, 0, 0, 0, 0, InitialFractureDistribution.PowerLaw, 0, 0, 0);
+            resetFractures(NoFractureSets_in, B_in, c_in, false, FractureMode.Mode1, BiazimuthalConjugate_in, IncludeReverseFractures_in, 0, 0, 0, 0, 0, 0, InitialFractureDistribution.PowerLaw, 0, 0, 0);
         }
         /// <summary>
         /// Create new layer-bound fracture sets each containing only one dip set of specified mode
@@ -8309,7 +8325,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="IncludeReverseFractures_in">Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow</param>
         public void resetLayerBoundFractures(int NoFractureSets_in, double B_in, double c_in, FractureMode FractureMode_in, bool IncludeReverseFractures_in)
         {
-            resetFractures(NoFractureSets_in, B_in, c_in, true, FractureMode_in, true, IncludeReverseFractures_in, 0, 0, 0, 0, 0, InitialFractureDistribution.PowerLaw, 0, 0, 0);
+            resetFractures(NoFractureSets_in, B_in, c_in, true, FractureMode_in, true, IncludeReverseFractures_in, 0, 0, 0, 0, 0, 0, InitialFractureDistribution.PowerLaw, 0, 0, 0);
         }
         /// <summary>
         /// Create new unconfined fracture sets
@@ -8319,11 +8335,12 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoRaysPerFracture_in">Number of rays comprising each unconfined fracture</param>
         /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
         /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
+        /// <param name="MaxUnconfinedEffectiveFractureRadius_in">Maximum allowed effective radius for unconfined fractures; when this is reached, rays will continue propagating but velocity and stress shadow width will be independent of fracture size</param>
         /// <param name="InitialMicrofractureDistribution_in">Initial microfracture distribution function</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="uFrmedian_in">Median initial microfracture radius for the log-normal distribution function</param>
-        private void createUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, InitialFractureDistribution InitialMicrofractureDistribution_in, double B_in, double c_in, double uFrmedian_in)
+        private void createUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double MaxUnconfinedEffectiveFractureRadius_in, InitialFractureDistribution InitialMicrofractureDistribution_in, double B_in, double c_in, double uFrmedian_in)
         {
             List<double> dips = new List<double>();
 
@@ -8371,14 +8388,14 @@ namespace DFMGenerator_SharedCode
 
                 foreach (double dip in dips)
                 {
-                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialMicrofractureDistribution_in, B_in, c_in, uFrmedian_in);
+                    UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, strike, dip, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, MaxUnconfinedEffectiveFractureRadius_in, InitialMicrofractureDistribution_in, B_in, c_in, uFrmedian_in);
                     UnconfinedFractureSets.Add(new_FractureSet);
                 }
             }
             // Create a horizontal fracture set
             if (NoDipSets_in > 0)
             {
-                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialMicrofractureDistribution_in, B_in, c_in, uFrmedian_in);
+                UnconfinedFractureSet new_FractureSet = new UnconfinedFractureSet(this, 0, 0, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, MaxUnconfinedEffectiveFractureRadius_in, InitialMicrofractureDistribution_in, B_in, c_in, uFrmedian_in);
                 UnconfinedFractureSets.Add(new_FractureSet);
             }
         }
@@ -8390,13 +8407,14 @@ namespace DFMGenerator_SharedCode
         /// <param name="NoRaysPerFracture_in">Number of rays comprising each unconfined fracture</param>
         /// <param name="MinUnconfinedFractureRadius_in">Minimum radius for unconfined fractures; this will be the length of the rays at nucleation</param>
         /// <param name="MaxUnconfinedFractureRadius_in">Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length</param>
+        /// <param name="MaxUnconfinedEffectiveFractureRadius_in">Maximum allowed effective radius for unconfined fractures; when this is reached, rays will continue propagating but velocity and stress shadow width will be independent of fracture size</param>
         /// <param name="InitialMicrofractureDistribution_in">Initial microfracture distribution function</param>
         /// <param name="B_in">Initial microfracture density coefficient B (/m3)</param>
         /// <param name="c_in">Initial microfracture distribution coefficient c</param>
         /// <param name="uFrmedian_in">Median initial microfracture radius - this is only used for the log-normal distribution function</param>
-        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, InitialFractureDistribution InitialMicrofractureDistribution_in, double B_in, double c_in, double uFrmedian_in)
+        public void resetUnconfinedFractures(int NoStrikeSets_in, int NoDipSets_in, int NoRaysPerFracture_in, double MinUnconfinedFractureRadius_in, double MaxUnconfinedFractureRadius_in, double MaxUnconfinedEffectiveFractureRadius_in, InitialFractureDistribution InitialMicrofractureDistribution_in, double B_in, double c_in, double uFrmedian_in)
         {
-            resetFractures(0, 0, 0, false, FractureMode.Mode1, false, true, NoStrikeSets_in, NoDipSets_in, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, InitialMicrofractureDistribution_in, B_in, c_in, uFrmedian_in);
+            resetFractures(0, 0, 0, false, FractureMode.Mode1, false, true, NoStrikeSets_in, NoDipSets_in, NoRaysPerFracture_in, MinUnconfinedFractureRadius_in, MaxUnconfinedFractureRadius_in, MaxUnconfinedEffectiveFractureRadius_in, InitialMicrofractureDistribution_in, B_in, c_in, uFrmedian_in);
         }
         /// <summary>
         /// Reset the arrays containing fracture set information, e.g. termination arrays, stress shadow multiplier arrays, etc
