@@ -4815,10 +4815,9 @@ namespace DFMGenerator_SharedCode
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(mirrorSegment, fs_index));
                                 }
                             }
-                            else // Otherwise increment the microfracture radius and then deactivate the microfraccture
+                            else // Otherwise just increment the microfracture radius
                             {
                                 uF.Radius = newRadius;
-                                uF.Active = false;
 
                                 // If the fracture nucleation position is undefined and the microfracture tip has reached one of the layer boundaries, move its centrepoint towards centre of layer
                                 // This will prevent the microfracture extending out of layer; however this is only geologically valid if the microfractures grow anisotropically and it may skew the microfracture volumetric distribution
