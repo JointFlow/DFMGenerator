@@ -6037,7 +6037,7 @@ namespace DFMGenerator_SharedCode
                                     if (limitNewFractures) maxNewFractureSegments -= 2;
                                 }
                             }
-                            else // Otherwise increment the microfracture radius
+                            else // Otherwise just increment the microfracture radius
                             {
                                 uF.Radius = newRadius;
 
