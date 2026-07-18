@@ -1058,7 +1058,7 @@ namespace DFMGenerator_Ocean
                     }
                     bool UseGridFor_InitialMicrofractureMedianRadius = (InitialMicrofractureMedianRadius_grid != null);
 
-                    // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
+                    // Subcritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
                     double SubcriticalPropIndex = 10;
                     if (!double.IsNaN(arguments.Argument_SubcriticalPropagationIndex_default))
                         SubcriticalPropIndex = arguments.Argument_SubcriticalPropagationIndex_default; // Can also be set from grid property
@@ -1101,8 +1101,71 @@ namespace DFMGenerator_Ocean
                     // Flag for whether to average mechanical properties properties across the Petrel grid cells, or take the value from the top middle cell
                     bool AverageMechanicalPropertyData = arguments.Argument_AverageMechanicalPropertyData;
 
-                    // Create a list of cleavage planes
-                    List<Cleavage> Cleavages = new List<Cleavage>();
+                    // Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation
+                    // Up to 2 cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly
+                    // If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect
+                    // Create arrays for the default values and grid properties related to the cleavages, if defined
+                    // NB these may not be valid defined cleavage planes - this will be checked separately for each gridblock
+                    int maxNoCleavages = 2;
+                    double[] Cleavage_Azimuth = new double[maxNoCleavages];
+                    Cleavage_Azimuth[0] = arguments.Argument_Cleavage1_Azimuth_default;
+                    Cleavage_Azimuth[1] = arguments.Argument_Cleavage2_Azimuth_default;
+                    Property[] Cleavage_Azimuth_grid = new Property[maxNoCleavages];
+                    bool[] UseGridFor_Cleavage_Azimuth = new bool[maxNoCleavages];
+                    Cleavage_Azimuth_grid[0] = arguments.Argument_Cleavage1_Azimuth;
+                    Cleavage_Azimuth_grid[1] = arguments.Argument_Cleavage2_Azimuth;
+                    double[] Cleavage_Dip = new double[maxNoCleavages];
+                    Cleavage_Dip[0] = arguments.Argument_Cleavage1_Dip_default;
+                    Cleavage_Dip[1] = arguments.Argument_Cleavage2_Dip_default;
+                    Property[] Cleavage_Dip_grid = new Property[2];
+                    bool[] UseGridFor_Cleavage_Dip = new bool[maxNoCleavages];
+                    Cleavage_Dip_grid[0] = arguments.Argument_Cleavage1_Dip;
+                    Cleavage_Dip_grid[1] = arguments.Argument_Cleavage2_Dip;
+                    double[] Cleavage_CrackSurfaceEnergy = new double[maxNoCleavages];
+                    Cleavage_CrackSurfaceEnergy[0] = arguments.Argument_Cleavage1_CrackSurfaceEnergy_default;
+                    Cleavage_CrackSurfaceEnergy[1] = arguments.Argument_Cleavage2_CrackSurfaceEnergy_default;
+                    Property[] Cleavage_CrackSurfaceEnergy_grid = new Property[2];
+                    bool[] UseGridFor_Cleavage_CrackSurfaceEnergy = new bool[maxNoCleavages];
+                    Cleavage_CrackSurfaceEnergy_grid[0] = arguments.Argument_Cleavage1_CrackSurfaceEnergy;
+                    Cleavage_CrackSurfaceEnergy_grid[1] = arguments.Argument_Cleavage2_CrackSurfaceEnergy;
+                    double[] Cleavage_FrictionCoefficient = new double[maxNoCleavages];
+                    Cleavage_FrictionCoefficient[0] = arguments.Argument_Cleavage1_FrictionCoefficient_default;
+                    Cleavage_FrictionCoefficient[1] = arguments.Argument_Cleavage2_FrictionCoefficient_default;
+                    Property[] Cleavage_FrictionCoefficient_grid = new Property[2];
+                    bool[] UseGridFor_Cleavage_FrictionCoefficient = new bool[maxNoCleavages];
+                    Cleavage_FrictionCoefficient_grid[0] = arguments.Argument_Cleavage1_FrictionCoefficient;
+                    Cleavage_FrictionCoefficient_grid[1] = arguments.Argument_Cleavage2_FrictionCoefficient;
+                    bool[] Cleavage_Defined = new bool[maxNoCleavages];
+                    for (int cleavageNo = 0; cleavageNo < maxNoCleavages; cleavageNo++)
+                    {
+                        // Check if the cleavage plane is defined - at a minimum a default azimuth and dip must be specified
+                        Cleavage_Defined[cleavageNo] = !double.IsNaN(Cleavage_Azimuth[cleavageNo]) && !double.IsNaN(Cleavage_Dip[cleavageNo]);
+
+                        if ((Cleavage_Azimuth_grid[cleavageNo] != null) && (Cleavage_Azimuth_grid[cleavageNo].Grid != PetrelGrid))
+                        {
+                            Cleavage_Azimuth_grid[cleavageNo] = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Cleavage {0} azimuth property data is defined on a different grid; will use default value instead", cleavageNo + 1));
+                        }
+                        UseGridFor_Cleavage_Azimuth[cleavageNo] = (Cleavage_Azimuth_grid[cleavageNo] != null);
+                        if ((Cleavage_Dip_grid[cleavageNo] != null) && (Cleavage_Dip_grid[cleavageNo].Grid != PetrelGrid))
+                        {
+                            Cleavage_Dip_grid[cleavageNo] = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Cleavage {0} azimuth property data is defined on a different grid; will use default value instead", cleavageNo + 1));
+                        }
+                        UseGridFor_Cleavage_Dip[cleavageNo] = (Cleavage_Dip_grid[cleavageNo] != null);
+                        if ((Cleavage_CrackSurfaceEnergy_grid[cleavageNo] != null) && (Cleavage_CrackSurfaceEnergy_grid[cleavageNo].Grid != PetrelGrid))
+                        {
+                            Cleavage_CrackSurfaceEnergy_grid[cleavageNo] = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Cleavage {0} azimuth property data is defined on a different grid; will use default value instead", cleavageNo + 1));
+                        }
+                        UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo] = (Cleavage_CrackSurfaceEnergy_grid[cleavageNo] != null);
+                        if ((Cleavage_FrictionCoefficient_grid[cleavageNo] != null) && (Cleavage_FrictionCoefficient_grid[cleavageNo].Grid != PetrelGrid))
+                        {
+                            Cleavage_FrictionCoefficient_grid[cleavageNo] = null;
+                            PetrelLogger.InfoOutputWindow(string.Format("Cleavage {0} azimuth property data is defined on a different grid; will use default value instead", cleavageNo + 1));
+                        }
+                        UseGridFor_Cleavage_FrictionCoefficient[cleavageNo] = (Cleavage_FrictionCoefficient_grid[cleavageNo] != null);
+                    }
 
                     // Stress state
                     // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -1575,7 +1638,7 @@ namespace DFMGenerator_Ocean
                     double MaxUnconfinedFractureRadius = arguments.Argument_MaxUnconfinedFractureRadius;
                     // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
                     // If set to -1, there will be no limit on effective fracture radius
-                    double MaxEffectiveUnconfinedFractureRadius = arguments.Argument_MaxUnconfinedFractureRadius;
+                    double MaxEffectiveUnconfinedFractureRadius = arguments.Argument_MaxEffectiveUnconfinedFractureRadius;
                     // Calculation termination controls
                     // The calculation is set to stop automatically when fractures stop growing
                     // This can be defined in one of three ways:
@@ -1678,6 +1741,10 @@ namespace DFMGenerator_Ocean
                     Template AzimuthTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.DipAzimuth;
                     IUnitConverter toProjectAzimuthUnits = PetrelUnitSystem.GetConverterToUI(AzimuthTemplate);
                     string AzimuthUnits = PetrelUnitSystem.GetDisplayUnit(AzimuthTemplate).Symbol;
+                    // Dip
+                    Template DipTemplate = PetrelProject.WellKnownTemplates.GeometricalGroup.DipAngle;
+                    IUnitConverter toProjectDipUnits = PetrelUnitSystem.GetConverterToUI(DipTemplate);
+                    string DipUnits = PetrelUnitSystem.GetDisplayUnit(DipTemplate).Symbol;
                     // Young's Modulus
                     Template YoungsModTemplate = PetrelProject.WellKnownTemplates.GeomechanicGroup.YoungsModulus;
                     IUnitConverter toProjectYoungsModUnits = PetrelUnitSystem.GetConverterToUI(YoungsModTemplate);
@@ -1773,8 +1840,9 @@ namespace DFMGenerator_Ocean
                     IUnitConverter toSITimeUnits = PetrelUnitSystem.GetConverterFromUI(GeologicalTimeTemplate);
                     bool convertFromGeneral_RockStrainRelaxation = (UseGridFor_RockStrainRelaxation ? RockStrainRelaxation_grid.Template.Equals(GeneralTemplate) : false);
                     bool convertFromGeneral_FractureRelaxation = (UseGridFor_FractureRelaxation ? FractureRelaxation_grid.Template.Equals(GeneralTemplate) : false);
-                    // Strain azimuth and deformation load
+                    // Orientation and deformation load
                     IUnitConverter toSIAzimuthUnits = PetrelUnitSystem.GetConverterFromUI(AzimuthTemplate);
+                    IUnitConverter toSIDipUnits = PetrelUnitSystem.GetConverterFromUI(DipTemplate);
                     IUnitConverter toSIPressureUnits = PetrelUnitSystem.GetConverterFromUI(PressureTemplate);
                     IUnitConverter toSITemperatureUnits = PetrelUnitSystem.GetConverterFromUI(TemperatureTemplate);
                     IUnitConverter toSIDepthUnits = PetrelUnitSystem.GetConverterFromUI(DepthTemplate);
@@ -1821,6 +1889,19 @@ namespace DFMGenerator_Ocean
                         convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_gridResult.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
                     if (UseGridFor_FrictionCoefficient)
                         convertFromFrictionAngle_FrictionCoefficient = FrictionCoefficient_grid.Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
+                    bool[] convertFromGeneral_Cleavage_Azimuth = new bool[maxNoCleavages];
+                    bool[] convertFromGeneral_Cleavage_Dip = new bool[maxNoCleavages];
+                    bool[] convertFromGeneral_Cleavage_CrackSurfaceEnergy = new bool[maxNoCleavages];
+                    bool[] convertFromFrictionAngle_Cleavage_FrictionCoefficient = new bool[maxNoCleavages];
+                    for (int cleavageNo = 0; cleavageNo < maxNoCleavages; cleavageNo++)
+                    {
+                        convertFromGeneral_Cleavage_Azimuth[cleavageNo] = (UseGridFor_Cleavage_Azimuth[cleavageNo] ? Cleavage_Azimuth_grid[cleavageNo].Template.Equals(GeneralTemplate) : false);
+                        convertFromGeneral_Cleavage_Dip[cleavageNo] = (UseGridFor_Cleavage_Dip[cleavageNo] ? Cleavage_Dip_grid[cleavageNo].Template.Equals(GeneralTemplate) : false);
+                        convertFromGeneral_Cleavage_CrackSurfaceEnergy[cleavageNo] = (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo] ? Cleavage_CrackSurfaceEnergy_grid[cleavageNo].Template.Equals(GeneralTemplate) : false);
+                        convertFromFrictionAngle_Cleavage_FrictionCoefficient[cleavageNo] = false;
+                        if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
+                            convertFromFrictionAngle_Cleavage_FrictionCoefficient[cleavageNo] = Cleavage_FrictionCoefficient_grid[cleavageNo].Template.Equals(PetrelProject.WellKnownTemplates.GeomechanicGroup.FrictionAngle);
+                    }
                     // Host rock permeability
                     IUnitConverter toSIPermeabilityUnits = PetrelUnitSystem.GetConverterFromUI(PermeabilityTemplate);
                     bool convertFromGeneral_HostRock_kh = (UseGridFor_HostRock_kh ? HostRock_kh_grid.Template.Equals(GeneralTemplate) : false);
@@ -2122,6 +2203,33 @@ namespace DFMGenerator_Ocean
                         generalInputParams += "Mechanical property input parameters averaged across all cells\n";
                     else
                         generalInputParams += "Mechanical property data taken from top middle cell in each stack\n";
+
+                    // Cleavage
+                    for (int cleavageNo = 0; cleavageNo < maxNoCleavages; cleavageNo++)
+                        if (Cleavage_Defined[cleavageNo])
+                        {
+                            generalInputParams += string.Format("Cleavage {0}: ", cleavageNo);
+                            if (UseGridFor_Cleavage_Azimuth[cleavageNo])
+                                generalInputParams += string.Format("Azimuth {0}, default {1}{2}, ", Cleavage_Azimuth_grid[cleavageNo].Name, toProjectAzimuthUnits.Convert(Cleavage_Azimuth[cleavageNo]), AzimuthUnits);
+                            else
+                                generalInputParams += string.Format("Azimuth {0}{1}, ", toProjectAzimuthUnits.Convert(Cleavage_Azimuth[cleavageNo]), AzimuthUnits);
+                            if (UseGridFor_Cleavage_Dip[cleavageNo])
+                                generalInputParams += string.Format("Dip {0}, default {1}{2}\n", Cleavage_Dip_grid[cleavageNo].Name, toProjectDipUnits.Convert(Cleavage_Dip[cleavageNo]), DipUnits);
+                            else
+                                generalInputParams += string.Format("Dip {0}{1}\n", toProjectDipUnits.Convert(Cleavage_Dip[cleavageNo]), DipUnits);
+                            if (Cleavage_CrackSurfaceEnergy[cleavageNo] >= 0)
+                            {
+                                if (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                    generalInputParams += string.Format("            Crack Surface Energy {1}, default {2}{3}\n", Cleavage_CrackSurfaceEnergy_grid[cleavageNo].Name, toProjectCrackSurfaceEnergyUnits.Convert(Cleavage_CrackSurfaceEnergy[cleavageNo]), CrackSurfaceEnergyUnits);
+                                else
+                                    generalInputParams += string.Format("            Crack Surface Energy {1}{2}\n", toProjectCrackSurfaceEnergyUnits.Convert(Cleavage_CrackSurfaceEnergy[cleavageNo]), CrackSurfaceEnergyUnits);
+
+                                if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
+                                    generalInputParams += string.Format("            Friction coefficient: {0}, default {1}\n", Cleavage_FrictionCoefficient_grid[cleavageNo].Name, Cleavage_FrictionCoefficient[cleavageNo]);
+                                else
+                                    generalInputParams += string.Format("            Friction coefficient: {0}\n", Cleavage_FrictionCoefficient[cleavageNo]);
+                            }
+                        }
 
                     // Stress state
                     generalInputParams += string.Format("Stress distribution: {0}\n", StressDistributionScenario);
@@ -3444,6 +3552,216 @@ namespace DFMGenerator_Ocean
                                             PetrelLogger.InfoOutputWindow(string.Format("Invalid value for Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio, PetrelGrid_FirstCellI + 1, maxJ - PetrelGrid_FirstCellJ + 1));
                                         }
                                         // End get the mechanical properties from the grid as required
+
+                                        // Create a local list of cleavages and get the grid properties representing the cleavage values if required 
+                                        List<Cleavage> local_Cleavages = new List<Cleavage>();
+                                        for (int cleavageNo = 0; cleavageNo < maxNoCleavages; cleavageNo++)
+                                        {
+                                            // Check if the cleavage plane is defined - at a minimum a default azimuth and dip must be specified
+                                            // If this is the case, create a new cleavage object and add it to the list
+                                            if (Cleavage_Defined[cleavageNo])
+                                            {
+                                                // Get the default values fo the cleavage orientation and properties
+                                                double cleavage_Azimuth = Cleavage_Azimuth[cleavageNo];
+                                                double cleavage_Dip = Cleavage_Dip[cleavageNo];
+                                                double cleavage_CrackSurfaceEnergy = Cleavage_CrackSurfaceEnergy[cleavageNo];
+                                                double cleavage_FrictionCoefficient = Cleavage_FrictionCoefficient[cleavageNo];
+
+                                                // Read the orientation data for the cleavage from the grid
+                                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each mechanical property
+                                                    double cleavage_Azimuth_total = 0;
+                                                    int cleavage_Azimuth_novalues = 0;
+                                                    double cleavage_Dip_total = 0;
+                                                    int cleavage_Dip_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update the azimuth total if defined
+                                                                if (UseGridFor_Cleavage_Azimuth[cleavageNo])
+                                                                {
+                                                                    double cell_Cleavage_Azimuth = (double)Cleavage_Azimuth_grid[cleavageNo][cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Cleavage_Azimuth[cleavageNo])
+                                                                        cell_Cleavage_Azimuth = toSIAzimuthUnits.Convert(cell_Cleavage_Azimuth);
+                                                                    if (!double.IsNaN(cell_Cleavage_Azimuth))
+                                                                    {
+                                                                        cleavage_Azimuth_total += cell_Cleavage_Azimuth;
+                                                                        cleavage_Azimuth_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update the dip total if defined
+                                                                if (UseGridFor_Cleavage_Dip[cleavageNo])
+                                                                {
+                                                                    double cell_Cleavage_Dip = (double)Cleavage_Dip_grid[cleavageNo][cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Cleavage_Dip[cleavageNo])
+                                                                        cell_Cleavage_Dip = toSIDipUnits.Convert(cell_Cleavage_Dip);
+                                                                    if (!double.IsNaN(cell_Cleavage_Dip))
+                                                                    {
+                                                                        cleavage_Dip_total += cell_Cleavage_Dip;
+                                                                        cleavage_Dip_novalues++;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (cleavage_Azimuth_novalues > 0)
+                                                        cleavage_Azimuth = cleavage_Azimuth_total / (double)cleavage_Azimuth_novalues;
+                                                    if (cleavage_Dip_novalues > 0)
+                                                        cleavage_Dip = cleavage_Dip_total / (double)cleavage_Dip_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                    // Update the azimuth total if defined
+                                                    if (UseGridFor_Cleavage_Azimuth[cleavageNo])
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Cleavage_Azimuth = (double)Cleavage_Azimuth_grid[cleavageNo][cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Cleavage_Azimuth[cleavageNo])
+                                                                cell_Cleavage_Azimuth = toSIAzimuthUnits.Convert(cell_Cleavage_Azimuth);
+                                                            if (!double.IsNaN(cell_Cleavage_Azimuth))
+                                                            {
+                                                                cleavage_Azimuth = cell_Cleavage_Azimuth;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update the dip total if defined
+                                                    if (UseGridFor_Cleavage_Dip[cleavageNo])
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Cleavage_Dip =  (double)Cleavage_Dip_grid[cleavageNo][cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Cleavage_Dip[cleavageNo])
+                                                                cell_Cleavage_Dip = toSIDipUnits.Convert(cell_Cleavage_Dip);
+                                                            if (!double.IsNaN(cell_Cleavage_Dip))
+                                                            {
+                                                                cleavage_Dip = cell_Cleavage_Dip;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // Read the mechanical property data for the cleavage from the grid
+                                                if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
+                                                {
+                                                    // Create local variables for running total and number of datapoints for each mechanical property
+                                                    double cleavage_CrackSurfaceEnergy_total = 0;
+                                                    int cleavage_CrackSurfaceEnergy_novalues = 0;
+                                                    double cleavage_FrictionCoeff_total = 0;
+                                                    int cleavage_FrictionCoeff_novalues = 0;
+
+                                                    // Loop through all the Petrel cells in the gridblock
+                                                    for (int PetrelGrid_I = PetrelGrid_FirstCellI; PetrelGrid_I <= PetrelGrid_LastCellI; PetrelGrid_I++)
+                                                        for (int PetrelGrid_J = PetrelGrid_FirstCellJ; PetrelGrid_J <= PetrelGrid_LastCellJ; PetrelGrid_J++)
+                                                            for (int PetrelGrid_K = PetrelGrid_HighestCellK; PetrelGrid_K <= PetrelGrid_LowestCellK; PetrelGrid_K++)
+                                                            {
+                                                                Index3 cellRef = new Index3(PetrelGrid_I, PetrelGrid_J, PetrelGrid_K);
+
+                                                                // Update crack surface energy total if defined
+                                                                if (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                                                {
+                                                                    double cell_Cleavage_CrackSurfaceEnergy = (double)Cleavage_CrackSurfaceEnergy_grid[cleavageNo][cellRef];
+                                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                                    if (convertFromGeneral_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                                                        cell_Cleavage_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_Cleavage_CrackSurfaceEnergy);
+                                                                    if (!double.IsNaN(cell_Cleavage_CrackSurfaceEnergy))
+                                                                    {
+                                                                        cleavage_CrackSurfaceEnergy_total += cell_Cleavage_CrackSurfaceEnergy;
+                                                                        cleavage_CrackSurfaceEnergy_novalues++;
+                                                                    }
+                                                                }
+
+                                                                // Update friction coefficient total if defined
+                                                                if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
+                                                                {
+                                                                    double cell_Cleavage_FrictionCoeff = (double)Cleavage_FrictionCoefficient_grid[cleavageNo][cellRef];
+                                                                    // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                                                    if (convertFromFrictionAngle_Cleavage_FrictionCoefficient[cleavageNo])
+                                                                        cell_Cleavage_FrictionCoeff = Math.Tan(cell_Cleavage_FrictionCoeff);
+                                                                    if (!double.IsNaN(cell_Cleavage_FrictionCoeff))
+                                                                    {
+                                                                        cleavage_FrictionCoeff_total += cell_Cleavage_FrictionCoeff;
+                                                                        cleavage_FrictionCoeff_novalues++;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                                    if (cleavage_CrackSurfaceEnergy_novalues > 0)
+                                                        cleavage_CrackSurfaceEnergy = cleavage_CrackSurfaceEnergy_total / (double)cleavage_CrackSurfaceEnergy_novalues;
+                                                    if (cleavage_FrictionCoeff_novalues > 0)
+                                                        cleavage_FrictionCoefficient = cleavage_FrictionCoeff_total / (double)cleavage_FrictionCoeff_novalues;
+                                                }
+                                                else // We are taking data from a single cell
+                                                {
+                                                    // Create a reference to the cell from which we will read the data
+                                                    Index3 cellRef = new Index3(PetrelGrid_DataCellI, PetrelGrid_DataCellJ, PetrelGrid_HighestCellK);
+
+                                                    // Update crack surface energy total if defined
+                                                    if (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Cleavage_CrackSurfaceEnergy = (double)Cleavage_CrackSurfaceEnergy_grid[cleavageNo][cellRef];
+                                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                            if (convertFromGeneral_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                                                cell_Cleavage_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_Cleavage_CrackSurfaceEnergy);
+                                                            if (!double.IsNaN(cell_Cleavage_CrackSurfaceEnergy))
+                                                            {
+                                                                cleavage_CrackSurfaceEnergy = cell_Cleavage_CrackSurfaceEnergy;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Update friction coefficient total if defined
+                                                    if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
+                                                    {
+                                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                                        for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
+                                                        {
+                                                            cellRef.K = PetrelGrid_DataCellK;
+                                                            double cell_Cleavage_FrictionCoeff = (double)Cleavage_FrictionCoefficient_grid[cleavageNo][cellRef];
+                                                            // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                                            if (convertFromFrictionAngle_Cleavage_FrictionCoefficient[cleavageNo])
+                                                                cell_Cleavage_FrictionCoeff = Math.Tan(cell_Cleavage_FrictionCoeff);
+                                                            if (!double.IsNaN(cell_Cleavage_FrictionCoeff))
+                                                            {
+                                                                cleavage_FrictionCoefficient = cell_Cleavage_FrictionCoeff;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                // Create a Cleavage object for this gridblock and add it to the local list
+                                                Cleavage newCleavage = new Cleavage(cleavage_CrackSurfaceEnergy, cleavage_FrictionCoefficient, cleavage_Azimuth - (Math.PI / 2), cleavage_Dip);
+                                                local_Cleavages.Add(newCleavage);
+                                            }
+                                        } // End create a local list of cleavages
 
                                         // Get the deformation load data for each deformation episode
                                         // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
@@ -5572,9 +5890,6 @@ namespace DFMGenerator_Ocean
 
                                         // Set the mechanical property overrides for any fracture sets parallel to the defined cleavages
                                         // NB Cleavage overrides are currently applied only to unconfined fracture sets, and not to layer-bound fracture sets
-                                        List<Cleavage> local_Cleavages = new List<Cleavage>();
-                                        foreach (Cleavage cleavage in Cleavages)
-                                            local_Cleavages.Add(new Cleavage(cleavage));
                                         gc.SetCleavages(local_Cleavages, MaxConsistencyAngle);
 #if DEBUG_FRAC_INPUT
                                         foreach (Cleavage cleavage in local_Cleavages)
@@ -9120,6 +9435,24 @@ namespace DFMGenerator_Ocean
             private double argument_kv_default = 9.869233e-16; // 1mD converted to m2
             private Droid argument_kv;
             private bool argument_AverageMechanicalPropertyData = true;
+            // Cleavages
+            // Up to 2 cleavage planes can be defined
+            private double argument_Cleavage1_Azimuth_default = double.NaN;
+            private Droid argument_Cleavage1_Azimuth;
+            private double argument_Cleavage1_Dip_default = double.NaN;
+            private Droid argument_Cleavage1_Dip;
+            private double argument_Cleavage1_CrackSurfaceEnergy_default = double.NaN;
+            private Droid argument_Cleavage1_CrackSurfaceEnergy;
+            private double argument_Cleavage1_FrictionCoefficient_default = double.NaN;
+            private Droid argument_Cleavage1_FrictionCoefficient;
+            private double argument_Cleavage2_Azimuth_default = double.NaN;
+            private Droid argument_Cleavage2_Azimuth;
+            private double argument_Cleavage2_Dip_default = double.NaN;
+            private Droid argument_Cleavage2_Dip;
+            private double argument_Cleavage2_CrackSurfaceEnergy_default = double.NaN;
+            private Droid argument_Cleavage2_CrackSurfaceEnergy;
+            private double argument_Cleavage2_FrictionCoefficient_default = double.NaN;
+            private Droid argument_Cleavage2_FrictionCoefficient;
 
             // Stress state
             private int argument_StressDistribution = 1;
@@ -14136,6 +14469,136 @@ namespace DFMGenerator_Ocean
                 set { this.argument_MaxEffectiveUnconfinedFractureRadius = value; }
             }
 
+            // Cleavages
+            // Up to 2 cleavage planes can be defined
+            [OptionalInWorkflow]
+            [Description("Default azimuth for cleavage plane 1", "Default azimuth for cleavage plane 1")]
+            public double Argument_Cleavage1_Azimuth_default
+            {
+                internal get { return this.argument_Cleavage1_Azimuth_default; }
+                set { this.argument_Cleavage1_Azimuth_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Azimuth for cleavage plane 1", "Azimuth for cleavage plane 1")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage1_Azimuth
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage1_Azimuth) as Property; }
+                set { this.argument_Cleavage1_Azimuth = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default dip for cleavage plane 1", "Default dip for cleavage plane 1")]
+            public double Argument_Cleavage1_Dip_default
+            {
+                internal get { return this.argument_Cleavage1_Dip_default; }
+                set { this.argument_Cleavage1_Dip_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Dip for cleavage plane 1", "Dip for cleavage plane 1")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage1_Dip
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage1_Dip) as Property; }
+                set { this.argument_Cleavage1_Dip = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default crack surface energy for cleavage plane 1", "Default crack surface energy for cleavage plane 1")]
+            public double Argument_Cleavage1_CrackSurfaceEnergy_default
+            {
+                internal get { return this.argument_Cleavage1_CrackSurfaceEnergy_default; }
+                set { this.argument_Cleavage1_CrackSurfaceEnergy_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Crack surface energy for cleavage plane 1", "Crack surface energy for cleavage plane 1")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage1_CrackSurfaceEnergy
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage1_CrackSurfaceEnergy) as Property; }
+                set { this.argument_Cleavage1_CrackSurfaceEnergy = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default friction coefficient for cleavage plane 1", "Default friction coefficient for cleavage plane 1")]
+            public double Argument_Cleavage1_FrictionCoefficient_default
+            {
+                internal get { return this.argument_Cleavage1_FrictionCoefficient_default; }
+                set { this.argument_Cleavage1_FrictionCoefficient_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Friction coefficient for cleavage plane 1", "Friction coefficient for cleavage plane 1")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage1_FrictionCoefficient
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage1_FrictionCoefficient) as Property; }
+                set { this.argument_Cleavage1_FrictionCoefficient = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default azimuth for cleavage plane 2", "Default azimuth for cleavage plane 2")]
+            public double Argument_Cleavage2_Azimuth_default
+            {
+                internal get { return this.argument_Cleavage2_Azimuth_default; }
+                set { this.argument_Cleavage2_Azimuth_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Azimuth for cleavage plane 2", "Azimuth for cleavage plane 2")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage2_Azimuth
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage2_Azimuth) as Property; }
+                set { this.argument_Cleavage2_Azimuth = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default dip for cleavage plane 2", "Default dip for cleavage plane 2")]
+            public double Argument_Cleavage2_Dip_default
+            {
+                internal get { return this.argument_Cleavage2_Dip_default; }
+                set { this.argument_Cleavage2_Dip_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Dip for cleavage plane 2", "Dip for cleavage plane 2")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage2_Dip
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage2_Dip) as Property; }
+                set { this.argument_Cleavage2_Dip = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default crack surface energy for cleavage plane 2", "Default crack surface energy for cleavage plane 2")]
+            public double Argument_Cleavage2_CrackSurfaceEnergy_default
+            {
+                internal get { return this.argument_Cleavage2_CrackSurfaceEnergy_default; }
+                set { this.argument_Cleavage2_CrackSurfaceEnergy_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Crack surface energy for cleavage plane 2", "Crack surface energy for cleavage plane 2")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage2_CrackSurfaceEnergy
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage2_CrackSurfaceEnergy) as Property; }
+                set { this.argument_Cleavage2_CrackSurfaceEnergy = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Default friction coefficient for cleavage plane 2", "Default friction coefficient for cleavage plane 2")]
+            public double Argument_Cleavage2_FrictionCoefficient_default
+            {
+                internal get { return this.argument_Cleavage2_FrictionCoefficient_default; }
+                set { this.argument_Cleavage2_FrictionCoefficient_default = value; }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Friction coefficient for cleavage plane 2", "Friction coefficient for cleavage plane 2")]
+            public Slb.Ocean.Petrel.DomainObject.PillarGrid.Property Argument_Cleavage2_FrictionCoefficient
+            {
+                internal get { return DataManager.Resolve(this.argument_Cleavage2_FrictionCoefficient) as Property; }
+                set { this.argument_Cleavage2_FrictionCoefficient = (value == null ? null : value.Droid); }
+            }
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -14406,6 +14869,25 @@ namespace DFMGenerator_Ocean
                 argument_kv_default = 9.869233e-16; // 1mD converted to m2
                 argument_kv = null;
                 argument_AverageMechanicalPropertyData = true;
+
+                // Cleavages
+                // Up to 2 cleavage planes can be defined
+                argument_Cleavage1_Azimuth_default = double.NaN;
+                argument_Cleavage1_Azimuth = null;
+                argument_Cleavage1_Dip_default = double.NaN;
+                argument_Cleavage1_Dip = null;
+                argument_Cleavage1_CrackSurfaceEnergy_default = double.NaN;
+                argument_Cleavage1_CrackSurfaceEnergy = null;
+                argument_Cleavage1_FrictionCoefficient_default = double.NaN;
+                argument_Cleavage1_FrictionCoefficient = null;
+                argument_Cleavage2_Azimuth_default = double.NaN;
+                argument_Cleavage2_Azimuth = null;
+                argument_Cleavage2_Dip_default = double.NaN;
+                argument_Cleavage2_Dip = null;
+                argument_Cleavage2_CrackSurfaceEnergy_default = double.NaN;
+                argument_Cleavage2_CrackSurfaceEnergy = null;
+                argument_Cleavage2_FrictionCoefficient_default = double.NaN;
+                argument_Cleavage2_FrictionCoefficient = null;
 
                 // Stress state
                 argument_StressDistribution = 1;

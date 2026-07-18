@@ -3,7 +3,7 @@
 // The flag should be set to generate release versions of the standalone code
 #define READINPUTFROMFILE
 // Set this flag to run test models with hardcoded values for unconfined fractures
-//#define TESTUCF
+#define TESTUCF
 // Set this flag to output detailed information on input parameters and properties for each gridblock
 // Use for debugging only; will significantly increase runtime 
 //#define DEBUG_FRACS
@@ -137,7 +137,7 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Median initial microfracture radius - this is only used for the log-normal distribution");
                 input_file.WriteLine("% Set to -1 to use layer thickness / 20");
                 input_file.WriteLine("InitialMicrofractureMedianRadius -1");
-                input_file.WriteLine("% Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation");
+                input_file.WriteLine("% Subcritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation");
                 input_file.WriteLine("SubcriticalPropIndex 10");
                 input_file.WriteLine("% Critical fracture propagation rate in m/s");
                 input_file.WriteLine("CriticalPropagationRate 2000");
@@ -145,6 +145,14 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% NB Permeability must be given in m^2; 1mD = 9.869233E-16m^2");
                 input_file.WriteLine("HostRock_kh 0");
                 input_file.WriteLine("HostRock_kv 0");
+                input_file.WriteLine();
+
+                input_file.WriteLine("% Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation");
+                input_file.WriteLine("% Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly");
+                input_file.WriteLine("% If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect");
+                input_file.WriteLine("% To specify a cleavage plane, use the keyword Cleavage then specify the cleavage azimuth and dip (radians), and the crack surface energy (J/m2) and sliding friction coefficient parallel to the cleavage plane, in order");
+                input_file.WriteLine("% E.g. to specify a North-dipping inclined cleavage plane with crack surface energy 500J/m2 and sliding friction coefficient 0.4, use:");
+                input_file.WriteLine("%Cleavage 0 1.05 500 0.4");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Stress state");
@@ -858,17 +866,20 @@ namespace DFMGenerator_Standalone
             // Set to -1 to use layer thickness / 20
             double InitialMicrofractureMedianRadius = 1;
 #endif
-            // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
+            // Subcritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
             double SubcriticalPropIndex = 10;
             double CriticalPropagationRate = 2000;
             // Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
             double HostRock_kh = 9.869233e-16;// 1mD in m2
             double HostRock_kv = 9.869233e-16;// 1mD in m2
 
+            // Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation
+            // Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly
+            // If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect
             // Create a list of cleavage planes
             List<Cleavage> Cleavages = new List<Cleavage>();
-            // Add a N-dipping inclined cleavage plane with Crack Surface Energy 500J/m2 and Friction Coefficient 0.4
-            //Cleavages.Add(new Cleavage(500, 0.4, 0, 1.01));// Math.PI / 2));
+            // Add a North-dipping inclined cleavage plane with Crack Surface Energy 500J/m2 and Friction Coefficient 0.4
+            //Cleavages.Add(new Cleavage(500, 0.4, 4.71, 1.01));// Math.PI / 2));
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -1418,7 +1429,7 @@ namespace DFMGenerator_Standalone
                         case "InitialMicrofractureMedianRadius":
                             InitialMicrofractureMedianRadius = Convert.ToDouble(line_split[1]);
                             break;
-                        // Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
+                        // Subcritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
                         case "SubcriticalPropIndex":
                         case "b": // For backwards compatibility
                             SubcriticalPropIndex = Convert.ToDouble(line_split[1]);
@@ -1432,6 +1443,32 @@ namespace DFMGenerator_Standalone
                             break;
                         case "HostRock_kv":
                             HostRock_kv = Convert.ToDouble(line_split[1]);
+                            break;
+
+                        // Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation");
+                        // Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly");
+                        // If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect");
+                        case "Cleavage":
+                            {
+                                int noValues = line_split.GetLength(0);
+                                // We can only add a cleavage if at least three values are specified (azimuth, dip, crack surface energy); optionally friction coefficient can also be defined
+                                if (noValues > 3)
+                                {
+                                    // The azimuth must be converted to a strike
+                                    double strike = Convert.ToDouble(line_split[1]) - (Math.PI / 2);
+                                    double dip = Convert.ToDouble(line_split[2]);
+                                    double CSE = Convert.ToDouble(line_split[3]);
+                                    // If only 3 values are specified, set the friction coefficint override to NaN
+                                    double MuFr = (noValues > 4) ? Convert.ToDouble(line_split[4]) : double.NaN;
+
+                                    // If both strike and dip are valid numbers, create a new cleavage plane and add it to the list
+                                    if (!double.IsNaN(strike) && !double.IsNaN(dip))
+                                    {
+                                        Cleavage newCleavage = new Cleavage(CSE, MuFr, strike, dip);
+                                        Cleavages.Add(newCleavage);
+                                    }
+                                }
+                            }
                             break;
 
                         // Stress state

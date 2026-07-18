@@ -182,6 +182,17 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("AverageMechanicalPropertyData true");
                 input_file.WriteLine();
 
+                input_file.WriteLine("% Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation");
+                input_file.WriteLine("% Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly");
+                input_file.WriteLine("% If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect");
+                input_file.WriteLine("% To specify a cleavage plane, use the keyword Cleavage then specify the default values for the cleavage azimuth and dip (radians), and the crack surface energy (J/m2) and sliding friction coefficient parallel to the cleavage plane, in that order");
+                input_file.WriteLine("% Optionally these values can be followed by property names for each of the four parameters, in the same order");
+                input_file.WriteLine("% E.g. to specify a North-dipping inclined cleavage plane with crack surface energy 500J/m2 and sliding friction coefficient 0.4, use:");
+                input_file.WriteLine("%Cleavage 0 1.05 500 0.4");
+                input_file.WriteLine("% Use grid properties to define these parameters as follows:");
+                input_file.WriteLine("%Cleavage 0 1.05 500 0.4 AZIMUTH_PROPERTYNAME DIP_PROPERTYNAME CSE_PROPERTYNAME FRICTION_PROPERTYNAME");
+                input_file.WriteLine();
+
                 input_file.WriteLine("% Stress state");
                 input_file.WriteLine("% Stress distribution scenario - use to turn on or off stress shadow effect");
                 input_file.WriteLine("% Options are EvenlyDistributedStress or StressShadow");
@@ -707,8 +718,21 @@ namespace DFMGenerator_GRDECL
             // Flag for whether to average mechanical properties properties across the shadow grid cells, or take the value from the top middle cell
             bool AverageMechanicalPropertyData = true;
 
-            // Create a list of cleavage planes
-            List<Cleavage> Cleavages = new List<Cleavage>();
+            // Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation
+            // Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly
+            // If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect
+            // Any number of cleavage planes can be defined
+            // Create arrays for the default values and grid properties related to the cleavages, if defined
+            int NoCleavages = 0;
+            List<bool> Cleavage_Defined = new List<bool>();
+            List<double> Default_Cleavage_Azimuth = new List<double>();
+            List<string> Cleavage_Azimuth_PropertyName = new List<string>();
+            List<double> Default_Cleavage_Dip = new List<double>();
+            List<string> Cleavage_Dip_PropertyName = new List<string>();
+            List<double> Default_Cleavage_CrackSurfaceEnergy = new List<double>();
+            List<string> Cleavage_CrackSurfaceEnergy_PropertyName = new List<string>();
+            List<double> Default_Cleavage_FrictionCoefficient = new List<double>();
+            List<string> Cleavage_FrictionCoefficient_PropertyName = new List<string>();
 
             // Stress state
             // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -1521,6 +1545,54 @@ namespace DFMGenerator_GRDECL
                         case "AverageMechanicalPropertyData":
                             AverageMechanicalPropertyData = (line_split[1] == "true");
                             break;
+  
+                        // Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation");
+                        // Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly");
+                        // If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect");
+                        case "Cleavage":
+                            {
+                                int noValues = line_split.GetLength(0);
+                                // We can only add a cleavage if at least three values are specified (azimuth, dip, crack surface energy); optionally friction coefficient can also be defined
+                                if (noValues > 4)
+                                {
+                                    // The azimuth must be converted to a strike
+                                    double azimuth = Convert.ToDouble(line_split[1]);
+                                    double dip = Convert.ToDouble(line_split[2]);
+                                    double CSE = Convert.ToDouble(line_split[3]);
+                                    double MuFr = Convert.ToDouble(line_split[4]);
+
+                                    // If both strike and dip are valid numbers, the cleavage plane is valid - add the default values to the appropriate lists
+                                    if (!double.IsNaN(azimuth) && !double.IsNaN(dip))
+                                    {
+                                        Cleavage_Defined.Add(true);
+                                        Default_Cleavage_Azimuth.Add(azimuth);
+                                        Default_Cleavage_Dip.Add(dip);
+                                        Default_Cleavage_CrackSurfaceEnergy.Add(CSE);
+                                        Default_Cleavage_FrictionCoefficient.Add(MuFr);
+
+                                        // If property names have also been specified, add these to the appropriate lists
+                                        if (noValues > 8)
+                                        {
+                                            Cleavage_Azimuth_PropertyName.Add(line_split[5]);
+                                            Cleavage_Dip_PropertyName.Add(line_split[6]);
+                                            Cleavage_CrackSurfaceEnergy_PropertyName.Add(line_split[7]);
+                                            Cleavage_FrictionCoefficient_PropertyName.Add(line_split[8]);
+                                        }
+                                        // Otherwise add empty strings
+                                        else
+                                        {
+                                            Cleavage_Azimuth_PropertyName.Add(string.Empty);
+                                            Cleavage_Dip_PropertyName.Add(string.Empty);
+                                            Cleavage_CrackSurfaceEnergy_PropertyName.Add(string.Empty);
+                                            Cleavage_FrictionCoefficient_PropertyName.Add(string.Empty);
+                                        }
+
+                                        // Update the number of cleavage planes
+                                        NoCleavages++;
+                                    }
+                                }
+                            }
+                            break;
 
                         // Stress state
                         // Stress distribution scenario - use to turn on or off stress shadow effect
@@ -2280,6 +2352,19 @@ namespace DFMGenerator_GRDECL
             bool UseGridFor_HostRock_kh = HostRock_khPropertyName.Length > 0;
             bool UseGridFor_HostRock_kv = HostRock_kvPropertyName.Length > 0;
             bool UseGridFor_DepthAtDeformation = DepthAtDeformationPropertyName.Length > 0;
+
+            // Create flags to determine which cleavage properties should be populated from grid properties
+            List<bool> UseGridFor_Cleavage_Azimuth = new List<bool>();
+            List<bool> UseGridFor_Cleavage_Dip = new List<bool>();
+            List<bool> UseGridFor_Cleavage_CrackSurfaceEnergy = new List<bool>();
+            List<bool> UseGridFor_Cleavage_FrictionCoefficient = new List<bool>();
+            for (int cleavageNo = 0; cleavageNo < NoCleavages; cleavageNo++)
+            {
+                UseGridFor_Cleavage_Azimuth.Add((Cleavage_Azimuth_PropertyName.Count > cleavageNo) ? (Cleavage_Azimuth_PropertyName[cleavageNo].Length > 0) : false);
+                UseGridFor_Cleavage_Dip.Add((Cleavage_Dip_PropertyName.Count > cleavageNo) ? (Cleavage_Dip_PropertyName[cleavageNo].Length > 0) : false);
+                UseGridFor_Cleavage_CrackSurfaceEnergy.Add((Cleavage_CrackSurfaceEnergy_PropertyName.Count > cleavageNo) ? (Cleavage_CrackSurfaceEnergy_PropertyName[cleavageNo].Length > 0) : false);
+                UseGridFor_Cleavage_FrictionCoefficient.Add((Cleavage_FrictionCoefficient_PropertyName.Count > cleavageNo) ? (Cleavage_FrictionCoefficient_PropertyName[cleavageNo].Length > 0) : false);
+            }
 
             // Create flags to determine which present day stress properties should be populated from grid properties
             bool UseGridFor_PresentDayStress_XX = PresentDayStress_XXPropertyName.Length > 0;
@@ -3261,6 +3346,203 @@ namespace DFMGenerator_GRDECL
                             progressReporter.OutputMessage(string.Format("Invalid value for Poisson's ratio ({0}) in cell {1},{2}. This will create errors in the calculation.", local_PoissonsRatio, ShadowGrid_FirstCellI + 1, SourceDataGrid.NoJRows - ShadowGrid_FirstCellJ + 1));
                         }
                         // End get the mechanical properties from the grid as required
+
+                        // Create a local list of cleavages and get the grid properties representing the cleavage values if required 
+                        List<Cleavage> local_Cleavages = new List<Cleavage>();
+                        for (int cleavageNo = 0; cleavageNo < NoCleavages; cleavageNo++)
+                        {
+                            // Check if the cleavage plane is defined - at a minimum a default azimuth and dip must be specified
+                            // If this is the case, create a new cleavage object and add it to the list
+                            if (Cleavage_Defined[cleavageNo])
+                            {
+                                // Get the default values fo the cleavage orientation and properties
+                                double cleavage_Azimuth = Default_Cleavage_Azimuth[cleavageNo];
+                                double cleavage_Dip = Default_Cleavage_Dip[cleavageNo];
+                                double cleavage_CrackSurfaceEnergy = Default_Cleavage_CrackSurfaceEnergy[cleavageNo];
+                                double cleavage_FrictionCoefficient = Default_Cleavage_FrictionCoefficient[cleavageNo];
+
+                                // Read the orientation data for the cleavage from the grid
+                                if (AverageStressStrainData) // We are averaging over all Petrel cells in the gridblock
+                                {
+                                    // Create local variables for running total and number of datapoints for each mechanical property
+                                    double cleavage_Azimuth_total = 0;
+                                    int cleavage_Azimuth_novalues = 0;
+                                    double cleavage_Dip_total = 0;
+                                    int cleavage_Dip_novalues = 0;
+
+                                    // Loop through all the shadow grid cells in the gridblock
+                                    for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
+                                        for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
+                                            for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
+                                            {
+                                                // Update the azimuth total if defined
+                                                if (UseGridFor_Cleavage_Azimuth[cleavageNo])
+                                                {
+                                                    double cell_Cleavage_Azimuth = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, Cleavage_Azimuth_PropertyName[cleavageNo]);
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    //if (convertFromGeneral_Cleavage_Azimuth[cleavageNo])
+                                                    //    cell_Cleavage_Azimuth = toSIAzimuthUnits.Convert(cell_Cleavage_Azimuth);
+                                                    if (!double.IsNaN(cell_Cleavage_Azimuth))
+                                                    {
+                                                        cleavage_Azimuth_total += cell_Cleavage_Azimuth;
+                                                        cleavage_Azimuth_novalues++;
+                                                    }
+                                                }
+
+                                                // Update the dip total if defined
+                                                if (UseGridFor_Cleavage_Dip[cleavageNo])
+                                                {
+                                                    double cell_Cleavage_Dip = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, Cleavage_Dip_PropertyName[cleavageNo]);
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    //if (convertFromGeneral_Cleavage_Dip[cleavageNo])
+                                                    //    cell_Cleavage_Dip = toSIDipUnits.Convert(cell_Cleavage_Dip);
+                                                    if (!double.IsNaN(cell_Cleavage_Dip))
+                                                    {
+                                                        cleavage_Dip_total += cell_Cleavage_Dip;
+                                                        cleavage_Dip_novalues++;
+                                                    }
+                                                }
+                                            }
+
+                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                    if (cleavage_Azimuth_novalues > 0)
+                                        cleavage_Azimuth = cleavage_Azimuth_total / (double)cleavage_Azimuth_novalues;
+                                    if (cleavage_Dip_novalues > 0)
+                                        cleavage_Dip = cleavage_Dip_total / (double)cleavage_Dip_novalues;
+                                }
+                                else // We are taking data from a single cell
+                                {
+                                    // Update crack surface energy total if defined
+                                    if (UseGridFor_Cleavage_Azimuth[cleavageNo])
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
+                                        {
+                                            double cell_Cleavage_Azimuth = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, Cleavage_Azimuth_PropertyName[cleavageNo]);
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            //if (convertFromGeneral_Cleavage_Azimuth[cleavageNo])
+                                            //    cell_Cleavage_Azimuth = toSIAzimuthUnits.Convert(cell_Cleavage_Azimuth);
+                                            if (!double.IsNaN(cell_Cleavage_Azimuth))
+                                            {
+                                                cleavage_Azimuth = cell_Cleavage_Azimuth;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Update friction coefficient total if defined
+                                    if (UseGridFor_Cleavage_Dip[cleavageNo])
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
+                                        {
+                                            double cell_Cleavage_Dip = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, Cleavage_Dip_PropertyName[cleavageNo]);
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            //if (convertFromGeneral_Cleavage_Dip[cleavageNo])
+                                            //    cell_Cleavage_Dip = toSIDipUnits.Convert(cell_Cleavage_Dip);
+                                            if (!double.IsNaN(cell_Cleavage_Dip))
+                                            {
+                                                cleavage_Dip = cell_Cleavage_Dip;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Read the mechanical property data for the cleavage from the grid
+                                if (AverageMechanicalPropertyData) // We are averaging over all Petrel cells in the gridblock
+                                {
+                                    // Create local variables for running total and number of datapoints for each mechanical property
+                                    double cleavage_CrackSurfaceEnergy_total = 0;
+                                    int cleavage_CrackSurfaceEnergy_novalues = 0;
+                                    double cleavage_FrictionCoeff_total = 0;
+                                    int cleavage_FrictionCoeff_novalues = 0;
+
+                                    // Loop through all the shadow grid cells in the gridblock
+                                    for (int ShadowGrid_I = ShadowGrid_FirstCellI; ShadowGrid_I <= ShadowGrid_LastCellI; ShadowGrid_I++)
+                                        for (int ShadowGrid_J = ShadowGrid_FirstCellJ; ShadowGrid_J <= ShadowGrid_LastCellJ; ShadowGrid_J++)
+                                            for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
+                                            {
+                                                // Update crack surface energy total if defined
+                                                if (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                                {
+                                                    double cell_Cleavage_CrackSurfaceEnergy = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, Cleavage_CrackSurfaceEnergy_PropertyName[cleavageNo]);
+                                                    // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                                    //if (convertFromGeneral_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                                    //    cell_Cleavage_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_Cleavage_CrackSurfaceEnergy);
+                                                    if (!double.IsNaN(cell_Cleavage_CrackSurfaceEnergy))
+                                                    {
+                                                        cleavage_CrackSurfaceEnergy_total += cell_Cleavage_CrackSurfaceEnergy;
+                                                        cleavage_CrackSurfaceEnergy_novalues++;
+                                                    }
+                                                }
+
+                                                // Update friction coefficient total if defined
+                                                if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
+                                                {
+                                                    double cell_Cleavage_FrictionCoeff = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_I, ShadowGrid_J, ShadowGrid_K, Cleavage_FrictionCoefficient_PropertyName[cleavageNo]);
+                                                    // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                                    //if (convertFromFrictionAngle_Cleavage_FrictionCoefficient[cleavageNo])
+                                                    //    cell_Cleavage_FrictionCoeff = Math.Tan(cell_Cleavage_FrictionCoeff);
+                                                    if (!double.IsNaN(cell_Cleavage_FrictionCoeff))
+                                                    {
+                                                        cleavage_FrictionCoeff_total += cell_Cleavage_FrictionCoeff;
+                                                        cleavage_FrictionCoeff_novalues++;
+                                                    }
+                                                }
+                                            }
+
+                                    // Update the gridblock values with the averages - if there is any data to calculate them from
+                                    if (cleavage_CrackSurfaceEnergy_novalues > 0)
+                                        cleavage_CrackSurfaceEnergy = cleavage_CrackSurfaceEnergy_total / (double)cleavage_CrackSurfaceEnergy_novalues;
+                                    if (cleavage_FrictionCoeff_novalues > 0)
+                                        cleavage_FrictionCoefficient = cleavage_FrictionCoeff_total / (double)cleavage_FrictionCoeff_novalues;
+                                }
+                                else // We are taking data from a single cell
+                                {
+                                    // Update crack surface energy total if defined
+                                    if (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
+                                        {
+                                            double cell_Cleavage_CrackSurfaceEnergy = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, Cleavage_CrackSurfaceEnergy_PropertyName[cleavageNo]);
+                                            // If the property has a General template, carry out unit conversion as if it was supplied in project units
+                                            //if (convertFromGeneral_Cleavage_CrackSurfaceEnergy[cleavageNo])
+                                            //    cell_Cleavage_CrackSurfaceEnergy = toSICrackSurfaceEnergyUnits.Convert(cell_Cleavage_CrackSurfaceEnergy);
+                                            if (!double.IsNaN(cell_Cleavage_CrackSurfaceEnergy))
+                                            {
+                                                cleavage_CrackSurfaceEnergy = cell_Cleavage_CrackSurfaceEnergy;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Update friction coefficient total if defined
+                                    if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
+                                    {
+                                        // Loop through all cells in the stack, from the top down, until we find one that contains valid data
+                                        for (int ShadowGrid_DataCellK = ShadowGrid_HighestCellK; ShadowGrid_DataCellK <= ShadowGrid_LowestCellK; ShadowGrid_DataCellK++)
+                                        {
+                                            double cell_Cleavage_FrictionCoeff = SourceDataGrid.GetFloatingPointPropertyValue(ShadowGrid_DataCellI, ShadowGrid_DataCellJ, ShadowGrid_DataCellK, Cleavage_FrictionCoefficient_PropertyName[cleavageNo]);
+                                            // If the property has a FrictionAngle template, convert this to a friction coefficient
+                                            //if (convertFromFrictionAngle_Cleavage_FrictionCoefficient[cleavageNo])
+                                            //    cell_Cleavage_FrictionCoeff = Math.Tan(cell_Cleavage_FrictionCoeff);
+                                            if (!double.IsNaN(cell_Cleavage_FrictionCoeff))
+                                            {
+                                                cleavage_FrictionCoefficient = cell_Cleavage_FrictionCoeff;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Create a Cleavage object for this gridblock and add it to the local list
+                                Cleavage newCleavage = new Cleavage(cleavage_CrackSurfaceEnergy, cleavage_FrictionCoefficient, cleavage_Azimuth - (Math.PI / 2), cleavage_Dip);
+                                local_Cleavages.Add(newCleavage);
+                            }
+                        } // End create a local list of cleavages
+
 
                         // Also calculate the total uplift - this will be needed to calculate the depth at the time of deformation
                         List<Tensor2S> local_EhRate_list = new List<Tensor2S>();
@@ -4743,9 +5025,6 @@ namespace DFMGenerator_GRDECL
 
                         // Set the mechanical property overrides for any fracture sets parallel to the defined cleavages
                         // NB Cleavage overrides are currently applied only to unconfined fracture sets, and not to layer-bound fracture sets
-                        List<Cleavage> local_Cleavages = new List<Cleavage>();
-                        foreach (Cleavage cleavage in Cleavages)
-                            local_Cleavages.Add(new Cleavage(cleavage));
                         gc.SetCleavages(local_Cleavages, MaxConsistencyAngle);
 #if DEBUG_FRAC_INPUT
                         foreach (Cleavage cleavage in local_Cleavages)

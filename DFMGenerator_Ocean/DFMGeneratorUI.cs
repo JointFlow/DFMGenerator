@@ -115,7 +115,7 @@ namespace DFMGenerator_Ocean
         /// </summary>
         private bool definePresentDayStressUIOpen { get { return !(presentDayStressUI is null); } }
         /// <summary>
-        /// Remove reference to the currently open Present Day Stress UI in the DFM Generator UI - should be called by the Deformation Episode UI when it is closed
+        /// Remove reference to the currently open Present Day Stress UI in the DFM Generator UI - should be called by the Present Day Stress UI when it is closed
         /// </summary>
         public void RemovePresentDayStressUI()
         {
@@ -130,6 +130,33 @@ namespace DFMGenerator_Ocean
             {
                 if (!presentDayStressUI.IsDisposed)
                     presentDayStressUI.FindForm().Close();
+            }
+        }
+        /// <summary>
+        /// Reference to the currently open Cleavage UI - will be null if the Cleavage UI is not open
+        /// This is required to ensure that the Cleavage UI can be closed when the DFM Generator dialog is closed
+        /// </summary>
+        private CleavageUI cleavageUI;
+        /// <summary>
+        /// Flag to specify whether a Cleavage UI is already open
+        /// </summary>
+        private bool defineCleavageUIOpen { get { return !(cleavageUI is null); } }
+        /// <summary>
+        /// Remove reference to the currently open Cleavage UI in the DFM Generator UI - should be called by the Cleavage UI when it is closed
+        /// </summary>
+        public void RemoveCleavageUI()
+        {
+            cleavageUI = null;
+        }
+        /// <summary>
+        /// Close the present day stress UI if it is currently open
+        /// </summary>
+        private void CloseCleavageUI()
+        {
+            if (defineCleavageUIOpen)
+            {
+                if (!cleavageUI.IsDisposed)
+                    cleavageUI.FindForm().Close();
             }
         }
 
@@ -320,6 +347,7 @@ namespace DFMGenerator_Ocean
             UpdateNumericBox(args.Argument_NoRaysPerUnconfinedFracture, numericUpDown_RaysPerUCF);
             UpdateTextBox(args.Argument_MinUnconfinedFractureRadius, unitTextBox_MinUCFRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MinUCFRadius_Units);
             UpdateTextBox(args.Argument_MaxUnconfinedFractureRadius, unitTextBox_MaxUCFRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MaxUCFRadius_Units);
+            UpdateTextBox(args.Argument_MaxEffectiveUnconfinedFractureRadius, unitTextBox_MaxUCFEffectiveRadius, PetrelProject.WellKnownTemplates.SpatialGroup.ThicknessDepth, label_MaxUCFEffectiveRadius_Units);
             UpdateTextBox(args.Argument_Historic_UCFP32_TerminationRatio, unitTextBox_Historic_UCFP32_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Active_UCRP30_TerminationRatio, unitTextBox_Active_UCRP30_TerminationRatio, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
             UpdateTextBox(args.Argument_Minimum_UCFClearZone_Volume, unitTextBox_Minimum_UCFClearZone_Volume, PetrelProject.WellKnownTemplates.MiscellaneousGroup.General);
@@ -510,6 +538,7 @@ namespace DFMGenerator_Ocean
             args.Argument_NoRaysPerUnconfinedFracture = GetIntFromNumericBox(numericUpDown_RaysPerUCF);
             args.Argument_MinUnconfinedFractureRadius = GetDoubleFromTextBox(unitTextBox_MinUCFRadius);
             args.Argument_MaxUnconfinedFractureRadius = GetDoubleFromTextBox(unitTextBox_MaxUCFRadius);
+            args.Argument_MaxEffectiveUnconfinedFractureRadius = GetDoubleFromTextBox(unitTextBox_MaxUCFEffectiveRadius);
             args.Argument_Historic_UCFP32_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Historic_UCFP32_TerminationRatio);
             args.Argument_Active_UCRP30_TerminationRatio = GetDoubleFromTextBox(unitTextBox_Active_UCRP30_TerminationRatio);
             args.Argument_Minimum_UCFClearZone_Volume = GetDoubleFromTextBox(unitTextBox_Minimum_UCFClearZone_Volume);
@@ -943,6 +972,12 @@ namespace DFMGenerator_Ocean
                 args.RunAborted = true;
                 return;
             }
+            else if (defineCleavageUIOpen)
+            {
+                PetrelLogger.WarnBox("The Define Cleavage dialog box is still open. Please close this before proceeding");
+                args.RunAborted = true;
+                return;
+            }
 
             if (context is WorkstepProcessWrapper.Context)
             {
@@ -959,6 +994,7 @@ namespace DFMGenerator_Ocean
             {
                 CloseAllDeformationEpisodeUIs();
                 ClosePresentDayStressUI();
+                CloseCleavageUI();
                 this.FindForm().Close();
             }
         }
@@ -967,6 +1003,7 @@ namespace DFMGenerator_Ocean
         {
             CloseAllDeformationEpisodeUIs();
             ClosePresentDayStressUI();
+            CloseCleavageUI();
             this.FindForm().Close();
         }
 
@@ -1335,6 +1372,20 @@ namespace DFMGenerator_Ocean
                 updateUIFromArgs();
             }
         }
+        /// <summary>
+        /// Open a separate dialog box to input data for the cleavage, if such a dialog box is not already open
+        /// </summary>
+        private void OpenCleavageUI()
+        {
+            // Only open a Define Cleavage UI if there is not already one open
+            if (!defineCleavageUIOpen)
+            {
+                CleavageUI dlg_DefineCleavage = new CleavageUI(args, this, context);
+                cleavageUI = dlg_DefineCleavage;
+                PetrelSystem.ShowModeless(dlg_DefineCleavage);
+                updateUIFromArgs();
+            }
+        }
 
         /// <summary>
         /// Event handler to be triggered when a deformation episode is removed
@@ -1377,6 +1428,12 @@ namespace DFMGenerator_Ocean
             checkBox_UsePresentDayStress.Checked = true;
             updateArgsFromUI();
             OpenPresentDayStressUI();
+        }
+
+        private void button_AddCleavage_Click(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            OpenCleavageUI();
         }
         #endregion
     }

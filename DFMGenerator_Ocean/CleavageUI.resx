@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -117,10 +117,19 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="toolTipManager_DFMGenerator.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <metadata name="toolTipManager1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
-  <data name="toolTipItem14.Text" xml:space="preserve">
-    <value>Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation. Up to 2 cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly. If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect.</value>
+  <data name="toolTipItem151.Text" xml:space="preserve">
+    <value>Specify the azimuth and dip of the first cleavage plane. The cleavage plane properties will then be applied to the fracture set closest to the specified orientation, as long as it is within the maximum consistency angle specified on the Control tab of the DFM Generator dialog.</value>
+  </data>
+  <data name="toolTipItem153.Text" xml:space="preserve">
+    <value>Specify the friction coefficient and/or the crack surface energy for fractures parallel to the cleavage plane. These values will override the general friction coefficient and crack surface energy values specified on the Mechanical Properties tab of the DFM Generator dialog.</value>
+  </data>
+  <data name="toolTipItem154.Text" xml:space="preserve">
+    <value>Specify the azimuth and dip of the second cleavage plane. The cleavage plane properties will then be applied to the fracture set closest to the specified orientation, as long as it is within the maximum consistency angle specified on the Control tab of the DFM Generator dialog.</value>
+  </data>
+  <data name="toolTipItem156.Text" xml:space="preserve">
+    <value>Specify the friction coefficient and/or the crack surface energy for fractures parallel to the cleavage plane. These values will override the general friction coefficient and crack surface energy values specified on the Mechanical Properties tab of the DFM Generator dialog.</value>
   </data>
 </root>
