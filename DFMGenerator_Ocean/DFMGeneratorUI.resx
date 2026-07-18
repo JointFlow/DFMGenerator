@@ -120,7 +120,106 @@
   <metadata name="toolTipManager_DFMGenerator.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
+  <data name="toolTipItem8.Text" xml:space="preserve">
+    <value>Use this to output a series of explicit DFNs and implicit fracture data representing intermediate stages in the evolution of the fracture network. This can be useful for risk analysis, as it allows automatic generation of multiple, geologically realistic fracture models representing low, mid and high case scenarios. If set to 0, output will only be generated for the final, fully developed fracture network.</value>
+  </data>
+  <data name="toolTipItem11.Text" xml:space="preserve">
+    <value>Use the column and row controls to limit the model to a part of the overall grid. Leave these blank to run the model on the entire grid. NB since the model may take several hours to run on a large grid, it is recommended to run a test on a small part of the grid beforehand.</value>
+  </data>
+  <data name="toolTipItem13.Text" xml:space="preserve">
+    <value>Assign each fracture model a unique name to help identify the model output. This name will be applied to the output folders containing the implicit fracture properties and to the DFN objects. NB The parameters used to generate each fracture model are recorded on the comments tab of the output folders and DFNs.</value>
+  </data>
   <data name="toolTipItem14.Text" xml:space="preserve">
     <value>Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation. Up to 2 cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly. If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect.</value>
+  </data>
+  <data name="toolTipItem15.Text" xml:space="preserve">
+    <value>The default value for friction should be supplied as a friction coefficient, not a friction angle [friction coefficient = tan(friction angle)]. However if a grid property with the Friction Angle template is supplied, this will automatically be converted to a friction coefficient.</value>
+  </data>
+  <data name="toolTipItem16.Text" xml:space="preserve">
+    <value>This parameter allows for time-dependent (viscoelastic) relaxation of elastic strain around the fractures only; distributed elastic strain in the rockmass will not dissipate. To activate this, the rock strain relaxation must be set to 0.</value>
+  </data>
+  <data name="toolTipItem17.Text" xml:space="preserve">
+    <value>If the specified brittle layer contains multiple grid (K) layers and mechanical properties are specified as grid properties, check this box to calculate the average value for each property within each cell stack and apply it to the entire stack. If unchecked, the value of the top cell in the stack will be applied to the entire stack.</value>
+  </data>
+  <data name="toolTipItem18.Text" xml:space="preserve">
+    <value>This controls the fracture propation rate. Set to &lt;5 for slow subcritical propagation, 5-15 for intermediate propagation, &gt;15 for rapid critical propagation. Typical values in lithified sedimetary rocks are 10-100.</value>
+  </data>
+  <data name="toolTipItem19.Text" xml:space="preserve">
+    <value>This controls time-dependent (viscoelastic) strain relaxation in the rockmass as a whole (including elastic strain around the fractures). It represents the time taken for elastic strain in the rockmass to decrease by a factor of 1/e; NB lower values therefore correspond to more strain relaxation. Set to 0 or leave blank to switch off viscoelastic strain relaxation.</value>
+  </data>
+  <data name="toolTipItem20.Text" xml:space="preserve">
+    <value>Specify the mechanical property data as grid properties to model lateral variations in the mechanical properties of the layer. If no grid property is specified for a given mechanical property, the model will apply the specified default values to all cells.</value>
+  </data>
+  <data name="toolTipItem26.Text" xml:space="preserve">
+    <value>The units for the initial microfracture density A will vary, depending on the value of the initial microfracture size distribution c: [A] fractures/[length]^3-c. Note that specified values for the initial microfracture density will not be recalculated automatically if the initial microfracture size distribution values are changed. It is recommended that the default values are used, as these are valid for most fractured layers.</value>
+  </data>
+  <data name="toolTipItem29.Text" xml:space="preserve">
+    <value>If the specified brittle layer contains multiple grid (K) layers and horizontal strain parameters are specified as grid properties, check this box to calculate the average value for each property within each cell stack and apply it to the entire stack. If unchecked, the value of the top cell in the stack will be applied to the entire stack. It is recommended to keep this unchecked, as averaging the strain orientation can lead to anomalous results.</value>
+  </data>
+  <data name="toolTipItem34.Text" xml:space="preserve">
+    <value>This determines the effective vertical stress, in conjunction with the sediment and fluid density and the fluid overpressure. If blank, the current depth of burial will be used to determine the effective vertical stress.</value>
+  </data>
+  <data name="toolTipItem36.Text" xml:space="preserve">
+    <value>Calculates the aperture for shear fractures subject to a compressive normal stress using the Barton-Bandis formula (Bandis et al. 1983, Int J Rock Mech, Min Sci &amp; Geomech Abs 20, 249-268). The calculation is based on the in situ stress state at the end of deformation and various parameters related to the fracture morphology; the default values given here are typical for shear fractures in sedimentary rocks.</value>
+  </data>
+  <data name="toolTipItem37.Text" xml:space="preserve">
+    <value>Calculates the equilibrium elastic aperture for dilatant fractures subject to a tensile normal stress. An arbitrary user-defined multiplier can also be applied. The calculation is based on the in situ stress state at the end of deformation; NB if this is compressive (e.g. for Mode 2 shear fractures), the resulting fracture porosity will be 0.</value>
+  </data>
+  <data name="toolTipItem38.Text" xml:space="preserve">
+    <value>Maximum fracture aperture is proportional to the minimum fracture dimension (fracture diameter for microfractures, layer thickness for layer-bound fractures). Different scaling factors can be defined for fractures striking perpendicular to the minimum (i.e. most tensile) and maximum horizontal stress.</value>
+  </data>
+  <data name="toolTipItem39.Text" xml:space="preserve">
+    <value>All fractures are assigned an arbitrary user-specified aperture. Different apertures can be specified for fractures oriented perpendicular to the minimum (i.e. most tensile) and maximum horizontal stress.</value>
+  </data>
+  <data name="toolTipItem40.Text" xml:space="preserve">
+    <value>Check this to calculate density, size, porosity and fracture connectivity indices (if selected) for individual fracture sets. These will be output as grid properties in a separate output folder for each set.</value>
+  </data>
+  <data name="toolTipItem41.Text" xml:space="preserve">
+    <value>If this is checked, all cells in the specified region of the grid will be populated with implicit fracture data, even if the fracture density is zero. If this is not checked, cells with zero fracture density will not be populated; this enables easier visualisation of the extent of the fracture network.</value>
+  </data>
+  <data name="toolTipItem42.Text" xml:space="preserve">
+    <value>Check this to use the present day stress rather than the stress at the time of deformation to calculate fracture aperture and reactivation potential. This will ensure that the calculated fracture porosity, permeability and reactivation risk will be valid for present day conditions. Click on the button to define the present day stress.</value>
+  </data>
+  <data name="toolTipItem43.Text" xml:space="preserve">
+    <value>Check this to calculate the reactivation potential of each fracture set, output as grid properties in the implicit output folder(s). The fracture reactivation potential represents the fracture driving stress if positive, and the cohesionless distance to failure if negative.</value>
+  </data>
+  <data name="toolTipItem49.Text" xml:space="preserve">
+    <value>Check this to calculate bulk rock compliance and stiffness tensors, that include the effect of fractures on the elastic properties. These are 4th order tensors with 36 components each, output as grid properties in their own output folder. They are only generated for the final timestep.</value>
+  </data>
+  <data name="toolTipItem50.Text" xml:space="preserve">
+    <value>Check this to calculate fracture connectivity indices (ratio of I, R and Y nodes) for individual fracture sets and for the entire fracture network, as well as anisotropy indices for the network. These will be output as grid properties in the implicit output folder(s).</value>
+  </data>
+  <data name="toolTipItem57.Text" xml:space="preserve">
+    <value>Generate output files representing the explicit DFN, in ASCII or FAB format; the FAB format is compatible with Petrel and other common fracture modelling packages. 2 files will be generated for the final network: one representing the microfractures and one representing the layer-bound fractures. An additional 2 files will also be generated for each intermediate stage output. Output files are written to $home\DFNFolder or to the project folder.</value>
+  </data>
+  <data name="toolTipItem58.Text" xml:space="preserve">
+    <value>Generate output files showing the evolution of the implicit fracture density data through time. Output files are written to $home\DFNFolder or to the project folder. NB this will generate one file per cell stack so may generate a large number of files for a large grid.</value>
+  </data>
+  <data name="toolTipItem71.Text" xml:space="preserve">
+    <value>Maximum increase in volumetric macrofracture ratio (MFP33) allowed in each timestep. This controls the optimal timestep duration. If it is increased, there will be fewer but longer timesteps; the calculation will run faster but with greater discretisation error.</value>
+  </data>
+  <data name="toolTipItem73.Text" xml:space="preserve">
+    <value>Total microfracture area (uFP32) and porosity must be calculated by numerical integration. The number of bins controls the accuracy of the numerical integration - increase this to increase the accuracy of the calculated uFP32 and porosity at expense of runtime.</value>
+  </data>
+  <data name="toolTipItem74.Text" xml:space="preserve">
+    <value>Minimum radius for microfractures to be included in implicit fracture density and porosity calculations. If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density (uFP30) as this will be infinite. If blank, the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population).</value>
+  </data>
+  <data name="toolTipItem75.Text" xml:space="preserve">
+    <value>Use this control to amalgamate Petrel grid cells laterally as well as vertically, and thus reduce the number of cell stacks. In addition to reducing model runtime, this will reduce the height:width ratio of the cell stacks; for optimal results this should be less than 1/2. However faults will not be honoured in horizontally upscaled grids (i.e. fractures may cut across faults).</value>
+  </data>
+  <data name="toolTipItem77.Text" xml:space="preserve">
+    <value>By default fractures will terminate if they intersect a fault at a cell boundary. This can cause problems with stairstep grids contining inclined faults or faults at different depths, as any pillar intersecting a fault will cause fractures to terminate, even if the fault does not cut the layer containing the fractures. To prevent this, check this box to allow fractures to propagate across all faulted cell boundaries.</value>
+  </data>
+  <data name="toolTipItem87.Text" xml:space="preserve">
+    <value>By default, checking for stress shadow interaction is only carried out against other macrofractures in the same cell stack. Some stress shadow interactions may therefore be missed for fractures parallel to and close to the cell stack boundaries. Use this control to search adjacent cell stacks for stress shadow interaction; this will increase runtime. If set to automatic, the requirement to search adjacent cell stacks will be determined independently for each cell stack based on its geometry.</value>
+  </data>
+  <data name="toolTipItem89.Text" xml:space="preserve">
+    <value>This controls the order in which fractures are propagated within each timestep: if checked, fractures will be propagated in order of nucleation time regardless of fracture set; if unchecked they will be propagated in order of fracture set. Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time.</value>
+  </data>
+  <data name="toolTipItem94.Text" xml:space="preserve">
+    <value>The explicit DFN will not be generated in cell stacks thinner than this cutoff. Set this to prevent the generation of excessive numbers of fractures in very thin cell stacks, e.g. where there is pinch-out of the brittle layer.</value>
+  </data>
+  <data name="toolTipItem95.Text" xml:space="preserve">
+    <value>This represents the maximum variation in fracture propagation azimuth allowed across gridblock boundary. If the orientation of the fracture set varies across the gridblock boundary by more than this angle, the algorithm will seek a better matching set.</value>
   </data>
 </root>
