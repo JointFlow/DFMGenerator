@@ -120,8 +120,14 @@
   <metadata name="toolTipManager_DFMGenerator.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
+  <data name="toolTipItem6.Text" xml:space="preserve">
+    <value>If checked, 6 fracture sets will be generated striking at 30 degree intervals. The oblique fracture sets may experience strike-slip displacement, depending on the applied strain. This will give longer runtimes and generate more output data, so is only recommended in strike-slip stress regimes.</value>
+  </data>
   <data name="toolTipItem8.Text" xml:space="preserve">
     <value>Use this to output a series of explicit DFNs and implicit fracture data representing intermediate stages in the evolution of the fracture network. This can be useful for risk analysis, as it allows automatic generation of multiple, geologically realistic fracture models representing low, mid and high case scenarios. If set to 0, output will only be generated for the final, fully developed fracture network.</value>
+  </data>
+  <data name="toolTipItem9.Text" xml:space="preserve">
+    <value>Specify the K indices of the top and bottom of the brittle layer containing the layer-bound fractures. If this spans multiple grid layers, these will be amalgamated into "cell stacks" for the purpose of calculation. In the output data, the same fracture density values will be applied to every cell in the stack; these represent the fracture densities across the entire brittle layer.</value>
   </data>
   <data name="toolTipItem11.Text" xml:space="preserve">
     <value>Use the column and row controls to limit the model to a part of the overall grid. Leave these blank to run the model on the entire grid. NB since the model may take several hours to run on a large grid, it is recommended to run a test on a small part of the grid beforehand.</value>
@@ -183,6 +189,15 @@
   <data name="toolTipItem43.Text" xml:space="preserve">
     <value>Check this to calculate the reactivation potential of each fracture set, output as grid properties in the implicit output folder(s). The fracture reactivation potential represents the fracture driving stress if positive, and the cohesionless distance to failure if negative.</value>
   </data>
+  <data name="toolTipItem44.Text" xml:space="preserve">
+    <value>Check this to calculate the fracture permeability tensor, either for microfractures, layer-bound fractures or all fractures. This is a 2nd order tensor with 6 components, output as grid properties in their own output folder.</value>
+  </data>
+  <data name="toolTipItem46.Text" xml:space="preserve">
+    <value>Oda (1986): This assumes fractures of infinite size and connectivity, and calculates permeability based on fracture density and aperture, as described in Oda (1986), Water Resources Research 22, 1845-1856.</value>
+  </data>
+  <data name="toolTipItem48.Text" xml:space="preserve">
+    <value>Size and connectivity corrected: This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock. For the latter, host rock permeability must be specified.</value>
+  </data>
   <data name="toolTipItem49.Text" xml:space="preserve">
     <value>Check this to calculate bulk rock compliance and stiffness tensors, that include the effect of fractures on the elastic properties. These are 4th order tensors with 36 components each, output as grid properties in their own output folder. They are only generated for the final timestep.</value>
   </data>
@@ -215,6 +230,12 @@
   </data>
   <data name="toolTipItem89.Text" xml:space="preserve">
     <value>This controls the order in which fractures are propagated within each timestep: if checked, fractures will be propagated in order of nucleation time regardless of fracture set; if unchecked they will be propagated in order of fracture set. Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time.</value>
+  </data>
+  <data name="toolTipItem90.Text" xml:space="preserve">
+    <value>By default, fractures nucleate deterministically at regular intervals determined by the microfracture density and growth rate. However if the cell stacks are small relative to the fracture spacing, so the average number of fractures per cell stack is less than 1, no fractures will nucleate. This control allows the timing of fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value. This will allow some fractures to nucleate even when cell stacks are small.</value>
+  </data>
+  <data name="toolTipItem93.Text" xml:space="preserve">
+    <value>NB If probabilistic fracture nucleation is required to generate fractures, it is often because the height:width ratio of the cell stacks is too high. Try using horizontal upscaling to reduce this instead.</value>
   </data>
   <data name="toolTipItem94.Text" xml:space="preserve">
     <value>The explicit DFN will not be generated in cell stacks thinner than this cutoff. Set this to prevent the generation of excessive numbers of fractures in very thin cell stacks, e.g. where there is pinch-out of the brittle layer.</value>

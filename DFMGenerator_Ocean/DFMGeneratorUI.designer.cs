@@ -41,11 +41,11 @@ namespace DFMGenerator_Ocean
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem4 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DFMGeneratorUI));
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo5 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo6 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem8 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DFMGeneratorUI));
             Slb.Ocean.Petrel.UI.Controls.ToolTipInfo toolTipInfo7 = new Slb.Ocean.Petrel.UI.Controls.ToolTipInfo();
             Slb.Ocean.Petrel.UI.Controls.ToolTipItem toolTipItem9 = new Slb.Ocean.Petrel.UI.Controls.ToolTipItem();
             Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator toolTipSeparator1 = new Slb.Ocean.Petrel.UI.Controls.ToolTipSeparator();
@@ -806,6 +806,7 @@ namespace DFMGenerator_Ocean
     " the principal horizontal stress directions, so there will be no strike-slip dis" +
     "placement.";
             toolTipItem6.ShowBullet = true;
+            toolTipItem6.Text = resources.GetString("toolTipItem6.Text");
             toolTipInfo4.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem4,
             toolTipItem5,
@@ -853,6 +854,7 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_Kindices.Name = "toolTipHotspot_Kindices";
             this.toolTipHotspot_Kindices.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_Kindices.TabIndex = 44;
+            toolTipItem9.Text = resources.GetString("toolTipItem9.Text");
             toolTipItem10.Text = "NB it is only possible to model one brittle layer at a time. It is of course poss" +
     "ible to rerun the model several times to generate multiple DFNs for different br" +
     "ittle layers.";
@@ -2891,13 +2893,16 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FracturePermeability.Name = "toolTipHotspot_FracturePermeability";
             this.toolTipHotspot_FracturePermeability.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_FracturePermeability.TabIndex = 28;
+            toolTipItem44.Text = resources.GetString("toolTipItem44.Text");
             toolTipItem45.Text = "The following algorithms can be used to calculate fracture permeability:";
             toolTipItem46.ShowBullet = true;
+            toolTipItem46.Text = resources.GetString("toolTipItem46.Text");
             toolTipItem47.ShowBullet = true;
             toolTipItem47.Text = "Oda corrected (1987): This algorithm adds a correction factor to account for frac" +
     "ture connectivity, as described in Oda, et al. (1987), Journal of Geophysical Re" +
     "search 92, B8, 8037-8048.";
             toolTipItem48.ShowBullet = true;
+            toolTipItem48.Text = resources.GetString("toolTipItem48.Text");
             toolTipInfo34.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem44,
             toolTipItem45,
@@ -3777,11 +3782,13 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.Name = "toolTipHotspot_ProbabilisticFractureNucleationLimit";
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.Size = new System.Drawing.Size(20, 20);
             this.toolTipHotspot_ProbabilisticFractureNucleationLimit.TabIndex = 24;
+            toolTipItem90.Text = resources.GetString("toolTipItem90.Text");
             toolTipItem91.ShowBullet = true;
             toolTipItem91.Text = "Set to 0 to disable probabilistic fracture nucleation.";
             toolTipItem92.ShowBullet = true;
             toolTipItem92.Text = "Leave blank for automatic (probabilistic fracture nucleation will be activated wh" +
     "enever searching neighbouring gridblocks is also active).";
+            toolTipItem93.Text = resources.GetString("toolTipItem93.Text");
             toolTipInfo61.Items.AddRange(new Slb.Ocean.Petrel.UI.Controls.ToolTipItemBase[] {
             toolTipItem90,
             toolTipItem91,
