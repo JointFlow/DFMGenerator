@@ -2961,6 +2961,7 @@ namespace DFMGenerator_SharedCode
                             {
                                 // Get the controlling radius of the restricted fracture ray
                                 double datapoint_Rc = datapoint.PropagationControllingLength;
+                                double datapoint_currentReff = datapoint.EffectiveRayLength;
 
                                 // Check if the fracture radius exceeds that at which critical propagation will occur at the initial driving stress
                                 double criticalRadius = (2 * Math.Pow(sqrtpi_Kc_factor * U, -2)) - datapoint_Rc;
@@ -2979,10 +2980,10 @@ namespace DFMGenerator_SharedCode
                                     // If the maximum effective ray length is reached, subcritical propagation occurs at constant rate beyond this point
                                     double growthWtime;
                                     if (datapoint_finalReff > MaximumEffectiveFractureRadius)
-                                        growthWtime = bis2 ? 2 * (((datapoint_finalReff / MaximumEffectiveFractureRadius) - 1) + (Math.Log(MaximumEffectiveFractureRadius) - Math.Log(datapoint_currentR))) :
-                                            2 * (((datapoint_finalReff - MaximumEffectiveFractureRadius) / (Math.Pow(MaximumEffectiveFractureRadius, b / 2))) + (beta * (Math.Pow(MaximumEffectiveFractureRadius, 1 / beta) - Math.Pow(datapoint_currentR, 1 / beta))));
+                                        growthWtime = bis2 ? 2 * (((datapoint_finalReff / MaximumEffectiveFractureRadius) - 1) + (Math.Log(MaximumEffectiveFractureRadius) - Math.Log(datapoint_currentReff))) :
+                                            2 * (((datapoint_finalReff - MaximumEffectiveFractureRadius) / (Math.Pow(MaximumEffectiveFractureRadius, b / 2))) + (beta * (Math.Pow(MaximumEffectiveFractureRadius, 1 / beta) - Math.Pow(datapoint_currentReff, 1 / beta))));
                                     else
-                                        growthWtime = bis2 ? 2 * (Math.Log(datapoint_finalReff) - Math.Log(datapoint_currentR)) : 2 * beta * (Math.Pow(datapoint_finalReff, 1 / beta) - Math.Pow(datapoint_currentR, 1 / beta));
+                                        growthWtime = bis2 ? 2 * (Math.Log(datapoint_finalReff) - Math.Log(datapoint_currentReff)) : 2 * beta * (Math.Pow(datapoint_finalReff, 1 / beta) - Math.Pow(datapoint_currentReff, 1 / beta));
 
                                     // Convert the weighted time to real time
                                     // NB we will do this locally as U and V have not yet been set in the CurrentFractureData object
@@ -3309,9 +3310,9 @@ namespace DFMGenerator_SharedCode
                 // NB if this is the case, the calculation of finalR assuming accelerating propagation rate may give a NaN
                 if ((finalR > MaximumEffectiveFractureRadius) || double.IsNaN(finalR))
                 {
-                    double constantRateIncrement = bis2 ? MaximumEffectiveFractureRadius * ((Math.Log(initialR) - Math.Log(MaximumEffectiveFractureRadius)) - dGamma_M) :
+                    double constantKiIncrement = bis2 ? MaximumEffectiveFractureRadius * ((Math.Log(initialR) - Math.Log(MaximumEffectiveFractureRadius)) - dGamma_M) :
                         beta * Math.Pow(MaximumEffectiveFractureRadius, b / 2) * ((Math.Pow(initialR, 1 / beta) - Math.Pow(MaximumEffectiveFractureRadius, 1 / beta)) - dGamma_M);
-                    finalR = MaximumEffectiveFractureRadius + constantRateIncrement;
+                    finalR = MaximumEffectiveFractureRadius + constantKiIncrement;
                     incrementR = finalR - initialR;
                 }
 
@@ -3332,12 +3333,13 @@ namespace DFMGenerator_SharedCode
             foreach (ImplicitFracturePopulationDatapoint restrictedFracturePopulationDatapoint in Fractures.fracturePopulationDatapoints[RayPropagationStatus.Restricted])
             {
                 double initialR = restrictedFracturePopulationDatapoint.RayLength;
+                double initialReff = restrictedFracturePopulationDatapoint.EffectiveRayLength;
                 double initialRc = restrictedFracturePopulationDatapoint.PropagationControllingLength;
 
                 // Calculation of the increment in ray length will depend on whether propagation of the fracture is critical or subcritical, and whether the maximum effective ray length is reached
                 // First calculate the increment in ray length assuming subcritical fracture propagation
                 // Subcritical propagation rate is dependent on driving stress and fracture size, both of which may vary during the timestep
-                double growthComponent = bis2 ? initialR * Math.Exp(-dGamma_M / 2) : Math.Pow(Math.Pow(initialR, 1 / beta) - (dGamma_M / 2), beta);
+                double growthComponent = bis2 ? initialReff * Math.Exp(-dGamma_M / 2) : Math.Pow(Math.Pow(initialReff, 1 / beta) - (dGamma_M / 2), beta);
                 double finalR = (2 * growthComponent) - initialRc;
                 double incrementR = finalR - initialR;
 
@@ -3345,9 +3347,9 @@ namespace DFMGenerator_SharedCode
                 // NB if this is the case, the calculation of finalR assuming accelerating propagation rate may give a NaN
                 if ((growthComponent > MaximumEffectiveFractureRadius) || double.IsNaN(growthComponent))
                 {
-                    double constantRateIncrement = bis2 ? MaximumEffectiveFractureRadius * ((2 * (Math.Log(initialR) - Math.Log(MaximumEffectiveFractureRadius))) - dGamma_M) :
-                        beta * Math.Pow(MaximumEffectiveFractureRadius, b / 2) * ((2 * (Math.Pow(initialR, 1 / beta) - Math.Pow(MaximumEffectiveFractureRadius, 1 / beta))) - dGamma_M);
-                    finalR = (2 * MaximumEffectiveFractureRadius) + constantRateIncrement - initialRc;
+                    double constantKiIncrement = bis2 ? MaximumEffectiveFractureRadius * ((2 * (Math.Log(initialReff) - Math.Log(MaximumEffectiveFractureRadius))) - dGamma_M) :
+                        beta * Math.Pow(MaximumEffectiveFractureRadius, b / 2) * ((2 * (Math.Pow(initialReff, 1 / beta) - Math.Pow(MaximumEffectiveFractureRadius, 1 / beta))) - dGamma_M);
+                    finalR = (2 * MaximumEffectiveFractureRadius) + constantKiIncrement - initialRc;
                     incrementR = finalR - initialR;
                 }
 

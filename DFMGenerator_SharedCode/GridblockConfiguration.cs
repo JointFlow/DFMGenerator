@@ -6676,9 +6676,9 @@ namespace DFMGenerator_SharedCode
                 // If the maximum effective ray length is reached, subcritical propagation occurs at constant rate beyond this point
                 if (finalR > maximumEffectiveFractureRadius)
                 {
-                    double constantRateIncrement = bis2 ? maximumEffectiveFractureRadius * ((Math.Log(initialR) - Math.Log(maximumEffectiveFractureRadius)) - growthFactor) :
+                    double constantKiIncrement = bis2 ? maximumEffectiveFractureRadius * ((Math.Log(initialR) - Math.Log(maximumEffectiveFractureRadius)) - growthFactor) :
                         beta * Math.Pow(maximumEffectiveFractureRadius, b / 2) * ((Math.Pow(initialR, 1 / beta) - Math.Pow(maximumEffectiveFractureRadius, 1 / beta)) - growthFactor);
-                    finalR = maximumEffectiveFractureRadius + constantRateIncrement;
+                    finalR = maximumEffectiveFractureRadius + constantKiIncrement;
                 }
 
                 // Finally calculate the propagation increment
@@ -6698,9 +6698,9 @@ namespace DFMGenerator_SharedCode
                 // If the maximum effective ray length is reached, subcritical propagation occurs at constant rate beyond this point
                 if (growthComponent > maximumEffectiveFractureRadius)
                 {
-                    double constantRateIncrement = bis2 ? maximumEffectiveFractureRadius * ((2 * (Math.Log(initialR) - Math.Log(maximumEffectiveFractureRadius))) - growthFactor) :
-                        beta * Math.Pow(maximumEffectiveFractureRadius, b / 2) * ((2 * (Math.Pow(initialR, 1 / beta) - Math.Pow(maximumEffectiveFractureRadius, 1 / beta))) - growthFactor);
-                    finalR = (2 * maximumEffectiveFractureRadius) + constantRateIncrement - initialRc;
+                    double constantKiIncrement = bis2 ? maximumEffectiveFractureRadius * ((2 * (Math.Log(initialReff) - Math.Log(maximumEffectiveFractureRadius))) - growthFactor) :
+                        beta * Math.Pow(maximumEffectiveFractureRadius, b / 2) * ((2 * (Math.Pow(initialReff, 1 / beta) - Math.Pow(maximumEffectiveFractureRadius, 1 / beta))) - growthFactor);
+                    finalR = (2 * maximumEffectiveFractureRadius) + constantKiIncrement - initialRc;
                 }
 
                 // Finally calculate the propagation increment

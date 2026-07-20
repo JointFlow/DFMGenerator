@@ -1,7 +1,7 @@
 ﻿// Switch this flag off to use hardcoded values for all parameters
 // This should be done for debugging only
 // The flag should be set to generate release versions of the standalone code
-#define READINPUTFROMFILE
+//#define READINPUTFROMFILE
 // Set this flag to run test models with hardcoded values for unconfined fractures
 #define TESTUCF
 // Set this flag to output detailed information on input parameters and properties for each gridblock
@@ -1117,7 +1117,7 @@ namespace DFMGenerator_Standalone
             // Ratio of active to total unconfined fracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
             double Active_TotalUCRP30TerminationRatio = -1;// 0.01;
             // Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
-            double MinimumUCFClearZoneVolume = 0.2;
+            double MinimumUCFClearZoneVolume = 0.1;
             // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
             double MinimumStaticUCRLength = -1;
             // Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
@@ -1125,7 +1125,7 @@ namespace DFMGenerator_Standalone
             double MaxTimestepUCFP33Increase = 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
-            double MaxTimestepRadiusIncrease = 0.2;// double.NaN;// 0.05;//
+            double MaxTimestepRadiusIncrease = 0.2;// 0.05;//
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
