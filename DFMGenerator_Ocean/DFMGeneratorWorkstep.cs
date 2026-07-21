@@ -2208,7 +2208,7 @@ namespace DFMGenerator_Ocean
                     for (int cleavageNo = 0; cleavageNo < maxNoCleavages; cleavageNo++)
                         if (Cleavage_Defined[cleavageNo])
                         {
-                            generalInputParams += string.Format("Cleavage {0}: ", cleavageNo);
+                            generalInputParams += string.Format("Cleavage {0}: ", cleavageNo + 1);
                             if (UseGridFor_Cleavage_Azimuth[cleavageNo])
                                 generalInputParams += string.Format("Azimuth {0}, default {1}{2}, ", Cleavage_Azimuth_grid[cleavageNo].Name, toProjectAzimuthUnits.Convert(Cleavage_Azimuth[cleavageNo]), AzimuthUnits);
                             else
@@ -2220,10 +2220,12 @@ namespace DFMGenerator_Ocean
                             if (Cleavage_CrackSurfaceEnergy[cleavageNo] >= 0)
                             {
                                 if (UseGridFor_Cleavage_CrackSurfaceEnergy[cleavageNo])
-                                    generalInputParams += string.Format("            Crack Surface Energy {1}, default {2}{3}\n", Cleavage_CrackSurfaceEnergy_grid[cleavageNo].Name, toProjectCrackSurfaceEnergyUnits.Convert(Cleavage_CrackSurfaceEnergy[cleavageNo]), CrackSurfaceEnergyUnits);
+                                    generalInputParams += string.Format("            Crack Surface Energy {0}, default {1}{2}\n", Cleavage_CrackSurfaceEnergy_grid[cleavageNo].Name, toProjectCrackSurfaceEnergyUnits.Convert(Cleavage_CrackSurfaceEnergy[cleavageNo]), CrackSurfaceEnergyUnits);
                                 else
-                                    generalInputParams += string.Format("            Crack Surface Energy {1}{2}\n", toProjectCrackSurfaceEnergyUnits.Convert(Cleavage_CrackSurfaceEnergy[cleavageNo]), CrackSurfaceEnergyUnits);
-
+                                    generalInputParams += string.Format("            Crack Surface Energy {0}{1}\n", toProjectCrackSurfaceEnergyUnits.Convert(Cleavage_CrackSurfaceEnergy[cleavageNo]), CrackSurfaceEnergyUnits);
+                            }
+                            if (Cleavage_FrictionCoefficient[cleavageNo] >= 0)
+                            {
                                 if (UseGridFor_Cleavage_FrictionCoefficient[cleavageNo])
                                     generalInputParams += string.Format("            Friction coefficient: {0}, default {1}\n", Cleavage_FrictionCoefficient_grid[cleavageNo].Name, Cleavage_FrictionCoefficient[cleavageNo]);
                                 else
@@ -2490,7 +2492,10 @@ namespace DFMGenerator_Ocean
                     generalInputParams += string.Format("Number of radius bins for numerical calculation of microfracture P32: {0}\n", No_r_bins);
                     if (NoUnconfinedFractureStrikeSets > 0)
                     {
-                        generalInputParams += string.Format("Unconfined fractures have minimum radius {0}{3}, maximum radius {1}{3}, and maximum effective radius {2}{3}\n", MinUnconfinedFractureRadius, MaxUnconfinedFractureRadius, MaxEffectiveUnconfinedFractureRadius, FractureRadiusUnits);
+                        if (MaxEffectiveUnconfinedFractureRadius>0)
+                            generalInputParams += string.Format("Unconfined fractures have minimum radius {0}{3}, maximum radius {1}{3}, and maximum effective radius {2}{3}\n", MinUnconfinedFractureRadius, MaxUnconfinedFractureRadius, MaxEffectiveUnconfinedFractureRadius, FractureRadiusUnits);
+                        else
+                            generalInputParams += string.Format("Unconfined fractures have minimum radius {0}{2} and maximum radius {1}{2}\n", MinUnconfinedFractureRadius, MaxUnconfinedFractureRadius, FractureRadiusUnits);
                     }
                     if (HorizontalUpscalingFactor > 1)
                         generalInputParams += string.Format("Horizontal upscaling factor: {0}\n", HorizontalUpscalingFactor);
