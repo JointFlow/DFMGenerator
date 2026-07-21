@@ -159,6 +159,33 @@ namespace DFMGenerator_Ocean
                     cleavageUI.FindForm().Close();
             }
         }
+        /// <summary>
+        /// Reference to the currently open Extract Fracture Traces UI - will be null if the Extract Fracture Traces UI is not open
+        /// This is required to ensure that the Extract Fracture Traces UI can be closed when the DFM Generator dialog is closed
+        /// </summary>
+        private ExtractFractureTraces extractFractureTraces;
+        /// <summary>
+        /// Flag to specify whether a Extract Fracture Traces UI is already open
+        /// </summary>
+        private bool defineExtractFractureTracesOpen { get { return !(extractFractureTraces is null); } }
+        /// <summary>
+        /// Remove reference to the currently open Extract Fracture Traces UI in the DFM Generator UI - should be called by the Extract Fracture Traces UI when it is closed
+        /// </summary>
+        public void RemoveExtractFractureTraces()
+        {
+            extractFractureTraces = null;
+        }
+        /// <summary>
+        /// Close the Extract Fracture Traces UI if it is currently open
+        /// </summary>
+        private void CloseExtractFractureTraces()
+        {
+            if (defineExtractFractureTracesOpen)
+            {
+                if (!extractFractureTraces.IsDisposed)
+                    extractFractureTraces.FindForm().Close();
+            }
+        }
 
         /// <summary>
         /// Updates the data displayed on the UI.
@@ -978,6 +1005,12 @@ namespace DFMGenerator_Ocean
                 args.RunAborted = true;
                 return;
             }
+            else if (defineExtractFractureTracesOpen)
+            {
+                PetrelLogger.WarnBox("The Extract Fractue Traces dialog box is still open. Please close this before proceeding");
+                args.RunAborted = true;
+                return;
+            }
 
             if (context is WorkstepProcessWrapper.Context)
             {
@@ -995,6 +1028,7 @@ namespace DFMGenerator_Ocean
                 CloseAllDeformationEpisodeUIs();
                 ClosePresentDayStressUI();
                 CloseCleavageUI();
+                CloseExtractFractureTraces();
                 this.FindForm().Close();
             }
         }
@@ -1004,6 +1038,7 @@ namespace DFMGenerator_Ocean
             CloseAllDeformationEpisodeUIs();
             ClosePresentDayStressUI();
             CloseCleavageUI();
+            CloseExtractFractureTraces();
             this.FindForm().Close();
         }
 
@@ -1386,6 +1421,20 @@ namespace DFMGenerator_Ocean
                 updateUIFromArgs();
             }
         }
+        /// <summary>
+        /// Open a separate dialog box to extract fracture traces, if such a dialog box is not already open
+        /// </summary>
+        private void OpenExtractFractureTraces()
+        {
+            // Only open a Extract Fracture Traces UI if there is not already one open
+            if (!defineExtractFractureTracesOpen)
+            {
+                ExtractFractureTraces dlg_ExtractFractureTraces = new ExtractFractureTraces(args, this, context);
+                extractFractureTraces = dlg_ExtractFractureTraces;
+                PetrelSystem.ShowModeless(dlg_ExtractFractureTraces);
+                updateUIFromArgs();
+            }
+        }
 
         /// <summary>
         /// Event handler to be triggered when a deformation episode is removed
@@ -1436,6 +1485,12 @@ namespace DFMGenerator_Ocean
             OpenCleavageUI();
         }
         #endregion
+
+        private void button_EFT_Click(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            OpenExtractFractureTraces();
+        }
     }
     /// <summary>
     /// Event arguments class for passing on event information when a deformation episode is removed from the DFM Generator UI

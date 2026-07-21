@@ -9591,6 +9591,9 @@ namespace DFMGenerator_Ocean
             private double argument_FilterByPropertyMinCutoff = double.NaN;
             private double argument_FilterByPropertyMaxCutoff = double.NaN;
 
+            // Arguments for DFN trace extractor
+            private Droid argument_EFT_DFNToExtract;
+            private double argument_EFT_Depth = double.NaN;
 #endif
 
             // Main settings
@@ -14604,6 +14607,24 @@ namespace DFMGenerator_Ocean
                 set { this.argument_Cleavage2_FrictionCoefficient = (value == null ? null : value.Droid); }
             }
 
+            // Arguments for DFN trace extractor
+            [OptionalInWorkflow]
+            [Description("DFN to extract horizontal fracture traces from", "DFN to extract horizontal fracture traces from")]
+            public Slb.Ocean.Petrel.DomainObject.Shapes.FractureNetwork Argument_EFT_DFNToExtract
+            {
+                internal get { return DataManager.Resolve(this.argument_EFT_DFNToExtract) as FractureNetwork; }
+                set { this.argument_EFT_DFNToExtract = (value == null ? null : value.Droid); }
+            }
+
+            [OptionalInWorkflow]
+            [Description("Depth of horizontal plane to extract traces onto", "Depth of horizontal plane to extract traces onto")]
+            public double Argument_EFT_Depth
+            {
+                internal get { return this.argument_EFT_Depth; }
+                set { this.argument_EFT_Depth = value; }
+            }
+
+
             /// <summary>
             /// Reset all arguments to default values
             /// </summary>
@@ -15010,6 +15031,10 @@ namespace DFMGenerator_Ocean
                 argument_PropertyToFilter = null;
                 argument_FilterByPropertyMinCutoff = double.NaN;
                 argument_FilterByPropertyMaxCutoff = double.NaN;
+
+                // Arguments for DFN trace extractor
+                argument_EFT_DFNToExtract = null;
+                argument_EFT_Depth = double.NaN;
             }
 #if MANAGED_PERSISTENCE
             // IIdentifiable Members

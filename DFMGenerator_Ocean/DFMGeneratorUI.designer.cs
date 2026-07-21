@@ -614,6 +614,7 @@ namespace DFMGenerator_Ocean
             this.checkBox_UseUnconfinedFractures = new System.Windows.Forms.CheckBox();
             this.toolTipManager_DFMGenerator = new Slb.Ocean.Petrel.UI.Controls.ToolTipManager(this.components);
             this.btnRestoreDefaults = new System.Windows.Forms.Button();
+            this.button_EFT = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_NoIntermediateOutputs)).BeginInit();
@@ -686,7 +687,7 @@ namespace DFMGenerator_Ocean
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Location = new System.Drawing.Point(10, 10);
             this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 6;
+            this.tabControl1.SelectedIndex = 0;
             this.tabControl1.ShowTabListButton = false;
             this.tabControl1.Size = new System.Drawing.Size(755, 423);
             this.tabControl1.TabIndex = 0;
@@ -702,6 +703,7 @@ namespace DFMGenerator_Ocean
             // 
             // tabMain
             // 
+            this.tabMain.Controls.Add(this.button_EFT);
             this.tabMain.Controls.Add(this.listBox_DeformationEpisodes);
             this.tabMain.Controls.Add(this.btnRemoveDeformationEpisode);
             this.tabMain.Controls.Add(this.btnAddDeformationEpisode);
@@ -4685,6 +4687,16 @@ namespace DFMGenerator_Ocean
             this.btnRestoreDefaults.UseVisualStyleBackColor = true;
             this.btnRestoreDefaults.Click += new System.EventHandler(this.btnRestoreDefaults_Click);
             // 
+            // button_EFT
+            // 
+            this.button_EFT.Location = new System.Drawing.Point(573, 355);
+            this.button_EFT.Name = "button_EFT";
+            this.button_EFT.Size = new System.Drawing.Size(154, 23);
+            this.button_EFT.TabIndex = 60;
+            this.button_EFT.Text = "Extract fracture traces";
+            this.button_EFT.UseVisualStyleBackColor = true;
+            this.button_EFT.Click += new System.EventHandler(this.button_EFT_Click);
+            // 
             // DFMGeneratorUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -5130,5 +5142,6 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_MaxUCFEffectiveRadius_Units;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MaxUCFEffectiveRadius;
         private System.Windows.Forms.Label label_MaxUCFEffectiveRadius;
+        private System.Windows.Forms.Button button_EFT;
     }
 }

@@ -124,6 +124,12 @@
     <Compile Include="DeformationEpisodeUI.Designer.cs">
       <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
     </Compile>
+    <Compile Include="ExtractFractureTraces.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ExtractFractureTraces.Designer.cs">
+      <DependentUpon>ExtractFractureTraces.cs</DependentUpon>
+    </Compile>
     <Compile Include="LaunchDFMGenerator.cs" />
     <Compile Include="DFMGeneratorWorkstep.cs" />
     <Compile Include="DFMGeneratorUI.cs">
@@ -174,6 +180,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="DeformationEpisodeUI.resx">
       <DependentUpon>DeformationEpisodeUI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExtractFractureTraces.resx">
+      <DependentUpon>ExtractFractureTraces.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PresentDayStressUI.resx">
       <DependentUpon>PresentDayStressUI.cs</DependentUpon>
