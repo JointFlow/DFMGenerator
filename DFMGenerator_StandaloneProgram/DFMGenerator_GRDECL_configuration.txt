@@ -1,0 +1,452 @@
+% Model DFMGenerator_configuration.txt
+
+% Replace defaults with required values
+% Use % for comment lines
+
+% Main properties
+% Model name, used to name output files; if not specified, will be taken from the input file name
+%ModelName NAME
+% Geometry and grid property data
+% This should be a GRDECL format file
+GridFileName Gridfile.GRDECL
+% Subset of rows and columns from the GRDECL grid to include in the fracture grid (indexed from 1)
+% Following GRDECL format, columns are indexed from west to east but rows are indexed in reverse order, from north to south
+% Set to -1 to include all rows and columns
+StartColumnI -1
+EndColumnI -1
+StartRowJ -1
+EndRowJ -1
+% Subset of layers from the GRDECL grid to include in the fracture grid (indexed from 1)
+% Following GRDECL format, layers are indexed from top to bottom
+% Set to -1 to include all layers
+TopLayerK -1
+BottomLayerK -1
+% Horizontal upscaling factor - used to amalgamate multiple GRDECL grid cells into one fracture gridblock
+HorizontalUpscalingFactor 1
+% Vertical upscaling factor - used to amalgamate multiple shadow grid layers into one fracture grid layer
+% Set to 0 to amalgamate all selected shadow grid layers into a single fracture grid layer
+% Set to 1 to create a fracture grid layer for each selected shadow grid layer
+VerticalUpscalingFactor 1
+% Time units used in input load rates, time limits and strain relaxation time constants
+% Set time units to ma, year or second
+ModelTimeUnits ma
+% Deformation load
+% Each deformation episode can be assigned a name; if this is not specified, a default name will be generated
+%DeformationEpisodeName Deformation_Episode_1
+% Minimum strain orientatation (i.e. direction of maximum extension) in radians, clockwise from North
+DefaultEhminAzi 0
+%EhminAziProperty PROPERTYNAME
+% Strain rates; units determined by ModelTimeUnits (i.e. strain/s, strain/year or strain/ma)
+% Set to negative value for extensional strain - this is necessary in at least one direction to generate fractures
+% With no strain relaxation, strain rate will control rate of horizontal stress increase
+% With strain relaxation, ratio of strain rate to strain relaxation time constants will control magnitude of constant horizontal stress
+% EhminRate is most tensile (i.e. most negative) horizontal strain rate
+DefaultEhminRate -0.01
+%EhminRateProperty PROPERTYNAME
+% Set EhmaxRate to 0 for uniaxial strain; set to between 0 and EhminRate for anisotropic fracture pattern; set to EhminRate for isotropic fracture pattern
+DefaultEhmaxRate 0
+%EhmaxRateProperty PROPERTYNAME
+% Fluid pressure, thermal and uplift loads
+% Rate of increase of fluid overpressure (Pa/ModelTimeUnit)
+DefaultAppliedOverpressureRate 0
+%AppliedOverpressureRateProperty PROPERTYNAME
+% Rate of in situ temperature change (not including cooling due to uplift) (degK/ModelTimeUnit)
+DefaultAppliedTemperatureChange 0
+%AppliedTemperatureChangeProperty PROPERTYNAME
+% Rate of uplift and erosion; will generate decrease in lithostatic stress, fluid pressure and temperature (m/ModelTimeUnit)
+DefaultAppliedUpliftRate 0
+%AppliedUpliftRateProperty PROPERTYNAME
+% Proportion of vertical stress due to fluid pressure and thermal loads accommodated by stress arching: set to 0 for no stress arching (dsigma_v = 0) or 1 for complete stress arching (dsigma_v = dsigma_h)
+StressArchingFactor 0
+% Parameters to specify dynamic deformation loads, defined in terms of stress rather than strain
+% If these parameters are specified, they will override the strain, fluid overpressure, thermal and uplift loads
+% If only the ZZ stress component is specified, it will be used to calculate the lithostatic stress instead of depth and overburden density but the strain and thermal loads will used to define horizontal stress
+% If the XX, YY, ZZ and XY stress components are specified, a horizontally symmetric stress tensor will be generated (YZ and ZX components set to 0) which will override the strain, thermal and uplift loads
+% If all 6 stress components are specified, a full stress tensor will be generated which will override the strain, thermal and uplift loads
+% If the fluid pressure is specified this will replace the hydrostatic fluid pressure and override the fluid overpressure load
+% Dynamic loads should be specified in Pa as either AbsoluteStress, TerzaghiEffectiveStress or BiotEffectiveStress tensors, depending on the StressLoadDefinition flag
+%StressLoadDefinition TerzaghiEffectiveStress
+%StressXXProperty PROPERTYNAME
+%StressYYProperty PROPERTYNAME
+%StressZZProperty PROPERTYNAME
+%StressXYProperty PROPERTYNAME
+%StressYZProperty PROPERTYNAME
+%StressZXProperty PROPERTYNAME
+%FluidPressureProperty PROPERTYNAME
+% Duration of the deformation episode; set to -1 to continue until fracture saturation is reached
+% Units are determined by ModelTimeUnits setting
+DeformationEpisodeDuration -1
+% To add additional deformation episodes, list multiple values after the deformation load keywords
+% For example, to model a 1ma episode of NE-oriented extensional strain, followed by uplift and erosion of 2000m over 20ma, 
+% followed by an episode of overpressure and cooling (e.g. due to injection of cold fluid for 10 years), use the following
+%   DefaultEhminAzi 0 0.7853 0
+%   EhminAziProperty PROPERTY1 PROPERTY2 PROPERTY3 PROPERTY4
+%   DefaultEhminRate -0.01 0 0
+%   EhminRateProperty PROPERTY1 PROPERTY2 PROPERTY3 PROPERTY4
+%   DefaultEhmaxRate 0 0 0
+%   EhmaxRateProperty PROPERTY1 PROPERTY2 PROPERTY3 PROPERTY4
+%   DefaultAppliedOverpressureRate 0 0 1E+12
+%   DefaultAppliedTemperatureChange 0 0 -5E+6
+%   DefaultAppliedUpliftRate 0 100 0
+%   StressArchingFactor 0 0 1
+%   DeformationEpisodeDuration 1 20 1E-5
+
+% Mechanical properties
+% Young's Modulus in Pa
+DefaultYoungsMod 1E+10
+%YoungsModProperty PROPERTYNAME
+DefaultPoissonsRatio 0.25
+%PoissonsRatioProperty PROPERTYNAME
+DefaultPorosity 0.2
+PorosityProperty PROPERTYNAME
+DefaultBiotCoefficient 1
+%BiotCoefficientProperty PROPERTYNAME
+% Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)
+DefaultThermalExpansionCoefficient 4E-5
+%ThermalExpansionCoefficientProperty PROPERTYNAME
+% Crack surface energy in J/m2
+DefaultCrackSurfaceEnergy 1000
+%CrackSurfaceEnergyProperty PROPERTYNAME
+DefaultFrictionCoefficient 0.5
+%FrictionCoefficientProperty PROPERTYNAME
+% Strain relaxation time constants
+% Units are determined by ModelTimeUnits setting
+% Set RockStrainRelaxation to 0 for no strain relaxation and steadily increasing horizontal stress; set it to >0 for constant horizontal stress determined by ratio of strain rate and relaxation rate
+DefaultRockStrainRelaxation 0
+%RockStrainRelaxationProperty PROPERTYNAME
+% Set FractureRelaxation to >0 and RockStrainRelaxation to 0 to apply strain relaxation to the fractures only
+DefaultFractureRelaxation 0
+%FractureRelaxationProperty PROPERTYNAME
+% Initial microfracture distribution function
+% For unconfined fractures this can be set to PowerLaw, Exponential or LogNormal
+% For layer-bound fractures it is assumed to be power law
+InitialMicrofractureDistributionFunction PowerLaw
+% Density of initial microfractures
+DefaultInitialMicrofractureDensity 0.001
+%InitialMicrofractureDensityProperty PROPERTYNAME
+% Size distribution of initial microfractures - increase for larger ratio of small:large initial microfractures
+DefaultInitialMicrofractureSizeDistribution 3
+%InitialMicrofractureSizeDistributionProperty PROPERTYNAME
+% Median initial microfracture radius - this is only used for the log-normal distribution
+% Set to -1 to use layer thickness / 20
+DefaultInitialMicrofractureMedianRadius -1
+%InitialMicrofractureMedianRadiusPropertyName PROPERTYNAME
+% Subritical fracture propagation index; <5 for slow subcritical propagation, 5-15 for intermediate, >15 for rapid critical propagation
+DefaultSubcriticalPropIndex 10
+%SubcriticalPropIndexProperty PROPERTYNAME
+% Critical fracture propagation rate in m/s
+CriticalPropagationRate 2000
+% Host rock permeability is used to calculate fracture permeability correcting for fracture size and connectivity
+% NB Permeability must be given in m^2; 1mD = 9.869233E-16m^2
+DefaultHostRock_kh 0
+%HostRock_kvProperty PROPERTYNAME
+DefaultHostRock_kh 0
+%HostRock_kvProperty PROPERTYNAME
+% Flag for whether to average mechanical properties properties across the GRDECL grid cells, or take the value from the top middle cell
+AverageMechanicalPropertyData true
+
+% Stress state
+% Stress distribution scenario - use to turn on or off stress shadow effect
+% Options are EvenlyDistributedStress or StressShadow
+% Do not use DuctileBoundary as this is not yet implemented
+StressDistributionScenario StressShadow
+% Depth at the start of deformation (in metres, positive downwards) - this will control stress state
+% If DepthAtDeformation is specified, this will be used to calculate the initial vertical stress
+% If DepthAtDeformation is <=0 or NaN, the depth at the start of deformation will be set to the current depth plus total specified uplift
+DefaultDepthAtDeformation -1
+%DepthAtDeformationProperty PROPERTYNAME
+% Mean density of overlying sediments and fluid in kg/m3
+MeanOverlyingSedimentDensity 2250
+FluidDensity 1000
+% Fluid overpressure in Pa
+InitialOverpressure 0
+% Geothermal gradient (degK/m)
+GeothermalGradient 0.03
+% InitialStressRelaxation controls the initial horizontal stress, prior to the application of horizontal strain
+% Set InitialStressRelaxation to 1 to have initial horizontal stress = vertical stress (viscoelastic equilibrium)
+% Set InitialStressRelaxation to 0 to have initial horizontal stress = v/(1-v) * vertical stress (elastic equilibrium)
+% Set InitialStressRelaxation to -1 for initial horizontal stress = Mohr-Coulomb failure stress (critical stress state)
+InitialStressRelaxation 0.5
+% Flag for whether to average stress and strain data across the GRDECL grid cells, or take the value from the top middle cell
+AverageStressStrainData false
+
+% Outputs
+% Output to file from within FractureGrid object
+% This will generate one file of implicit data per gridblock, and one DFN file per output stage
+% Output files from the FractureGrid object can be useful for debugging or detailed analysis of fracture growth
+WriteImplicitDataFiles false
+WriteDFNFiles false
+% Output file type for explicit DFN data:
+%      - ASCII (Can be loaded into the data analysis spreadsheets supplied with DFM Generator)
+%      - FAB (FAB files can be loaded directly into Petrel)
+OutputDFNFileType ASCII
+% Flag to write implicit fracture data to a series of GRDECL files
+% A separate GRDECL file will be generated for each output stage
+% These files can include the grid geometry and output properties, or only the output properties
+WriteGRDECLFiles true
+IncludeGridGeometryInGRDECLFiles false
+% Flag to write explicit DFN data to a series of FAB files
+% A separate FAB file will be generated for each output stage
+WriteFABFiles true
+% Output DFM at intermediate stages of fracture growth
+NoIntermediateOutputs 0
+% Flag to control interval between output of intermediate stage DFMs:
+%      - EqualArea (output at at approximately equal increments of total fracture area)
+%      - EqualTime (output at equal intervals of time)
+%      - SpecifiedTime (output at the end of each specified deformation episode)
+IntermediateOutputIntervalControl EqualArea
+% Flag to output the layer-bound fracture centrepoints and the unconfined fracture rays as polylines
+OutputCentrepoints false
+% Flag to calculate and output density, mean length and connectivity data (if selected) for individual fracture sets
+OutputFractureSets true
+% Flag to calculate and output the fracture reactivation potential: this represents the fracture driving stress if positive, and the cohesionless distance to failure if negative
+OutputFractureReactivationPotential false
+% Flag to calculate and output the bulk rock compliance and stiffness tensors
+OutputBulkRockElasticTensors false
+% Flag to calculate and output fracture connectivity and anisotropy indices
+OutputFractureConnectivityAnisotropy false
+% Flag to calculate and output fracture porosity
+OutputFracturePorosity true
+% Flag to calculate and output fracture permeability tensors
+OutputFracturePermeabilityTensor false
+% Fracture types included in the fracture permeability tensor:
+%      - Microfractures: Microfractures only
+%      - LayerBoundFractures: Layer-bound fractures only
+%      - UnconfinedFractures: Unconfined fractures only
+%      - AllFractures: All fractures
+FractureTypesInPermeabilityTensor AllFractures
+% Algorithm to use for calculating fracture permeability
+%      - Oda1986 (The Oda 1986 model assumes fractures of infinite size and connectivity)
+%      - OdaCorrected1987 (This algorithm adds a correction factor to account for fracture connectivity)
+%      - SizeConnectivityCorrected (This takes into account flow between fractures along relay segments, fractures from other sets, or through the host rock; for the latter, host rock permeability must be specified)
+PermeabilityAlgorithm Oda1986
+% Flag to calculate and output implicit fracture population distribution functions from the FractureGrid object (will only be output if WriteImplicitDataFiles is true)
+OutputPopulationDistribution true
+% Number of fracture or ray length values to calculate for each of the implicit fracture population distribution functions
+No_l_indexPoints 20
+% MaxHMinLength and MaxHMaxLength control the range of fracture or ray lengths to calculate for the implicit fracture population distribution functions for fractures striking perpendicular to hmin and hmax respectively
+% Set these values to the approximate maximum length of fractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
+MaxHMinLength 0
+MaxHMaxLength 0
+% Flag to populate implicit fracture data in gridblocks with no fractures?
+% If true, all gridblocks in the specified region of the grid will be populated with implicit fracture data, even if the fracture density is zero; otherwise gridblocks with zero fracture density will not be populated, enabling easier visualisation of the extent of the fracture network
+PopulateEmptyGridblocks true
+
+% Fracture aperture control parameters
+% Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
+% Set to Uniform, SizeDependent, Dynamic, or BartonBandis
+FractureApertureControl Uniform
+% Fracture aperture control parameters: Uniform fracture aperture
+% Fixed aperture for Mode 1 fractures striking perpendicular to hmin in the uniform aperture case (m)
+Mode1HMin_UniformAperture 0.0005
+% Fixed aperture for Mode 2 fractures striking perpendicular to hmin in the uniform aperture case (m)
+Mode2HMin_UniformAperture 0.0005
+% Fixed aperture for Mode 1 fractures striking perpendicular to hmax in the uniform aperture case (m)
+Mode1HMax_UniformAperture 0.0005
+% Fixed aperture for Mode 2 fractures striking perpendicular to hmax in the uniform aperture case (m)
+Mode2HMax_UniformAperture 0.0005
+% Fracture aperture control parameters: SizeDependent fracture aperture
+% Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode1HMin_SizeDependentApertureMultiplier 1E-5
+% Size-dependent aperture multiplier for Mode 2 fractures striking perpendicular to hmin - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode2HMin_SizeDependentApertureMultiplier 1E-5
+% Size-dependent aperture multiplier for Mode 1 fractures striking perpendicular to hmax - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode1HMax_SizeDependentApertureMultiplier 1E-5
+% Size-dependent aperture multiplier for Mode 2 fractures striking perpendicular to hmax - layer-bound fracture aperture is given by layer thickness times this multiplier
+Mode2HMax_SizeDependentApertureMultiplier 1E-5
+% Fracture aperture control parameters: Dynamic fracture aperture
+% Multiplier for dynamic aperture
+DynamicApertureMultiplier 1
+% Fracture aperture control parameters: Barton-Bandis model for fracture aperture
+% Joint Roughness Coefficient
+JRC 10
+% Compressive strength ratio; ratio of unconfined compressive strength of unfractured rock to fractured rock
+UCSRatio 2
+% Initial normal stress on fracture (Pa)
+InitialNormalStress 2E+5
+% Stiffness normal to the fracture, at initial normal stress (Pa/m)
+FractureNormalStiffness 2.5E+9
+% Maximum fracture closure (m)
+MaximumClosure 0.0005
+% Present day effective stress parameters
+% Define the present day stress tensor and fluid pressure to override stress at the time of deformation when calculating fracture aperture and permeability
+% Present day stress tensor and fluid pressure should be specified in Pa as either AbsoluteStress, TerzaghiEffectiveStress or BiotEffectiveStress tensors, depending on the PresentDayStressDefinition flag
+UsePresentDayStress false
+PresentDayStressDefinition TerzaghiEffectiveStress
+DefaultPresentDayStressXX 15000000
+DefaultPresentDayStressYY 15000000
+DefaultPresentDayStressZZ 25000000
+DefaultPresentDayStressXY 0
+DefaultPresentDayStressYZ 0
+DefaultPresentDayStressZX 0
+DefaultPresentDayFluidPressure 10000000
+%PresentDayStressXXProperty PROPERTYNAME
+%PresentDayStressYYProperty PROPERTYNAME
+%PresentDayStressZZProperty PROPERTYNAME
+%PresentDayStressXYProperty PROPERTYNAME
+%PresentDayStressYZProperty PROPERTYNAME
+%PresentDayStressZXProperty PROPERTYNAME
+%PresentDayFluidPressurePropertyName PROPERTYNAME
+% It is also possible to overridde the Biot Coefficient when calculating present day effective stress
+%DefaultPresentDayBiotCoefficient 1
+%PresentDayBiotCoefficientPropertyName PROPERTYNAME
+
+% Calculation control parameters
+% Number of layer-bound fracture sets
+% Set to 1 to generate a single fracture set, perpendicular to ehmin
+% Set to 2 to generate two orthogonal fracture sets, perpendicular to the minimum and maximum horizontal strain directions; this is typical of a single stage of tectonic deformation in intact rock
+% Set to 6 to model polygonal or strike-slip fractures, or multiple deformation episodes where there are pre-existing fractures oblique to the principal horizontal stresses
+NoLayerBoundFractureSets 2
+% Fracture mode: set these to force only Mode 1 (dilatant) or only Mode 2 (shear) fractures; otherwise model will include both, depending on which is energetically optimal
+Mode1Only false
+Mode2Only false
+% Position of fracture nucleation within the layer; set to 0 to force all fractures to nucleate at the base of the layer and 1 to force all fractures to nucleate at the top of the layer; set to -1 to nucleate fractures at random locations within the layer
+FractureNucleationPosition -1
+% Flag to check microfractures against stress shadows of all macrofractures, regardless of set: can be set to None, All or Automatic
+%      - If None, microfractures will only be deactivated if they lie in the stress shadow zone of parallel macrofractures
+%      - If All, microfractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular macrofractures, depending on the strain tensor
+%      - If Automatic, microfractures in the stress shadow zone of oblique or perpendicular macrofractures will be deactivated only if there are more than two fracture sets
+CheckAlluFStressShadows Automatic
+% Cutoff value to use the isotropic method for calculating cross-fracture set stress shadow and exclusion zone volumes
+AnisotropyCutoff 1
+% Flag to allow reverse fractures; if set to false, fracture dipsets with a reverse displacement vector will not be allowed to accumulate displacement or grow
+AllowReverseFractures false
+% Maximum duration for individual timesteps; set to -1 for no maximum timestep duration
+MaxTimestepDuration -1
+% Maximum increase in MFP33 allowed in each timestep - controls the optimal timestep duration
+% Increase this to run calculation faster, with fewer but longer timesteps
+MaxTimestepMFP33Increase 0.005
+% Minimum radius for microfractures to be included in implicit fracture density and porosity calculations (in metres)
+% If this is set to 0 (i.e. include all microfractures) then it will not be possible to calculate volumetric microfracture density as this will be infinite
+% If this is set to -1 the maximum radius of the smallest bin will be used (i.e. exclude the smallest bin from the microfracture population)
+MinImplicitMicrofractureRadius -1
+% Number of bins used in numerical integration of uFP32
+% This controls accuracy of numerical calculation of microfracture populations - increase this to increase accuracy of the numerical integration at expense of runtime
+No_r_bins 10
+% Calculation termination controls
+% The calculation is set to stop automatically when fractures stop growing
+% This can be defined in one of three ways:
+%      - When the total volumetric ratio of active (propagating) half-macrofractures (a_MFP33) drops below a specified proportion of the peak historic value
+%      - When the total volumetric density of active (propagating) half-macrofractures (a_MFP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (MFP30)
+%      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
+% Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
+% Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
+% To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
+% Ratio of current to peak active macrofracture volumetric ratio at which fracture sets are considered inactive; set to negative value to switch off this control
+Current_HistoricMFP33TerminationRatio -1
+% Ratio of active to total macrofracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
+Active_TotalMFP30TerminationRatio -1
+% Minimum required clear zone volume in which fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
+MinimumClearZoneVolume 0.01
+% Use the deformation episode duration (set in the deformation load inputs) or the maximum timestep limit to stop the calculation before fractures have finished growing
+MaxTimesteps 1000
+% DFN geometry controls
+% Flag to generate explicit DFN; if set to false only implicit fracture population functions will be generated
+GenerateExplicitDFN true
+% Set false to allow fractures to propagate outside of the outer grid boundary
+CropAtBoundary true
+% Set true to link fractures that terminate due to stress shadow interaction into one long fracture, via a relay segment
+LinkStressShadows false
+% Maximum variation in fracture propagation azimuth allowed across gridblock boundary; if the orientation of the fracture set varies across the gridblock boundary by more than this, the algorithm will seek a better matching set
+% Set to Pi/4 radians (45 degrees) by default
+MaxConsistencyAngle 0.78539816
+% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value
+% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
+MinimumLayerThickness 0
+% Maximum number of fracture segments that can be generated per gridblock
+% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
+MaxNoFractureSegments 1000
+% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
+% Set to 0 to disable probabilistic fracture nucleation
+% Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
+ProbabilisticFractureNucleationLimit -1
+% Flag to control the order in which fractures are propagated within each timestep: if true, fractures will be propagated in order of nucleation time regardless of fracture set; if false they will be propagated in order of fracture set
+% Propagating in strict order of nucleation time removes bias in fracture lengths between sets, but will add a small overhead to calculation time
+PropagateFracturesInNucleationOrder true
+% Flag to control whether to search adjacent gridblocks for stress shadow interaction: can be set to All, None or Automatic; if set to Automatic, this will be determined independently for each gridblock based on the gridblock geometry
+SearchAdjacentGridblocks Automatic
+% Minimum radius for microfractures to be included in explicit DFN (in metres)
+% Set this to 0 to exclude microfractures from DFN; set to between 0 and half layer thickness to include larger microfractures in the DFN
+MinExplicitMicrofractureRadius 0
+% Number of cornerpoints defining the microfracture polygons in the explicit DFN
+% Set to zero to output microfractures as just a centrepoint and radius; set to 3 or greater to output microfractures as polygons defined by a list of cornerpoints
+Number_uF_Points 8
+
+% Parameters for controlling unconfined fractures
+% Use NoUnconfinedFractureStrikeSets and NoUnconfinedFractureDipSets to create unconfined fracture sets, which can propagate and interact vertically as well as horizontally
+% These are useful for modelling fractures in thick geobodies such as igneous plutons
+% NB Unconfined fracture sets are not subdivided into dipsets; unconfined fractures with the same strike but different dips are counted as different sets
+% The total number of unconfined fracture sets generates will therefore be given by NoUnconfinedFractureStrikeSets * NoUnconfinedFractureDipSets
+% Recommended values fo unconfined fracture modelling: NoUnconfinedFractureStrikeSets 6; NoUnconfinedFractureDipSets 3
+NoUnconfinedFractureStrikeSets 0
+NoUnconfinedFractureDipSets 0
+% Number of rays comprising each unconfined fracture
+NoRaysPerUnconfinedFracture 16
+% Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
+% If set to -1, will use 0.01 * layer thickness
+MinUnconfinedFractureRadius -1
+% Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
+% If set to -1, will use 0.5 * layer thickness
+MaxUnconfinedFractureRadius -1
+% Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
+% If set to -1, there will be no limit on effective fracture radius
+MaxEffectiveUnconfinedFractureRadius -1
+% Calculation termination controls
+% The calculation is set to stop automatically when fractures stop growing
+% This can be defined in one of three ways:
+%      - When the total volumetric ratio of active (propagating)  unconfined fractures (a_UCFP33) drops below a specified proportion of the peak historic value
+%      - When the total volumetric density of active (propagating) unconfined fracture rays (a_UCRP30) drops below a specified proportion of the total (propagating and non-propagating) volumetric density (UCRP30)
+%      - When the total clear zone volume (the volume in which fractures can nucleate without falling within or overlapping a stress shadow) drops below a specified proportion of the total volume
+%      - When the mean static unconfined fracture ray length drops below a specified value (this prevents brecciation - large numbers of small UCFs terminating against each other, filling the voids between stress shadows of larger UCFs)
+% Increase these cutoffs to reduce the sensitivity and stop the calculation earlier
+% Use this to prevent a long calculation tail - i.e. late timesteps where fractures have stopped growing so they have no impact on fracture populations, just increase runtime
+% To stop calculation while fractures are still growing reduce the DeformationEpisodeDuration (in the deformation load inputs) or MaxTimesteps limits
+% Ratio of current to peak active unconfined fracture mean linear density at which fracture sets are considered inactive; set to negative value to switch off this control
+Current_HistoricUCFP32TerminationRatio -1
+% Ratio of active to total unconfined fracture volumetric density at which fracture sets are considered inactive; set to negative value to switch off this control
+Active_TotalUCRP30TerminationRatio -1
+% Minimum required clear zone volume in which unconfined fractures can nucleate without stress shadow interactions (as a proportion of total volume); if the clear zone volume falls below this value, the fracture set will be deactivated
+MinimumUCFClearZoneVolume 0.2
+% Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
+% MinimumStaticUCRLength -1
+% Maximum increase in UCFP33 allowed in each timestep - controls the optimal timestep duration
+% Increase this to run calculation faster, with fewer but longer timesteps
+MaxTimestepUCFP33Increase 0.005
+% Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
+% Set to -1 for no limit
+MaxTimestepRadiusIncrease -1
+% Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
+Max_R_DeactivationCheck_interval 0.2
+% Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint
+Min_R_ActivationProbability 0.8
+% The proportion of the ray length increment to apply to active unconfined fracture datapoints before the specified proportion of fractures are deactivated
+% Set to -1 to use the mean distance that a fracture propagates before being deactivated
+ProportionalIncrementToApply -1
+% Minimum proportional size difference for static unconfined fracture datapoints; any datapoints with less than this proportional size difference may be amalgamated into a single point
+Min_R_StaticDatapointSizeRatio 0.02
+% Frequency (in timesteps) with which static unconfined fracture datapoints are culled
+CullTSFrequency 10
+% Flag to calculate implicit data for unconfined fractures; if set to false no grid properties will be generated, only an explicit DFN; does not affect layer-bound fractures
+CalculateImplicitUCFData true
+% Flag to check unconfined fractures against stress shadows of all other unconfined fractures, regardless of set: can be set to None, All or Automatic
+%      - If None, unconfined fractures will only be deactivated if they lie in the stress shadow zone of parallel unconfined fractures
+%      - If All, unconfined fractures will also be deactivated if they lie in the stress shadow zone of oblique or perpendicular unconfined fractures, depending on the strain tensor
+%      - If Automatic, unconfined fractures in the stress shadow zone of oblique or perpendicular unconfined fractures will be deactivated only if there are more than two fracture sets
+CheckAllUCFStressShadows Automatic
+% Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries
+PlanarUnconfinedFractures false
+% Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
+LargeFractureMinimumRadius -1
+% Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
+MinStressShadowDeactivationRatio 0.5
+% Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
+MinIntersectionDeactivationRatio 0.5
+% Flag to filter cells by property; if true, cells with property values outside the specified range will not be included in the model
+FilterByProperty false
+% Property to filter cells by; cells with property values outside the specified range will not be included in the model
+%PropertyToFilter PROPERTYNAME
+% Minimum cutoff for the property filter; cells where the spcified property value is lower than this will not be included in the model
+%FilterByPropertyMinCutoff 0
+% Maximum cutoff for the property filter; cells where the spcified property value is higher than this will not be included in the model
+%FilterByPropertyMaxCutoff 1
+
