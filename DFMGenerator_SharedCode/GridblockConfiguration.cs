@@ -5342,12 +5342,12 @@ namespace DFMGenerator_SharedCode
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
             double Minimum_Large_UCF_Radius = DFNControl.MinRadiusForLargeFractures;
             bool checkLargeFractures = searchNeighbouringGridblocks && (Minimum_Large_UCF_Radius >= 0);
-            // Set the maximum number of new fracture segments that can nucleate as the maximum number of fracture segments per the gridblock minus the number of fracture segments currently in the gridblock
-            int currentNoFractureSegments = MacrofractureSegments.Count + UnconfinedFractureRaySegments.Count;
+            // Set the maximum number of new fracture patches that can nucleate as the maximum number of fracture patches per the gridblock minus the number of fracture patches currently in the gridblock
+            int currentNoFracturePatches = MacrofractureSegments.Count + UnconfinedFractureRaySegments.Count;
             foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
-                currentNoFractureSegments += fs.LocalDFNMicrofractures.Count;
-            int maxNewFractureSegments = DFNControl.MaxNoFractureSegments - currentNoFractureSegments;
-            bool limitNewFractures = (maxNewFractureSegments > 0);
+                currentNoFracturePatches += fs.LocalDFNMicrofractures.Count;
+            int maxNewFracturePatches = DFNControl.MaxNoFracturePatches - currentNoFracturePatches;
+            bool limitNewFractures = (maxNewFracturePatches > 0);
             // If probabilisticFractureNucleationLimit is set to -1 then it should be set to automatic
             // In automatic mode, probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active 
             if (probabilisticFractureNucleationLimit < 0)
@@ -5645,13 +5645,16 @@ namespace DFMGenerator_SharedCode
                                     // Create a corresponding MicrofractureXYZ object and add it to the global DFN
                                     MicrofractureXYZ new_global_uF = new_local_uF.createLinkedGlobalMicrofracture(fs_index);
                                     global_DFN.GlobalDFNMicrofractures.Add(new_global_uF);
+
+                                    // Update the number of new fracture patches that can be added this timestep
+                                    if (limitNewFractures) --maxNewFracturePatches;
                                 }
 
                                 // Update the number of microfractures that we need to add - if there are no more to add we can break out of the loop
                                 no_uF_toAdd--;
 
-                                // Update the number of new fracture segments that can be added this timestep; if this drops below zero, break out of the loop
-                                if (limitNewFractures && (--maxNewFractureSegments < 0))
+                                // Check the number of new fracture patches that can be added this timestep; if this drops below zero, break out of the loop
+                                if (limitNewFractures && (maxNewFracturePatches < 0))
                                     break;
                             }
                         }
@@ -5716,6 +5719,9 @@ namespace DFMGenerator_SharedCode
                                 // Create a corresponding MicrofractureXYZ object and add it to the global DFN
                                 MicrofractureXYZ new_global_uF = new_local_uF.createLinkedGlobalMicrofracture(fs_index);
                                 global_DFN.GlobalDFNMicrofractures.Add(new_global_uF);
+
+                                // Update the number of new fracture patches that can be added this timestep
+                                if (limitNewFractures) --maxNewFracturePatches;
                             }
 
                             // Update the weighted time (LTime) when the next microfracture will nucleate
@@ -5724,8 +5730,8 @@ namespace DFMGenerator_SharedCode
                             nVB_invbetac1_factor = (bis2 ? Math.Log(nVB_factor) / betac_factor : Math.Pow(nVB_factor, 1 / betac_factor));
                             NucleationLTime = hb1_factor * beta * (ts_CumrminGammaMminus1 - nVB_invbetac1_factor);
 
-                            // Update the number of new fracture segments that can be added this timestep; if this drops below zero, break out of the loop
-                            if (limitNewFractures && (--maxNewFractureSegments < 0))
+                            // Check the number of new fracture patches that can be added this timestep; if this drops below zero, break out of the loop
+                            if (limitNewFractures && (maxNewFracturePatches < 0))
                                 break;
                         }
                     } // End add microfractures
@@ -5827,11 +5833,13 @@ namespace DFMGenerator_SharedCode
                                     // Also add both the new segments to the list of all fracture segments in the gridblock
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(new_local_MF, fs_index));
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(mirrorSegment, fs_index));
+
+                                    // Update the number of new fracture patches that can be added this timestep
+                                    if (limitNewFractures) maxNewFracturePatches -= 2;
                                 }
 
-                                // Update the number of new fracture segments that can be added this timestep; if this drops below zero, break out of the loop
-                                if (limitNewFractures) maxNewFractureSegments -= 2;
-                                if (limitNewFractures && (maxNewFractureSegments < 0))
+                                // Check the number of new fracture patches that can be added this timestep; if this drops below zero, break out of the loop
+                                if (limitNewFractures && (maxNewFracturePatches < 0))
                                     break;
                             }
                         }
@@ -5912,6 +5920,9 @@ namespace DFMGenerator_SharedCode
                                 // Also add both the new segments to the list of all fracture segments in the gridblock
                                 MacrofractureSegments.Add(new MacrofractureSegmentHolder(new_local_MF, fs_index));
                                 MacrofractureSegments.Add(new MacrofractureSegmentHolder(mirrorSegment, fs_index));
+
+                                // Update the number of new fracture patches that can be added this timestep
+                                if (limitNewFractures) maxNewFracturePatches -= 2;
                             }
 
                             // Update the weighted time (LTime) when the next microfracture will nucleate
@@ -5920,16 +5931,11 @@ namespace DFMGenerator_SharedCode
                             nVB_invbetac1_factor = (bis2 ? Math.Log(nVB_factor) / betac_factor : Math.Pow(nVB_factor, 1 / betac_factor));
                             NucleationLTime = (hb1_factor * beta * (ts_CumhGammaMminus1 - nVB_invbetac1_factor)) + L_factor;
 
-                            // Update the number of new fracture segments that can be added this timestep; if this drops below zero, break out of the loop
-                            if (limitNewFractures) maxNewFractureSegments -= 2;
-                            if (limitNewFractures && (maxNewFractureSegments < 0))
+                            // Check the number of new fracture patches that can be added this timestep; if this drops below zero, break out of the loop
+                            if (limitNewFractures && (maxNewFracturePatches < 0))
                                 break;
                         }
                     } // End add macrofractures
-
-                    // If the number of new fracture segments that can be added this timestep has dropped below zero, break out of the loop
-                    if (limitNewFractures && (maxNewFractureSegments < 0))
-                        break;
 
                 } // End loop through fracture dip sets
 
@@ -6002,8 +6008,8 @@ namespace DFMGenerator_SharedCode
                                     addThisFracture = !checkInMFExclusionZone(fs.convertIJKtoXYZ(uF.CentrePoint), fs_index, dipsetIndex, checkAlluFStressShadows, SearchNeighbouringGridblocks(), ref SetI_StressShadowHalfWidthsIJ, ref SetI_StressShadowHalfWidthsJI);
                                 }
 
-                                // If the number of new fracture segments that can be added this timestep has dropped to zero, do not add this fracture
-                                if (limitNewFractures && (maxNewFractureSegments <= 0))
+                                // If the number of new fracture patches that can be added this timestep has dropped to zero, do not add this fracture
+                                if (limitNewFractures && (maxNewFracturePatches <= 0))
                                     addThisFracture = false;
 
                                 if (addThisFracture)
@@ -6033,8 +6039,8 @@ namespace DFMGenerator_SharedCode
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(new_local_MF, fs_index));
                                     MacrofractureSegments.Add(new MacrofractureSegmentHolder(mirrorSegment, fs_index));
 
-                                    // Update the number of new fracture segments that can be added this timestep
-                                    if (limitNewFractures) maxNewFractureSegments -= 2;
+                                    // Update the number of new fracture patches that can be added this timestep
+                                    if (limitNewFractures) maxNewFracturePatches -= 2;
                                 }
                             }
                             else // Otherwise just increment the microfracture radius
@@ -6212,8 +6218,8 @@ namespace DFMGenerator_SharedCode
                 if (ufs.getEvolutionStage(CurrentExplicitTimestep) == FractureEvolutionStage.Deactivated)
                     continue;
 
-                // If the number of new fracture segments that can be added this timestep has dropped below zero, break out of the loop
-                if (limitNewFractures && (maxNewFractureSegments < 0))
+                // If the number of new fracture patches that can be added this timestep has dropped below zero, break out of the loop
+                if (limitNewFractures && (maxNewFracturePatches < 0))
                     continue;
 
                 // Add new unconfined fractures if required
@@ -6351,6 +6357,9 @@ namespace DFMGenerator_SharedCode
 
                             // Reset the counter for the number of consecutive failed explicit fracture nucleation attempts to zero
                             ufs.ResetFailedNucleationAttemptCounter();
+
+                            // Update the number of new fracture patches that can be added this timestep
+                            if (limitNewFractures) maxNewFracturePatches -= ufs.RaysPerFracture;
                         }
                         else
                         {
@@ -6365,9 +6374,8 @@ namespace DFMGenerator_SharedCode
                         // This time we do need to increment the counter - even if the fracture did not actually nucleate (the counter represents maximum potential nucleated fractures)
                         nextFrac_Ln = ufs.getNextNucleatingFractureIndex(true, allowProbabilisticFractureNucleation);
 
-                        // Update the number of new fracture segments that can be added this timestep; if this drops below zero, break out of the loop
-                        if (limitNewFractures) maxNewFractureSegments -= ufs.RaysPerFracture;
-                        if (limitNewFractures && (maxNewFractureSegments < 0))
+                        // Check the number of new fracture patches that can be added this timestep; if this drops below zero, break out of the loop
+                        if (limitNewFractures && (maxNewFracturePatches < 0))
                             break;
 
                     } // Loop back to check whether to add another fracture
@@ -6625,7 +6633,7 @@ namespace DFMGenerator_SharedCode
 
             // Determine the return code and return it
             PropagateDFNReturnCode returnCode;
-            if (limitNewFractures && (maxNewFractureSegments < 0))
+            if (limitNewFractures && (maxNewFracturePatches < 0))
                 returnCode = PropagateDFNReturnCode.FractureLimitExceeded;
             else
                 returnCode = PropagateDFNReturnCode.Completed;

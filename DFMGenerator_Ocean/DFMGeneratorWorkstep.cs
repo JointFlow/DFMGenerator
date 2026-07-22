@@ -1579,9 +1579,9 @@ namespace DFMGenerator_Ocean
                     double MinimumLayerThickness = 0;
                     if (!double.IsNaN(arguments.Argument_MinimumLayerThickness))
                         MinimumLayerThickness = arguments.Argument_MinimumLayerThickness;
-                    // Maximum number of fracture segments that can be generated per gridblock
+                    // Maximum number of fracture patches that can be generated per gridblock
                     // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-                    int MaxNoFractureSegments = arguments.Argument_MaxNoFractureSegments;
+                    int MaxNoFracturePatches = arguments.Argument_MaxNoFracturePatches;
                     // Flag to create only triangular DFN fracture patches; will increase the total number of patches but ensure no geometric errors due to flattening of patches
                     // If set to true, all fractures will be subdivided into triangular patches
                     // If set to false, microfractures and the innermost patches of unconfined fractures will comprise a single polygon, while layer-bound fractures will comprise quadrilateral patches
@@ -2562,8 +2562,8 @@ namespace DFMGenerator_Ocean
                         explicitInputParams += "Do not link fractures across relay zones\n";
                     explicitInputParams += string.Format("Maximum bend across cell boundaries (Max Consistency Angle): {0}{1}\n", toProjectAzimuthUnits.Convert(arguments.Argument_MaxConsistencyAngle), AzimuthUnits);
                     explicitInputParams += string.Format("Minimum layer thickness cutoff: {0}{1}\n", toProjectLayerThicknessUnits.Convert(MinimumLayerThickness), LayerThicknessUnits);
-                    if (MaxNoFractureSegments>0)
-                        explicitInputParams += string.Format("Maximum number of new fractures that can be generated per gridblock per timestep: {0}\n", MaxNoFractureSegments);
+                    if (MaxNoFracturePatches > 0)
+                        explicitInputParams += string.Format("Maximum number of fracture patches that can be generated per gridblock: {0}\n", MaxNoFracturePatches);
                     if (CreateTriangularFracturePatches)
                         explicitInputParams += "Fractures represented by triangular segments\n";
                     if (ProbabilisticFractureNucleationLimit > 0)
@@ -5917,7 +5917,7 @@ namespace DFMGenerator_Ocean
                                     } // End loop through all gridblocks in the Fracture Grid
 
                             // Set the DFN generation data
-                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
+                            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFracturePatches, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 
 #if DEBUG_FRAC_INPUT
                             PetrelLogger.InfoOutputWindow("");
@@ -8446,6 +8446,38 @@ namespace DFMGenerator_Ocean
                                             transactionCreateFractures.Commit();
                                         }
 
+                                        // Give the fracture sets appropriate names
+                                        foreach (FractureSet fset in fractureNetwork.FractureSets)
+                                        {
+                                            using (ITransaction transactionNameFractureSets = DataManager.NewTransaction())
+                                            {
+                                                // Lock the database
+                                                transactionNameFractureSets.Lock(fset);
+
+                                                // Get the fracture set number and convert it to a zero-based index
+                                                int setNo = fset.Value - 1;
+                                                string setName = "FS";
+                                                if (setNo < 0) setNo = 0;
+                                                try
+                                                {
+                                                    if (setNo < NoLayerBoundFractureSets)
+                                                        setName = GridblockConfiguration.getLayerBoundFractureSetName(setNo, NoLayerBoundFractureSets);
+                                                    else
+                                                        setName = string.Format("Unconfined Fracture Set {0}", setNo + 1);
+                                                    fset.Name = setName;
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    string errorMessage = string.Format("Exception thrown when writing the name of fracture set {0} as {1}", setNo, setName);
+                                                    PetrelLogger.InfoOutputWindow(errorMessage);
+                                                    PetrelLogger.InfoOutputWindow(e.Message);
+                                                    PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                }
+                                                // Commit the changes to the Petrel database
+                                                transactionNameFractureSets.Commit();
+                                            }
+                                        }
+
                                         // Assign the fracture properties
                                         using (ITransaction transactionAssignFractureProperties = DataManager.NewTransaction())
                                         {
@@ -9554,7 +9586,7 @@ namespace DFMGenerator_Ocean
             private bool argument_LinkParallelFractures = true;
             private double argument_MaxConsistencyAngle = Math.PI / 4;
             private double argument_MinimumLayerThickness = 1;
-            private int argument_MaxNoFractureSegments = 1000;
+            private int argument_MaxNoFracturePatches = 1000;
             private bool argument_CreateTriangularFracturePatches = false;
             private double argument_ProbabilisticFractureNucleationLimit = double.NaN;
             private bool argument_PropagateFracturesInNucleationOrder = true;
@@ -14454,11 +14486,11 @@ namespace DFMGenerator_Ocean
             }
             // Minimum allowed mean static unconfined fracture ray length; if the mean static ray length drops below this value, the fracture set will be deactivated; set to 0 for no limit and -1 to use the minimum UCF radius
 
-            [Description("Maximum number of fracture segments that can be generated per gridblock", "Maximum number of fracture segments that can be generated per gridblock per timestep; set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason")]
-            public int Argument_MaxNoFractureSegments
+            [Description("Maximum number of fracture patches that can be generated per gridblock", "Maximum number of fracture patches that can be generated per gridblock; set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason")]
+            public int Argument_MaxNoFracturePatches
             {
-                internal get { return this.argument_MaxNoFractureSegments; }
-                set { this.argument_MaxNoFractureSegments = value; }
+                internal get { return this.argument_MaxNoFracturePatches; }
+                set { this.argument_MaxNoFracturePatches = value; }
             }
 
             [OptionalInWorkflow]
@@ -14995,7 +15027,7 @@ namespace DFMGenerator_Ocean
                 argument_LinkParallelFractures = true;
                 argument_MaxConsistencyAngle = Math.PI / 4;
                 argument_MinimumLayerThickness = 1;
-                argument_MaxNoFractureSegments = 1000;
+                argument_MaxNoFracturePatches = 1000;
                 argument_CreateTriangularFracturePatches = false;
                 argument_ProbabilisticFractureNucleationLimit = double.NaN;
                 argument_PropagateFracturesInNucleationOrder = true;
