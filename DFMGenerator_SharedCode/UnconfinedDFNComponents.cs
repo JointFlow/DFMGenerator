@@ -1027,42 +1027,36 @@ namespace DFMGenerator_SharedCode
                     }
                     else if (previousRayNodes.Count > nodeIndex)
                     {
+                        PointXYZ outerNode1 = new PointXYZ(previousRayNodes[nodeIndex]);
+                        PointXYZ innerNode1 = new PointXYZ(previousRayNodes[nodeIndex - 1]);
+                        PointXYZ innerNode2 = new PointXYZ(currentRayNodes[currentRayNodes.Count - 1]);
+
                         // With three points we can only create one new patch
-                        for (int nodeIndex2 = nodeIndex; nodeIndex2 < previousRayNodes.Count; nodeIndex2++)
-                        {
-                            PointXYZ outerNode1 = new PointXYZ(previousRayNodes[nodeIndex2]);
-                            PointXYZ innerNode1 = new PointXYZ(previousRayNodes[nodeIndex - 1]);
-                            PointXYZ innerNode2 = new PointXYZ(currentRayNodes[currentRayNodes.Count - 1]);
+                        PointXYZ[] patch1 = new PointXYZ[3];
+                        patch1[0] = innerNode1;
+                        patch1[1] = innerNode2;
+                        patch1[2] = outerNode1;
 
-                            PointXYZ[] patch1 = new PointXYZ[3];
-                            patch1[0] = innerNode1;
-                            patch1[1] = innerNode2;
-                            patch1[2] = outerNode1;
-
-                            // Add the new array to the list of patches
-                            NewPatchList.Add(patch1);
-                        }
+                        // Add the new array to the list of patches
+                        NewPatchList.Add(patch1);
                     }
                     else if (currentRayNodes.Count > nodeIndex)
                     {
+                        PointXYZ outerNode2 = new PointXYZ(currentRayNodes[nodeIndex]);
+                        PointXYZ innerNode1 = new PointXYZ(previousRayNodes[previousRayNodes.Count - 1]);
+                        PointXYZ innerNode2 = new PointXYZ(currentRayNodes[nodeIndex - 1]);
+
                         // With three points we can only create one new patch
-                        for (int nodeIndex2 = nodeIndex; nodeIndex2 < currentRayNodes.Count; nodeIndex2++)
-                        {
-                            PointXYZ outerNode2 = new PointXYZ(currentRayNodes[nodeIndex2]);
-                            PointXYZ innerNode1 = new PointXYZ(previousRayNodes[previousRayNodes.Count - 1]);
-                            PointXYZ innerNode2 = new PointXYZ(currentRayNodes[nodeIndex - 1]);
+                        PointXYZ[] patch1 = new PointXYZ[3];
+                        patch1[0] = innerNode1;
+                        patch1[1] = innerNode2;
+                        patch1[2] = outerNode2;
 
-                            PointXYZ[] patch1 = new PointXYZ[3];
-                            patch1[0] = innerNode1;
-                            patch1[1] = innerNode2;
-                            patch1[2] = outerNode2;
+                        // Add the new array to the list of patches
+                        NewPatchList.Add(patch1);
 
-                            // Add the new array to the list of patches
-                            NewPatchList.Add(patch1);
-
-                            // Set the next node index flag to true
-                            moveToNextNodeIndex = true;
-                        }
+                        // Set the next node index flag to true
+                        moveToNextNodeIndex = true;
                     }
 
                     // Update the previous ray node list

@@ -405,9 +405,9 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value");
                 input_file.WriteLine("% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers");
                 input_file.WriteLine("MinimumLayerThickness 0");
-                input_file.WriteLine("% Maximum number of fracture segments that can be generated per gridblock");
+                input_file.WriteLine("% Maximum number of fracture patches that can be generated per gridblock");
                 input_file.WriteLine("% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason");
-                input_file.WriteLine("MaxNoFractureSegments 1000");
+                input_file.WriteLine("MaxNoFracturePatches 1000");
                 input_file.WriteLine("% Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small");
                 input_file.WriteLine("% Set to 0 to disable probabilistic fracture nucleation");
                 input_file.WriteLine("% Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)");
@@ -941,9 +941,9 @@ namespace DFMGenerator_GRDECL
             // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value
             // Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
             double MinimumLayerThickness = 0;
-            // Maximum number of fracture segments that can be generated per gridblock
+            // Maximum number of fracture patches that can be generated per gridblock
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-            int MaxNoFractureSegments = 1000;
+            int MaxNoFracturePatches = 1000;
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
             // Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)
@@ -2014,10 +2014,11 @@ namespace DFMGenerator_GRDECL
                         case "MinimumLayerThickness":
                             MinimumLayerThickness = Convert.ToDouble(line_split[1]);
                             break;
-                        // Maximum number of fracture segments that can be generated per gridblock
+                        // Maximum number of fracture patches that can be generated per gridblock
                         // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-                        case "MaxNoFractureSegments":
-                            MaxNoFractureSegments = Convert.ToInt32(line_split[1]);
+                        case "MaxNoFracturePatches":
+                        case "MaxNoFractureSegments": // For backwards compatibility
+                            MaxNoFracturePatches = Convert.ToInt32(line_split[1]);
                             break;
                         // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
                         // Set to 0 to disable probabilistic fracture nucleation
@@ -5047,7 +5048,7 @@ namespace DFMGenerator_GRDECL
                     } // End loop through all gridblocks in the Fracture Grid
 
             // Set the DFN generation data
-            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
+            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFracturePatches, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 
 #if DEBUG_FRAC_INPUT
             progressReporter.OutputMessage("");

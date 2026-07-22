@@ -498,8 +498,8 @@ namespace DFMGenerator_Ocean
             this.toolTipHotspot_FractureMode = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.numericUpDown_HorizontalUpscalingFactor = new System.Windows.Forms.NumericUpDown();
             this.groupBox_DFNGeometryControls = new System.Windows.Forms.GroupBox();
-            this.textBox_MaximumFractureSegments = new System.Windows.Forms.TextBox();
-            this.label_MaximumFractureSegments = new System.Windows.Forms.Label();
+            this.textBox_MaximumFracturePatches = new System.Windows.Forms.TextBox();
+            this.label_MaximumFracturePatches = new System.Windows.Forms.Label();
             this.toolTipHotspot_IgnoreFaults = new Slb.Ocean.Petrel.UI.Controls.ToolTipHotspot(this.components);
             this.checkBox_IgnoreFaults = new System.Windows.Forms.CheckBox();
             this.unitTextBox_FractureNucleationPosition = new Slb.Ocean.Petrel.UI.Controls.UnitTextBox();
@@ -3501,8 +3501,8 @@ namespace DFMGenerator_Ocean
             // 
             // groupBox_DFNGeometryControls
             // 
-            this.groupBox_DFNGeometryControls.Controls.Add(this.textBox_MaximumFractureSegments);
-            this.groupBox_DFNGeometryControls.Controls.Add(this.label_MaximumFractureSegments);
+            this.groupBox_DFNGeometryControls.Controls.Add(this.textBox_MaximumFracturePatches);
+            this.groupBox_DFNGeometryControls.Controls.Add(this.label_MaximumFracturePatches);
             this.groupBox_DFNGeometryControls.Controls.Add(this.toolTipHotspot_IgnoreFaults);
             this.groupBox_DFNGeometryControls.Controls.Add(this.checkBox_IgnoreFaults);
             this.groupBox_DFNGeometryControls.Controls.Add(this.unitTextBox_FractureNucleationPosition);
@@ -3544,21 +3544,21 @@ namespace DFMGenerator_Ocean
             this.groupBox_DFNGeometryControls.TabStop = false;
             this.groupBox_DFNGeometryControls.Text = "DFN geometry controls";
             // 
-            // textBox_MaximumFractureSegments
+            // textBox_MaximumFracturePatches
             // 
-            this.textBox_MaximumFractureSegments.Location = new System.Drawing.Point(212, 223);
-            this.textBox_MaximumFractureSegments.Name = "textBox_MaximumFractureSegments";
-            this.textBox_MaximumFractureSegments.Size = new System.Drawing.Size(88, 20);
-            this.textBox_MaximumFractureSegments.TabIndex = 40;
+            this.textBox_MaximumFracturePatches.Location = new System.Drawing.Point(212, 223);
+            this.textBox_MaximumFracturePatches.Name = "textBox_MaximumFracturePatches";
+            this.textBox_MaximumFracturePatches.Size = new System.Drawing.Size(88, 20);
+            this.textBox_MaximumFracturePatches.TabIndex = 40;
             // 
-            // label_MaximumFractureSegments
+            // label_MaximumFracturePatches
             // 
-            this.label_MaximumFractureSegments.AutoSize = true;
-            this.label_MaximumFractureSegments.Location = new System.Drawing.Point(3, 226);
-            this.label_MaximumFractureSegments.Name = "label_MaximumFractureSegments";
-            this.label_MaximumFractureSegments.Size = new System.Drawing.Size(181, 13);
-            this.label_MaximumFractureSegments.TabIndex = 39;
-            this.label_MaximumFractureSegments.Text = "Max fracture segments per gridblock:";
+            this.label_MaximumFracturePatches.AutoSize = true;
+            this.label_MaximumFracturePatches.Location = new System.Drawing.Point(3, 226);
+            this.label_MaximumFracturePatches.Name = "label_MaximumFracturePatches";
+            this.label_MaximumFracturePatches.Size = new System.Drawing.Size(174, 13);
+            this.label_MaximumFracturePatches.TabIndex = 39;
+            this.label_MaximumFracturePatches.Text = "Max fracture patches per gridblock:";
             // 
             // toolTipHotspot_IgnoreFaults
             // 
@@ -5099,8 +5099,8 @@ namespace DFMGenerator_Ocean
         private System.Windows.Forms.Label label_LargeFractureMinimumRadius;
         private System.Windows.Forms.CheckBox checkBox_PlanarUnconfinedFractures;
         private System.Windows.Forms.GroupBox groupBox_FilterCells;
-        private System.Windows.Forms.TextBox textBox_MaximumFractureSegments;
-        private System.Windows.Forms.Label label_MaximumFractureSegments;
+        private System.Windows.Forms.TextBox textBox_MaximumFracturePatches;
+        private System.Windows.Forms.Label label_MaximumFracturePatches;
         private System.Windows.Forms.Label label_MinimumStaticUCRLength_Units;
         private Slb.Ocean.Petrel.UI.Controls.UnitTextBox unitTextBox_MinimumStaticUCRLength;
         private System.Windows.Forms.Label label_MinimumStaticUCRLength;
