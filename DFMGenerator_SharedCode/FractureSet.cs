@@ -4494,7 +4494,7 @@ namespace DFMGenerator_SharedCode
         }
         /// <summary>
         /// Check whether any other fracture segments intersect a line between two specified fracture tips
-        /// THis is useful to check if a potential relay zone would be intersected by another fracture
+        /// This is useful to check if a potential relay zone would be intersected by another fracture
         /// </summary>
         /// <param name="FractureTip1">First fracture tip; must belong to a fracture in this fracture set</param>
         /// <param name="FractureTip2">Second fracture tip; may belong to a fracture in another fracture set</param>
@@ -4521,7 +4521,7 @@ namespace DFMGenerator_SharedCode
                         PointXYZ intersectingSegmentTip2XYZ = intersectingSegment.getPropNodeinXYZ();
 
                         // If the third segment intersects the line between the two specified fracture tips, return true
-                        if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYZ))
+                        if (PointXYZ.check2DCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYZ))
                             return true;
                     }
             }
@@ -4542,7 +4542,7 @@ namespace DFMGenerator_SharedCode
                             PointXYZ intersectingSegmentTip2XYZ = intersectingSegment.getPropNodeinXYZ();
 
                             // If the third segment intersects the line between the two specified fracture tips, return true
-                            if (PointXYZ.checkCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYZ))
+                            if (PointXYZ.check2DCrossover(fractureTip1XYZ, fractureTip2XYZ, intersectingSegmentTip1XYZ, intersectingSegmentTip2XYZ))
                                 return true;
                         }
                 }

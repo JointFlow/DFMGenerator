@@ -51,8 +51,8 @@ namespace DFMGenerator_Ocean
             this.callingDialog = callingDialog;
             updateUIFromArgs();
 
-            this.btn_EFT_OK.Image = PetrelImages.OK;
-            this.btn_EFT_Cancel.Image = PetrelImages.Cancel;
+            this.btn_EFT_OK.Image = PetrelImages.Apply;
+            this.btn_EFT_Cancel.Image = PetrelImages.Close;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
         }

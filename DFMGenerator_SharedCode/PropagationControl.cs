@@ -752,6 +752,23 @@ namespace DFMGenerator_SharedCode
         /// Path to folder for output files
         /// </summary>
         public string FolderPath { get; set; }
+        /// <summary>
+        /// Depth of horizontal section
+        /// Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+        /// </summary>
+        public double DepthOfHorizontalSection { get; private set; }
+        /// <summary>
+        /// Flag to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+        /// </summary>
+        public bool ExtractFractureTraceData { get { return !double.IsNaN(DepthOfHorizontalSection); } }
+        /// <summary>
+        /// Set the flag to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+        /// </summary>
+        /// <param name="DepthOfHorizontalSection_in">Depth of horizontal section to extract fracture traces onto</param>
+        public void Create2DFractureNetwork(double DepthOfHorizontalSection_in)
+        {
+            DepthOfHorizontalSection = DepthOfHorizontalSection_in;
+        }
 
         // Default values for fracture permeability, compressibility and aperture
         // Use these values when the fracture permeability, compressibility and aperture must be written to file but are not explicitly calculated
@@ -912,6 +929,12 @@ namespace DFMGenerator_SharedCode
             IntermediateOutputTimes = new List<double>();
             // Set all other data
             setDFNGenerationControl(GenerateExplicitDFN_in, MicrofractureDFNMinimumSizeIndex_in, MacrofractureDFNMinimumSizeIndex_in, UnconfinedFractureDFNMinimumRadius_in, MaxNoFractures_in, MaxNoFracturePatches_in, MinimumLayerThickness_in, MaxConsistencyAngle_in, CropToGrid_in, LinkFracturesInStressShadow_in, NumberOfuFPoints_in, NumberOfIntermediateOutputs_in, SeparateIntermediateOutputsBy_in, WriteDFNFiles_in, OutputFileType_in, outputCentrepoints_in, probabilisticFractureNucleationLimit_in, SearchAdjacentGridlocks_in, propagateFracturesInNucleationOrder_in, MinStressShadowDeactivationRatio_in, MinIntersectionDeactivationRatio_in, MinRadiusForLargeFractures_in, timeUnits_in);
+
+            // Depth of horizontal section to extract fracture traces onto: set to NaN
+            // This will prevent the generation of a 2D fracture network
+            // In order to create a 2D fracture network by extracting the traces of the 3D fractures in the DFN onto a horizontal plane and write the fracture network geometry data to file,
+            // use the Create2DFractureNetwork function to set the depth of the horizontal section
+            DepthOfHorizontalSection = double.NaN;
         }
     }
 

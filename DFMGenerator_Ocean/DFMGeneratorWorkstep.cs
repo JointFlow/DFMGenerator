@@ -1257,6 +1257,9 @@ namespace DFMGenerator_Ocean
                     // Flag to populate implicit fracture data in gridblocks with no fractures?
                     // If true, all gridblocks in the specified region of the grid will be populated with implicit fracture data, even if the fracture density is zero; otherwise gridblocks with zero fracture density will not be populated, enabling easier visualisation of the extent of the fracture network
                     bool PopulateEmptyGridblocks = arguments.Argument_PopulateEmptyGridblocks;
+                    // Depth of horizontal section
+                    // Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+                    double DepthOfHorizontalSection = arguments.Argument_EFT_Depth;
 
                     // Fracture aperture control parameters
                     // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -5990,6 +5993,11 @@ namespace DFMGenerator_Ocean
 
                             // Set the output folder path
                             dfn_control.FolderPath = folderPath;
+
+                            // If required, set the flag to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+                            // This requires that we specify the depth of the horizontal section to extract the fracture traces onto
+                            if (!double.IsNaN(DepthOfHorizontalSection))
+                                dfn_control.Create2DFractureNetwork(DepthOfHorizontalSection);
 
                             // Add the DFNGenerationControl object to the grid
                             ModelGrid.DFNControl = dfn_control;

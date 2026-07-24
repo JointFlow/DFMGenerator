@@ -644,6 +644,11 @@ namespace DFMGenerator_SharedCode
             if (noIntermediateDFNs < 0) noIntermediateDFNs = 0;
             IntermediateOutputInterval separateIntermediatesBy = DFNControl.SeparateIntermediateOutputsBy;
 
+            // Flag to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the trace geometry data to file
+            bool extractFractureTraceData = DFNControl.ExtractFractureTraceData;
+            // Depth of horizontal section
+            double depthOfSection = DFNControl.DepthOfHorizontalSection;
+
             // Calculate unit conversion modifier for output time data if not in SI units
             TimeUnits timeUnits = DFNControl.timeUnits;
             double timeUnits_Modifier = DFNControl.getTimeUnitsModifier();
@@ -1211,6 +1216,29 @@ namespace DFMGenerator_SharedCode
                         }
                     }
                 } // End write fracture data to file
+
+                // Extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the trace geometry data to file
+                if (extractFractureTraceData)
+                {
+                    // Create a stage-specific label for the output file
+                    string outputLabel = (calculationCompleted ? "final" : string.Format("Stage{0}_Time{1}", nextStage, CurrentDFN.CurrentTime / timeUnits_Modifier));
+
+                    // At present this is only implemented for unconfined fractures
+                    if (latestDFN.GlobalDFNUnconfinedFractures.Count > 0)
+                    {
+                        // Create the fracture network
+                        FractureNetwork_2D latestNetwork = new FractureNetwork_2D(latestDFN, this, depthOfSection);
+
+                        // Write the fracture trace geometry data (location and nodality of each of the nodes in each trace component) to file
+                        latestNetwork.WriteTraceGeometryToFile(outputLabel);
+
+                        // Write the fracture trace component length and connectivity data(trace component length, mean azimuth, nodality and list of connected fracture traces at the trace component endpoints) to a text file
+                        latestNetwork.WriteTraceComponentDataToFile(outputLabel);
+
+                        // Write the fracture trace length and connectivity data (trace length, number of connected fracture traces and list of connected fracture traces at the trace component endpoints) to a text file
+                        latestNetwork.WriteTraceDataToFile(outputLabel);
+                    }
+                }
 
                 // Update the next output stage counter
                 nextStage++;

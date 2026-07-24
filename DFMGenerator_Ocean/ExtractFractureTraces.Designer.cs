@@ -41,7 +41,7 @@ namespace DFMGenerator_Ocean
             // 
             // unitTextBox_EFT_Depth
             // 
-            this.unitTextBox_EFT_Depth.Location = new System.Drawing.Point(471, 6);
+            this.unitTextBox_EFT_Depth.Location = new System.Drawing.Point(143, 45);
             this.unitTextBox_EFT_Depth.Name = "unitTextBox_EFT_Depth";
             this.unitTextBox_EFT_Depth.Size = new System.Drawing.Size(123, 20);
             this.unitTextBox_EFT_Depth.TabIndex = 108;
@@ -49,24 +49,24 @@ namespace DFMGenerator_Ocean
             // label_EFT_Depth
             // 
             this.label_EFT_Depth.AutoSize = true;
-            this.label_EFT_Depth.Location = new System.Drawing.Point(422, 9);
+            this.label_EFT_Depth.Location = new System.Drawing.Point(12, 48);
             this.label_EFT_Depth.Name = "label_EFT_Depth";
-            this.label_EFT_Depth.Size = new System.Drawing.Size(39, 13);
+            this.label_EFT_Depth.Size = new System.Drawing.Size(128, 13);
             this.label_EFT_Depth.TabIndex = 107;
-            this.label_EFT_Depth.Text = "Depth:";
+            this.label_EFT_Depth.Text = "Depth of horizontal plane:";
             // 
             // presentationBox_EFT_DFNToExtract
             // 
-            this.presentationBox_EFT_DFNToExtract.Location = new System.Drawing.Point(267, 4);
+            this.presentationBox_EFT_DFNToExtract.Location = new System.Drawing.Point(229, 12);
             this.presentationBox_EFT_DFNToExtract.Name = "presentationBox_EFT_DFNToExtract";
-            this.presentationBox_EFT_DFNToExtract.Size = new System.Drawing.Size(146, 22);
+            this.presentationBox_EFT_DFNToExtract.Size = new System.Drawing.Size(281, 22);
             this.presentationBox_EFT_DFNToExtract.TabIndex = 106;
             this.presentationBox_EFT_DFNToExtract.KeyDown += new System.Windows.Forms.KeyEventHandler(this.presentationBox_EFT_DFNToExtract_KeyDown);
             // 
             // dropTarget_EFT_DFNToExtract
             // 
             this.dropTarget_EFT_DFNToExtract.AllowDrop = true;
-            this.dropTarget_EFT_DFNToExtract.Location = new System.Drawing.Point(235, 4);
+            this.dropTarget_EFT_DFNToExtract.Location = new System.Drawing.Point(197, 12);
             this.dropTarget_EFT_DFNToExtract.Name = "dropTarget_EFT_DFNToExtract";
             this.dropTarget_EFT_DFNToExtract.Size = new System.Drawing.Size(26, 23);
             this.dropTarget_EFT_DFNToExtract.TabIndex = 105;
@@ -75,7 +75,7 @@ namespace DFMGenerator_Ocean
             // label_EFT_DFNToExtract
             // 
             this.label_EFT_DFNToExtract.AutoSize = true;
-            this.label_EFT_DFNToExtract.Location = new System.Drawing.Point(12, 9);
+            this.label_EFT_DFNToExtract.Location = new System.Drawing.Point(12, 17);
             this.label_EFT_DFNToExtract.Name = "label_EFT_DFNToExtract";
             this.label_EFT_DFNToExtract.Size = new System.Drawing.Size(182, 13);
             this.label_EFT_DFNToExtract.TabIndex = 104;
@@ -85,7 +85,7 @@ namespace DFMGenerator_Ocean
             // 
             this.btn_EFT_Cancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btn_EFT_Cancel.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.btn_EFT_Cancel.Location = new System.Drawing.Point(552, 43);
+            this.btn_EFT_Cancel.Location = new System.Drawing.Point(435, 43);
             this.btn_EFT_Cancel.Name = "btn_EFT_Cancel";
             this.btn_EFT_Cancel.Size = new System.Drawing.Size(75, 23);
             this.btn_EFT_Cancel.TabIndex = 110;
@@ -97,7 +97,7 @@ namespace DFMGenerator_Ocean
             // 
             this.btn_EFT_OK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btn_EFT_OK.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.btn_EFT_OK.Location = new System.Drawing.Point(471, 43);
+            this.btn_EFT_OK.Location = new System.Drawing.Point(354, 43);
             this.btn_EFT_OK.Name = "btn_EFT_OK";
             this.btn_EFT_OK.Size = new System.Drawing.Size(75, 23);
             this.btn_EFT_OK.TabIndex = 109;
@@ -108,7 +108,7 @@ namespace DFMGenerator_Ocean
             // label_EFT_Depth_Units
             // 
             this.label_EFT_Depth_Units.AutoSize = true;
-            this.label_EFT_Depth_Units.Location = new System.Drawing.Point(600, 9);
+            this.label_EFT_Depth_Units.Location = new System.Drawing.Point(272, 48);
             this.label_EFT_Depth_Units.Name = "label_EFT_Depth_Units";
             this.label_EFT_Depth_Units.Size = new System.Drawing.Size(15, 13);
             this.label_EFT_Depth_Units.TabIndex = 111;
@@ -118,7 +118,7 @@ namespace DFMGenerator_Ocean
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(639, 78);
+            this.ClientSize = new System.Drawing.Size(522, 78);
             this.Controls.Add(this.label_EFT_Depth_Units);
             this.Controls.Add(this.btn_EFT_Cancel);
             this.Controls.Add(this.btn_EFT_OK);

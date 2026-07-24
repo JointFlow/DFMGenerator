@@ -245,56 +245,145 @@ namespace DFMGenerator_SharedCode
             return new PointXYZ(Xcoord / (double)noPoints, Ycoord / (double)noPoints, Zcoord / (double)noPoints);
         }
         /// <summary>
-        /// Check to see if two line segments cross, when projected onto a horizontal plane
+        /// Check if two line segments cross when projected onto a horizontal plane, and get the relative position of the crossing point on the two lines (this will be returned even if the crossing point lies outside of one or both segments)
         /// </summary>
-        /// <param name="Line1Point1"></param>
-        /// <param name="Line1Point2"></param>
-        /// <param name="Line2Point1"></param>
-        /// <param name="Line2Point2"></param>
-        /// <returns></returns>
-        public static bool checkCrossover(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2)
+        /// <param name="Line1Point1">The first point of the defined segment of line 1</param>
+        /// <param name="Line1Point2">The second point of the defined segment of line 1</param>
+        /// <param name="Line2Point1">The first point of the defined segment of line 2</param>
+        /// <param name="Line2Point2">The second point of the defined segment of line 2</param>
+        /// <param name="RelativeCrossoverPositionOnLine1">The relative position of the crossover point between the two specified points on Line 1; will be zero if the crossover is at Line1Point1, 1 if the crossover is at Line1Point2, <0 if the crossover is before Line1Point1 and >1 if the crossover is after Line1Point2</param>
+        /// <param name="RelativeCrossoverPositionOnLine2">The relative position of the crossover point between the two specified points on Line 2; will be zero if the crossover is at Line2Point1, 1 if the crossover is at Line2Point2, <0 if the crossover is before Line2Point1 and >1 if the crossover is after Line2Point2</param>
+        /// <returns>True if the crssover point lies within the defined segments of both lines (i.e. between all four points); otherwise false</returns>
+        public static bool check2DCrossover(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, out double RelativeCrossoverPositionOnLine1, out double RelativeCrossoverPositionOnLine2)
         {
+            // Set the relative crossover positions to NaN - this will be returned if the crossover position cannot be calculated (e.g. if the two lines are parallel)
+            RelativeCrossoverPositionOnLine1 = double.NaN;
+            RelativeCrossoverPositionOnLine2 = double.NaN;
+
             // Get x, y and z coordinates of base points and vectors of both lines
             double x1 = Line1Point1.X;
             double y1 = Line1Point1.Y;
-            double z1 = Line1Point1.Z;
             double dx1 = Line1Point2.X - x1;
             double dy1 = Line1Point2.Y - y1;
-            double dz1 = Line1Point2.Z - z1;
             double x2 = Line2Point1.X;
             double y2 = Line2Point1.Y;
             double dx2 = Line2Point2.X - x2;
             double dy2 = Line2Point2.Y - y2;
 
             // Get position of crossover point relative to basepoint and vector of first line
-            double p = 0;
             double denominator = ((dx2 * dy1) - (dx1 * dy2));
             if (denominator == 0) // If the denominator is zero, the points defining one or both lines are coincident, or the two lines are parallel, so do not cross
                 return false;
-            else
-                p = ((dx2 * (y2 - y1)) - ((x2 - x1) * dy2)) / denominator;
-
-            // The crossover point lies between the two specified points on the first line if p is between 0 and 1; if it is not we can return false
-            if (p < 0)
-                return false;
-            else if (p > 1)
-                return false;
+            RelativeCrossoverPositionOnLine1 = ((dx2 * (y2 - y1)) - ((x2 - x1) * dy2)) / denominator;
 
             // Get position of crossover point relative to basepoint and vector of second line
             denominator = ((dx1 * dy2) - (dx2 * dy1));
             if (denominator == 0) // If the denominator is zero, the points defining one or both lines are coincident, or the two lines are parallel, so do not cross
                 return false;
-            else
-                p = ((dx1 * (y1 - y2)) - ((x1 - x2) * dy1)) / denominator;
+            RelativeCrossoverPositionOnLine2 = ((dx1 * (y1 - y2)) - ((x1 - x2) * dy1)) / denominator;
 
-            // The crossover point now lies between the two specified points on the second line if p is between 0 and 1; if it is not we can return false
-            if (p < 0)
-                return false;
-            else if (p > 1)
+            // If either of the crossover points lie outside the line segments, return false
+            if (((float)RelativeCrossoverPositionOnLine1 < 0f) || ((float)RelativeCrossoverPositionOnLine1 > 1f) || ((float)RelativeCrossoverPositionOnLine2 < 0f) || ((float)RelativeCrossoverPositionOnLine2 > 1f))
                 return false;
 
             // Otherwise we can return true
             return true;
+        }
+        /// <summary>
+        /// Check if two line segments cross when projected onto a horizontal plane
+        /// </summary>
+        /// <param name="Line1Point1">The first point of the defined segment of line 1</param>
+        /// <param name="Line1Point2">The second point of the defined segment of line 1</param>
+        /// <param name="Line2Point1">The first point of the defined segment of line 2</param>
+        /// <param name="Line2Point2">The second point of the defined segment of line 2</param>
+        /// <returns>True if the crssover point lies within the defined segments of both lines (i.e. between all four points); otherwise false</returns>
+        public static bool check2DCrossover(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2)
+        {
+            double RelativeCrossoverPositionOnLine1, RelativeCrossoverPositionOnLine2;
+            return check2DCrossover(Line1Point1, Line1Point2, Line2Point1, Line2Point2, out RelativeCrossoverPositionOnLine1, out RelativeCrossoverPositionOnLine2);
+        }
+        /// <summary>
+        /// Check if two line segments cross when projected onto a horizontal plane, and get the position of the crossing point
+        /// NB This partially duplicates the getCrossoverPoint() functions below although with some differences; this code should be tidied up at some point
+        /// <param name="Line1Point1">The first point of the defined segment of line 1</param>
+        /// <param name="Line1Point2">The second point of the defined segment of line 1</param>
+        /// <param name="Line2Point1">The first point of the defined segment of line 2</param>
+        /// <param name="Line2Point2">The second point of the defined segment of line 2</param>
+        /// <param name="XOType">Controls calculation: Extend will return the location of crossover wherever it occurs; Trim will only return crossover point if it lies between the two specified points on the first line, otherwise it will return the nearest of these two points; Restrict will only return crossover point if it lies between the two specified points on the first line, otherwise it will return null</param>
+        /// <param name="LengthTolerance">The maximum proportional distance of the crossover point outside the specified points on the first line, if the Trim or Restrict options are specified</param>
+        /// <param name="IntersectsPoint">Array of flags indicating whether the crossover point lies on any of the four specified points, in order</param>
+        /// <returns></returns>
+        public static PointXYZ get2DCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType, double LengthTolerance, out bool[] IntersectsPoint)
+        {
+            // Set all the IntersectsPoint values to false
+            IntersectsPoint = new bool[4];
+            for (int pointNo = 0; pointNo < 4; pointNo++)
+                IntersectsPoint[pointNo] = false;
+
+            double RelativeCrossoverPositionOnLine1, RelativeCrossoverPositionOnLine2;
+            check2DCrossover(Line1Point1, Line1Point2, Line2Point1, Line2Point2, out RelativeCrossoverPositionOnLine1, out RelativeCrossoverPositionOnLine2);
+            // If either of the two relative crossover positions are NaN, the crossover position could not be calculated so return null
+            if (double.IsNaN(RelativeCrossoverPositionOnLine1) || double.IsNaN(RelativeCrossoverPositionOnLine2))
+                return null;
+
+            // Check whether the crossover point lies between the two specified points on either line, within the specified tolerance
+            // If not adjust the crossover point or return null according to the specified crossover type
+            // Also 
+            switch (XOType)
+            {
+                case CrossoverType.Extend:
+                    // Return the calculated point wherever it lies, so no adjustment needed
+                    break;
+                case CrossoverType.Trim:
+                    // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, adjust it to the nearest of these two points
+                    if (RelativeCrossoverPositionOnLine1 < -LengthTolerance)
+                        RelativeCrossoverPositionOnLine1 = -LengthTolerance;
+                    else if (RelativeCrossoverPositionOnLine1 > 1 + LengthTolerance)
+                        RelativeCrossoverPositionOnLine1 = 1 + LengthTolerance;
+                    if (RelativeCrossoverPositionOnLine2 < -LengthTolerance)
+                        RelativeCrossoverPositionOnLine2 = -LengthTolerance;
+                    else if (RelativeCrossoverPositionOnLine2 > 1 + LengthTolerance)
+                        RelativeCrossoverPositionOnLine2 = 1 + LengthTolerance;
+                    break;
+                case CrossoverType.Restrict:
+                    // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, return null
+                    if (RelativeCrossoverPositionOnLine1 < -LengthTolerance)
+                        return null;
+                    else if (RelativeCrossoverPositionOnLine1 > 1 + LengthTolerance)
+                        return null;
+                    if (RelativeCrossoverPositionOnLine2 < -LengthTolerance)
+                        return null;
+                    else if (RelativeCrossoverPositionOnLine1 > 2 + LengthTolerance)
+                        return null;
+                    break;
+                default:
+                    break;
+            }
+
+            // Check if the crossover point lies on any of the specified points on either line, within the specified tolerance
+            if (Math.Abs(RelativeCrossoverPositionOnLine1) < LengthTolerance)
+                IntersectsPoint[0] = true;
+            if (Math.Abs(RelativeCrossoverPositionOnLine1-1) < LengthTolerance)
+                IntersectsPoint[1] = true;
+            if (Math.Abs(RelativeCrossoverPositionOnLine2) < LengthTolerance)
+                IntersectsPoint[2] = true;
+            if (Math.Abs(RelativeCrossoverPositionOnLine2-1) < LengthTolerance)
+                IntersectsPoint[3] = true;
+
+            // Calculate the position of the intersection point (projected onto the first line)
+            double x1 = Line1Point1.X;
+            double y1 = Line1Point1.Y;
+            double z1 = Line1Point1.Z;
+            double dx1 = Line1Point2.X - x1;
+            double dy1 = Line1Point2.Y - y1;
+            double dz1 = Line1Point2.Z - z1;
+            double x_crossover = x1 + (RelativeCrossoverPositionOnLine1 * dx1);
+            double y_crossover = y1 + (RelativeCrossoverPositionOnLine1 * dy1);
+            double z_crossover = z1 + (RelativeCrossoverPositionOnLine1 * dz1);
+            PointXYZ returnPoint = new PointXYZ(x_crossover, y_crossover, z_crossover);
+
+            // Return the calculated point
+            return returnPoint;
         }
         /// <summary>
         /// Find the lateral crossover point of two lines, projected vertically onto the first line
@@ -317,10 +406,10 @@ namespace DFMGenerator_SharedCode
         /// <param name="Line2Point1">Point lying on the second line</param>
         /// <param name="Line2Point2">Point lying on the second line</param>
         /// <param name="XOType">Controls calculation: Extend will return the location of crossover wherever it occurs; Trim will only return crossover point if it lies between the two specified points on the first line plus the specified tolerance, otherwise it will return the nearest of these two points; Restrict will only return crossover point if it lies between the two specified points on the first line plus the specified tolerance, otherwise it will return null</param>
-        /// <param name="ExtensionRatio">The maximum proportional distance of the crossover point outside the specified points on the first line, if the Trim or Restrict options are specified</param>
+        /// <param name="LengthTolerance">The maximum proportional distance of the crossover point outside the specified points on the first line, if the Trim or Restrict options are specified</param>
         /// <param name="AngularTolerance">The tangent of the minimum permitted angle between the two lines; if the angle is smaller than this, they will be considered parallel and the function will return null</param>
         /// <returns>Lateral crossover point, projected vertically onto the first line, as PointXYZ object</returns>
-        public static PointXYZ getCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType, double ExtensionRatio, double AngularTolerance)
+        public static PointXYZ getCrossoverPoint(PointXYZ Line1Point1, PointXYZ Line1Point2, PointXYZ Line2Point1, PointXYZ Line2Point2, CrossoverType XOType, double LengthTolerance, double AngularTolerance)
         {
             // Get x, y and z coordinates of base points and vectors of both lines
             double x1 = Line1Point1.X;
@@ -353,16 +442,16 @@ namespace DFMGenerator_SharedCode
                     break;
                 case CrossoverType.Trim:
                     // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, adjust it to the nearest of these two points
-                    if (p < -ExtensionRatio)
-                        p = -ExtensionRatio;
-                    else if (p > 1 + ExtensionRatio)
-                        p = 1 + ExtensionRatio;
+                    if (p < -LengthTolerance)
+                        p = -LengthTolerance;
+                    else if (p > 1 + LengthTolerance)
+                        p = 1 + LengthTolerance;
                     break;
                 case CrossoverType.Restrict:
                     // If the crossover point does not lie between the two specified points on the first line, within the specified tolerance, return null
-                    if (p < -ExtensionRatio)
+                    if (p < -LengthTolerance)
                         return null;
-                    else if (p > 1 + ExtensionRatio)
+                    else if (p > 1 + LengthTolerance)
                         return null;
                     break;
                 default:

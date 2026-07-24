@@ -629,7 +629,7 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Global unconfined fracture counter - used to set an ID for each new unconfined fracture object
         /// </summary>
-        private static int unconfinedfractureCounter = 0;
+        private static int unconfinedFractureCounter = 0;
         /// <summary>
         /// Unique unconfined fracture ID 
         /// </summary>
@@ -1242,7 +1242,7 @@ namespace DFMGenerator_SharedCode
         public UnconfinedFractureXYZ(UnconfinedFractureSet ufs_in, GridblockConfiguration gbc_in, int setIndex_in, PointXYZ NucleationPoint_in, VectorXYZ Orientation, int NoRays, double InitialRadius, double NucleationWTime_in, int NucleationTimestep_in)
         {
             // Assign the new object an ID number and increment the unconfined fracture counter
-            UnconfinedFractureID = ++unconfinedfractureCounter;
+            UnconfinedFractureID = ++unconfinedFractureCounter;
 
             // Set the reference to the gridblock in which the fracture nucleated and parent unconfined fracture set
             nucleationGridblock = gbc_in;
@@ -1297,7 +1297,7 @@ namespace DFMGenerator_SharedCode
         public UnconfinedFractureXYZ(UnconfinedFractureXYZ fracture_in)
         {
             // Assign the new object an ID number and increment the unconfined fracture counter
-            UnconfinedFractureID = ++unconfinedfractureCounter;
+            UnconfinedFractureID = ++unconfinedFractureCounter;
 
             // Set the reference to the gridblock in which the fracture nucleated and parent unconfined fracture set
             nucleationGridblock = fracture_in.nucleationGridblock;

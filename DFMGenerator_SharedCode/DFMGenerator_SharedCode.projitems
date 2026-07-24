@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureCalculationData_Minimised.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureDipSet.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FractureNetwork_2D.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FractureSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GeometricObjects.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Grid.cs" />

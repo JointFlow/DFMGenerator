@@ -219,6 +219,9 @@ namespace DFMGenerator_Standalone
                 input_file.WriteLine("% Set these values to the approximate maximum length of fractures generated (in metres), or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length");
                 input_file.WriteLine("MaxHMinLength 0");
                 input_file.WriteLine("MaxHMaxLength 0");
+                input_file.WriteLine("% Depth of horizontal section");
+                input_file.WriteLine("% Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file");
+                input_file.WriteLine("%DepthOfHorizontalSection 2000.5");
                 input_file.WriteLine();
 
                 input_file.WriteLine("% Fracture aperture control parameters");
@@ -939,6 +942,9 @@ namespace DFMGenerator_Standalone
             // Set these values to the approximate maximum length of fractures generated, or 0 if this is not known; 0 will default to maximum potential length - but this may be much greater than actual maximum length
             double MaxHMinLength = 0;
             double MaxHMaxLength = 0;
+            // Depth of horizontal section
+            // Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+            double DepthOfHorizontalSection = 2500;// double.NaN;
 
             // Fracture aperture control parameters
             // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -1618,6 +1624,11 @@ namespace DFMGenerator_Standalone
                         case "MaxHMaxLength":
                         case "maxHMaxLength": // For backwards compatibility
                             MaxHMaxLength = Convert.ToDouble(line_split[1]);
+                            break;
+                        // Depth of horizontal section
+                        // Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+                        case "DepthOfHorizontalSection":
+                            DepthOfHorizontalSection = Convert.ToDouble(line_split[1]);
                             break;
 
                         // Fracture aperture control parameters
@@ -3319,6 +3330,11 @@ namespace DFMGenerator_Standalone
 
             // Set the output folder path
             dfn_control.FolderPath = folderPath;
+
+            // If required, set the flag to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+            // This requires that we specify the depth of the horizontal section to extract the fracture traces onto
+            if (!double.IsNaN(DepthOfHorizontalSection))
+                dfn_control.Create2DFractureNetwork(DepthOfHorizontalSection);
 
             // Add the DFNGenerationControl object to the grid
             ModelGrid.DFNControl = dfn_control;
