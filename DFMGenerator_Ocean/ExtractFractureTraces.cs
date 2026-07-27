@@ -51,7 +51,7 @@ namespace DFMGenerator_Ocean
             this.callingDialog = callingDialog;
             updateUIFromArgs();
 
-            this.btn_EFT_OK.Image = PetrelImages.Apply;
+            this.btn_EFT_Extract.Image = PetrelImages.Apply;
             this.btn_EFT_Cancel.Image = PetrelImages.Close;
 
             context.ArgumentPackageChanged += new EventHandler<WorkflowContext.ArgumentPackageChangedEventArgs>(context_ArgumentPackageChanged);
@@ -223,13 +223,19 @@ namespace DFMGenerator_Ocean
 
         private void btn_EFT_OK_Click(object sender, EventArgs e)
         {
-            updateArgsFromUI();
-            ExtractFractureTraces_Implementation();
+             updateArgsFromUI();
+            this.FindForm().Close();
         }
 
         private void btn_EFT_Cancel_Click(object sender, EventArgs e)
         {
             this.FindForm().Close();
+        }
+
+        private void btn_EFT_OK_Extract(object sender, EventArgs e)
+        {
+            updateArgsFromUI();
+            ExtractFractureTraces_Implementation();
         }
 
         private void dropTarget_EFT_DFNToExtract_DragDrop(object sender, DragEventArgs e)

@@ -61,6 +61,13 @@ namespace DFMGenerator_SharedCode
                     {
                         ConnectedSegments[thisSegmentEndPoint] = segmentToCheck;
                         segmentToCheck.ConnectedSegments[segmentToCheckEndPoint] = this;
+
+                        // Endpoints of this segment should always connect to the opposite endpoint of the adjacent segment (e.g. the start point of this segment should connect to the end point of the adjacent segment and vice versa)
+                        // Therefore if both endpoints are at the same end of their respective segments, we need to swap the endpoints of the other segment
+                        // This will also swap the connecting segment references of the adjacent segment
+                        if (thisSegmentEndPoint == segmentToCheckEndPoint)
+                            segmentToCheck.SwapEndpoints(this);
+
                         return true;
                     }
                 }
@@ -68,6 +75,28 @@ namespace DFMGenerator_SharedCode
 
             // If the segments are not connected, return false
             return false;
+        }
+        /// <summary>
+        /// Swap the endpoints of this segment and any connected segments
+        /// This is used to ensure segment endpoints can always connect to the opposite endpoint of an adjacent segment
+        /// </summary>
+        /// <param name="callingSegment"></param>
+        private void SwapEndpoints(FractureTraceSegment_2D callingSegment)
+        {
+            // Swap the end points
+            PointXYZ tempEndpoint = EndPoints[0];
+            EndPoints[0] = EndPoints[1];
+            EndPoints[1] = tempEndpoint;
+
+            // Swap the references to connecting segments
+            FractureTraceSegment_2D tempSegment = ConnectedSegments[0];
+            ConnectedSegments[0] = ConnectedSegments[1];
+            ConnectedSegments[1] = tempSegment;
+
+            // If there are connected segments, these must be swapped as well (but do not call back to the segment that called this swap)
+            for (int endPoint = 0; endPoint < 2; endPoint++)
+                if ((IsConnected(endPoint)) && !object.ReferenceEquals(ConnectedSegments[endPoint], callingSegment))
+                    ConnectedSegments[endPoint].SwapEndpoints(this);
         }
 
         // Constructors
@@ -157,8 +186,11 @@ namespace DFMGenerator_SharedCode
                 double dX = Nodes[NoSegments].X - Nodes[0].X;
                 double dY = Nodes[NoSegments].Y - Nodes[0].Y;
                 // NB we must supply dX ad dY in the opposite order to the prescribed orientation as we want the bearing clockwise from the Y axis, not anticlockwise from the X axis
-                double bearing = Math.Atan2(dX, dY);
-                return bearing;
+                double azimuth = Math.Atan2(dX, dY);
+                // Since the directionality is not important, we only want to return values from 0 to PI
+                if (azimuth < 0)
+                    azimuth += Math.PI;
+                return azimuth;
             }
         }
         /// <summary>
@@ -202,7 +234,7 @@ namespace DFMGenerator_SharedCode
             if (endPoint == 0)
                 Nodality[0] = nodalityValue;
             else if (endPoint == 1)
-                 Nodality[NoNodes - 1] = nodalityValue;
+                Nodality[NoNodes - 1] = nodalityValue;
         }
         /// <summary>
         /// Increase the nodality of an endpoint of the fracture trace component by 1
@@ -247,7 +279,7 @@ namespace DFMGenerator_SharedCode
 
             // Sort the list of trace IDs and remove duplicates
             output.Sort();
-            for (int listElementNo = 1; listElementNo < output.Count; listElementNo++)
+            for (int listElementNo = (output.Count - 1); listElementNo > 0; listElementNo--)
             {
                 if (output[listElementNo] == output[listElementNo - 1])
                     output.Remove(listElementNo);
@@ -292,7 +324,7 @@ namespace DFMGenerator_SharedCode
             string output = string.Format("Fracture trace component index:\t{0}\tNumber of nodes:\t{1}\n\n", FractureTraceComponentID, NoNodes);
 
             // Loop through each trace component adding data for that component
-            for(int nodeNo = 0; nodeNo < NoNodes; nodeNo++)
+            for (int nodeNo = 0; nodeNo < NoNodes; nodeNo++)
             {
                 // Create a new string for the node
                 string nodeInfo = string.Empty;
@@ -301,10 +333,12 @@ namespace DFMGenerator_SharedCode
                 nodeInfo += string.Format("{0}\t{1}\t{2}\t", node.X, node.Y, node.Z);
                 // Add nodality
                 nodeInfo += string.Format("{0}\n", Nodality[nodeNo]);
+                // Add to the output string
+                output += nodeInfo;
             }
 
             // Add a final empty line and return the output string
-            output += "/n";
+            output += "\n";
             return output;
         }
         /// <summary>
@@ -319,7 +353,7 @@ namespace DFMGenerator_SharedCode
             // Add the IDs of the connected fracture trace components
             List<int> connectedComponentIDs = GetConnectedTraceComponentIDs();
             foreach (int componentID in connectedComponentIDs)
-                output += string.Format("{0}\t", connectedComponentIDs);
+                output += string.Format("{0}\t", componentID);
 
             // Return the output string
             return output;
@@ -350,11 +384,11 @@ namespace DFMGenerator_SharedCode
         public FractureTraceComponent_2D SplitFractureTraceComponent(int NodeToSplit)
         {
             int noNodesInNewComponent = NoNodes - NodeToSplit;
-            if ((NodeToSplit < 1) || (noNodesInNewComponent < 1))
+            if ((NodeToSplit < 1) || (noNodesInNewComponent < 2))
                 return null;
 
             // Create a new FractureTraceComponent_2D object for the second half of this fracture trace component after the split
-            FractureTraceComponent_2D newFractureTraceComponent = new FractureTraceComponent_2D(Nodes.GetRange(NodeToSplit, noNodesInNewComponent));
+            FractureTraceComponent_2D newFractureTraceComponent = new FractureTraceComponent_2D(ft, Nodes.GetRange(NodeToSplit, noNodesInNewComponent));
             newFractureTraceComponent.ConnectedFractureTraceComponents[1] = ConnectedFractureTraceComponents[1];
             newFractureTraceComponent.SetEndPointNodality(0, Nodality[NodeToSplit]);
             newFractureTraceComponent.SetEndPointNodality(1, GetEndPointNodality(1));
@@ -390,10 +424,14 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Base constructor: Create lists for the node locations, nodality and references to endpoints but do not populate them
         /// </summary>
-        private FractureTraceComponent_2D()
+        /// <param name="ft_in">Reference to the parent FractureTrace_2D object</param>
+        private FractureTraceComponent_2D(FractureTrace_2D ft_in)
         {
             // Assign the new object an ID number and increment the fracture trace component counter
             FractureTraceComponentID = ++fractureTraceComponentCounter;
+
+            // Set the reference to the parent fracture trace object
+            ft = ft_in;
 
             // Create a new node list
             Nodes = new List<PointXYZ>();
@@ -409,8 +447,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Create a FractureTraceComponent object from a list of FractureTraceSegment_2D objects
         /// </summary>
+        /// <param name="ft_in">Reference to the parent FractureTrace_2D object</param>
         /// <param name="FractureTraceSegments_in">List of FractureTraceSegment_2D objects representing the segments of the fracture trace component, in order</param>
-        public FractureTraceComponent_2D(List<FractureTraceSegment_2D> FractureTraceSegments_in):this()
+        public FractureTraceComponent_2D(FractureTrace_2D ft_in, List<FractureTraceSegment_2D> FractureTraceSegments_in) : this(ft_in)
         {
             // Populate both lists
             // The Nodes list will be populated by the endpoints of the supplied fracture trace segments
@@ -433,8 +472,9 @@ namespace DFMGenerator_SharedCode
         /// <summary>
         /// Create a FractureTraceComponent object from a list of PointXYZ objects
         /// </summary>
+        /// <param name="ft_in">Reference to the parent FractureTrace_2D object</param>
         /// <param name="FractureTraceSegments_in">List of PointXYZ objects representing the nodes of the fracture trace component, in order</param>
-        public FractureTraceComponent_2D(List<PointXYZ> FractureTraceNodes_in) : this()
+        public FractureTraceComponent_2D(FractureTrace_2D ft_in, List<PointXYZ> FractureTraceNodes_in) : this(ft_in)
         {
             // Populate both lists
             // The Nodes list will be populated by the supplied fracture nodes
@@ -495,7 +535,7 @@ namespace DFMGenerator_SharedCode
         public string GetFractureTraceGeometry()
         {
             // Create a new string for the output and add header data
-            string output = string.Format("Fracture trace index:\t{0}\tFracture set index:\t{1}\tNumber of components:\t{2}\n\n", FractureTraceID, NoTraceComponents, FractureSetIndex);
+            string output = string.Format("Fracture trace index:\t{0}\tFracture set index:\t{1}\tNumber of components:\t{2}\n\n", FractureTraceID, FractureSetIndex, NoTraceComponents);
 
             // Loop through each trace component adding data for that component
             foreach (FractureTraceComponent_2D traceComponent in TraceComponents)
@@ -519,6 +559,7 @@ namespace DFMGenerator_SharedCode
                 string componentOutput = string.Format("{0}\t{1}\t", FractureSetIndex, FractureTraceID);
                 componentOutput += traceComponent.GetFractureTraceComponentLengthConnectivityData();
                 componentOutput += "\n";
+                output += componentOutput;
             }
 
             // Return the output string
@@ -554,7 +595,8 @@ namespace DFMGenerator_SharedCode
             foreach (int traceID in connectedTraceIDs)
                 output += string.Format("{0}\t", traceID);
 
-            // Return the output string
+            // Add a line return and return the output string
+            output += "\n";
             return output;
         }
 
@@ -568,6 +610,9 @@ namespace DFMGenerator_SharedCode
         {
             // Assign the new object an ID number and increment the fracture trace counter
             FractureTraceID = ++fractureTraceCounter;
+
+            // Create a new fracture trace component list
+            TraceComponents = new List<FractureTraceComponent_2D>();
         }
     }
 
@@ -637,18 +682,17 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // If there are two different intersection points, add a new segment
-                if ((intersectionPoints.Count == 2) && PointXYZ.comparePoints(intersectionPoints[0], intersectionPoints[1]))
+                if ((intersectionPoints.Count == 2) && !PointXYZ.comparePoints(intersectionPoints[0], intersectionPoints[1]))
                     segments.Add(new FractureTraceSegment_2D(intersectionPoints[0], intersectionPoints[1]));
             }
 
             // Loop through all the segments checking for connections
-            int noSegments = segments.Count;
-            for (int segment1Index = 0; segment1Index < noSegments; segment1Index++)
-                for (int segment2Index = segment1Index + 1; segment2Index < noSegments; segment2Index++)
+            for (int segment1Index = 0; segment1Index < segments.Count; segment1Index++)
+                for (int segment2Index = segment1Index + 1; segment2Index < segments.Count; segment2Index++)
                     segments[segment1Index].CreateConnection(segments[segment2Index]);
 
             // Extract chains of connected segments and use them to create FractureTraceComponent_2D objects
-            while (noSegments > 0)
+            while (segments.Count > 0)
             {
                 // Create an ordered list of segments making up this fracture trace component, and get a reference to the initial segment for this trace component
                 // NB this is just the first segment in the unordered list, it is not necessarily the first or last segment in the trace component
@@ -676,10 +720,7 @@ namespace DFMGenerator_SharedCode
                 }
 
                 // Create a new FractureTraceComponent_2D for the trace component and add it to the list
-                TraceComponents.Add(new FractureTraceComponent_2D(nextTraceComponentSegments));
-
-                // Recalculate the number of remaining segments and if there are any left, move on to the next fracture trace component
-                noSegments = segments.Count;
+                TraceComponents.Add(new FractureTraceComponent_2D(this, nextTraceComponentSegments));
             }
         }
     }
@@ -698,6 +739,10 @@ namespace DFMGenerator_SharedCode
         /// Reference to the grandparent Grid object
         /// </summary>
         private FractureGrid gd;
+        /// <summary>
+        /// End time of last timestep used to generate this DFN
+        /// </summary>
+        public double CurrentTime { get { return gdfn.CurrentTime; } }
 
         // Fracture Data
         /// <summary>
@@ -733,7 +778,7 @@ namespace DFMGenerator_SharedCode
             StreamWriter traceGeometry_outputFile = new StreamWriter(namecomb);
 
             // Write the header line
-            traceGeometry_outputFile.WriteLine("Node X\tNode Y\tNode Z\tNumber of connected nodes\n\n");
+            traceGeometry_outputFile.WriteLine("Node X\tNode Y\tNode Z\tNumber of connected nodes\n");
 
             // Write the geometry data for each fracture trace
             foreach (FractureTrace_2D trace in FractureTraces)
@@ -776,7 +821,7 @@ namespace DFMGenerator_SharedCode
             string fractureFileExtension = ".txt";
 
             // Create output file for fracture trace geometry information
-            string fileName = "TraceComponentData_" + outputFileLabel + fractureFileExtension;
+            string fileName = "TraceData_" + outputFileLabel + fractureFileExtension;
             String namecomb = gd.DFNControl.FolderPath + fileName;
             StreamWriter traceGeometry_outputFile = new StreamWriter(namecomb);
 
@@ -794,6 +839,7 @@ namespace DFMGenerator_SharedCode
         // Reset and data input functions
 
         // Constructors
+
         /// <summary>
         /// Create a fracture network object comprising the traces of all fractures from a specified DFN on a specified horizontal plane
         /// </summary>
@@ -802,8 +848,9 @@ namespace DFMGenerator_SharedCode
         /// <param name="DepthOfSection">Depth of the horizontal plane on which the traces lie</param>
         public FractureNetwork_2D(GlobalDFN DFN_in, FractureGrid gd_in, double DepthOfSection)
         {
-            // Set the reference to the GlobalDFN object
+            // Set the reference to the GlobalDFN and FractureGrid objects
             gdfn = DFN_in;
+            gd = gd_in;
 
             // Create a PlaneXYZ object representing the horizontal section at the specified depth
             PlaneOfSection = new PlaneXYZ(new PointXYZ(0, 0, -DepthOfSection), new VectorXYZ(0, 0, 1));
@@ -819,7 +866,13 @@ namespace DFMGenerator_SharedCode
 
             // Extract the traces of all unconfined fractures in the specified DFN and add them to the fracture trace list
             foreach (UnconfinedFractureXYZ ucf in DFN_in.GlobalDFNUnconfinedFractures)
-                FractureTraces.Add(new UnconfinedFractureTrace_2D(ucf, DepthOfSection));
+            {
+                UnconfinedFractureTrace_2D ucfTrace = new UnconfinedFractureTrace_2D(ucf, DepthOfSection);
+                // If the fracture does not intersect the specified horizontal plane, the trace will contain no trace components
+                // In this case it should not be added to the trace component list
+                if (ucfTrace.NoTraceComponents > 0)
+                    FractureTraces.Add(ucfTrace);
+            }
 
             // Check for intersections and crossing points between traces and insert new nodes where required
             // This requires cross-checking every segment of every fracture trace component against every other segment of every other fracture trace component
@@ -843,6 +896,11 @@ namespace DFMGenerator_SharedCode
                             for (int traceComponent2No = 0; traceComponent2No < trace2.NoTraceComponents; traceComponent2No++)
                             {
                                 FractureTraceComponent_2D traceComponent2 = trace2.TraceComponents[traceComponent2No];
+
+                                // Check if trace component 2 is already connected to trace component 1; if so move on to the next trace component
+                                if (traceComponent2.ConnectedFractureTraceComponents[0].Contains(traceComponent1) || traceComponent2.ConnectedFractureTraceComponents[1].Contains(traceComponent1))
+                                    continue;
+
                                 for (int traceSegment2No = 0; traceSegment2No < traceComponent2.NoSegments; traceSegment2No++)
                                 {
                                     PointXYZ traceSegment2StartPoint = traceComponent2.Nodes[traceSegment2No];
@@ -859,9 +917,9 @@ namespace DFMGenerator_SharedCode
                                     // Create flags to indicate whether the intersection point lies at the endpoint of either of the trace components
                                     // If it does it will form a Y node, otherwise it will form an X node
                                     bool traceSegment1StartPointIsEndNode = false;
-                                    bool traceSegment1EndPointIsEndNode = intersectsPoint[1] && (traceSegment1No == (traceComponent1.NoSegments - 1));
-                                    bool traceSegment2StartPointIsEndNode = intersectsPoint[2] && (traceSegment2No == 0);
-                                    bool traceSegment2EndPointIsEndNode = intersectsPoint[3] && (traceSegment2No == (traceComponent2.NoSegments - 1));
+                                    bool traceSegment1EndPointIsEndNode = false;
+                                    bool traceSegment2StartPointIsEndNode = false;
+                                    bool traceSegment2EndPointIsEndNode = false;
 
                                     // Split the two traces and add new nodes if neccesary
                                     FractureTraceComponent_2D newTrace1Component, newTrace2Component;
@@ -905,7 +963,7 @@ namespace DFMGenerator_SharedCode
                                     else
                                     {
                                         // The intersection lies within trace segment 2 so a new node must be inserted
-                                        newTrace2Component = traceComponent2.SplitFractureTraceComponent(crossoverPoint, traceSegment1No);
+                                        newTrace2Component = traceComponent2.SplitFractureTraceComponent(crossoverPoint, traceSegment2No);
                                     }
 
                                     // Update the nodality and connection information for all trace segments
@@ -994,6 +1052,9 @@ namespace DFMGenerator_SharedCode
                                     if (!traceSegment1StartPointIsEndNode && !traceSegment1EndPointIsEndNode)
                                     {
                                         trace1.TraceComponents.Add(newTrace1Component);
+                                        // Update the start and end points of TraceSegment1 - these will have changed
+                                        traceSegment1StartPoint = traceComponent1.Nodes[traceSegment1No];
+                                        traceSegment1EndPoint = traceComponent1.Nodes[traceSegment1No + 1];
                                     }
                                     if (!traceSegment2StartPointIsEndNode && !traceSegment2EndPointIsEndNode)
                                     {

@@ -37,6 +37,14 @@ namespace DFMGenerator_SharedCode
         /// </summary>
         public List<GlobalDFN> DFNGrowthStages;
         /// <summary>
+        /// FractureNetwork_2D object representing the traces of the current DFN fractures on a specified horizontal plane; will only be populated if the ExtractFractureTraceData is true
+        /// </summary>
+        public FractureNetwork_2D Current2DFractureNetwork;
+        /// <summary>
+        /// List of FractureNetwork_2D objects representing the traces of the DFN fractures at different stages of fracture propagation on a specified horizontal plane; will only be populated if the ExtractFractureTraceData is true
+        /// </summary>
+        public List<FractureNetwork_2D> FractureNetworkGrowthStages;
+        /// <summary>
         /// Return reference to a specific gridblock in the grid
         /// </summary>
         /// <param name="ColNo">Column number I of gridblock to retrieve (indexed from west to east)</param>
@@ -383,7 +391,7 @@ namespace DFMGenerator_SharedCode
                 // If it does not, the stress shadows do not interact and we can move on to the next fracture
                 double distanceToAxisIntersection;
                 PointXYZ axis_rayStressShadow_intersection = PointXYZ.getIntersectionPoint(fractureCentrepoint, segmentAxis, propatingSegmentStressShadowPlane, out distanceToAxisIntersection);
-                if (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius)
+                if ((axis_rayStressShadow_intersection is null) || (Math.Abs(distanceToAxisIntersection) > fractureEffectiveRadius))
                     continue;
 
                 // Check to see if the vector from the propagating ray origin to the intersection point is in the same direction (within +/-90degrees) of the propagation direction
@@ -1226,17 +1234,18 @@ namespace DFMGenerator_SharedCode
                     // At present this is only implemented for unconfined fractures
                     if (latestDFN.GlobalDFNUnconfinedFractures.Count > 0)
                     {
-                        // Create the fracture network
-                        FractureNetwork_2D latestNetwork = new FractureNetwork_2D(latestDFN, this, depthOfSection);
+                        // Create the fracture network and add it to the list
+                        Current2DFractureNetwork = new FractureNetwork_2D(latestDFN, this, depthOfSection);
+                        FractureNetworkGrowthStages.Add(Current2DFractureNetwork);
 
                         // Write the fracture trace geometry data (location and nodality of each of the nodes in each trace component) to file
-                        latestNetwork.WriteTraceGeometryToFile(outputLabel);
+                        Current2DFractureNetwork.WriteTraceGeometryToFile(outputLabel);
 
                         // Write the fracture trace component length and connectivity data(trace component length, mean azimuth, nodality and list of connected fracture traces at the trace component endpoints) to a text file
-                        latestNetwork.WriteTraceComponentDataToFile(outputLabel);
+                        Current2DFractureNetwork.WriteTraceComponentDataToFile(outputLabel);
 
                         // Write the fracture trace length and connectivity data (trace length, number of connected fracture traces and list of connected fracture traces at the trace component endpoints) to a text file
-                        latestNetwork.WriteTraceDataToFile(outputLabel);
+                        Current2DFractureNetwork.WriteTraceDataToFile(outputLabel);
                     }
                 }
 
@@ -1851,6 +1860,10 @@ namespace DFMGenerator_SharedCode
 
             // Create an empty list of GlobalDFN objects representing the DFN at intermediate stages of fracture propagation
             DFNGrowthStages = new List<GlobalDFN>();
+
+            // Create an empty list of FractureNetwork_2D objects representing the traces of the DFN fractures at intermediate stages of fracture propagation on a specified horizontal plane
+            // Will only be populated if the ExtractFractureTraceData is true
+            FractureNetworkGrowthStages = new List<FractureNetwork_2D>();
 
             // Create an empty list for large unconfined fractures
             LargeFractures = new List<UnconfinedFractureXYZ>();

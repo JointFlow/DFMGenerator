@@ -664,7 +664,7 @@ namespace DFMGenerator_Standalone
             double EhminAzi = 0;
             // Set VariableStrainOrientation false to have N-S minimum strain orientatation in all cells
             // Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
-            bool VariableStrainOrientation = false;
+            bool VariableStrainOrientation = true;// false;
             double EhminCurvature = Math.PI / 16;
             if (VariableStrainOrientation)
                 EhminAzi = Math.PI / 4;
@@ -784,7 +784,7 @@ namespace DFMGenerator_Standalone
             InitialAbsoluteStress_list.Add(new Tensor2S(40000000, 40000000, 60000000, -500000, 1000000, -1000000));
             BiazimuthalConjugate = false;*/
 #if TESTUCF
-            EhminAzi_list.Add(EhminAzi);
+            /*EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(0);
@@ -794,6 +794,20 @@ namespace DFMGenerator_Standalone
             ModelTimeUnits = TimeUnits.ma;
             DeformationEpisodeDuration_list.Add(10);
             AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
+            InitialFluidPressure_list.Add(19620000);
+            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
+            BiazimuthalConjugate = false;*/
+            EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(0);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(StressArchingFactor);
+            ModelTimeUnits = TimeUnits.ma;
+            DeformationEpisodeDuration_list.Add(10);
+            //AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
+            AbsoluteStressRate_list.Add(new Tensor2S(0, 0, 0, 0, 0, 0));
             InitialFluidPressure_list.Add(19620000);
             InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
             BiazimuthalConjugate = false;
@@ -1104,7 +1118,7 @@ namespace DFMGenerator_Standalone
             double MinUnconfinedFractureRadius = 100;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 1000;// -1;
+            double MaxUnconfinedFractureRadius = 3000;// -1;
             // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
             // If set to -1, there will be no limit on effective fracture radius
             double MaxEffectiveUnconfinedFractureRadius = -1;
@@ -1153,7 +1167,7 @@ namespace DFMGenerator_Standalone
             // Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries
             bool PlanarUnconfinedFractures = false;
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
-            double LargeFractureMinimumRadius = double.NaN;
+            double LargeFractureMinimumRadius = 500;// double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
             double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
@@ -2187,6 +2201,12 @@ namespace DFMGenerator_Standalone
                             nextAbsoluteStressRate_array[ColNo, RowNo, LayerNo] = nextAbsoluteStressRate;
                             nextInitialFluidPressure_array[ColNo, RowNo, LayerNo] = nextInitialFluidPressure;
                             nextInitialAbsoluteStess_array[ColNo, RowNo, LayerNo] = nextInitialAbsoluteStess;
+                            if (VariableStrainOrientation)
+                            {
+                                double local_EhminAzi = nextEhminAzi + ((double)(ColNo - RowNo + LayerNo) * (EhminCurvature));
+                                Tensor2S local_AbsoluteStressRate = new Tensor2S(-1300000 * Math.Pow(Math.Cos(local_EhminAzi), 2), -1300000 * Math.Pow(Math.Sin(local_EhminAzi), 2), 0, 1300000 * Math.Sin(local_EhminAzi) * Math.Cos(local_EhminAzi), 0, 0);
+                                nextAbsoluteStressRate_array[ColNo, RowNo, LayerNo] = local_AbsoluteStressRate;
+                            }
                         }
 
                 // Add the new arrays to the appropriate list

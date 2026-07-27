@@ -1260,6 +1260,7 @@ namespace DFMGenerator_Ocean
                     // Depth of horizontal section
                     // Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
                     double DepthOfHorizontalSection = arguments.Argument_EFT_Depth;
+                    bool OutputTraceNetworkData = !double.IsNaN(DepthOfHorizontalSection);
 
                     // Fracture aperture control parameters
                     // Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -1937,7 +1938,7 @@ namespace DFMGenerator_Ocean
                                 }
                             }
                         }
-                        if (WriteImplicitDataFiles || WriteDFNFiles)
+                        if (WriteImplicitDataFiles || WriteDFNFiles || OutputTraceNetworkData)
                         {
                             // If the output folder does not exist, create it
                             if (!Directory.Exists(folderPath))
@@ -2495,7 +2496,7 @@ namespace DFMGenerator_Ocean
                     generalInputParams += string.Format("Number of radius bins for numerical calculation of microfracture P32: {0}\n", No_r_bins);
                     if (NoUnconfinedFractureStrikeSets > 0)
                     {
-                        if (MaxEffectiveUnconfinedFractureRadius>0)
+                        if (MaxEffectiveUnconfinedFractureRadius > 0)
                             generalInputParams += string.Format("Unconfined fractures have minimum radius {0}{3}, maximum radius {1}{3}, and maximum effective radius {2}{3}\n", MinUnconfinedFractureRadius, MaxUnconfinedFractureRadius, MaxEffectiveUnconfinedFractureRadius, FractureRadiusUnits);
                         else
                             generalInputParams += string.Format("Unconfined fractures have minimum radius {0}{2} and maximum radius {1}{2}\n", MinUnconfinedFractureRadius, MaxUnconfinedFractureRadius, FractureRadiusUnits);
@@ -3657,7 +3658,7 @@ namespace DFMGenerator_Ocean
                                                         for (int PetrelGrid_DataCellK = PetrelGrid_HighestCellK; PetrelGrid_DataCellK <= PetrelGrid_LowestCellK; PetrelGrid_DataCellK++)
                                                         {
                                                             cellRef.K = PetrelGrid_DataCellK;
-                                                            double cell_Cleavage_Dip =  (double)Cleavage_Dip_grid[cleavageNo][cellRef];
+                                                            double cell_Cleavage_Dip = (double)Cleavage_Dip_grid[cleavageNo][cellRef];
                                                             // If the property has a General template, carry out unit conversion as if it was supplied in project units
                                                             if (convertFromGeneral_Cleavage_Dip[cleavageNo])
                                                                 cell_Cleavage_Dip = toSIDipUnits.Convert(cell_Cleavage_Dip);
@@ -4350,78 +4351,78 @@ namespace DFMGenerator_Ocean
                                                 double local_szxRate = 0;
                                                 double local_syzRate = 0;
 
-                                        // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
-                                        if (double.IsNaN(initialSzz))
-                                            initialSzz = finalSzz;
-                                        else
-                                            local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                        if (double.IsNaN(initialSxx))
-                                            initialSxx = finalSxx;
-                                        else
-                                            local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
-                                        if (double.IsNaN(initialSyy))
-                                            initialSyy = finalSyy;
-                                        else
-                                            local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
-                                        if (double.IsNaN(initialSxy))
-                                            initialSxy = finalSxy;
-                                        else
-                                            local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
-                                        if (overideShvComponents)
-                                        {
-                                            if (double.IsNaN(initialSzx))
-                                                initialSzx = finalSzx;
-                                            else
-                                                local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
-                                            if (double.IsNaN(initialSyz))
-                                                initialSyz = finalSyz;
-                                            else
-                                                local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
-                                        }
-                                        else
-                                        {
-                                            initialSzx = 0;
-                                            initialSyz = 0;
-                                            finalSzx = 0;
-                                            finalSyz = 0;
-                                        }
-                                        local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
-                                        local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
-                                    }
-                                    bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
-                                    if (overrideFluidPressure)
-                                    {
-                                        double local_FluidPressureRate = 0;
-                                        if (double.IsNaN(initialFluidPressure))
-                                            initialFluidPressure = finalFluidPressure;
-                                        else
-                                            local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
-                                        double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
-                                        local_InitialFluidPressure = initialFluidPressure;
-                                        local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
-                                    }
-                                    // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
-                                    // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
-                                    bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
-                                    if (overrideStressArchingFactor)
-                                    {
-                                        double dSigmazz_dt = 0;
-                                        if (double.IsNaN(initialSzz))
-                                            initialSzz = finalSzz;
-                                        else
-                                            dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
-                                        double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
-                                        double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
-                                        double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
-                                        local_InitialVerticalStress = initialSzz;
-                                        double local_OP_Thermal_factor = (local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt;
-                                        local_StressArchingFactor = (local_OP_Thermal_factor != 0) ? (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt) : 1;
-                                        // Trim the result so it lies between 0 and 1 inclusive
-                                        if (local_StressArchingFactor < 0)
-                                            local_StressArchingFactor = 0;
-                                        if (local_StressArchingFactor > 1)
-                                            local_StressArchingFactor = 1;
-                                    }
+                                                // If initial stress values are not defined, set them equal to the final values - this will give a constant stress during the timestep
+                                                if (double.IsNaN(initialSzz))
+                                                    initialSzz = finalSzz;
+                                                else
+                                                    local_szzRate = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                if (double.IsNaN(initialSxx))
+                                                    initialSxx = finalSxx;
+                                                else
+                                                    local_sxxRate = (finalSxx - initialSxx) / local_DeformationEpisodeDuration;
+                                                if (double.IsNaN(initialSyy))
+                                                    initialSyy = finalSyy;
+                                                else
+                                                    local_syyRate = (finalSyy - initialSyy) / local_DeformationEpisodeDuration;
+                                                if (double.IsNaN(initialSxy))
+                                                    initialSxy = finalSxy;
+                                                else
+                                                    local_sxyRate = (finalSxy - initialSxy) / local_DeformationEpisodeDuration;
+                                                if (overideShvComponents)
+                                                {
+                                                    if (double.IsNaN(initialSzx))
+                                                        initialSzx = finalSzx;
+                                                    else
+                                                        local_szxRate = (finalSzx - initialSzx) / local_DeformationEpisodeDuration;
+                                                    if (double.IsNaN(initialSyz))
+                                                        initialSyz = finalSyz;
+                                                    else
+                                                        local_syzRate = (finalSyz - initialSyz) / local_DeformationEpisodeDuration;
+                                                }
+                                                else
+                                                {
+                                                    initialSzx = 0;
+                                                    initialSyz = 0;
+                                                    finalSzx = 0;
+                                                    finalSyz = 0;
+                                                }
+                                                local_InitialStressTensor = new Tensor2S(initialSxx, initialSyy, initialSzz, initialSxy, initialSyz, initialSzx);
+                                                local_StressRateTensor = new Tensor2S(local_sxxRate, local_syyRate, local_szzRate, local_sxyRate, local_syzRate, local_szxRate);
+                                            }
+                                            bool overrideFluidPressure = UsePropertyFor_FluidPressure && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalFluidPressure);
+                                            if (overrideFluidPressure)
+                                            {
+                                                double local_FluidPressureRate = 0;
+                                                if (double.IsNaN(initialFluidPressure))
+                                                    initialFluidPressure = finalFluidPressure;
+                                                else
+                                                    local_FluidPressureRate = (finalFluidPressure - initialFluidPressure) / local_DeformationEpisodeDuration;
+                                                double local_HydrostaticPressureRate = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * FluidDensity * StressStrainState.Gravity : 0);
+                                                local_InitialFluidPressure = initialFluidPressure;
+                                                local_AppliedOverpressureRate = local_FluidPressureRate - local_HydrostaticPressureRate;
+                                            }
+                                            // If the stress tensor is not defined, then changes in the absolute vertical stress within each deformation episode will be accounted for through the stress arching factor
+                                            // NB The absolute vertical stress will also be reset at the start of each deformation episode, so will remain synchronised with the specified input load
+                                            bool overrideStressArchingFactor = UsePropertyFor_Szz && !UsePropertyFor_StressTensor && (local_DeformationEpisodeDuration > 0) && !double.IsNaN(finalSzz);
+                                            if (overrideStressArchingFactor)
+                                            {
+                                                double dSigmazz_dt = 0;
+                                                if (double.IsNaN(initialSzz))
+                                                    initialSzz = finalSzz;
+                                                else
+                                                    dSigmazz_dt = (finalSzz - initialSzz) / local_DeformationEpisodeDuration;
+                                                double dLithStress_dt = (local_AppliedUpliftRate > 0 ? -local_AppliedUpliftRate * (MeanOverlyingSedimentDensity - FluidDensity) * StressStrainState.Gravity : 0);
+                                                double local_Kb = local_YoungsMod / (2 * (1 + local_PoissonsRatio));
+                                                double dEtherm_dt = local_Kb * local_ThermalExpansionCoefficient * local_AppliedTemperatureChange;
+                                                local_InitialVerticalStress = initialSzz;
+                                                double local_OP_Thermal_factor = (local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt;
+                                                local_StressArchingFactor = (local_OP_Thermal_factor != 0) ? (dSigmazz_dt - dLithStress_dt) / ((local_BiotCoefficient * local_AppliedOverpressureRate) + dEtherm_dt) : 1;
+                                                // Trim the result so it lies between 0 and 1 inclusive
+                                                if (local_StressArchingFactor < 0)
+                                                    local_StressArchingFactor = 0;
+                                                if (local_StressArchingFactor > 1)
+                                                    local_StressArchingFactor = 1;
+                                            }
 
                                             // If the final stress tensor and fluid pressure values are not defined, reset them to NaN so they will not be picked up by the next deformation episode
                                             if (!overideStressRate)
@@ -5996,7 +5997,7 @@ namespace DFMGenerator_Ocean
 
                             // If required, set the flag to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
                             // This requires that we specify the depth of the horizontal section to extract the fracture traces onto
-                            if (!double.IsNaN(DepthOfHorizontalSection))
+                            if (OutputTraceNetworkData)
                                 dfn_control.Create2DFractureNetwork(DepthOfHorizontalSection);
 
                             // Add the DFNGenerationControl object to the grid
@@ -6077,8 +6078,8 @@ namespace DFMGenerator_Ocean
                         // To do this we must create a new progress bar
                         using (IProgress progressBar = PetrelLogger.NewProgress(0, 100, ProgressType.Cancelable, System.Windows.Forms.Cursors.WaitCursor))
                         {
-                                PetrelProgressReporter progressBarWrapper = new PetrelProgressReporter(progressBar);
-                                PetrelLogger.InfoOutputWindow("Start writing output");
+                            PetrelProgressReporter progressBarWrapper = new PetrelProgressReporter(progressBar);
+                            PetrelLogger.InfoOutputWindow("Start writing output");
 
                             // Get a handle to the DFNGenerationControl object for the grid
                             DFNGenerationControl dfn_control = ModelGrid.DFNControl;
@@ -6126,7 +6127,7 @@ namespace DFMGenerator_Ocean
                                     int NoCalculationElementsCompleted = 0;
                                     int TotalNoSets = (NoLayerBoundFractureSets * NoDipSets) + NoUnconfinedFractureSets;
                                     int NoSetTypes = (NoLayerBoundFractureSets > 0 ? 1 : 0) + (NoUnconfinedFractureSets > 0 ? 1 : 0);
-                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + NoSetTypes+ 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? NoSetTypes : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
+                                    int NoElements = NoActiveGridblocks * (TotalNoSets + (OutputFractureConnectivityAnisotropy ? TotalNoSets + NoSetTypes + 1 : 0) + (OutputFractureReactivationPotential ? TotalNoSets : 0) + (OutputFracturePorosity ? NoSetTypes : 0) + (OutputFracturePermeabilityTensor ? 1 : 0));
                                     NoElements *= NoStages;
                                     // Bulk rock elastic tensors are only output for the final stage
                                     if (OutputBulkRockElasticTensors)
@@ -8138,17 +8139,25 @@ namespace DFMGenerator_Ocean
 #if DEBUG_EXPLICIT_OUTPUT
                                         PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} microfractures", stage, DFN.GlobalDFNMicrofractures.Count));
                                         PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} macrofractures", stage++, DFN.GlobalDFNMacrofractures.Count));
+                                        PetrelLogger.InfoOutputWindow(string.Format("Stage {0}, {1} unconfined fractures", stage++, DFN.GlobalDFNUnconfinedFractures.Count));
 #endif
                                     }
 #if DEBUG_EXPLICIT_OUTPUT
                                     PetrelLogger.InfoOutputWindow(string.Format("Total {0} fractures", totalNoFractures));
 #endif
+                                    // Get the number of fracture traces
+                                    int totalNoFractureTraces = 0;
+                                    foreach (FractureNetwork_2D fractureNetwork in ModelGrid.FractureNetworkGrowthStages)
+                                    {
+                                        totalNoFractureTraces += fractureNetwork.NoTraces;
+                                    }
 
                                     // Set the number of elements in the progress bar to twice the total number of fractures
                                     // We must loop through all the fractures twice - the first time to generate the fracture objects and the second to assign properties to them
                                     // Unless we are generating fracture centrelines in which case we will need to loop through a third time
                                     int numberOfElements = totalNoFractures * 2;
                                     if (OutputCentrepoints) numberOfElements += totalNoFractures;
+                                    if (OutputTraceNetworkData) numberOfElements += totalNoFractureTraces;
                                     progressBarWrapper.SetNumberOfElements(numberOfElements);
                                     int noFracturesGenerated = 0;
 
@@ -8719,29 +8728,29 @@ namespace DFMGenerator_Ocean
                                                 // Get the number of unconfined fracture patches that were created for this fracture
                                                 int finalUCFPatchNo = PatchNo + UCF.GetNoFracturePatchesInXYZ(CreateTriangularFracturePatches);
 
-                                                    // Loop through each patch in the list
-                                                    for (; PatchNo < finalUCFPatchNo; PatchNo++)
+                                                // Loop through each patch in the list
+                                                for (; PatchNo < finalUCFPatchNo; PatchNo++)
+                                                {
+                                                    try
                                                     {
-                                                        try
+                                                        if (PatchNo < NoPatches)
                                                         {
-                                                            if (PatchNo < NoPatches)
-                                                            {
-                                                                fractureAperture[PatchNo].Value = UCF_Aperture;
-                                                                fracturePermeability[PatchNo].Value = UCF_Permeability;
-                                                                //if (!double.IsNaN(uF_Compressibility))
-                                                                //    fractureCompressibility[PatchNo].Value = UCF_Compressibility;
-                                                            }
-                                                        }
-                                                        catch (Exception e)
-                                                        {
-                                                            string errorMessage = string.Format("Exception thrown when writing properties to unconfined fracture patch {0}:", PatchNo);
-                                                            errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", UCF_Aperture, UCF_Permeability);
-                                                            //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", UCF_Aperture, UCF_Permeability, UCF_Compressibility);
-                                                            PetrelLogger.InfoOutputWindow(errorMessage);
-                                                            PetrelLogger.InfoOutputWindow(e.Message);
-                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                            fractureAperture[PatchNo].Value = UCF_Aperture;
+                                                            fracturePermeability[PatchNo].Value = UCF_Permeability;
+                                                            //if (!double.IsNaN(uF_Compressibility))
+                                                            //    fractureCompressibility[PatchNo].Value = UCF_Compressibility;
                                                         }
                                                     }
+                                                    catch (Exception e)
+                                                    {
+                                                        string errorMessage = string.Format("Exception thrown when writing properties to unconfined fracture patch {0}:", PatchNo);
+                                                        errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}", UCF_Aperture, UCF_Permeability);
+                                                        //errorMessage = errorMessage + string.Format(" Aperture {0}, Permeability {1}, Compressibility {2}", UCF_Aperture, UCF_Permeability, UCF_Compressibility);
+                                                        PetrelLogger.InfoOutputWindow(errorMessage);
+                                                        PetrelLogger.InfoOutputWindow(e.Message);
+                                                        PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                    }
+                                                }
 
                                                 // Update progress bar
                                                 progressBarWrapper.UpdateProgress(++noFracturesGenerated);
@@ -8769,9 +8778,9 @@ namespace DFMGenerator_Ocean
                                             // Create a new collection for the polyline set
                                             CentrelineCollection = project.CreateCollection(ModelName + "_Centrelines");
 
-                                        // Write the input parameters for the model run to the collection comments string
-                                        string outputStageParams = string.Format("Model name: {0}\n\n", ModelName);
-                                        CentrelineCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
+                                            // Write the input parameters for the model run to the collection comments string
+                                            string outputStageParams = string.Format("Model name: {0}\n\n", ModelName);
+                                            CentrelineCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
 
                                             // Commit the changes to the Petrel database
                                             transactionCreateCentrelineCollection.Commit();
@@ -8888,6 +8897,110 @@ namespace DFMGenerator_Ocean
 
                                                 // Commit the changes to the Petrel database
                                                 transactionCreateCentrelines.Commit();
+                                            }
+
+                                            // Update the stage number
+                                            stageNumber++;
+                                        }
+                                    }
+
+                                    // If required, output the fracture trace networks as polylines
+                                    if (OutputTraceNetworkData)
+                                    {
+                                        // Create a new collection for the polyline output
+                                        Collection CentrelineCollection = Collection.NullObject;
+                                        using (ITransaction transactionCreateCentrelineCollection = DataManager.NewTransaction())
+                                        {
+                                            // Get handle to project and lock database
+                                            Project project = PetrelProject.PrimaryProject;
+                                            transactionCreateCentrelineCollection.Lock(project);
+
+                                            // Create a new collection for the polyline set
+                                            CentrelineCollection = project.CreateCollection(ModelName + "_FractureTraceNetwork");
+
+                                            // Write the input parameters for the model run to the collection comments string
+                                            string outputStageParams = string.Format("Model name: {0}\n\n", ModelName);
+                                            CentrelineCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
+
+                                            // Commit the changes to the Petrel database
+                                            transactionCreateCentrelineCollection.Commit();
+                                        }
+
+                                        // Loop through each stage in the fracture growth
+                                        stageNumber = 1;
+                                        foreach (FractureNetwork_2D fractureNetwork in ModelGrid.FractureNetworkGrowthStages)
+                                        {
+                                            string stageNameOverride = null;
+                                            if ((IntermediateOutputIntervalControl == IntermediateOutputInterval.SpecifiedTime) && (stageNumber <= OutputStageNameOverride.Count))
+                                                stageNameOverride = OutputStageNameOverride[stageNumber - 1];
+
+                                            // Create a stage-specific label for the output
+                                            string outputLabel;
+                                            if ((stageNameOverride is null) || (stageNameOverride.Length == 0))
+                                                outputLabel = (stageNumber == NoStages) ? "_final" : string.Format("_Stage{0}_Time{1}{2}", stageNumber, toGeologicalTimeUnits.Convert(fractureNetwork.CurrentTime).ToString("G3"), ProjectTimeUnits);
+                                            else
+                                                outputLabel = "_" + stageNameOverride;
+
+                                            using (ITransaction transactionCreateFractureTraces = DataManager.NewTransaction())
+                                            {
+                                                // Lock database
+                                                transactionCreateFractureTraces.Lock(CentrelineCollection);
+
+                                                // Create a new polyline set and set to the depth domain
+                                                PolylineSet fractureTraces = CentrelineCollection.CreatePolylineSet("Fracture_Traces" + outputLabel);
+                                                fractureTraces.Domain = Domain.ELEVATION_DEPTH;
+
+                                                // Add creation event to the polyline set object history
+                                                HistoryEntry centrelinesCreationEvent = new HistoryEntry("Create dynamic DFN", "", PetrelSystem.VersionInfo.ToString());
+                                                IHistoryInfoEditor centrelinesHistoryInfoEditor = HistoryService.GetHistoryInfoEditor(fractureTraces);
+                                                centrelinesHistoryInfoEditor.AddHistoryEntry(centrelinesCreationEvent);
+
+                                                // Create a list of Petrel polylines
+                                                List<Polyline3> pline_list = new List<Polyline3>();
+
+                                                // Loop through all the fracture trace components in the fracture network
+                                                foreach (FractureTrace_2D trace in fractureNetwork.FractureTraces)
+                                                {
+                                                    // Check if calculation has been aborted
+                                                    if (progressBarWrapper.abortCalculation())
+                                                    {
+                                                        // Clean up any resources or data
+                                                        break;
+                                                    }
+
+                                                    foreach (FractureTraceComponent_2D traceComponent in trace.TraceComponents)
+                                                    {
+                                                        // Get the fracture trace component nodes
+                                                        List<PointXYZ> traceComponentNodes = traceComponent.Nodes;
+
+                                                        // Create a new Petrel polyline from the trace component nodes and add it to the polyline list
+                                                        try
+                                                        {
+                                                            List<Point3> newpline = new List<Point3>();
+                                                            foreach (PointXYZ node in traceComponentNodes)
+                                                                newpline.Add(new Point3(node.X, node.Y, node.Z));
+                                                            pline_list.Add(new Polyline3(newpline));
+                                                        }
+                                                        catch (Exception e)
+                                                        {
+                                                            string errorMessage = string.Format("Exception thrown when writing fracture traces:");
+                                                            foreach (PointXYZ node in traceComponentNodes)
+                                                                errorMessage = errorMessage + string.Format(" ({0},{1},{2})", node.X, node.Y, node.Z);
+                                                            PetrelLogger.InfoOutputWindow(errorMessage);
+                                                            PetrelLogger.InfoOutputWindow(e.Message);
+                                                            PetrelLogger.InfoOutputWindow(e.StackTrace);
+                                                        }
+                                                    }
+
+                                                    // Update progress bar
+                                                    progressBarWrapper.UpdateProgress(++noFracturesGenerated);
+                                                }
+
+                                                // Add the polyline list to the polyline set
+                                                fractureTraces.Polylines = pline_list;
+
+                                                // Commit the changes to the Petrel database
+                                                transactionCreateFractureTraces.Commit();
                                             }
 
                                             // Update the stage number

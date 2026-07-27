@@ -353,7 +353,7 @@ namespace DFMGenerator_SharedCode
                         return null;
                     if (RelativeCrossoverPositionOnLine2 < -LengthTolerance)
                         return null;
-                    else if (RelativeCrossoverPositionOnLine1 > 2 + LengthTolerance)
+                    else if (RelativeCrossoverPositionOnLine2 > 1 + LengthTolerance)
                         return null;
                     break;
                 default:
@@ -363,11 +363,11 @@ namespace DFMGenerator_SharedCode
             // Check if the crossover point lies on any of the specified points on either line, within the specified tolerance
             if (Math.Abs(RelativeCrossoverPositionOnLine1) < LengthTolerance)
                 IntersectsPoint[0] = true;
-            if (Math.Abs(RelativeCrossoverPositionOnLine1-1) < LengthTolerance)
+            if (Math.Abs(RelativeCrossoverPositionOnLine1 - 1) < LengthTolerance)
                 IntersectsPoint[1] = true;
             if (Math.Abs(RelativeCrossoverPositionOnLine2) < LengthTolerance)
                 IntersectsPoint[2] = true;
-            if (Math.Abs(RelativeCrossoverPositionOnLine2-1) < LengthTolerance)
+            if (Math.Abs(RelativeCrossoverPositionOnLine2 - 1) < LengthTolerance)
                 IntersectsPoint[3] = true;
 
             // Calculate the position of the intersection point (projected onto the first line)
