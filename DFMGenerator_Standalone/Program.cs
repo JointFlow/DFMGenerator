@@ -620,19 +620,19 @@ namespace DFMGenerator_Standalone
             // Main properties
 #if TESTUCF
             // Grid size
-            int NoCols = 3;
-            int NoRows = 3;
-            int NoLayers = 3;
+            int NoCols = 1;// 3;
+            int NoRows = 1;// 3;
+            int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 1000;
-            double Length_NS = 1000;
-            double LayerThickness = 1000;
+            double Width_EW = 100;// 1000;
+            double Length_NS = 100;// 1000;
+            double LayerThickness = 100;// 1000;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial of the top surface in metres, positive downwards
-            double Depth = 1000;
+            double Depth = 10;// 1000;
 #else
             // Grid size
             int NoCols = 3;
@@ -807,9 +807,11 @@ namespace DFMGenerator_Standalone
             ModelTimeUnits = TimeUnits.ma;
             DeformationEpisodeDuration_list.Add(10);
             //AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
-            AbsoluteStressRate_list.Add(new Tensor2S(0, 0, 0, 0, 0, 0));
-            InitialFluidPressure_list.Add(19620000);
-            InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
+            AbsoluteStressRate_list.Add(new Tensor2S(16500, 1366000, 969500, -962500, 19900, -8600));
+            //InitialFluidPressure_list.Add(19620000);
+            InitialFluidPressure_list.Add(0);
+            //InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
+            InitialAbsoluteStress_list.Add(new Tensor2S(6047000, 5188000, 13369000, -354000, 674000, -211000));
             BiazimuthalConjugate = false;
 #else
             // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
@@ -1076,12 +1078,12 @@ namespace DFMGenerator_Standalone
             // Layer thickness cutoff: explicit DFN will not be calculated for gridblocks thinner than this value
             // Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
             double MinimumLayerThickness = 0;
-            // Maximum number of fracture segments that can be generated per gridblock
+            // Maximum number of fracture patches that can be generated per gridblock
             // Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
 #if TESTUCF
-            int MaxNoFractureSegments = 1000;
+            int MaxNoFracturePatches = 1000;
 #else
-            int MaxNoFractureSegments = 100000;
+            int MaxNoFracturePatches = 100000;
 #endif
             // Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
             // Set to 0 to disable probabilistic fracture nucleation
@@ -1115,13 +1117,13 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 16;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 100;// -1;
+            double MinUnconfinedFractureRadius = 1;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 3000;// -1;
+            double MaxUnconfinedFractureRadius = 50;// -1;
             // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
             // If set to -1, there will be no limit on effective fracture radius
-            double MaxEffectiveUnconfinedFractureRadius = -1;
+            double MaxEffectiveUnconfinedFractureRadius = 5;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -1167,7 +1169,7 @@ namespace DFMGenerator_Standalone
             // Flag to make unconfined fractures completely planar, even when crossing gridblock boundaries
             bool PlanarUnconfinedFractures = false;
             // Minimum radius for large fractures; fractures larger than this will be considered to influence the entire grid when checking stress shadows
-            double LargeFractureMinimumRadius = 500;// double.NaN;
+            double LargeFractureMinimumRadius = double.NaN;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to stress shadow interaction, as a ratio of the propagating fracture radius
             double MinStressShadowDeactivationRatio = 0.5;
             // Minimum radius of unconfined fractures able to cause deactivation of a propagating unconfined fracture due to intersection, as a ratio of the propagating fracture radius
@@ -3297,7 +3299,7 @@ namespace DFMGenerator_Standalone
                 }
             }
             // Set the DFN generation data
-            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
+            DFNGenerationControl dfn_control = new DFNGenerationControl(GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFracturePatches, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits);
 #if DEBUG_FRACS
             Console.WriteLine(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchNeighbouringGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
 #endif

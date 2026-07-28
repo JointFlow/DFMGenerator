@@ -8908,22 +8908,23 @@ namespace DFMGenerator_Ocean
                                     if (OutputTraceNetworkData)
                                     {
                                         // Create a new collection for the polyline output
-                                        Collection CentrelineCollection = Collection.NullObject;
-                                        using (ITransaction transactionCreateCentrelineCollection = DataManager.NewTransaction())
+                                        Collection FractureTraceCollection = Collection.NullObject;
+                                        using (ITransaction transactionCreateFractureTraceCollection = DataManager.NewTransaction())
                                         {
                                             // Get handle to project and lock database
                                             Project project = PetrelProject.PrimaryProject;
-                                            transactionCreateCentrelineCollection.Lock(project);
+                                            transactionCreateFractureTraceCollection.Lock(project);
 
                                             // Create a new collection for the polyline set
-                                            CentrelineCollection = project.CreateCollection(ModelName + "_FractureTraceNetwork");
+                                            string FTNlabel = string.Format("_FractureTraceNetwork_Depth{0}{1}", (int)DepthOfHorizontalSection, DepthUnits);
+                                            FractureTraceCollection = project.CreateCollection(ModelName + FTNlabel);
 
                                             // Write the input parameters for the model run to the collection comments string
                                             string outputStageParams = string.Format("Model name: {0}\n\n", ModelName);
-                                            CentrelineCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
+                                            FractureTraceCollection.Comments = headerInputParams + outputStageParams + generalInputParams + explicitInputParams;
 
                                             // Commit the changes to the Petrel database
-                                            transactionCreateCentrelineCollection.Commit();
+                                            transactionCreateFractureTraceCollection.Commit();
                                         }
 
                                         // Loop through each stage in the fracture growth
@@ -8944,10 +8945,10 @@ namespace DFMGenerator_Ocean
                                             using (ITransaction transactionCreateFractureTraces = DataManager.NewTransaction())
                                             {
                                                 // Lock database
-                                                transactionCreateFractureTraces.Lock(CentrelineCollection);
+                                                transactionCreateFractureTraces.Lock(FractureTraceCollection);
 
                                                 // Create a new polyline set and set to the depth domain
-                                                PolylineSet fractureTraces = CentrelineCollection.CreatePolylineSet("Fracture_Traces" + outputLabel);
+                                                PolylineSet fractureTraces = FractureTraceCollection.CreatePolylineSet("Fracture_Traces" + outputLabel);
                                                 fractureTraces.Domain = Domain.ELEVATION_DEPTH;
 
                                                 // Add creation event to the polyline set object history

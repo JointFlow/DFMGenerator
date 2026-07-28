@@ -2243,7 +2243,8 @@ namespace DFMGenerator_SharedCode
                 // We will first try to do this by decreasing AA1 and increasing BB1 in proportion
                 double volumeAvailable = (OneMinusPsi / Excess_Volume_Multiplier) - minSpacingVolumes[0];
                 double W1_AA1 = W_1 * AA_1;
-                double AA_multiplier = (Math.Sqrt(Math.Pow(W1_AA1, 2) + (4 * AA1_BB1 * Math.Max(volumeAvailable, 0))) - W1_AA1) / (2 * AA1_BB1);
+                double AA_multiplier = ((float)AA1_BB1 == 0f) ? Math.Max(volumeAvailable, 0) / W1_AA1 :
+                    (Math.Sqrt(Math.Pow(W1_AA1, 2) + (4 * AA1_BB1 * Math.Max(volumeAvailable, 0))) - W1_AA1) / (2 * AA1_BB1);
                 AA1_BB1 *= AA_multiplier;
                 BB_1 /= AA_multiplier;
                 // We must also update the new_AA_values array and the AA1_BB1 value

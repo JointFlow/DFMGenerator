@@ -1,4 +1,4 @@
-% Model DFMGenerator_configuration.txt
+% Model DFMGenerator_GRDECL_configuration.txt
 
 % Replace defaults with required values
 % Use % for comment lines
@@ -145,6 +145,16 @@ DefaultHostRock_kh 0
 % Flag for whether to average mechanical properties properties across the GRDECL grid cells, or take the value from the top middle cell
 AverageMechanicalPropertyData true
 
+% Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation
+% Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly
+% If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect
+% To specify a cleavage plane, use the keyword Cleavage then specify the default values for the cleavage azimuth and dip (radians), and the crack surface energy (J/m2) and sliding friction coefficient parallel to the cleavage plane, in that order
+% Optionally these values can be followed by property names for each of the four parameters, in the same order
+% E.g. to specify a North-dipping inclined cleavage plane with crack surface energy 500J/m2 and sliding friction coefficient 0.4, use:
+%Cleavage 0 1.05 500 0.4
+% Use grid properties to define these parameters as follows:
+%Cleavage 0 1.05 500 0.4 AZIMUTH_PROPERTYNAME DIP_PROPERTYNAME CSE_PROPERTYNAME FRICTION_PROPERTYNAME
+
 % Stress state
 % Stress distribution scenario - use to turn on or off stress shadow effect
 % Options are EvenlyDistributedStress or StressShadow
@@ -231,6 +241,9 @@ MaxHMaxLength 0
 % Flag to populate implicit fracture data in gridblocks with no fractures?
 % If true, all gridblocks in the specified region of the grid will be populated with implicit fracture data, even if the fracture density is zero; otherwise gridblocks with zero fracture density will not be populated, enabling easier visualisation of the extent of the fracture network
 PopulateEmptyGridblocks true
+% Depth of horizontal section
+% Set this to extract the traces of the 3D fractures in the DFN on a horizontal plane at the specified depth, and write the fracture network geometry data to file
+%DepthOfHorizontalSection 2000.5
 
 % Fracture aperture control parameters
 % Flag to determine method used to determine fracture aperture - used in porosity and permeability calculation
@@ -268,6 +281,7 @@ InitialNormalStress 2E+5
 FractureNormalStiffness 2.5E+9
 % Maximum fracture closure (m)
 MaximumClosure 0.0005
+
 % Present day effective stress parameters
 % Define the present day stress tensor and fluid pressure to override stress at the time of deformation when calculating fracture aperture and permeability
 % Present day stress tensor and fluid pressure should be specified in Pa as either AbsoluteStress, TerzaghiEffectiveStress or BiotEffectiveStress tensors, depending on the PresentDayStressDefinition flag
@@ -353,9 +367,9 @@ MaxConsistencyAngle 0.78539816
 % Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value
 % Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers
 MinimumLayerThickness 0
-% Maximum number of fracture segments that can be generated per gridblock
+% Maximum number of fracture patches that can be generated per gridblock
 % Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason
-MaxNoFractureSegments 1000
+MaxNoFracturePatches 1000
 % Allow fracture nucleation to be controlled probabilistically, if the number of fractures nucleating per timestep is less than the specified value - this will allow fractures to nucleate when gridblocks are small
 % Set to 0 to disable probabilistic fracture nucleation
 % Set to -1 for automatic (probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active; if SearchNeighbouringGridblocks is set to automatic, this will be determined independently for each gridblock based on the gridblock geometry)

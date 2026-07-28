@@ -1878,6 +1878,17 @@ namespace DFMGenerator_DataTransfer
         /// <returns>Return code: 0 if the operation was successful, 1 if the specified dimensions are invalid</returns>
         private int ResetGridGeometry(int NoICols_in, int NoJRows_in, int NoKLayers_in)
         {
+            // Recreate the list of fault names
+            faultNames = new List<string>();
+
+            // Recreate lists for floating point and integer input and output properties
+            // NB a new output stage must be created using CreateNewStage(StageName) before output property data can be written
+            floatingPointInputProperties = new List<GridPropertyArray<double>>();
+            integerInputProperties = new List<GridPropertyArray<int>>();
+            floatingPointOutputProperties = new List<List<GridPropertyArray<double>>>();
+            integerOutputProperties = new List<List<GridPropertyArray<int>>>();
+            stageNames = new List<string>();
+
             // If the specified dimensions are invalid return 1
             if ((NoICols_in < 1) || (NoJRows_in < 1) || (NoKLayers_in < 1))
                 return 1;
@@ -1894,17 +1905,6 @@ namespace DFMGenerator_DataTransfer
                 string arrayName = string.Format("CellFace_{0}", face);
                 cellFaces[face] = new GridPropertyArray<int>(arrayName, NoICols_in, NoJRows_in, NoKLayers_in, 0);
             }
-
-            // Recreate the list of fault names
-            faultNames = new List<string>();
-
-            // Recreate lists for floating point and integer input and output properties
-            // NB a new output stage must be created using CreateNewStage(StageName) before output property data can be written
-            floatingPointInputProperties = new List<GridPropertyArray<double>>();
-            integerInputProperties = new List<GridPropertyArray<int>>();
-            floatingPointOutputProperties = new List<List<GridPropertyArray<double>>>();
-            integerOutputProperties = new List<List<GridPropertyArray<int>>>();
-            stageNames = new List<string>();
 
             // Return 0
             return 0;
@@ -2420,12 +2420,12 @@ namespace DFMGenerator_DataTransfer
             // Recreate the grid and set the grid geometry using the data read from the specified GRDECL file
             // If there are errors recreating the grid, set the return code to 2
             if (BuildGrid(RawData) > 0)
-                returnCode = ShadowGridErrorStatus.ErrorBuildingGrid;
+                returnCode = (returnCode == ShadowGridErrorStatus.DataLoadedOK) ? ShadowGridErrorStatus.ErrorBuildingGrid : returnCode;
 
             // Populate the grid with property data read from the specified GRDECL file
             // If there are errors reading the property data, set the return code to 3
             if (PopulateProperties(RawData) > 0)
-                returnCode = ShadowGridErrorStatus.ErrorPopulatingProperties;
+                returnCode = (returnCode == ShadowGridErrorStatus.DataLoadedOK) ? ShadowGridErrorStatus.ErrorPopulatingProperties : returnCode;
 
             // Return the return code
             return returnCode;

@@ -471,20 +471,13 @@ namespace DFMGenerator_SharedCode
         {
             // Set the inverse stress shadow volume (1 - Psi), i.e. cumulative probability that an initial microfracture in this gridblock is still active, at end of timestep M
             // NB this is set here rather than in the SetMacrofractureDensityData, because the value of psi will be controlled by the cumulative macrofracture spacing distribution function if the stress shadow width varies through time
-            if (theta_in < 0)
-                theta_in = 0;
-            if (theta_in > 1)
-                theta_in = 1;
+            if ((theta_in >= 0) && (theta_in <= 1))
             theta_M = theta_in;
             // Set the clear zone volume (1 - Chi), i.e. cumulative probability that a macrofracture nucleating in this gridblock does not lie in a stress shadow exclusion zone, at end of timestep M
-            if (theta_dashed_in < 0)
-                theta_dashed_in = 0;
-            if (theta_dashed_in > 1)
-                theta_dashed_in = 1;
+            if ((theta_dashed_in >= 0) && (theta_dashed_in <= 1))
             theta_dashed_M = theta_dashed_in;
             // Set the rate of increase of exclusion zone volume when adding new macrofractures from this dipset, i.e. the gradient of (1 - theta_dashed) / Total_MFP32
-            if (dChi_dMFP32_M_in < 0)
-                dChi_dMFP32_M_in = 0;
+            if (dChi_dMFP32_M_in >= 0)
             dChi_dMFP32_M = dChi_dMFP32_M_in;
         }
         /// <summary>

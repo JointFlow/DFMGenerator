@@ -28,7 +28,7 @@ namespace DFMGenerator_GRDECL
             if (args.Length > 0)
                 inputfile_name = args[0];
             else
-                inputfile_name = "DFMGenerator_configuration.txt";
+                inputfile_name = "DFMGenerator_GRDECL_configuration.txt";
             if (!File.Exists(inputfile_name))
             {
                 StreamWriter input_file = new StreamWriter(inputfile_name);
@@ -972,8 +972,8 @@ namespace DFMGenerator_GRDECL
             // These are useful for modelling fractures in thick geobodies such as igneous plutons
             // NB Unconfined fracture sets are not subdivided into dipsets; unconfined fractures with the same strike but different dips are counted as different sets
             // The total number of unconfined fracture sets generates will therefore be given by NoUnconfinedFractureStrikeSets * NoUnconfinedFractureDipSets
-            int NoUnconfinedFractureStrikeSets = 6;// 0;
-            int NoUnconfinedFractureDipSets = 3;// 0;
+            int NoUnconfinedFractureStrikeSets = 0;
+            int NoUnconfinedFractureDipSets = 0;
             int NoUnconfinedFractureSets = 0;
             List<string> UnconfinedFractureSetNames = new List<string>();
             // Number of rays comprising each unconfined fracture

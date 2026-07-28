@@ -5347,7 +5347,7 @@ namespace DFMGenerator_SharedCode
             foreach (LayerBoundFractureSet fs in LayerBoundFractureSets)
                 currentNoFracturePatches += fs.LocalDFNMicrofractures.Count;
             int maxNewFracturePatches = DFNControl.MaxNoFracturePatches - currentNoFracturePatches;
-            bool limitNewFractures = (maxNewFracturePatches > 0);
+            bool limitNewFractures = (DFNControl.MaxNoFracturePatches > 0);
             // If probabilisticFractureNucleationLimit is set to -1 then it should be set to automatic
             // In automatic mode, probabilistic fracture nucleation will be activated whenever searching neighbouring gridblocks is also active 
             if (probabilisticFractureNucleationLimit < 0)
