@@ -903,6 +903,10 @@ namespace DFMGenerator_SharedCode
 
                                 for (int traceSegment2No = 0; traceSegment2No < traceComponent2.NoSegments; traceSegment2No++)
                                 {
+                                    // Check if trace segment 1 still exists; it may have been removed due to splitting component 1, in which case we can move on
+                                    if (traceSegment1No >= traceComponent1.NoSegments)
+                                        continue;
+
                                     PointXYZ traceSegment2StartPoint = traceComponent2.Nodes[traceSegment2No];
                                     PointXYZ traceSegment2EndPoint = traceComponent2.Nodes[traceSegment2No + 1];
 
@@ -1053,8 +1057,11 @@ namespace DFMGenerator_SharedCode
                                     {
                                         trace1.TraceComponents.Add(newTrace1Component);
                                         // Update the start and end points of TraceSegment1 - these will have changed
-                                        traceSegment1StartPoint = traceComponent1.Nodes[traceSegment1No];
-                                        traceSegment1EndPoint = traceComponent1.Nodes[traceSegment1No + 1];
+                                        if (traceSegment1No < traceComponent1.NoSegments)
+                                        {
+                                            traceSegment1StartPoint = traceComponent1.Nodes[traceSegment1No];
+                                            traceSegment1EndPoint = traceComponent1.Nodes[traceSegment1No + 1];
+                                        }
                                     }
                                     if (!traceSegment2StartPointIsEndNode && !traceSegment2EndPointIsEndNode)
                                     {

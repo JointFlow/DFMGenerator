@@ -1552,7 +1552,7 @@ namespace DFMGenerator_GRDECL
                         case "AverageMechanicalPropertyData":
                             AverageMechanicalPropertyData = (line_split[1] == "true");
                             break;
-  
+
                         // Cleavages: Cleavage planes reduce the crack surface energy and/or friction coefficient on fractures parallel to the specified cleavage orientation");
                         // Multiple cleavage planes can be defined; for each one, the crack surface energy and/or friction coefficient on the fracture set with the closest orientation (within the specified MaxConsistencyAngle) will be modified accordingly");
                         // If there is no fracture set within the specified MaxConsistencyAngle, the cleavage plane will have no effect");
@@ -5064,7 +5064,7 @@ namespace DFMGenerator_GRDECL
 
 #if DEBUG_FRAC_INPUT
             progressReporter.OutputMessage("");
-            progressReporter.OutputMessage(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFractureSegments, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
+            progressReporter.OutputMessage(string.Format("DFNGenerationControl dfn_control = new DFNGenerationControl({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, DFNFileType.{14}, {15}, {16}, {18}, {18}, {19}, {20}, {21}, TimeUnits.{22});", GenerateExplicitDFN, MinExplicitMicrofractureRadius, MinMacrofractureLength, MinUnconfinedFractureRadius, -1, MaxNoFracturePatches, MinimumLayerThickness, MaxConsistencyAngle, CropAtBoundary, LinkStressShadows, Number_uF_Points, NoIntermediateOutputs, IntermediateOutputIntervalControl, WriteDFNFiles, OutputDFNFileType, OutputCentrepoints, ProbabilisticFractureNucleationLimit, SearchAdjacentGridblocks, PropagateFracturesInNucleationOrder, MinStressShadowDeactivationRatio, MinIntersectionDeactivationRatio, LargeFractureMinimumRadius, ModelTimeUnits));
 #endif
 
             // If the intermediate stage DFMs are set to be output at specified times, create a list of deformation episode end times in SI units for this purpose and supply it to the DFNGenerationControl object
@@ -5214,8 +5214,8 @@ namespace DFMGenerator_GRDECL
                         SourceDataGrid.CreateNewStage(outputLabel);
 
 #if DEBUG_FRAC_OUTPUT
-                        progressReporter.OutputMessage("");
-                        progressReporter.OutputMessage("Stage: " + outputLabel);
+                    progressReporter.OutputMessage("");
+                    progressReporter.OutputMessage("Stage: " + outputLabel);
 #endif
 
                         // If required, loop through each fracture set to output data
@@ -5305,9 +5305,9 @@ namespace DFMGenerator_GRDECL
                                                     bool writeMacrofractureData = PopulateEmptyGridblocks || (cell_MF_P32_tot > 0);
 
 #if DEBUG_FRAC_OUTPUT
-                                                    progressReporter.OutputMessage("");
-                                                    progressReporter.OutputMessage(string.Format("Base data: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
-                                                    progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                                progressReporter.OutputMessage("");
+                                                progressReporter.OutputMessage(string.Format("Base data: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
+                                                progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                     // Loop through all the shadow grid cells in the gridblock
@@ -5318,7 +5318,7 @@ namespace DFMGenerator_GRDECL
                                                                 for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                                 {
 #if DEBUG_FRAC_OUTPUT
-                                                                    progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                                progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                                     // Write data to shadow grid
@@ -5432,9 +5432,9 @@ namespace DFMGenerator_GRDECL
                                                     }
 
 #if DEBUG_FRAC_OUTPUT
-                                                    progressReporter.OutputMessage("");
-                                                    progressReporter.OutputMessage(string.Format("Connectivity data: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
-                                                    progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                                progressReporter.OutputMessage("");
+                                                progressReporter.OutputMessage(string.Format("Connectivity data: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
+                                                progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                     // Loop through all the shadow grid cells in the gridblock
@@ -5445,7 +5445,7 @@ namespace DFMGenerator_GRDECL
                                                                 for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                                 {
 #if DEBUG_FRAC_OUTPUT
-                                                                    progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                                progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                                     // Write data to shadow grid
@@ -5529,9 +5529,9 @@ namespace DFMGenerator_GRDECL
                                                     double SlipTendency = fds.PresentDaySlipTendency;
 
 #if DEBUG_FRAC_OUTPUT
-                                                    progressReporter.OutputMessage("");
-                                                    progressReporter.OutputMessage(string.Format("Reactivation potential: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
-                                                    progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                                progressReporter.OutputMessage("");
+                                                progressReporter.OutputMessage(string.Format("Reactivation potential: Set {0} dipset {1}", LayerBoundFractureSetNo, DipSetNo));
+                                                progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                     // Loop through all the shadow grid cells in the gridblock
@@ -5542,7 +5542,7 @@ namespace DFMGenerator_GRDECL
                                                                 for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                                 {
 #if DEBUG_FRAC_OUTPUT
-                                                                    progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                                progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                                     // Write data to shadow grid
@@ -5647,9 +5647,9 @@ namespace DFMGenerator_GRDECL
                                                 bool writeUCFData = PopulateEmptyGridblocks || (cell_UCF_P32_tot > 0);
 
 #if DEBUG_FRAC_OUTPUT
-                                                progressReporter.OutputMessage("");
-                                                progressReporter.OutputMessage(string.Format("Base data: Set {0}", UnconfinedFractureSetNo));
-                                                progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                            progressReporter.OutputMessage("");
+                                            progressReporter.OutputMessage(string.Format("Base data: Set {0}", UnconfinedFractureSetNo));
+                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                 // Loop through all the shadow grid cells in the gridblock
@@ -5660,7 +5660,7 @@ namespace DFMGenerator_GRDECL
                                                             for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                             {
 #if DEBUG_FRAC_OUTPUT
-                                                                progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                                 // Write data to shadow grid
@@ -5780,9 +5780,9 @@ namespace DFMGenerator_GRDECL
                                                 }
 
 #if DEBUG_FRAC_OUTPUT
-                                                progressReporter.OutputMessage("");
-                                                progressReporter.OutputMessage(string.Format("Connectivity data: Set {0}", UnconfinedFractureSetNo));
-                                                progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                            progressReporter.OutputMessage("");
+                                            progressReporter.OutputMessage(string.Format("Connectivity data: Set {0}", UnconfinedFractureSetNo));
+                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                 // Loop through all the shadow grid cells in the gridblock
@@ -5793,7 +5793,7 @@ namespace DFMGenerator_GRDECL
                                                             for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                             {
 #if DEBUG_FRAC_OUTPUT
-                                                                progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                                 // Write data to shadow grid
@@ -5877,9 +5877,9 @@ namespace DFMGenerator_GRDECL
                                                 double SlipTendency = ufs.PresentDaySlipTendency;
 
 #if DEBUG_FRAC_OUTPUT
-                                                progressReporter.OutputMessage("");
-                                                progressReporter.OutputMessage(string.Format("Reactivation potential: Unconfined set {0}", UnconfinedFractureSetNo));
-                                                progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                            progressReporter.OutputMessage("");
+                                            progressReporter.OutputMessage(string.Format("Reactivation potential: Unconfined set {0}", UnconfinedFractureSetNo));
+                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                                 // Loop through all the shadow grid cells in the gridblock
@@ -5890,7 +5890,7 @@ namespace DFMGenerator_GRDECL
                                                             for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                             {
 #if DEBUG_FRAC_OUTPUT
-                                                                progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                                 // Write data to shadow grid
@@ -6065,9 +6065,9 @@ namespace DFMGenerator_GRDECL
                                             }
 
 #if DEBUG_FRAC_OUTPUT
-                                            progressReporter.OutputMessage("");
-                                            progressReporter.OutputMessage("Connectivity data: all layer-bound sets");
-                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        progressReporter.OutputMessage("");
+                                        progressReporter.OutputMessage("Connectivity data: all layer-bound sets");
+                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                             // Loop through all the shadow grid cells in the gridblock
@@ -6078,7 +6078,7 @@ namespace DFMGenerator_GRDECL
                                                         for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
-                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                             // Write data to shadow grid
@@ -6261,9 +6261,9 @@ namespace DFMGenerator_GRDECL
                                             }
 
 #if DEBUG_FRAC_OUTPUT
-                                            progressReporter.OutputMessage("");
-                                            progressReporter.OutputMessage("Connectivity data: all unconfined sets");
-                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        progressReporter.OutputMessage("");
+                                        progressReporter.OutputMessage("Connectivity data: all unconfined sets");
+                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                             // Loop through all the shadow grid cells in the gridblock
@@ -6274,7 +6274,7 @@ namespace DFMGenerator_GRDECL
                                                         for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
-                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                             // Write data to shadow grid
@@ -6368,9 +6368,9 @@ namespace DFMGenerator_GRDECL
                                             }
 
 #if DEBUG_FRAC_OUTPUT
-                                            progressReporter.OutputMessage("");
-                                            progressReporter.OutputMessage("End time data: all sets");
-                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        progressReporter.OutputMessage("");
+                                        progressReporter.OutputMessage("End time data: all sets");
+                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                             // Loop through all the shadow grid cells in the gridblock
@@ -6381,7 +6381,7 @@ namespace DFMGenerator_GRDECL
                                                         for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
-                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                             // Write data to shadow grid
@@ -6499,9 +6499,9 @@ namespace DFMGenerator_GRDECL
                                             bool writeMacrofractureData = PopulateEmptyGridblocks || (MF_P32_value > 0);
 
 #if DEBUG_FRAC_OUTPUT
-                                            progressReporter.OutputMessage("");
-                                            progressReporter.OutputMessage("Porosity data: all sets");
-                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        progressReporter.OutputMessage("");
+                                        progressReporter.OutputMessage("Porosity data: all sets");
+                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                             // Loop through all the shadow grid cells in the gridblock
@@ -6512,7 +6512,7 @@ namespace DFMGenerator_GRDECL
                                                         for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
-                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                             // Write data to shadow grid
@@ -6603,9 +6603,9 @@ namespace DFMGenerator_GRDECL
                                             bool writeUnconfinedFractureData = PopulateEmptyGridblocks || (UCF_P32_value > 0);
 
 #if DEBUG_FRAC_OUTPUT
-                                            progressReporter.OutputMessage("");
-                                            progressReporter.OutputMessage("Porosity data: all sets");
-                                            progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                        progressReporter.OutputMessage("");
+                                        progressReporter.OutputMessage("Porosity data: all sets");
+                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                             // Loop through all the shadow grid cells in the gridblock
@@ -6616,7 +6616,7 @@ namespace DFMGenerator_GRDECL
                                                         for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                         {
 #if DEBUG_FRAC_OUTPUT
-                                                            progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                             // Write data to shadow grid
@@ -6803,9 +6803,9 @@ namespace DFMGenerator_GRDECL
                                         }
 
 #if DEBUG_FRAC_OUTPUT
-                                        progressReporter.OutputMessage("");
-                                        progressReporter.OutputMessage("Permability tensor: all sets");
-                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                    progressReporter.OutputMessage("");
+                                    progressReporter.OutputMessage("Permability tensor: all sets");
+                                    progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                         // Loop through all the shadow grid cells in the gridblock
@@ -6818,7 +6818,7 @@ namespace DFMGenerator_GRDECL
                                                     for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
 #if DEBUG_FRAC_OUTPUT
-                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                    progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                         // Write tensor component data to shadow grid
@@ -6908,9 +6908,9 @@ namespace DFMGenerator_GRDECL
                                         Tensor4_2Sx2S gridblockStiffnessTensor = gridblockComplianceTensor.Inverse();
 
 #if DEBUG_FRAC_OUTPUT
-                                        progressReporter.OutputMessage("");
-                                        progressReporter.OutputMessage("Stiffness and compliance tensors: all sets");
-                                        progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
+                                    progressReporter.OutputMessage("");
+                                    progressReporter.OutputMessage("Stiffness and compliance tensors: all sets");
+                                    progressReporter.OutputMessage(string.Format("FractureGrid gridblock {0}, {1}, {2}", FractureGrid_ColNo, FractureGrid_RowNo, FractureGrid_LayerNo));
 #endif
 
                                         // Loop through all the shadow grid cells in the gridblock
@@ -6924,7 +6924,7 @@ namespace DFMGenerator_GRDECL
                                                     for (int ShadowGrid_K = ShadowGrid_HighestCellK; ShadowGrid_K <= ShadowGrid_LowestCellK; ShadowGrid_K++)
                                                     {
 #if DEBUG_FRAC_OUTPUT
-                                                        progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
+                                                    progressReporter.OutputMessage(string.Format("ShadowGrid cell {0}, {1}, {2}", ShadowGrid_I, ShadowGrid_J, ShadowGrid_K));
 #endif
 
                                                         // Write tensor component data to shadow grid
@@ -6965,10 +6965,15 @@ namespace DFMGenerator_GRDECL
                         {
                             SourceDataGrid.WriteGRDECLFile(ModelName, outputFolderPath, progressReporter, stageNumber, ShadowGrid_TopLayerK, ShadowGrid_BottomLayerK, IncludeGridGeometryInGRDECLFiles, PopulateEmptyGridblocks);
                         }
+                }
 
-                    // Write the explicit DFNs to a series of FAB output files, one for each stage in the fracture growth
-                    if (WriteFABFiles)
-                        SourceDataGrid.WriteFABFiles(ModelName, outputFolderPath, ModelGrid, progressReporter, (MinExplicitMicrofractureRadius > 0), true, true);
+                // Write the explicit DFNs to a series of FAB output files, one for each stage in the fracture growth
+                if (WriteFABFiles)
+                {
+                    // Write explicit DFN data to FAB files
+                    progressReporter.OutputMessage("Write explicit DFN");
+
+                    SourceDataGrid.WriteFABFiles(ModelName, outputFolderPath, ModelGrid, progressReporter, (MinExplicitMicrofractureRadius > 0), true, true);
                 }
             }
 

@@ -620,19 +620,19 @@ namespace DFMGenerator_Standalone
             // Main properties
 #if TESTUCF
             // Grid size
-            int NoCols = 1;// 3;
-            int NoRows = 1;// 3;
-            int NoLayers = 1;// 3;
+            int NoCols = 3;
+            int NoRows = 3;
+            int NoLayers = 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 100;// 1000;
-            double Length_NS = 100;// 1000;
-            double LayerThickness = 100;// 1000;
+            double Width_EW = 1000;
+            double Length_NS = 1000;
+            double LayerThickness = 1000;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial of the top surface in metres, positive downwards
-            double Depth = 10;// 1000;
+            double Depth = 1000;
 #else
             // Grid size
             int NoCols = 3;
@@ -664,7 +664,7 @@ namespace DFMGenerator_Standalone
             double EhminAzi = 0;
             // Set VariableStrainOrientation false to have N-S minimum strain orientatation in all cells
             // Set VariableStrainOrientation true to have laterally variable strain orientation controlled by EhminAzi and EhminCurvature
-            bool VariableStrainOrientation = true;// false;
+            bool VariableStrainOrientation = false;
             double EhminCurvature = Math.PI / 16;
             if (VariableStrainOrientation)
                 EhminAzi = Math.PI / 4;
@@ -797,7 +797,7 @@ namespace DFMGenerator_Standalone
             InitialFluidPressure_list.Add(19620000);
             InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
             BiazimuthalConjugate = false;*/
-            EhminAzi_list.Add(EhminAzi);
+            //EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
             EhmaxRate_list.Add(EhmaxRate);
             AppliedOverpressureRate_list.Add(0);
@@ -805,13 +805,29 @@ namespace DFMGenerator_Standalone
             AppliedUpliftRate_list.Add(AppliedUpliftRate);
             StressArchingFactor_list.Add(StressArchingFactor);
             ModelTimeUnits = TimeUnits.ma;
-            DeformationEpisodeDuration_list.Add(10);
+            DeformationEpisodeDuration_list.Add(1);
             //AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
-            AbsoluteStressRate_list.Add(new Tensor2S(16500, 1366000, 969500, -962500, 19900, -8600));
+            AbsoluteStressRate_list.Add(new Tensor2S(0, 0, 0, 0, 0, 0));
             //InitialFluidPressure_list.Add(19620000);
             InitialFluidPressure_list.Add(0);
             //InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
-            InitialAbsoluteStress_list.Add(new Tensor2S(6047000, 5188000, 13369000, -354000, 674000, -211000));
+            InitialAbsoluteStress_list.Add(new Tensor2S(16304000, 16778000, 43412000, -408000, 2154000, -459000));
+            BiazimuthalConjugate = false;
+            //EhminAzi_list.Add(EhminAzi);
+            EhminRate_list.Add(EhminRate);
+            EhmaxRate_list.Add(EhmaxRate);
+            AppliedOverpressureRate_list.Add(0);
+            AppliedTemperatureChange_list.Add(AppliedTemperatureChange);
+            AppliedUpliftRate_list.Add(AppliedUpliftRate);
+            StressArchingFactor_list.Add(StressArchingFactor);
+            ModelTimeUnits = TimeUnits.ma;
+            DeformationEpisodeDuration_list.Add(5);
+            //AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
+            AbsoluteStressRate_list.Add(new Tensor2S(-220000, 431600, -353800, -751000, -14600, -101200));
+            //InitialFluidPressure_list.Add(19620000);
+            //InitialFluidPressure_list.Add(0);
+            //InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
+            //InitialAbsoluteStress_list.Add(new Tensor2S(16304000, 16778000, 43412000, -408000, 2154000, -459000));
             BiazimuthalConjugate = false;
 #else
             // Add a deformation episode with uniaxial extension of -0.001/ma over 1ma
@@ -830,7 +846,7 @@ namespace DFMGenerator_Standalone
 #endif
 
             // Mechanical properties
-            double YoungsMod = 1E+10;
+            double YoungsMod = 2.5E+10;// 1E+10;
             // Set VariableYoungsMod true to have laterally variable Young's Modulus
             bool VariableYoungsMod = false;
             double VariableYoungsModSmoothingFactor = 2;
@@ -1117,13 +1133,13 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 16;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 1;// -1;
+            double MinUnconfinedFractureRadius = 500;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 50;// -1;
+            double MaxUnconfinedFractureRadius = 10000;// -1;
             // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
             // If set to -1, there will be no limit on effective fracture radius
-            double MaxEffectiveUnconfinedFractureRadius = 5;
+            double MaxEffectiveUnconfinedFractureRadius = -1;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:
@@ -1147,7 +1163,7 @@ namespace DFMGenerator_Standalone
             double MaxTimestepUCFP33Increase = 0.01;
             // Maximum proportional increase in the unconfined fracture ray length in each timestep (controls speed and accuracy of calculation)
             // Set to -1 for no limit 
-            double MaxTimestepRadiusIncrease = 0.2;// 0.05;//
+            double MaxTimestepRadiusIncrease = 0.2;
             // Maximum proportional increase in the radius of the unconfined fractures before checking for fracture deactivation (controls number of implicit fracture population datapoints generated)
             double Max_R_DeactivationCheck_interval = 0.2;
             // Minimum activation probability for unconfined fractures; if the activation probability drops below this, the specified proportion of fractures will be deactivated, creating a new implicit fracture population datapoint

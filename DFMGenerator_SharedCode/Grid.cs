@@ -1234,18 +1234,28 @@ namespace DFMGenerator_SharedCode
                     // At present this is only implemented for unconfined fractures
                     if (latestDFN.GlobalDFNUnconfinedFractures.Count > 0)
                     {
-                        // Create the fracture network and add it to the list
-                        Current2DFractureNetwork = new FractureNetwork_2D(latestDFN, this, depthOfSection);
-                        FractureNetworkGrowthStages.Add(Current2DFractureNetwork);
+                        try
+                        {
+                            // Create the fracture network and add it to the list
+                            Current2DFractureNetwork = new FractureNetwork_2D(latestDFN, this, depthOfSection);
+                            FractureNetworkGrowthStages.Add(Current2DFractureNetwork);
 
-                        // Write the fracture trace geometry data (location and nodality of each of the nodes in each trace component) to file
-                        Current2DFractureNetwork.WriteTraceGeometryToFile(outputLabel);
+                            // Write the fracture trace geometry data (location and nodality of each of the nodes in each trace component) to file
+                            Current2DFractureNetwork.WriteTraceGeometryToFile(outputLabel);
 
-                        // Write the fracture trace component length and connectivity data(trace component length, mean azimuth, nodality and list of connected fracture traces at the trace component endpoints) to a text file
-                        Current2DFractureNetwork.WriteTraceComponentDataToFile(outputLabel);
+                            // Write the fracture trace component length and connectivity data(trace component length, mean azimuth, nodality and list of connected fracture traces at the trace component endpoints) to a text file
+                            Current2DFractureNetwork.WriteTraceComponentDataToFile(outputLabel);
 
-                        // Write the fracture trace length and connectivity data (trace length, number of connected fracture traces and list of connected fracture traces at the trace component endpoints) to a text file
-                        Current2DFractureNetwork.WriteTraceDataToFile(outputLabel);
+                            // Write the fracture trace length and connectivity data (trace length, number of connected fracture traces and list of connected fracture traces at the trace component endpoints) to a text file
+                            Current2DFractureNetwork.WriteTraceDataToFile(outputLabel);
+                        }
+                        catch (Exception e)
+                        {
+                            progressReporter.OutputMessage(string.Format("Error in creating 2D fracture trace network for stage {0}", nextStage));
+                            progressReporter.OutputMessage(string.Format("Error: {0}", e.Message));
+                            //progressReporter.OutputMessage(e.StackTrace);
+                            ExplicitCalculationException++;
+                        }
                     }
                 }
 

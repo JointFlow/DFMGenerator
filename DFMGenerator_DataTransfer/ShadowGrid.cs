@@ -224,6 +224,35 @@ namespace DFMGenerator_DataTransfer
                 return default(T);
             }
         }
+        /// <summary>
+        /// Get a string representing the values of a specified floating point property for all the cells in a specified stratigraphic interval of the grid
+        /// </summary>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <returns>A string representing the values of the specified property for all the cells in a specified stratigraphic interval of the grid in GRDECL format</returns>
+        public string GetPropertyDataAsString(int TopLayerK, int BottomLayerK)
+        {
+            // Get the array size
+            int NoICols = values.GetLength(0);
+            int NoJRows = values.GetLength(1);
+
+            // Create a string for the property
+            string propertyData = string.Empty;
+
+            // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
+            for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+            {
+                for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
+                {
+                    for (int cellI = 0; cellI < NoICols; cellI++)
+                    {
+                        propertyData += string.Format(" {0}", values[cellI, cellJ, cellK].ToString());
+                    }
+                    propertyData += "\n ";
+                }
+            }
+            return propertyData;
+        }
 
         // Constructors
         /// <summary>
@@ -303,7 +332,8 @@ namespace DFMGenerator_DataTransfer
         // I increases towards E
         // J increases towards N
         // K increases downwards
-        // NB J coordinate direction is the opposite to that in most GRDECL files
+        // Orientation of the axes may vary in GRDECL files so we use flags to indicate which axes should be reversed when reading from or writing to GRDECL files
+        // In most GRDECL files the I and K axes are the same but the J axis is reversed; this will be the default
         /// <summary>
         /// Number of columns (I coordinate) in the grid
         /// </summary>
@@ -559,6 +589,10 @@ namespace DFMGenerator_DataTransfer
         /// </summary>
         private string OutputDataSource { get; set; }
         /// <summary>
+        /// Set the format for export of floating point property values; G4 will switch between decimal and scientific format as appropriate, and output 4 significant figures
+        /// </summary>
+        private const string ExportFormatForDouble = "G4";
+        /// <summary>
         /// Get a string representing the map unit data in GRDECL format
         /// </summary>
         /// <returns>A string representing the map unit data in GRDECL format</returns>
@@ -578,7 +612,7 @@ namespace DFMGenerator_DataTransfer
             string axisData = "";
             PointXYZ gridOrigin = gridPillars[0, 0].GetCellCornerpoint(0, GridblockCornerpoint.NWTop);
             axisData += string.Format("MAPAXES\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
-            axisData += string.Format("  {0} {1} {2} {3} {4} {5} {6}\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.X, gridOrigin.X + 1000, gridOrigin.Y, EndBlockIndicator);
+            axisData += string.Format("  {0} {1} {2} {3} {4} {5} {6}\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.Y, gridOrigin.X + 1000, gridOrigin.Y, EndBlockIndicator);
             return axisData;
         }
         /// <summary>
@@ -856,7 +890,7 @@ namespace DFMGenerator_DataTransfer
                 {
                     for (int cellI = 0; cellI < NoICols; cellI++)
                     {
-                        propertyData += string.Format(" {0}", Property.GetPropertyValue(cellI, cellJ, cellK));
+                        propertyData += string.Format(" {0}", Property.GetPropertyValue(cellI, cellJ, cellK).ToString(ExportFormatForDouble));
                     }
                     propertyData += "\n ";
                 }
@@ -904,7 +938,7 @@ namespace DFMGenerator_DataTransfer
                 {
                     for (int cellI = 0; cellI < NoICols; cellI++)
                     {
-                        propertyData += string.Format(" {0}", Property.GetPropertyValue(cellI, cellJ, cellK));
+                        propertyData += string.Format(" {0}", Property.GetPropertyValue(cellI, cellJ, cellK).ToString());
                     }
                     propertyData += "\n ";
                 }
@@ -995,9 +1029,17 @@ namespace DFMGenerator_DataTransfer
 
                     // Write the property data for all properties in the specified output stage to the output file
                     foreach (GridPropertyArray<double> nextProperty in floatingPointPropertiesToOutput)
-                        outputFile.Write(GetPropertyDataInGRDECLFormat(nextProperty, TopLayerK, BottomLayerK, OutputDataSource));
+                    {
+                        string propertyData = GetPropertyDataInGRDECLFormat(nextProperty, TopLayerK, BottomLayerK, OutputDataSource);
+                        outputFile.Write(propertyData);
+                        progressReporter.OutputMessage(string.Format("Written data for property {0}", nextProperty.PropertyName));
+                    }
                     foreach (GridPropertyArray<int> nextProperty in integerPropertiesToOutput)
-                        outputFile.Write(GetPropertyDataInGRDECLFormat(nextProperty, TopLayerK, BottomLayerK, OutputDataSource));
+                    {
+                        string propertyData = GetPropertyDataInGRDECLFormat(nextProperty, TopLayerK, BottomLayerK, OutputDataSource);
+                        outputFile.Write(propertyData);
+                        progressReporter.OutputMessage(string.Format("Written data for property {0}", nextProperty.PropertyName));
+                    }
 
                     // Close the output file
                     outputFile.Close();

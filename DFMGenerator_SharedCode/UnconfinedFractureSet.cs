@@ -3079,6 +3079,9 @@ namespace DFMGenerator_SharedCode
                         double nucleationWtime = bis2 ? -(Math.Log(r0) - cumGammaRmin_Nminus1) : -beta * (Math.Pow(r0, 1 / beta) - cumGammaRmin_Nminus1);
 
                         // Convert the weighted time into a real time
+                        // NB if the inverse stress shadow volume theta has decreased compared to the previous timestep, which is possible if a change in the stress tensor causes stress shadow widths to decrease, 
+                        // then the weighted time until the next datapoint will nucleate could be negative (i.e. the next datapoint has already nucleated)
+                        // In this case we will insert a zero length timestep
                         if (nucleationWtime > 0)
                         {
                             // Convert the weighted time to real time
@@ -3101,6 +3104,12 @@ namespace DFMGenerator_SharedCode
                                 setVto0 = true;
                             }
 
+                            if (timeTodP33max > timeToNextDatapoint)
+                                timeTodP33max = timeToNextDatapoint;
+                        }
+                        else if (!double.IsNaN(nucleationWtime))
+                        {
+                            double timeToNextDatapoint = 0;
                             if (timeTodP33max > timeToNextDatapoint)
                                 timeTodP33max = timeToNextDatapoint;
                         }
