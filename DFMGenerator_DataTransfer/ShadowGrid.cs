@@ -327,6 +327,78 @@ namespace DFMGenerator_DataTransfer
         /// </summary>
         public ShadowGridErrorStatus ErrorStatus { get; private set; }
 
+        // Coordinate system for import and export
+        // Coordinates can either be local or global
+        // If global, the imported pillar coordinates are assumed to be true coordinates, and will be saved in the Shadow Grid as they appear in the import file; they will also be exported in the same format
+        // If local, the imported pillar coordinates are assumed to be relative to a specified origina and axes; they will therefore need to be translated and rotated to obtain true coordinates before they are saved in the shadow grid, and will need to be converted back to local coordinates before they are exported
+        // NB In a local coordinate system, only the X and Y coordinates are transformed, as the Z coordinates are assumed to be always global
+        /// <summary>
+        /// Flag to indicate whether coordinates should be improted or exported as global coordinates (no conversion) or local coordinates (translated and rotated to account for local origin and axis orientations)
+        /// </summary>
+        private bool UseLocalCoordinates { get { return !(CoordinateOrigin is null) && !(XAxis is null) && !(YAxis is null); } }
+        /// <summary>
+        /// Origin for the local coordinate system
+        /// </summary>
+        private PointXYZ CoordinateOrigin { get; set; }
+        /// <summary>
+        /// X axis for the local coordinate system
+        /// </summary>
+        private VectorXYZ XAxis { get; set; }
+        /// <summary>
+        /// Y axis for the local coordinate system
+        /// </summary>
+        private VectorXYZ YAxis { get; set; }
+        /// <summary>
+        /// Convert a point in local coordinates to a point in global coordinates
+        /// </summary>
+        /// <param name="PointInLocalCoordinates">A point with coordinates relative to the local coordinate origin and local X and Y axes</param>
+        /// <returns>A point in true (global) coordinates</returns>
+        private PointXYZ GetPointInGlobalCoordinates(PointXYZ PointInLocalCoordinates)
+        {
+            // Check if a local coordinate system has been defined; if not, return the copy of the input point without conversion
+            if (!UseLocalCoordinates)
+                return new PointXYZ(PointInLocalCoordinates);
+
+            // Create a new point at the coordinate system origin, but with the Z coordinate of the input point
+            PointXYZ pointInGlobalCoordinates = new PointXYZ(CoordinateOrigin.X, CoordinateOrigin.Y, PointInLocalCoordinates.Z);
+            // Move the new point along the local X and Y axes based on the X and Y coordinates of the input point 
+            pointInGlobalCoordinates.AddVector(PointInLocalCoordinates.X * XAxis);
+            pointInGlobalCoordinates.AddVector(PointInLocalCoordinates.Y * YAxis);
+
+            // Return the new point
+            return pointInGlobalCoordinates;
+        }
+        /// <summary>
+        /// Convert a point in global coordinates to a point in local coordinates
+        /// </summary>
+        /// <param name="PointInGlobalCoordinates">A point in true (global) coordinates</param>
+        /// <returns>A point with coordinates relative to the local coordinate origin and local X and Y axes</returns>
+        private PointXYZ GetPointInLocalCoordinates(PointXYZ PointInGlobalCoordinates)
+        {
+            // Check if a local coordinate system has been defined; if not, return the copy of the input point without conversion
+            if (!UseLocalCoordinates)
+                return new PointXYZ(PointInGlobalCoordinates);
+
+            // Get the coordinates of the point relative to the origin but in global axes - i.e. undo the translation representing the local origin
+            PointXYZ pointInLocalCoordinates = PointXYZ.subtractLocalMapOrigin(PointInGlobalCoordinates, CoordinateOrigin.X, CoordinateOrigin.Y);
+            // Calculate the sine and cosine of the local axes
+            // NB We assume that the local axis vectors have unit length
+            double cosXAxis = XAxis.Component(VectorComponents.X);
+            double sinXAxis = XAxis.Component(VectorComponents.Y);
+            double cosYAxis = YAxis.Component(VectorComponents.X);
+            double sinYAxis = YAxis.Component(VectorComponents.Y);
+            // Calculate the local X and Y coordinates - i.e. undo the rotation representing the local axes
+            double localX = (sinYAxis > cosYAxis) ? (pointInLocalCoordinates.X - (pointInLocalCoordinates.Y * (cosYAxis / sinYAxis))) / (cosXAxis - (sinXAxis * (cosYAxis / sinYAxis))) :
+                ((pointInLocalCoordinates.X * (sinYAxis / cosYAxis)) - pointInLocalCoordinates.Y) / ((cosXAxis * (sinYAxis / cosYAxis)) - sinXAxis);
+            double localY = (sinXAxis > cosXAxis) ? (pointInLocalCoordinates.X - (pointInLocalCoordinates.Y * (cosXAxis / sinXAxis))) / (cosYAxis - (sinYAxis * (cosXAxis / sinXAxis))) :
+                ((pointInLocalCoordinates.X * (sinXAxis / cosXAxis)) - pointInLocalCoordinates.Y) / ((cosYAxis * (sinXAxis / cosXAxis)) - sinYAxis);
+
+            // Update the local point and return it
+            pointInLocalCoordinates.X = localX;
+            pointInLocalCoordinates.Y = localY;
+            return pointInLocalCoordinates;
+        }
+
         // Grid geometry
         // Grid is zero-indexed from SWtop corner
         // I increases towards E
@@ -610,9 +682,20 @@ namespace DFMGenerator_DataTransfer
         private string GetMapAxesInGRDECLFormat()
         {
             string axisData = "";
-            PointXYZ gridOrigin = gridPillars[0, 0].GetCellCornerpoint(0, GridblockCornerpoint.NWTop);
             axisData += string.Format("MAPAXES\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
-            axisData += string.Format("  {0} {1} {2} {3} {4} {5} {6}\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.Y, gridOrigin.X + 1000, gridOrigin.Y, EndBlockIndicator);
+            if (UseLocalCoordinates)
+            {
+                PointXYZ XAxisTip = new PointXYZ(CoordinateOrigin);
+                XAxisTip.AddVector(1000 * XAxis);
+                PointXYZ YAxisTip = new PointXYZ(CoordinateOrigin);
+                YAxisTip.AddVector(1000 * YAxis);
+                axisData += string.Format("  {0} {1} {2} {3} {4} {5} {6}\n\n", YAxisTip.X, YAxisTip.Y + 1000, CoordinateOrigin.X, CoordinateOrigin.Y, XAxisTip.X + 1000, XAxisTip.Y, EndBlockIndicator);
+            }
+            else
+            {
+                PointXYZ gridOrigin = gridPillars[0, 0].GetCellCornerpoint(0, GridblockCornerpoint.NWTop);
+                axisData += string.Format("  {0} {1} {2} {3} {4} {5} {6}\n\n", gridOrigin.X, gridOrigin.Y + 1000, gridOrigin.X, gridOrigin.Y, gridOrigin.X + 1000, gridOrigin.Y, EndBlockIndicator);
+            }
             return axisData;
         }
         /// <summary>
@@ -671,8 +754,18 @@ namespace DFMGenerator_DataTransfer
             for (int pillarJ = NoJRows; pillarJ >= 0; pillarJ--)
                 for (int pillarI = 0; pillarI <= NoICols; pillarI++)
                 {
-                    PointXYZ PillarTop = gridPillars[pillarI, pillarJ].PillarTop;
-                    PointXYZ PillarBottom = gridPillars[pillarI, pillarJ].PillarBottom;
+                    PointXYZ PillarTop, PillarBottom;
+                    // If necessary, convert to local coordinates
+                    if (UseLocalCoordinates)
+                    {
+                        PillarTop = GetPointInLocalCoordinates(gridPillars[pillarI, pillarJ].PillarTop);
+                        PillarBottom = GetPointInLocalCoordinates(gridPillars[pillarI, pillarJ].PillarBottom);
+                    }
+                    else
+                    {
+                        PillarTop = gridPillars[pillarI, pillarJ].PillarTop;
+                        PillarBottom = gridPillars[pillarI, pillarJ].PillarBottom;
+                    }
                     pillarData += string.Format("  {0} {1} {2} {3} {4} {5}\n", PillarTop.X, PillarTop.Y, PillarTop.Depth, PillarBottom.X, PillarBottom.Y, PillarBottom.Depth);
                 }
             pillarData += string.Format("  {0}\n\n", EndBlockIndicator);
@@ -1952,6 +2045,34 @@ namespace DFMGenerator_DataTransfer
             return 0;
         }
         /// <summary>
+        /// Set the local coordinate origin and axes
+        /// </summary>
+        /// <param name="LocalAxisCoordinates">List of 6 global coordinates: [0][1] Global X and Y coordinates of the tip of the local Y axis; [2][3] Global X and Y coordinates of the local coordinate origin; [4][5] Global X and Y coordinates of the tip of the local X axis</param>
+        /// <returns></returns>
+        private int SetLocalCoordinateSystem(List<double> LocalAxisCoordinates)
+        {
+            // The coordinate origin is defined by the third and fourth numbers in the MAPAXES datablock
+            CoordinateOrigin = new PointXYZ(LocalAxisCoordinates[2], LocalAxisCoordinates[3], 0);
+            // The first two numbers represent the tip of the Y axis
+            PointXYZ YAxisTip = new PointXYZ(LocalAxisCoordinates[0], LocalAxisCoordinates[1], 0);
+            // The final two numbers represent the tip of the X axis
+            PointXYZ XAxisTip = new PointXYZ(LocalAxisCoordinates[4], LocalAxisCoordinates[5], 0);
+            // Calculate and normalise the axis vectors
+            XAxis = new VectorXYZ(CoordinateOrigin, XAxisTip);
+            XAxis.Length = 1;
+            YAxis = new VectorXYZ(CoordinateOrigin, YAxisTip);
+            YAxis.Length = 1;
+
+            // If the axis vectors are not defined, return error code 1
+            if (((float)XAxis.Length != 1f) || ((float)YAxis.Length != 1f))
+                return 1;
+            // If the axis vectors are not perpendicular, return error code 2
+            if ((float)(XAxis & YAxis) != 0f)
+                return 2;
+            else
+                return 0;
+        }
+        /// <summary>
         /// Rebuild the pillar array
         /// </summary>
         /// <param name="PillarData">List of coordinates for the ends of the pillars in the following order: Pillar[1,1] Top X,Y,Z Bottom X,Y,Z; Pillar[2,1] Top X,Y,Z Bottom X,Y,Z; ... Pillar[1,2] Top X,Y,Z Bottom X,Y,Z; ...</param>
@@ -1978,7 +2099,16 @@ namespace DFMGenerator_DataTransfer
                     // Check if any values are invalid; if so return error code 2
                     if (double.IsNaN(topX) || double.IsNaN(topY) || double.IsNaN(topZ))
                         return 2;
-                    PointXYZ newPillarTop = new PointXYZ(topX, topY, topZ);
+                    PointXYZ newPillarTop;
+                    // If necessary, convert to local coordinates
+                    if (UseLocalCoordinates)
+                    {
+                        newPillarTop = GetPointInGlobalCoordinates(new PointXYZ(topX, topY, topZ));
+                    }
+                    else
+                    {
+                        newPillarTop = new PointXYZ(topX, topY, topZ);
+                    }
 
                     // Get the coordinates for the top of the pillar
                     // NB since Z coordinates in GRDECL files are specified increasing downwards, they will need to be inverted to match the PointXYZ specification
@@ -1988,7 +2118,16 @@ namespace DFMGenerator_DataTransfer
                     // Check if any values are invalid; if so return error code 2
                     if (double.IsNaN(bottomX) || double.IsNaN(bottomY) || double.IsNaN(bottomZ))
                         return 2;
-                    PointXYZ newPillarBottom = new PointXYZ(bottomX, bottomY, bottomZ);
+                    PointXYZ newPillarBottom;
+                    // If necessary, convert to local coordinates
+                    if (UseLocalCoordinates)
+                    {
+                        newPillarBottom = GetPointInGlobalCoordinates(new PointXYZ(bottomX, bottomY, bottomZ));
+                    }
+                    else
+                    {
+                        newPillarBottom = new PointXYZ(bottomX, bottomY, bottomZ);
+                    }
 
                     //Create the new pillar object
                     gridPillars[pillarI, pillarJ] = new ShadowGridPillar(newPillarTop, newPillarBottom, NoKLayers);
@@ -2247,6 +2386,12 @@ namespace DFMGenerator_DataTransfer
             if (dimensions.NoDataValues < 3)
                 return 1;
             else if (ResetGridGeometry(dimensions.BlockData[0], dimensions.BlockData[1], dimensions.BlockData[2]) > 0)
+                return 1;
+
+            // Get the local coordinate origin and axes, if specified
+            GRDECLDataBlock<double> axes = ExtractFloatingPointBlockFromGRDECLData("MAPAXES", RawData, 6);
+            // If local coordinate origin and axis data cannot be found or is invalid, we will assume input data is specified in global coordinates and continue
+            if ((axes.NoDataValues == 6) && (SetLocalCoordinateSystem(axes.BlockData) > 0))
                 return 1;
 
             // Get the pillar geometry and rebuild the pillar grid

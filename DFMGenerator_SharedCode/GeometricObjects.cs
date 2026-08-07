@@ -714,6 +714,27 @@ namespace DFMGenerator_SharedCode
             else
                 return true;
         }
+        /// <summary>
+        /// Calculate the position of a point relative to an arbitrary local origin; this will subtract the coordinates of the origin from the coordinates of the point
+        /// </summary>
+        /// <param name="Point1">Point to be situated relative to an arbitrary local origin</param>
+        /// <param name="LocalOrigin">Position of the local origin in global coordinates</param>
+        /// <returns>A PointXYZ object representing the position of Point1 in local coordinates relative to LocalOrigin</returns>
+        public static PointXYZ subtractLocalOrigin(PointXYZ Point1, PointXYZ LocalOrigin)
+        {
+            return new PointXYZ(Point1.X - LocalOrigin.X, Point1.Y - LocalOrigin.Y, Point1.Z - LocalOrigin.Z);
+        }
+        /// <summary>
+        /// Calculate the position of a point relative to an arbitrary local map origin; this will subtract the X and Y coordinates of the origin from the coordinates of the point, but leave the Z coordinate unchanged
+        /// </summary>
+        /// <param name="Point1">Point to be situated relative to an arbitrary local origin</param>
+        /// <param name="LocalOrigin_X">X coordinate of the local map origin in global coordinates</param>
+        /// <param name="LocalOrigin_Y">Y coordinate of the local map origin in global coordinates</param>
+        /// <returns>A PointXYZ object representing the position of Point1 in local coordinates relative to the local map origin</returns>
+        public static PointXYZ subtractLocalMapOrigin(PointXYZ Point1, double LocalOrigin_X, double LocalOrigin_Y)
+        {
+            return new PointXYZ(Point1.X - LocalOrigin_X, Point1.Y - LocalOrigin_Y, Point1.Z);
+        }
 
         // Vector functions
         /// <summary>

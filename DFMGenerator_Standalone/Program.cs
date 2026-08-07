@@ -620,19 +620,19 @@ namespace DFMGenerator_Standalone
             // Main properties
 #if TESTUCF
             // Grid size
-            int NoCols = 3;
-            int NoRows = 3;
-            int NoLayers = 3;
+            int NoCols = 1;// 3;
+            int NoRows = 1;// 3;
+            int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 1000;
-            double Length_NS = 1000;
-            double LayerThickness = 1000;
+            double Width_EW = 10;// 1000;
+            double Length_NS = 10;// 1000;
+            double LayerThickness = 10;// 1000;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
             double OriginYOffset = 0;
             // Current depth of burial of the top surface in metres, positive downwards
-            double Depth = 1000;
+            double Depth = 2000;// 1000;
 #else
             // Grid size
             int NoCols = 3;
@@ -811,7 +811,7 @@ namespace DFMGenerator_Standalone
             //InitialFluidPressure_list.Add(19620000);
             InitialFluidPressure_list.Add(0);
             //InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
-            InitialAbsoluteStress_list.Add(new Tensor2S(16304000, 16778000, 43412000, -408000, 2154000, -459000));
+            InitialAbsoluteStress_list.Add(new Tensor2S(15406000, 15694000, 42114000, -542000, 1254000, -277000));
             BiazimuthalConjugate = false;
             //EhminAzi_list.Add(EhminAzi);
             EhminRate_list.Add(EhminRate);
@@ -823,7 +823,7 @@ namespace DFMGenerator_Standalone
             ModelTimeUnits = TimeUnits.ma;
             DeformationEpisodeDuration_list.Add(5);
             //AbsoluteStressRate_list.Add(new Tensor2S(-1333333.333, -1333333.333, 0, 0, 0, 0));
-            AbsoluteStressRate_list.Add(new Tensor2S(-220000, 431600, -353800, -751000, -14600, -101200));
+            AbsoluteStressRate_list.Add(new Tensor2S(-1358400, -1057000, 199600, -680800, 31600, -123000));
             //InitialFluidPressure_list.Add(19620000);
             //InitialFluidPressure_list.Add(0);
             //InitialAbsoluteStress_list.Add(new Tensor2S(35970000, 35970000, 44145000, 0, 0, 0));
@@ -1133,10 +1133,10 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 16;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 500;// -1;
+            double MinUnconfinedFractureRadius = 0.5;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 10000;// -1;
+            double MaxUnconfinedFractureRadius = 50;// -1;
             // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
             // If set to -1, there will be no limit on effective fracture radius
             double MaxEffectiveUnconfinedFractureRadius = -1;
