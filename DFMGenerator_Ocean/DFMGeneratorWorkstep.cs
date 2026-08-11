@@ -1720,9 +1720,9 @@ namespace DFMGenerator_Ocean
                         FilterByProperty = false;
                         PetrelLogger.InfoOutputWindow("Property to filter by is defined on a different grid; no filter will be applied");
                     }
-                    // Minimum cutoff for the property filter; cells where the spcified property value is lower than this will not be included in the model
+                    // Minimum cutoff for the property filter; cells where the specified property value is lower than this will not be included in the model
                     double FilterByPropertyMinCutoff = arguments.Argument_FilterByPropertyMinCutoff;
-                    // Maximum cutoff for the property filter; cells where the spcified property value is higher than this will not be included in the model
+                    // Maximum cutoff for the property filter; cells where the specified property value is higher than this will not be included in the model
                     double FilterByPropertyMaxCutoff = arguments.Argument_FilterByPropertyMaxCutoff;
 
                     // Flag to assign discrete fractures to sets based on azimuth
@@ -1968,6 +1968,19 @@ namespace DFMGenerator_Ocean
                     generalInputParams += string.Format("Grid {0}\n", PetrelGrid.Name);
                     generalInputParams += string.Format("Columns {0}-{1}, rows {2}-{3}\n", PetrelGrid_StartCellI + 1, PetrelGrid_StartCellI + NoPetrelGridCols, maxJ - PetrelGrid_StartCellJ - NoPetrelGridRows + 2, maxJ - PetrelGrid_StartCellJ + 1);
                     generalInputParams += string.Format("Layers {0}-{1}\n", PetrelGrid_TopCellK + 1, PetrelGrid_BaseCellK + 1);
+
+                    // Filter by property
+                    if (FilterByProperty)
+                    {
+                        generalInputParams += string.Format("Filter grid by property: {0} only cells with values ", PropertyToFilter_grid.Name);
+                        if (!double.IsNaN(FilterByPropertyMinCutoff) && !double.IsNaN(FilterByPropertyMaxCutoff))
+                            generalInputParams += string.Format("between {0} and {1} ", FilterByPropertyMinCutoff, FilterByPropertyMaxCutoff);
+                        else if (!double.IsNaN(FilterByPropertyMinCutoff))
+                            generalInputParams += string.Format("greater than {0}", FilterByPropertyMinCutoff);
+                        else if (!double.IsNaN(FilterByPropertyMaxCutoff))
+                            generalInputParams += string.Format("less than {0}", FilterByPropertyMaxCutoff);
+                        generalInputParams += "will be included in the model\n";
+                    }
 
                     // Populate empty gridblocks
                     if (!PopulateEmptyGridblocks)

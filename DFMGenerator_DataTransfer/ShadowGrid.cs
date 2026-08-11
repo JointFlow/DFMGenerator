@@ -330,7 +330,7 @@ namespace DFMGenerator_DataTransfer
         // Coordinate system for import and export
         // Coordinates can either be local or global
         // If global, the imported pillar coordinates are assumed to be true coordinates, and will be saved in the Shadow Grid as they appear in the import file; they will also be exported in the same format
-        // If local, the imported pillar coordinates are assumed to be relative to a specified origina and axes; they will therefore need to be translated and rotated to obtain true coordinates before they are saved in the shadow grid, and will need to be converted back to local coordinates before they are exported
+        // If local, the imported pillar coordinates are assumed to be relative to a specified origin and axes; they will therefore need to be translated and rotated to obtain true coordinates before they are saved in the shadow grid, and will need to be converted back to local coordinates before they are exported
         // NB In a local coordinate system, only the X and Y coordinates are transformed, as the Z coordinates are assumed to be always global
         /// <summary>
         /// Flag to indicate whether coordinates should be improted or exported as global coordinates (no conversion) or local coordinates (translated and rotated to account for local origin and axis orientations)
