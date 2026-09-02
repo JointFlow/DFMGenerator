@@ -624,9 +624,9 @@ namespace DFMGenerator_Standalone
             int NoRows = 1;// 3;
             int NoLayers = 1;// 3;
             // Gridblock size; all lengths in metres
-            double Width_EW = 10;// 1000;
-            double Length_NS = 10;// 1000;
-            double LayerThickness = 10;// 1000;
+            double Width_EW = 1000;
+            double Length_NS = 1000;
+            double LayerThickness = 1000;
             // Model location 
             // Use the origin offset to set the absolute XY coordinates of the SW corner of the bottom left gridblock
             double OriginXOffset = 0;
@@ -1133,10 +1133,10 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 16;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 0.5;// -1;
+            double MinUnconfinedFractureRadius = 50;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
-            double MaxUnconfinedFractureRadius = 50;// -1;
+            double MaxUnconfinedFractureRadius = 1000000;// -1;
             // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
             // If set to -1, there will be no limit on effective fracture radius
             double MaxEffectiveUnconfinedFractureRadius = -1;

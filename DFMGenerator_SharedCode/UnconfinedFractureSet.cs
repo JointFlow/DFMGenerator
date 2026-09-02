@@ -266,9 +266,14 @@ namespace DFMGenerator_SharedCode
 
         // Fracture distribution control data
         /// <summary>
+        /// Minimum allowable increment in the Limiting RP30 (i.e. maximum potential RP30 with no stress shadow deactivation)
+        /// This is required for a log-normal initial microfracture distribution function because at very low values of LRP30 (i.e. high values of r0) the CDDF function will round the expected dRP30 value to zero, which will cause an infinite loop of zero-length timesteps in which no fractures are generated
+        /// </summary>
+        private double min_dLRP30;
+        /// <summary>
         /// Allowable rounding error in dRP30 when calculating whether a new datapoint will be nucleated
         /// </summary>
-        const double dRP30_rounding_error = 0.99;// 0.999;
+        private const double dRP30_rounding_error = 0.99;// 0.999;
         /// <summary>
         /// Factor a used in Winitzki's algorithms for approximating erf and inverse erf
         /// </summary>
@@ -3721,6 +3726,8 @@ namespace DFMGenerator_SharedCode
             double maxRadius = (Fractures.MeanStaticRayLength > 0) ? Fractures.MeanStaticRayLength : MaximumFractureRadius;
             double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(maxRadius, 3);
             min_NucleatingDatapoint_RP30 = (dP33 / maxFracVol) * (double)RaysPerFracture;
+            if (min_NucleatingDatapoint_RP30 < min_dLRP30)
+                min_NucleatingDatapoint_RP30 = min_dLRP30;
         }
         /// <summary>
         /// Cull datapoints from the static fracture population distribution arrays
@@ -4457,6 +4464,15 @@ namespace DFMGenerator_SharedCode
             previous_Ln = 0;
             next_Ln = double.NaN;
 
+            // Set the minimum allowable increment in the Limiting RP30 (i.e. maximum potential RP30 with no stress shadow deactivation)
+            // This is required for a log-normal initial microfracture distribution function because at very low values of LRP30 (i.e. high values of r0) the CDDF function will round the expected dRP30 value to zero, which will cause an infinite loop of zero-length timesteps in which no fractures are generated
+            // For the log-normal initial microfracture distribution function, this occurs when the fracture radius term (ln(r)-M)/sqrt(2S) is greater than 4 
+            // For other initial microfracture distribution functions it can be set to zero
+            if (uFDistributionIn == InitialFractureDistribution.LogNormal)
+                min_dLRP30 = B_in * CDDF_LogNormal(4) * (double)raysPerFracture_in;
+            else
+                min_dLRP30 = 0;
+
             // Set the minimum RP30 value for nucleating fracture datapoints
             // This is initially set to the value that will generate the specified maximum dP33 increment with fractures of maximum size
             // If a maximum increase in radius per timestep is specified, the specified maximum dP33 increment will be multiplied by the minimum number of timesteps required for a nucleating fracture to grow to the maximum radius
@@ -4471,6 +4487,8 @@ namespace DFMGenerator_SharedCode
             double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(MaximumFractureRadius, 3);
             //double minFracVol = (4d / 3d) * Math.PI * Math.Pow(MinimumFractureRadius, 3);
             min_NucleatingDatapoint_RP30 = (dP33 / maxFracVol) * (double)raysPerFracture_in;
+            if (min_NucleatingDatapoint_RP30 < min_dLRP30)
+                min_NucleatingDatapoint_RP30 = min_dLRP30;
             //min_GrowingDatapoint_RP30 = (dP33 / minFracVol) * (double)raysPerFracture_in;
         }
         /// <summary>
