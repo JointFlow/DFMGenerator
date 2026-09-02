@@ -350,3 +350,4 @@ MigrationBackup/
 .ionide/
 
 *.ini
+/README - Copy.md

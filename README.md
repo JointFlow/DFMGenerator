@@ -45,23 +45,15 @@ The software can be run either as a standalone software or as a plug-in within P
 
 For installation and usage:
 
-Standalone executable and example files (https://github.com/JointFlow/DFMGenerator/blob/main/Files/DFMGenerator_StandaloneProgram.zip)
+The current release contains only source code, so you will need to compile the executables yourself. To run the text file standalone version of DFM Generator, download the source code for the DFMGenerator_Code solution and compile the DFMGenerator_Standalone project in C Sharp using Microsoft Visual Studio. To run the GRDECL compatible standalone version of DFM Generator, download the source code for the DFMGenerator_Code solution and compile the DFMGenerator_GRDECL project in C Sharp using Microsoft Visual Studio. In both cases, the resulting executables should be run from the command line. We will release the precompiled executables for the two standalone versions of DFM Generator very soon in a subsequent release.
+
+To run the Petrel plug-in version of DFM Generator, you will need the SLB Ocean development environment as well as Visual Studio. Download the source code for the DFMGenerator_Code solution and compile the DFMGenerator_Ocean project in C Sharp using Microsoft Visual Studio and Ocean.
+
+User guides are available from:
 
 Standalone: DFM_Generator_Standalone_UserGuide.pdf (https://github.com/JointFlow/DFMGenerator/tree/main/Documentation/DFM_Generator_Standalone_UserGuide.pdf)
 
 Petrel plug-in: DFM_Generator_Petrel_UserGuide.pdf (https://github.com/JointFlow/DFMGenerator/tree/main/Documentation/DFM_Generator_Petrel_UserGuide.pdf)
-
-Precompiled .pip installers for the Petrel version can be downloaded from the links below. These can be installed using the the Ocean Plug-in manager in Petrel. Please note that due to licensing restrictions, the precompiled installers are for a previous version of DFM Generator (v2.2.3) and will lack some functionality of the latest version (e.g. calculation of fracture permeability). If you would like to use the latest version of DFM Generator (v2.4.2) and have access to Ocean, you can download the and compile the DFM Generator source code. If you do not have access to Ocean but would like to use DFM Generator v2.4.2 with Petrel, please contact mwelch@dtu.dk. 
-
-Petrel 2020: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2020.pip)
-
-Petrel 2021: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2021.pip)
-
-Petrel 2022: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2022.pip)
-
-Petrel 2023: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2023.pip)
-
-Petrel 2024: (https://github.com/JointFlow/DFMGenerator/tree/main/DFMGenerator_PetrelInstallers/DFMGenerator_2024.pip)
 
 An overview of the structure of the DFN Generator code is given in DFNGenerator_TechNotes.pdf (https://github.com/JointFlow/DFMGenerator/tree/main/Documentation/DFM_Generator_TechNotes.pdf)
 This is not however intended as a complete description of derivation of the algorithm used by the DFN Generator tool. This can be found in described in detail in the monograph “Modelling the Evolution of Natural Fracture Networks” by Welch et al. 2020. Please see references below.
