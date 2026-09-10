@@ -3723,7 +3723,7 @@ namespace DFMGenerator_SharedCode
             // If a maximum increase in radius per timestep is specified, the specified maximum dP33 increment will be multiplied by the minimum number of timesteps required for a nucleating fracture to grow to the maximum radius
             // This ensures that the growth of the fractures in subsequent timesteps will be limited to approximately the specified maximum increase in radius
             double dP33 = gbc.PropControl.max_TS_UCFP33_increase * growth_dP33_multiplier;
-            double maxRadius = (Fractures.MeanStaticRayLength > 0) ? Fractures.MeanStaticRayLength : MaximumFractureRadius;
+            double maxRadius = (Fractures.MeanStaticRayLength > MinimumFractureRadius) ? Fractures.MeanStaticRayLength : MaximumFractureRadius;
             double maxFracVol = (4d / 3d) * Math.PI * Math.Pow(maxRadius, 3);
             min_NucleatingDatapoint_RP30 = (dP33 / maxFracVol) * (double)RaysPerFracture;
             if (min_NucleatingDatapoint_RP30 < min_dLRP30)
