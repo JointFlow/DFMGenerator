@@ -1133,13 +1133,13 @@ namespace DFMGenerator_Standalone
             int NoRaysPerUnconfinedFracture = 16;
             // Minimum radius for unconfined fractures; this will be the length of the rays at nucleation
             // If set to -1, will use 0.01 * layer thickness
-            double MinUnconfinedFractureRadius = 5;// -1;
+            double MinUnconfinedFractureRadius = 1;// -1;
             // Maximum allowed radius for unconfined fractures; rays will stop propagating when they reach this length
             // If set to -1, will use 0.5 * layer thickness
             double MaxUnconfinedFractureRadius = 100;// -1;
             // Maximum allowed effective radius for unconfined fractures; will limit fracture stress shadow and propagation rate but not fracture growth
             // If set to -1, there will be no limit on effective fracture radius
-            double MaxEffectiveUnconfinedFractureRadius = 20;
+            double MaxEffectiveUnconfinedFractureRadius = 5;
             // Calculation termination controls
             // The calculation is set to stop automatically when fractures stop growing
             // This can be defined in one of three ways:

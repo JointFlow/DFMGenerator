@@ -4414,7 +4414,7 @@ namespace DFMGenerator_SharedCode
         /// <param name="uFrmedian_in">Median initial microfracture radius - this is only used for the log-normal distribution function</param>
         public void resetFractureData(ushort raysPerFracture_in, double rmin_in, double rmax_in, double rmaxeff_in, InitialFractureDistribution uFDistributionIn, double B_in, double c_in, double uFrmedian_in)
         {
-            // Set the initial fracture distribution data
+            // Set the initial microfracture distribution data
             InitialDistribution = uFDistributionIn;
             CapB = B_in;
             c_coefficient = c_in;
@@ -4422,16 +4422,16 @@ namespace DFMGenerator_SharedCode
             M_term = Math.Log(uFrmedian_in);
             Sqrt2_S = Math.Sqrt(2) * c_in;
 
-            // Set the implicit fracture population data 
-            // Number of rays comprising each fracture
+            // Initialise the implicit unconfined fracture population data 
+            // Number of rays comprising each unconfined fracture
             RaysPerFracture = raysPerFracture_in;
-            // Minimum radius for a fracture; this will be the length of the rays at nucleation
+            // Minimum radius for an unconfined fracture; this will be the length of the rays at nucleation
             MinimumFractureRadius = rmin_in;
-            // Maximum allowed radius for a fracture; rays will stop propagating when they reach this length
+            // Maximum allowed radius for an unconfined fracture; rays will stop propagating when they reach this length
             MaximumFractureRadius = rmax_in;
-            // Maximum allowed effective radius for unconfined fractures; when this is reached, rays will continue propagating but velocity and stress shadow width will be independent of fracture size
+            // Maximum allowed effective radius for an unconfined fracture; when this is reached, rays will continue propagating but velocity and stress shadow width will be independent of fracture size
             MaximumEffectiveFractureRadius = rmaxeff_in;
-            // Create new UnconfinedFractureData object
+            // Calculate the density of initial microfractures greater than the mininum unconfined fracture radius and create new UnconfinedFractureData object
             double initialRP30 = InitialP30() * (double)raysPerFracture_in;
             Fractures = new UnconfinedFractureData(initialRP30, rmin_in, this);
 
@@ -4457,8 +4457,8 @@ namespace DFMGenerator_SharedCode
             // Set the counter for consecutive failed nucleation attempts to 0
             failedNucleationAttempts = 0;
 
-            // Set the unrestricted RP30 (i.e. maximum potential RP30 with no stress shadow deactivation) to zero
-            previous_LRP30 = 0;
+            // Set the unrestricted RP30 (i.e. maximum potential RP30 with no stress shadow deactivation) to the density of initial microfractures greater than the mininum unconfined fracture radius
+            previous_LRP30 = initialRP30;
             // Set the counter for the limiting number of explicit fractures in this gridblock (i.e. maximum potential number of nucleated fractures with no stress shadow deactivation) to zero
             // Set the counter for the index number of the next fracture to nucleate to NaN - this will force it to be recalculated when fractures start nucleating, thus incorporating proabilistic nucleation if required
             previous_Ln = 0;
