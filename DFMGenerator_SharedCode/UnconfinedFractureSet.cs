@@ -1943,11 +1943,11 @@ namespace DFMGenerator_SharedCode
             De_ee_Ratio = CurrentFractureData.Displacement_Strain_Ratio;
         }
         /// <summary>
-        /// Return the current ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J; i.e. (DI.eI * eJ.eJ) / (DJ.eJ * eI.eI)
+        /// Return the current ratio of the incremental displacement on this fracture set I to the incremental displacement on fracture set J, projected onto the applied strain vector for J; i.e. (DI.eJ * eJ.eJ) / (DJ.eJ * eI.eI)
         /// UCFW_IJ * W_I gives the width of stress shadows around a set I fracture as seen by a set J fracture
         /// </summary>
         /// <param name="J">Reference to unconfined fracture set J</param>
-        /// <returns>The ratio (DI.eI * eJ.eJ) / (DJ.eJ * eI.eI), or 0 if DJ.eJ or eI.eI are zero (i.e. the applied strain on J is 0)</returns>
+        /// <returns>The ratio (DI.eJ * eJ.eJ) / (DJ.eJ * eI.eI), or 0 if DJ.eJ or eI.eI are zero (i.e. the applied strain on J is 0)</returns>
         public double getUFSW_IJ(UnconfinedFractureSet J)
         {
             // Get the displacement increment and applied stress increment on fracture sets I and J
@@ -1957,13 +1957,13 @@ namespace DFMGenerator_SharedCode
             VectorXYZ strainOnFractureJ = J.CurrentFractureData.IncrementalStrainOnFracture_M;
 
             // Calculate DI.eI, DJ.eJ, eI.eI and eJ.eJ
-            double DIeI = displacementIncrement_I & strainOnFractureI;
+            double DIeJ = displacementIncrement_I & strainOnFractureJ;
             double DJeJ = displacementIncrement_J & strainOnFractureJ;
             double eIeI = strainOnFractureI & strainOnFractureI;
             double eJeJ = strainOnFractureJ & strainOnFractureJ;
 
             if ((DJeJ * eIeI) > 0)
-                return Math.Abs((DIeI * eJeJ) / (DJeJ * eIeI));
+                return Math.Abs((DIeJ * eJeJ) / (DJeJ * eIeI));
             else
                 return 0;
         }
