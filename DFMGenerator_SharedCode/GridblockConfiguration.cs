@@ -6322,6 +6322,8 @@ namespace DFMGenerator_SharedCode
                             double next_r0 = ufs.InitialRadius(nextFrac_Ln / Volume);
                             double nextUCF_r0_invbeta = Math.Pow(next_r0, 1 / beta);
                             double NucleationWTime = -beta * (nextUCF_r0_invbeta - ts_CumrminGammaMminus1);
+                            if (NucleationWTime < 0)
+                                NucleationWTime = 0;
 
                             // Create a new UnconfinedFractureXYZ object and add it to the list of unconfined fractures in the local fracture set - this is used to check for fracture intersection
                             // Fractures will all be created with zero initial radius and then allowed to grow to the mininum unconfined fracture radius
