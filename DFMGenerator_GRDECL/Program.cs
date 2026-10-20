@@ -61,7 +61,7 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("% Vertical upscaling factor - used to amalgamate multiple shadow grid layers into one fracture grid layer");
                 input_file.WriteLine("% Set to 0 to amalgamate all selected shadow grid layers into a single fracture grid layer");
                 input_file.WriteLine("% Set to 1 to create a fracture grid layer for each selected shadow grid layer");
-                input_file.WriteLine("VerticalUpscalingFactor 1");
+                input_file.WriteLine("VerticalUpscalingFactor 0");
                 input_file.WriteLine("% Time units used in input load rates, time limits and strain relaxation time constants");
                 input_file.WriteLine("% Set time units to ma, year or second");
                 input_file.WriteLine("ModelTimeUnits ma");
@@ -134,7 +134,7 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("DefaultPoissonsRatio 0.25");
                 input_file.WriteLine("%PoissonsRatioProperty PROPERTYNAME");
                 input_file.WriteLine("DefaultPorosity 0.2");
-                input_file.WriteLine("PorosityProperty PROPERTYNAME");
+                input_file.WriteLine("%PorosityProperty PROPERTYNAME");
                 input_file.WriteLine("DefaultBiotCoefficient 1");
                 input_file.WriteLine("%BiotCoefficientProperty PROPERTYNAME");
                 input_file.WriteLine("% Thermal expansion coefficient typically 3E-5/degK for sandstone, 4E-5/degK for shale (Miller 1995)");
@@ -408,7 +408,7 @@ namespace DFMGenerator_GRDECL
                 input_file.WriteLine("MaxConsistencyAngle 0.78539816");
                 input_file.WriteLine("% Layer thickness cutoff (in metres): explicit DFN will not be calculated for gridblocks thinner than this value");
                 input_file.WriteLine("% Set this to prevent the generation of excessive numbers of fractures in very thin gridblocks where there is geometric pinch-out of the layers");
-                input_file.WriteLine("MinimumLayerThickness 0");
+                input_file.WriteLine("MinimumLayerThickness 1");
                 input_file.WriteLine("% Maximum number of fracture patches that can be generated per gridblock");
                 input_file.WriteLine("% Set this to prevent the program from hanging if excessive numbers of fractures are generated for any reason");
                 input_file.WriteLine("MaxNoFracturePatches 1000");
@@ -2417,6 +2417,7 @@ namespace DFMGenerator_GRDECL
                 case ShadowGridErrorStatus.ErrorPopulatingProperties:
                     Console.WriteLine(string.Format("Error reading one or more grid properties from {0}", inputFolderPath + GridFileName));
                     Console.WriteLine("Model run will continue but some properties may be replaced by defaults");
+                    Console.Write(SourceDataGrid.PropertyLoadingErrors);
                     break;
                 default:
                     break;
@@ -6963,7 +6964,7 @@ namespace DFMGenerator_GRDECL
                     if (WriteGRDECLFiles)
                         for (int stageNumber = 1; stageNumber <= NoStages; stageNumber++)
                         {
-                            SourceDataGrid.WriteGRDECLFile(ModelName, outputFolderPath, progressReporter, stageNumber, ShadowGrid_TopLayerK, ShadowGrid_BottomLayerK, IncludeGridGeometryInGRDECLFiles, PopulateEmptyGridblocks);
+                            SourceDataGrid.WriteGRDECLFile(ModelName, outputFolderPath, progressReporter, stageNumber, ShadowGrid_StartColI, ShadowGrid_EndColI, ShadowGrid_StartRowJ, ShadowGrid_EndRowJ, ShadowGrid_TopLayerK, ShadowGrid_BottomLayerK, IncludeGridGeometryInGRDECLFiles, PopulateEmptyGridblocks);
                         }
                 }
 

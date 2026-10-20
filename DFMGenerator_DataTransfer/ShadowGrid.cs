@@ -726,22 +726,11 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the dimension data for the entire grid in GRDECL format</returns>
         private string GetGridDimensionsInGRDECLFormat()
         {
-            return GetGridDimensionsInGRDECLFormat(0, NoKLayers - 1);
-        }
-        /// <summary>
-        /// Get a string representing the dimension data for a specified stratigraphic interval of the grid in GRDECL format
-        /// </summary>
-        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
-        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
-        /// <returns>A string representing the dimension data for a specified stratigraphic interval of the grid in GRDECL format</returns>
-        private string GetGridDimensionsInGRDECLFormat(int TopLayerK, int BottomLayerK)
-        {
-            int noLayers = BottomLayerK + 1 - TopLayerK;
             string dimensionData = "";
             //dimensionData += string.Format("DIMENS\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
             //dimensionData += string.Format("  {0} {1} {2}/\n\n", NoICols, NoJRows, noLayers);
             dimensionData += string.Format("SPECGRID\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
-            dimensionData += string.Format("  {0} {1} {2} {3} {4} {5}\n\n", NoICols, NoJRows, noLayers, 1, "F", EndBlockIndicator);
+            dimensionData += string.Format("  {0} {1} {2} {3} {4} {5}\n\n", NoICols, NoJRows, NoKLayers, 1, "F", EndBlockIndicator);
             return dimensionData;
         }
         /// <summary>
@@ -778,18 +767,8 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the cell cornerpoints for the entire grid in GRDECL format</returns>
         private string GetCellCornerDepthsInGRDECLFormat()
         {
-            return GetCellCornerDepthsInGRDECLFormat(0, NoKLayers - 1);
-        }
-        /// <summary>
-        /// Get a string representing the cell cornerpoints of a specified stratigraphic interval of the grid in GRDECL format
-        /// </summary>
-        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
-        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
-        /// <returns>A string representing the cell cornerpoints of a specified stratigraphic interval of the grid in GRDECL format</returns>
-        private string GetCellCornerDepthsInGRDECLFormat(int TopLayerK, int BottomLayerK)
-        {
             string cornerDepthData = string.Format("ZCORN\t{0} Generated : {1}\n ", CommentIndicator, GeometryDataSource);
-            for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+            for (int cellK = 0; cellK < NoKLayers; cellK++)
             {
                 // Get the depths for the top corners of all the cells in layer K
                 for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
@@ -830,16 +809,6 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing a nested datablock describing the faulted cell faces within the entire grid in GRDECL format</returns>
         private string GetFaultsInGRDECLFormat()
         {
-            return GetFaultsInGRDECLFormat(0, NoKLayers - 1);
-        }
-        /// <summary>
-        /// Get a string representing the faults within a specified stratigraphic interval of the grid in GRDECL format
-        /// </summary>
-        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
-        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
-        /// <returns>A string representing a nested datablock describing the faulted cell faces within a specified stratigraphic interval of the grid in GRDECL format</returns>
-        private string GetFaultsInGRDECLFormat(int TopLayerK, int BottomLayerK)
-        {
             string faultData = string.Format("FAULTS\t{0} Generated : {1}\n\n", CommentIndicator, GeometryDataSource);
             faultData += CommentIndicator + " NAME\tIX1\tIX2\tIY1\tIY2\tIZ1\tIZ2\tFACE\n";
 
@@ -848,6 +817,172 @@ namespace DFMGenerator_DataTransfer
             // We will therefore loop through the I and J grid coordinates first to find cell stacks, and then through each face of the stack
             for (int cellI = 0; cellI < NoICols; cellI++)
                 for (int cellJ = 0; cellJ < NoJRows; cellJ++)
+                    foreach (GridDirection face in new GridDirection[] { GridDirection.E, GridDirection.W, GridDirection.S, GridDirection.N })
+                    {
+                        string directionValue = "";
+                        switch (face)
+                        {
+                            case GridDirection.N:
+                                directionValue = "Y-";
+                                break;
+                            case GridDirection.E:
+                                directionValue = "X+";
+                                break;
+                            case GridDirection.S:
+                                directionValue = "Y+";
+                                break;
+                            case GridDirection.W:
+                                directionValue = "X-";
+                                break;
+                            case GridDirection.None:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        // Set null values for the top and bottom of the current fault patch and the current fault index number
+                        int TopK = -1;
+                        int BottomK = -1;
+                        int currentFaultIndex = 0;
+
+                        // Now loop through the K layers looking for faulted patches on the current face
+                        for (int cellK = 0; cellK < NoKLayers; cellK++)
+                        {
+                            // Get the value in the cellFaces array for the appropriate face of the current cell
+                            int cellFaceValue = cellFaces[face].GetPropertyValue(cellI, cellJ, cellK);
+
+                            // If we have not yet found a fault patch, look for the start of a fault patch
+                            if (currentFaultIndex == 0)
+                            {
+                                if (cellFaceValue > 0)
+                                {
+                                    // If we have found the top of the fault patch, set the top of the current fault patch and the current fault index number
+                                    TopK = cellK;
+                                    currentFaultIndex = cellFaceValue;
+                                }
+                            }
+
+                            // If we have aleady found the top of a fault patch, check if we are at the bottom of the patch
+                            // This may be because we are at the bottom of the cell stack, or because the cellFaces value of the underlying cell is different to the current fault index
+                            if ((currentFaultIndex != 0) && ((cellK == NoKLayers - 1) || (cellFaces[face].GetPropertyValue(cellI, cellJ, cellK + 1) != currentFaultIndex)))
+                            {
+                                // If we are at the bottom of the cell stack we will need to set the BottomK value manually
+                                if (cellK == NoKLayers - 1)
+                                    BottomK = NoKLayers - 1;
+
+                                // If we have found the bottom of the fault patch, write a new subblock to the nested fault data block, then reset the top abd bottom fault 
+                                // The coordinates in the GRDECL files are 1-indexed so must be converted from 0-index
+                                // The J coordinates must also be reversed
+                                // Finally the fault index number must be converted from 1-index to 0-index to lookup the fault name
+                                string faultName = (currentFaultIndex <= faultNames.Count) ? faultNames[currentFaultIndex - 1] : "FAULT";
+                                string subblockText = string.Format("'{0}' {1} {2} {3} {4} {5} {6} '{7}' {8}\n", faultName, cellI + 1, cellI + 1, NoJRows - cellJ, NoJRows - cellJ, TopK + 1, BottomK + 1, directionValue, EndBlockIndicator);
+                                faultData += subblockText;
+                                TopK = -1;
+                                BottomK = -1;
+                                currentFaultIndex = 0;
+                            }
+                        }
+                    }
+
+            // Add a list of unique fault names and an end block indicator to the nested block
+            faultData += string.Format("\n{0} List of unique fault names\n", CommentIndicator);
+            foreach (string faultName in faultNames)
+                faultData += string.Format("{0} {1}\n", CommentIndicator, faultName);
+            faultData += string.Format("\n{0}\n\n", EndBlockIndicator);
+
+            return faultData;
+        }
+        // Functions for retrieving the geometry of a subsection of the grid - not currently used
+        /*/// <summary>
+        /// Get a string representing the dimension data for a specified subsection of the grid in GRDECL format
+        /// </summary>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <returns>A string representing the dimension data for a specified stratigraphic interval of the grid in GRDECL format</returns>
+        private string GetGridDimensionsInGRDECLFormat(int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK)
+        {
+            int noCols = EndColI + 1 - StartColI;
+            int noRows = StartRowJ + 1 - EndRowJ;
+            int noLayers = BottomLayerK + 1 - TopLayerK;
+            string dimensionData = "";
+            //dimensionData += string.Format("DIMENS\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            //dimensionData += string.Format("  {0} {1} {2}/\n\n", NoICols, NoJRows, noLayers);
+            dimensionData += string.Format("SPECGRID\t{0} Generated: {1}\n", CommentIndicator, GeometryDataSource);
+            dimensionData += string.Format("  {0} {1} {2} {3} {4} {5}\n\n", noCols, noRows, noLayers, 1, "F", EndBlockIndicator);
+            return dimensionData;
+        }
+        /// <summary>
+        /// Get a string representing the cell cornerpoints of a specified subsection of the grid in GRDECL format
+        /// </summary>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <returns>A string representing the cell cornerpoints of a specified stratigraphic interval of the grid in GRDECL format</returns>
+        private string GetCellCornerDepthsInGRDECLFormat(int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK)
+        {
+            string cornerDepthData = string.Format("ZCORN\t{0} Generated : {1}\n ", CommentIndicator, GeometryDataSource);
+            for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+            {
+                // Get the depths for the top corners of all the cells in layer K
+                for (int cellJ = EndRowJ; StartRowJ >= 0; cellJ--)
+                {
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                    {
+                        cornerDepthData += string.Format(" {0} {1}", GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.NWTop), GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.NETop));
+                    }
+                    cornerDepthData += "\n ";
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                    {
+                        cornerDepthData += string.Format(" {0} {1}", GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.SWTop), GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.SETop));
+                    }
+                    cornerDepthData += "\n ";
+                }
+
+                // Get the depths for the bottom corners of all the cells in layer K
+                for (int cellJ = EndRowJ; StartRowJ >= 0; cellJ--)
+                {
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                    {
+                        cornerDepthData += string.Format(" {0} {1}", GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.NWBottom), GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.NEBottom));
+                    }
+                    cornerDepthData += "\n ";
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                    {
+                        cornerDepthData += string.Format(" {0} {1}", GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.SWBottom), GetCellCornerDepth(cellI, cellJ, cellK, GridblockCornerpoint.SEBottom));
+                    }
+                    cornerDepthData += "\n ";
+                }
+            }
+            cornerDepthData += string.Format("  {0}\n\n", EndBlockIndicator);
+            return cornerDepthData;
+        }
+        /// <summary>
+        /// Get a string representing the faults within a specified subsection of the grid in GRDECL format
+        /// </summary>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <returns>A string representing a nested datablock describing the faulted cell faces within a specified stratigraphic interval of the grid in GRDECL format</returns>
+        private string GetFaultsInGRDECLFormat(int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK)
+        {
+            string faultData = string.Format("FAULTS\t{0} Generated : {1}\n\n", CommentIndicator, GeometryDataSource);
+            faultData += CommentIndicator + " NAME\tIX1\tIX2\tIY1\tIY2\tIZ1\tIZ2\tFACE\n";
+
+            // Loop through all the cells finding fault patches
+            // We will assume patches are a maximum of one cell wide, but may be many cells tall
+            // We will therefore loop through the I and J grid coordinates first to find cell stacks, and then through each face of the stack
+            for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                for (int cellJ = StartRowJ; cellJ <= EndRowJ; cellJ++)
                     foreach (GridDirection face in new GridDirection[] { GridDirection.E, GridDirection.W, GridDirection.S, GridDirection.N })
                     {
                         string directionValue = "";
@@ -922,7 +1057,7 @@ namespace DFMGenerator_DataTransfer
             faultData += string.Format("\n{0}\n\n", EndBlockIndicator);
 
             return faultData;
-        }
+        }*/
         /// <summary>
         /// Get a string representing the Actnum values of all the cells in the grid in GRDECL format, assuming all cells are active (Actnum value 1)
         /// </summary>
@@ -934,15 +1069,66 @@ namespace DFMGenerator_DataTransfer
             return actnumData;
         }
         /// <summary>
-        /// Get a string representing the Actnum values of all the cells in a specified stratigraphic interval of the grid in GRDECL format, assuming all cells are active (Actnum value 1)
+        /// Get a string representing the Actnum values of all the cells in a specified subsection of the grid in GRDECL format, assuming all cells are active (Actnum value 1)
         /// </summary>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
         /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
         /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
         /// <returns>A string representing the Actnum values of all the cells in a specified stratigraphic interval of the grid in GRDECL formatt</returns>
-        private string GetActnumDataInGRDECLFormat(int TopLayerK, int BottomLayerK)
+        private string GetActnumDataInGRDECLFormat(int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK)
         {
+            // Create a string for the property
             string actnumData = string.Format("ACTNUM\t{0} Generated : {1}\n  ", CommentIndicator, GeometryDataSource);
-            actnumData += string.Format("  {0}*1  {1}\n\n", NoICols * NoJRows * (TopLayerK - BottomLayerK + 1), EndBlockIndicator);
+
+            // Get the number of cells per layer, the number of cells per row and the number of cells per column before and after the selected cells
+            int noCellsPerLayer = NoICols * NoJRows;
+            int noCellsPerRow = NoICols;
+            int noCellsPerRowBeforeSelection = StartColI;
+            int noCellsPerRowWithinSelection = EndColI + 1 - StartColI;
+            int noCellsPerRowAfterSelection = NoICols - 1 - EndColI;
+
+            // Fill in the empty top layers with 0 (inactive)
+            for (int cellK = 0; cellK < TopLayerK; cellK++)
+            {
+                actnumData += string.Format(" {0}*0\n ", noCellsPerLayer);
+            }
+            // Loop through all cells in the specified layers in the appropriate order
+            for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+            {
+                // Fill in the empty rows with 0 (inactive)
+                for (int cellJ = NoJRows - 1; cellJ > EndRowJ; cellJ--)
+                {
+                    actnumData += string.Format(" {0}*0\n ", noCellsPerRow);
+                }
+                for (int cellJ = EndRowJ; cellJ >= StartRowJ; cellJ--)
+                {
+                    // Fill in the empty columns with 0 (inactive)
+                    if (noCellsPerRowBeforeSelection > 0)
+                        actnumData += string.Format(" {0}*0", noCellsPerRowBeforeSelection);
+                    // Fill the populated cells with 1 (active)
+                    if (noCellsPerRowWithinSelection > 0)
+                        actnumData += string.Format(" {0}*1", noCellsPerRowWithinSelection);
+                    // Fill in the empty columns with 0 (inactive)
+                    if (noCellsPerRowAfterSelection > 0)
+                        actnumData += string.Format(" {0}*0", noCellsPerRowAfterSelection);
+                    actnumData += "\n ";
+                }
+                // Fill in the empty rows with 0 (inactive)
+                for (int cellJ = StartRowJ - 1; cellJ >= 0; cellJ--)
+                {
+                    actnumData += string.Format(" {0}*0\n ", noCellsPerRow);
+                }
+            }
+            // Fill in the empty bottom layers with 0 (inactive)
+            for (int cellK = BottomLayerK + 1; cellK < NoKLayers; cellK++)
+            {
+                actnumData += string.Format(" {0}*0\n ", noCellsPerLayer);
+            }
+
+            actnumData += string.Format("  {0}\n\n", EndBlockIndicator);
             return actnumData;
         }
         /// <summary>
@@ -953,17 +1139,21 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the values of the specified property for all the cells in the grid in GRDECL format</returns>
         private string GetPropertyDataInGRDECLFormat(GridPropertyArray<double> Property, string Source)
         {
-            return GetPropertyDataInGRDECLFormat(Property, 0, NoKLayers - 1, Source);
+            return GetPropertyDataInGRDECLFormat(Property, 0, NoICols - 1, 0, NoJRows - 1, 0, NoKLayers - 1, Source);
         }
         /// <summary>
-        /// Get a string representing the values of a specified floating point property for all the cells in a specified stratigraphic interval of the grid in GRDECL format
+        /// Get a string representing the values of a specified floating point property for all the cells in a specified subsection of the grid in GRDECL format
         /// </summary>
         /// <param name="Property">GridPropertyArray object containing the property to be exported</param>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
         /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
         /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
         /// <param name="Source">A string defining the source of the property data; this will be included as a comment in the GRDECL format output string</param>
         /// <returns>A string representing the values of the specified property for all the cells in a specified stratigraphic interval of the grid in GRDECL format</returns>
-        private string GetPropertyDataInGRDECLFormat(GridPropertyArray<double> Property, int TopLayerK, int BottomLayerK, string Source)
+        private string GetPropertyDataInGRDECLFormat(GridPropertyArray<double> Property, int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK, string Source)
         {
             // Set the source by checking if the property is in the input or output arrays and set the source
             /*string Source = "";
@@ -976,17 +1166,53 @@ namespace DFMGenerator_DataTransfer
             // Create a string for the property
             string propertyData = string.Format("{0}\t{1} Generated : {2}\n ", Property.PropertyName, CommentIndicator, Source);
 
+            // Get the number of cells per layer, the number of cells per row and the number of cells per column before and after the selected cells
+            int noCellsPerLayer = NoICols * NoJRows;
+            int noCellsPerRow = NoICols;
+            int noCellsPerRowBeforeSelection = StartColI;
+            int noCellsPerRowAfterSelection = NoICols - 1 - EndColI;
+
+            // Fill in the empty top layers with null values
+            for (int cellK = 0; cellK < TopLayerK; cellK++)
+            {
+                propertyData += string.Format(" {0}*{1}\n ", noCellsPerLayer, NullFloatingPointValue.ToString());
+            }
             // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
             for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
             {
-                for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
+                // Fill in the empty rows with null values
+                for (int cellJ = NoJRows - 1; cellJ > EndRowJ; cellJ--)
                 {
-                    for (int cellI = 0; cellI < NoICols; cellI++)
+                    propertyData += string.Format(" {0}*{1}\n ", noCellsPerRow, NullFloatingPointValue.ToString());
+                }
+                for (int cellJ = EndRowJ; cellJ >= StartRowJ; cellJ--)
+                {
+                    // Fill in the empty columns with null values
+                    if (noCellsPerRowBeforeSelection > 0)
+                        propertyData += string.Format(" {0}*{1}", noCellsPerRowBeforeSelection, NullFloatingPointValue.ToString());
+                    // Fill the populated cells with correct values
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
                     {
-                        propertyData += string.Format(" {0}", Property.GetPropertyValue(cellI, cellJ, cellK).ToString(ExportFormatForDouble));
+                        double propertyValue = Property.GetPropertyValue(cellI, cellJ, cellK);
+                        if (double.IsNaN(propertyValue) || double.IsInfinity(propertyValue))
+                            propertyValue = NullFloatingPointValue;
+                        propertyData += string.Format(" {0}", propertyValue.ToString(ExportFormatForDouble));
                     }
+                    // Fill in the empty columns with null values
+                    if (noCellsPerRowAfterSelection > 0)
+                        propertyData += string.Format(" {0}*{1}", noCellsPerRowAfterSelection, NullFloatingPointValue.ToString());
                     propertyData += "\n ";
                 }
+                // Fill in the empty rows with null values
+                for (int cellJ = StartRowJ - 1; cellJ >= 0; cellJ--)
+                {
+                    propertyData += string.Format(" {0}*{1}\n ", noCellsPerRow, NullFloatingPointValue.ToString());
+                }
+            }
+            // Fill in the empty bottom layers with null values
+            for (int cellK = BottomLayerK+1; cellK < NoKLayers; cellK++)
+            {
+                propertyData += string.Format(" {0}*{1}\n ", noCellsPerLayer, NullFloatingPointValue.ToString());
             }
 
             // Add the terminator to the property string and return it
@@ -1001,17 +1227,21 @@ namespace DFMGenerator_DataTransfer
         /// <returns>A string representing the values of the specified property for all the cells in the grid in GRDECL format</returns>
         private string GetPropertyDataInGRDECLFormat(GridPropertyArray<int> Property, string Source)
         {
-            return GetPropertyDataInGRDECLFormat(Property, 0, NoKLayers - 1, Source);
+            return GetPropertyDataInGRDECLFormat(Property, 0, NoICols - 1, 0, NoJRows - 1, 0, NoKLayers - 1, Source);
         }
         /// <summary>
-        /// Get a string representing the values of a specified integer property for all the cells in a specified stratigraphic interval of the grid in GRDECL format
+        /// Get a string representing the values of a specified integer property for all the cells in a specified subsection of the grid in GRDECL format
         /// </summary>
         /// <param name="Property">GridPropertyArray object containing the property to be exported</param>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
         /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
         /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
         /// <param name="Source">A string defining the source of the property data; this will be included as a comment in the GRDECL format output string</param>
         /// <returns>A string representing the values of the specified property for all the cells in a specified stratigraphic interval of the grid in GRDECL format</returns>
-        private string GetPropertyDataInGRDECLFormat(GridPropertyArray<int> Property, int TopLayerK, int BottomLayerK, string Source)
+        private string GetPropertyDataInGRDECLFormat(GridPropertyArray<int> Property, int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK, string Source)
         {
             // Set the source by checking if the property is in the input or output arrays and set the source
             /*string Source = "";
@@ -1024,14 +1254,113 @@ namespace DFMGenerator_DataTransfer
             // Create a string for the property
             string propertyData = string.Format("{0}\t{1} Generated : {2}\n ", Property.PropertyName, CommentIndicator, Source);
 
+            // Get the number of cells per layer, the number of cells per row and the number of cells per column before and after the selected cells
+            int noCellsPerLayer = NoICols * NoJRows;
+            int noCellsPerRow = NoICols;
+            int noCellsPerRowBeforeSelection = StartColI;
+            int noCellsPerRowAfterSelection = NoICols - 1 - EndColI;
+
+            // Fill in the empty top layers with null values
+            for (int cellK = 0; cellK < TopLayerK; cellK++)
+            {
+                propertyData += string.Format(" {0}*{1}\n ", noCellsPerLayer, NullIntegerValue.ToString());
+            }
             // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
             for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
             {
-                for (int cellJ = NoJRows - 1; cellJ >= 0; cellJ--)
+                // Fill in the empty rows with null values
+                for (int cellJ = NoJRows - 1; cellJ > EndRowJ; cellJ--)
                 {
-                    for (int cellI = 0; cellI < NoICols; cellI++)
+                    propertyData += string.Format(" {0}*{1}\n ", noCellsPerRow, NullIntegerValue.ToString());
+                }
+                for (int cellJ = EndRowJ; cellJ >= StartRowJ; cellJ--)
+                {
+                    // Fill in the empty columns with null values
+                    if (noCellsPerRowBeforeSelection > 0)
+                        propertyData += string.Format(" {0}*{1}", noCellsPerRowBeforeSelection, NullIntegerValue.ToString());
+                    // Fill the populated cells with correct values
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
                     {
-                        propertyData += string.Format(" {0}", Property.GetPropertyValue(cellI, cellJ, cellK).ToString());
+                        int propertyValue = Property.GetPropertyValue(cellI, cellJ, cellK);
+                        propertyData += string.Format(" {0}", propertyValue.ToString());
+                    }
+                    // Fill in the empty columns with null values
+                    if (noCellsPerRowAfterSelection > 0)
+                        propertyData += string.Format(" {0}*{1}", noCellsPerRowAfterSelection, NullIntegerValue.ToString());
+                    propertyData += "\n ";
+                }
+                // Fill in the empty rows with null values
+                for (int cellJ = StartRowJ - 1; cellJ >= 0; cellJ--)
+                {
+                    propertyData += string.Format(" {0}*{1}\n ", noCellsPerRow, NullIntegerValue.ToString());
+                }
+            }
+            // Fill in the empty bottom layers with null values
+            for (int cellK = BottomLayerK + 1; cellK < NoKLayers; cellK++)
+            {
+                propertyData += string.Format(" {0}*{1}\n ", noCellsPerLayer, NullIntegerValue.ToString());
+            }
+
+            // Add the terminator to the property string and return it
+            propertyData += string.Format("  {0}\n\n", EndBlockIndicator);
+            return propertyData;
+        }
+        // Functions for retrieving the geometry of a subsection of the grid - not currently used
+        /*/// <summary>
+        /// Get a string representing the Actnum values of all the cells in a specified subsection of the grid in GRDECL format, assuming all cells are active (Actnum value 1)
+        /// </summary>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <returns>A string representing the Actnum values of all the cells in a specified stratigraphic interval of the grid in GRDECL formatt</returns>
+        private string GetActnumDataInGRDECLFormat(int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK)
+        {
+            int noCols = EndColI + 1 - StartColI;
+            int noRows = StartRowJ + 1 - EndRowJ;
+            int noLayers = BottomLayerK + 1 - TopLayerK;
+            string actnumData = string.Format("ACTNUM\t{0} Generated : {1}\n  ", CommentIndicator, GeometryDataSource);
+            actnumData += string.Format("  {0}*1  {1}\n\n", noCols * noRows * noLayers, EndBlockIndicator);
+            return actnumData;
+        }
+        /// <summary>
+        /// Get a string representing the values of a specified floating point property for all the cells in a specified subsection of the grid in GRDECL format
+        /// </summary>
+        /// <param name="Property">GridPropertyArray object containing the property to be exported</param>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="Source">A string defining the source of the property data; this will be included as a comment in the GRDECL format output string</param>
+        /// <returns>A string representing the values of the specified property for all the cells in a specified stratigraphic interval of the grid in GRDECL format</returns>
+        private string GetPropertyDataInGRDECLFormat(GridPropertyArray<double> Property, int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK, string Source)
+        {
+            // Set the source by checking if the property is in the input or output arrays and set the source
+            string Source = "";
+            if (floatingPointInputProperties.Contains(Property))
+                Source = InputDataSource;
+            else foreach (List<GridPropertyArray<double>> nextStageProperties in floatingPointOutputProperties)
+                    if (nextStageProperties.Contains(Property))
+                        Source = OutputDataSource;
+
+            // Create a string for the property
+            string propertyData = string.Format("{0}\t{1} Generated : {2}\n ", Property.PropertyName, CommentIndicator, Source);
+
+            // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
+            for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+            {
+                for (int cellJ = EndRowJ; cellJ >= StartRowJ; cellJ--)
+                {
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                    {
+                        double propertyValue = Property.GetPropertyValue(cellI, cellJ, cellK);
+                        if (double.IsNaN(propertyValue) || double.IsInfinity(propertyValue))
+                            propertyValue = NullFloatingPointValue;
+                        propertyData += string.Format(" {0}", propertyValue.ToString(ExportFormatForDouble));
                     }
                     propertyData += "\n ";
                 }
@@ -1042,21 +1371,74 @@ namespace DFMGenerator_DataTransfer
             return propertyData;
         }
         /// <summary>
-        /// Write grid geometry and implicit output data of a specified output stage for a specified stratigraphic interval to a GRDECL format file
+        /// Get a string representing the values of a specified integer property for all the cells in a specified subsection of the grid in GRDECL format
+        /// </summary>
+        /// <param name="Property">GridPropertyArray object containing the property to be exported</param>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
+        /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
+        /// <param name="Source">A string defining the source of the property data; this will be included as a comment in the GRDECL format output string</param>
+        /// <returns>A string representing the values of the specified property for all the cells in a specified stratigraphic interval of the grid in GRDECL format</returns>
+        private string GetPropertyDataInGRDECLFormat(GridPropertyArray<int> Property, int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK, string Source)
+        {
+            // Set the source by checking if the property is in the input or output arrays and set the source
+            string Source = "";
+            if (integerInputProperties.Contains(Property))
+                Source = InputDataSource;
+            else foreach (List<GridPropertyArray<int>> nextStageProperties in integerOutputProperties)
+                    if (nextStageProperties.Contains(Property))
+                        Source = OutputDataSource;
+
+            // Create a string for the property
+            string propertyData = string.Format("{0}\t{1} Generated : {2}\n ", Property.PropertyName, CommentIndicator, Source);
+
+            // Loop through all cells in the specified layers in the appropriate order, getting the correct property values
+            for (int cellK = TopLayerK; cellK <= BottomLayerK; cellK++)
+            {
+                for (int cellJ = EndRowJ; cellJ >= StartRowJ; cellJ--)
+                {
+                    for (int cellI = StartColI; cellI <= EndColI; cellI++)
+                    {
+                        int propertyValue = Property.GetPropertyValue(cellI, cellJ, cellK);
+                        propertyData += string.Format(" {0}", propertyValue.ToString());
+                    }
+                    propertyData += "\n ";
+                }
+            }
+
+            // Add the terminator to the property string and return it
+            propertyData += string.Format("  {0}\n\n", EndBlockIndicator);
+            return propertyData;
+        }*/
+        /// <summary>
+        /// Write grid geometry and implicit output data of a specified output stage for a specified specified subsection of the grid to a GRDECL format file
         /// </summary>
         /// <param name="ModelName">Name of the model to output - will be included in the filename</param>
         /// <param name="FilePath">File path to write the output file to</param>
         /// <param name="progressReporter">Reference to progress reporter implementing the IProgressReporterWrapper interface</param>
         /// <param name="Stage">Stage of the model output to write to the GRDECL file, indexed from 1</param>
+        /// <param name="StartColI">I index of the first column in the subsection of the grid to be exported</param>
+        /// <param name="EndColI">I index of the last column in the subsection of the grid to be exported</param>
+        /// <param name="StartRowJ">J index of the first row in the subsection of the grid to be exported</param>
+        /// <param name="EndRowJ">J index of the last row in the subsection of the grid to be exported</param>
         /// <param name="TopLayerK">K index of the uppermost layer of the stratigraphic interval to be exported</param>
         /// <param name="BottomLayerK">K index of the lowermost layer of the stratigraphic interval to be exported</param>
         /// <param name="IncludeGridGeometry">Flag to include grid geometry data in the GRDECL file</param>
         /// <returns>Return code: 0 if the operation was successful, 1 if the specified stage does not exist, 2 if there is an error writing to the specified file</returns>
-        public int WriteGRDECLFile(string ModelName, string FilePath, IProgressReporterWrapper progressReporter, int Stage, int TopLayerK, int BottomLayerK, bool IncludeGridGeometry, bool PopulateEmptyGridblocks)
+        public int WriteGRDECLFile(string ModelName, string FilePath, IProgressReporterWrapper progressReporter, int Stage, int StartColI, int EndColI, int StartRowJ, int EndRowJ, int TopLayerK, int BottomLayerK, bool IncludeGridGeometry, bool PopulateEmptyGridblocks)
         {
             try
             {
-                // Check if the specified top and bottom layers are within range; if not adjust them to lie within the grid
+                // Check if the specified subsection coordinates are within range; if not adjust them to lie within the grid
+                if (StartColI < 0) StartColI = 0;
+                if (EndColI >= NoICols) EndColI = NoICols - 1;
+                if (StartColI > EndColI) StartColI = EndColI;
+                if (StartRowJ < 0) StartRowJ = 0;
+                if (EndRowJ >= NoJRows) EndRowJ = NoJRows - 1;
+                if (StartRowJ > EndRowJ) StartRowJ = EndRowJ;
                 if (TopLayerK < 0) TopLayerK = 0;
                 if (BottomLayerK >= NoKLayers) BottomLayerK = NoKLayers - 1;
                 if (TopLayerK > BottomLayerK) TopLayerK = BottomLayerK;
@@ -1109,27 +1491,27 @@ namespace DFMGenerator_DataTransfer
                         // Write the grid units to the output file
                         outputFile.Write(GetGridUnitsInGRDECLFormat());
                         // Write the grid dimensions to the output file
-                        outputFile.Write(GetGridDimensionsInGRDECLFormat(TopLayerK, BottomLayerK));
+                        outputFile.Write(GetGridDimensionsInGRDECLFormat());
                         // Write the coordinate system to the output file 
                         outputFile.Write(GetCoordinateSystemInGRDECLFormat());
                         // Write the coordinates of the grid pillars to the output file
                         outputFile.Write(GetPillarsInGRDECLFormat());
                         // Write the depths (-Z coordinates) of the cell cornerpoint to the output file
-                        outputFile.Write(GetCellCornerDepthsInGRDECLFormat(TopLayerK, BottomLayerK));
+                        outputFile.Write(GetCellCornerDepthsInGRDECLFormat());
                         // Write the fault patches to the output file
-                        outputFile.Write(GetFaultsInGRDECLFormat(TopLayerK, BottomLayerK));
+                        outputFile.Write(GetFaultsInGRDECLFormat());
                     }
 
                     // Write the property data for all properties in the specified output stage to the output file
                     foreach (GridPropertyArray<double> nextProperty in floatingPointPropertiesToOutput)
                     {
-                        string propertyData = GetPropertyDataInGRDECLFormat(nextProperty, TopLayerK, BottomLayerK, OutputDataSource);
+                        string propertyData = GetPropertyDataInGRDECLFormat(nextProperty, StartColI, EndColI, StartRowJ, EndRowJ, TopLayerK, BottomLayerK, OutputDataSource);
                         outputFile.Write(propertyData);
                         progressReporter.OutputMessage(string.Format("Written data for property {0}", nextProperty.PropertyName));
                     }
                     foreach (GridPropertyArray<int> nextProperty in integerPropertiesToOutput)
                     {
-                        string propertyData = GetPropertyDataInGRDECLFormat(nextProperty, TopLayerK, BottomLayerK, OutputDataSource);
+                        string propertyData = GetPropertyDataInGRDECLFormat(nextProperty, StartColI, EndColI, StartRowJ, EndRowJ, TopLayerK, BottomLayerK, OutputDataSource);
                         outputFile.Write(propertyData);
                         progressReporter.OutputMessage(string.Format("Written data for property {0}", nextProperty.PropertyName));
                     }
@@ -2417,15 +2799,22 @@ namespace DFMGenerator_DataTransfer
             return 0;
         }
         /// <summary>
+        /// String to record errors when loading specific properties
+        /// </summary>
+        public string PropertyLoadingErrors { get; private set; }
+        /// <summary>
         /// Populate the grid with property data
         /// </summary>
         /// <param name="RawData">Data from a GRDECL file, split line by line into strings</param>
         /// <returns>Return code: 0 if the operation was successful, 1 if no property data was found, 2 if there were load errors in one or more property (some property data may have been loaded)</returns>
         private int PopulateProperties(string[] RawData)
         {
+            // Initialise the string to record errors when loading specific properties
+            PropertyLoadingErrors = string.Empty;
+
             // Create a list of keywords defining the geometry
             // Get a list of data blocks with any name other than the geometry keywords
-            List<string> keywords = new List<string> { "GRIDUNIT", "MAPUNITS", "METRES", "FEET", "SPECGRID", "DIMENS", "COORD", "ZCORN", "FAULTS", "MAPAXES", "MAP", "F", "COORDSYS" };
+            List<string> keywords = new List<string> { "GRIDUNIT", "MAPUNITS", "METRES", "FEET", "SPECGRID", "DIMENS", "COORD", "ZCORN", "FAULTS", "MAPAXES", "MAP", "F", "COORDSYS", "PINCH", "NOECHO", "ECHO" };
             List<GRDECLDataBlock<double>> propertyBlocks = ExtractFloatingPointBlocksFromGRDECLData(keywords, RawData, NoCells);
             // If no data was found, return 1
             if (propertyBlocks.Count == 0)
@@ -2441,6 +2830,7 @@ namespace DFMGenerator_DataTransfer
                 if (propertyBlock.NoDataValues < NoCells)
                 {
                     loadErrors++;
+                    PropertyLoadingErrors += string.Format("Property {0}: {1} values for {2} cells\n", propertyBlock.BlockName, propertyBlock.NoDataValues, NoCells);
                     continue;
                 }
 
@@ -2491,7 +2881,10 @@ namespace DFMGenerator_DataTransfer
 
                     // If there were bad data values, increment the load error list
                     if (badValues > 0)
+                    {
                         loadErrors++;
+                        PropertyLoadingErrors += string.Format("Property {0}: {1} bad values", propertyName, badValues);
+                    }
                 }
                 // Otherwise assume the property is a floating point property
                 else
